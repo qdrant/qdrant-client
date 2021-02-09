@@ -1,6 +1,7 @@
 import inspect
 
 from pydantic import BaseModel
+
 from qdrant_openapi_client.api_client import ApiClient, AsyncApis, SyncApis  # noqa F401
 from qdrant_openapi_client.models import models
 

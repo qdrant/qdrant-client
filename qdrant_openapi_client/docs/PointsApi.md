@@ -103,7 +103,6 @@ with qdrant_openapi_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = points_api.PointsApi(api_client)
     name = "name_example" # str | Name of the collection to retrieve from
-    wait = True # bool | Wait for changes to actually happen? Default: false (optional)
     point_request = PointRequest(
         ids=[
             0,
@@ -122,7 +121,7 @@ with qdrant_openapi_client.ApiClient() as api_client:
     # and optional values
     try:
         # Retrieve points by ids
-        api_response = api_instance.get_points(name, wait=wait, point_request=point_request)
+        api_response = api_instance.get_points(name, point_request=point_request)
         pprint(api_response)
     except qdrant_openapi_client.ApiException as e:
         print("Exception when calling PointsApi->get_points: %s\n" % e)
@@ -133,7 +132,6 @@ with qdrant_openapi_client.ApiClient() as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **name** | **str**| Name of the collection to retrieve from |
- **wait** | **bool**| Wait for changes to actually happen? Default: false | [optional]
  **point_request** | [**PointRequest**](PointRequest.md)| List of points to retrieve | [optional]
 
 ### Return type
