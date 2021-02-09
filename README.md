@@ -11,7 +11,9 @@ It also provides some additional helper methods for frequently required operatio
 
 ## Installation
 
-ToDo
+```
+pip install qdrant-client
+```
 
 ## Examples
 
