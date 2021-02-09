@@ -1,0 +1,2 @@
+# Python Qdrant client library 
+

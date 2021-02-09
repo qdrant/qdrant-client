@@ -1,0 +1,11 @@
+# ConditionAnyOf4
+
+Check if geo point is within a given radius
+## Properties
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**geo_radius** | [**GeoRadius**](GeoRadius.md) |  | 
+
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+
