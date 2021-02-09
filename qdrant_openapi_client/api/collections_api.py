@@ -1,9 +1,8 @@
 # flake8: noqa E501
-from asyncio import get_event_loop
 from enum import Enum
 from pathlib import PurePath
 from types import GeneratorType
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
 
 from pydantic.json import ENCODERS_BY_TYPE
 from pydantic.main import BaseModel
@@ -150,13 +149,13 @@ if TYPE_CHECKING:
 
 
 class _CollectionsApi:
-    def __init__(self, api_client: "ApiClient"):
+    def __init__(self, api_client: "Union[ApiClient, AsyncApiClient]"):
         self.api_client = api_client
 
     def _build_for_get_collection(
         self,
         name: str,
-    ) -> Awaitable[m.InlineResponse2002]:
+    ):
         path_params = {
             "name": str(name),
         }
@@ -170,7 +169,7 @@ class _CollectionsApi:
 
     def _build_for_get_collections(
         self,
-    ) -> Awaitable[m.InlineResponse200]:
+    ):
         return self.api_client.request(
             type_=m.InlineResponse200,
             method="GET",
@@ -180,7 +179,7 @@ class _CollectionsApi:
     def _build_for_update_collections(
         self,
         storage_ops: m.StorageOps = None,
-    ) -> Awaitable[m.InlineResponse2001]:
+    ):
         body = jsonable_encoder(storage_ops)
 
         return self.api_client.request(type_=m.InlineResponse2001, method="POST", url="/collections", json=body)
@@ -214,22 +213,19 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         name: str,
     ) -> m.InlineResponse2002:
-        coroutine = self._build_for_get_collection(
+        return self._build_for_get_collection(
             name=name,
         )
-        return get_event_loop().run_until_complete(coroutine)
 
     def get_collections(
         self,
     ) -> m.InlineResponse200:
-        coroutine = self._build_for_get_collections()
-        return get_event_loop().run_until_complete(coroutine)
+        return self._build_for_get_collections()
 
     def update_collections(
         self,
         storage_ops: m.StorageOps = None,
     ) -> m.InlineResponse2001:
-        coroutine = self._build_for_update_collections(
+        return self._build_for_update_collections(
             storage_ops=storage_ops,
         )
-        return get_event_loop().run_until_complete(coroutine)

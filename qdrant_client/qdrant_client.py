@@ -28,10 +28,7 @@ def iter_batch(iterable, size) -> Iterable:
 class QdrantClient:
 
     def __init__(self, host="localhost", port=6333):
-        self.api_client = ApiClient(
-            host=f"http://{host}:{port}"
-        )
-        self.openapi_client = SyncApis(self.api_client)
+        self.openapi_client = SyncApis(host=f"http://{host}:{port}")
 
     @classmethod
     def _json_to_payload(cls, json_data, prefix="") -> Dict[str, PayloadInterface]:

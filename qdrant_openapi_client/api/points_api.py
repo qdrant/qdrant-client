@@ -1,9 +1,8 @@
 # flake8: noqa E501
-from asyncio import get_event_loop
 from enum import Enum
 from pathlib import PurePath
 from types import GeneratorType
-from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
 
 from pydantic.json import ENCODERS_BY_TYPE
 from pydantic.main import BaseModel
@@ -150,14 +149,14 @@ if TYPE_CHECKING:
 
 
 class _PointsApi:
-    def __init__(self, api_client: "ApiClient"):
+    def __init__(self, api_client: "Union[ApiClient, AsyncApiClient]"):
         self.api_client = api_client
 
     def _build_for_get_point(
         self,
         name: str,
         id: int,
-    ) -> Awaitable[m.InlineResponse2004]:
+    ):
         path_params = {
             "name": str(name),
             "id": str(id),
@@ -173,11 +172,16 @@ class _PointsApi:
     def _build_for_get_points(
         self,
         name: str,
+        wait: bool = None,
         point_request: m.PointRequest = None,
-    ) -> Awaitable[m.InlineResponse2005]:
+    ):
         path_params = {
             "name": str(name),
         }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait)
 
         body = jsonable_encoder(point_request)
 
@@ -186,6 +190,7 @@ class _PointsApi:
             method="POST",
             url="/collections/{name}/points",
             path_params=path_params,
+            params=query_params,
             json=body,
         )
 
@@ -193,7 +198,7 @@ class _PointsApi:
         self,
         name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> Awaitable[m.InlineResponse2006]:
+    ):
         path_params = {
             "name": str(name),
         }
@@ -212,7 +217,7 @@ class _PointsApi:
         self,
         name: str,
         search_request: m.SearchRequest = None,
-    ) -> Awaitable[m.InlineResponse2006]:
+    ):
         path_params = {
             "name": str(name),
         }
@@ -231,7 +236,7 @@ class _PointsApi:
         self,
         name: str,
         collection_update_operations: m.CollectionUpdateOperations = None,
-    ) -> Awaitable[m.InlineResponse2003]:
+    ):
         path_params = {
             "name": str(name),
         }
@@ -257,10 +262,12 @@ class AsyncPointsApi(_PointsApi):
     async def get_points(
         self,
         name: str,
+        wait: bool = None,
         point_request: m.PointRequest = None,
     ) -> m.InlineResponse2005:
         return await self._build_for_get_points(
             name=name,
+            wait=wait,
             point_request=point_request,
         )
 
@@ -301,52 +308,49 @@ class SyncPointsApi(_PointsApi):
         name: str,
         id: int,
     ) -> m.InlineResponse2004:
-        coroutine = self._build_for_get_point(
+        return self._build_for_get_point(
             name=name,
             id=id,
         )
-        return get_event_loop().run_until_complete(coroutine)
 
     def get_points(
         self,
         name: str,
+        wait: bool = None,
         point_request: m.PointRequest = None,
     ) -> m.InlineResponse2005:
-        coroutine = self._build_for_get_points(
+        return self._build_for_get_points(
             name=name,
+            wait=wait,
             point_request=point_request,
         )
-        return get_event_loop().run_until_complete(coroutine)
 
     def recommend_points(
         self,
         name: str,
         recommend_request: m.RecommendRequest = None,
     ) -> m.InlineResponse2006:
-        coroutine = self._build_for_recommend_points(
+        return self._build_for_recommend_points(
             name=name,
             recommend_request=recommend_request,
         )
-        return get_event_loop().run_until_complete(coroutine)
 
     def search_points(
         self,
         name: str,
         search_request: m.SearchRequest = None,
     ) -> m.InlineResponse2006:
-        coroutine = self._build_for_search_points(
+        return self._build_for_search_points(
             name=name,
             search_request=search_request,
         )
-        return get_event_loop().run_until_complete(coroutine)
 
     def update_points(
         self,
         name: str,
         collection_update_operations: m.CollectionUpdateOperations = None,
     ) -> m.InlineResponse2003:
-        coroutine = self._build_for_update_points(
+        return self._build_for_update_points(
             name=name,
             collection_update_operations=collection_update_operations,
         )
-        return get_event_loop().run_until_complete(coroutine)
