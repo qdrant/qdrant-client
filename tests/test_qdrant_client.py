@@ -7,7 +7,7 @@ from time import sleep
 
 import numpy as np
 
-from qdrant_client.qdrant_client import QdrantClient
+from qdrant_client import QdrantClient
 from qdrant_openapi_client.models.models import PayloadInterfaceAnyOf
 
 DIM = 100
@@ -49,7 +49,7 @@ def test_qdrant_client_integration():
     # Call Qdrant API to retrieve list of existing collections
     collections = client.http.collections_api.get_collections().result.collections
 
-    # Print all existing collections
+    # Prfrom qdrant_client import QdrantClientint all existing collections
     for collection in collections:
         print(collection.dict())
 
