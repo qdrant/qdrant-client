@@ -70,6 +70,11 @@ def test_qdrant_client_integration():
     # If want need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
     sleep(1)
 
+    # Create payload index for field `random_num`
+    # If indexed field appear in filtering condition - search operation could be performed faster
+    index_create_result = client.create_payload_index(COLLECTION_NAME, "random_num")
+    pprint(index_create_result.dict())
+
     # Let's now check details about our new collection
     test_collection = client.http.collections_api.get_collection(COLLECTION_NAME)
     pprint(test_collection.dict())

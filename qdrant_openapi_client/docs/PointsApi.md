@@ -8,7 +8,7 @@ Method | HTTP request | Description
 [**get_points**](PointsApi.md#get_points) | **POST** /collections/{name}/points | Retrieve points by ids
 [**recommend_points**](PointsApi.md#recommend_points) | **POST** /collections/{name}/points/recommend | Recommend points
 [**search_points**](PointsApi.md#search_points) | **POST** /collections/{name}/points/search | Search points
-[**update_points**](PointsApi.md#update_points) | **POST** /collections/{name} | Update points in collection
+[**update_points**](PointsApi.md#update_points) | **POST** /collections/{name} | Update points (vectors, payloads, indexes) in collection
 
 
 # **get_point**
@@ -103,7 +103,6 @@ with qdrant_openapi_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = points_api.PointsApi(api_client)
     name = "name_example" # str | Name of the collection to retrieve from
-    wait = True # bool | Wait for changes to actually happen? Default: false (optional)
     point_request = PointRequest(
         ids=[
             0,
@@ -122,7 +121,7 @@ with qdrant_openapi_client.ApiClient() as api_client:
     # and optional values
     try:
         # Retrieve points by ids
-        api_response = api_instance.get_points(name, wait=wait, point_request=point_request)
+        api_response = api_instance.get_points(name, point_request=point_request)
         pprint(api_response)
     except qdrant_openapi_client.ApiException as e:
         print("Exception when calling PointsApi->get_points: %s\n" % e)
@@ -133,7 +132,6 @@ with qdrant_openapi_client.ApiClient() as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **name** | **str**| Name of the collection to retrieve from |
- **wait** | **bool**| Wait for changes to actually happen? Default: false | [optional]
  **point_request** | [**PointRequest**](PointRequest.md)| List of points to retrieve | [optional]
 
 ### Return type
@@ -327,7 +325,7 @@ No authorization required
 # **update_points**
 > InlineResponse2003 update_points(name)
 
-Update points in collection
+Update points (vectors, payloads, indexes) in collection
 
 ### Example
 
@@ -351,11 +349,12 @@ with qdrant_openapi_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = points_api.PointsApi(api_client)
     name = "name_example" # str | Name of the collection to search in
-    collection_update_operations = CollectionUpdateOperations() # CollectionUpdateOperations | Points update operations (optional)
+    wait = True # bool | Wait for changes to actually happen? Default: false (optional)
+    collection_update_operations = CollectionUpdateOperations() # CollectionUpdateOperations | Collection update operations (optional)
 
     # example passing only required values which don't have defaults set
     try:
-        # Update points in collection
+        # Update points (vectors, payloads, indexes) in collection
         api_response = api_instance.update_points(name)
         pprint(api_response)
     except qdrant_openapi_client.ApiException as e:
@@ -364,8 +363,8 @@ with qdrant_openapi_client.ApiClient() as api_client:
     # example passing only required values which don't have defaults set
     # and optional values
     try:
-        # Update points in collection
-        api_response = api_instance.update_points(name, collection_update_operations=collection_update_operations)
+        # Update points (vectors, payloads, indexes) in collection
+        api_response = api_instance.update_points(name, wait=wait, collection_update_operations=collection_update_operations)
         pprint(api_response)
     except qdrant_openapi_client.ApiException as e:
         print("Exception when calling PointsApi->update_points: %s\n" % e)
@@ -376,7 +375,8 @@ with qdrant_openapi_client.ApiClient() as api_client:
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **name** | **str**| Name of the collection to search in |
- **collection_update_operations** | [**CollectionUpdateOperations**](CollectionUpdateOperations.md)| Points update operations | [optional]
+ **wait** | **bool**| Wait for changes to actually happen? Default: false | [optional]
+ **collection_update_operations** | [**CollectionUpdateOperations**](CollectionUpdateOperations.md)| Collection update operations | [optional]
 
 ### Return type
 
