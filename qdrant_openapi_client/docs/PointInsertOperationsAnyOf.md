@@ -1,9 +1,10 @@
-# PointOpsAnyOf1DeletePoints
+# PointInsertOperationsAnyOf
 
+Inset points from a batch.
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**ids** | **[int]** |  | 
+**batch** | [**PointInsertOperationsAnyOfBatch**](PointInsertOperationsAnyOfBatch.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

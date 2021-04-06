@@ -1,10 +1,10 @@
-# StorageOpsAnyOf2
+# FieldIndexOperationsAnyOf
 
-Perform changes of collection aliases Alias changes are atomic, meaning that no collection modifications can happen between alias operations
+Create index for payload field
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**change_aliases** | [**StorageOpsAnyOf2ChangeAliases**](StorageOpsAnyOf2ChangeAliases.md) |  | 
+**create_index** | **str** |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

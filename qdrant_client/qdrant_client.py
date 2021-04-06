@@ -6,10 +6,10 @@ import numpy as np
 from tqdm import tqdm
 
 from qdrant_openapi_client import SyncApis, ApiClient
-from qdrant_openapi_client.models.models import PointOpsAnyOf, PointInsertOpsAnyOfBatch, PayloadInterface, \
+from qdrant_openapi_client.models.models import PointOperationsAnyOf, PointInsertOperationsAnyOfBatch, PayloadInterface, \
     PayloadInterfaceAnyOf, PayloadInterfaceAnyOf1, PayloadInterfaceAnyOf2, PayloadInterfaceAnyOf3, GeoPoint, \
-    StorageOpsAnyOf1, StorageOpsAnyOf, StorageOpsAnyOfCreateCollection, Distance, Indexes, PointInsertOpsAnyOf, \
-    PointRequest, SearchRequest, Filter, SearchParams
+    Distance, Indexes, PointInsertOperationsAnyOf, PointRequest, SearchRequest, Filter, SearchParams, StorageOperationsAnyOf, \
+    StorageOperationsAnyOfCreateCollection, StorageOperationsAnyOf1
 
 
 def iter_batch(iterable, size) -> Iterable:
@@ -148,7 +148,7 @@ class QdrantClient:
             name=collection_name,
             search_request=SearchRequest(
                 vector=query_vector,
-                query_filter=query_filter,
+                filter=query_filter,
                 top=top,
                 params=search_params
             )
@@ -182,14 +182,14 @@ class QdrantClient:
             distance = Distance.DOT
 
         self.http.collections_api.update_collections(
-            storage_ops=StorageOpsAnyOf1(
+            storage_operations=StorageOperationsAnyOf1(
                 delete_collection=collection_name
             )
         )
 
         self.http.collections_api.update_collections(
-            storage_ops=StorageOpsAnyOf(
-                create_collection=StorageOpsAnyOfCreateCollection(
+            storage_operations=StorageOperationsAnyOf(
+                create_collection=StorageOperationsAnyOfCreateCollection(
                     name=collection_name,
                     distance=distance,
                     vector_size=vector_size,
@@ -217,9 +217,9 @@ class QdrantClient:
         for ids_batch, vectors_batch, payload_batch in tqdm(self._iterate_batches(vectors, payload, ids, batch_size)):
             self.openapi_client.points_api.update_points(
                 name=collection_name,
-                collection_update_operations=PointOpsAnyOf(
-                    upsert_points=PointInsertOpsAnyOf(
-                        batch=PointInsertOpsAnyOfBatch(
+                collection_update_operations=PointOperationsAnyOf(
+                    upsert_points=PointInsertOperationsAnyOf(
+                        batch=PointInsertOperationsAnyOfBatch(
                             ids=ids_batch,
                             payloads=payload_batch,
                             vectors=vectors_batch

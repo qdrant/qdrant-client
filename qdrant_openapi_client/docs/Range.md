@@ -3,7 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**key** | **str** | Name of the field to match with | 
 **gt** | **float, none_type** | point.key &gt; range.gt | [optional] 
 **gte** | **float, none_type** | point.key &gt;&#x3D; range.gte | [optional] 
 **lt** | **float, none_type** | point.key &lt; range.lt | [optional] 

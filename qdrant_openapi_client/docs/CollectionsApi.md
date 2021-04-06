@@ -142,8 +142,8 @@ Perform update operation on collections
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import collections_api
+from qdrant_openapi_client.model.storage_operations import StorageOperations
 from qdrant_openapi_client.model.inline_response2001 import InlineResponse2001
-from qdrant_openapi_client.model.storage_ops import StorageOps
 from qdrant_openapi_client.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
@@ -157,13 +157,13 @@ configuration = qdrant_openapi_client.Configuration(
 with qdrant_openapi_client.ApiClient() as api_client:
     # Create an instance of the API class
     api_instance = collections_api.CollectionsApi(api_client)
-    storage_ops = StorageOps() # StorageOps | Operation to perform on collections (optional)
+    storage_operations = StorageOperations() # StorageOperations | Operation to perform on collections (optional)
 
     # example passing only required values which don't have defaults set
     # and optional values
     try:
         # Perform update operation on collections
-        api_response = api_instance.update_collections(storage_ops=storage_ops)
+        api_response = api_instance.update_collections(storage_operations=storage_operations)
         pprint(api_response)
     except qdrant_openapi_client.ApiException as e:
         print("Exception when calling CollectionsApi->update_collections: %s\n" % e)
@@ -173,7 +173,7 @@ with qdrant_openapi_client.ApiClient() as api_client:
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **storage_ops** | [**StorageOps**](StorageOps.md)| Operation to perform on collections | [optional]
+ **storage_operations** | [**StorageOperations**](StorageOperations.md)| Operation to perform on collections | [optional]
 
 ### Return type
 

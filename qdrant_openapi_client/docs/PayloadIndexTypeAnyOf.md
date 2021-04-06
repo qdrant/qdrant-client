@@ -1,10 +1,10 @@
-# ConditionAnyOf5
+# PayloadIndexTypeAnyOf
 
-Check if points id is in a given set
+Do not index anything, just keep of what should be indexed later
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**has_id** | **[int]** |  | 
+**type** | **str** |  | defaults to "plain"
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

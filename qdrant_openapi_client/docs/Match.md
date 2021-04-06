@@ -3,7 +3,6 @@
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**key** | **str** | Name of the field to match with | 
 **integer** | **int, none_type** | Integer value to match | [optional] 
 **keyword** | **str, none_type** | Keyword value to match | [optional] 
 
