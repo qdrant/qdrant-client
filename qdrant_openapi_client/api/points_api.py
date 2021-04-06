@@ -172,16 +172,11 @@ class _PointsApi:
     def _build_for_get_points(
         self,
         name: str,
-        wait: bool = None,
         point_request: m.PointRequest = None,
     ):
         path_params = {
             "name": str(name),
         }
-
-        query_params = {}
-        if wait is not None:
-            query_params["wait"] = str(wait)
 
         body = jsonable_encoder(point_request)
 
@@ -190,7 +185,6 @@ class _PointsApi:
             method="POST",
             url="/collections/{name}/points",
             path_params=path_params,
-            params=query_params,
             json=body,
         )
 
@@ -235,16 +229,26 @@ class _PointsApi:
     def _build_for_update_points(
         self,
         name: str,
+        wait: bool = None,
         collection_update_operations: m.CollectionUpdateOperations = None,
     ):
         path_params = {
             "name": str(name),
         }
 
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait)
+
         body = jsonable_encoder(collection_update_operations)
 
         return self.api_client.request(
-            type_=m.InlineResponse2003, method="POST", url="/collections/{name}", path_params=path_params, json=body
+            type_=m.InlineResponse2003,
+            method="POST",
+            url="/collections/{name}",
+            path_params=path_params,
+            params=query_params,
+            json=body,
         )
 
 
@@ -262,12 +266,10 @@ class AsyncPointsApi(_PointsApi):
     async def get_points(
         self,
         name: str,
-        wait: bool = None,
         point_request: m.PointRequest = None,
     ) -> m.InlineResponse2005:
         return await self._build_for_get_points(
             name=name,
-            wait=wait,
             point_request=point_request,
         )
 
@@ -294,10 +296,12 @@ class AsyncPointsApi(_PointsApi):
     async def update_points(
         self,
         name: str,
+        wait: bool = None,
         collection_update_operations: m.CollectionUpdateOperations = None,
     ) -> m.InlineResponse2003:
         return await self._build_for_update_points(
             name=name,
+            wait=wait,
             collection_update_operations=collection_update_operations,
         )
 
@@ -316,12 +320,10 @@ class SyncPointsApi(_PointsApi):
     def get_points(
         self,
         name: str,
-        wait: bool = None,
         point_request: m.PointRequest = None,
     ) -> m.InlineResponse2005:
         return self._build_for_get_points(
             name=name,
-            wait=wait,
             point_request=point_request,
         )
 
@@ -348,9 +350,11 @@ class SyncPointsApi(_PointsApi):
     def update_points(
         self,
         name: str,
+        wait: bool = None,
         collection_update_operations: m.CollectionUpdateOperations = None,
     ) -> m.InlineResponse2003:
         return self._build_for_update_points(
             name=name,
+            wait=wait,
             collection_update_operations=collection_update_operations,
         )

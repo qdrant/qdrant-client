@@ -1,10 +1,10 @@
-# ConditionAnyOf2
+# PointOperationsAnyOf1
 
-Check if points value lies in a given range
+Delete point if exists
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**range** | [**Range**](Range.md) |  | 
+**delete_points** | [**PointOperationsAnyOf1DeletePoints**](PointOperationsAnyOf1DeletePoints.md) |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

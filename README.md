@@ -17,6 +17,8 @@ pip install qdrant-client
 
 ## Examples
 
+
+
 Instance a client
 ```python
 from qdrant_client import QdrantClient
@@ -50,3 +52,28 @@ hits = client.search(
     top=5  # Return 5 closest points
 )
 ```
+
+Search for similar vectors with filtering condition
+
+```python
+from qdrant_openapi_client.models.models import Filter, FieldCondition, Range
+
+hits = client.search(
+    collection_name="my_collection",
+    query_vector=query_vector,
+    query_filter=Filter(
+        must=[  # These conditions are required for search results
+            FieldCondition(
+                key='rand_number',  # Condition based on values of `rand_number` field.
+                range=Range(
+                    gte=0.5  # Select only those results where `rand_number` >= 0.5
+                )
+            )
+        ]
+    ),
+    append_payload=True,  # Also return a stored payload for found points
+    top=5  # Return 5 closest points
+)
+```
+
+Check out [full example code](tests/test_qdrant_client.py)

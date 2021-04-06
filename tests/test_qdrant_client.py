@@ -3,12 +3,12 @@ import random
 import uuid
 from pprint import pprint
 from tempfile import mkdtemp
-from time import sleep
 
 import numpy as np
+from time import sleep
 
 from qdrant_client import QdrantClient
-from qdrant_openapi_client.models.models import PayloadInterfaceAnyOf
+from qdrant_openapi_client.models.models import Filter, FieldCondition, Range
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -70,6 +70,11 @@ def test_qdrant_client_integration():
     # If want need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
     sleep(1)
 
+    # Create payload index for field `random_num`
+    # If indexed field appear in filtering condition - search operation could be performed faster
+    index_create_result = client.create_payload_index(COLLECTION_NAME, "random_num")
+    pprint(index_create_result.dict())
+
     # Let's now check details about our new collection
     test_collection = client.http.collections_api.get_collection(COLLECTION_NAME)
     pprint(test_collection.dict())
@@ -88,6 +93,29 @@ def test_qdrant_client_integration():
     )
 
     # Print found results
+    print("Search result:")
+    for hit in hits:
+        print(hit)
+
+    # Let's now query same vector with filter condition
+    hits = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        query_filter=Filter(
+            must=[  # These conditions are required for search results
+                FieldCondition(
+                    key='rand_number',  # Condition based on values of `rand_number` field.
+                    range=Range(
+                        gte=0.5  # Select only those results where `rand_number` >= 0.5
+                    )
+                )
+            ]
+        ),
+        append_payload=True,  # Also return a stored payload for found points
+        top=5  # Return 5 closest points
+    )
+
+    print("Filtered search result (`random_num` >= 0.5):")
     for hit in hits:
         print(hit)
 

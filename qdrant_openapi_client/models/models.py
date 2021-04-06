@@ -65,54 +65,6 @@ class CollectionsResponse(BaseModel):
     collections: List["CollectionDescription"] = Field(..., description="")
 
 
-class ConditionAnyOf(BaseModel):
-    """
-    Nested filter
-    """
-
-    filter: "Filter" = Field(..., description="Nested filter")
-
-
-class ConditionAnyOf1(BaseModel):
-    """
-    Check if point has field with a given value
-    """
-
-    match: "Match" = Field(..., description="Check if point has field with a given value")
-
-
-class ConditionAnyOf2(BaseModel):
-    """
-    Check if points value lies in a given range
-    """
-
-    range: "Range" = Field(..., description="Check if points value lies in a given range")
-
-
-class ConditionAnyOf3(BaseModel):
-    """
-    Check if points geo location lies in a given area
-    """
-
-    geo_bounding_box: "GeoBoundingBox" = Field(..., description="Check if points geo location lies in a given area")
-
-
-class ConditionAnyOf4(BaseModel):
-    """
-    Check if geo point is within a given radius
-    """
-
-    geo_radius: "GeoRadius" = Field(..., description="Check if geo point is within a given radius")
-
-
-class ConditionAnyOf5(BaseModel):
-    """
-    Check if points id is in a given set
-    """
-
-    has_id: List[int] = Field(..., description="Check if points id is in a given set")
-
-
 class Distance(str, Enum):
     COSINE = "Cosine"
     EUCLID = "Euclid"
@@ -129,6 +81,32 @@ class ErrorResponseStatus(BaseModel):
     error: Optional[str] = Field(None, description="Description of the occurred error.")
 
 
+class FieldCondition(BaseModel):
+    geo_bounding_box: Optional["GeoBoundingBox"] = Field(
+        None, description="Check if points geo location lies in a given area"
+    )
+    geo_radius: Optional["GeoRadius"] = Field(None, description="Check if geo point is within a given radius")
+    key: str = Field(..., description="")
+    match: Optional["Match"] = Field(None, description="Check if point has field with a given value")
+    range: Optional["Range"] = Field(None, description="Check if points value lies in a given range")
+
+
+class FieldIndexOperationsAnyOf(BaseModel):
+    """
+    Create index for payload field
+    """
+
+    create_index: str = Field(..., description="Create index for payload field")
+
+
+class FieldIndexOperationsAnyOf1(BaseModel):
+    """
+    Delete index for the field
+    """
+
+    delete_index: str = Field(..., description="Delete index for the field")
+
+
 class Filter(BaseModel):
     must: Optional[List["Condition"]] = Field(None, description="All conditions must match")
     must_not: Optional[List["Condition"]] = Field(None, description="All conditions must NOT match")
@@ -137,7 +115,6 @@ class Filter(BaseModel):
 
 class GeoBoundingBox(BaseModel):
     bottom_right: "GeoPoint" = Field(..., description="")
-    key: str = Field(..., description="Name of the field to match with")
     top_left: "GeoPoint" = Field(..., description="")
 
 
@@ -148,8 +125,11 @@ class GeoPoint(BaseModel):
 
 class GeoRadius(BaseModel):
     center: "GeoPoint" = Field(..., description="")
-    key: str = Field(..., description="Name of the field to match with")
     radius: float = Field(..., description="Radius of the area in meters")
+
+
+class HasIdCondition(BaseModel):
+    has_id: List[int] = Field(..., description="")
 
 
 class IndexesAnyOf(BaseModel):
@@ -251,8 +231,27 @@ class InlineResponse2006(BaseModel):
 
 class Match(BaseModel):
     integer: Optional[int] = Field(None, description="Integer value to match")
-    key: str = Field(..., description="Name of the field to match with")
     keyword: Optional[str] = Field(None, description="Keyword value to match")
+
+
+class PayloadIndexTypeAnyOf(BaseModel):
+    """
+    Do not index anything, just keep of what should be indexed later
+    """
+
+    type: Literal[
+        "plain",
+    ] = Field(..., description="Do not index anything, just keep of what should be indexed later")
+
+
+class PayloadIndexTypeAnyOf1(BaseModel):
+    """
+    Build payload index. Index is saved on disc, but index itself is in RAM
+    """
+
+    type: Literal[
+        "struct",
+    ] = Field(..., description="Build payload index. Index is saved on disc, but index itself is in RAM")
 
 
 class PayloadInterfaceAnyOf(BaseModel):
@@ -355,15 +354,15 @@ class PayloadTypeAnyOf3(BaseModel):
     value: List["GeoPoint"] = Field(..., description="")
 
 
-class PointInsertOpsAnyOf(BaseModel):
+class PointInsertOperationsAnyOf(BaseModel):
     """
     Inset points from a batch.
     """
 
-    batch: "PointInsertOpsAnyOfBatch" = Field(..., description="Inset points from a batch.")
+    batch: "PointInsertOperationsAnyOfBatch" = Field(..., description="Inset points from a batch.")
 
 
-class PointInsertOpsAnyOf1(BaseModel):
+class PointInsertOperationsAnyOf1(BaseModel):
     """
     Insert points from a list
     """
@@ -371,29 +370,29 @@ class PointInsertOpsAnyOf1(BaseModel):
     points: List["PointStruct"] = Field(..., description="Insert points from a list")
 
 
-class PointInsertOpsAnyOfBatch(BaseModel):
+class PointInsertOperationsAnyOfBatch(BaseModel):
     ids: List[int] = Field(..., description="")
     payloads: Optional[List[Dict[str, "PayloadInterface"]]] = Field(None, description="")
     vectors: List[List[float]] = Field(..., description="")
 
 
-class PointOpsAnyOf(BaseModel):
+class PointOperationsAnyOf(BaseModel):
     """
     Insert or update points
     """
 
-    upsert_points: "PointInsertOps" = Field(..., description="Insert or update points")
+    upsert_points: "PointInsertOperations" = Field(..., description="Insert or update points")
 
 
-class PointOpsAnyOf1(BaseModel):
+class PointOperationsAnyOf1(BaseModel):
     """
     Delete point if exists
     """
 
-    delete_points: "PointOpsAnyOf1DeletePoints" = Field(..., description="Delete point if exists")
+    delete_points: "PointOperationsAnyOf1DeletePoints" = Field(..., description="Delete point if exists")
 
 
-class PointOpsAnyOf1DeletePoints(BaseModel):
+class PointOperationsAnyOf1DeletePoints(BaseModel):
     ids: List[int] = Field(..., description="")
 
 
@@ -410,7 +409,6 @@ class PointStruct(BaseModel):
 class Range(BaseModel):
     gt: Optional[float] = Field(None, description="point.key &gt; range.gt")
     gte: Optional[float] = Field(None, description="point.key &gt;= range.gte")
-    key: str = Field(..., description="Name of the field to match with")
     lt: Optional[float] = Field(None, description="point.key &lt; range.lt")
     lte: Optional[float] = Field(None, description="point.key &lt;= range.lte")
 
@@ -471,21 +469,22 @@ class SearchRequest(BaseModel):
 class SegmentConfig(BaseModel):
     distance: "Distance" = Field(..., description="")
     index: "Indexes" = Field(..., description="")
+    payload_index: Optional["PayloadIndexType"] = Field(None, description="Payload Indexes")
     storage_type: "StorageType" = Field(..., description="")
     vector_size: int = Field(..., description="Size of a vectors used")
 
 
-class StorageOpsAnyOf(BaseModel):
+class StorageOperationsAnyOf(BaseModel):
     """
     Create new collection and (optionally) specify index params
     """
 
-    create_collection: "StorageOpsAnyOfCreateCollection" = Field(
+    create_collection: "StorageOperationsAnyOfCreateCollection" = Field(
         ..., description="Create new collection and (optionally) specify index params"
     )
 
 
-class StorageOpsAnyOf1(BaseModel):
+class StorageOperationsAnyOf1(BaseModel):
     """
     Delete collection with given name
     """
@@ -493,22 +492,22 @@ class StorageOpsAnyOf1(BaseModel):
     delete_collection: str = Field(..., description="Delete collection with given name")
 
 
-class StorageOpsAnyOf2(BaseModel):
+class StorageOperationsAnyOf2(BaseModel):
     """
-    Perform changes of collection aliases Alias changes are atomic, meaning that no collection modifications can happen between alias operations
+    Perform changes of collection aliases. Alias changes are atomic, meaning that no collection modifications can happen between alias operations.
     """
 
-    change_aliases: "StorageOpsAnyOf2ChangeAliases" = Field(
+    change_aliases: "StorageOperationsAnyOf2ChangeAliases" = Field(
         ...,
-        description="Perform changes of collection aliases Alias changes are atomic, meaning that no collection modifications can happen between alias operations",
+        description="Perform changes of collection aliases. Alias changes are atomic, meaning that no collection modifications can happen between alias operations.",
     )
 
 
-class StorageOpsAnyOf2ChangeAliases(BaseModel):
+class StorageOperationsAnyOf2ChangeAliases(BaseModel):
     actions: List["AliasOperations"] = Field(..., description="")
 
 
-class StorageOpsAnyOfCreateCollection(BaseModel):
+class StorageOperationsAnyOfCreateCollection(BaseModel):
     distance: "Distance" = Field(..., description="")
     index: Optional["Indexes"] = Field(None, description="")
     name: str = Field(..., description="")
@@ -551,16 +550,21 @@ AliasOperations = Union[
     AliasOperationsAnyOf2,
 ]
 Condition = Union[
-    ConditionAnyOf,
-    ConditionAnyOf1,
-    ConditionAnyOf2,
-    ConditionAnyOf3,
-    ConditionAnyOf4,
-    ConditionAnyOf5,
+    FieldCondition,
+    Filter,
+    HasIdCondition,
+]
+FieldIndexOperations = Union[
+    FieldIndexOperationsAnyOf,
+    FieldIndexOperationsAnyOf1,
 ]
 Indexes = Union[
     IndexesAnyOf,
     IndexesAnyOf1,
+]
+PayloadIndexType = Union[
+    PayloadIndexTypeAnyOf,
+    PayloadIndexTypeAnyOf1,
 ]
 PayloadInterface = Union[
     PayloadInterfaceAnyOf,
@@ -595,27 +599,28 @@ PayloadVariantForString = Union[
     List[str],
     str,
 ]
-PointInsertOps = Union[
-    PointInsertOpsAnyOf,
-    PointInsertOpsAnyOf1,
+PointInsertOperations = Union[
+    PointInsertOperationsAnyOf,
+    PointInsertOperationsAnyOf1,
 ]
-PointOps = Union[
-    PointOpsAnyOf,
-    PointOpsAnyOf1,
+PointOperations = Union[
+    PointOperationsAnyOf,
+    PointOperationsAnyOf1,
 ]
 SearchParams = Union[
     SearchParamsAnyOf,
 ]
-StorageOps = Union[
-    StorageOpsAnyOf,
-    StorageOpsAnyOf1,
-    StorageOpsAnyOf2,
+StorageOperations = Union[
+    StorageOperationsAnyOf,
+    StorageOperationsAnyOf1,
+    StorageOperationsAnyOf2,
 ]
 StorageType = Union[
     StorageTypeAnyOf,
     StorageTypeAnyOf1,
 ]
 CollectionUpdateOperations = Union[
+    FieldIndexOperations,
     PayloadOps,
-    PointOps,
+    PointOperations,
 ]
