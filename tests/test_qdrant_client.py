@@ -63,6 +63,7 @@ def test_qdrant_client_integration():
         vectors=vectors,
         payload=payload,
         ids=None,  # Let client auto-assign sequential ids
+        parallel=2
     )
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch

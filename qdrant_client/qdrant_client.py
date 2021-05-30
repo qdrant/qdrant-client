@@ -1,10 +1,13 @@
+from multiprocessing import Pool
+
 import math
 from itertools import count, islice
-from typing import Optional, Iterable, Dict, List, Union
+from typing import Optional, Iterable, Dict, List, Union, Any
 
 import numpy as np
 from tqdm import tqdm
 
+from qdrant_client.parallel_processor import Worker, ParallelWorkerPool
 from qdrant_openapi_client import SyncApis, ApiClient
 from qdrant_openapi_client.models.models import PointOperationsAnyOf, PointInsertOperationsAnyOfBatch, PayloadInterface, \
     GeoPoint, Distance, PointInsertOperationsAnyOf, PointRequest, SearchRequest, Filter, SearchParams, \
@@ -27,10 +30,45 @@ def iter_batch(iterable, size) -> Iterable:
         yield b
 
 
+def _upload_batch(openapi_client, collection_name, batch) -> bool:
+    ids_batch, vectors_batch, payload_batch = batch
+    openapi_client.points_api.update_points(
+        name=collection_name,
+        collection_update_operations=PointOperationsAnyOf(
+            upsert_points=PointInsertOperationsAnyOf(
+                batch=PointInsertOperationsAnyOfBatch(
+                    ids=ids_batch,
+                    payloads=payload_batch,
+                    vectors=vectors_batch
+                )
+            )
+        )
+    )
+    return True
+
+
 class QdrantClient:
 
     def __init__(self, host="localhost", port=6333):
+        self._host = host
+        self._port = port
         self.openapi_client = SyncApis(host=f"http://{host}:{port}")
+
+    class BatchUploader(Worker):
+
+        def __init__(self, host, port, collection_name):
+            self.collection_name = collection_name
+            self.openapi_client = SyncApis(host=f"http://{host}:{port}")
+
+        @classmethod
+        def start(cls, collection_name=None, host="localhost", port=6333, **kwargs) -> 'BatchUploader':
+            if not collection_name:
+                raise RuntimeError("Collection name could not be empty")
+            return cls(host=host, port=port, collection_name=collection_name)
+
+        def process(self, items: Iterable[Any]) -> Iterable[Any]:
+            for batch in items:
+                yield _upload_batch(self.openapi_client, self.collection_name, batch)
 
     @classmethod
     def _json_to_payload(cls, json_data, prefix="") -> Dict[str, PayloadInterface]:
@@ -212,7 +250,8 @@ class QdrantClient:
                           vectors: np.ndarray,
                           payload: Optional[Iterable[dict]],
                           ids: Optional[Iterable[int]],
-                          batch_size: int = 64):
+                          batch_size: int = 64,
+                          parallel: int = 1):
         """
         Upload vectors and payload to the collection
 
@@ -221,21 +260,20 @@ class QdrantClient:
         :param payload: Iterable of vectors payload, Optional
         :param ids: Iterable of custom vectors ids, Optional
         :param batch_size: How much vectors upload per-request
+        :param parallel: Number of parallel processes of upload
         :return:
         """
-        for ids_batch, vectors_batch, payload_batch in tqdm(self._iterate_batches(vectors, payload, ids, batch_size)):
-            self.openapi_client.points_api.update_points(
-                name=collection_name,
-                collection_update_operations=PointOperationsAnyOf(
-                    upsert_points=PointInsertOperationsAnyOf(
-                        batch=PointInsertOperationsAnyOfBatch(
-                            ids=ids_batch,
-                            payloads=payload_batch,
-                            vectors=vectors_batch
-                        )
-                    )
-                )
-            )
+        batches_iterator = self._iterate_batches(vectors, payload, ids, batch_size)
+        if parallel == 1:
+            for batch in tqdm(batches_iterator):
+                _upload_batch(self.openapi_client, collection_name=collection_name, batch=batch)
+        else:
+            pool = ParallelWorkerPool(parallel, self.BatchUploader)
+            for _ in tqdm(pool.unordered_map(batches_iterator,
+                                             collection_name=collection_name,
+                                             host=self._host,
+                                             port=self._port)):
+                pass
 
     def create_payload_index(self, collection_name: str, field_name: str):
         """
