@@ -1,4 +1,4 @@
-# PayloadInterfaceAnyOf3
+# PayloadInterfaceStrictAnyOf3
 
 ## Properties
 Name | Type | Description | Notes

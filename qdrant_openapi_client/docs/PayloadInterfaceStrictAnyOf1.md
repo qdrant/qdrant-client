@@ -1,10 +1,10 @@
-# PayloadIndexTypeAnyOf1
+# PayloadInterfaceStrictAnyOf1
 
-Build payload index. Index is saved on disc, but index itself is in RAM
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**type** | **str** |  | defaults to "struct"
+**value** | [**PayloadVariantForInt64**](PayloadVariantForInt64.md) |  | 
+**type** | **str** |  | defaults to "integer"
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

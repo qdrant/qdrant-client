@@ -7,11 +7,11 @@ from tqdm import tqdm
 
 from qdrant_openapi_client import SyncApis, ApiClient
 from qdrant_openapi_client.models.models import PointOperationsAnyOf, PointInsertOperationsAnyOfBatch, PayloadInterface, \
-    PayloadInterfaceAnyOf, PayloadInterfaceAnyOf1, PayloadInterfaceAnyOf2, PayloadInterfaceAnyOf3, GeoPoint, \
-    Distance, Indexes, PointInsertOperationsAnyOf, PointRequest, SearchRequest, Filter, SearchParams, \
+    GeoPoint, Distance, PointInsertOperationsAnyOf, PointRequest, SearchRequest, Filter, SearchParams, \
     StorageOperationsAnyOf, \
-    StorageOperationsAnyOfCreateCollection, StorageOperationsAnyOf1, FieldIndexOperationsAnyOf, \
-    FieldIndexOperationsAnyOf1
+    StorageOperationsAnyOfCreateCollection, FieldIndexOperationsAnyOf, \
+    FieldIndexOperationsAnyOf1, PayloadInterfaceStrictAnyOf, PayloadInterfaceStrictAnyOf1, PayloadInterfaceStrictAnyOf2, \
+    PayloadInterfaceStrictAnyOf3, HnswConfigDiff, OptimizersConfigDiff, WalConfigDiff, StorageOperationsAnyOf2
 
 
 def iter_batch(iterable, size) -> Iterable:
@@ -49,15 +49,15 @@ class QdrantClient:
         res = {}
         for key, val in json_data.items():
             if isinstance(val, str):
-                res[prefix + key] = PayloadInterfaceAnyOf(value=val, type="keyword")
+                res[prefix + key] = PayloadInterfaceStrictAnyOf(value=val, type="keyword")
             if isinstance(val, int):
-                res[prefix + key] = PayloadInterfaceAnyOf1(value=val, type="integer")
+                res[prefix + key] = PayloadInterfaceStrictAnyOf1(value=val, type="integer")
             if isinstance(val, float):
-                res[prefix + key] = PayloadInterfaceAnyOf2(value=val, type="float")
+                res[prefix + key] = PayloadInterfaceStrictAnyOf2(value=val, type="float")
 
             if isinstance(val, dict):
                 if 'lon' in val and 'lat' in val:
-                    res[prefix + key] = PayloadInterfaceAnyOf3(
+                    res[prefix + key] = PayloadInterfaceStrictAnyOf3(
                         value=GeoPoint(lat=val['lat'], lon=val['lon']),
                         type="geo"
                     )
@@ -170,21 +170,26 @@ class QdrantClient:
             collection_name: str,
             vector_size: int,
             distance: Distance = None,
-            index_params: Optional[Indexes] = None):
+            hnsw_config: Optional[HnswConfigDiff] = None,
+            optimizers_config: Optional[OptimizersConfigDiff] = None,
+            wal_config: Optional[WalConfigDiff] = None,
+    ):
         """
         Delete and create empty collection
 
         :param collection_name: Name of the collection to recreate
         :param vector_size: Vector size of the collection
         :param distance: Which metric to use, default: Dot
-        :param index_params: Params for collection index
+        :param hnsw_config: Params for HNSW index
+        :param optimizers_config: Params for optimizer
+        :param wal_config: Params for Write-Ahead-Log
         :return:
         """
         if distance is None:
             distance = Distance.DOT
 
         self.http.collections_api.update_collections(
-            storage_operations=StorageOperationsAnyOf1(
+            storage_operations=StorageOperationsAnyOf2(
                 delete_collection=collection_name
             )
         )
@@ -195,7 +200,9 @@ class QdrantClient:
                     name=collection_name,
                     distance=distance,
                     vector_size=vector_size,
-                    index=index_params
+                    hnsw_config=hnsw_config,
+                    optimizers_config=optimizers_config,
+                    wal_config=wal_config
                 )
             )
         )
