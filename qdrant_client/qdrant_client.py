@@ -1,5 +1,3 @@
-from multiprocessing import Pool
-
 import math
 from itertools import count, islice
 from typing import Optional, Iterable, Dict, List, Union, Any
@@ -8,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 
 from qdrant_client.parallel_processor import Worker, ParallelWorkerPool
-from qdrant_openapi_client import SyncApis, ApiClient
+from qdrant_openapi_client import SyncApis
 from qdrant_openapi_client.models.models import PointOperationsAnyOf, PointInsertOperationsAnyOfBatch, PayloadInterface, \
     GeoPoint, Distance, PointInsertOperationsAnyOf, PointRequest, SearchRequest, Filter, SearchParams, \
     StorageOperationsAnyOf, \
@@ -202,6 +200,19 @@ class QdrantClient:
             ]
         else:
             return search_result.result
+
+    def delete_collection(self, collection_name: str):
+        """
+        Removes collection and all it's data
+
+        :param collection_name: Name of the collection to delete
+        :return:
+        """
+        return self.http.collections_api.update_collections(
+            storage_operations=StorageOperationsAnyOf2(
+                delete_collection=collection_name
+            )
+        )
 
     def recreate_collection(
             self,
