@@ -47,10 +47,10 @@ def _upload_batch(openapi_client, collection_name, batch) -> bool:
 
 class QdrantClient:
 
-    def __init__(self, host="localhost", port=6333):
+    def __init__(self, host="localhost", port=6333, **kwargs):
         self._host = host
         self._port = port
-        self.openapi_client = SyncApis(host=f"http://{host}:{port}")
+        self.openapi_client = SyncApis(host=f"http://{host}:{port}", **kwargs)
 
     class BatchUploader(Worker):
 
