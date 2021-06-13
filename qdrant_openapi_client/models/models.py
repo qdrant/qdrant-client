@@ -63,6 +63,7 @@ class CollectionInfo(BaseModel):
 
     config: "CollectionConfig" = Field(..., description="Current statistics and configuration of the collection.")
     disk_data_size: int = Field(..., description="Disk space, used by collection")
+    payload_schema: Dict[str, "PayloadSchemaInfo"] = Field(..., description="Types of stored payload")
     ram_data_size: int = Field(..., description="RAM used by collection")
     segments_count: int = Field(..., description="Number of segments in collection")
     status: "CollectionStatus" = Field(..., description="Current statistics and configuration of the collection.")
@@ -367,6 +368,35 @@ class PayloadOpsAnyOfSetPayload(BaseModel):
     points: List[int] = Field(..., description="Assigns payload to each point in this list")
 
 
+class PayloadSchemaInfo(BaseModel):
+    data_type: "PayloadSchemaType" = Field(..., description="")
+    indexed: bool = Field(..., description="")
+
+
+class PayloadSchemaTypeAnyOf(BaseModel):
+    type: Literal[
+        "keyword",
+    ] = Field(..., description="")
+
+
+class PayloadSchemaTypeAnyOf1(BaseModel):
+    type: Literal[
+        "integer",
+    ] = Field(..., description="")
+
+
+class PayloadSchemaTypeAnyOf2(BaseModel):
+    type: Literal[
+        "float",
+    ] = Field(..., description="")
+
+
+class PayloadSchemaTypeAnyOf3(BaseModel):
+    type: Literal[
+        "geo",
+    ] = Field(..., description="")
+
+
 class PayloadTypeAnyOf(BaseModel):
     type: Literal[
         "keyword",
@@ -615,6 +645,12 @@ PayloadOps = Union[
     PayloadOpsAnyOf,
     PayloadOpsAnyOf1,
     PayloadOpsAnyOf2,
+]
+PayloadSchemaType = Union[
+    PayloadSchemaTypeAnyOf,
+    PayloadSchemaTypeAnyOf1,
+    PayloadSchemaTypeAnyOf2,
+    PayloadSchemaTypeAnyOf3,
 ]
 PayloadType = Union[
     PayloadTypeAnyOf,
