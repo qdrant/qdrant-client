@@ -200,9 +200,31 @@ class _PointsApi:
         body = jsonable_encoder(recommend_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{name}/points/recommend",
+            path_params=path_params,
+            json=body,
+        )
+
+    def _build_for_scroll_points(
+        self,
+        name: str,
+        scroll_request: m.ScrollRequest = None,
+    ):
+        """
+        Scroll request - paginate over all points which matches given condition
+        """
+        path_params = {
+            "name": str(name),
+        }
+
+        body = jsonable_encoder(scroll_request)
+
+        return self.api_client.request(
+            type_=m.InlineResponse2006,
+            method="POST",
+            url="/collections/{name}/points/scroll",
             path_params=path_params,
             json=body,
         )
@@ -219,7 +241,7 @@ class _PointsApi:
         body = jsonable_encoder(search_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{name}/points/search",
             path_params=path_params,
@@ -277,17 +299,30 @@ class AsyncPointsApi(_PointsApi):
         self,
         name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         return await self._build_for_recommend_points(
             name=name,
             recommend_request=recommend_request,
+        )
+
+    async def scroll_points(
+        self,
+        name: str,
+        scroll_request: m.ScrollRequest = None,
+    ) -> m.InlineResponse2006:
+        """
+        Scroll request - paginate over all points which matches given condition
+        """
+        return await self._build_for_scroll_points(
+            name=name,
+            scroll_request=scroll_request,
         )
 
     async def search_points(
         self,
         name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         return await self._build_for_search_points(
             name=name,
             search_request=search_request,
@@ -331,17 +366,30 @@ class SyncPointsApi(_PointsApi):
         self,
         name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         return self._build_for_recommend_points(
             name=name,
             recommend_request=recommend_request,
+        )
+
+    def scroll_points(
+        self,
+        name: str,
+        scroll_request: m.ScrollRequest = None,
+    ) -> m.InlineResponse2006:
+        """
+        Scroll request - paginate over all points which matches given condition
+        """
+        return self._build_for_scroll_points(
+            name=name,
+            scroll_request=scroll_request,
         )
 
     def search_points(
         self,
         name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         return self._build_for_search_points(
             name=name,
             search_request=search_request,

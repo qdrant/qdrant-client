@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**get_point**](PointsApi.md#get_point) | **GET** /collections/{name}/points/{id} | Retrieve point by id
 [**get_points**](PointsApi.md#get_points) | **POST** /collections/{name}/points | Retrieve points by ids
 [**recommend_points**](PointsApi.md#recommend_points) | **POST** /collections/{name}/points/recommend | Recommend points
+[**scroll_points**](PointsApi.md#scroll_points) | **POST** /collections/{name}/points/scroll | Scroll points
 [**search_points**](PointsApi.md#search_points) | **POST** /collections/{name}/points/search | Search points
 [**update_points**](PointsApi.md#update_points) | **POST** /collections/{name} | Update points (vectors, payloads, indexes) in collection
 
@@ -156,7 +157,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **recommend_points**
-> InlineResponse2006 recommend_points(name)
+> InlineResponse2007 recommend_points(name)
 
 Recommend points
 
@@ -167,7 +168,7 @@ import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import points_api
 from qdrant_openapi_client.model.recommend_request import RecommendRequest
-from qdrant_openapi_client.model.inline_response2006 import InlineResponse2006
+from qdrant_openapi_client.model.inline_response2007 import InlineResponse2007
 from qdrant_openapi_client.model.error_response import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
@@ -221,6 +222,89 @@ Name | Type | Description  | Notes
 
 ### Return type
 
+[**InlineResponse2007**](InlineResponse2007.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | successful operation |  -  |
+**0** | error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **scroll_points**
+> InlineResponse2006 scroll_points(name)
+
+Scroll points
+
+Scroll request - paginate over all points which matches given condition
+
+### Example
+
+```python
+import time
+import qdrant_openapi_client
+from qdrant_openapi_client.api import points_api
+from qdrant_openapi_client.model.inline_response2006 import InlineResponse2006
+from qdrant_openapi_client.model.scroll_request import ScrollRequest
+from qdrant_openapi_client.model.error_response import ErrorResponse
+from pprint import pprint
+# Defining the host is optional and defaults to http://localhost:6333
+# See configuration.py for a list of all supported configuration parameters.
+configuration = qdrant_openapi_client.Configuration(
+    host = "http://localhost:6333"
+)
+
+
+# Enter a context with an instance of the API client
+with qdrant_openapi_client.ApiClient() as api_client:
+    # Create an instance of the API class
+    api_instance = points_api.PointsApi(api_client)
+    name = "name_example" # str | Name of the collection to retrieve from
+    scroll_request = ScrollRequest(
+        filter=,
+        limit=0,
+        offset=0,
+        with_payload=True,
+        with_vector=True,
+    ) # ScrollRequest | Pagination and filter parameters (optional)
+
+    # example passing only required values which don't have defaults set
+    try:
+        # Scroll points
+        api_response = api_instance.scroll_points(name)
+        pprint(api_response)
+    except qdrant_openapi_client.ApiException as e:
+        print("Exception when calling PointsApi->scroll_points: %s\n" % e)
+
+    # example passing only required values which don't have defaults set
+    # and optional values
+    try:
+        # Scroll points
+        api_response = api_instance.scroll_points(name, scroll_request=scroll_request)
+        pprint(api_response)
+    except qdrant_openapi_client.ApiException as e:
+        print("Exception when calling PointsApi->scroll_points: %s\n" % e)
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **name** | **str**| Name of the collection to retrieve from |
+ **scroll_request** | [**ScrollRequest**](ScrollRequest.md)| Pagination and filter parameters | [optional]
+
+### Return type
+
 [**InlineResponse2006**](InlineResponse2006.md)
 
 ### Authorization
@@ -241,7 +325,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **search_points**
-> InlineResponse2006 search_points(name)
+> InlineResponse2007 search_points(name)
 
 Search points
 
@@ -251,7 +335,7 @@ Search points
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import points_api
-from qdrant_openapi_client.model.inline_response2006 import InlineResponse2006
+from qdrant_openapi_client.model.inline_response2007 import InlineResponse2007
 from qdrant_openapi_client.model.search_request import SearchRequest
 from qdrant_openapi_client.model.error_response import ErrorResponse
 from pprint import pprint
@@ -303,7 +387,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2006**](InlineResponse2006.md)
+[**InlineResponse2007**](InlineResponse2007.md)
 
 ### Authorization
 

@@ -1,11 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    # Python 3.7 backport
-    from typing_extensions import Literal
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -237,6 +231,14 @@ class InlineResponse2005(BaseModel):
 
 
 class InlineResponse2006(BaseModel):
+    time: Optional[float] = Field(None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
+    result: Optional["ScrollResult"] = Field(None, description="")
+
+
+class InlineResponse2007(BaseModel):
     time: Optional[float] = Field(None, description="Time spent to process this request")
     status: Literal[
         "ok",
@@ -515,6 +517,31 @@ class Record(BaseModel):
 class ScoredPoint(BaseModel):
     id: int = Field(..., description="Point id")
     score: float = Field(..., description="Points vector distance to the query vector")
+
+
+class ScrollRequest(BaseModel):
+    """
+    Scroll request - paginate over all points which matches given condition
+    """
+
+    filter: Optional["Filter"] = Field(
+        None, description="Look only for points which satisfies this conditions. If not provided - all points."
+    )
+    limit: Optional[int] = Field(None, description="Page size. Default: 10")
+    offset: Optional[int] = Field(None, description="Start ID to read points from. Default: 0")
+    with_payload: Optional[bool] = Field(None, description="Return point payload with the result. Default: true")
+    with_vector: Optional[bool] = Field(None, description="Return point vector with the result. Default: false")
+
+
+class ScrollResult(BaseModel):
+    """
+    Result of the points read request. Contains
+    """
+
+    next_page_offset: Optional[int] = Field(
+        None, description="Offset which should be used to retrieve a next page result"
+    )
+    points: List["Record"] = Field(..., description="List of retrieved points")
 
 
 class SearchParams(BaseModel):
