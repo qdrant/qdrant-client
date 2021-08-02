@@ -3,12 +3,14 @@ import random
 import uuid
 from pprint import pprint
 from tempfile import mkdtemp
-
-import numpy as np
 from time import sleep
 
+import numpy as np
+
 from qdrant_client import QdrantClient
-from qdrant_openapi_client.models.models import Filter, FieldCondition, Range
+from qdrant_openapi_client.models.models import Filter, FieldCondition, Range, PointOperationsAnyOf, \
+    PointInsertOperationsAnyOf1, PointStruct, PointRequest, PayloadOpsAnyOf, PayloadOpsAnyOfSetPayload, \
+    PointOperationsAnyOf1, PointOperationsAnyOf1DeletePoints
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -121,5 +123,62 @@ def test_qdrant_client_integration():
         print(hit)
 
 
+def test_points_crud():
+
+    client = QdrantClient()
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vector_size=DIM
+    )
+
+    # Create a single point
+
+    client.http.points_api.update_points(
+        name=COLLECTION_NAME,
+        collection_update_operations=PointOperationsAnyOf(
+            upsert_points=PointInsertOperationsAnyOf1(
+                points=[
+                    PointStruct(
+                        id=123,
+                        payload={"test": "value"},
+                        vector=np.random.rand(DIM).tolist()
+                    )
+                ]
+            )
+        )
+    )
+
+    # Read a single point
+
+    points = client.http.points_api.get_points(COLLECTION_NAME, point_request=PointRequest(ids=[123]))
+
+    print(points)
+
+    # Update a single point
+
+    client.http.points_api.update_points(
+        name=COLLECTION_NAME,
+        collection_update_operations=PayloadOpsAnyOf(
+            set_payload=PayloadOpsAnyOfSetPayload(
+                payload={
+                    "test2": "value2"
+                },
+                points=[123]
+            )
+        )
+    )
+
+    # Delete a single point
+
+    client.http.points_api.update_points(
+        name=COLLECTION_NAME,
+        collection_update_operations=PointOperationsAnyOf1(
+            delete_points=PointOperationsAnyOf1DeletePoints(ids=[123])
+        )
+    )
+
+
 if __name__ == '__main__':
     test_qdrant_client_integration()
+    test_points_crud()
