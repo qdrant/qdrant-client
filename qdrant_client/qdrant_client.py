@@ -69,13 +69,13 @@ class QdrantClient:
                 yield _upload_batch(self.openapi_client, self.collection_name, batch)
 
     @classmethod
-    def _json_to_payload(cls, json_data, prefix="") -> Dict[str, PayloadInterface]:
+    def json_to_payload(cls, json_data, prefix="") -> Dict[str, PayloadInterface]:
         """
         Function converts json data into flatten typed representation, which Qdrant is able to store
 
-        >>> QdrantClient._json_to_payload({"idx": 123})['idx'].dict()
+        >>> QdrantClient.json_to_payload({"idx": 123})['idx'].dict()
         {'type': 'integer', 'value': 123}
-        >>> QdrantClient._json_to_payload({"idx": 123, "data": {"hi": "there"}})['data__hi'].dict()
+        >>> QdrantClient.json_to_payload({"idx": 123, "data": {"hi": "there"}})['data__hi'].dict()
         {'type': 'keyword', 'value': 'there'}
 
         :param json_data: Any json data
@@ -86,10 +86,15 @@ class QdrantClient:
         for key, val in json_data.items():
             if isinstance(val, str):
                 res[prefix + key] = PayloadInterfaceStrictAnyOf(value=val, type="keyword")
+                continue
+
             if isinstance(val, int):
                 res[prefix + key] = PayloadInterfaceStrictAnyOf1(value=val, type="integer")
+                continue
+
             if isinstance(val, float):
                 res[prefix + key] = PayloadInterfaceStrictAnyOf2(value=val, type="float")
+                continue
 
             if isinstance(val, dict):
                 if 'lon' in val and 'lat' in val:
@@ -100,8 +105,30 @@ class QdrantClient:
                 else:
                     res = {
                         **res,
-                        **cls._json_to_payload(val, prefix=f"{key}__")
+                        **cls.json_to_payload(val, prefix=f"{key}__")
                     }
+                continue
+
+            if isinstance(val, list):
+                if all(isinstance(v, str) for v in val):
+                    res[prefix + key] = PayloadInterfaceStrictAnyOf(value=val, type="keyword")
+                    continue
+
+                if all(isinstance(v, int) for v in val):
+                    res[prefix + key] = PayloadInterfaceStrictAnyOf1(value=val, type="integer")
+                    continue
+
+                if all(isinstance(v, float) for v in val):
+                    res[prefix + key] = PayloadInterfaceStrictAnyOf2(value=val, type="float")
+                    continue
+
+                if all(isinstance(v, dict) and 'lon' in v and 'lat' in v for v in val):
+                    res[prefix + key] = PayloadInterfaceStrictAnyOf3(
+                        value=[GeoPoint(lat=v['lat'], lon=v['lon']) for v in val],
+                        type="geo"
+                    )
+
+            raise RuntimeError(f"Payload {key} have unsupported type {type(val)}")
 
         return res
 
@@ -138,7 +165,7 @@ class QdrantClient:
         if payload is None:
             payload_batches = (None for _ in count())
         else:
-            payload = map(cls._json_to_payload, payload)
+            payload = map(cls.json_to_payload, payload)
             payload_batches = iter_batch(payload, batch_size)
 
         num_batches = int(math.ceil(num_vectors / batch_size))

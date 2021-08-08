@@ -22,7 +22,8 @@ def random_payload():
         yield {
             "id": i + 100,
             "text_data": uuid.uuid4().hex,
-            "rand_number": random.random()
+            "rand_number": random.random(),
+            "text_array": [uuid.uuid4().hex, uuid.uuid4().hex]
         }
 
 
@@ -153,7 +154,7 @@ def test_points_crud():
 
     points = client.http.points_api.get_points(COLLECTION_NAME, point_request=PointRequest(ids=[123]))
 
-    print(points)
+    print("read a single point", points)
 
     # Update a single point
 
