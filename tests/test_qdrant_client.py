@@ -137,6 +137,7 @@ def test_points_crud():
 
     client.http.points_api.update_points(
         name=COLLECTION_NAME,
+        wait=True,
         collection_update_operations=PointOperationsAnyOf(
             upsert_points=PointInsertOperationsAnyOf1(
                 points=[

@@ -260,7 +260,7 @@ class _PointsApi:
 
         query_params = {}
         if wait is not None:
-            query_params["wait"] = str(wait)
+            query_params["wait"] = str(wait).lower()
 
         body = jsonable_encoder(collection_update_operations)
 

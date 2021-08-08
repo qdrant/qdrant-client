@@ -1,11 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    # Python 3.7 backport
-    from typing_extensions import Literal
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
