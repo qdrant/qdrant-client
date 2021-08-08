@@ -162,7 +162,7 @@ def test_points_crud():
         collection_update_operations=PayloadOpsAnyOf(
             set_payload=PayloadOpsAnyOfSetPayload(
                 payload={
-                    "test2": "value2"
+                    "test2": ["value2", "value3"]
                 },
                 points=[123]
             )
