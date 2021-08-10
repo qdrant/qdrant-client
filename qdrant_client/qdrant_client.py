@@ -142,8 +142,6 @@ class QdrantClient:
         res = {}
         for key, value_interface in payload.items():
             value = value_interface.dict()['value']
-            if len(value) == 1:
-                value = value[0]
             res[key] = value
         return res
 
