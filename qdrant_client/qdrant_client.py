@@ -127,6 +127,7 @@ class QdrantClient:
                         value=[GeoPoint(lat=v['lat'], lon=v['lon']) for v in val],
                         type="geo"
                     )
+                    continue
 
             raise RuntimeError(f"Payload {key} have unsupported type {type(val)}")
 
