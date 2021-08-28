@@ -47,6 +47,10 @@ def _upload_batch(openapi_client, collection_name, batch) -> bool:
 
 class QdrantClient:
 
+    # If True - single-value payload arrays will be replaced with just values.
+    # Warn: Deprecated
+    unwrap_payload = False
+
     def __init__(self, host="localhost", port=6333, **kwargs):
         self._host = host
         self._port = port
@@ -143,6 +147,9 @@ class QdrantClient:
         res = {}
         for key, value_interface in payload.items():
             value = value_interface.dict()['value']
+            if cls.unwrap_payload:
+                if len(value) == 1:
+                    value = value[0]
             res[key] = value
         return res
 
