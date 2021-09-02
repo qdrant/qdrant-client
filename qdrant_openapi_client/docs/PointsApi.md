@@ -23,8 +23,8 @@ Retrieve point by id
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import points_api
-from qdrant_openapi_client.model.inline_response2004 import InlineResponse2004
-from qdrant_openapi_client.model.error_response import ErrorResponse
+from qdrant_openapi_client.models.models import InlineResponse2004
+from qdrant_openapi_client.models.models import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.
@@ -88,9 +88,9 @@ Retrieve points by ids
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import points_api
-from qdrant_openapi_client.model.point_request import PointRequest
-from qdrant_openapi_client.model.inline_response2005 import InlineResponse2005
-from qdrant_openapi_client.model.error_response import ErrorResponse
+from qdrant_openapi_client.models.models import PointRequest
+from qdrant_openapi_client.models.models import InlineResponse2005
+from qdrant_openapi_client.models.models import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.
@@ -167,9 +167,9 @@ Recommend points
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import points_api
-from qdrant_openapi_client.model.recommend_request import RecommendRequest
-from qdrant_openapi_client.model.inline_response2007 import InlineResponse2007
-from qdrant_openapi_client.model.error_response import ErrorResponse
+from qdrant_openapi_client.models.models import RecommendRequest
+from qdrant_openapi_client.models.models import InlineResponse2007
+from qdrant_openapi_client.models.models import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.
@@ -254,9 +254,9 @@ Scroll request - paginate over all points which matches given condition
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import points_api
-from qdrant_openapi_client.model.inline_response2006 import InlineResponse2006
-from qdrant_openapi_client.model.scroll_request import ScrollRequest
-from qdrant_openapi_client.model.error_response import ErrorResponse
+from qdrant_openapi_client.models.models import InlineResponse2006
+from qdrant_openapi_client.models.models import ScrollRequest
+from qdrant_openapi_client.models.models import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.
@@ -335,9 +335,9 @@ Search points
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import points_api
-from qdrant_openapi_client.model.inline_response2007 import InlineResponse2007
-from qdrant_openapi_client.model.search_request import SearchRequest
-from qdrant_openapi_client.model.error_response import ErrorResponse
+from qdrant_openapi_client.models.models import InlineResponse2007
+from qdrant_openapi_client.models.models import SearchRequest
+from qdrant_openapi_client.models.models import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.
@@ -417,9 +417,9 @@ Update points (vectors, payloads, indexes) in collection
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import points_api
-from qdrant_openapi_client.model.inline_response2003 import InlineResponse2003
-from qdrant_openapi_client.model.error_response import ErrorResponse
-from qdrant_openapi_client.model.collection_update_operations import CollectionUpdateOperations
+from qdrant_openapi_client.models.models import InlineResponse2003
+from qdrant_openapi_client.models.models import ErrorResponse
+from qdrant_openapi_client.models.models import CollectionUpdateOperations
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.

@@ -20,8 +20,8 @@ Get information about existing collection
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import collections_api
-from qdrant_openapi_client.model.error_response import ErrorResponse
-from qdrant_openapi_client.model.inline_response2002 import InlineResponse2002
+from qdrant_openapi_client.models.models import ErrorResponse
+from qdrant_openapi_client.models.models import InlineResponse2002
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.
@@ -83,8 +83,8 @@ Get list of existing collections
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import collections_api
-from qdrant_openapi_client.model.inline_response200 import InlineResponse200
-from qdrant_openapi_client.model.error_response import ErrorResponse
+from qdrant_openapi_clients.models.models import InlineResponse200
+from qdrant_openapi_clients.models.models import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.
@@ -142,9 +142,9 @@ Perform update operation on collections
 import time
 import qdrant_openapi_client
 from qdrant_openapi_client.api import collections_api
-from qdrant_openapi_client.model.storage_operations import StorageOperations
-from qdrant_openapi_client.model.inline_response2001 import InlineResponse2001
-from qdrant_openapi_client.model.error_response import ErrorResponse
+from qdrant_openapi_client.models.models import StorageOperations
+from qdrant_openapi_client.models.models import InlineResponse2001
+from qdrant_openapi_client.models.models import ErrorResponse
 from pprint import pprint
 # Defining the host is optional and defaults to http://localhost:6333
 # See configuration.py for a list of all supported configuration parameters.
