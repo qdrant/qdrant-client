@@ -667,8 +667,8 @@ AliasOperations = Union[
 ]
 Condition = Union[
     FieldCondition,
-    Filter,
     HasIdCondition,
+    Filter,
 ]
 FieldIndexOperations = Union[
     FieldIndexOperationsAnyOf,
@@ -728,13 +728,13 @@ StorageOperations = Union[
     StorageOperationsAnyOf3,
 ]
 CollectionUpdateOperations = Union[
-    FieldIndexOperations,
-    PayloadOps,
     PointOperations,
+    PayloadOps,
+    FieldIndexOperations,
 ]
 PayloadInterface = Union[
-    PayloadInterfaceStrict,
-    PayloadVariantForDouble,
-    PayloadVariantForInt64,
     PayloadVariantForString,
+    PayloadVariantForInt64,
+    PayloadVariantForDouble,
+    PayloadInterfaceStrict,
 ]

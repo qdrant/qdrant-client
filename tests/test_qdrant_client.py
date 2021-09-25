@@ -10,7 +10,7 @@ import numpy as np
 from qdrant_client import QdrantClient
 from qdrant_openapi_client.models.models import Filter, FieldCondition, Range, PointOperationsAnyOf, \
     PointInsertOperationsAnyOf1, PointStruct, PointRequest, PayloadOpsAnyOf, PayloadOpsAnyOfSetPayload, \
-    PointOperationsAnyOf1, PointOperationsAnyOf1DeletePoints
+    PointOperationsAnyOf1, PointOperationsAnyOf1DeletePoints, HasIdCondition, Match
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -181,6 +181,18 @@ def test_points_crud():
     )
 
 
+def test_has_id_condition():
+    query = Filter(
+        must=[
+            HasIdCondition(has_id=[42, 43]),
+            FieldCondition(key="field_name", match=Match(keyword="field_value_42")),
+        ]
+    ).dict()
+
+    assert query['must'][0]['has_id'] == [42, 43]
+
+
 if __name__ == '__main__':
     test_qdrant_client_integration()
     test_points_crud()
+    test_has_id_condition()
