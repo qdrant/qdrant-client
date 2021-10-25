@@ -411,6 +411,11 @@ class PayloadSchemaTypeAnyOf3(BaseModel):
     ] = Field(..., description="")
 
 
+class PayloadSelector(BaseModel):
+    exclude: List[str] = Field(..., description="Post-exclude return payload key type")
+    include: List[str] = Field(..., description="Include return payload key type")
+
+
 class PayloadTypeAnyOf(BaseModel):
     type: Literal[
         "keyword",
@@ -483,6 +488,7 @@ class PointOperationsAnyOf1DeletePoints(BaseModel):
 
 class PointRequest(BaseModel):
     ids: List[int] = Field(..., description="")
+    with_payload: Optional["WithPayloadInterface"] = Field(None, description="")
 
 
 class PointStruct(BaseModel):
@@ -522,7 +528,9 @@ class Record(BaseModel):
 
 class ScoredPoint(BaseModel):
     id: int = Field(..., description="Point id")
+    payload: Optional[Dict[str, "PayloadType"]] = Field(None, description="Payload storage")
     score: float = Field(..., description="Points vector distance to the query vector")
+    version: int = Field(..., description="Point version")
 
 
 class ScrollRequest(BaseModel):
@@ -535,7 +543,9 @@ class ScrollRequest(BaseModel):
     )
     limit: Optional[int] = Field(None, description="Page size. Default: 10")
     offset: Optional[int] = Field(None, description="Start ID to read points from. Default: 0")
-    with_payload: Optional[bool] = Field(None, description="Return point payload with the result. Default: true")
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        None, description="Return point payload with the result. Default: True"
+    )
     with_vector: Optional[bool] = Field(None, description="Return point vector with the result. Default: false")
 
 
@@ -570,6 +580,7 @@ class SearchRequest(BaseModel):
     params: Optional["SearchParams"] = Field(None, description="Additional search params")
     top: int = Field(..., description="Max number of result to return")
     vector: List[float] = Field(..., description="Look for vectors closest to this")
+    with_payload: Optional["WithPayloadInterface"] = Field(None, description="Payload interface")
 
 
 class StorageOperationsAnyOf(BaseModel):
@@ -726,6 +737,11 @@ StorageOperations = Union[
     StorageOperationsAnyOf1,
     StorageOperationsAnyOf2,
     StorageOperationsAnyOf3,
+]
+WithPayloadInterface = Union[
+    PayloadSelector,
+    List[str],
+    bool,
 ]
 CollectionUpdateOperations = Union[
     PointOperations,
