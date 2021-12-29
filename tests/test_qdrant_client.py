@@ -125,7 +125,6 @@ def test_qdrant_client_integration():
 
 
 def test_points_crud():
-
     client = QdrantClient()
 
     client.recreate_collection(
@@ -190,6 +189,17 @@ def test_has_id_condition():
     ).dict()
 
     assert query['must'][0]['has_id'] == [42, 43]
+
+
+def test_insert_float():
+
+    point = PointStruct(
+        id=123,
+        payload={'value': 0.123},
+        vector=np.random.rand(DIM).tolist()
+    )
+
+    assert isinstance(point.payload['value'], float)
 
 
 if __name__ == '__main__':
