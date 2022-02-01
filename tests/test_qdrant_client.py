@@ -8,9 +8,8 @@ from time import sleep
 import numpy as np
 
 from qdrant_client import QdrantClient
-from qdrant_openapi_client.models.models import Filter, FieldCondition, Range, PointOperationsAnyOf, \
-    PointInsertOperationsAnyOf1, PointStruct, PointRequest, PayloadOpsAnyOf, PayloadOpsAnyOfSetPayload, \
-    PointOperationsAnyOf1, PointOperationsAnyOf1DeletePoints, HasIdCondition, Match
+from qdrant_openapi_client.models.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
+    SetPayload, HasIdCondition, Match, PointsSelector, PointIdsList
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -134,20 +133,16 @@ def test_points_crud():
 
     # Create a single point
 
-    client.http.points_api.update_points(
+    client.http.points_api.upsert_points(
         name=COLLECTION_NAME,
         wait=True,
-        collection_update_operations=PointOperationsAnyOf(
-            upsert_points=PointInsertOperationsAnyOf1(
-                points=[
-                    PointStruct(
-                        id=123,
-                        payload={"test": "value"},
-                        vector=np.random.rand(DIM).tolist()
-                    )
-                ]
+        point_insert_operations=PointsList(points=[
+            PointStruct(
+                id=123,
+                payload={"test": "value"},
+                vector=np.random.rand(DIM).tolist()
             )
-        )
+        ])
     )
 
     # Read a single point
@@ -158,25 +153,21 @@ def test_points_crud():
 
     # Update a single point
 
-    client.http.points_api.update_points(
+    client.http.points_api.set_payload(
         name=COLLECTION_NAME,
-        collection_update_operations=PayloadOpsAnyOf(
-            set_payload=PayloadOpsAnyOfSetPayload(
-                payload={
-                    "test2": ["value2", "value3"]
-                },
-                points=[123]
-            )
+        set_payload=SetPayload(
+            payload={
+                "test2": ["value2", "value3"]
+            },
+            points=[123]
         )
     )
 
     # Delete a single point
 
-    client.http.points_api.update_points(
+    client.http.points_api.delete_points(
         name=COLLECTION_NAME,
-        collection_update_operations=PointOperationsAnyOf1(
-            delete_points=PointOperationsAnyOf1DeletePoints(ids=[123])
-        )
+        points_selector=PointIdsList(points=[123])
     )
 
 
