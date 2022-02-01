@@ -10,7 +10,7 @@ from qdrant_openapi_client import SyncApis
 from qdrant_openapi_client.models.models import PointsBatch, Batch, Filter, SearchParams, SearchRequest, Distance, \
     HnswConfigDiff, OptimizersConfigDiff, WalConfigDiff, CreateCollection, CreateFieldIndex, PointRequest, \
     PayloadInterface, PointsList, GeoPoint, PayloadInterfaceStrictOneOf, PayloadInterfaceStrictOneOf1, \
-    PayloadInterfaceStrictOneOf2, PayloadInterfaceStrictOneOf3
+    PayloadInterfaceStrictOneOf2, PayloadInterfaceStrictOneOf3, ExtendedPointId
 
 
 def iter_batch(iterable, size) -> Iterable:
@@ -157,7 +157,7 @@ class QdrantClient:
     def _iterate_batches(cls,
                          vectors: np.ndarray,
                          payload: Optional[Iterable[dict]],
-                         ids: Optional[Iterable[int]],
+                         ids: Optional[Iterable[ExtendedPointId]],
                          batch_size: int) -> Iterable:
         num_vectors, _dim = vectors.shape
         if ids is None:
@@ -175,7 +175,7 @@ class QdrantClient:
 
         yield from zip(ids_batches, vector_batches, payload_batches)
 
-    def get_payload(self, collection_name: str, ids: List[int]) -> Dict[int, dict]:
+    def get_payload(self, collection_name: str, ids: List[ExtendedPointId]) -> Dict[ExtendedPointId, dict]:
         """
         Retrieve points payload by ids
         :param collection_name:
@@ -220,18 +220,12 @@ class QdrantClient:
                 vector=query_vector,
                 filter=query_filter,
                 top=top,
-                params=search_params
+                params=search_params,
+                with_payload=append_payload
             )
         )
 
-        if append_payload:
-            found_ids = [hit.id for hit in search_result.result]
-            payloads = self.get_payload(collection_name=collection_name, ids=found_ids)
-            return [
-                (hit, payloads.get(hit.id)) for hit in search_result.result
-            ]
-        else:
-            return search_result.result
+        return search_result.result
 
     def delete_collection(self, collection_name: str):
         """
@@ -282,7 +276,7 @@ class QdrantClient:
                           collection_name,
                           vectors: np.ndarray,
                           payload: Optional[Iterable[dict]],
-                          ids: Optional[Iterable[int]],
+                          ids: Optional[Iterable[ExtendedPointId]],
                           batch_size: int = 64,
                           parallel: int = 1):
         """
