@@ -8,6 +8,7 @@ except ImportError:
     from typing_extensions import Literal
 
 from pydantic import BaseModel, Field
+from pydantic.types import StrictFloat, StrictInt, StrictStr
 
 
 class AliasOperationsAnyOf(BaseModel):
@@ -709,20 +710,20 @@ PayloadType = Union[
     PayloadTypeAnyOf3,
 ]
 PayloadVariantForDouble = Union[
-    List[float],
-    float,
+    List[StrictFloat],
+    StrictFloat,
 ]
 PayloadVariantForGeoPoint = Union[
     GeoPoint,
     List[GeoPoint],
 ]
 PayloadVariantForInt64 = Union[
-    List[int],
-    int,
+    List[StrictInt],
+    StrictInt,
 ]
 PayloadVariantForString = Union[
-    List[str],
-    str,
+    List[StrictStr],
+    StrictStr,
 ]
 PointInsertOperations = Union[
     PointInsertOperationsAnyOf,
@@ -740,7 +741,7 @@ StorageOperations = Union[
 ]
 WithPayloadInterface = Union[
     PayloadSelector,
-    List[str],
+    List[StrictStr],
     bool,
 ]
 CollectionUpdateOperations = Union[
