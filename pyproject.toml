@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "qdrant_client"
-version = "0.4.1"
+version = "0.5.0"
 description = "Client library for the Qdrant vector search engine"
-authors = ["Andrey Vasnetsov <andrey@vasnetsov.com>"]
+authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
     {include = "qdrant_client"},
     {include = "qdrant_openapi_client"}
@@ -17,7 +17,7 @@ keywords = ["vector", "search", "neural", "matching", "client"]
 [tool.poetry.dependencies]
 python = ">=3.7"
 httpx = "^0.16.1"
-numpy = "^1.19"
+numpy = "^1.21"
 pydantic = "^1.8"
 tqdm = "^4.56.0"
 loguru = "^0.5.3"

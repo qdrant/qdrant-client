@@ -11,45 +11,21 @@ from pydantic import BaseModel, Field
 from pydantic.types import StrictFloat, StrictInt, StrictStr
 
 
-class AliasOperationsAnyOf(BaseModel):
+class Batch(BaseModel):
+    ids: List["ExtendedPointId"] = Field(..., description="")
+    payloads: Optional[List[Dict[str, "PayloadInterface"]]] = Field(None, description="")
+    vectors: List[List[float]] = Field(..., description="")
+
+
+class ChangeAliasesOperation(BaseModel):
     """
-    Create alternative name for a collection. Collection will be available under both names for search, retrieve,
+    Operation for performing changes of collection aliases. Alias changes are atomic, meaning that no collection modifications can happen between alias operations.
     """
 
-    create_alias: "AliasOperationsAnyOfCreateAlias" = Field(
+    actions: List["AliasOperations"] = Field(
         ...,
-        description="Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
+        description="Operation for performing changes of collection aliases. Alias changes are atomic, meaning that no collection modifications can happen between alias operations.",
     )
-
-
-class AliasOperationsAnyOf1(BaseModel):
-    """
-    Delete alias if exists
-    """
-
-    delete_alias: "AliasOperationsAnyOf1DeleteAlias" = Field(..., description="Delete alias if exists")
-
-
-class AliasOperationsAnyOf1DeleteAlias(BaseModel):
-    alias_name: str = Field(..., description="")
-
-
-class AliasOperationsAnyOf2(BaseModel):
-    """
-    Change alias to a new one
-    """
-
-    rename_alias: "AliasOperationsAnyOf2RenameAlias" = Field(..., description="Change alias to a new one")
-
-
-class AliasOperationsAnyOf2RenameAlias(BaseModel):
-    new_alias_name: str = Field(..., description="")
-    old_alias_name: str = Field(..., description="")
-
-
-class AliasOperationsAnyOfCreateAlias(BaseModel):
-    alias_name: str = Field(..., description="")
-    collection_name: str = Field(..., description="")
 
 
 class CollectionConfig(BaseModel):
@@ -65,15 +41,15 @@ class CollectionDescription(BaseModel):
 
 class CollectionInfo(BaseModel):
     """
-    Current statistics and configuration of the collection.
+    Current statistics and configuration of the collection
     """
 
-    config: "CollectionConfig" = Field(..., description="Current statistics and configuration of the collection.")
+    config: "CollectionConfig" = Field(..., description="Current statistics and configuration of the collection")
     disk_data_size: int = Field(..., description="Disk space, used by collection")
     payload_schema: Dict[str, "PayloadSchemaInfo"] = Field(..., description="Types of stored payload")
     ram_data_size: int = Field(..., description="RAM used by collection")
     segments_count: int = Field(..., description="Number of segments in collection")
-    status: "CollectionStatus" = Field(..., description="Current statistics and configuration of the collection.")
+    status: "CollectionStatus" = Field(..., description="Current statistics and configuration of the collection")
     vectors_count: int = Field(..., description="Number of vectors in collection")
 
 
@@ -90,6 +66,95 @@ class CollectionStatus(str, Enum):
 
 class CollectionsResponse(BaseModel):
     collections: List["CollectionDescription"] = Field(..., description="")
+
+
+class CreateAlias(BaseModel):
+    """
+    Create alternative name for a collection. Collection will be available under both names for search, retrieve,
+    """
+
+    alias_name: str = Field(
+        ...,
+        description="Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
+    )
+    collection_name: str = Field(
+        ...,
+        description="Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
+    )
+
+
+class CreateAliasOperation(BaseModel):
+    create_alias: "CreateAlias" = Field(..., description="")
+
+
+class CreateCollection(BaseModel):
+    """
+    Operation for creating new collection and (optionally) specify index params
+    """
+
+    distance: "Distance" = Field(
+        ..., description="Operation for creating new collection and (optionally) specify index params"
+    )
+    hnsw_config: Optional["HnswConfigDiff"] = Field(
+        None, description="Custom params for HNSW index. If none - values from service configuration file are used."
+    )
+    optimizers_config: Optional["OptimizersConfigDiff"] = Field(
+        None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
+    )
+    vector_size: int = Field(
+        ..., description="Operation for creating new collection and (optionally) specify index params"
+    )
+    wal_config: Optional["WalConfigDiff"] = Field(
+        None, description="Custom params for WAL. If none - values from service configuration file are used."
+    )
+
+
+class CreateCollectionOperation(BaseModel):
+    """
+    Operation for creating new collection and (optionally) specify index params
+    """
+
+    distance: "Distance" = Field(
+        ..., description="Operation for creating new collection and (optionally) specify index params"
+    )
+    hnsw_config: Optional["HnswConfigDiff"] = Field(
+        None, description="Custom params for HNSW index. If none - values from service configuration file are used."
+    )
+    name: str = Field(..., description="Operation for creating new collection and (optionally) specify index params")
+    optimizers_config: Optional["OptimizersConfigDiff"] = Field(
+        None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
+    )
+    vector_size: int = Field(
+        ..., description="Operation for creating new collection and (optionally) specify index params"
+    )
+    wal_config: Optional["WalConfigDiff"] = Field(
+        None, description="Custom params for WAL. If none - values from service configuration file are used."
+    )
+
+
+class CreateFieldIndex(BaseModel):
+    field_name: str = Field(..., description="")
+
+
+class DeleteAlias(BaseModel):
+    """
+    Delete alias if exists
+    """
+
+    alias_name: str = Field(..., description="Delete alias if exists")
+
+
+class DeleteAliasOperation(BaseModel):
+    """
+    Delete alias if exists
+    """
+
+    delete_alias: "DeleteAlias" = Field(..., description="Delete alias if exists")
+
+
+class DeletePayload(BaseModel):
+    keys: List[str] = Field(..., description="")
+    points: List["ExtendedPointId"] = Field(..., description="Deletes values from each point in this list")
 
 
 class Distance(str, Enum):
@@ -109,16 +174,20 @@ class ErrorResponseStatus(BaseModel):
 
 
 class FieldCondition(BaseModel):
+    """
+    All possible payload filtering conditions
+    """
+
     geo_bounding_box: Optional["GeoBoundingBox"] = Field(
         None, description="Check if points geo location lies in a given area"
     )
     geo_radius: Optional["GeoRadius"] = Field(None, description="Check if geo point is within a given radius")
-    key: str = Field(..., description="")
+    key: str = Field(..., description="All possible payload filtering conditions")
     match: Optional["Match"] = Field(None, description="Check if point has field with a given value")
     range: Optional["Range"] = Field(None, description="Check if points value lies in a given range")
 
 
-class FieldIndexOperationsAnyOf(BaseModel):
+class FieldIndexOperationsOneOf(BaseModel):
     """
     Create index for payload field
     """
@@ -126,7 +195,7 @@ class FieldIndexOperationsAnyOf(BaseModel):
     create_index: str = Field(..., description="Create index for payload field")
 
 
-class FieldIndexOperationsAnyOf1(BaseModel):
+class FieldIndexOperationsOneOf1(BaseModel):
     """
     Delete index for the field
     """
@@ -140,26 +209,59 @@ class Filter(BaseModel):
     should: Optional[List["Condition"]] = Field(None, description="At least one of thous conditions should match")
 
 
+class FilterSelector(BaseModel):
+    filter: "Filter" = Field(..., description="")
+
+
 class GeoBoundingBox(BaseModel):
-    bottom_right: "GeoPoint" = Field(..., description="")
-    top_left: "GeoPoint" = Field(..., description="")
+    """
+    Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges
+    """
+
+    bottom_right: "GeoPoint" = Field(
+        ...,
+        description="Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
+    )
+    top_left: "GeoPoint" = Field(
+        ...,
+        description="Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
+    )
 
 
 class GeoPoint(BaseModel):
-    lat: float = Field(..., description="")
-    lon: float = Field(..., description="")
+    """
+    Geo point payload schema
+    """
+
+    lat: float = Field(..., description="Geo point payload schema")
+    lon: float = Field(..., description="Geo point payload schema")
 
 
 class GeoRadius(BaseModel):
-    center: "GeoPoint" = Field(..., description="")
+    """
+    Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`
+    """
+
+    center: "GeoPoint" = Field(
+        ...,
+        description="Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
+    )
     radius: float = Field(..., description="Radius of the area in meters")
 
 
 class HasIdCondition(BaseModel):
-    has_id: List[int] = Field(..., description="")
+    """
+    ID-based filtering condition
+    """
+
+    has_id: List["ExtendedPointId"] = Field(..., description="ID-based filtering condition")
 
 
 class HnswConfig(BaseModel):
+    """
+    Config of HNSW index
+    """
+
     ef_construct: int = Field(
         ...,
         description="Number of neighbours to consider during the index building. Larger the value - more accurate the search, more time required to build index.",
@@ -254,11 +356,19 @@ class InlineResponse2007(BaseModel):
 
 
 class Match(BaseModel):
+    """
+    Match filter request
+    """
+
     integer: Optional[int] = Field(None, description="Integer value to match")
     keyword: Optional[str] = Field(None, description="Keyword value to match")
 
 
 class OptimizersConfig(BaseModel):
+    default_segment_number: int = Field(
+        ...,
+        description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads",
+    )
     deleted_threshold: float = Field(
         ...,
         description="The minimal fraction of deleted vectors in a segment, required to perform segment optimization",
@@ -268,8 +378,10 @@ class OptimizersConfig(BaseModel):
         ...,
         description="Maximum number of vectors allowed for plain index. Default value based on https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md",
     )
-    max_segment_number: int = Field(
-        ..., description="If the number of segments exceeds this value, the optimizer will merge the smallest segments."
+    max_optimization_threads: int = Field(..., description="Maximum available threads for optimization workers")
+    max_segment_size: int = Field(
+        ...,
+        description="Do not create segments larger this number of points. Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher.",
     )
     memmap_threshold: int = Field(
         ...,
@@ -285,6 +397,10 @@ class OptimizersConfig(BaseModel):
 
 
 class OptimizersConfigDiff(BaseModel):
+    default_segment_number: Optional[int] = Field(
+        None,
+        description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads",
+    )
     deleted_threshold: Optional[float] = Field(
         None,
         description="The minimal fraction of deleted vectors in a segment, required to perform segment optimization",
@@ -294,9 +410,12 @@ class OptimizersConfigDiff(BaseModel):
         None,
         description="Maximum number of vectors allowed for plain index. Default value based on https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md",
     )
-    max_segment_number: Optional[int] = Field(
+    max_optimization_threads: Optional[int] = Field(
+        None, description="Maximum available threads for optimization workers"
+    )
+    max_segment_size: Optional[int] = Field(
         None,
-        description="If the number of segments exceeds this value, the optimizer will merge the smallest segments.",
+        description="Do not create segments larger this number of points. Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher.",
     )
     memmap_threshold: Optional[int] = Field(
         None,
@@ -311,163 +430,139 @@ class OptimizersConfigDiff(BaseModel):
     )
 
 
-class PayloadInterfaceStrictAnyOf(BaseModel):
+class PayloadInterfaceStrictOneOf(BaseModel):
     type: Literal[
         "keyword",
     ] = Field(..., description="")
     value: "PayloadVariantForString" = Field(..., description="")
 
 
-class PayloadInterfaceStrictAnyOf1(BaseModel):
+class PayloadInterfaceStrictOneOf1(BaseModel):
     type: Literal[
         "integer",
     ] = Field(..., description="")
     value: "PayloadVariantForInt64" = Field(..., description="")
 
 
-class PayloadInterfaceStrictAnyOf2(BaseModel):
+class PayloadInterfaceStrictOneOf2(BaseModel):
     type: Literal[
         "float",
     ] = Field(..., description="")
     value: "PayloadVariantForDouble" = Field(..., description="")
 
 
-class PayloadInterfaceStrictAnyOf3(BaseModel):
+class PayloadInterfaceStrictOneOf3(BaseModel):
     type: Literal[
         "geo",
     ] = Field(..., description="")
     value: "PayloadVariantForGeoPoint" = Field(..., description="")
 
 
-class PayloadOpsAnyOf(BaseModel):
+class PayloadOpsOneOf(BaseModel):
     """
     Set payload value, overrides if it is already exists
     """
 
-    set_payload: "PayloadOpsAnyOfSetPayload" = Field(
-        ..., description="Set payload value, overrides if it is already exists"
-    )
+    set_payload: "SetPayload" = Field(..., description="Set payload value, overrides if it is already exists")
 
 
-class PayloadOpsAnyOf1(BaseModel):
+class PayloadOpsOneOf1(BaseModel):
     """
     Deletes specified payload values if they are assigned
     """
 
-    delete_payload: "PayloadOpsAnyOf1DeletePayload" = Field(
-        ..., description="Deletes specified payload values if they are assigned"
-    )
+    delete_payload: "DeletePayload" = Field(..., description="Deletes specified payload values if they are assigned")
 
 
-class PayloadOpsAnyOf1DeletePayload(BaseModel):
-    keys: List[str] = Field(..., description="")
-    points: List[int] = Field(..., description="Deletes values from each point in this list")
-
-
-class PayloadOpsAnyOf2(BaseModel):
+class PayloadOpsOneOf2(BaseModel):
     """
     Drops all Payload values associated with given points.
     """
 
-    clear_payload: "PayloadOpsAnyOf2ClearPayload" = Field(
+    clear_payload: "PayloadOpsOneOf2ClearPayload" = Field(
         ..., description="Drops all Payload values associated with given points."
     )
 
 
-class PayloadOpsAnyOf2ClearPayload(BaseModel):
-    points: List[int] = Field(..., description="")
-
-
-class PayloadOpsAnyOfSetPayload(BaseModel):
-    payload: Dict[str, "PayloadInterface"] = Field(..., description="")
-    points: List[int] = Field(..., description="Assigns payload to each point in this list")
+class PayloadOpsOneOf2ClearPayload(BaseModel):
+    points: List["ExtendedPointId"] = Field(..., description="")
 
 
 class PayloadSchemaInfo(BaseModel):
-    data_type: "PayloadSchemaType" = Field(..., description="")
-    indexed: bool = Field(..., description="")
+    """
+    Payload field type &amp; index information
+    """
+
+    data_type: "PayloadSchemaType" = Field(..., description="Payload field type &amp; index information")
+    indexed: bool = Field(..., description="Payload field type &amp; index information")
 
 
-class PayloadSchemaTypeAnyOf(BaseModel):
+class PayloadSchemaTypeOneOf(BaseModel):
     type: Literal[
         "keyword",
     ] = Field(..., description="")
 
 
-class PayloadSchemaTypeAnyOf1(BaseModel):
+class PayloadSchemaTypeOneOf1(BaseModel):
     type: Literal[
         "integer",
     ] = Field(..., description="")
 
 
-class PayloadSchemaTypeAnyOf2(BaseModel):
+class PayloadSchemaTypeOneOf2(BaseModel):
     type: Literal[
         "float",
     ] = Field(..., description="")
 
 
-class PayloadSchemaTypeAnyOf3(BaseModel):
+class PayloadSchemaTypeOneOf3(BaseModel):
     type: Literal[
         "geo",
     ] = Field(..., description="")
 
 
 class PayloadSelector(BaseModel):
+    """
+    Specifies how to treat payload selector
+    """
+
     exclude: List[str] = Field(..., description="Post-exclude return payload key type")
     include: List[str] = Field(..., description="Include return payload key type")
 
 
-class PayloadTypeAnyOf(BaseModel):
+class PayloadTypeOneOf(BaseModel):
     type: Literal[
         "keyword",
     ] = Field(..., description="")
     value: List[str] = Field(..., description="")
 
 
-class PayloadTypeAnyOf1(BaseModel):
+class PayloadTypeOneOf1(BaseModel):
     type: Literal[
         "integer",
     ] = Field(..., description="")
     value: List[int] = Field(..., description="")
 
 
-class PayloadTypeAnyOf2(BaseModel):
+class PayloadTypeOneOf2(BaseModel):
     type: Literal[
         "float",
     ] = Field(..., description="")
     value: List[float] = Field(..., description="")
 
 
-class PayloadTypeAnyOf3(BaseModel):
+class PayloadTypeOneOf3(BaseModel):
     type: Literal[
         "geo",
     ] = Field(..., description="")
     value: List["GeoPoint"] = Field(..., description="")
 
 
-class PointInsertOperationsAnyOf(BaseModel):
-    """
-    Inset points from a batch.
-    """
-
-    batch: "PointInsertOperationsAnyOfBatch" = Field(..., description="Inset points from a batch.")
+class PointIdsList(BaseModel):
+    points: List["ExtendedPointId"] = Field(..., description="")
 
 
-class PointInsertOperationsAnyOf1(BaseModel):
-    """
-    Insert points from a list
-    """
-
-    points: List["PointStruct"] = Field(..., description="Insert points from a list")
-
-
-class PointInsertOperationsAnyOfBatch(BaseModel):
-    ids: List[int] = Field(..., description="")
-    payloads: Optional[List[Dict[str, "PayloadInterface"]]] = Field(None, description="")
-    vectors: List[List[float]] = Field(..., description="")
-
-
-class PointOperationsAnyOf(BaseModel):
+class PointOperationsOneOf(BaseModel):
     """
     Insert or update points
     """
@@ -475,30 +570,51 @@ class PointOperationsAnyOf(BaseModel):
     upsert_points: "PointInsertOperations" = Field(..., description="Insert or update points")
 
 
-class PointOperationsAnyOf1(BaseModel):
+class PointOperationsOneOf1(BaseModel):
     """
     Delete point if exists
     """
 
-    delete_points: "PointOperationsAnyOf1DeletePoints" = Field(..., description="Delete point if exists")
+    delete_points: "PointOperationsOneOf1DeletePoints" = Field(..., description="Delete point if exists")
 
 
-class PointOperationsAnyOf1DeletePoints(BaseModel):
-    ids: List[int] = Field(..., description="")
+class PointOperationsOneOf1DeletePoints(BaseModel):
+    ids: List["ExtendedPointId"] = Field(..., description="")
+
+
+class PointOperationsOneOf2(BaseModel):
+    """
+    Delete points by given filter criteria
+    """
+
+    delete_points_by_filter: "Filter" = Field(..., description="Delete points by given filter criteria")
 
 
 class PointRequest(BaseModel):
-    ids: List[int] = Field(..., description="")
+    ids: List["ExtendedPointId"] = Field(..., description="")
     with_payload: Optional["WithPayloadInterface"] = Field(None, description="")
+    with_vector: Optional[bool] = Field(None, description="")
 
 
 class PointStruct(BaseModel):
-    id: int = Field(..., description="Point id")
+    id: "ExtendedPointId" = Field(..., description="")
     payload: Optional[Dict[str, "PayloadInterface"]] = Field(None, description="Payload values (optional)")
     vector: List[float] = Field(..., description="Vector")
 
 
+class PointsBatch(BaseModel):
+    batch: "Batch" = Field(..., description="")
+
+
+class PointsList(BaseModel):
+    points: List["PointStruct"] = Field(..., description="")
+
+
 class Range(BaseModel):
+    """
+    Range filter request
+    """
+
     gt: Optional[float] = Field(None, description="point.key &gt; range.gt")
     gte: Optional[float] = Field(None, description="point.key &gt;= range.gte")
     lt: Optional[float] = Field(None, description="point.key &lt; range.lt")
@@ -507,13 +623,13 @@ class Range(BaseModel):
 
 class RecommendRequest(BaseModel):
     """
-    Search request
+    Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.
     """
 
     filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
-    negative: List[int] = Field(..., description="Try to avoid vectors like this")
+    negative: List["ExtendedPointId"] = Field(..., description="Try to avoid vectors like this")
     params: Optional["SearchParams"] = Field(None, description="Additional search params")
-    positive: List[int] = Field(..., description="Look for vectors closest to those")
+    positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
     top: int = Field(..., description="Max number of result to return")
 
 
@@ -522,15 +638,37 @@ class Record(BaseModel):
     Point data
     """
 
-    id: int = Field(..., description="Id of the point")
+    id: "ExtendedPointId" = Field(..., description="Point data")
     payload: Optional[Dict[str, "PayloadType"]] = Field(None, description="Payload - values assigned to the point")
     vector: Optional[List[float]] = Field(None, description="Vector of the point")
 
 
+class RenameAlias(BaseModel):
+    """
+    Change alias to a new one
+    """
+
+    new_alias_name: str = Field(..., description="Change alias to a new one")
+    old_alias_name: str = Field(..., description="Change alias to a new one")
+
+
+class RenameAliasOperation(BaseModel):
+    """
+    Change alias to a new one
+    """
+
+    rename_alias: "RenameAlias" = Field(..., description="Change alias to a new one")
+
+
 class ScoredPoint(BaseModel):
-    id: int = Field(..., description="Point id")
-    payload: Optional[Dict[str, "PayloadType"]] = Field(None, description="Payload storage")
+    """
+    Search result
+    """
+
+    id: "ExtendedPointId" = Field(..., description="Search result")
+    payload: Optional[Dict[str, "PayloadType"]] = Field(None, description="Payload - values assigned to the point")
     score: float = Field(..., description="Points vector distance to the query vector")
+    vector: Optional[List[float]] = Field(None, description="Vector of the point")
     version: int = Field(..., description="Point version")
 
 
@@ -543,7 +681,7 @@ class ScrollRequest(BaseModel):
         None, description="Look only for points which satisfies this conditions. If not provided - all points."
     )
     limit: Optional[int] = Field(None, description="Page size. Default: 10")
-    offset: Optional[int] = Field(None, description="Start ID to read points from. Default: 0")
+    offset: Optional["ExtendedPointId"] = Field(None, description="Start ID to read points from. Default: 0")
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Return point payload with the result. Default: True"
     )
@@ -552,10 +690,10 @@ class ScrollRequest(BaseModel):
 
 class ScrollResult(BaseModel):
     """
-    Result of the points read request. Contains
+    Result of the points read request
     """
 
-    next_page_offset: Optional[int] = Field(
+    next_page_offset: Optional["ExtendedPointId"] = Field(
         None, description="Offset which should be used to retrieve a next page result"
     )
     points: List["Record"] = Field(..., description="List of retrieved points")
@@ -574,7 +712,7 @@ class SearchParams(BaseModel):
 
 class SearchRequest(BaseModel):
     """
-    Search request
+    Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.
     """
 
     filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
@@ -582,71 +720,50 @@ class SearchRequest(BaseModel):
     top: int = Field(..., description="Max number of result to return")
     vector: List[float] = Field(..., description="Look for vectors closest to this")
     with_payload: Optional["WithPayloadInterface"] = Field(None, description="Payload interface")
+    with_vector: Optional[bool] = Field(None, description="Return point vector with the result. Default: false")
 
 
-class StorageOperationsAnyOf(BaseModel):
+class SetPayload(BaseModel):
+    payload: Dict[str, "PayloadInterface"] = Field(..., description="")
+    points: List["ExtendedPointId"] = Field(..., description="Assigns payload to each point in this list")
+
+
+class StorageOperationsOneOf(BaseModel):
+    create_collection: "CreateCollectionOperation" = Field(..., description="")
+
+
+class StorageOperationsOneOf1(BaseModel):
+    update_collection: "UpdateCollectionOperation" = Field(..., description="")
+
+
+class StorageOperationsOneOf2(BaseModel):
+    delete_collection: str = Field(..., description="Operation for deleting collection with given name")
+
+
+class StorageOperationsOneOf3(BaseModel):
+    change_aliases: "ChangeAliasesOperation" = Field(..., description="")
+
+
+class UpdateCollection(BaseModel):
     """
-    Create new collection and (optionally) specify index params
+    Operation for updating parameters of the existing collection
     """
 
-    create_collection: "StorageOperationsAnyOfCreateCollection" = Field(
-        ..., description="Create new collection and (optionally) specify index params"
-    )
-
-
-class StorageOperationsAnyOf1(BaseModel):
-    """
-    Update parameters of the existing collection
-    """
-
-    update_collection: "StorageOperationsAnyOf1UpdateCollection" = Field(
-        ..., description="Update parameters of the existing collection"
-    )
-
-
-class StorageOperationsAnyOf1UpdateCollection(BaseModel):
-    name: str = Field(..., description="")
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         None,
         description="Custom params for Optimizers.  If none - values from service configuration file are used. This operation is blocking, it will only proceed ones all current optimizations are complete",
     )
 
 
-class StorageOperationsAnyOf2(BaseModel):
+class UpdateCollectionOperation(BaseModel):
     """
-    Delete collection with given name
-    """
-
-    delete_collection: str = Field(..., description="Delete collection with given name")
-
-
-class StorageOperationsAnyOf3(BaseModel):
-    """
-    Perform changes of collection aliases. Alias changes are atomic, meaning that no collection modifications can happen between alias operations.
+    Operation for updating parameters of the existing collection
     """
 
-    change_aliases: "StorageOperationsAnyOf3ChangeAliases" = Field(
-        ...,
-        description="Perform changes of collection aliases. Alias changes are atomic, meaning that no collection modifications can happen between alias operations.",
-    )
-
-
-class StorageOperationsAnyOf3ChangeAliases(BaseModel):
-    actions: List["AliasOperations"] = Field(..., description="")
-
-
-class StorageOperationsAnyOfCreateCollection(BaseModel):
-    distance: "Distance" = Field(..., description="")
-    hnsw_config: Optional["HnswConfigDiff"] = Field(
-        None, description="Custom params for HNSW index. If none - values from service configuration file are used."
-    )
-    name: str = Field(..., description="")
+    name: str = Field(..., description="Operation for updating parameters of the existing collection")
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
-        None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
-    )
-    vector_size: int = Field(..., description="")
-    wal_config: Optional["WalConfigDiff"] = Field(
-        None, description="Custom params for WAL. If none - values from service configuration file are used."
+        None,
+        description="Custom params for Optimizers.  If none - values from service configuration file are used. This operation is blocking, it will only proceed ones all current optimizations are complete",
     )
 
 
@@ -673,41 +790,45 @@ class WalConfigDiff(BaseModel):
 
 
 AliasOperations = Union[
-    AliasOperationsAnyOf,
-    AliasOperationsAnyOf1,
-    AliasOperationsAnyOf2,
+    CreateAliasOperation,
+    DeleteAliasOperation,
+    RenameAliasOperation,
 ]
 Condition = Union[
     FieldCondition,
     HasIdCondition,
     Filter,
 ]
+ExtendedPointId = Union[
+    StrictInt,
+    StrictStr,
+]
 FieldIndexOperations = Union[
-    FieldIndexOperationsAnyOf,
-    FieldIndexOperationsAnyOf1,
+    FieldIndexOperationsOneOf,
+    FieldIndexOperationsOneOf1,
 ]
 PayloadInterfaceStrict = Union[
-    PayloadInterfaceStrictAnyOf,
-    PayloadInterfaceStrictAnyOf1,
-    PayloadInterfaceStrictAnyOf2,
-    PayloadInterfaceStrictAnyOf3,
+    PayloadInterfaceStrictOneOf,
+    PayloadInterfaceStrictOneOf1,
+    PayloadInterfaceStrictOneOf2,
+    PayloadInterfaceStrictOneOf3,
 ]
 PayloadOps = Union[
-    PayloadOpsAnyOf,
-    PayloadOpsAnyOf1,
-    PayloadOpsAnyOf2,
+    PayloadOpsOneOf,
+    PayloadOpsOneOf1,
+    PayloadOpsOneOf2,
 ]
 PayloadSchemaType = Union[
-    PayloadSchemaTypeAnyOf,
-    PayloadSchemaTypeAnyOf1,
-    PayloadSchemaTypeAnyOf2,
-    PayloadSchemaTypeAnyOf3,
+    PayloadSchemaTypeOneOf,
+    PayloadSchemaTypeOneOf1,
+    PayloadSchemaTypeOneOf2,
+    PayloadSchemaTypeOneOf3,
 ]
 PayloadType = Union[
-    PayloadTypeAnyOf,
-    PayloadTypeAnyOf1,
-    PayloadTypeAnyOf2,
-    PayloadTypeAnyOf3,
+    PayloadTypeOneOf,
+    PayloadTypeOneOf1,
+    PayloadTypeOneOf2,
+    PayloadTypeOneOf3,
 ]
 PayloadVariantForDouble = Union[
     List[StrictFloat],
@@ -726,18 +847,23 @@ PayloadVariantForString = Union[
     StrictStr,
 ]
 PointInsertOperations = Union[
-    PointInsertOperationsAnyOf,
-    PointInsertOperationsAnyOf1,
+    PointsBatch,
+    PointsList,
 ]
 PointOperations = Union[
-    PointOperationsAnyOf,
-    PointOperationsAnyOf1,
+    PointOperationsOneOf,
+    PointOperationsOneOf1,
+    PointOperationsOneOf2,
+]
+PointsSelector = Union[
+    PointIdsList,
+    FilterSelector,
 ]
 StorageOperations = Union[
-    StorageOperationsAnyOf,
-    StorageOperationsAnyOf1,
-    StorageOperationsAnyOf2,
-    StorageOperationsAnyOf3,
+    StorageOperationsOneOf,
+    StorageOperationsOneOf1,
+    StorageOperationsOneOf2,
+    StorageOperationsOneOf3,
 ]
 WithPayloadInterface = Union[
     PayloadSelector,
