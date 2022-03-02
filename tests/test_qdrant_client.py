@@ -9,7 +9,7 @@ import numpy as np
 
 from qdrant_client import QdrantClient
 from qdrant_openapi_client.models.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
-    SetPayload, HasIdCondition, Match, PointsSelector, PointIdsList
+    SetPayload, HasIdCondition, PointIdsList, MatchKeyword
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -134,7 +134,7 @@ def test_points_crud():
     # Create a single point
 
     client.http.points_api.upsert_points(
-        name=COLLECTION_NAME,
+        collection_name=COLLECTION_NAME,
         wait=True,
         point_insert_operations=PointsList(points=[
             PointStruct(
@@ -154,7 +154,7 @@ def test_points_crud():
     # Update a single point
 
     client.http.points_api.set_payload(
-        name=COLLECTION_NAME,
+        collection_name=COLLECTION_NAME,
         set_payload=SetPayload(
             payload={
                 "test2": ["value2", "value3"]
@@ -166,7 +166,7 @@ def test_points_crud():
     # Delete a single point
 
     client.http.points_api.delete_points(
-        name=COLLECTION_NAME,
+        collection_name=COLLECTION_NAME,
         points_selector=PointIdsList(points=[123])
     )
 
@@ -175,7 +175,7 @@ def test_has_id_condition():
     query = Filter(
         must=[
             HasIdCondition(has_id=[42, 43]),
-            FieldCondition(key="field_name", match=Match(keyword="field_value_42")),
+            FieldCondition(key="field_name", match=MatchKeyword(keyword="field_value_42")),
         ]
     ).dict()
 
