@@ -154,20 +154,24 @@ class _CollectionsApi:
 
     def _build_for_create_collection(
         self,
-        name: str,
+        collection_name: str,
         create_collection: m.CreateCollection = None,
     ):
         """
         Create new collection with given parameters
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         body = jsonable_encoder(create_collection)
 
         return self.api_client.request(
-            type_=m.InlineResponse2001, method="PUT", url="/collections/{name}", path_params=path_params, json=body
+            type_=m.InlineResponse2001,
+            method="PUT",
+            url="/collections/{collection_name}",
+            path_params=path_params,
+            json=body,
         )
 
     def _build_for_create_field_index(
@@ -200,19 +204,19 @@ class _CollectionsApi:
 
     def _build_for_delete_collection(
         self,
-        name: str,
+        collection_name: str,
     ):
         """
         Drop collection and all associated data
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         return self.api_client.request(
             type_=m.InlineResponse2001,
             method="DELETE",
-            url="/collections/{name}",
+            url="/collections/{collection_name}",
             path_params=path_params,
         )
 
@@ -244,19 +248,19 @@ class _CollectionsApi:
 
     def _build_for_get_collection(
         self,
-        name: str,
+        collection_name: str,
     ):
         """
         Get detailed information about specified existing collection
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         return self.api_client.request(
             type_=m.InlineResponse2002,
             method="GET",
-            url="/collections/{name}",
+            url="/collections/{collection_name}",
             path_params=path_params,
         )
 
@@ -282,20 +286,24 @@ class _CollectionsApi:
 
     def _build_for_update_collection(
         self,
-        name: str,
+        collection_name: str,
         update_collection: m.UpdateCollection = None,
     ):
         """
         Update parameters of the existing collection
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         body = jsonable_encoder(update_collection)
 
         return self.api_client.request(
-            type_=m.InlineResponse2001, method="PATCH", url="/collections/{name}", path_params=path_params, json=body
+            type_=m.InlineResponse2001,
+            method="PATCH",
+            url="/collections/{collection_name}",
+            path_params=path_params,
+            json=body,
         )
 
     def _build_for_update_collections(
@@ -313,14 +321,14 @@ class _CollectionsApi:
 class AsyncCollectionsApi(_CollectionsApi):
     async def create_collection(
         self,
-        name: str,
+        collection_name: str,
         create_collection: m.CreateCollection = None,
     ) -> m.InlineResponse2001:
         """
         Create new collection with given parameters
         """
         return await self._build_for_create_collection(
-            name=name,
+            collection_name=collection_name,
             create_collection=create_collection,
         )
 
@@ -341,13 +349,13 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def delete_collection(
         self,
-        name: str,
+        collection_name: str,
     ) -> m.InlineResponse2001:
         """
         Drop collection and all associated data
         """
         return await self._build_for_delete_collection(
-            name=name,
+            collection_name=collection_name,
         )
 
     async def delete_field_index(
@@ -367,13 +375,13 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def get_collection(
         self,
-        name: str,
+        collection_name: str,
     ) -> m.InlineResponse2002:
         """
         Get detailed information about specified existing collection
         """
         return await self._build_for_get_collection(
-            name=name,
+            collection_name=collection_name,
         )
 
     async def get_collections(
@@ -394,14 +402,14 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def update_collection(
         self,
-        name: str,
+        collection_name: str,
         update_collection: m.UpdateCollection = None,
     ) -> m.InlineResponse2001:
         """
         Update parameters of the existing collection
         """
         return await self._build_for_update_collection(
-            name=name,
+            collection_name=collection_name,
             update_collection=update_collection,
         )
 
@@ -420,14 +428,14 @@ class AsyncCollectionsApi(_CollectionsApi):
 class SyncCollectionsApi(_CollectionsApi):
     def create_collection(
         self,
-        name: str,
+        collection_name: str,
         create_collection: m.CreateCollection = None,
     ) -> m.InlineResponse2001:
         """
         Create new collection with given parameters
         """
         return self._build_for_create_collection(
-            name=name,
+            collection_name=collection_name,
             create_collection=create_collection,
         )
 
@@ -448,13 +456,13 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def delete_collection(
         self,
-        name: str,
+        collection_name: str,
     ) -> m.InlineResponse2001:
         """
         Drop collection and all associated data
         """
         return self._build_for_delete_collection(
-            name=name,
+            collection_name=collection_name,
         )
 
     def delete_field_index(
@@ -474,13 +482,13 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def get_collection(
         self,
-        name: str,
+        collection_name: str,
     ) -> m.InlineResponse2002:
         """
         Get detailed information about specified existing collection
         """
         return self._build_for_get_collection(
-            name=name,
+            collection_name=collection_name,
         )
 
     def get_collections(
@@ -501,14 +509,14 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def update_collection(
         self,
-        name: str,
+        collection_name: str,
         update_collection: m.UpdateCollection = None,
     ) -> m.InlineResponse2001:
         """
         Update parameters of the existing collection
         """
         return self._build_for_update_collection(
-            name=name,
+            collection_name=collection_name,
             update_collection=update_collection,
         )
 

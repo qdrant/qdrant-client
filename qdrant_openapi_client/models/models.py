@@ -46,6 +46,9 @@ class CollectionInfo(BaseModel):
 
     config: "CollectionConfig" = Field(..., description="Current statistics and configuration of the collection")
     disk_data_size: int = Field(..., description="Disk space, used by collection")
+    optimizer_status: "OptimizersStatus" = Field(
+        ..., description="Current statistics and configuration of the collection"
+    )
     payload_schema: Dict[str, "PayloadSchemaInfo"] = Field(..., description="Types of stored payload")
     ram_data_size: int = Field(..., description="RAM used by collection")
     segments_count: int = Field(..., description="Number of segments in collection")
@@ -355,13 +358,20 @@ class InlineResponse2007(BaseModel):
     result: Optional[List["ScoredPoint"]] = Field(None, description="")
 
 
-class Match(BaseModel):
+class MatchInteger(BaseModel):
     """
     Match filter request
     """
 
-    integer: Optional[int] = Field(None, description="Integer value to match")
-    keyword: Optional[str] = Field(None, description="Keyword value to match")
+    integer: int = Field(..., description="Integer value to match")
+
+
+class MatchKeyword(BaseModel):
+    """
+    Match by keyword
+    """
+
+    keyword: str = Field(..., description="Keyword value to match")
 
 
 class OptimizersConfig(BaseModel):
@@ -430,6 +440,18 @@ class OptimizersConfigDiff(BaseModel):
     )
 
 
+class OptimizersStatusOneOf(str, Enum):
+    OK = "ok"
+
+
+class OptimizersStatusOneOf1(BaseModel):
+    """
+    Something wrong happened with optimizers
+    """
+
+    error: str = Field(..., description="Something wrong happened with optimizers")
+
+
 class PayloadInterfaceStrictOneOf(BaseModel):
     type: Literal[
         "keyword",
@@ -488,6 +510,14 @@ class PayloadOpsOneOf2ClearPayload(BaseModel):
     points: List["ExtendedPointId"] = Field(..., description="")
 
 
+class PayloadOpsOneOf3(BaseModel):
+    """
+    Clear all Payload values by given filter criteria.
+    """
+
+    clear_payload_by_filter: "Filter" = Field(..., description="Clear all Payload values by given filter criteria.")
+
+
 class PayloadSchemaInfo(BaseModel):
     """
     Payload field type &amp; index information
@@ -521,13 +551,12 @@ class PayloadSchemaTypeOneOf3(BaseModel):
     ] = Field(..., description="")
 
 
-class PayloadSelector(BaseModel):
-    """
-    Specifies how to treat payload selector
-    """
+class PayloadSelectorExclude(BaseModel):
+    exclude: List[str] = Field(..., description="Exclude this fields from returning payload")
 
-    exclude: List[str] = Field(..., description="Post-exclude return payload key type")
-    include: List[str] = Field(..., description="Include return payload key type")
+
+class PayloadSelectorInclude(BaseModel):
+    include: List[str] = Field(..., description="Only include this payload keys")
 
 
 class PayloadTypeOneOf(BaseModel):
@@ -591,9 +620,11 @@ class PointOperationsOneOf2(BaseModel):
 
 
 class PointRequest(BaseModel):
-    ids: List["ExtendedPointId"] = Field(..., description="")
-    with_payload: Optional["WithPayloadInterface"] = Field(None, description="")
-    with_vector: Optional[bool] = Field(None, description="")
+    ids: List["ExtendedPointId"] = Field(..., description="Look for points with ids")
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        None, description="Select which payload to return with the response. Default: All"
+    )
+    with_vector: Optional[bool] = Field(False, description="Whether to return the point vector with the result?")
 
 
 class PointStruct(BaseModel):
@@ -631,6 +662,10 @@ class RecommendRequest(BaseModel):
     params: Optional["SearchParams"] = Field(None, description="Additional search params")
     positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
     top: int = Field(..., description="Max number of result to return")
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        None, description="Select which payload to return with the response. Default: None"
+    )
+    with_vector: Optional[bool] = Field(False, description="Whether to return the point vector with the result?")
 
 
 class Record(BaseModel):
@@ -681,11 +716,11 @@ class ScrollRequest(BaseModel):
         None, description="Look only for points which satisfies this conditions. If not provided - all points."
     )
     limit: Optional[int] = Field(None, description="Page size. Default: 10")
-    offset: Optional["ExtendedPointId"] = Field(None, description="Start ID to read points from. Default: 0")
+    offset: Optional["ExtendedPointId"] = Field(None, description="Start ID to read points from.")
     with_payload: Optional["WithPayloadInterface"] = Field(
-        None, description="Return point payload with the result. Default: True"
+        None, description="Select which payload to return with the response. Default: All"
     )
-    with_vector: Optional[bool] = Field(None, description="Return point vector with the result. Default: false")
+    with_vector: Optional[bool] = Field(False, description="Whether to return the point vector with the result?")
 
 
 class ScrollResult(BaseModel):
@@ -719,8 +754,10 @@ class SearchRequest(BaseModel):
     params: Optional["SearchParams"] = Field(None, description="Additional search params")
     top: int = Field(..., description="Max number of result to return")
     vector: List[float] = Field(..., description="Look for vectors closest to this")
-    with_payload: Optional["WithPayloadInterface"] = Field(None, description="Payload interface")
-    with_vector: Optional[bool] = Field(None, description="Return point vector with the result. Default: false")
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        None, description="Select which payload to return with the response. Default: None"
+    )
+    with_vector: Optional[bool] = Field(False, description="Whether to return the point vector with the result?")
 
 
 class SetPayload(BaseModel):
@@ -807,6 +844,14 @@ FieldIndexOperations = Union[
     FieldIndexOperationsOneOf,
     FieldIndexOperationsOneOf1,
 ]
+Match = Union[
+    MatchKeyword,
+    MatchInteger,
+]
+OptimizersStatus = Union[
+    OptimizersStatusOneOf,
+    OptimizersStatusOneOf1,
+]
 PayloadInterfaceStrict = Union[
     PayloadInterfaceStrictOneOf,
     PayloadInterfaceStrictOneOf1,
@@ -817,12 +862,17 @@ PayloadOps = Union[
     PayloadOpsOneOf,
     PayloadOpsOneOf1,
     PayloadOpsOneOf2,
+    PayloadOpsOneOf3,
 ]
 PayloadSchemaType = Union[
     PayloadSchemaTypeOneOf,
     PayloadSchemaTypeOneOf1,
     PayloadSchemaTypeOneOf2,
     PayloadSchemaTypeOneOf3,
+]
+PayloadSelector = Union[
+    PayloadSelectorInclude,
+    PayloadSelectorExclude,
 ]
 PayloadType = Union[
     PayloadTypeOneOf,
@@ -865,11 +915,6 @@ StorageOperations = Union[
     StorageOperationsOneOf2,
     StorageOperationsOneOf3,
 ]
-WithPayloadInterface = Union[
-    PayloadSelector,
-    List[StrictStr],
-    bool,
-]
 CollectionUpdateOperations = Union[
     PointOperations,
     PayloadOps,
@@ -880,4 +925,9 @@ PayloadInterface = Union[
     PayloadVariantForInt64,
     PayloadVariantForDouble,
     PayloadInterfaceStrict,
+]
+WithPayloadInterface = Union[
+    PayloadSelector,
+    List[StrictStr],
+    bool,
 ]

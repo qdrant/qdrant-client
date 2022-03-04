@@ -154,7 +154,7 @@ class _PointsApi:
 
     def _build_for_clear_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
     ):
@@ -162,7 +162,7 @@ class _PointsApi:
         Remove all payload for specified points
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         query_params = {}
@@ -174,7 +174,7 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="POST",
-            url="/collections/{name}/points/payload/clear",
+            url="/collections/{collection_name}/points/payload/clear",
             path_params=path_params,
             params=query_params,
             json=body,
@@ -182,7 +182,7 @@ class _PointsApi:
 
     def _build_for_delete_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         delete_payload: m.DeletePayload = None,
     ):
@@ -190,7 +190,7 @@ class _PointsApi:
         Delete specified key payload for points
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         query_params = {}
@@ -202,7 +202,7 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="POST",
-            url="/collections/{name}/points/payload/delete",
+            url="/collections/{collection_name}/points/payload/delete",
             path_params=path_params,
             params=query_params,
             json=body,
@@ -210,7 +210,7 @@ class _PointsApi:
 
     def _build_for_delete_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
     ):
@@ -218,7 +218,7 @@ class _PointsApi:
         Delete points
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         query_params = {}
@@ -230,7 +230,7 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="POST",
-            url="/collections/{name}/points/delete",
+            url="/collections/{collection_name}/points/delete",
             path_params=path_params,
             params=query_params,
             json=body,
@@ -238,34 +238,34 @@ class _PointsApi:
 
     def _build_for_get_point(
         self,
-        name: str,
+        collection_name: str,
         id: m.ExtendedPointId,
     ):
         """
         Retrieve full information of single point by id
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
             "id": str(id),
         }
 
         return self.api_client.request(
             type_=m.InlineResponse2004,
             method="GET",
-            url="/collections/{name}/points/{id}",
+            url="/collections/{collection_name}/points/{id}",
             path_params=path_params,
         )
 
     def _build_for_get_points(
         self,
-        name: str,
+        collection_name: str,
         point_request: m.PointRequest = None,
     ):
         """
         Retrieve multiple points by specified IDs
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         body = jsonable_encoder(point_request)
@@ -273,21 +273,21 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2005,
             method="POST",
-            url="/collections/{name}/points",
+            url="/collections/{collection_name}/points",
             path_params=path_params,
             json=body,
         )
 
     def _build_for_recommend_points(
         self,
-        name: str,
+        collection_name: str,
         recommend_request: m.RecommendRequest = None,
     ):
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         body = jsonable_encoder(recommend_request)
@@ -295,21 +295,21 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2007,
             method="POST",
-            url="/collections/{name}/points/recommend",
+            url="/collections/{collection_name}/points/recommend",
             path_params=path_params,
             json=body,
         )
 
     def _build_for_scroll_points(
         self,
-        name: str,
+        collection_name: str,
         scroll_request: m.ScrollRequest = None,
     ):
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         body = jsonable_encoder(scroll_request)
@@ -317,21 +317,21 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="POST",
-            url="/collections/{name}/points/scroll",
+            url="/collections/{collection_name}/points/scroll",
             path_params=path_params,
             json=body,
         )
 
     def _build_for_search_points(
         self,
-        name: str,
+        collection_name: str,
         search_request: m.SearchRequest = None,
     ):
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         body = jsonable_encoder(search_request)
@@ -339,14 +339,14 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2007,
             method="POST",
-            url="/collections/{name}/points/search",
+            url="/collections/{collection_name}/points/search",
             path_params=path_params,
             json=body,
         )
 
     def _build_for_set_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         set_payload: m.SetPayload = None,
     ):
@@ -354,7 +354,7 @@ class _PointsApi:
         Set payload for points
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         query_params = {}
@@ -366,7 +366,7 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="POST",
-            url="/collections/{name}/points/payload",
+            url="/collections/{collection_name}/points/payload",
             path_params=path_params,
             params=query_params,
             json=body,
@@ -374,7 +374,7 @@ class _PointsApi:
 
     def _build_for_update_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         collection_update_operations: m.CollectionUpdateOperations = None,
     ):
@@ -382,7 +382,7 @@ class _PointsApi:
         Perform point update operation (vectors, payloads, indexes) in collection
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         query_params = {}
@@ -394,7 +394,7 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="POST",
-            url="/collections/{name}",
+            url="/collections/{collection_name}",
             path_params=path_params,
             params=query_params,
             json=body,
@@ -402,7 +402,7 @@ class _PointsApi:
 
     def _build_for_upsert_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         point_insert_operations: m.PointInsertOperations = None,
     ):
@@ -410,7 +410,7 @@ class _PointsApi:
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
         path_params = {
-            "name": str(name),
+            "collection_name": str(collection_name),
         }
 
         query_params = {}
@@ -422,7 +422,7 @@ class _PointsApi:
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="PUT",
-            url="/collections/{name}/points",
+            url="/collections/{collection_name}/points",
             path_params=path_params,
             params=query_params,
             json=body,
@@ -432,7 +432,7 @@ class _PointsApi:
 class AsyncPointsApi(_PointsApi):
     async def clear_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
     ) -> m.InlineResponse2003:
@@ -440,14 +440,14 @@ class AsyncPointsApi(_PointsApi):
         Remove all payload for specified points
         """
         return await self._build_for_clear_payload(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             points_selector=points_selector,
         )
 
     async def delete_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         delete_payload: m.DeletePayload = None,
     ) -> m.InlineResponse2003:
@@ -455,14 +455,14 @@ class AsyncPointsApi(_PointsApi):
         Delete specified key payload for points
         """
         return await self._build_for_delete_payload(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             delete_payload=delete_payload,
         )
 
     async def delete_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
     ) -> m.InlineResponse2003:
@@ -470,79 +470,79 @@ class AsyncPointsApi(_PointsApi):
         Delete points
         """
         return await self._build_for_delete_points(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             points_selector=points_selector,
         )
 
     async def get_point(
         self,
-        name: str,
+        collection_name: str,
         id: m.ExtendedPointId,
     ) -> m.InlineResponse2004:
         """
         Retrieve full information of single point by id
         """
         return await self._build_for_get_point(
-            name=name,
+            collection_name=collection_name,
             id=id,
         )
 
     async def get_points(
         self,
-        name: str,
+        collection_name: str,
         point_request: m.PointRequest = None,
     ) -> m.InlineResponse2005:
         """
         Retrieve multiple points by specified IDs
         """
         return await self._build_for_get_points(
-            name=name,
+            collection_name=collection_name,
             point_request=point_request,
         )
 
     async def recommend_points(
         self,
-        name: str,
+        collection_name: str,
         recommend_request: m.RecommendRequest = None,
     ) -> m.InlineResponse2007:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
         return await self._build_for_recommend_points(
-            name=name,
+            collection_name=collection_name,
             recommend_request=recommend_request,
         )
 
     async def scroll_points(
         self,
-        name: str,
+        collection_name: str,
         scroll_request: m.ScrollRequest = None,
     ) -> m.InlineResponse2006:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
         return await self._build_for_scroll_points(
-            name=name,
+            collection_name=collection_name,
             scroll_request=scroll_request,
         )
 
     async def search_points(
         self,
-        name: str,
+        collection_name: str,
         search_request: m.SearchRequest = None,
     ) -> m.InlineResponse2007:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
         return await self._build_for_search_points(
-            name=name,
+            collection_name=collection_name,
             search_request=search_request,
         )
 
     async def set_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         set_payload: m.SetPayload = None,
     ) -> m.InlineResponse2003:
@@ -550,14 +550,14 @@ class AsyncPointsApi(_PointsApi):
         Set payload for points
         """
         return await self._build_for_set_payload(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             set_payload=set_payload,
         )
 
     async def update_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         collection_update_operations: m.CollectionUpdateOperations = None,
     ) -> m.InlineResponse2003:
@@ -565,14 +565,14 @@ class AsyncPointsApi(_PointsApi):
         Perform point update operation (vectors, payloads, indexes) in collection
         """
         return await self._build_for_update_points(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             collection_update_operations=collection_update_operations,
         )
 
     async def upsert_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         point_insert_operations: m.PointInsertOperations = None,
     ) -> m.InlineResponse2003:
@@ -580,7 +580,7 @@ class AsyncPointsApi(_PointsApi):
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
         return await self._build_for_upsert_points(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             point_insert_operations=point_insert_operations,
         )
@@ -589,7 +589,7 @@ class AsyncPointsApi(_PointsApi):
 class SyncPointsApi(_PointsApi):
     def clear_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
     ) -> m.InlineResponse2003:
@@ -597,14 +597,14 @@ class SyncPointsApi(_PointsApi):
         Remove all payload for specified points
         """
         return self._build_for_clear_payload(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             points_selector=points_selector,
         )
 
     def delete_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         delete_payload: m.DeletePayload = None,
     ) -> m.InlineResponse2003:
@@ -612,14 +612,14 @@ class SyncPointsApi(_PointsApi):
         Delete specified key payload for points
         """
         return self._build_for_delete_payload(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             delete_payload=delete_payload,
         )
 
     def delete_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
     ) -> m.InlineResponse2003:
@@ -627,79 +627,79 @@ class SyncPointsApi(_PointsApi):
         Delete points
         """
         return self._build_for_delete_points(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             points_selector=points_selector,
         )
 
     def get_point(
         self,
-        name: str,
+        collection_name: str,
         id: m.ExtendedPointId,
     ) -> m.InlineResponse2004:
         """
         Retrieve full information of single point by id
         """
         return self._build_for_get_point(
-            name=name,
+            collection_name=collection_name,
             id=id,
         )
 
     def get_points(
         self,
-        name: str,
+        collection_name: str,
         point_request: m.PointRequest = None,
     ) -> m.InlineResponse2005:
         """
         Retrieve multiple points by specified IDs
         """
         return self._build_for_get_points(
-            name=name,
+            collection_name=collection_name,
             point_request=point_request,
         )
 
     def recommend_points(
         self,
-        name: str,
+        collection_name: str,
         recommend_request: m.RecommendRequest = None,
     ) -> m.InlineResponse2007:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
         return self._build_for_recommend_points(
-            name=name,
+            collection_name=collection_name,
             recommend_request=recommend_request,
         )
 
     def scroll_points(
         self,
-        name: str,
+        collection_name: str,
         scroll_request: m.ScrollRequest = None,
     ) -> m.InlineResponse2006:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
         return self._build_for_scroll_points(
-            name=name,
+            collection_name=collection_name,
             scroll_request=scroll_request,
         )
 
     def search_points(
         self,
-        name: str,
+        collection_name: str,
         search_request: m.SearchRequest = None,
     ) -> m.InlineResponse2007:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
         return self._build_for_search_points(
-            name=name,
+            collection_name=collection_name,
             search_request=search_request,
         )
 
     def set_payload(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         set_payload: m.SetPayload = None,
     ) -> m.InlineResponse2003:
@@ -707,14 +707,14 @@ class SyncPointsApi(_PointsApi):
         Set payload for points
         """
         return self._build_for_set_payload(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             set_payload=set_payload,
         )
 
     def update_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         collection_update_operations: m.CollectionUpdateOperations = None,
     ) -> m.InlineResponse2003:
@@ -722,14 +722,14 @@ class SyncPointsApi(_PointsApi):
         Perform point update operation (vectors, payloads, indexes) in collection
         """
         return self._build_for_update_points(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             collection_update_operations=collection_update_operations,
         )
 
     def upsert_points(
         self,
-        name: str,
+        collection_name: str,
         wait: bool = None,
         point_insert_operations: m.PointInsertOperations = None,
     ) -> m.InlineResponse2003:
@@ -737,7 +737,7 @@ class SyncPointsApi(_PointsApi):
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
         return self._build_for_upsert_points(
-            name=name,
+            collection_name=collection_name,
             wait=wait,
             point_insert_operations=point_insert_operations,
         )

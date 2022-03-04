@@ -9,7 +9,7 @@ from qdrant_client.parallel_processor import Worker, ParallelWorkerPool
 from qdrant_openapi_client import SyncApis
 from qdrant_openapi_client.models.models import PointsBatch, Batch, Filter, SearchParams, SearchRequest, Distance, \
     HnswConfigDiff, OptimizersConfigDiff, WalConfigDiff, CreateCollection, CreateFieldIndex, PointRequest, \
-    PayloadInterface, PointsList, GeoPoint, PayloadInterfaceStrictOneOf, PayloadInterfaceStrictOneOf1, \
+    PayloadInterface, GeoPoint, PayloadInterfaceStrictOneOf, PayloadInterfaceStrictOneOf1, \
     PayloadInterfaceStrictOneOf2, PayloadInterfaceStrictOneOf3, ExtendedPointId
 
 
@@ -30,7 +30,7 @@ def _upload_batch(openapi_client: SyncApis, collection_name: str, batch) -> bool
     ids_batch, vectors_batch, payload_batch = batch
 
     openapi_client.points_api.upsert_points(
-        name=collection_name,
+        collection_name=collection_name,
         point_insert_operations=PointsBatch(
             batch=Batch(
                 ids=ids_batch,
@@ -184,7 +184,7 @@ class QdrantClient:
         """
         result = {}
         response = self.http.points_api.get_points(
-            name=collection_name,
+            collection_name=collection_name,
             point_request=PointRequest(ids=ids, with_payload=True)
         )
 
@@ -215,7 +215,7 @@ class QdrantClient:
             query_vector = query_vector.tolist()
 
         search_result = self.http.points_api.search_points(
-            name=collection_name,
+            collection_name=collection_name,
             search_request=SearchRequest(
                 vector=query_vector,
                 filter=query_filter,
@@ -262,7 +262,7 @@ class QdrantClient:
         self.delete_collection(collection_name)
 
         self.http.collections_api.create_collection(
-            name=collection_name,
+            collection_name=collection_name,
             create_collection=CreateCollection(
                 distance=distance,
                 vector_size=vector_size,
