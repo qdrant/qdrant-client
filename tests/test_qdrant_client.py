@@ -8,7 +8,7 @@ from time import sleep
 import numpy as np
 
 from qdrant_client import QdrantClient
-from qdrant_openapi_client.models.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
+from qdrant_client.http.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
     SetPayload, HasIdCondition, PointIdsList, MatchKeyword
 
 DIM = 100
@@ -183,7 +183,6 @@ def test_has_id_condition():
 
 
 def test_insert_float():
-
     point = PointStruct(
         id=123,
         payload={'value': 0.123},
@@ -193,7 +192,17 @@ def test_insert_float():
     assert isinstance(point.payload['value'], float)
 
 
+def test_legacy_imports():
+    try:
+        from qdrant_openapi_client.models.models import Filter, FieldCondition
+        from qdrant_openapi_client.api.points_api import SyncPointsApi
+    except ImportError:
+        assert False  # can't import, fail
+
+
 if __name__ == '__main__':
     test_qdrant_client_integration()
     test_points_crud()
     test_has_id_condition()
+    test_insert_float()
+    test_legacy_imports()

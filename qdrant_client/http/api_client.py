@@ -4,9 +4,9 @@ from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overl
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
-from qdrant_openapi_client.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
-from qdrant_openapi_client.api.points_api import AsyncPointsApi, SyncPointsApi
-from qdrant_openapi_client.exceptions import ResponseHandlingException, UnexpectedResponse
+from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
+from qdrant_client.http.api.points_api import AsyncPointsApi, SyncPointsApi
+from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
 
 ClientT = TypeVar("ClientT", bound="ApiClient")
 AsyncClientT = TypeVar("AsyncClientT", bound="AsyncApiClient")

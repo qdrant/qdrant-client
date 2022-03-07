@@ -5,9 +5,9 @@ from typing import Optional, Iterable, Dict, List, Union, Any
 import numpy as np
 from tqdm import tqdm
 
+from qdrant_client.http import SyncApis
 from qdrant_client.parallel_processor import Worker, ParallelWorkerPool
-from qdrant_openapi_client import SyncApis
-from qdrant_openapi_client.models.models import PointsBatch, Batch, Filter, SearchParams, SearchRequest, Distance, \
+from qdrant_client.http.models import PointsBatch, Batch, Filter, SearchParams, SearchRequest, Distance, \
     HnswConfigDiff, OptimizersConfigDiff, WalConfigDiff, CreateCollection, CreateFieldIndex, PointRequest, \
     PayloadInterface, GeoPoint, PayloadInterfaceStrictOneOf, PayloadInterfaceStrictOneOf1, \
     PayloadInterfaceStrictOneOf2, PayloadInterfaceStrictOneOf3, ExtendedPointId
