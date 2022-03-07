@@ -196,6 +196,7 @@ def test_legacy_imports():
     try:
         from qdrant_openapi_client.models.models import Filter, FieldCondition
         from qdrant_openapi_client.api.points_api import SyncPointsApi
+        from qdrant_openapi_client.exceptions import UnexpectedResponse
     except ImportError:
         assert False  # can't import, fail
 
