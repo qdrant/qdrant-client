@@ -1,11 +1,7 @@
-import inspect
+from loguru import logger
 
-from pydantic import BaseModel
-from qdrant_openapi_client.api_client import ApiClient, AsyncApis, SyncApis  # noqa F401
-from qdrant_openapi_client.models import models
+import qdrant_client.http.api as api
+import qdrant_client.http.exceptions as exceptions
+import qdrant_client.http.api_client as api_client
 
-for model in inspect.getmembers(models, inspect.isclass):
-    if model[1].__module__ == "qdrant_openapi_client.models.models":
-        model_class = model[1]
-        if issubclass(model_class, BaseModel):
-            model_class.update_forward_refs()
+logger.warning("Use of deprecated import: use `qdrant_client.http` instead of `qdrant_openapi_client`")
