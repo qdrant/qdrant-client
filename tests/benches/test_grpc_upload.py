@@ -32,7 +32,7 @@ def upload_data(data):
     )
 
 
-# @pytest.mark.skip(reason="skip slow benchmark")
+@pytest.mark.skip(reason="skip slow benchmark")
 def test_grpc_upload():
     print("")
     prepare_collection_rest()
