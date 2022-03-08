@@ -56,7 +56,7 @@ hits = client.search(
 Search for similar vectors with filtering condition
 
 ```python
-from qdrant_openapi_client.models.models import Filter, FieldCondition, Range
+from qdrant_client.http.models import Filter, FieldCondition, Range
 
 hits = client.search(
     collection_name="my_collection",
