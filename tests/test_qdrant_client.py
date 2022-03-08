@@ -1,6 +1,7 @@
 import os
 import random
 import uuid
+import pytest
 from pprint import pprint
 from tempfile import mkdtemp
 from time import sleep
@@ -36,12 +37,15 @@ def create_random_vectors():
     return vectors_path
 
 
-def test_qdrant_client_integration():
+@pytest.mark.parametrize(
+    "prefer_grpc", [False, True]
+)
+def test_qdrant_client_integration(prefer_grpc):
     vectors_path = create_random_vectors()
     vectors = np.memmap(vectors_path, dtype='float32', mode='r', shape=(NUM_VECTORS, DIM))
     payload = random_payload()
 
-    client = QdrantClient()
+    client = QdrantClient(prefer_grpc=prefer_grpc)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -51,7 +55,7 @@ def test_qdrant_client_integration():
     # Call Qdrant API to retrieve list of existing collections
     collections = client.http.collections_api.get_collections().result.collections
 
-    # Prfrom qdrant_client import QdrantClientint all existing collections
+    # Print all existing collections
     for collection in collections:
         print(collection.dict())
 
@@ -70,7 +74,7 @@ def test_qdrant_client_integration():
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
     # Let's give it a second to actually add all points to a collection.
-    # If want need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
+    # If you need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
     sleep(1)
 
     # Create payload index for field `random_num`
