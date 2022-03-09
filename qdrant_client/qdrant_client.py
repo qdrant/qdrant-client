@@ -1,45 +1,16 @@
-import math
-from itertools import count, islice
-from typing import Optional, Iterable, Dict, List, Union, Any
+import collections
+from typing import Optional, Iterable, Dict, List, Union
 
 import numpy as np
 from tqdm import tqdm
 
 from qdrant_client.http import SyncApis
-from qdrant_client.parallel_processor import Worker, ParallelWorkerPool
-from qdrant_client.http.models import PointsBatch, Batch, Filter, SearchParams, SearchRequest, Distance, \
+from qdrant_client.http.models import Filter, SearchParams, SearchRequest, Distance, \
     HnswConfigDiff, OptimizersConfigDiff, WalConfigDiff, CreateCollection, CreateFieldIndex, PointRequest, \
-    PayloadInterface, GeoPoint, PayloadInterfaceStrictOneOf, PayloadInterfaceStrictOneOf1, \
-    PayloadInterfaceStrictOneOf2, PayloadInterfaceStrictOneOf3, ExtendedPointId
-
-
-def iter_batch(iterable, size) -> Iterable:
-    """
-    >>> list(iter_batch([1,2,3,4,5], 3))
-    [[1, 2, 3], [4, 5]]
-    """
-    source_iter = iter(iterable)
-    while source_iter:
-        b = list(islice(source_iter, size))
-        if len(b) == 0:
-            break
-        yield b
-
-
-def _upload_batch(openapi_client: SyncApis, collection_name: str, batch) -> bool:
-    ids_batch, vectors_batch, payload_batch = batch
-
-    openapi_client.points_api.upsert_points(
-        collection_name=collection_name,
-        point_insert_operations=PointsBatch(
-            batch=Batch(
-                ids=ids_batch,
-                payloads=payload_batch,
-                vectors=vectors_batch
-            )
-        )
-    )
-    return True
+    PayloadInterface, ExtendedPointId
+from qdrant_client.parallel_processor import ParallelWorkerPool
+from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
+from qdrant_client.uploader.rest_uploader import json_to_payload, RestBatchUploader
 
 
 class QdrantClient:
@@ -47,26 +18,17 @@ class QdrantClient:
     # Warn: Deprecated
     unwrap_payload = False
 
-    def __init__(self, host="localhost", port=6333, **kwargs):
+    def __init__(self,
+                 host="localhost",
+                 port=6333,
+                 grpc_port=6334,
+                 prefer_grpc=False,
+                 **kwargs):
+        self._prefer_grpc = prefer_grpc
+        self._grpc_port = grpc_port
         self._host = host
         self._port = port
         self.openapi_client = SyncApis(host=f"http://{host}:{port}", **kwargs)
-
-    class BatchUploader(Worker):
-
-        def __init__(self, host, port, collection_name):
-            self.collection_name = collection_name
-            self.openapi_client = SyncApis(host=f"http://{host}:{port}")
-
-        @classmethod
-        def start(cls, collection_name=None, host="localhost", port=6333, **kwargs) -> 'BatchUploader':
-            if not collection_name:
-                raise RuntimeError("Collection name could not be empty")
-            return cls(host=host, port=port, collection_name=collection_name)
-
-        def process(self, items: Iterable[Any]) -> Iterable[Any]:
-            for batch in items:
-                yield _upload_batch(self.openapi_client, self.collection_name, batch)
 
     @classmethod
     def json_to_payload(cls, json_data, prefix="") -> Dict[str, PayloadInterface]:
@@ -81,57 +43,7 @@ class QdrantClient:
         :param json_data: Any json data
         :return: Flatten Qdrant payload. Raises exception if data is not compatible
         """
-
-        res = {}
-        for key, val in json_data.items():
-            if isinstance(val, str):
-                res[prefix + key] = PayloadInterfaceStrictOneOf(value=val, type="keyword")
-                continue
-
-            if isinstance(val, int):
-                res[prefix + key] = PayloadInterfaceStrictOneOf1(value=val, type="integer")
-                continue
-
-            if isinstance(val, float):
-                res[prefix + key] = PayloadInterfaceStrictOneOf2(value=val, type="float")
-                continue
-
-            if isinstance(val, dict):
-                if 'lon' in val and 'lat' in val:
-                    res[prefix + key] = PayloadInterfaceStrictOneOf3(
-                        value=GeoPoint(lat=val['lat'], lon=val['lon']),
-                        type="geo"
-                    )
-                else:
-                    res = {
-                        **res,
-                        **cls.json_to_payload(val, prefix=f"{key}__")
-                    }
-                continue
-
-            if isinstance(val, list):
-                if all(isinstance(v, str) for v in val):
-                    res[prefix + key] = PayloadInterfaceStrictOneOf(value=val, type="keyword")
-                    continue
-
-                if all(isinstance(v, int) for v in val):
-                    res[prefix + key] = PayloadInterfaceStrictOneOf1(value=val, type="integer")
-                    continue
-
-                if all(isinstance(v, float) for v in val):
-                    res[prefix + key] = PayloadInterfaceStrictOneOf2(value=val, type="float")
-                    continue
-
-                if all(isinstance(v, dict) and 'lon' in v and 'lat' in v for v in val):
-                    res[prefix + key] = PayloadInterfaceStrictOneOf3(
-                        value=[GeoPoint(lat=v['lat'], lon=v['lon']) for v in val],
-                        type="geo"
-                    )
-                    continue
-
-            raise RuntimeError(f"Payload {key} have unsupported type {type(val)}")
-
-        return res
+        return json_to_payload(json_data, prefix=prefix)
 
     @classmethod
     def _payload_to_json(cls, payload: Dict[str, PayloadInterface]) -> dict:
@@ -152,28 +64,6 @@ class QdrantClient:
     @property
     def http(self):
         return self.openapi_client
-
-    @classmethod
-    def _iterate_batches(cls,
-                         vectors: np.ndarray,
-                         payload: Optional[Iterable[dict]],
-                         ids: Optional[Iterable[ExtendedPointId]],
-                         batch_size: int) -> Iterable:
-        num_vectors, _dim = vectors.shape
-        if ids is None:
-            ids = range(num_vectors)
-
-        ids_batches = iter_batch(ids, batch_size)
-        if payload is None:
-            payload_batches = (None for _ in count())
-        else:
-            payload = map(cls.json_to_payload, payload)
-            payload_batches = iter_batch(payload, batch_size)
-
-        num_batches = int(math.ceil(num_vectors / batch_size))
-        vector_batches = (vectors[i * batch_size:(i + 1) * batch_size].tolist() for i in range(num_batches))
-
-        yield from zip(ids_batches, vector_batches, payload_batches)
 
     def get_payload(self, collection_name: str, ids: List[ExtendedPointId]) -> Dict[ExtendedPointId, dict]:
         """
@@ -290,16 +180,27 @@ class QdrantClient:
         :param parallel: Number of parallel processes of upload
         :return:
         """
-        batches_iterator = self._iterate_batches(vectors, payload, ids, batch_size)
-        if parallel == 1:
-            for batch in tqdm(batches_iterator):
-                _upload_batch(self.openapi_client, collection_name=collection_name, batch=batch)
+        if self._prefer_grpc:
+            updater_class = GrpcBatchUploader
+            port = self._grpc_port
         else:
-            pool = ParallelWorkerPool(parallel, self.BatchUploader)
+            updater_class = RestBatchUploader
+            port = self._port
+
+        batches_iterator = updater_class.iterate_batches(vectors=vectors,
+                                                         payload=payload,
+                                                         ids=ids,
+                                                         batch_size=batch_size)
+        if parallel == 1:
+            updater = updater_class.start(collection_name=collection_name, host=self._host, port=port)
+            for _ in tqdm(updater.process(batches_iterator)):
+                pass
+        else:
+            pool = ParallelWorkerPool(parallel, updater_class)
             for _ in tqdm(pool.unordered_map(batches_iterator,
                                              collection_name=collection_name,
                                              host=self._host,
-                                             port=self._port)):
+                                             port=port)):
                 pass
 
     def create_payload_index(self, collection_name: str, field_name: str):

@@ -77,3 +77,16 @@ hits = client.search(
 ```
 
 Check out [full example code](tests/test_qdrant_client.py)
+
+### gRPC
+
+gRPC support in Qdrant client is under active development.
+Basic classes could be found [here](qdrant_client/grpc/__init__.py).
+
+To enable (much faster) collection uploading with gRPC, use the following initialization:
+
+```python
+from qdrant_client import QdrantClient
+
+client = QdrantClient(host="localhost", grpc_port=6334, prefer_grpc=True)
+```

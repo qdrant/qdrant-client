@@ -15,7 +15,10 @@ QDRANT_VERSION='v0.6.0'
 
 QDRANT_HOST='localhost:6333'
 
-docker run -d --rm --network=host --name qdrant_test qdrant/qdrant:${QDRANT_VERSION}
+docker run -d --rm \
+           --network=host \
+           -e QDRANT__SERVICE__GRPC_PORT="6334" \
+           --name qdrant_test qdrant/qdrant:${QDRANT_VERSION}
 
 trap stop_docker SIGINT
 trap stop_docker ERR
