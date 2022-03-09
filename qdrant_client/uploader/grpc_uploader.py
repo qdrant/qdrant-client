@@ -71,7 +71,7 @@ def process_payload(payload: dict):
     return res
 
 
-async def upload_batch_grpc(service: PointsStub, collection_name: str, batch):
+async def upload_batch_grpc(points_client: PointsStub, collection_name: str, batch):
     ids_batch, vectors_batch, payload_batch = batch
     if payload_batch is None:
         payload_batch = (None for _ in count())
@@ -83,7 +83,7 @@ async def upload_batch_grpc(service: PointsStub, collection_name: str, batch):
             payload=process_payload(payload) if payload else {},
         ) for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
     ]
-    return await service.upsert(collection_name=collection_name, points=points)
+    return await points_client.upsert(collection_name=collection_name, points=points)
 
 
 class GrpcBatchUploader(BaseUploader):
@@ -102,9 +102,9 @@ class GrpcBatchUploader(BaseUploader):
 
     async def process_upload(self, items):
         async with Channel(host=self._host, port=self._port) as channel:
-            service = PointsStub(channel)
+            points_client = PointsStub(channel)
             for batch in items:
-                yield await upload_batch_grpc(service, self.collection_name, batch)
+                yield await upload_batch_grpc(points_client, self.collection_name, batch)
 
     def process(self, items: Iterable[Any]) -> Iterable[Any]:
         loop = asyncio.get_event_loop()
