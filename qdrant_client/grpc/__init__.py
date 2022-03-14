@@ -168,6 +168,9 @@ class CreateCollection(betterproto.Message):
     optimizers_config: Optional["OptimizersConfigDiff"] = betterproto.message_field(
         6, optional=True, group="_optimizers_config"
     )
+    shard_number: Optional[int] = betterproto.uint32_field(
+        7, optional=True, group="_shard_number"
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -570,7 +573,8 @@ class CollectionsStub(betterproto.ServiceStub):
         distance: "Distance" = 0,
         hnsw_config: Optional["HnswConfigDiff"] = None,
         wal_config: Optional["WalConfigDiff"] = None,
-        optimizers_config: Optional["OptimizersConfigDiff"] = None
+        optimizers_config: Optional["OptimizersConfigDiff"] = None,
+        shard_number: Optional[int] = None
     ) -> "CollectionOperationResponse":
 
         request = CreateCollection()
@@ -583,6 +587,7 @@ class CollectionsStub(betterproto.ServiceStub):
             request.wal_config = wal_config
         if optimizers_config is not None:
             request.optimizers_config = optimizers_config
+        request.shard_number = shard_number
 
         return await self._unary_unary(
             "/qdrant.Collections/Create", request, CollectionOperationResponse
@@ -880,6 +885,7 @@ class CollectionsBase(ServiceBase):
         hnsw_config: Optional["HnswConfigDiff"],
         wal_config: Optional["WalConfigDiff"],
         optimizers_config: Optional["OptimizersConfigDiff"],
+        shard_number: Optional[int],
     ) -> "CollectionOperationResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
@@ -919,6 +925,7 @@ class CollectionsBase(ServiceBase):
             "hnsw_config": request.hnsw_config,
             "wal_config": request.wal_config,
             "optimizers_config": request.optimizers_config,
+            "shard_number": request.shard_number,
         }
 
         response = await self.create(**request_kwargs)

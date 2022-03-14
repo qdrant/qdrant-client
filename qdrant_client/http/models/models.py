@@ -58,6 +58,7 @@ class CollectionInfo(BaseModel):
 
 class CollectionParams(BaseModel):
     distance: "Distance" = Field(..., description="")
+    shard_number: Optional[int] = Field(1, description="Number of shards the collection has")
     vector_size: int = Field(..., description="Size of a vectors used")
 
 
@@ -104,6 +105,7 @@ class CreateCollection(BaseModel):
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
     )
+    shard_number: Optional[int] = Field(1, description="Number of shards in collection. Default is 1, minimum is 1.")
     vector_size: int = Field(
         ..., description="Operation for creating new collection and (optionally) specify index params"
     )
@@ -129,6 +131,7 @@ class CreateCollectionOperation(BaseModel):
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
     )
+    shard_number: Optional[int] = Field(1, description="Number of shards in collection. Default is 1, minimum is 1.")
     vector_size: int = Field(
         ..., description="Operation for creating new collection and (optionally) specify index params"
     )
@@ -169,9 +172,9 @@ class Distance(str, Enum):
 
 
 class ErrorResponse(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
-    status: Optional["ErrorResponseStatus"] = Field(None, description="")
     result: Optional[Any] = Field(None, description="")
+    status: Optional["ErrorResponseStatus"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class ErrorResponseStatus(BaseModel):
@@ -297,67 +300,67 @@ class HnswConfigDiff(BaseModel):
 
 
 class InlineResponse200(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["CollectionsResponse"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionsResponse"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2001(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional[bool] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[bool] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2002(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["CollectionInfo"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionInfo"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2003(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["UpdateResult"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["UpdateResult"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2004(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional[List["Record"]] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["Record"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2005(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional[List["ScoredPoint"]] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["Record"]] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2006(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["ScrollResult"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ScrollResult"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2007(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["Record"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class MatchInteger(BaseModel):
