@@ -10,7 +10,8 @@ import numpy as np
 
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
-    SetPayload, HasIdCondition, PointIdsList, MatchKeyword
+    SetPayload, HasIdCondition, PointIdsList, MatchKeyword, PayloadSchemaType
+from qdrant_client.uploader.grpc_uploader import grpc_to_payload, payload_to_grpc
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -69,7 +70,7 @@ def test_qdrant_client_integration(prefer_grpc):
         vectors=vectors,
         payload=payload,
         ids=None,  # Let client auto-assign sequential ids
-        parallel=2
+        parallel=1
     )
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
@@ -79,7 +80,7 @@ def test_qdrant_client_integration(prefer_grpc):
 
     # Create payload index for field `random_num`
     # If indexed field appear in filtering condition - search operation could be performed faster
-    index_create_result = client.create_payload_index(COLLECTION_NAME, "random_num")
+    index_create_result = client.create_payload_index(COLLECTION_NAME, "random_num", PayloadSchemaType.FLOAT)
     pprint(index_create_result.dict())
 
     # Let's now check details about our new collection
@@ -203,6 +204,36 @@ def test_legacy_imports():
         from qdrant_openapi_client.exceptions import UnexpectedResponse
     except ImportError:
         assert False  # can't import, fail
+
+
+def test_serialization():
+    from qdrant_client.grpc import PointStruct as PointStructGrpc
+    from qdrant_client.grpc import PointId as PointIdGrpc
+    from betterproto.lib.google.protobuf import Value
+
+    point = PointStructGrpc(
+        id=PointIdGrpc(num=1),
+        vector=[1., 2., 3., 4.],
+        payload={
+            "a": payload_to_grpc(123),
+            "b": payload_to_grpc("text"),
+            "c": payload_to_grpc([1, 2, 3]),
+            "d": payload_to_grpc({
+                "val1": "val2",
+                "val2": [1, 2, 3],
+            }),
+            "e": payload_to_grpc(True),
+            "f": payload_to_grpc(None),
+        }
+    )
+    print("\n")
+    print(point.payload)
+    data = point.SerializeToString()
+    res = PointStructGrpc().parse(data)
+    print(res.payload)
+
+    for key, val in res.payload.items():
+        print(key, grpc_to_payload(val))
 
 
 if __name__ == '__main__':

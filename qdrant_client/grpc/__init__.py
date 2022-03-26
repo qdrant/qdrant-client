@@ -31,6 +31,13 @@ class PayloadSchemaType(betterproto.Enum):
     Geo = 4
 
 
+class FieldType(betterproto.Enum):
+    FieldTypeKeyword = 0
+    FieldTypeInteger = 1
+    FieldTypeFloat = 2
+    FieldTypeGeo = 3
+
+
 class UpdateStatus(betterproto.Enum):
     UnknownUpdateStatus = 0
     Acknowledged = 1
@@ -168,6 +175,9 @@ class CreateCollection(betterproto.Message):
     optimizers_config: Optional["OptimizersConfigDiff"] = betterproto.message_field(
         6, optional=True, group="_optimizers_config"
     )
+    shard_number: Optional[int] = betterproto.uint32_field(
+        7, optional=True, group="_shard_number"
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -207,7 +217,6 @@ class CollectionConfig(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class PayloadSchemaInfo(betterproto.Message):
     data_type: "PayloadSchemaType" = betterproto.enum_field(1)
-    indexed: bool = betterproto.bool_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -222,6 +231,35 @@ class CollectionInfo(betterproto.Message):
     payload_schema: Dict[str, "PayloadSchemaInfo"] = betterproto.map_field(
         8, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
+
+
+@dataclass(eq=False, repr=False)
+class ChangeAliases(betterproto.Message):
+    actions: List["AliasOperations"] = betterproto.message_field(1)
+
+
+@dataclass(eq=False, repr=False)
+class AliasOperations(betterproto.Message):
+    create_alias: "CreateAlias" = betterproto.message_field(1, group="action")
+    rename_alias: "RenameAlias" = betterproto.message_field(2, group="action")
+    delete_alias: "DeleteAlias" = betterproto.message_field(3, group="action")
+
+
+@dataclass(eq=False, repr=False)
+class CreateAlias(betterproto.Message):
+    collection_name: str = betterproto.string_field(1)
+    alias_name: str = betterproto.string_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class RenameAlias(betterproto.Message):
+    old_alias_name: str = betterproto.string_field(1)
+    new_alias_name: str = betterproto.string_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class DeleteAlias(betterproto.Message):
+    alias_name: str = betterproto.string_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -258,7 +296,7 @@ class GetPoints(betterproto.Message):
 class SetPayloadPoints(betterproto.Message):
     collection_name: str = betterproto.string_field(1)
     wait: Optional[bool] = betterproto.bool_field(2, optional=True, group="_wait")
-    payload: Dict[str, "Payload"] = betterproto.map_field(
+    payload: Dict[str, "betterproto_lib_google_protobuf.Value"] = betterproto.map_field(
         3, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
     points: List["PointId"] = betterproto.message_field(4)
@@ -284,6 +322,9 @@ class CreateFieldIndexCollection(betterproto.Message):
     collection_name: str = betterproto.string_field(1)
     wait: Optional[bool] = betterproto.bool_field(2, optional=True, group="_wait")
     field_name: str = betterproto.string_field(3)
+    field_type: Optional["FieldType"] = betterproto.enum_field(
+        4, optional=True, group="_field_type"
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -379,7 +420,7 @@ class UpdateResult(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class ScoredPoint(betterproto.Message):
     id: "PointId" = betterproto.message_field(1)
-    payload: Dict[str, "Payload"] = betterproto.map_field(
+    payload: Dict[str, "betterproto_lib_google_protobuf.Value"] = betterproto.map_field(
         2, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
     score: float = betterproto.float_field(3)
@@ -405,7 +446,7 @@ class ScrollResponse(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class RetrievedPoint(betterproto.Message):
     id: "PointId" = betterproto.message_field(1)
-    payload: Dict[str, "Payload"] = betterproto.map_field(
+    payload: Dict[str, "betterproto_lib_google_protobuf.Value"] = betterproto.map_field(
         2, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
     vector: List[float] = betterproto.float_field(3)
@@ -494,37 +535,9 @@ class PointsIdsList(betterproto.Message):
 class PointStruct(betterproto.Message):
     id: "PointId" = betterproto.message_field(1)
     vector: List[float] = betterproto.float_field(2)
-    payload: Dict[str, "Payload"] = betterproto.map_field(
+    payload: Dict[str, "betterproto_lib_google_protobuf.Value"] = betterproto.map_field(
         3, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
-
-
-@dataclass(eq=False, repr=False)
-class Payload(betterproto.Message):
-    keyword: "KeywordPayload" = betterproto.message_field(1, group="payload_one_of")
-    integer: "IntegerPayload" = betterproto.message_field(2, group="payload_one_of")
-    float: "FloatPayload" = betterproto.message_field(3, group="payload_one_of")
-    geo: "GeoPayload" = betterproto.message_field(4, group="payload_one_of")
-
-
-@dataclass(eq=False, repr=False)
-class KeywordPayload(betterproto.Message):
-    values: List[str] = betterproto.string_field(1)
-
-
-@dataclass(eq=False, repr=False)
-class IntegerPayload(betterproto.Message):
-    values: List[int] = betterproto.int64_field(1)
-
-
-@dataclass(eq=False, repr=False)
-class FloatPayload(betterproto.Message):
-    values: List[float] = betterproto.double_field(1)
-
-
-@dataclass(eq=False, repr=False)
-class GeoPayload(betterproto.Message):
-    values: List["GeoPoint"] = betterproto.message_field(1)
 
 
 @dataclass(eq=False, repr=False)
@@ -570,7 +583,8 @@ class CollectionsStub(betterproto.ServiceStub):
         distance: "Distance" = 0,
         hnsw_config: Optional["HnswConfigDiff"] = None,
         wal_config: Optional["WalConfigDiff"] = None,
-        optimizers_config: Optional["OptimizersConfigDiff"] = None
+        optimizers_config: Optional["OptimizersConfigDiff"] = None,
+        shard_number: Optional[int] = None
     ) -> "CollectionOperationResponse":
 
         request = CreateCollection()
@@ -583,6 +597,7 @@ class CollectionsStub(betterproto.ServiceStub):
             request.wal_config = wal_config
         if optimizers_config is not None:
             request.optimizers_config = optimizers_config
+        request.shard_number = shard_number
 
         return await self._unary_unary(
             "/qdrant.Collections/Create", request, CollectionOperationResponse
@@ -613,6 +628,19 @@ class CollectionsStub(betterproto.ServiceStub):
 
         return await self._unary_unary(
             "/qdrant.Collections/Delete", request, CollectionOperationResponse
+        )
+
+    async def update_aliases(
+        self, *, actions: Optional[List["AliasOperations"]] = None
+    ) -> "CollectionOperationResponse":
+        actions = actions or []
+
+        request = ChangeAliases()
+        if actions is not None:
+            request.actions = actions
+
+        return await self._unary_unary(
+            "/qdrant.Collections/UpdateAliases", request, CollectionOperationResponse
         )
 
 
@@ -679,7 +707,7 @@ class PointsStub(betterproto.ServiceStub):
         *,
         collection_name: str = "",
         wait: Optional[bool] = None,
-        payload: Dict[str, "Payload"] = None,
+        payload: Dict[str, "betterproto_lib_google_protobuf.Value"] = None,
         points: Optional[List["PointId"]] = None
     ) -> "PointsOperationResponse":
         points = points or []
@@ -740,13 +768,15 @@ class PointsStub(betterproto.ServiceStub):
         *,
         collection_name: str = "",
         wait: Optional[bool] = None,
-        field_name: str = ""
+        field_name: str = "",
+        field_type: Optional["FieldType"] = None
     ) -> "PointsOperationResponse":
 
         request = CreateFieldIndexCollection()
         request.collection_name = collection_name
         request.wait = wait
         request.field_name = field_name
+        request.field_type = field_type
 
         return await self._unary_unary(
             "/qdrant.Points/CreateFieldIndex", request, PointsOperationResponse
@@ -880,6 +910,7 @@ class CollectionsBase(ServiceBase):
         hnsw_config: Optional["HnswConfigDiff"],
         wal_config: Optional["WalConfigDiff"],
         optimizers_config: Optional["OptimizersConfigDiff"],
+        shard_number: Optional[int],
     ) -> "CollectionOperationResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
@@ -889,6 +920,11 @@ class CollectionsBase(ServiceBase):
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
     async def delete(self, collection_name: str) -> "CollectionOperationResponse":
+        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
+
+    async def update_aliases(
+        self, actions: Optional[List["AliasOperations"]]
+    ) -> "CollectionOperationResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
     async def __rpc_get(self, stream: grpclib.server.Stream) -> None:
@@ -919,6 +955,7 @@ class CollectionsBase(ServiceBase):
             "hnsw_config": request.hnsw_config,
             "wal_config": request.wal_config,
             "optimizers_config": request.optimizers_config,
+            "shard_number": request.shard_number,
         }
 
         response = await self.create(**request_kwargs)
@@ -943,6 +980,16 @@ class CollectionsBase(ServiceBase):
         }
 
         response = await self.delete(**request_kwargs)
+        await stream.send_message(response)
+
+    async def __rpc_update_aliases(self, stream: grpclib.server.Stream) -> None:
+        request = await stream.recv_message()
+
+        request_kwargs = {
+            "actions": request.actions,
+        }
+
+        response = await self.update_aliases(**request_kwargs)
         await stream.send_message(response)
 
     def __mapping__(self) -> Dict[str, grpclib.const.Handler]:
@@ -977,6 +1024,12 @@ class CollectionsBase(ServiceBase):
                 DeleteCollection,
                 CollectionOperationResponse,
             ),
+            "/qdrant.Collections/UpdateAliases": grpclib.const.Handler(
+                self.__rpc_update_aliases,
+                grpclib.const.Cardinality.UNARY_UNARY,
+                ChangeAliases,
+                CollectionOperationResponse,
+            ),
         }
 
 
@@ -1007,7 +1060,7 @@ class PointsBase(ServiceBase):
         self,
         collection_name: str,
         wait: Optional[bool],
-        payload: Dict[str, "Payload"],
+        payload: Dict[str, "betterproto_lib_google_protobuf.Value"],
         points: Optional[List["PointId"]],
     ) -> "PointsOperationResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
@@ -1027,7 +1080,11 @@ class PointsBase(ServiceBase):
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
     async def create_field_index(
-        self, collection_name: str, wait: Optional[bool], field_name: str
+        self,
+        collection_name: str,
+        wait: Optional[bool],
+        field_name: str,
+        field_type: Optional["FieldType"],
     ) -> "PointsOperationResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
@@ -1154,6 +1211,7 @@ class PointsBase(ServiceBase):
             "collection_name": request.collection_name,
             "wait": request.wait,
             "field_name": request.field_name,
+            "field_type": request.field_type,
         }
 
         response = await self.create_field_index(**request_kwargs)
@@ -1311,3 +1369,6 @@ class QdrantBase(ServiceBase):
                 HealthCheckReply,
             ),
         }
+
+
+import betterproto.lib.google.protobuf as betterproto_lib_google_protobuf

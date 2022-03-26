@@ -1,13 +1,51 @@
 import asyncio
 from itertools import count
-from typing import List, Iterable, Any
+from typing import Iterable, Any, Dict
 
+import betterproto
 from grpclib.client import Channel
 
-from qdrant_client import grpc
-from qdrant_client.grpc import PointsStub, PointStruct, PointId, KeywordPayload, IntegerPayload, FloatPayload, \
-    GeoPayload
+from betterproto.lib.google.protobuf import Value, ListValue, Struct, NullValue
+from qdrant_client.grpc import PointsStub, PointStruct, PointId
 from qdrant_client.uploader.uploader import BaseUploader
+
+
+def payload_to_grpc(payload: Any) -> Value:
+    if payload is None:
+        return Value(null_value=NullValue.NULL_VALUE)
+    if isinstance(payload, bool):
+        return Value(bool_value=payload)
+    if isinstance(payload, int):
+        return Value(number_value=payload)
+    if isinstance(payload, float):
+        return Value(number_value=payload)
+    if isinstance(payload, str):
+        return Value(string_value=payload)
+    if isinstance(payload, list):
+        return Value(list_value=ListValue(values=[payload_to_grpc(v) for v in payload]))
+    if isinstance(payload, dict):
+        return Value(struct_value=Struct(fields=dict((k, payload_to_grpc(v)) for k, v in payload.items())))
+    return Value(null_value=NullValue.NULL_VALUE)
+
+
+def grpc_to_payload(value: Value) -> Any:
+    if isinstance(value, Value):
+        value = value.to_dict()
+
+    if "numberValue" in value:
+        return value["numberValue"]
+    if "stringValue" in value:
+        return value["stringValue"]
+    if "boolValue" in value:
+        return value["boolValue"]
+    if "structValue" in value:
+        return dict((key, grpc_to_payload(val)) for key, val in value["structValue"]['fields'].items())
+    if "listValue" in value:
+        return list(grpc_to_payload(val) for val in value["listValue"]['values'])
+    if "nullValue" in value:
+        return None
+
+    raise RuntimeError(f"Can't convert value: {value}")
 
 
 def iter_over_async(ait, loop):
@@ -27,50 +65,6 @@ def iter_over_async(ait, loop):
         yield obj
 
 
-def process_payload(payload: dict):
-    res = {}
-    for key, val in payload.items():
-        if isinstance(val, str):
-            res[key] = grpc.Payload(keyword=KeywordPayload(values=[val]))
-            continue
-
-        if isinstance(val, int):
-            res[key] = grpc.Payload(integer=IntegerPayload(values=[val]))
-            continue
-
-        if isinstance(val, float):
-            res[key] = grpc.Payload(float=FloatPayload(values=[val]))
-            continue
-
-        if isinstance(val, dict):
-            if 'lon' in val and 'lat' in val:
-                res[key] = grpc.Payload(geo=GeoPayload(values=[grpc.GeoPoint(lat=val['lat'], lon=val['lon'])]))
-                continue
-            else:
-                raise RuntimeWarning(f"Unsupported payload: ({key} -> {val})")
-
-        if isinstance(val, list):
-            if all(isinstance(v, str) for v in val):
-                res[key] = grpc.Payload(keyword=KeywordPayload(values=val))
-                continue
-
-            if all(isinstance(v, int) for v in val):
-                res[key] = grpc.Payload(integer=IntegerPayload(values=val))
-                continue
-
-            if all(isinstance(v, float) for v in val):
-                res[key] = grpc.Payload(float=FloatPayload(values=val))
-                continue
-
-            if all(isinstance(v, dict) and 'lon' in v and 'lat' in v for v in val):
-                res[key] = grpc.Payload(geo=GeoPayload(
-                    values=[grpc.GeoPoint(lat=v['lat'], lon=v['lon']) for v in val],
-                ))
-                continue
-        raise RuntimeError(f"Payload {key} have unsupported type {type(val)}")
-    return res
-
-
 async def upload_batch_grpc(points_client: PointsStub, collection_name: str, batch):
     ids_batch, vectors_batch, payload_batch = batch
     if payload_batch is None:
@@ -80,7 +74,7 @@ async def upload_batch_grpc(points_client: PointsStub, collection_name: str, bat
         PointStruct(
             id=PointId(uuid=idx) if isinstance(idx, str) else PointId(num=idx),
             vector=vector,
-            payload=process_payload(payload) if payload else {},
+            payload=dict((key, payload_to_grpc(value)) for key, value in (payload or {}).items()),
         ) for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
     ]
     return await points_client.upsert(collection_name=collection_name, points=points)
