@@ -10,7 +10,7 @@ from qdrant_client.grpc import PointsStub, PointStruct, PointId
 from qdrant_client.uploader.uploader import BaseUploader
 
 
-def payload_to_grpc(payload: Any) -> Value:
+def json_to_value(payload: Any) -> Value:
     if payload is None:
         return Value(null_value=NullValue.NULL_VALUE)
     if isinstance(payload, bool):
@@ -22,15 +22,15 @@ def payload_to_grpc(payload: Any) -> Value:
     if isinstance(payload, str):
         return Value(string_value=payload)
     if isinstance(payload, list):
-        return Value(list_value=ListValue(values=[payload_to_grpc(v) for v in payload]))
+        return Value(list_value=ListValue(values=[json_to_value(v) for v in payload]))
     if isinstance(payload, dict):
-        return Value(struct_value=Struct(fields=dict((k, payload_to_grpc(v)) for k, v in payload.items())))
+        return Value(struct_value=Struct(fields=dict((k, json_to_value(v)) for k, v in payload.items())))
     return Value(null_value=NullValue.NULL_VALUE)
 
 
-def grpc_to_payload(value: Value) -> Any:
+def value_to_json(value: Value) -> Any:
     if isinstance(value, Value):
-        value = value.to_dict()
+        value = value.to_dict(casing=betterproto.Casing.CAMEL)
 
     if "numberValue" in value:
         return value["numberValue"]
@@ -39,13 +39,27 @@ def grpc_to_payload(value: Value) -> Any:
     if "boolValue" in value:
         return value["boolValue"]
     if "structValue" in value:
-        return dict((key, grpc_to_payload(val)) for key, val in value["structValue"]['fields'].items())
+        return dict((key, value_to_json(val)) for key, val in value["structValue"]['fields'].items())
     if "listValue" in value:
-        return list(grpc_to_payload(val) for val in value["listValue"]['values'])
+        return list(value_to_json(val) for val in value["listValue"]['values'])
     if "nullValue" in value:
         return None
 
     raise RuntimeError(f"Can't convert value: {value}")
+
+
+def payload_to_grpc(payload: Dict[str, Any]) -> Dict[str, Value]:
+    return dict(
+        (key, json_to_value(val))
+        for key, val in payload.items()
+    )
+
+
+def grpc_to_payload(grpc: Dict[str, Value]) -> Dict[str, Any]:
+    return dict(
+        (key, value_to_json(val))
+        for key, val in grpc.items()
+    )
 
 
 def iter_over_async(ait, loop):
@@ -74,7 +88,7 @@ async def upload_batch_grpc(points_client: PointsStub, collection_name: str, bat
         PointStruct(
             id=PointId(uuid=idx) if isinstance(idx, str) else PointId(num=idx),
             vector=vector,
-            payload=dict((key, payload_to_grpc(value)) for key, value in (payload or {}).items()),
+            payload=payload_to_grpc(payload or {}),
         ) for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
     ]
     return await points_client.upsert(collection_name=collection_name, points=points)

@@ -1,12 +1,12 @@
 import os
 import random
 import uuid
-import pytest
 from pprint import pprint
 from tempfile import mkdtemp
 from time import sleep
 
 import numpy as np
+import pytest
 
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
@@ -206,34 +206,36 @@ def test_legacy_imports():
         assert False  # can't import, fail
 
 
+def test_value_serialization():
+    from betterproto.lib.google.protobuf import Value
+    v = Value().from_json("123")
+    print(v)
+
 def test_serialization():
     from qdrant_client.grpc import PointStruct as PointStructGrpc
     from qdrant_client.grpc import PointId as PointIdGrpc
-    from betterproto.lib.google.protobuf import Value
 
     point = PointStructGrpc(
         id=PointIdGrpc(num=1),
         vector=[1., 2., 3., 4.],
-        payload={
-            "a": payload_to_grpc(123),
-            "b": payload_to_grpc("text"),
-            "c": payload_to_grpc([1, 2, 3]),
-            "d": payload_to_grpc({
+        payload=payload_to_grpc({
+            "a": 123,
+            "b": "text",
+            "c": [1, 2, 3],
+            "d": {
                 "val1": "val2",
                 "val2": [1, 2, 3],
-            }),
-            "e": payload_to_grpc(True),
-            "f": payload_to_grpc(None),
-        }
+            },
+            "e": True,
+            "f": None,
+        })
     )
     print("\n")
     print(point.payload)
     data = point.SerializeToString()
     res = PointStructGrpc().parse(data)
     print(res.payload)
-
-    for key, val in res.payload.items():
-        print(key, grpc_to_payload(val))
+    print(grpc_to_payload(res.payload))
 
 
 if __name__ == '__main__':
