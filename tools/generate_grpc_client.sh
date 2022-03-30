@@ -8,9 +8,9 @@ cd $(mktemp -d)
 
 git clone --sparse --filter=blob:none --depth=1 git@github.com:qdrant/qdrant.git
 cd qdrant
-git sparse-checkout add src/tonic/proto
+git sparse-checkout add lib/api/src/grpc/proto
 
-PROTO_DIR="$(pwd)/src/tonic/proto"
+PROTO_DIR="$(pwd)/lib/api/src/grpc/proto"
 
 # Ensure current path is project root
 cd $PROJECT_ROOT
