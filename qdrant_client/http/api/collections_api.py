@@ -308,12 +308,12 @@ class _CollectionsApi:
 
     def _build_for_update_collections(
         self,
-        storage_operations: m.StorageOperations = None,
+        collection_meta_operations: m.CollectionMetaOperations = None,
     ):
         """
         Perform update, create, remove or alias change operations on collections
         """
-        body = jsonable_encoder(storage_operations)
+        body = jsonable_encoder(collection_meta_operations)
 
         return self.api_client.request(type_=m.InlineResponse2001, method="POST", url="/collections", json=body)
 
@@ -415,13 +415,13 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def update_collections(
         self,
-        storage_operations: m.StorageOperations = None,
+        collection_meta_operations: m.CollectionMetaOperations = None,
     ) -> m.InlineResponse2001:
         """
         Perform update, create, remove or alias change operations on collections
         """
         return await self._build_for_update_collections(
-            storage_operations=storage_operations,
+            collection_meta_operations=collection_meta_operations,
         )
 
 
@@ -522,11 +522,11 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def update_collections(
         self,
-        storage_operations: m.StorageOperations = None,
+        collection_meta_operations: m.CollectionMetaOperations = None,
     ) -> m.InlineResponse2001:
         """
         Perform update, create, remove or alias change operations on collections
         """
         return self._build_for_update_collections(
-            storage_operations=storage_operations,
+            collection_meta_operations=collection_meta_operations,
         )

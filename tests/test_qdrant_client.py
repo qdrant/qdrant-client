@@ -10,8 +10,8 @@ import pytest
 
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
-    SetPayload, HasIdCondition, PointIdsList, MatchKeyword, PayloadSchemaType
-from qdrant_client.uploader.grpc_uploader import grpc_to_payload, payload_to_grpc
+    SetPayload, HasIdCondition, PointIdsList, PayloadSchemaType, MatchValue
+from qdrant_client.uploader.grpc_uploader import grpc_to_payload, payload_to_grpc, json_to_value
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -180,7 +180,7 @@ def test_has_id_condition():
     query = Filter(
         must=[
             HasIdCondition(has_id=[42, 43]),
-            FieldCondition(key="field_name", match=MatchKeyword(keyword="field_value_42")),
+            FieldCondition(key="field_name", match=MatchValue(value="field_value_42")),
         ]
     ).dict()
 
@@ -207,9 +207,9 @@ def test_legacy_imports():
 
 
 def test_value_serialization():
-    from betterproto.lib.google.protobuf import Value
-    v = Value().from_json("123")
+    v = json_to_value(123)
     print(v)
+
 
 def test_serialization():
     from qdrant_client.grpc import PointStruct as PointStructGrpc

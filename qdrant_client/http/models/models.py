@@ -56,6 +56,22 @@ class CollectionInfo(BaseModel):
     vectors_count: int = Field(..., description="Number of vectors in collection")
 
 
+class CollectionMetaOperationsOneOf(BaseModel):
+    create_collection: "CreateCollectionOperation" = Field(..., description="")
+
+
+class CollectionMetaOperationsOneOf1(BaseModel):
+    update_collection: "UpdateCollectionOperation" = Field(..., description="")
+
+
+class CollectionMetaOperationsOneOf2(BaseModel):
+    delete_collection: str = Field(..., description="Operation for deleting collection with given name")
+
+
+class CollectionMetaOperationsOneOf3(BaseModel):
+    change_aliases: "ChangeAliasesOperation" = Field(..., description="")
+
+
 class CollectionParams(BaseModel):
     distance: "Distance" = Field(..., description="")
     shard_number: Optional[int] = Field(1, description="Number of shards the collection has")
@@ -196,9 +212,10 @@ class FieldCondition(BaseModel):
         None, description="Check if points geo location lies in a given area"
     )
     geo_radius: Optional["GeoRadius"] = Field(None, description="Check if geo point is within a given radius")
-    key: str = Field(..., description="All possible payload filtering conditions")
+    key: str = Field(..., description="Payload key")
     match: Optional["Match"] = Field(None, description="Check if point has field with a given value")
     range: Optional["Range"] = Field(None, description="Check if points value lies in a given range")
+    values_count: Optional["ValuesCount"] = Field(None, description="Check number of values of the field")
 
 
 class FieldIndexOperationsOneOf(BaseModel):
@@ -369,9 +386,17 @@ class InlineResponse2007(BaseModel):
     time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
+class IsEmptyCondition(BaseModel):
+    """
+    Select points with empty payload for a specified field
+    """
+
+    is_empty: "PayloadField" = Field(..., description="Select points with empty payload for a specified field")
+
+
 class MatchInteger(BaseModel):
     """
-    Match filter request
+    Match filter request (deprecated)
     """
 
     integer: int = Field(..., description="Integer value to match")
@@ -379,10 +404,14 @@ class MatchInteger(BaseModel):
 
 class MatchKeyword(BaseModel):
     """
-    Match by keyword
+    Match by keyword (deprecated)
     """
 
     keyword: str = Field(..., description="Keyword value to match")
+
+
+class MatchValue(BaseModel):
+    value: "ValueVariants" = Field(..., description="")
 
 
 class OptimizersConfig(BaseModel):
@@ -464,6 +493,14 @@ class OptimizersStatusOneOf1(BaseModel):
 
 
 Payload = dict
+
+
+class PayloadField(BaseModel):
+    """
+    Payload field
+    """
+
+    key: str = Field(..., description="Payload field name")
 
 
 class PayloadIndexInfo(BaseModel):
@@ -705,22 +742,6 @@ class SetPayload(BaseModel):
     points: List["ExtendedPointId"] = Field(..., description="Assigns payload to each point in this list")
 
 
-class StorageOperationsOneOf(BaseModel):
-    create_collection: "CreateCollectionOperation" = Field(..., description="")
-
-
-class StorageOperationsOneOf1(BaseModel):
-    update_collection: "UpdateCollectionOperation" = Field(..., description="")
-
-
-class StorageOperationsOneOf2(BaseModel):
-    delete_collection: str = Field(..., description="Operation for deleting collection with given name")
-
-
-class StorageOperationsOneOf3(BaseModel):
-    change_aliases: "ChangeAliasesOperation" = Field(..., description="")
-
-
 class UpdateCollection(BaseModel):
     """
     Operation for updating parameters of the existing collection
@@ -754,6 +775,17 @@ class UpdateStatus(str, Enum):
     COMPLETED = "completed"
 
 
+class ValuesCount(BaseModel):
+    """
+    Values count filter request
+    """
+
+    gt: Optional[int] = Field(None, description="point.key.length() &gt; values_count.gt")
+    gte: Optional[int] = Field(None, description="point.key.length() &gt;= values_count.gte")
+    lt: Optional[int] = Field(None, description="point.key.length() &lt; values_count.lt")
+    lte: Optional[int] = Field(None, description="point.key.length() &lt;= values_count.lte")
+
+
 class WalConfig(BaseModel):
     wal_capacity_mb: int = Field(..., description="Size of a single WAL segment in MB")
     wal_segments_ahead: int = Field(..., description="Number of WAL segments to create ahead of actually used ones")
@@ -771,8 +803,15 @@ AliasOperations = Union[
     DeleteAliasOperation,
     RenameAliasOperation,
 ]
+CollectionMetaOperations = Union[
+    CollectionMetaOperationsOneOf,
+    CollectionMetaOperationsOneOf1,
+    CollectionMetaOperationsOneOf2,
+    CollectionMetaOperationsOneOf3,
+]
 Condition = Union[
     FieldCondition,
+    IsEmptyCondition,
     HasIdCondition,
     Filter,
 ]
@@ -785,6 +824,7 @@ FieldIndexOperations = Union[
     FieldIndexOperationsOneOf1,
 ]
 Match = Union[
+    MatchValue,
     MatchKeyword,
     MatchInteger,
 ]
@@ -815,11 +855,10 @@ PointsSelector = Union[
     PointIdsList,
     FilterSelector,
 ]
-StorageOperations = Union[
-    StorageOperationsOneOf,
-    StorageOperationsOneOf1,
-    StorageOperationsOneOf2,
-    StorageOperationsOneOf3,
+ValueVariants = Union[
+    bool,
+    StrictInt,
+    StrictStr,
 ]
 CollectionUpdateOperations = Union[
     PointOperations,
