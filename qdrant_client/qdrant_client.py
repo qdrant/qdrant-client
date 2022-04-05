@@ -7,10 +7,10 @@ from tqdm import tqdm
 from qdrant_client.http import SyncApis
 from qdrant_client.http.models import Filter, SearchParams, SearchRequest, Distance, \
     HnswConfigDiff, OptimizersConfigDiff, WalConfigDiff, CreateCollection, CreateFieldIndex, PointRequest, \
-    PayloadInterface, ExtendedPointId
+    ExtendedPointId, Payload, PayloadSchemaType
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
-from qdrant_client.uploader.rest_uploader import json_to_payload, RestBatchUploader
+from qdrant_client.uploader.rest_uploader import RestBatchUploader
 
 
 class QdrantClient:
@@ -30,37 +30,6 @@ class QdrantClient:
         self._port = port
         self.openapi_client = SyncApis(host=f"http://{host}:{port}", **kwargs)
 
-    @classmethod
-    def json_to_payload(cls, json_data, prefix="") -> Dict[str, PayloadInterface]:
-        """
-        Function converts json data into flatten typed representation, which Qdrant is able to store
-
-        >>> QdrantClient.json_to_payload({"idx": 123})['idx'].dict()
-        {'type': 'integer', 'value': 123}
-        >>> QdrantClient.json_to_payload({"idx": 123, "data": {"hi": "there"}})['data__hi'].dict()
-        {'type': 'keyword', 'value': 'there'}
-
-        :param json_data: Any json data
-        :return: Flatten Qdrant payload. Raises exception if data is not compatible
-        """
-        return json_to_payload(json_data, prefix=prefix)
-
-    @classmethod
-    def _payload_to_json(cls, payload: Dict[str, PayloadInterface]) -> dict:
-        """
-        Function converts Qdrant payload into convenient json
-        :param payload: Payload from Qdrant
-        :return: Json data
-        """
-        res = {}
-        for key, value_interface in payload.items():
-            value = value_interface.dict()['value']
-            if cls.unwrap_payload:
-                if len(value) == 1:
-                    value = value[0]
-            res[key] = value
-        return res
-
     @property
     def http(self):
         return self.openapi_client
@@ -79,8 +48,7 @@ class QdrantClient:
         )
 
         for record in response.result:
-            payload_json = self._payload_to_json(record.payload)
-            result[record.id] = payload_json
+            result[record.id] = record.payload
 
         return result
 
@@ -176,7 +144,7 @@ class QdrantClient:
         :param vectors: np.ndarray of vectors to upload. Might be mmaped
         :param payload: Iterable of vectors payload, Optional
         :param ids: Iterable of custom vectors ids, Optional
-        :param batch_size: How much vectors upload per-request
+        :param batch_size: How many vectors upload per-request
         :param parallel: Number of parallel processes of upload
         :return:
         """
@@ -203,17 +171,18 @@ class QdrantClient:
                                              port=port)):
                 pass
 
-    def create_payload_index(self, collection_name: str, field_name: str):
+    def create_payload_index(self, collection_name: str, field_name: str, field_type: PayloadSchemaType):
         """
         Creates index for a given payload field. Indexed fields allow to perform filtered search operations faster.
 
         :param collection_name: Name of the collection
         :param field_name: Name of the payload field
+        :param field_type: Type of data to index
         :return:
         """
         return self.openapi_client.collections_api.create_field_index(
             collection_name=collection_name,
-            create_field_index=CreateFieldIndex(field_name=field_name),
+            create_field_index=CreateFieldIndex(field_name=field_name, field_type=field_type),
             wait=True
         )
 
