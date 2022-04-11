@@ -149,7 +149,6 @@ class ParallelWorkerPool:
                 yield out_item
                 read += 1
         finally:
-            print("self.num_active_workers", self.num_active_workers)
             self.input_queue.close()
             self.output_queue.close()
 
