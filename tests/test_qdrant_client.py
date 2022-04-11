@@ -64,13 +64,14 @@ def test_qdrant_client_integration(prefer_grpc):
     test_collection = client.http.collections_api.get_collection(COLLECTION_NAME)
     pprint(test_collection.dict())
 
+
     # Upload data to a new collection
     client.upload_collection(
         collection_name=COLLECTION_NAME,
         vectors=vectors,
         payload=payload,
         ids=None,  # Let client auto-assign sequential ids
-        parallel=1
+        parallel=2
     )
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
