@@ -1,4 +1,4 @@
 [build]
 publish = "docs/html"
-command = "bash -x generate_docs_netlify.sh"
+command = "bash -x tools/generate_docs_netlify.sh"
 
