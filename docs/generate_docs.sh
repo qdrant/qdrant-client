@@ -6,5 +6,5 @@ set -e
 cd "$(dirname "$0")/../"
 
 
-poetry run sphinx-apidoc --force --separate --no-toc -o docs/source quaterion
+poetry run sphinx-apidoc --force --separate --no-toc -o docs/source qdrant_client
 poetry run sphinx-build docs/source docs/html
