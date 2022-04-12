@@ -23,6 +23,7 @@ loguru = "^0.5.3"
 typing-extensions = "^3.10.0"
 grpcio = { version = "^1.44.0", allow-prereleases = true }
 betterproto = { version = "2.0.0b4", allow-prereleases = true }
+qdrant-sphinx-theme = { git = "https://github.com/qdrant/qdrant_sphinx_theme.git", branch = "master" }
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
