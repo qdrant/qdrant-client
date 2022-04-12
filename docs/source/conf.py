@@ -12,13 +12,14 @@
 #
 # import os
 # import sys
+from datetime import datetime
 
 #
 # -- Project information -----------------------------------------------------
 
-project = "Quadrant Client"
-copyright = "2022, Quadrant Client Authors"
-author = "Quadrant Client Authors"
+project = "Qdrant Client"
+copyright = f"{datetime.today().year}, Qdrant Client Authors"
+author = "Qdrant Client Authors"
 
 
 # -- General configuration ---------------------------------------------------
@@ -32,16 +33,6 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
 ]
-
-# mapping to quadrant_client_models
-# tuple: (target, inventory)
-# Each target is the base URI of a foreign Sphinx documentation set and can be a local path or an
-# HTTP URI. The inventory indicates where the inventory file can be found: it can be None (an
-# objects.inv file at the same location as the base URI) or another local file path or a full
-# HTTP URI to an inventory file.
-intersphinx_mapping = {
-    "quadrant_client_models": ("http://127.0.0.1:5500/docs/html", None),
-}
 
 # prevents sphinx from adding full path to type hints
 autodoc_typehints_format = "short"
@@ -65,22 +56,18 @@ add_module_names = False
 templates_path = ["_templates"]
 
 # prevents unfolding type hints
-autodoc_type_aliases = {
-    "KeyExtractorType": "KeyExtractorType",
-    "TensorInterchange": "TensorInterchange",
-    "CacheCollateReturnType": "CacheCollateReturnType",
-    "CollateFnType": "CollateFnType",
-}
+# autodoc_type_aliases = {
+#     "KeyExtractorType": "KeyExtractorType",
+#     "TensorInterchange": "TensorInterchange",
+#     "CacheCollateReturnType": "CacheCollateReturnType",
+#     "CollateFnType": "CollateFnType",
+# }
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    "*cache_mixin*",
-    "*cache_encoder*",
-    "*cache_model*",
-    "*cache_train_collater*",
-    "*indexing_dataset*",
+    "*qdrant_openapi_client*",
 ]
 # -- Options for HTML output -------------------------------------------------
 
@@ -110,6 +97,7 @@ html_theme_options = {
     "collapse_navigation": True,
     "sticky_navigation": True,
     "titles_only": False,
+    "qdrant_project": "qdrant_client"
 }
 
 # default is false
