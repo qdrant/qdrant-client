@@ -27,6 +27,7 @@ betterproto = { version = "2.0.0b4", allow-prereleases = true }
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 grpcio-tools = "^1.44.0"
+sphinx = "^4.4.0"
 qdrant-sphinx-theme = { git = "https://github.com/qdrant/qdrant_sphinx_theme.git", branch = "master" }
 
 [build-system]
