@@ -250,7 +250,7 @@ class _PointsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2004,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
             path_params=path_params,
@@ -271,7 +271,7 @@ class _PointsApi:
         body = jsonable_encoder(point_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2004,
             method="POST",
             url="/collections/{collection_name}/points",
             path_params=path_params,
@@ -293,7 +293,7 @@ class _PointsApi:
         body = jsonable_encoder(recommend_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2005,
             method="POST",
             url="/collections/{collection_name}/points/recommend",
             path_params=path_params,
@@ -337,7 +337,7 @@ class _PointsApi:
         body = jsonable_encoder(search_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2005,
             method="POST",
             url="/collections/{collection_name}/points/search",
             path_params=path_params,
@@ -479,7 +479,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse2004:
+    ) -> m.InlineResponse2007:
         """
         Retrieve full information of single point by id
         """
@@ -492,7 +492,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2004:
         """
         Retrieve multiple points by specified IDs
         """
@@ -505,7 +505,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2005:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -531,7 +531,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2005:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -636,7 +636,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse2004:
+    ) -> m.InlineResponse2007:
         """
         Retrieve full information of single point by id
         """
@@ -649,7 +649,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2004:
         """
         Retrieve multiple points by specified IDs
         """
@@ -662,7 +662,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2005:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -688,7 +688,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2005:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """

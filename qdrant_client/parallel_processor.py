@@ -110,43 +110,47 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def unordered_map(self, stream: Iterable[Any], *args, **kwargs) -> Iterable[Any]:
-        self.start(**kwargs)
-        pushed = 0
-        read = 0
-        for item in stream:
+        try:
+            self.start(**kwargs)
+            pushed = 0
+            read = 0
+            for item in stream:
 
-            if pushed - read < self.queue_size:
-                try:
-                    out_item = self.output_queue.get_nowait()
-                except Empty:
-                    out_item = None
-            else:
-                try:
-                    out_item = self.output_queue.get(timeout=processing_timeout)
-                except Empty as e:
-                    self.join_or_terminate()
-                    raise e
+                if pushed - read < self.queue_size:
+                    try:
+                        out_item = self.output_queue.get_nowait()
+                    except Empty:
+                        out_item = None
+                else:
+                    try:
+                        out_item = self.output_queue.get(timeout=processing_timeout)
+                    except Empty as e:
+                        self.join_or_terminate()
+                        raise e
 
-            if out_item is not None:
+                if out_item is not None:
+                    if out_item == QueueSignals.error:
+                        self.join_or_terminate()
+                        raise RuntimeError("Thread unexpectedly terminated")
+                    yield out_item
+                    read += 1
+
+                self.input_queue.put(item)
+                pushed += 1
+
+            for _ in range(self.num_workers):
+                self.input_queue.put(QueueSignals.stop)
+
+            while read < pushed:
+                out_item = self.output_queue.get(timeout=processing_timeout)
                 if out_item == QueueSignals.error:
                     self.join_or_terminate()
                     raise RuntimeError("Thread unexpectedly terminated")
                 yield out_item
                 read += 1
-
-            self.input_queue.put(item)
-            pushed += 1
-
-        for _ in range(self.num_workers):
-            self.input_queue.put(QueueSignals.stop)
-
-        while read < pushed:
-            out_item = self.output_queue.get(timeout=processing_timeout)
-            if out_item == QueueSignals.error:
-                self.join_or_terminate()
-                raise RuntimeError("Thread unexpectedly terminated")
-            yield out_item
-            read += 1
+        finally:
+            self.input_queue.close()
+            self.output_queue.close()
 
     def join_or_terminate(self, timeout=1):
         """

@@ -8,12 +8,12 @@ except ImportError:
     from typing_extensions import Literal
 
 from pydantic import BaseModel, Field
-from pydantic.types import StrictFloat, StrictInt, StrictStr
+from pydantic.types import StrictInt, StrictStr
 
 
 class Batch(BaseModel):
     ids: List["ExtendedPointId"] = Field(..., description="")
-    payloads: Optional[List[Dict[str, "PayloadInterface"]]] = Field(None, description="")
+    payloads: Optional[List["Payload"]] = Field(None, description="")
     vectors: List[List[float]] = Field(..., description="")
 
 
@@ -49,15 +49,32 @@ class CollectionInfo(BaseModel):
     optimizer_status: "OptimizersStatus" = Field(
         ..., description="Current statistics and configuration of the collection"
     )
-    payload_schema: Dict[str, "PayloadSchemaInfo"] = Field(..., description="Types of stored payload")
+    payload_schema: Dict[str, "PayloadIndexInfo"] = Field(..., description="Types of stored payload")
     ram_data_size: int = Field(..., description="RAM used by collection")
     segments_count: int = Field(..., description="Number of segments in collection")
     status: "CollectionStatus" = Field(..., description="Current statistics and configuration of the collection")
     vectors_count: int = Field(..., description="Number of vectors in collection")
 
 
+class CollectionMetaOperationsOneOf(BaseModel):
+    create_collection: "CreateCollectionOperation" = Field(..., description="")
+
+
+class CollectionMetaOperationsOneOf1(BaseModel):
+    update_collection: "UpdateCollectionOperation" = Field(..., description="")
+
+
+class CollectionMetaOperationsOneOf2(BaseModel):
+    delete_collection: str = Field(..., description="Operation for deleting collection with given name")
+
+
+class CollectionMetaOperationsOneOf3(BaseModel):
+    change_aliases: "ChangeAliasesOperation" = Field(..., description="")
+
+
 class CollectionParams(BaseModel):
     distance: "Distance" = Field(..., description="")
+    shard_number: Optional[int] = Field(1, description="Number of shards the collection has")
     vector_size: int = Field(..., description="Size of a vectors used")
 
 
@@ -104,6 +121,7 @@ class CreateCollection(BaseModel):
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
     )
+    shard_number: Optional[int] = Field(1, description="Number of shards in collection. Default is 1, minimum is 1.")
     vector_size: int = Field(
         ..., description="Operation for creating new collection and (optionally) specify index params"
     )
@@ -129,6 +147,7 @@ class CreateCollectionOperation(BaseModel):
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
     )
+    shard_number: Optional[int] = Field(1, description="Number of shards in collection. Default is 1, minimum is 1.")
     vector_size: int = Field(
         ..., description="Operation for creating new collection and (optionally) specify index params"
     )
@@ -139,6 +158,12 @@ class CreateCollectionOperation(BaseModel):
 
 class CreateFieldIndex(BaseModel):
     field_name: str = Field(..., description="")
+    field_type: Optional["PayloadSchemaType"] = Field(None, description="")
+
+
+class CreateIndex(BaseModel):
+    field_name: str = Field(..., description="")
+    field_type: Optional["PayloadSchemaType"] = Field(None, description="")
 
 
 class DeleteAlias(BaseModel):
@@ -169,9 +194,9 @@ class Distance(str, Enum):
 
 
 class ErrorResponse(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
-    status: Optional["ErrorResponseStatus"] = Field(None, description="")
     result: Optional[Any] = Field(None, description="")
+    status: Optional["ErrorResponseStatus"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class ErrorResponseStatus(BaseModel):
@@ -187,9 +212,10 @@ class FieldCondition(BaseModel):
         None, description="Check if points geo location lies in a given area"
     )
     geo_radius: Optional["GeoRadius"] = Field(None, description="Check if geo point is within a given radius")
-    key: str = Field(..., description="All possible payload filtering conditions")
+    key: str = Field(..., description="Payload key")
     match: Optional["Match"] = Field(None, description="Check if point has field with a given value")
     range: Optional["Range"] = Field(None, description="Check if points value lies in a given range")
+    values_count: Optional["ValuesCount"] = Field(None, description="Check number of values of the field")
 
 
 class FieldIndexOperationsOneOf(BaseModel):
@@ -197,7 +223,7 @@ class FieldIndexOperationsOneOf(BaseModel):
     Create index for payload field
     """
 
-    create_index: str = Field(..., description="Create index for payload field")
+    create_index: "CreateIndex" = Field(..., description="Create index for payload field")
 
 
 class FieldIndexOperationsOneOf1(BaseModel):
@@ -297,72 +323,80 @@ class HnswConfigDiff(BaseModel):
 
 
 class InlineResponse200(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["CollectionsResponse"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionsResponse"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2001(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional[bool] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[bool] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2002(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["CollectionInfo"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionInfo"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2003(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["UpdateResult"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["UpdateResult"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2004(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional[List["Record"]] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["Record"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2005(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional[List["ScoredPoint"]] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["Record"]] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2006(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["ScrollResult"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ScrollResult"] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
 
 
 class InlineResponse2007(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    result: Optional["Record"] = Field(None, description="")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(None, description="")
+    time: Optional[float] = Field(None, description="Time spent to process this request")
+
+
+class IsEmptyCondition(BaseModel):
+    """
+    Select points with empty payload for a specified field
+    """
+
+    is_empty: "PayloadField" = Field(..., description="Select points with empty payload for a specified field")
 
 
 class MatchInteger(BaseModel):
     """
-    Match filter request
+    Match filter request (deprecated)
     """
 
     integer: int = Field(..., description="Integer value to match")
@@ -370,10 +404,14 @@ class MatchInteger(BaseModel):
 
 class MatchKeyword(BaseModel):
     """
-    Match by keyword
+    Match by keyword (deprecated)
     """
 
     keyword: str = Field(..., description="Keyword value to match")
+
+
+class MatchValue(BaseModel):
+    value: "ValueVariants" = Field(..., description="")
 
 
 class OptimizersConfig(BaseModel):
@@ -454,32 +492,23 @@ class OptimizersStatusOneOf1(BaseModel):
     error: str = Field(..., description="Something wrong happened with optimizers")
 
 
-class PayloadInterfaceStrictOneOf(BaseModel):
-    type: Literal[
-        "keyword",
-    ] = Field(..., description="")
-    value: "PayloadVariantForString" = Field(..., description="")
+Payload = dict
 
 
-class PayloadInterfaceStrictOneOf1(BaseModel):
-    type: Literal[
-        "integer",
-    ] = Field(..., description="")
-    value: "PayloadVariantForInt64" = Field(..., description="")
+class PayloadField(BaseModel):
+    """
+    Payload field
+    """
+
+    key: str = Field(..., description="Payload field name")
 
 
-class PayloadInterfaceStrictOneOf2(BaseModel):
-    type: Literal[
-        "float",
-    ] = Field(..., description="")
-    value: "PayloadVariantForDouble" = Field(..., description="")
+class PayloadIndexInfo(BaseModel):
+    """
+    Payload field type &amp; index information
+    """
 
-
-class PayloadInterfaceStrictOneOf3(BaseModel):
-    type: Literal[
-        "geo",
-    ] = Field(..., description="")
-    value: "PayloadVariantForGeoPoint" = Field(..., description="")
+    data_type: "PayloadSchemaType" = Field(..., description="Payload field type &amp; index information")
 
 
 class PayloadOpsOneOf(BaseModel):
@@ -520,37 +549,11 @@ class PayloadOpsOneOf3(BaseModel):
     clear_payload_by_filter: "Filter" = Field(..., description="Clear all Payload values by given filter criteria.")
 
 
-class PayloadSchemaInfo(BaseModel):
-    """
-    Payload field type &amp; index information
-    """
-
-    data_type: "PayloadSchemaType" = Field(..., description="Payload field type &amp; index information")
-    indexed: bool = Field(..., description="Payload field type &amp; index information")
-
-
-class PayloadSchemaTypeOneOf(BaseModel):
-    type: Literal[
-        "keyword",
-    ] = Field(..., description="")
-
-
-class PayloadSchemaTypeOneOf1(BaseModel):
-    type: Literal[
-        "integer",
-    ] = Field(..., description="")
-
-
-class PayloadSchemaTypeOneOf2(BaseModel):
-    type: Literal[
-        "float",
-    ] = Field(..., description="")
-
-
-class PayloadSchemaTypeOneOf3(BaseModel):
-    type: Literal[
-        "geo",
-    ] = Field(..., description="")
+class PayloadSchemaType(str, Enum):
+    KEYWORD = "keyword"
+    INTEGER = "integer"
+    FLOAT = "float"
+    GEO = "geo"
 
 
 class PayloadSelectorExclude(BaseModel):
@@ -559,34 +562,6 @@ class PayloadSelectorExclude(BaseModel):
 
 class PayloadSelectorInclude(BaseModel):
     include: List[str] = Field(..., description="Only include this payload keys")
-
-
-class PayloadTypeOneOf(BaseModel):
-    type: Literal[
-        "keyword",
-    ] = Field(..., description="")
-    value: List[str] = Field(..., description="")
-
-
-class PayloadTypeOneOf1(BaseModel):
-    type: Literal[
-        "integer",
-    ] = Field(..., description="")
-    value: List[int] = Field(..., description="")
-
-
-class PayloadTypeOneOf2(BaseModel):
-    type: Literal[
-        "float",
-    ] = Field(..., description="")
-    value: List[float] = Field(..., description="")
-
-
-class PayloadTypeOneOf3(BaseModel):
-    type: Literal[
-        "geo",
-    ] = Field(..., description="")
-    value: List["GeoPoint"] = Field(..., description="")
 
 
 class PointIdsList(BaseModel):
@@ -631,7 +606,7 @@ class PointRequest(BaseModel):
 
 class PointStruct(BaseModel):
     id: "ExtendedPointId" = Field(..., description="")
-    payload: Optional[Dict[str, "PayloadInterface"]] = Field(None, description="Payload values (optional)")
+    payload: Optional["Payload"] = Field(None, description="Payload values (optional)")
     vector: List[float] = Field(..., description="Vector")
 
 
@@ -676,7 +651,7 @@ class Record(BaseModel):
     """
 
     id: "ExtendedPointId" = Field(..., description="Point data")
-    payload: Optional[Dict[str, "PayloadType"]] = Field(None, description="Payload - values assigned to the point")
+    payload: Optional["Payload"] = Field(None, description="Payload - values assigned to the point")
     vector: Optional[List[float]] = Field(None, description="Vector of the point")
 
 
@@ -703,7 +678,7 @@ class ScoredPoint(BaseModel):
     """
 
     id: "ExtendedPointId" = Field(..., description="Search result")
-    payload: Optional[Dict[str, "PayloadType"]] = Field(None, description="Payload - values assigned to the point")
+    payload: Optional["Payload"] = Field(None, description="Payload - values assigned to the point")
     score: float = Field(..., description="Points vector distance to the query vector")
     vector: Optional[List[float]] = Field(None, description="Vector of the point")
     version: int = Field(..., description="Point version")
@@ -763,24 +738,8 @@ class SearchRequest(BaseModel):
 
 
 class SetPayload(BaseModel):
-    payload: Dict[str, "PayloadInterface"] = Field(..., description="")
+    payload: "Payload" = Field(..., description="")
     points: List["ExtendedPointId"] = Field(..., description="Assigns payload to each point in this list")
-
-
-class StorageOperationsOneOf(BaseModel):
-    create_collection: "CreateCollectionOperation" = Field(..., description="")
-
-
-class StorageOperationsOneOf1(BaseModel):
-    update_collection: "UpdateCollectionOperation" = Field(..., description="")
-
-
-class StorageOperationsOneOf2(BaseModel):
-    delete_collection: str = Field(..., description="Operation for deleting collection with given name")
-
-
-class StorageOperationsOneOf3(BaseModel):
-    change_aliases: "ChangeAliasesOperation" = Field(..., description="")
 
 
 class UpdateCollection(BaseModel):
@@ -816,6 +775,17 @@ class UpdateStatus(str, Enum):
     COMPLETED = "completed"
 
 
+class ValuesCount(BaseModel):
+    """
+    Values count filter request
+    """
+
+    gt: Optional[int] = Field(None, description="point.key.length() &gt; values_count.gt")
+    gte: Optional[int] = Field(None, description="point.key.length() &gt;= values_count.gte")
+    lt: Optional[int] = Field(None, description="point.key.length() &lt; values_count.lt")
+    lte: Optional[int] = Field(None, description="point.key.length() &lt;= values_count.lte")
+
+
 class WalConfig(BaseModel):
     wal_capacity_mb: int = Field(..., description="Size of a single WAL segment in MB")
     wal_segments_ahead: int = Field(..., description="Number of WAL segments to create ahead of actually used ones")
@@ -833,8 +803,15 @@ AliasOperations = Union[
     DeleteAliasOperation,
     RenameAliasOperation,
 ]
+CollectionMetaOperations = Union[
+    CollectionMetaOperationsOneOf,
+    CollectionMetaOperationsOneOf1,
+    CollectionMetaOperationsOneOf2,
+    CollectionMetaOperationsOneOf3,
+]
 Condition = Union[
     FieldCondition,
+    IsEmptyCondition,
     HasIdCondition,
     Filter,
 ]
@@ -847,6 +824,7 @@ FieldIndexOperations = Union[
     FieldIndexOperationsOneOf1,
 ]
 Match = Union[
+    MatchValue,
     MatchKeyword,
     MatchInteger,
 ]
@@ -854,49 +832,15 @@ OptimizersStatus = Union[
     OptimizersStatusOneOf,
     OptimizersStatusOneOf1,
 ]
-PayloadInterfaceStrict = Union[
-    PayloadInterfaceStrictOneOf,
-    PayloadInterfaceStrictOneOf1,
-    PayloadInterfaceStrictOneOf2,
-    PayloadInterfaceStrictOneOf3,
-]
 PayloadOps = Union[
     PayloadOpsOneOf,
     PayloadOpsOneOf1,
     PayloadOpsOneOf2,
     PayloadOpsOneOf3,
 ]
-PayloadSchemaType = Union[
-    PayloadSchemaTypeOneOf,
-    PayloadSchemaTypeOneOf1,
-    PayloadSchemaTypeOneOf2,
-    PayloadSchemaTypeOneOf3,
-]
 PayloadSelector = Union[
     PayloadSelectorInclude,
     PayloadSelectorExclude,
-]
-PayloadType = Union[
-    PayloadTypeOneOf,
-    PayloadTypeOneOf1,
-    PayloadTypeOneOf2,
-    PayloadTypeOneOf3,
-]
-PayloadVariantForDouble = Union[
-    List[StrictFloat],
-    StrictFloat,
-]
-PayloadVariantForGeoPoint = Union[
-    GeoPoint,
-    List[GeoPoint],
-]
-PayloadVariantForInt64 = Union[
-    List[StrictInt],
-    StrictInt,
-]
-PayloadVariantForString = Union[
-    List[StrictStr],
-    StrictStr,
 ]
 PointInsertOperations = Union[
     PointsBatch,
@@ -911,22 +855,15 @@ PointsSelector = Union[
     PointIdsList,
     FilterSelector,
 ]
-StorageOperations = Union[
-    StorageOperationsOneOf,
-    StorageOperationsOneOf1,
-    StorageOperationsOneOf2,
-    StorageOperationsOneOf3,
+ValueVariants = Union[
+    bool,
+    StrictInt,
+    StrictStr,
 ]
 CollectionUpdateOperations = Union[
     PointOperations,
     PayloadOps,
     FieldIndexOperations,
-]
-PayloadInterface = Union[
-    PayloadVariantForString,
-    PayloadVariantForInt64,
-    PayloadVariantForDouble,
-    PayloadInterfaceStrict,
 ]
 WithPayloadInterface = Union[
     PayloadSelector,
