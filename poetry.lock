@@ -426,7 +426,7 @@ sphinx = "*"
 type = "git"
 url = "https://github.com/qdrant/qdrant_sphinx_theme.git"
 reference = "master"
-resolved_reference = "e7578ea27b12a352f6ee8814c6cf1b47521345c0"
+resolved_reference = "79266c4940edd3f44e465561ce05f3357e0d5330"
 
 [[package]]
 name = "requests"
@@ -656,13 +656,10 @@ python-versions = ">=3.7"
 docs = ["sphinx", "jaraco.packaging (>=9)", "rst.linker (>=1.9)"]
 testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-cov", "pytest-enabler (>=1.0.1)", "jaraco.itertools", "func-timeout", "pytest-black (>=0.3.7)", "pytest-mypy (>=0.9.1)"]
 
-[extras]
-docs = []
-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<4.0"
-content-hash = "832f39fc327e3e81020545fceb26e57672cd1245d51c9bc17a5427289e8ec51c"
+content-hash = "3be0806544d77c86f6bbdab5cc9e0ebd322926b6cf3517ae54a7548497afec88"
 
 [metadata.files]
 alabaster = [
