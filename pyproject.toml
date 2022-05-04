@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qdrant_client"
-version = "0.7.0"
+version = "0.7.1"
 description = "Client library for the Qdrant vector search engine"
 authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
@@ -15,18 +15,18 @@ keywords = ["vector", "search", "neural", "matching", "client"]
 
 [tool.poetry.dependencies]
 python = ">=3.7,<4.0"
-httpx = "^0.16.1"
+httpx = "^0.22.0"
 numpy = "^1.21"
 pydantic = "^1.8"
 tqdm = "^4.56.0"
 loguru = "^0.5.3"
 typing-extensions = "^3.10.0"
-grpcio = { version = "^1.44.0", allow-prereleases = true }
+grpcio = { version = "^1.46.0", allow-prereleases = true }
 betterproto = { version = "2.0.0b4", allow-prereleases = true }
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
-grpcio-tools = "^1.44.0"
+grpcio-tools = "^1.46.0"
 sphinx = "^4.4.0"
 qdrant-sphinx-theme = { git = "https://github.com/qdrant/qdrant_sphinx_theme.git", branch = "master" }
 
