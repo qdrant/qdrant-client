@@ -1,5 +1,5 @@
 import re
-from ctypes import Union
+from typing import Union
 
 import betterproto
 from loguru import logger
@@ -20,7 +20,7 @@ def test_conversion_completeness():
     http_classes = dict([
         (name, cls)
         for name, cls in models.__dict__.items()
-        if isinstance(cls, type) and issubclass(cls, (BaseModel, Union))
+        if (isinstance(cls, type) and issubclass(cls, BaseModel)) or (type(models.Match) is type(cls))
     ])
 
     from qdrant_client import grpc
@@ -44,15 +44,6 @@ def test_conversion_completeness():
         in getmembers(RestToGrpc) if method_name.startswith("convert_")
     )
 
-    print("")
-    print("---- grpc_to_rest_convert ----")
-    for method_name, method in grpc_to_rest_convert.items():
-        print(method_name)
-
-    print("---- rest_to_grpc_convert ----")
-    for method_name, method in rest_to_grpc_convert.items():
-        print(method_name)
-
     has_missing = False
     for common_class in common_classes:
         convert_function_name = f"convert_{camel_to_snake(common_class)}"
@@ -68,6 +59,10 @@ def test_conversion_completeness():
 
         fixtures = get_grpc_fixture(common_class)
         for fixture in fixtures:
+            if fixture is ...:
+                logger.warning(f"Fixture for {common_class} skipped")
+                continue
+
             rest_fixture = grpc_to_rest_convert[convert_function_name](fixture)
             grpc_fixture = rest_to_grpc_convert[convert_function_name](rest_fixture)
 

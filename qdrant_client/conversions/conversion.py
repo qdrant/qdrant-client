@@ -7,13 +7,13 @@ class GrpcToRest:
     @classmethod
     def convert_condition(cls, model: grpc.Condition) -> http.Condition:
         if model.field:
-            raise NotImplementedError()
+            return cls.convert_field_condition(model.field)
         if model.filter:
             return cls.convert_filter(model.filter)
         if model.has_id:
-            raise NotImplementedError()
+            return cls.convert_has_id_condition(model.has_id)
         if model.is_empty:
-            raise NotImplementedError()
+            return cls.convert_is_empty_condition(model.is_empty)
 
     @classmethod
     def convert_filter(cls, model: grpc.Filter) -> http.Filter:
@@ -25,11 +25,19 @@ class GrpcToRest:
 
     @classmethod
     def convert_range(cls, model: grpc.Range) -> http.Range:
-        raise NotImplementedError()
+        return http.Range(
+            gt=model.gt,
+            gte=model.gte,
+            lt=model.lt,
+            lte=model.lte,
+        )
 
     @classmethod
     def convert_geo_radius(cls, model: grpc.GeoRadius) -> http.GeoRadius:
-        raise NotImplementedError()
+        return http.GeoRadius(
+            center=cls.convert_geo_point(model.center),
+            radius=model.radius
+        )
 
     @classmethod
     def convert_collection_description(cls, model: grpc.CollectionDescription) -> http.CollectionDescription:
@@ -45,7 +53,17 @@ class GrpcToRest:
 
     @classmethod
     def convert_has_id_condition(cls, model: grpc.HasIdCondition) -> http.HasIdCondition:
-        raise NotImplementedError()
+        return http.HasIdCondition(
+            has_id=[cls.convert_point_id(idx) for idx in model.has_id]
+        )
+
+    @classmethod
+    def convert_point_id(cls, model: grpc.PointId) -> http.ExtendedPointId:
+        if model.num:
+            return model.num
+        if model.uuid:
+            return model.uuid
+        raise ValueError(f"invalid PointId model: {model}")
 
     @classmethod
     def convert_delete_alias(cls, model: grpc.DeleteAlias) -> http.DeleteAlias:
@@ -57,7 +75,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_is_empty_condition(cls, model: grpc.IsEmptyCondition) -> http.IsEmptyCondition:
-        raise NotImplementedError()
+        return http.IsEmptyCondition(is_empty=http.PayloadField(key=model.key))
 
     @classmethod
     def convert_search_params(cls, model: grpc.SearchParams) -> http.SearchParams:
@@ -77,11 +95,19 @@ class GrpcToRest:
 
     @classmethod
     def convert_values_count(cls, model: grpc.ValuesCount) -> http.ValuesCount:
-        raise NotImplementedError()
+        return http.ValuesCount(
+            gt=model.gt,
+            gte=model.gte,
+            lt=model.lt,
+            lte=model.lte,
+        )
 
     @classmethod
     def convert_geo_bounding_box(cls, model: grpc.GeoBoundingBox) -> http.GeoBoundingBox:
-        raise NotImplementedError()
+        return http.GeoBoundingBox(
+            bottom_right=cls.convert_geo_point(model.bottom_right),
+            top_left=cls.convert_geo_point(model.top_left)
+        )
 
     @classmethod
     def convert_point_struct(cls, model: grpc.PointStruct) -> http.PointStruct:
@@ -93,7 +119,29 @@ class GrpcToRest:
 
     @classmethod
     def convert_field_condition(cls, model: grpc.FieldCondition) -> http.FieldCondition:
-        raise NotImplementedError()
+        geo_bounding_box = cls.convert_geo_bounding_box(model.geo_bounding_box) if model.geo_bounding_box else None
+        geo_radius = cls.convert_geo_radius(model.geo_radius) if model.geo_radius else None
+        match = cls.convert_match(model.match) if model.match else None
+        range_ = cls.convert_range(model.range) if model.range else None
+        values_count = cls.convert_values_count(model.values_count) if model.values_count else None
+        return http.FieldCondition(
+            key=model.key,
+            geo_bounding_box=geo_bounding_box,
+            geo_radius=geo_radius,
+            match=match,
+            range=range_,
+            values_count=values_count,
+        )
+
+    @classmethod
+    def convert_match(cls, model: grpc.Match) -> http.Match:
+        if model.integer:
+            return http.MatchValue(value=model.integer)
+        if model.boolean:
+            return http.MatchValue(value=model.boolean)
+        if model.keyword:
+            return http.MatchValue(value=model.keyword)
+        raise ValueError(f"invalid Match model: {model}")
 
     @classmethod
     def convert_wal_config_diff(cls, model: grpc.WalConfigDiff) -> http.WalConfigDiff:
@@ -117,13 +165,24 @@ class GrpcToRest:
 
     @classmethod
     def convert_geo_point(cls, model: grpc.GeoPoint) -> http.GeoPoint:
+        return http.GeoPoint(
+            lat=model.lat,
+            lon=model.lon,
+        )
+
+    @classmethod
+    def convert_alias_operations(cls, model: grpc.AliasOperations) -> http.AliasOperations:
+        raise NotImplementedError()
+
+    @classmethod
+    def convert_points_selector(cls, model: grpc.PointsSelector) -> http.PointsSelector:
         raise NotImplementedError()
 
 
 class RestToGrpc:
     @classmethod
     def convert_filter(cls, model: http.Filter) -> grpc.Filter:
-        pass
+        raise NotImplementedError()
 
     @classmethod
     def convert_range(cls, model: http.Range) -> grpc.Range:
@@ -221,3 +280,18 @@ class RestToGrpc:
     def convert_geo_point(cls, model: http.GeoPoint) -> grpc.GeoPoint:
         raise NotImplementedError()
 
+    @classmethod
+    def convert_match(cls, model: http.Match) -> grpc.Match:
+        raise NotImplementedError()
+
+    @classmethod
+    def convert_alias_operations(cls, model: http.AliasOperations) -> grpc.AliasOperations:
+        raise NotImplementedError()
+
+    @classmethod
+    def convert_points_selector(cls, model: http.PointsSelector) -> grpc.PointsSelector:
+        raise NotImplementedError()
+
+    @classmethod
+    def convert_condition(cls, model: http.Condition) -> grpc.Condition:
+        raise NotImplementedError()

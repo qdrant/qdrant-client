@@ -47,6 +47,9 @@ fixtures = {
     "HnswConfigDiff": [...],
     "Range": [...],
     "UpdateCollection": [...],
+    "Condition": [...],
+    "PointsSelector": [...],
+    "AliasOperations": [...]
 }
 
 
