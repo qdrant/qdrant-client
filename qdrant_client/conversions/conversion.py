@@ -57,7 +57,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_collection_config(cls, model: grpc.CollectionConfig) -> http.CollectionConfig:
-        return http.CollectionConfig(hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
+        return http.CollectionConfig(
+            hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
         optimizer_config=cls.convert_optimizer_config(model.optimizer_config),
         params=cls.convert_collection_params(model.params),
         wal_config=cls.convert_wal_config(model.wal_config)
@@ -76,8 +77,30 @@ class GrpcToRest:
             indexing_threshold=model.indexing_threshold,
             max_optimization_threads=model.max_optimization_threads,
             max_segment_size=model.max_segment_size,
-            memmap_threshold=model.memmap_threshold
+            memmap_threshold=model.memmap_threshold,
+            payload_indexing_threshold=model.payload_indexing_threshold,
+            vacuum_min_vector_number=model.vacuum_min_vector_number
         )
+
+    @classmethod
+    def convert_collection_params(cls, model: grpc.CollectionParams) -> http.CollectionParams:
+        return http.CollectionParams(
+            distance=cls.convert_distance(model.distance),
+            shard_number=model.shard_number,
+            vector_size=model.vector_sie
+        )
+
+    @classmethod
+    def convert_distance(cls, model: grpc.Distance) -> http.Distance:
+        if model == grpc.Distance.Cosine:
+            return http.Distance.COSINE
+        elif model == grpc.Distance.Euclid:
+            return http.Distance.EUCLID
+        elif model == grpc.Distance.Dot:
+            return http.Distance.DOT
+        else:
+            raise NotImplementedError()
+
 
         
     @classmethod
