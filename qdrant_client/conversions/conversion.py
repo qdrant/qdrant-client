@@ -41,15 +41,57 @@ class GrpcToRest:
 
     @classmethod
     def convert_collection_description(cls, model: grpc.CollectionDescription) -> http.CollectionDescription:
-        raise NotImplementedError()
+        return http.CollectionDescription(name=model.name)
 
     @classmethod
     def convert_collection_info(cls, model: grpc.CollectionInfo) -> http.CollectionInfo:
-        raise NotImplementedError()
+        return http.CollectionInfo(config=cls.convert_collection_config(model.config),
+        disk_data_size=model.disk_data_size,
+        optimizer_status=cls.convert_optimizer_status(model.optimizer_status),
+        payload_schema=cls.convert_payload_schema(model.payload_schema),
+        ram_data_size=model.ram_data_size,
+        segments_count=model.segments_count,
+        status=cls.convert_collection_status(model.status),
+        vectors_count=model.vectors_count
+        )
 
     @classmethod
+    def convert_collection_config(cls, model: grpc.CollectionConfig) -> http.CollectionConfig:
+        return http.CollectionConfig(hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
+        optimizer_config=cls.convert_optimizer_config(model.optimizer_config),
+        params=cls.convert_collection_params(model.params),
+        wal_config=cls.convert_wal_config(model.wal_config)
+        )
+
+    @classmethod
+    def convert_hnsw_config(cls, model: grpc.HnswConfigDiff) -> http.HnswConfig:
+        return http.HnswConfig(ef_construct=model.ef_construct, m=model.m, full_scan_threshold=model.full_scan_threshold)
+
+    @classmethod
+    def convert_optimizer_config(cls, model: grpc.OptimizersConfigDiff) -> http.OptimizersConfig:
+        return http.OptimizersConfig(
+            default_segment_number=model.default_segment_number,
+            deleted_threshold=model.deleted_threshold,
+            flush_interval_sec=model.flush_interval_sec,
+            indexing_threshold=model.indexing_threshold,
+            max_optimization_threads=model.max_optimization_threads,
+            max_segment_size=model.max_segment_size,
+            memmap_threshold=model.memmap_threshold
+        )
+
+        
+    @classmethod
     def convert_update_result(cls, model: grpc.UpdateResult) -> http.UpdateResult:
-        raise NotImplementedError()
+        return http.UpdateResult(operation_id=model.operation_id, status=cls.convert_update_status(model.status))
+
+    @classmethod
+    def convert_update_status(cls, model: grpc.UpdateStatus) -> http.UpdateStatus:
+        if model == grpc.UpdateStatus.Acknowledged:
+            return http.UpdateStatus.ACKNOWLEDGED
+        elif model == grpc.UpdateStatus.Completed:
+            return http.UpdateStatus.COMPLETED
+        else:
+            raise NotImplementedError()
 
     @classmethod
     def convert_has_id_condition(cls, model: grpc.HasIdCondition) -> http.HasIdCondition:
