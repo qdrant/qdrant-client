@@ -28,3 +28,8 @@ jobs:
         run: |
           ./tests/integration-tests.sh
         shell: bash
+      - name: Check conversion coverage
+        run: |
+          ./tests/coverage-test.sh
+        shell: bash
+

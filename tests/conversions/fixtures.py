@@ -3,7 +3,7 @@ from typing import List
 import betterproto
 
 from qdrant_client import grpc
-from qdrant_client.uploader.grpc_uploader import json_to_value
+from qdrant_client.conversions.conversion import json_to_value
 
 point_id = grpc.PointId(num=1)
 point_id_1 = grpc.PointId(num=2)
@@ -17,11 +17,13 @@ has_id_condition = grpc.HasIdCondition(has_id=[
 
 is_empty = grpc.IsEmptyCondition(key="my.field")
 
+match_keyword = grpc.Match(keyword="hello")
+match_integer = grpc.Match(integer=42)
+match_bool = grpc.Match(boolean=True)
+
 field_condition_match = grpc.FieldCondition(
     key="match_field",
-    match=grpc.Match(
-        keyword="hello"
-    )
+    match=match_keyword
 )
 
 range_ = grpc.Range(
@@ -125,6 +127,13 @@ optimizer_config = grpc.OptimizersConfigDiff(
     max_optimization_threads=0
 )
 
+optimizer_config_half = grpc.OptimizersConfigDiff(
+    deleted_threshold=0.2,
+    vacuum_min_vector_number=10000,
+    default_segment_number=5,
+    max_segment_size=200000,
+)
+
 wal_config = grpc.WalConfigDiff(
     wal_capacity_mb=32,
     wal_segments_ahead=2
@@ -173,6 +182,8 @@ rename_alias = grpc.RenameAlias(
 )
 
 collection_status = grpc.CollectionStatus.Yellow
+collection_status_green = grpc.CollectionStatus.Green
+
 optimizer_status = grpc.OptimizerStatus(
     ok=True
 )
@@ -185,6 +196,22 @@ payload_schema_keyword = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType
 payload_schema_integer = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Integer)
 payload_schema_float = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Float)
 payload_schema_geo = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Geo)
+
+collection_info_ok = grpc.CollectionInfo(
+    status=collection_status_green,
+    optimizer_status=optimizer_status,
+    vectors_count=100000,
+    segments_count=6,
+    disk_data_size=0,
+    ram_data_size=0,
+    config=collection_config,
+    payload_schema={
+        "keyword_field": payload_schema_keyword,
+        "integer_field": payload_schema_integer,
+        "float_field": payload_schema_float,
+        "geo_field": payload_schema_geo,
+    },
+)
 
 collection_info = grpc.CollectionInfo(
     status=collection_status,
@@ -217,6 +244,13 @@ update_status = grpc.UpdateStatus.Acknowledged
 update_result = grpc.UpdateResult(
     operation_id=201,
     status=update_status
+)
+
+update_status_completed = grpc.UpdateStatus.Completed
+
+update_result_completed = grpc.UpdateResult(
+    operation_id=201,
+    status=update_status_completed
 )
 
 delete_alias = grpc.DeleteAlias(
@@ -260,8 +294,11 @@ fixtures = {
     "RenameAlias": [rename_alias],
     "ValuesCount": [values_count],
     "Filter": [filter_],
-    "OptimizersConfigDiff": [optimizer_config],
-    "CollectionInfo": [collection_info],
+    "OptimizersConfigDiff": [
+        optimizer_config,
+        optimizer_config_half
+    ],
+    "CollectionInfo": [collection_info, collection_info_ok],
     "CreateCollection": [create_collection],
     "FieldCondition": [
         field_condition_match,
@@ -271,7 +308,7 @@ fixtures = {
         field_condition_values_count
     ],
     "GeoRadius": [geo_radius],
-    "UpdateResult": [update_result],
+    "UpdateResult": [update_result, update_result_completed],
     "IsEmptyCondition": [is_empty],
     "DeleteAlias": [delete_alias],
     "PointStruct": [point_struct],
@@ -296,7 +333,12 @@ fixtures = {
         alias_operations_create,
         alias_operations_rename,
         alias_operations_delete,
-    ]
+    ],
+    "Match": [
+        match_keyword,
+        match_integer,
+        match_bool,
+    ],
 }
 
 
