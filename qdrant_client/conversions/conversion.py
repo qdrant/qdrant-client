@@ -61,15 +61,15 @@ class GrpcToRest:
     @classmethod
     def convert_collection_config(cls, model: grpc.CollectionConfig) -> http.CollectionConfig:
         return http.CollectionConfig(
-            hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
+            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config),
             optimizer_config=cls.convert_optimizer_config(model.optimizer_config),
             params=cls.convert_collection_params(model.params),
             wal_config=cls.convert_wal_config(model.wal_config)
         )
 
     @classmethod
-    def convert_hnsw_config(cls, model: grpc.HnswConfigDiff) -> http.HnswConfig:
-        return http.HnswConfig(ef_construct=model.ef_construct, m=model.m,
+    def convert_hnsw_config_diff(cls, model: grpc.HnswConfigDiff) -> http.HnswConfigDiff:
+        return http.HnswConfigDiff(ef_construct=model.ef_construct, m=model.m,
                                full_scan_threshold=model.full_scan_threshold)
 
     @classmethod
@@ -87,14 +87,6 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_collection_params(cls, model: grpc.CollectionParams) -> http.CollectionParams:
-        return http.CollectionParams(
-            distance=cls.convert_distance(model.distance),
-            shard_number=model.shard_number,
-            vector_size=model.vector_sie
-        )
-
-    @classmethod
     def convert_distance(cls, model: grpc.Distance) -> http.Distance:
         if model == grpc.Distance.Cosine:
             return http.Distance.COSINE
@@ -102,6 +94,43 @@ class GrpcToRest:
             return http.Distance.EUCLID
         elif model == grpc.Distance.Dot:
             return http.Distance.DOT
+        else:
+            raise NotImplementedError()
+
+    @classmethod
+    def convert_wal_config(cls, model: grpc.WalConfigDiff) -> http.WalConfig:
+        return http.WalConfig(wal_capacity_mb= model.wal_capacity_mb,
+        wal_segments_ahead=model.wal_segments_ahead)
+
+    @classmethod
+    def convert_payload_schema(cls, model: Dict[str, grpc.PayloadSchemaInfo]) -> Dict[str, http.PayloadIndexInfo]:
+        return {key: cls.convert_payload_schema_info(info) for key, info in model.items()}
+
+    @classmethod
+    def convert_payload_schma_info(cls, model: grpc.PayloadSchemaInfo) -> http.PayloadIndexInfo:
+        return http.PayloadIndexInfo(data_type=cls.convert_payload_schema_type(model.data_type))
+
+    @classmethod
+    def convert_payload_schema_type(cls, model: grpc.PayloadSchemaType) -> http.PayloadSchemaType:
+        if model == grpc.PayloadSchemaType.Float:
+            return http.PayloadSchemaType.FLOAT
+        elif model == grpc.PayloadSchemaType.Geo:
+            return http.PayloadSchemaType.GEO
+        elif model == grpc.PayloadSchemaType.Integer:
+            return http.PayloadSchemaType.INTEGER
+        elif model == grpc.PayloadSchemaType.Keyword:
+            return http.PayloadSchemaType.KEYWORD
+        else:
+            raise NotImplementedError()
+
+    @classmethod
+    def convert_collection_status(cls, model: grpc.CollectionStatus) -> http.CollectionStatus:
+        if model == grpc.CollectionStatus.Green:
+            return http.CollectionStatus.GREEN
+        elif model == grpc.CollectionStatus.Yellow:
+            return http.CollectionStatus.YELLOW
+        elif model == grpc.CollectionStatus.Red:
+            return http.CollectionStatus.RED
         else:
             raise NotImplementedError()
 
@@ -134,11 +163,11 @@ class GrpcToRest:
 
     @classmethod
     def convert_delete_alias(cls, model: grpc.DeleteAlias) -> http.DeleteAlias:
-        raise NotImplementedError()
+        return http.DeleteAlias(alias_name=model.alias_name)
 
     @classmethod
     def convert_rename_alias(cls, model: grpc.RenameAlias) -> http.RenameAlias:
-        raise NotImplementedError()
+        return http.RenameAlias(old_alias_name=model.old_alias_name, new_alias_name=model.new_alias_name)
 
     @classmethod
     def convert_is_empty_condition(cls, model: grpc.IsEmptyCondition) -> http.IsEmptyCondition:
@@ -146,15 +175,22 @@ class GrpcToRest:
 
     @classmethod
     def convert_search_params(cls, model: grpc.SearchParams) -> http.SearchParams:
-        raise NotImplementedError()
+        return http.SearchParams(hnsw_ef=model.hnsw_ef)
 
     @classmethod
     def convert_create_alias(cls, model: grpc.CreateAlias) -> http.CreateAlias:
-        raise NotImplementedError()
+        raise http.CreateAlias(collection_name=model.collection_name, alias_name=model.alias_name)
 
     @classmethod
     def convert_create_collection(cls, model: grpc.CreateCollection) -> http.CreateCollection:
-        raise NotImplementedError()
+        return http.CreateCollection(collection_name=model.collection_name,
+        vector_size=model.vector_size,
+        distance=cls.convert_distance(model.distance),
+        hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
+        wal_config=cls.convert_wal_config(model.wal_config),
+        optimizers_config=cls.convert_optimizer_config(model.optimizers_config),
+        shard_number=model.shard_number
+        )
 
     @classmethod
     def convert_scored_point(cls, model: grpc.ScoredPoint) -> http.ScoredPoint:
@@ -178,10 +214,6 @@ class GrpcToRest:
 
     @classmethod
     def convert_point_struct(cls, model: grpc.PointStruct) -> http.PointStruct:
-        raise NotImplementedError()
-
-    @classmethod
-    def convert_hnsw_config_diff(cls, model: grpc.HnswConfigDiff) -> http.HnswConfigDiff:
         raise NotImplementedError()
 
     @classmethod
@@ -214,13 +246,14 @@ class GrpcToRest:
     def convert_wal_config_diff(cls, model: grpc.WalConfigDiff) -> http.WalConfigDiff:
         raise NotImplementedError()
 
-    @classmethod
-    def convert_collection_config(cls, model: grpc.CollectionConfig) -> http.CollectionConfig:
-        raise NotImplementedError()
 
     @classmethod
     def convert_collection_params(cls, model: grpc.CollectionParams) -> http.CollectionParams:
-        raise NotImplementedError()
+        return http.CollectionParams(
+            distance=cls.convert_distance(model.distance),
+            shard_number=model.shard_number,
+            vector_size=model.vector_sie
+        )
 
     @classmethod
     def convert_optimizers_config_diff(cls, model: grpc.OptimizersConfigDiff) -> http.OptimizersConfigDiff:
