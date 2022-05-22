@@ -18,6 +18,8 @@ def camel_to_snake(name):
 def test_conversion_completeness():
     from qdrant_client.http.models import models
 
+    print("")
+
     http_classes = dict([
         (name, cls)
         for name, cls in models.__dict__.items()
@@ -47,8 +49,6 @@ def test_conversion_completeness():
 
     has_missing = False
 
-    common_classes = list(set(list(common_classes) + list(class_fixtures.keys())))
-    sorted(common_classes)
     for common_class in common_classes:
         convert_function_name = f"convert_{camel_to_snake(common_class)}"
         if convert_function_name not in grpc_to_rest_convert:
@@ -61,10 +61,17 @@ def test_conversion_completeness():
             logger.warning(f"Missing method {convert_function_name} for {common_class} in RestToGrpc")
             continue
 
-        fixtures = get_grpc_fixture(common_class)
+    assert not has_missing
+
+    all_classes = list(set(list(common_classes) + list(class_fixtures.keys())))
+    sorted(all_classes)
+    for model_class_name in all_classes:
+        convert_function_name = f"convert_{camel_to_snake(model_class_name)}"
+
+        fixtures = get_grpc_fixture(model_class_name)
         for fixture in fixtures:
             if fixture is ...:
-                logger.warning(f"Fixture for {common_class} skipped")
+                logger.warning(f"Fixture for {model_class_name} skipped")
                 continue
 
             try:
@@ -77,18 +84,19 @@ def test_conversion_completeness():
                 else:
                     rest_fixture = grpc_to_rest_convert[convert_function_name](fixture)
 
-                result = list(inspect.signature(rest_to_grpc_convert[convert_function_name]).parameters.keys())
+                back_convert_function_name = convert_function_name
+
+                result = list(inspect.signature(rest_to_grpc_convert[back_convert_function_name]).parameters.keys())
                 if 'collection_name' in result:
-                    grpc_fixture = rest_to_grpc_convert[convert_function_name](
+                    grpc_fixture = rest_to_grpc_convert[back_convert_function_name](
                         rest_fixture,
                         collection_name=fixture.collection_name
                     )
                 else:
-                    grpc_fixture = rest_to_grpc_convert[convert_function_name](rest_fixture)
+                    grpc_fixture = rest_to_grpc_convert[back_convert_function_name](rest_fixture)
             except Exception as e:
                 logger.warning(f"Error with {fixture}")
                 raise e
 
-            assert grpc_fixture.to_dict() == fixture.to_dict(), f"{common_class} conversion is broken"
+            assert grpc_fixture.to_dict() == fixture.to_dict(), f"{model_class_name} conversion is broken"
 
-    assert not has_missing

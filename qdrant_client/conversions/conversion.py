@@ -3,7 +3,7 @@ from typing import Dict, Any
 import betterproto
 
 from qdrant_client import grpc
-from qdrant_client.http.models import models as http
+from qdrant_client.http.models import models as rest
 from betterproto.lib.google.protobuf import Value, ListValue, Struct, NullValue
 
 
@@ -63,7 +63,7 @@ def grpc_to_payload(grpc: Dict[str, Value]) -> Dict[str, Any]:
 class GrpcToRest:
 
     @classmethod
-    def convert_condition(cls, model: grpc.Condition) -> http.Condition:
+    def convert_condition(cls, model: grpc.Condition) -> rest.Condition:
         name, val = betterproto.which_one_of(model, "condition_one_of")
 
         if name == "field":
@@ -78,16 +78,16 @@ class GrpcToRest:
         raise ValueError(f"invalid Condition model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_filter(cls, model: grpc.Filter) -> http.Filter:
-        return http.Filter(
+    def convert_filter(cls, model: grpc.Filter) -> rest.Filter:
+        return rest.Filter(
             must=[cls.convert_condition(condition) for condition in model.must],
             should=[cls.convert_condition(condition) for condition in model.should],
             must_not=[cls.convert_condition(condition) for condition in model.must_not]
         )
 
     @classmethod
-    def convert_range(cls, model: grpc.Range) -> http.Range:
-        return http.Range(
+    def convert_range(cls, model: grpc.Range) -> rest.Range:
+        return rest.Range(
             gt=model.gt,
             gte=model.gte,
             lt=model.lt,
@@ -95,19 +95,19 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_geo_radius(cls, model: grpc.GeoRadius) -> http.GeoRadius:
-        return http.GeoRadius(
+    def convert_geo_radius(cls, model: grpc.GeoRadius) -> rest.GeoRadius:
+        return rest.GeoRadius(
             center=cls.convert_geo_point(model.center),
             radius=model.radius
         )
 
     @classmethod
-    def convert_collection_description(cls, model: grpc.CollectionDescription) -> http.CollectionDescription:
-        return http.CollectionDescription(name=model.name)
+    def convert_collection_description(cls, model: grpc.CollectionDescription) -> rest.CollectionDescription:
+        return rest.CollectionDescription(name=model.name)
 
     @classmethod
-    def convert_collection_info(cls, model: grpc.CollectionInfo) -> http.CollectionInfo:
-        return http.CollectionInfo(
+    def convert_collection_info(cls, model: grpc.CollectionInfo) -> rest.CollectionInfo:
+        return rest.CollectionInfo(
             config=cls.convert_collection_config(model.config),
             disk_data_size=model.disk_data_size,
             optimizer_status=cls.convert_optimizer_status(model.optimizer_status),
@@ -119,15 +119,15 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_optimizer_status(cls, model: grpc.OptimizerStatus) -> http.OptimizersStatus:
+    def convert_optimizer_status(cls, model: grpc.OptimizerStatus) -> rest.OptimizersStatus:
         if model.ok:
-            return http.OptimizersStatusOneOf.OK
+            return rest.OptimizersStatusOneOf.OK
         else:
-            return http.OptimizersStatusOneOf1(error=model.error)
+            return rest.OptimizersStatusOneOf1(error=model.error)
 
     @classmethod
-    def convert_collection_config(cls, model: grpc.CollectionConfig) -> http.CollectionConfig:
-        return http.CollectionConfig(
+    def convert_collection_config(cls, model: grpc.CollectionConfig) -> rest.CollectionConfig:
+        return rest.CollectionConfig(
             hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config),
             optimizer_config=cls.convert_optimizer_config(model.optimizer_config),
             params=cls.convert_collection_params(model.params),
@@ -135,24 +135,24 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_hnsw_config_diff(cls, model: grpc.HnswConfigDiff) -> http.HnswConfigDiff:
-        return http.HnswConfigDiff(
+    def convert_hnsw_config_diff(cls, model: grpc.HnswConfigDiff) -> rest.HnswConfigDiff:
+        return rest.HnswConfigDiff(
             ef_construct=model.ef_construct,
             m=model.m,
             full_scan_threshold=model.full_scan_threshold
         )
 
     @classmethod
-    def convert_hnsw_config(cls, model: grpc.HnswConfigDiff) -> http.HnswConfig:
-        return http.HnswConfig(
+    def convert_hnsw_config(cls, model: grpc.HnswConfigDiff) -> rest.HnswConfig:
+        return rest.HnswConfig(
             ef_construct=model.ef_construct,
             m=model.m,
             full_scan_threshold=model.full_scan_threshold
         )
 
     @classmethod
-    def convert_optimizer_config(cls, model: grpc.OptimizersConfigDiff) -> http.OptimizersConfig:
-        return http.OptimizersConfig(
+    def convert_optimizer_config(cls, model: grpc.OptimizersConfigDiff) -> rest.OptimizersConfig:
+        return rest.OptimizersConfig(
             default_segment_number=model.default_segment_number,
             deleted_threshold=model.deleted_threshold,
             flush_interval_sec=model.flush_interval_sec,
@@ -165,74 +165,74 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_distance(cls, model: grpc.Distance) -> http.Distance:
+    def convert_distance(cls, model: grpc.Distance) -> rest.Distance:
         if model == grpc.Distance.Cosine:
-            return http.Distance.COSINE
+            return rest.Distance.COSINE
         elif model == grpc.Distance.Euclid:
-            return http.Distance.EUCLID
+            return rest.Distance.EUCLID
         elif model == grpc.Distance.Dot:
-            return http.Distance.DOT
+            return rest.Distance.DOT
         else:
             raise ValueError(f"invalid Distance model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_wal_config(cls, model: grpc.WalConfigDiff) -> http.WalConfig:
-        return http.WalConfig(wal_capacity_mb=model.wal_capacity_mb,
+    def convert_wal_config(cls, model: grpc.WalConfigDiff) -> rest.WalConfig:
+        return rest.WalConfig(wal_capacity_mb=model.wal_capacity_mb,
                               wal_segments_ahead=model.wal_segments_ahead)
 
     @classmethod
-    def convert_payload_schema(cls, model: Dict[str, grpc.PayloadSchemaInfo]) -> Dict[str, http.PayloadIndexInfo]:
+    def convert_payload_schema(cls, model: Dict[str, grpc.PayloadSchemaInfo]) -> Dict[str, rest.PayloadIndexInfo]:
         return {key: cls.convert_payload_schema_info(info) for key, info in model.items()}
 
     @classmethod
-    def convert_payload_schema_info(cls, model: grpc.PayloadSchemaInfo) -> http.PayloadIndexInfo:
-        return http.PayloadIndexInfo(data_type=cls.convert_payload_schema_type(model.data_type))
+    def convert_payload_schema_info(cls, model: grpc.PayloadSchemaInfo) -> rest.PayloadIndexInfo:
+        return rest.PayloadIndexInfo(data_type=cls.convert_payload_schema_type(model.data_type))
 
     @classmethod
-    def convert_payload_schema_type(cls, model: grpc.PayloadSchemaType) -> http.PayloadSchemaType:
+    def convert_payload_schema_type(cls, model: grpc.PayloadSchemaType) -> rest.PayloadSchemaType:
         if model == grpc.PayloadSchemaType.Float:
-            return http.PayloadSchemaType.FLOAT
+            return rest.PayloadSchemaType.FLOAT
         elif model == grpc.PayloadSchemaType.Geo:
-            return http.PayloadSchemaType.GEO
+            return rest.PayloadSchemaType.GEO
         elif model == grpc.PayloadSchemaType.Integer:
-            return http.PayloadSchemaType.INTEGER
+            return rest.PayloadSchemaType.INTEGER
         elif model == grpc.PayloadSchemaType.Keyword:
-            return http.PayloadSchemaType.KEYWORD
+            return rest.PayloadSchemaType.KEYWORD
         else:
             raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_collection_status(cls, model: grpc.CollectionStatus) -> http.CollectionStatus:
+    def convert_collection_status(cls, model: grpc.CollectionStatus) -> rest.CollectionStatus:
         if model == grpc.CollectionStatus.Green:
-            return http.CollectionStatus.GREEN
+            return rest.CollectionStatus.GREEN
         elif model == grpc.CollectionStatus.Yellow:
-            return http.CollectionStatus.YELLOW
+            return rest.CollectionStatus.YELLOW
         elif model == grpc.CollectionStatus.Red:
-            return http.CollectionStatus.RED
+            return rest.CollectionStatus.RED
         else:
             raise ValueError(f"invalid CollectionStatus model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_update_result(cls, model: grpc.UpdateResult) -> http.UpdateResult:
-        return http.UpdateResult(operation_id=model.operation_id, status=cls.convert_update_status(model.status))
+    def convert_update_result(cls, model: grpc.UpdateResult) -> rest.UpdateResult:
+        return rest.UpdateResult(operation_id=model.operation_id, status=cls.convert_update_status(model.status))
 
     @classmethod
-    def convert_update_status(cls, model: grpc.UpdateStatus) -> http.UpdateStatus:
+    def convert_update_status(cls, model: grpc.UpdateStatus) -> rest.UpdateStatus:
         if model == grpc.UpdateStatus.Acknowledged:
-            return http.UpdateStatus.ACKNOWLEDGED
+            return rest.UpdateStatus.ACKNOWLEDGED
         elif model == grpc.UpdateStatus.Completed:
-            return http.UpdateStatus.COMPLETED
+            return rest.UpdateStatus.COMPLETED
         else:
             raise ValueError(f"invalid UpdateStatus model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_has_id_condition(cls, model: grpc.HasIdCondition) -> http.HasIdCondition:
-        return http.HasIdCondition(
+    def convert_has_id_condition(cls, model: grpc.HasIdCondition) -> rest.HasIdCondition:
+        return rest.HasIdCondition(
             has_id=[cls.convert_point_id(idx) for idx in model.has_id]
         )
 
     @classmethod
-    def convert_point_id(cls, model: grpc.PointId) -> http.ExtendedPointId:
+    def convert_point_id(cls, model: grpc.PointId) -> rest.ExtendedPointId:
         name, val = betterproto.which_one_of(model, "point_id_options")
 
         if name == "num":
@@ -242,31 +242,31 @@ class GrpcToRest:
         raise ValueError(f"invalid PointId model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_delete_alias(cls, model: grpc.DeleteAlias) -> http.DeleteAlias:
-        return http.DeleteAlias(alias_name=model.alias_name)
+    def convert_delete_alias(cls, model: grpc.DeleteAlias) -> rest.DeleteAlias:
+        return rest.DeleteAlias(alias_name=model.alias_name)
 
     @classmethod
-    def convert_rename_alias(cls, model: grpc.RenameAlias) -> http.RenameAlias:
-        return http.RenameAlias(old_alias_name=model.old_alias_name, new_alias_name=model.new_alias_name)
+    def convert_rename_alias(cls, model: grpc.RenameAlias) -> rest.RenameAlias:
+        return rest.RenameAlias(old_alias_name=model.old_alias_name, new_alias_name=model.new_alias_name)
 
     @classmethod
-    def convert_is_empty_condition(cls, model: grpc.IsEmptyCondition) -> http.IsEmptyCondition:
-        return http.IsEmptyCondition(is_empty=http.PayloadField(key=model.key))
+    def convert_is_empty_condition(cls, model: grpc.IsEmptyCondition) -> rest.IsEmptyCondition:
+        return rest.IsEmptyCondition(is_empty=rest.PayloadField(key=model.key))
 
     @classmethod
-    def convert_search_params(cls, model: grpc.SearchParams) -> http.SearchParams:
-        return http.SearchParams(hnsw_ef=model.hnsw_ef)
+    def convert_search_params(cls, model: grpc.SearchParams) -> rest.SearchParams:
+        return rest.SearchParams(hnsw_ef=model.hnsw_ef)
 
     @classmethod
-    def convert_create_alias(cls, model: grpc.CreateAlias) -> http.CreateAlias:
-        return http.CreateAlias(
+    def convert_create_alias(cls, model: grpc.CreateAlias) -> rest.CreateAlias:
+        return rest.CreateAlias(
             collection_name=model.collection_name,
             alias_name=model.alias_name
         )
 
     @classmethod
-    def convert_create_collection(cls, model: grpc.CreateCollection) -> http.CreateCollection:
-        return http.CreateCollection(
+    def convert_create_collection(cls, model: grpc.CreateCollection) -> rest.CreateCollection:
+        return rest.CreateCollection(
             collection_name=model.collection_name,
             vector_size=model.vector_size,
             distance=cls.convert_distance(model.distance),
@@ -277,8 +277,8 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_scored_point(cls, model: grpc.ScoredPoint) -> http.ScoredPoint:
-        return http.ScoredPoint(
+    def convert_scored_point(cls, model: grpc.ScoredPoint) -> rest.ScoredPoint:
+        return rest.ScoredPoint(
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
             score=model.score,
@@ -287,7 +287,7 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_payload(cls, model: Dict[str, grpc.betterproto_lib_google_protobuf.Value]) -> http.Payload:
+    def convert_payload(cls, model: Dict[str, grpc.betterproto_lib_google_protobuf.Value]) -> rest.Payload:
         return dict(
             (key, value_to_json(val))
             for key, val in
@@ -295,8 +295,8 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_values_count(cls, model: grpc.ValuesCount) -> http.ValuesCount:
-        return http.ValuesCount(
+    def convert_values_count(cls, model: grpc.ValuesCount) -> rest.ValuesCount:
+        return rest.ValuesCount(
             gt=model.gt,
             gte=model.gte,
             lt=model.lt,
@@ -304,28 +304,28 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_geo_bounding_box(cls, model: grpc.GeoBoundingBox) -> http.GeoBoundingBox:
-        return http.GeoBoundingBox(
+    def convert_geo_bounding_box(cls, model: grpc.GeoBoundingBox) -> rest.GeoBoundingBox:
+        return rest.GeoBoundingBox(
             bottom_right=cls.convert_geo_point(model.bottom_right),
             top_left=cls.convert_geo_point(model.top_left)
         )
 
     @classmethod
-    def convert_point_struct(cls, model: grpc.PointStruct) -> http.PointStruct:
-        return http.PointStruct(
+    def convert_point_struct(cls, model: grpc.PointStruct) -> rest.PointStruct:
+        return rest.PointStruct(
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
             vector=model.vector,
         )
 
     @classmethod
-    def convert_field_condition(cls, model: grpc.FieldCondition) -> http.FieldCondition:
+    def convert_field_condition(cls, model: grpc.FieldCondition) -> rest.FieldCondition:
         geo_bounding_box = cls.convert_geo_bounding_box(model.geo_bounding_box) if model.geo_bounding_box else None
         geo_radius = cls.convert_geo_radius(model.geo_radius) if model.geo_radius else None
         match = cls.convert_match(model.match) if model.match else None
         range_ = cls.convert_range(model.range) if model.range else None
         values_count = cls.convert_values_count(model.values_count) if model.values_count else None
-        return http.FieldCondition(
+        return rest.FieldCondition(
             key=model.key,
             geo_bounding_box=geo_bounding_box,
             geo_radius=geo_radius,
@@ -335,35 +335,35 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_match(cls, model: grpc.Match) -> http.Match:
+    def convert_match(cls, model: grpc.Match) -> rest.Match:
         name, val = betterproto.which_one_of(model, "match_value")
 
         if name == "integer":
-            return http.MatchValue(value=val)
+            return rest.MatchValue(value=val)
         if name == "boolean":
-            return http.MatchValue(value=val)
+            return rest.MatchValue(value=val)
         if name == "keyword":
-            return http.MatchValue(value=val)
+            return rest.MatchValue(value=val)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_wal_config_diff(cls, model: grpc.WalConfigDiff) -> http.WalConfigDiff:
-        return http.WalConfigDiff(
+    def convert_wal_config_diff(cls, model: grpc.WalConfigDiff) -> rest.WalConfigDiff:
+        return rest.WalConfigDiff(
             wal_capacity_mb=model.wal_capacity_mb,
             wal_segments_ahead=model.wal_segments_ahead
         )
 
     @classmethod
-    def convert_collection_params(cls, model: grpc.CollectionParams) -> http.CollectionParams:
-        return http.CollectionParams(
+    def convert_collection_params(cls, model: grpc.CollectionParams) -> rest.CollectionParams:
+        return rest.CollectionParams(
             distance=cls.convert_distance(model.distance),
             shard_number=model.shard_number,
             vector_size=model.vector_size
         )
 
     @classmethod
-    def convert_optimizers_config_diff(cls, model: grpc.OptimizersConfigDiff) -> http.OptimizersConfigDiff:
-        return http.OptimizersConfigDiff(
+    def convert_optimizers_config_diff(cls, model: grpc.OptimizersConfigDiff) -> rest.OptimizersConfigDiff:
+        return rest.OptimizersConfigDiff(
             default_segment_number=model.default_segment_number,
             deleted_threshold=model.deleted_threshold,
             flush_interval_sec=model.flush_interval_sec,
@@ -376,51 +376,74 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_update_collection(cls, model: grpc.UpdateCollection) -> http.UpdateCollection:
-        return http.UpdateCollection(
+    def convert_update_collection(cls, model: grpc.UpdateCollection) -> rest.UpdateCollection:
+        return rest.UpdateCollection(
             optimizers_config=cls.convert_optimizers_config_diff(
                 model.optimizers_config) if model.optimizers_config is not None else None
         )
 
     @classmethod
-    def convert_geo_point(cls, model: grpc.GeoPoint) -> http.GeoPoint:
-        return http.GeoPoint(
+    def convert_geo_point(cls, model: grpc.GeoPoint) -> rest.GeoPoint:
+        return rest.GeoPoint(
             lat=model.lat,
             lon=model.lon,
         )
 
     @classmethod
-    def convert_alias_operations(cls, model: grpc.AliasOperations) -> http.AliasOperations:
+    def convert_alias_operations(cls, model: grpc.AliasOperations) -> rest.AliasOperations:
         name, val = betterproto.which_one_of(model, "action")
 
         if name == "rename_alias":
-            return http.RenameAliasOperation(rename_alias=cls.convert_rename_alias(val))
+            return rest.RenameAliasOperation(rename_alias=cls.convert_rename_alias(val))
         if name == "create_alias":
-            return http.CreateAliasOperation(create_alias=cls.convert_create_alias(val))
+            return rest.CreateAliasOperation(create_alias=cls.convert_create_alias(val))
         if name == "delete_alias":
-            return http.DeleteAliasOperation(delete_alias=cls.convert_delete_alias(val))
+            return rest.DeleteAliasOperation(delete_alias=cls.convert_delete_alias(val))
 
         raise ValueError(f"invalid AliasOperations model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_points_selector(cls, model: grpc.PointsSelector) -> http.PointsSelector:
+    def convert_points_selector(cls, model: grpc.PointsSelector) -> rest.PointsSelector:
         name, val = betterproto.which_one_of(model, "points_selector_one_of")
 
         if name == "points":
-            return http.PointIdsList(points=[
+            return rest.PointIdsList(points=[
                 cls.convert_point_id(point)
                 for point in val.ids
             ])
         if name == "filter":
-            return http.FilterSelector(
+            return rest.FilterSelector(
                 filter=cls.convert_filter(val)
             )
         raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
 
+    @classmethod
+    def convert_with_payload_selector(cls, model: grpc.WithPayloadSelector) -> rest.WithPayloadInterface:
+        name, val = betterproto.which_one_of(model, "selector_options")
+
+        if name == "enable":
+            return val
+        if name == "include":
+            return val.include
+        if name == "exclude":
+            return rest.PayloadSelectorExclude(exclude=val.exclude)
+
+        raise ValueError(f"invalid WithPayloadSelector model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_with_payload_interface(cls, model: grpc.WithPayloadSelector) -> rest.WithPayloadInterface:
+        return cls.convert_with_payload_selector(model)
+
+
+# ----------------------------------------
+#
+# ----------- REST TO gRPC ---------------
+#
+# ----------------------------------------
 
 class RestToGrpc:
     @classmethod
-    def convert_filter(cls, model: http.Filter) -> grpc.Filter:
+    def convert_filter(cls, model: rest.Filter) -> grpc.Filter:
         return grpc.Filter(
             must=[cls.convert_condition(condition) for condition in model.must] if model.must is not None else None,
             must_not=[cls.convert_condition(condition) for condition in
@@ -430,7 +453,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_range(cls, model: http.Range) -> grpc.Range:
+    def convert_range(cls, model: rest.Range) -> grpc.Range:
         return grpc.Range(
             lt=model.lt,
             gt=model.gt,
@@ -439,20 +462,20 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_geo_radius(cls, model: http.GeoRadius) -> grpc.GeoRadius:
+    def convert_geo_radius(cls, model: rest.GeoRadius) -> grpc.GeoRadius:
         return grpc.GeoRadius(
             center=cls.convert_geo_point(model.center),
             radius=model.radius
         )
 
     @classmethod
-    def convert_collection_description(cls, model: http.CollectionDescription) -> grpc.CollectionDescription:
+    def convert_collection_description(cls, model: rest.CollectionDescription) -> grpc.CollectionDescription:
         return grpc.CollectionDescription(
             name=model.name
         )
 
     @classmethod
-    def convert_collection_info(cls, model: http.CollectionInfo) -> grpc.CollectionInfo:
+    def convert_collection_info(cls, model: rest.CollectionInfo) -> grpc.CollectionInfo:
         return grpc.CollectionInfo(
             config=cls.convert_collection_config(model.config) if model.config else None,
             disk_data_size=model.disk_data_size,
@@ -466,23 +489,23 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_collection_status(cls, model: http.CollectionStatus) -> grpc.CollectionStatus:
-        if model == http.CollectionStatus.RED:
+    def convert_collection_status(cls, model: rest.CollectionStatus) -> grpc.CollectionStatus:
+        if model == rest.CollectionStatus.RED:
             return grpc.CollectionStatus.Red
-        if model == http.CollectionStatus.YELLOW:
+        if model == rest.CollectionStatus.YELLOW:
             return grpc.CollectionStatus.Yellow
-        if model == http.CollectionStatus.GREEN:
+        if model == rest.CollectionStatus.GREEN:
             return grpc.CollectionStatus.Green
 
         raise ValueError(f"invalid CollectionStatus model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_optimizer_status(cls, model: http.OptimizersStatus) -> grpc.OptimizerStatus:
-        if isinstance(model, http.OptimizersStatusOneOf):
+    def convert_optimizer_status(cls, model: rest.OptimizersStatus) -> grpc.OptimizerStatus:
+        if isinstance(model, rest.OptimizersStatusOneOf):
             return grpc.OptimizerStatus(
                 ok=True,
             )
-        if isinstance(model, http.OptimizersStatusOneOf1):
+        if isinstance(model, rest.OptimizersStatusOneOf1):
             return grpc.OptimizerStatus(
                 ok=False,
                 error=model.error
@@ -490,87 +513,87 @@ class RestToGrpc:
         raise ValueError(f"invalid OptimizersStatus model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_payload_schema(cls, model: Dict[str, http.PayloadIndexInfo]) -> Dict[str, grpc.PayloadSchemaInfo]:
+    def convert_payload_schema(cls, model: Dict[str, rest.PayloadIndexInfo]) -> Dict[str, grpc.PayloadSchemaInfo]:
         return dict(
             (key, cls.convert_payload_index_info(val))
             for key, val in model.items()
         )
 
     @classmethod
-    def convert_payload_index_info(cls, model: http.PayloadIndexInfo) -> grpc.PayloadSchemaInfo:
+    def convert_payload_index_info(cls, model: rest.PayloadIndexInfo) -> grpc.PayloadSchemaInfo:
         return grpc.PayloadSchemaInfo(
             data_type=cls.convert_payload_schema_type(model.data_type)
         )
 
     @classmethod
-    def convert_payload_schema_type(cls, model: http.PayloadSchemaType) -> grpc.PayloadSchemaType:
-        if model == http.PayloadSchemaType.KEYWORD:
+    def convert_payload_schema_type(cls, model: rest.PayloadSchemaType) -> grpc.PayloadSchemaType:
+        if model == rest.PayloadSchemaType.KEYWORD:
             return grpc.PayloadSchemaType.Keyword
-        if model == http.PayloadSchemaType.INTEGER:
+        if model == rest.PayloadSchemaType.INTEGER:
             return grpc.PayloadSchemaType.Integer
-        if model == http.PayloadSchemaType.FLOAT:
+        if model == rest.PayloadSchemaType.FLOAT:
             return grpc.PayloadSchemaType.Float
-        if model == http.PayloadSchemaType.GEO:
+        if model == rest.PayloadSchemaType.GEO:
             return grpc.PayloadSchemaType.Geo
 
         raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_update_result(cls, model: http.UpdateResult) -> grpc.UpdateResult:
+    def convert_update_result(cls, model: rest.UpdateResult) -> grpc.UpdateResult:
         return grpc.UpdateResult(
             operation_id=model.operation_id,
             status=cls.convert_update_stats(model.status)
         )
 
     @classmethod
-    def convert_update_stats(cls, model: http.UpdateStatus) -> grpc.UpdateStatus:
-        if model == http.UpdateStatus.COMPLETED:
+    def convert_update_stats(cls, model: rest.UpdateStatus) -> grpc.UpdateStatus:
+        if model == rest.UpdateStatus.COMPLETED:
             return grpc.UpdateStatus.Completed
-        if model == http.UpdateStatus.ACKNOWLEDGED:
+        if model == rest.UpdateStatus.ACKNOWLEDGED:
             return grpc.UpdateStatus.Acknowledged
 
         raise ValueError(f"invalid UpdateStatus model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_has_id_condition(cls, model: http.HasIdCondition) -> grpc.HasIdCondition:
+    def convert_has_id_condition(cls, model: rest.HasIdCondition) -> grpc.HasIdCondition:
         return grpc.HasIdCondition(
             has_id=[cls.convert_extended_point_id(idx) for idx in model.has_id]
         )
 
     @classmethod
-    def convert_delete_alias(cls, model: http.DeleteAlias) -> grpc.DeleteAlias:
+    def convert_delete_alias(cls, model: rest.DeleteAlias) -> grpc.DeleteAlias:
         return grpc.DeleteAlias(
             alias_name=model.alias_name
         )
 
     @classmethod
-    def convert_rename_alias(cls, model: http.RenameAlias) -> grpc.RenameAlias:
+    def convert_rename_alias(cls, model: rest.RenameAlias) -> grpc.RenameAlias:
         return grpc.RenameAlias(
             old_alias_name=model.old_alias_name,
             new_alias_name=model.new_alias_name
         )
 
     @classmethod
-    def convert_is_empty_condition(cls, model: http.IsEmptyCondition) -> grpc.IsEmptyCondition:
+    def convert_is_empty_condition(cls, model: rest.IsEmptyCondition) -> grpc.IsEmptyCondition:
         return grpc.IsEmptyCondition(
             key=model.is_empty.key
         )
 
     @classmethod
-    def convert_search_params(cls, model: http.SearchParams) -> grpc.SearchParams:
+    def convert_search_params(cls, model: rest.SearchParams) -> grpc.SearchParams:
         return grpc.SearchParams(
             hnsw_ef=model.hnsw_ef
         )
 
     @classmethod
-    def convert_create_alias(cls, model: http.CreateAlias) -> grpc.CreateAlias:
+    def convert_create_alias(cls, model: rest.CreateAlias) -> grpc.CreateAlias:
         return grpc.CreateAlias(
             collection_name=model.collection_name,
             alias_name=model.alias_name
         )
 
     @classmethod
-    def convert_create_collection(cls, model: http.CreateCollection, collection_name: str) -> grpc.CreateCollection:
+    def convert_create_collection(cls, model: rest.CreateCollection, collection_name: str) -> grpc.CreateCollection:
         return grpc.CreateCollection(
             collection_name=collection_name,
             distance=cls.convert_distance(model.distance),
@@ -583,7 +606,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_scored_point(cls, model: http.ScoredPoint) -> grpc.ScoredPoint:
+    def convert_scored_point(cls, model: rest.ScoredPoint) -> grpc.ScoredPoint:
         return grpc.ScoredPoint(
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
@@ -593,7 +616,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_values_count(cls, model: http.ValuesCount) -> grpc.ValuesCount:
+    def convert_values_count(cls, model: rest.ValuesCount) -> grpc.ValuesCount:
         return grpc.ValuesCount(
             lt=model.lt,
             gt=model.gt,
@@ -602,14 +625,14 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_geo_bounding_box(cls, model: http.GeoBoundingBox) -> grpc.GeoBoundingBox:
+    def convert_geo_bounding_box(cls, model: rest.GeoBoundingBox) -> grpc.GeoBoundingBox:
         return grpc.GeoBoundingBox(
             top_left=cls.convert_geo_point(model.top_left),
             bottom_right=cls.convert_geo_point(model.bottom_right),
         )
 
     @classmethod
-    def convert_point_struct(cls, model: http.PointStruct) -> grpc.PointStruct:
+    def convert_point_struct(cls, model: rest.PointStruct) -> grpc.PointStruct:
         return grpc.PointStruct(
             id=cls.convert_extended_point_id(model.id),
             vector=model.vector,
@@ -617,11 +640,11 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_payload(cls, model: http.Payload) -> Dict[str, grpc.betterproto_lib_google_protobuf.Value]:
+    def convert_payload(cls, model: rest.Payload) -> Dict[str, grpc.betterproto_lib_google_protobuf.Value]:
         return dict((key, json_to_value(val)) for key, val in model.items())
 
     @classmethod
-    def convert_hnsw_config_diff(cls, model: http.HnswConfigDiff) -> grpc.HnswConfigDiff:
+    def convert_hnsw_config_diff(cls, model: rest.HnswConfigDiff) -> grpc.HnswConfigDiff:
         return grpc.HnswConfigDiff(
             ef_construct=model.ef_construct,
             full_scan_threshold=model.full_scan_threshold,
@@ -629,7 +652,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_field_condition(cls, model: http.FieldCondition) -> grpc.FieldCondition:
+    def convert_field_condition(cls, model: rest.FieldCondition) -> grpc.FieldCondition:
         if model.match:
             return grpc.FieldCondition(
                 key=model.key,
@@ -658,14 +681,14 @@ class RestToGrpc:
         raise ValueError(f"invalid FieldCondition model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_wal_config_diff(cls, model: http.WalConfigDiff) -> grpc.WalConfigDiff:
+    def convert_wal_config_diff(cls, model: rest.WalConfigDiff) -> grpc.WalConfigDiff:
         return grpc.WalConfigDiff(
             wal_capacity_mb=model.wal_capacity_mb,
             wal_segments_ahead=model.wal_segments_ahead
         )
 
     @classmethod
-    def convert_collection_config(cls, model: http.CollectionConfig) -> grpc.CollectionConfig:
+    def convert_collection_config(cls, model: rest.CollectionConfig) -> grpc.CollectionConfig:
         return grpc.CollectionConfig(
             params=cls.convert_collection_params(model.params),
             hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
@@ -674,7 +697,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_hnsw_config(cls, model: http.HnswConfig) -> grpc.HnswConfigDiff:
+    def convert_hnsw_config(cls, model: rest.HnswConfig) -> grpc.HnswConfigDiff:
         return grpc.HnswConfigDiff(
             ef_construct=model.ef_construct,
             full_scan_threshold=model.full_scan_threshold,
@@ -682,25 +705,25 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_wal_config(cls, model: http.WalConfig) -> grpc.WalConfigDiff:
+    def convert_wal_config(cls, model: rest.WalConfig) -> grpc.WalConfigDiff:
         return grpc.WalConfigDiff(
             wal_capacity_mb=model.wal_capacity_mb,
             wal_segments_ahead=model.wal_segments_ahead
         )
 
     @classmethod
-    def convert_distance(cls, model: http.Distance) -> grpc.Distance:
-        if model == http.Distance.DOT:
+    def convert_distance(cls, model: rest.Distance) -> grpc.Distance:
+        if model == rest.Distance.DOT:
             return grpc.Distance.Dot
-        if model == http.Distance.COSINE:
+        if model == rest.Distance.COSINE:
             return grpc.Distance.Cosine
-        if model == http.Distance.EUCLID:
+        if model == rest.Distance.EUCLID:
             return grpc.Distance.Euclid
 
         raise ValueError(f"invalid Distance model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_collection_params(cls, model: http.CollectionParams) -> grpc.CollectionParams:
+    def convert_collection_params(cls, model: rest.CollectionParams) -> grpc.CollectionParams:
         return grpc.CollectionParams(
             vector_size=model.vector_size,
             shard_number=model.shard_number,
@@ -708,7 +731,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_optimizers_config(cls, model: http.OptimizersConfig) -> grpc.OptimizersConfigDiff:
+    def convert_optimizers_config(cls, model: rest.OptimizersConfig) -> grpc.OptimizersConfigDiff:
         return grpc.OptimizersConfigDiff(
             default_segment_number=model.default_segment_number,
             deleted_threshold=model.deleted_threshold,
@@ -722,7 +745,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_optimizers_config_diff(cls, model: http.OptimizersConfigDiff) -> grpc.OptimizersConfigDiff:
+    def convert_optimizers_config_diff(cls, model: rest.OptimizersConfigDiff) -> grpc.OptimizersConfigDiff:
         return grpc.OptimizersConfigDiff(
             default_segment_number=model.default_segment_number,
             deleted_threshold=model.deleted_threshold,
@@ -736,7 +759,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_update_collection(cls, model: http.UpdateCollection, collection_name: str) -> grpc.UpdateCollection:
+    def convert_update_collection(cls, model: rest.UpdateCollection, collection_name: str) -> grpc.UpdateCollection:
         return grpc.UpdateCollection(
             collection_name=collection_name,
             optimizers_config=cls.convert_optimizers_config_diff(
@@ -744,41 +767,41 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_geo_point(cls, model: http.GeoPoint) -> grpc.GeoPoint:
+    def convert_geo_point(cls, model: rest.GeoPoint) -> grpc.GeoPoint:
         return grpc.GeoPoint(
             lon=model.lon,
             lat=model.lat
         )
 
     @classmethod
-    def convert_match(cls, model: http.Match) -> grpc.Match:
-        if isinstance(model, http.MatchValue):
+    def convert_match(cls, model: rest.Match) -> grpc.Match:
+        if isinstance(model, rest.MatchValue):
             if isinstance(model.value, bool):
                 return grpc.Match(boolean=model.value)
             if isinstance(model.value, int):
                 return grpc.Match(integer=model.value)
             if isinstance(model.value, str):
                 return grpc.Match(keyword=model.value)
-        if isinstance(model, http.MatchKeyword):
+        if isinstance(model, rest.MatchKeyword):
             return grpc.Match(keyword=model.keyword)
-        if isinstance(model, http.MatchInteger):
+        if isinstance(model, rest.MatchInteger):
             return grpc.Match(integer=model.integer)
 
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_alias_operations(cls, model: http.AliasOperations) -> grpc.AliasOperations:
-        if isinstance(model, http.CreateAliasOperation):
+    def convert_alias_operations(cls, model: rest.AliasOperations) -> grpc.AliasOperations:
+        if isinstance(model, rest.CreateAliasOperation):
             return grpc.AliasOperations(create_alias=cls.convert_create_alias(model.create_alias))
-        if isinstance(model, http.DeleteAliasOperation):
+        if isinstance(model, rest.DeleteAliasOperation):
             return grpc.AliasOperations(delete_alias=cls.convert_delete_alias(model.delete_alias))
-        if isinstance(model, http.RenameAliasOperation):
+        if isinstance(model, rest.RenameAliasOperation):
             return grpc.AliasOperations(rename_alias=cls.convert_rename_alias(model.rename_alias))
 
         raise ValueError(f"invalid AliasOperations model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_extended_point_id(cls, model: http.ExtendedPointId) -> grpc.PointId:
+    def convert_extended_point_id(cls, model: rest.ExtendedPointId) -> grpc.PointId:
         if isinstance(model, int):
             return grpc.PointId(num=model)
         if isinstance(model, str):
@@ -786,26 +809,56 @@ class RestToGrpc:
         raise ValueError(f"invalid ExtendedPointId model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_points_selector(cls, model: http.PointsSelector) -> grpc.PointsSelector:
-        if isinstance(model, http.PointIdsList):
+    def convert_points_selector(cls, model: rest.PointsSelector) -> grpc.PointsSelector:
+        if isinstance(model, rest.PointIdsList):
             return grpc.PointsSelector(
                 points=grpc.PointsIdsList(ids=[cls.convert_extended_point_id(point) for point in model.points])
             )
-        if isinstance(model, http.FilterSelector):
+        if isinstance(model, rest.FilterSelector):
             return grpc.PointsSelector(
                 filter=cls.convert_filter(model.filter)
             )
         raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_condition(cls, model: http.Condition) -> grpc.Condition:
-        if isinstance(model, http.FieldCondition):
+    def convert_condition(cls, model: rest.Condition) -> grpc.Condition:
+        if isinstance(model, rest.FieldCondition):
             return grpc.Condition(field=cls.convert_field_condition(model))
-        if isinstance(model, http.IsEmptyCondition):
+        if isinstance(model, rest.IsEmptyCondition):
             return grpc.Condition(is_empty=cls.convert_is_empty_condition(model))
-        if isinstance(model, http.HasIdCondition):
+        if isinstance(model, rest.HasIdCondition):
             return grpc.Condition(has_id=cls.convert_has_id_condition(model))
-        if isinstance(model, http.Filter):
+        if isinstance(model, rest.Filter):
             return grpc.Condition(filter=cls.convert_filter(model))
 
         raise ValueError(f"invalid Condition model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_payload_selector(cls, model: rest.PayloadSelector) -> grpc.WithPayloadSelector:
+        if isinstance(model, rest.PayloadSelectorInclude):
+            return grpc.WithPayloadSelector(
+                include=grpc.PayloadIncludeSelector(include=model.include)
+            )
+        if isinstance(model, rest.PayloadSelectorExclude):
+            return grpc.WithPayloadSelector(
+                exclude=grpc.PayloadExcludeSelector(exclude=model.exclude)
+            )
+        raise ValueError(f"invalid PayloadSelector model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_with_payload_selector(cls, model: rest.PayloadSelector) -> grpc.WithPayloadSelector:
+        return cls.convert_with_payload_interface(model)
+
+    @classmethod
+    def convert_with_payload_interface(cls, model: rest.WithPayloadInterface) -> grpc.WithPayloadSelector:
+        if isinstance(model, bool):
+            return grpc.WithPayloadSelector(enable=model)
+        elif isinstance(model, list):
+            return grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(model))
+        elif isinstance(model, (
+                rest.PayloadSelectorInclude,
+                rest.PayloadSelectorExclude,
+        )):
+            return cls.convert_payload_selector(model)
+
+        raise ValueError(f"invalid WithPayloadInterface model: {model}")  # pragma: no cover
