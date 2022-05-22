@@ -1,65 +1,12 @@
 import asyncio
 from itertools import count
-from typing import Iterable, Any, Dict
+from typing import Iterable, Any
 
-import betterproto
 from grpclib.client import Channel
 
-from betterproto.lib.google.protobuf import Value, ListValue, Struct, NullValue
+from qdrant_client.conversions.conversion import payload_to_grpc
 from qdrant_client.grpc import PointsStub, PointStruct, PointId
 from qdrant_client.uploader.uploader import BaseUploader
-
-
-def json_to_value(payload: Any) -> Value:
-    if payload is None:
-        return Value(null_value=NullValue.NULL_VALUE)
-    if isinstance(payload, bool):
-        return Value(bool_value=payload)
-    if isinstance(payload, int):
-        return Value(number_value=payload)
-    if isinstance(payload, float):
-        return Value(number_value=payload)
-    if isinstance(payload, str):
-        return Value(string_value=payload)
-    if isinstance(payload, list):
-        return Value(list_value=ListValue(values=[json_to_value(v) for v in payload]))
-    if isinstance(payload, dict):
-        return Value(struct_value=Struct(fields=dict((k, json_to_value(v)) for k, v in payload.items())))
-    return Value(null_value=NullValue.NULL_VALUE)
-
-
-def value_to_json(value: Value) -> Any:
-    if isinstance(value, Value):
-        value = value.to_dict(casing=betterproto.Casing.CAMEL)
-
-    if "numberValue" in value:
-        return value["numberValue"]
-    if "stringValue" in value:
-        return value["stringValue"]
-    if "boolValue" in value:
-        return value["boolValue"]
-    if "structValue" in value:
-        return dict((key, value_to_json(val)) for key, val in value["structValue"]['fields'].items())
-    if "listValue" in value:
-        return list(value_to_json(val) for val in value["listValue"]['values'])
-    if "nullValue" in value:
-        return None
-
-    raise RuntimeError(f"Can't convert value: {value}")
-
-
-def payload_to_grpc(payload: Dict[str, Any]) -> Dict[str, Value]:
-    return dict(
-        (key, json_to_value(val))
-        for key, val in payload.items()
-    )
-
-
-def grpc_to_payload(grpc: Dict[str, Value]) -> Dict[str, Any]:
-    return dict(
-        (key, value_to_json(val))
-        for key, val in grpc.items()
-    )
 
 
 def iter_over_async(ait, loop):

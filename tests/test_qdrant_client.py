@@ -9,9 +9,10 @@ import numpy as np
 import pytest
 
 from qdrant_client import QdrantClient
+from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
     SetPayload, HasIdCondition, PointIdsList, PayloadSchemaType, MatchValue
-from qdrant_client.uploader.grpc_uploader import grpc_to_payload, payload_to_grpc, json_to_value
+from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 
 DIM = 100
 NUM_VECTORS = 1_000
