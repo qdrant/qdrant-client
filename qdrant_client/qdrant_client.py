@@ -89,20 +89,20 @@ class QdrantClient:
             collection_name: Collection to search in
             query_vector: Search for vectors closest to this
             query_filter:
-                Exclude vectors which doesn't fit given conditions.
-                If `None` - search among all vectors
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
             search_params: Additional search params
             top: How many results return
             with_payload:
-                Specify which stored payload should be attached to the result.
-                If `True` - attach all payload
-                If `False` - do not attach any payload
-                If List of string - include only specified fields
-                If `PayloadSelector` - use explicit rules
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
             with_vector:
-                If `True` - Attach stored vector to the search result.
-                If `False` - Do not attach vector.
-                Default: `False`
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - Default: `False`
             append_payload: Same as `with_payload`. Deprecated.
 
         Examples:

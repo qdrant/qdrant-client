@@ -103,6 +103,8 @@ def test_qdrant_client_integration(prefer_grpc):
         top=5  # Return 5 closest points
     )
 
+    assert len(hits) == 5
+
     # Print found results
     print("Search result:")
     for hit in hits:
