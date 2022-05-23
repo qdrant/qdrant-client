@@ -4,7 +4,7 @@ from typing import Iterable, Any
 
 from grpclib.client import Channel
 
-from qdrant_client.conversions.conversion import payload_to_grpc
+from qdrant_client.conversions.conversion import payload_to_grpc, RestToGrpc
 from qdrant_client.grpc import PointsStub, PointStruct, PointId
 from qdrant_client.uploader.uploader import BaseUploader
 
@@ -33,7 +33,7 @@ async def upload_batch_grpc(points_client: PointsStub, collection_name: str, bat
 
     points = [
         PointStruct(
-            id=PointId(uuid=idx) if isinstance(idx, str) else PointId(num=idx),
+            id=RestToGrpc.convert_extended_point_id(idx) if not isinstance(idx, PointId) else idx,
             vector=vector,
             payload=payload_to_grpc(payload or {}),
         ) for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)

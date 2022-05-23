@@ -283,6 +283,10 @@ alias_operations_create = grpc.AliasOperations(create_alias=create_alias)
 alias_operations_rename = grpc.AliasOperations(rename_alias=rename_alias)
 alias_operations_delete = grpc.AliasOperations(delete_alias=delete_alias)
 
+with_payload_bool = grpc.WithPayloadSelector(enable=True)
+with_payload_include = grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(include=["color", "price"]))
+with_payload_exclude = grpc.WithPayloadSelector(exclude=grpc.PayloadExcludeSelector(exclude=["color", "price"]))
+
 fixtures = {
     "CollectionParams": [collection_params],
     "CollectionConfig": [collection_config],
@@ -339,6 +343,11 @@ fixtures = {
         match_integer,
         match_bool,
     ],
+    "WithPayloadSelector": [
+        with_payload_bool,
+        with_payload_include,
+        with_payload_exclude,
+    ]
 }
 
 

@@ -105,3 +105,16 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Examples
+
+   examples/upload_collection
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API reference
+
+   qdrant_client.qdrant_client
+   qdrant_client

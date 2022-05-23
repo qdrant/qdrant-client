@@ -11,7 +11,7 @@ import pytest
 from qdrant_client import QdrantClient
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
-    SetPayload, HasIdCondition, PointIdsList, PayloadSchemaType, MatchValue
+    SetPayload, HasIdCondition, PointIdsList, PayloadSchemaType, MatchValue, Distance
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 
 DIM = 100
@@ -51,7 +51,8 @@ def test_qdrant_client_integration(prefer_grpc):
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
-        vector_size=DIM
+        vector_size=DIM,
+        distance=Distance.DOT,
     )
 
     # Call Qdrant API to retrieve list of existing collections
@@ -102,6 +103,8 @@ def test_qdrant_client_integration(prefer_grpc):
         top=5  # Return 5 closest points
     )
 
+    assert len(hits) == 5
+
     # Print found results
     print("Search result:")
     for hit in hits:
@@ -135,7 +138,8 @@ def test_points_crud():
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
-        vector_size=DIM
+        vector_size=DIM,
+        distance=Distance.DOT
     )
 
     # Create a single point

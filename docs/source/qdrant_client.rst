@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   qdrant_client.conversions
    qdrant_client.grpc
    qdrant_client.http
    qdrant_client.uploader
