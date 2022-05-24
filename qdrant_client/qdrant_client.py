@@ -1,17 +1,15 @@
 import asyncio
-from typing import Optional, Iterable, Dict, List, Union, get_args
+from typing import Optional, Iterable, List, Union
 
 import numpy as np
 from loguru import logger
 from tqdm import tqdm
 
+from qdrant_client import grpc
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import RestToGrpc, GrpcToRest
-
 from qdrant_client.http import SyncApis
 from qdrant_client.http import models as rest
-from qdrant_client import grpc
-
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
