@@ -287,6 +287,12 @@ with_payload_bool = grpc.WithPayloadSelector(enable=True)
 with_payload_include = grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(include=["color", "price"]))
 with_payload_exclude = grpc.WithPayloadSelector(exclude=grpc.PayloadExcludeSelector(exclude=["color", "price"]))
 
+retrieved_point = grpc.RetrievedPoint(
+    id=point_id_1,
+    payload={"key": payload_value},
+    vector=[1., 2., 3., 4.]
+)
+
 fixtures = {
     "CollectionParams": [collection_params],
     "CollectionConfig": [collection_config],
@@ -347,6 +353,9 @@ fixtures = {
         with_payload_bool,
         with_payload_include,
         with_payload_exclude,
+    ],
+    "RetrievedPoint": [
+        retrieved_point
     ]
 }
 

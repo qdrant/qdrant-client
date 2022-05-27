@@ -66,7 +66,6 @@ def test_qdrant_client_integration(prefer_grpc):
     test_collection = client.http.collections_api.get_collection(COLLECTION_NAME)
     pprint(test_collection.dict())
 
-
     # Upload data to a new collection
     client.upload_collection(
         collection_name=COLLECTION_NAME,
@@ -131,6 +130,95 @@ def test_qdrant_client_integration(prefer_grpc):
     print("Filtered search result (`random_num` >= 0.5):")
     for hit in hits:
         print(hit)
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vector=True
+    )
+
+    assert len(got_points) == 3
+
+    client.delete(
+        collection_name=COLLECTION_NAME,
+        wait=True,
+        points_selector=PointIdsList(points=[2, 3])
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vector=True
+    )
+
+    assert len(got_points) == 1
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        wait=True,
+        points=[PointStruct(id=2, payload={"hello": "world"}, vector=vectors[2].tolist())]
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vector=True
+    )
+
+    assert len(got_points) == 2
+
+    client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={
+            "new_key": 123
+        },
+        points=[1, 2],
+        wait=True
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2],
+        with_payload=True,
+        with_vector=True
+    )
+
+    for point in got_points:
+        assert point.payload.get("new_key") == 123
+
+    client.delete_payload(
+        collection_name=COLLECTION_NAME,
+        keys=["new_key"],
+        points=[1],
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1],
+        with_payload=True,
+        with_vector=True
+    )
+
+    for point in got_points:
+        assert "new_key" not in point.payload
+
+    client.clear_payload(
+        collection_name=COLLECTION_NAME,
+        points_selector=PointIdsList(points=[1, 2]),
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2],
+        with_payload=True,
+        with_vector=True
+    )
+
+    for point in got_points:
+        assert not point.payload
 
 
 def test_points_crud():
