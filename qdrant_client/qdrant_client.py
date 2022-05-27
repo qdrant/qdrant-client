@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, Iterable, List, Union
+from typing import Optional, Iterable, List, Union, Tuple
 
 import numpy as np
 from loguru import logger
@@ -107,7 +107,7 @@ class QdrantClient:
                search_params: Optional[types.SearchParams] = None,
                top: int = 10,
                with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-               with_vector=False,
+               with_vector: bool = False,
                append_payload=True) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
 
@@ -211,6 +211,214 @@ class QdrantClient:
             )
 
             return search_result.result
+
+    def recommend(
+            self,
+            collection_name: str,
+            positive: List[types.PointId],
+            negative: List[types.PointId] = None,
+            query_filter: Optional[types.Filter] = None,
+            search_params: Optional[types.SearchParams] = None,
+            top: int = 10,
+            with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+            with_vector: bool = False,
+    ) -> List[types.ScoredPoint]:
+        """Recommend points: search for similar points based on already stored in Qdrant examples.
+
+        Provide IDs of the stored points, and Qdrant will perform search based on already existing vectors.
+        This functionality is especially useful for recommendation over existing collection of points.
+
+        Args:
+            collection_name: Collection to search in
+            positive:
+                List of stored point IDs, which should be used as reference for similarity search.
+                If there is only oen ID provided - this request is equivalent to the regular search with vector of that point.
+                If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
+                Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
+            negative:
+                List of stored point IDs, which should be dissimilar to the search result.
+                Negative examples is an experimental functionality. Its behaviour may change in the future.
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            top: How many results return
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vector:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - Default: `False`
+
+        Returns:
+            List of recommended points with similarity scores.
+        """
+
+        if negative is None:
+            negative = []
+
+        if self._prefer_grpc:
+            positive = [
+                RestToGrpc.convert_extended_point_id(point_id) if isinstance(point_id, (str, int)) else point_id
+                for point_id in positive
+            ]
+
+            negative = [
+                RestToGrpc.convert_extended_point_id(point_id) if isinstance(point_id, (str, int)) else point_id
+                for point_id in negative
+            ]
+
+            if isinstance(query_filter, rest.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
+
+            if isinstance(search_params, rest.SearchParams):
+                search_params = RestToGrpc.convert_search_params(search_params)
+
+            if isinstance(with_payload, (
+                    bool,
+                    list,
+                    rest.PayloadSelectorInclude,
+                    rest.PayloadSelectorExclude
+            )):
+                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
+
+            loop = asyncio.get_event_loop()
+
+            res: grpc.SearchResponse = loop.run_until_complete(self._grpc_points_client.recommend(
+                collection_name=collection_name,
+                positive=positive,
+                negative=negative,
+                filter=query_filter,
+                top=top,
+                with_vector=with_vector,
+                with_payload=with_payload,
+                params=search_params
+            ))
+
+            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+        else:
+            positive = [
+                GrpcToRest.convert_point_id(point_id) if isinstance(point_id, grpc.PointId) else point_id
+                for point_id in positive
+            ]
+
+            negative = [
+                GrpcToRest.convert_point_id(point_id) if isinstance(point_id, grpc.PointId) else point_id
+                for point_id in negative
+            ]
+
+            if isinstance(query_filter, grpc.Filter):
+                query_filter = GrpcToRest.convert_filter(model=query_filter)
+
+            if isinstance(search_params, grpc.SearchParams):
+                search_params = GrpcToRest.convert_search_params(search_params)
+
+            if isinstance(with_payload, grpc.WithPayloadSelector):
+                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
+
+            return self.openapi_client.points_api.recommend_points(
+                collection_name=collection_name,
+                recommend_request=rest.RecommendRequest(
+                    filter=query_filter,
+                    negative=negative,
+                    params=search_params,
+                    positive=positive,
+                    top=top,
+                    with_payload=with_payload,
+                    with_vector=with_vector,
+                )
+            ).result
+
+    def scroll(
+            self,
+            collection_name: str,
+            scroll_filter: Optional[types.Filter] = None,
+            limit: int = 10,
+            offset: Optional[types.PointId] = None,
+            with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+            with_vector: bool = False,
+    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+        """Scroll over all (matching) points in the collection.
+
+        This method provides a way to iterate over all stored points with some optional filtering condition.
+        Scroll does not apply any similarity estimations, it will return points sorted by id in ascending order.
+
+        Args:
+            collection_name: Name of the collection
+            scroll_filter: If provided - only returns points matching filtering conditions
+            limit: How many points to return
+            offset: If provided - skip points with ids less than given `offset`
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vector:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - Default: `False`
+
+        Returns:
+            A pair of (List of points) and (optional offset for the next scroll request).
+            If next page offset is `None` - there is no more points in the collection to scroll.
+        """
+        if self._prefer_grpc:
+            if isinstance(offset, (int, str)):
+                offset = RestToGrpc.convert_extended_point_id(offset)
+
+            if isinstance(scroll_filter, rest.Filter):
+                scroll_filter = RestToGrpc.convert_filter(model=scroll_filter)
+
+            if isinstance(with_payload, (
+                    bool,
+                    list,
+                    rest.PayloadSelectorInclude,
+                    rest.PayloadSelectorExclude
+            )):
+                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
+
+            loop = asyncio.get_event_loop()
+
+            res: grpc.ScrollResponse = loop.run_until_complete(self._grpc_points_client.scroll(
+                collection_name=collection_name,
+                filter=scroll_filter,
+                offset=offset,
+                with_vector=with_vector,
+                with_payload=with_payload,
+                limit=limit
+            ))
+
+            return [
+                GrpcToRest.convert_retrieved_point(point)
+                for point in res.result
+            ], res.next_page_offset
+        else:
+            if isinstance(offset, grpc.PointId):
+                offset = GrpcToRest.convert_point_id(offset)
+
+            if isinstance(scroll_filter, grpc.Filter):
+                scroll_filter = GrpcToRest.convert_filter(model=scroll_filter)
+
+            if isinstance(with_payload, grpc.WithPayloadSelector):
+                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
+
+            scroll_result: rest.ScrollResult = self.openapi_client.points_api.scroll_points(
+                collection_name=collection_name,
+                scroll_request=rest.ScrollRequest(
+                    filter=scroll_filter,
+                    limit=limit,
+                    offset=offset,
+                    with_payload=with_payload,
+                    with_vector=with_vector
+                )
+            ).result
+
+            return scroll_result.points, scroll_result.next_page_offset
 
     def upsert(
             self,
