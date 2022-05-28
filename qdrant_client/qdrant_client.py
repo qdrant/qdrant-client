@@ -21,6 +21,9 @@ class QdrantClient:
     It combines interface classes and endpoint implementation.
     Additionally, it provides custom implementations for frequently used methods like initial collection upload.
 
+    All methods in QdrantClient accept both gRPC and REST structures as an input.
+    Conversion will be performed automatically.
+
     .. note::
         This module methods are wrappers around generated client code for gRPC and REST methods.
         If you need lower-level access to generated clients, use following properties:
@@ -59,10 +62,20 @@ class QdrantClient:
         self._grpc_points_client = None
         self._grpc_collections_client = None
         if prefer_grpc:
+            self._init_grpc_points_client()
+            self._init_grpc_collections_client()
+
+    def _init_grpc_points_client(self):
+        if self._grpc_channel is None:
             from grpclib.client import Channel
             self._grpc_channel = Channel(host=self._host, port=self._grpc_port)
-            self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
-            self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
+        self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
+
+    def _init_grpc_collections_client(self):
+        if self._grpc_channel is None:
+            from grpclib.client import Channel
+            self._grpc_channel = Channel(host=self._host, port=self._grpc_port)
+        self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
 
     @property
     def grpc_collections(self):
@@ -71,6 +84,8 @@ class QdrantClient:
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
+        if self._grpc_collections_client is None:
+            self._init_grpc_collections_client()
         return self._grpc_collections_client
 
     @property
@@ -80,6 +95,8 @@ class QdrantClient:
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
+        if self._grpc_points_client is None:
+            self._init_grpc_points_client()
         return self._grpc_points_client
 
     @property
