@@ -22,7 +22,7 @@ class QdrantClient:
     Additionally, it provides custom implementations for frequently used methods like initial collection upload.
 
     .. note::
-        This module methods are wrappers around generated client code for gPRC and REST methods.
+        This module methods are wrappers around generated client code for gRPC and REST methods.
         If you need lower-level access to generated clients, use following properties:
 
         - :meth:`QdrantClient.grpc_points`
