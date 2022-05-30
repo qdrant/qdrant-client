@@ -1,4 +1,4 @@
-from typing import Union, Type
+from typing import Union, Type, List
 
 import betterproto
 from pydantic import BaseModel
@@ -15,6 +15,10 @@ OptimizersConfigDiff = Union[rest.OptimizersConfigDiff, grpc.OptimizersConfigDif
 WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
 PointId = Union[rest.ExtendedPointId, grpc.PointId]
 PayloadSchemaType = Union[rest.PayloadSchemaType, grpc.PayloadSchemaType]
+Points = Union[rest.Batch, List[Union[rest.PointStruct, grpc.PointStruct]]]
+PointsSelector = Union[rest.PointsSelector, grpc.PointsSelector]
+Payload = rest.Payload
 
 ScoredPoint = rest.ScoredPoint
-
+UpdateResult = rest.UpdateResult
+Record = rest.Record

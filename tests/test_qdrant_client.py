@@ -66,7 +66,6 @@ def test_qdrant_client_integration(prefer_grpc):
     test_collection = client.http.collections_api.get_collection(COLLECTION_NAME)
     pprint(test_collection.dict())
 
-
     # Upload data to a new collection
     client.upload_collection(
         collection_name=COLLECTION_NAME,
@@ -132,9 +131,141 @@ def test_qdrant_client_integration(prefer_grpc):
     for hit in hits:
         print(hit)
 
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vector=True
+    )
 
-def test_points_crud():
-    client = QdrantClient()
+    assert len(got_points) == 3
+
+    client.delete(
+        collection_name=COLLECTION_NAME,
+        wait=True,
+        points_selector=PointIdsList(points=[2, 3])
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vector=True
+    )
+
+    assert len(got_points) == 1
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        wait=True,
+        points=[PointStruct(id=2, payload={"hello": "world"}, vector=vectors[2].tolist())]
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vector=True
+    )
+
+    assert len(got_points) == 2
+
+    client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={
+            "new_key": 123
+        },
+        points=[1, 2],
+        wait=True
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2],
+        with_payload=True,
+        with_vector=True
+    )
+
+    for point in got_points:
+        assert point.payload.get("new_key") == 123
+
+    client.delete_payload(
+        collection_name=COLLECTION_NAME,
+        keys=["new_key"],
+        points=[1],
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1],
+        with_payload=True,
+        with_vector=True
+    )
+
+    for point in got_points:
+        assert "new_key" not in point.payload
+
+    client.clear_payload(
+        collection_name=COLLECTION_NAME,
+        points_selector=PointIdsList(points=[1, 2]),
+    )
+
+    got_points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2],
+        with_payload=True,
+        with_vector=True
+    )
+
+    for point in got_points:
+        assert not point.payload
+
+    recommended_points = client.recommend(
+        collection_name=COLLECTION_NAME,
+        positive=[1, 2],
+        query_filter=Filter(
+            must=[  # These conditions are required for recommend results
+                FieldCondition(
+                    key='rand_number',  # Condition based on values of `rand_number` field.
+                    range=Range(
+                        lte=0.5  # Select only those results where `rand_number` >= 0.5
+                    )
+                )
+            ]
+        ),
+        top=5,
+        with_payload=True,
+        with_vector=False
+    )
+
+    assert len(recommended_points) == 5
+
+    scrolled_points, next_page = client.scroll(
+        collection_name=COLLECTION_NAME,
+        scroll_filter=Filter(
+            must=[  # These conditions are required for scroll results
+                FieldCondition(
+                    key='rand_number',  # Condition based on values of `rand_number` field.
+                    range=Range(
+                        lte=0.5  # Return only those results where `rand_number` <= 0.5
+                    )
+                )
+            ]
+        ),
+        limit=5,
+        offset=None,
+        with_payload=True,
+        with_vector=False
+    )
+
+    assert len(scrolled_points) == 5
+
+
+@pytest.mark.parametrize(
+    "prefer_grpc", [False, True]
+)
+def test_points_crud(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -143,40 +274,36 @@ def test_points_crud():
     )
 
     # Create a single point
-
-    client.http.points_api.upsert_points(
+    client.upsert(
         collection_name=COLLECTION_NAME,
-        wait=True,
-        point_insert_operations=PointsList(points=[
+        points=[
             PointStruct(
                 id=123,
                 payload={"test": "value"},
                 vector=np.random.rand(DIM).tolist()
             )
-        ])
+        ],
+        wait=True,
     )
 
     # Read a single point
 
-    points = client.http.points_api.get_points(COLLECTION_NAME, point_request=PointRequest(ids=[123]))
+    points = client.retrieve(COLLECTION_NAME, ids=[123])
 
     print("read a single point", points)
 
     # Update a single point
 
-    client.http.points_api.set_payload(
+    client.set_payload(
         collection_name=COLLECTION_NAME,
-        set_payload=SetPayload(
-            payload={
-                "test2": ["value2", "value3"]
-            },
-            points=[123]
-        )
+        payload={
+            "test2": ["value2", "value3"]
+        },
+        points=[123]
     )
 
     # Delete a single point
-
-    client.http.points_api.delete_points(
+    client.delete(
         collection_name=COLLECTION_NAME,
         points_selector=PointIdsList(points=[123])
     )

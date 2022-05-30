@@ -434,6 +434,18 @@ class GrpcToRest:
     def convert_with_payload_interface(cls, model: grpc.WithPayloadSelector) -> rest.WithPayloadInterface:
         return cls.convert_with_payload_selector(model)
 
+    @classmethod
+    def convert_retrieved_point(cls, model: grpc.RetrievedPoint) -> rest.Record:
+        return rest.Record(
+            id=cls.convert_point_id(model.id),
+            payload=cls.convert_payload(model.payload) if model.payload is not None else None,
+            vector=model.vector
+        )
+
+    @classmethod
+    def convert_record(cls, model: grpc.RetrievedPoint) -> rest.Record:
+        return cls.convert_retrieved_point(model)
+
 
 # ----------------------------------------
 #
@@ -862,3 +874,15 @@ class RestToGrpc:
             return cls.convert_payload_selector(model)
 
         raise ValueError(f"invalid WithPayloadInterface model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_record(cls, model: rest.Record) -> grpc.RetrievedPoint:
+        return grpc.RetrievedPoint(
+            id=cls.convert_extended_point_id(model.id),
+            payload=cls.convert_payload(model.payload) if model.payload is not None else None,
+            vector=model.vector
+        )
+
+    @classmethod
+    def convert_retrieved_point(cls, model: rest.Record) -> grpc.RetrievedPoint:
+        return cls.convert_record(model)
