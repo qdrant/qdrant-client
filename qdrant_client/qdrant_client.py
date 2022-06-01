@@ -249,7 +249,7 @@ class QdrantClient:
             collection_name: Collection to search in
             positive:
                 List of stored point IDs, which should be used as reference for similarity search.
-                If there is only oen ID provided - this request is equivalent to the regular search with vector of that point.
+                If there is only one ID provided - this request is equivalent to the regular search with vector of that point.
                 If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
                 Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
             negative:
