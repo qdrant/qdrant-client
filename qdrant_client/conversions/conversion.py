@@ -4,7 +4,7 @@ import betterproto
 
 from qdrant_client import grpc
 from qdrant_client.http.models import models as rest
-from betterproto.lib.google.protobuf import Value, ListValue, Struct, NullValue
+from qdrant_client.grpc import Value, ListValue, Struct, NullValue
 
 
 def json_to_value(payload: Any) -> Value:
@@ -13,9 +13,9 @@ def json_to_value(payload: Any) -> Value:
     if isinstance(payload, bool):
         return Value(bool_value=payload)
     if isinstance(payload, int):
-        return Value(number_value=payload)
+        return Value(integer_value=payload)
     if isinstance(payload, float):
-        return Value(number_value=payload)
+        return Value(double_value=payload)
     if isinstance(payload, str):
         return Value(string_value=payload)
     if isinstance(payload, list):
@@ -27,23 +27,29 @@ def json_to_value(payload: Any) -> Value:
 
 def value_to_json(value: Value) -> Any:
     if isinstance(value, Value):
-        value = value.to_dict(casing=betterproto.Casing.CAMEL)
+        value_ = value.to_dict(casing=betterproto.Casing.CAMEL)
+    else:
+        value_ = value
 
-    if "numberValue" in value:
-        return value["numberValue"]
-    if "stringValue" in value:
-        return value["stringValue"]
-    if "boolValue" in value:
-        return value["boolValue"]
-    if "structValue" in value:
-        if 'fields' not in value['structValue']:
+    if "integerValue" in value_:
+        # by default int are represented as string for precision
+        # But in python it is OK to just use `int`
+        return int(value_["integerValue"])
+    if "doubleValue" in value_:
+        return value_["doubleValue"]
+    if "stringValue" in value_:
+        return value_["stringValue"]
+    if "boolValue" in value_:
+        return value_["boolValue"]
+    if "structValue" in value_:
+        if 'fields' not in value_['structValue']:
             return {}
-        return dict((key, value_to_json(val)) for key, val in value["structValue"]['fields'].items())
-    if "listValue" in value:
-        return list(value_to_json(val) for val in value["listValue"]['values'])
-    if "nullValue" in value:
+        return dict((key, value_to_json(val)) for key, val in value_["structValue"]['fields'].items())
+    if "listValue" in value_:
+        return list(value_to_json(val) for val in value_["listValue"]['values'])
+    if "nullValue" in value_:
         return None
-    raise ValueError(f"Not supported value: {value}")  # pragma: no cover
+    raise ValueError(f"Not supported value: {value_}")  # pragma: no cover
 
 
 def payload_to_grpc(payload: Dict[str, Any]) -> Dict[str, Value]:
@@ -160,7 +166,6 @@ class GrpcToRest:
             max_optimization_threads=model.max_optimization_threads,
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
-            payload_indexing_threshold=model.payload_indexing_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number
         )
 
@@ -371,7 +376,6 @@ class GrpcToRest:
             max_optimization_threads=model.max_optimization_threads,
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
-            payload_indexing_threshold=model.payload_indexing_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
         )
 
@@ -424,9 +428,9 @@ class GrpcToRest:
         if name == "enable":
             return val
         if name == "include":
-            return val.include
+            return val.fields
         if name == "exclude":
-            return rest.PayloadSelectorExclude(exclude=val.exclude)
+            return rest.PayloadSelectorExclude(exclude=val.fields)
 
         raise ValueError(f"invalid WithPayloadSelector model: {model}")  # pragma: no cover
 
@@ -752,7 +756,6 @@ class RestToGrpc:
             max_optimization_threads=model.max_optimization_threads,
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
-            payload_indexing_threshold=model.payload_indexing_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
         )
 
@@ -766,7 +769,6 @@ class RestToGrpc:
             max_optimization_threads=model.max_optimization_threads,
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
-            payload_indexing_threshold=model.payload_indexing_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
         )
 
@@ -849,11 +851,11 @@ class RestToGrpc:
     def convert_payload_selector(cls, model: rest.PayloadSelector) -> grpc.WithPayloadSelector:
         if isinstance(model, rest.PayloadSelectorInclude):
             return grpc.WithPayloadSelector(
-                include=grpc.PayloadIncludeSelector(include=model.include)
+                include=grpc.PayloadIncludeSelector(fields=model.include)
             )
         if isinstance(model, rest.PayloadSelectorExclude):
             return grpc.WithPayloadSelector(
-                exclude=grpc.PayloadExcludeSelector(exclude=model.exclude)
+                exclude=grpc.PayloadExcludeSelector(fields=model.exclude)
             )
         raise ValueError(f"invalid PayloadSelector model: {model}")  # pragma: no cover
 

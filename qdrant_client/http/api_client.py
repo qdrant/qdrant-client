@@ -4,6 +4,7 @@ from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overl
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
+from qdrant_client.http.api.cluster_api import AsyncClusterApi, SyncClusterApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
 from qdrant_client.http.api.points_api import AsyncPointsApi, SyncPointsApi
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
@@ -16,6 +17,7 @@ class AsyncApis(Generic[AsyncClientT]):
     def __init__(self, host: str = None, **kwargs: Any):
         self.client = AsyncApiClient(host, **kwargs)
 
+        self.cluster_api = AsyncClusterApi(self.client)
         self.collections_api = AsyncCollectionsApi(self.client)
         self.points_api = AsyncPointsApi(self.client)
 
@@ -24,6 +26,7 @@ class SyncApis(Generic[ClientT]):
     def __init__(self, host: str = None, **kwargs: Any):
         self.client = ApiClient(host, **kwargs)
 
+        self.cluster_api = SyncClusterApi(self.client)
         self.collections_api = SyncCollectionsApi(self.client)
         self.points_api = SyncPointsApi(self.client)
 

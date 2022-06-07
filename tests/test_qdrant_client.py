@@ -10,13 +10,14 @@ import pytest
 
 from qdrant_client import QdrantClient
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
-from qdrant_client.http.models import Filter, FieldCondition, Range, PointsList, PointStruct, PointRequest, \
-    SetPayload, HasIdCondition, PointIdsList, PayloadSchemaType, MatchValue, Distance
+from qdrant_client.http.models import Filter, FieldCondition, Range, PointStruct, HasIdCondition, PointIdsList, \
+    PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 
 DIM = 100
 NUM_VECTORS = 1_000
 COLLECTION_NAME = 'client_test'
+COLLECTION_NAME_ALIAS = 'client_test_alias'
 
 
 def random_payload():
@@ -56,14 +57,14 @@ def test_qdrant_client_integration(prefer_grpc):
     )
 
     # Call Qdrant API to retrieve list of existing collections
-    collections = client.http.collections_api.get_collections().result.collections
+    collections = client.get_collections().collections
 
     # Print all existing collections
     for collection in collections:
         print(collection.dict())
 
     # Retrieve detailed information about newly created collection
-    test_collection = client.http.collections_api.get_collection(COLLECTION_NAME)
+    test_collection = client.get_collection(COLLECTION_NAME)
     pprint(test_collection.dict())
 
     # Upload data to a new collection
@@ -80,13 +81,24 @@ def test_qdrant_client_integration(prefer_grpc):
     # If you need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
     sleep(1)
 
+    client.update_collection_aliases(
+        change_aliases_operations=[
+            CreateAliasOperation(
+                create_alias=CreateAlias(
+                    collection_name=COLLECTION_NAME,
+                    alias_name=COLLECTION_NAME_ALIAS
+                )
+            )
+        ]
+    )
+
     # Create payload index for field `random_num`
     # If indexed field appear in filtering condition - search operation could be performed faster
     index_create_result = client.create_payload_index(COLLECTION_NAME, "random_num", PayloadSchemaType.FLOAT)
     pprint(index_create_result.dict())
 
     # Let's now check details about our new collection
-    test_collection = client.http.collections_api.get_collection(COLLECTION_NAME)
+    test_collection = client.get_collection(COLLECTION_NAME_ALIAS)
     pprint(test_collection.dict())
 
     # Now we can actually search in the collection
@@ -108,6 +120,15 @@ def test_qdrant_client_integration(prefer_grpc):
     print("Search result:")
     for hit in hits:
         print(hit)
+
+    client.update_collection(
+        collection_name=COLLECTION_NAME,
+        optimizer_config=OptimizersConfigDiff(
+            max_segment_size=10000
+        )
+    )
+
+    assert client.get_collection(COLLECTION_NAME).config.optimizer_config.max_segment_size == 10000
 
     # Let's now query same vector with filter condition
     hits = client.search(
