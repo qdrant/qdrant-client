@@ -15,7 +15,7 @@ keywords = ["vector", "search", "neural", "matching", "client"]
 
 [tool.poetry.dependencies]
 python = ">=3.7,<4.0"
-httpx = "^0.22.0"
+httpx = ">=0.22,<0.24"
 numpy = "^1.21"
 pydantic = "^1.8"
 tqdm = "^4.56.0"
