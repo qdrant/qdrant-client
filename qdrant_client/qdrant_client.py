@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Optional, Iterable, List, Union, Tuple
 
 import numpy as np
@@ -125,6 +126,7 @@ class QdrantClient:
                top: int = 10,
                with_payload: Union[bool, List[str], types.PayloadSelector] = True,
                with_vector: bool = False,
+               score_threshold: Optional[float] = None,
                append_payload=True) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
 
@@ -146,6 +148,12 @@ class QdrantClient:
                 - If `True` - Attach stored vector to the search result.
                 - If `False` - Do not attach vector.
                 - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
             append_payload: Same as `with_payload`. Deprecated.
 
         Examples:
@@ -201,7 +209,8 @@ class QdrantClient:
                 top=top,
                 with_vector=with_vector,
                 with_payload=with_payload,
-                params=search_params
+                params=search_params,
+                score_threshold=score_threshold
             ))
 
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
@@ -223,7 +232,9 @@ class QdrantClient:
                     filter=query_filter,
                     top=top,
                     params=search_params,
-                    with_payload=with_payload
+                    with_vector=with_vector,
+                    with_payload=with_payload,
+                    score_threshold=score_threshold
                 )
             )
 
@@ -239,6 +250,7 @@ class QdrantClient:
             top: int = 10,
             with_payload: Union[bool, List[str], types.PayloadSelector] = True,
             with_vector: bool = False,
+            score_threshold: Optional[float] = None,
     ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
 
@@ -270,6 +282,12 @@ class QdrantClient:
                 - If `True` - Attach stored vector to the search result.
                 - If `False` - Do not attach vector.
                 - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
 
         Returns:
             List of recommended points with similarity scores.
@@ -313,7 +331,8 @@ class QdrantClient:
                 top=top,
                 with_vector=with_vector,
                 with_payload=with_payload,
-                params=search_params
+                params=search_params,
+                score_threshold=score_threshold
             ))
 
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
@@ -347,6 +366,7 @@ class QdrantClient:
                     top=top,
                     with_payload=with_payload,
                     with_vector=with_vector,
+                    score_threshold=score_threshold
                 )
             ).result
 
@@ -411,9 +431,9 @@ class QdrantClient:
             ))
 
             return [
-                GrpcToRest.convert_retrieved_point(point)
-                for point in res.result
-            ], res.next_page_offset
+                       GrpcToRest.convert_retrieved_point(point)
+                       for point in res.result
+                   ], res.next_page_offset
         else:
             if isinstance(offset, grpc.PointId):
                 offset = GrpcToRest.convert_point_id(offset)
@@ -759,25 +779,116 @@ class QdrantClient:
                 points_selector=points_selector
             ).result
 
-    def delete_collection(self, collection_name: str):
+    def update_collection_aliases(
+            self,
+            change_aliases_operations: List[types.AliasOperations],
+            timeout: Optional[int] = None
+    ):
+        """Operation for performing changes of collection aliases.
+
+        Alias changes are atomic, meaning that no collection modifications can happen between alias operations.
+
+        Args:
+            change_aliases_operations: List of operations to perform
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached - request will return with service error.
+
+        Returns:
+            Operation result
+        """
+        change_aliases_operation = [
+            GrpcToRest.convert_alias_operations(operation)
+            if isinstance(operation, grpc.AliasOperations) else operation
+            for operation in change_aliases_operations
+        ]
+
+        return self.http.collections_api.update_aliases(
+            timeout=timeout,
+            change_aliases_operation=rest.ChangeAliasesOperation(
+                actions=change_aliases_operation
+            )
+        )
+
+    def get_collections(self) -> types.CollectionsResponse:
+        """Get list name of all existing collections
+
+        Returns:
+            List of the collections
+        """
+        return self.http.collections_api.get_collections().result
+
+    def get_collection(self, collection_name: str) -> types.CollectionInfo:
+        """Get detailed information about specified existing collection
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            Detailed information about the collection
+        """
+        return self.http.collections_api.get_collection(collection_name=collection_name).result
+
+    def update_collection(
+            self,
+            collection_name: str,
+            optimizer_config: Optional[types.OptimizersConfigDiff],
+            timeout: Optional[int] = None
+    ):
+        """Update parameters of the collection
+
+        Args:
+            collection_name: Name of the collection
+            optimizer_config: Override for optimizer configuration
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached - request will return with service error.
+
+        Returns:
+            Operation result
+        """
+        if isinstance(optimizer_config, grpc.OptimizersConfigDiff):
+            optimizer_config = GrpcToRest.convert_optimizers_config_diff(optimizer_config)
+        return self.http.collections_api.update_collection(
+            collection_name,
+            update_collection=rest.UpdateCollection(
+                optimizers_config=optimizer_config
+            ),
+            timeout=timeout
+        )
+
+    def delete_collection(
+            self,
+            collection_name: str,
+            timeout: Optional[int] = None
+    ):
         """Removes collection and all it's data
 
         Args:
             collection_name: Name of the collection to delete
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached - request will return with service error.
 
         Returns:
             Operation result
         """
 
-        return self.http.collections_api.delete_collection(collection_name)
+        return self.http.collections_api.delete_collection(
+            collection_name,
+            timeout=timeout
+        )
 
     def recreate_collection(self,
                             collection_name: str,
                             vector_size: int,
                             distance: types.Distance,
+                            shard_number: Optional[int] = None,
+                            on_disk_payload: Optional[bool] = None,
                             hnsw_config: Optional[types.HnswConfigDiff] = None,
                             optimizers_config: Optional[types.OptimizersConfigDiff] = None,
                             wal_config: Optional[types.WalConfigDiff] = None,
+                            timeout: Optional[int] = None
                             ):
         """Delete and create empty collection with given parameters
 
@@ -785,9 +896,18 @@ class QdrantClient:
             collection_name: Name of the collection to recreate
             vector_size: Vector size of the collection
             distance: Which metric to use
+            shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            on_disk_payload:
+                If true - point`s payload will not be stored in memory.
+                It will be read from the disk every time it is requested.
+                This setting saves RAM by (slightly) increasing the response time.
+                Note: those payload values that are involved in filtering and are indexed - remain in RAM.
             hnsw_config: Params for HNSW index
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached - request will return with service error.
 
         Returns:
             Operation result
@@ -807,15 +927,22 @@ class QdrantClient:
 
         self.delete_collection(collection_name)
 
+        create_collection_request = rest.CreateCollection(
+            distance=distance,
+            vector_size=vector_size,
+            shard_number=shard_number,
+            on_disk_payload=on_disk_payload,
+            hnsw_config=hnsw_config,
+            optimizers_config=optimizers_config,
+            wal_config=wal_config
+        )
+
+        print(json.dumps(create_collection_request.dict(), indent=2))
+
         self.http.collections_api.create_collection(
             collection_name=collection_name,
-            create_collection=rest.CreateCollection(
-                distance=distance,
-                vector_size=vector_size,
-                hnsw_config=hnsw_config,
-                optimizers_config=optimizers_config,
-                wal_config=wal_config
-            )
+            create_collection=create_collection_request,
+            timeout=timeout
         )
 
     def upload_collection(self,

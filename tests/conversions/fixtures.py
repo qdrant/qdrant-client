@@ -122,7 +122,6 @@ optimizer_config = grpc.OptimizersConfigDiff(
     max_segment_size=200000,
     memmap_threshold=50000,
     indexing_threshold=10000,
-    payload_indexing_threshold=10000,
     flush_interval_sec=10,
     max_optimization_threads=0
 )
@@ -284,8 +283,8 @@ alias_operations_rename = grpc.AliasOperations(rename_alias=rename_alias)
 alias_operations_delete = grpc.AliasOperations(delete_alias=delete_alias)
 
 with_payload_bool = grpc.WithPayloadSelector(enable=True)
-with_payload_include = grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(include=["color", "price"]))
-with_payload_exclude = grpc.WithPayloadSelector(exclude=grpc.PayloadExcludeSelector(exclude=["color", "price"]))
+with_payload_include = grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(fields=["color", "price"]))
+with_payload_exclude = grpc.WithPayloadSelector(exclude=grpc.PayloadExcludeSelector(fields=["color", "price"]))
 
 retrieved_point = grpc.RetrievedPoint(
     id=point_id_1,
