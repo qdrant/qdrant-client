@@ -8,7 +8,7 @@ except ImportError:
     from typing_extensions import Literal
 
 from pydantic import BaseModel, Field
-from pydantic.types import StrictInt, StrictStr
+from pydantic.types import StrictBool, StrictInt, StrictStr
 
 
 class Batch(BaseModel):
@@ -770,12 +770,12 @@ PointsSelector = Union[
     FilterSelector,
 ]
 ValueVariants = Union[
-    bool,
+    StrictBool,
     StrictInt,
     StrictStr,
 ]
 WithPayloadInterface = Union[
     PayloadSelector,
     List[StrictStr],
-    bool,
+    StrictBool,
 ]
