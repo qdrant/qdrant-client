@@ -937,8 +937,6 @@ class QdrantClient:
             wal_config=wal_config
         )
 
-        print(json.dumps(create_collection_request.dict(), indent=2))
-
         self.http.collections_api.create_collection(
             collection_name=collection_name,
             create_collection=create_collection_request,
