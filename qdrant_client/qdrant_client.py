@@ -827,6 +827,11 @@ class QdrantClient:
         Returns:
             Detailed information about the collection
         """
+        if self._prefer_grpc:
+            return GrpcToRest.convert_collection_info(
+                asyncio.get_event_loop().run_until_complete(self._grpc_collections_client.get(
+                    collection_name=collection_name
+                )).result)
         return self.http.collections_api.get_collection(collection_name=collection_name).result
 
     def update_collection(
