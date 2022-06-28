@@ -23,9 +23,11 @@ cp $PROTO_DIR/*.proto $CLIENT_DIR/
 rm $CLIENT_DIR/points_internal_service.proto
 rm $CLIENT_DIR/collections_internal_service.proto
 rm $CLIENT_DIR/raft_service.proto
-cat $CLIENT_DIR/qdrant.proto | grep -v 'collections_internal_service.proto' > $CLIENT_DIR/qdrant_tmp.proto
-cat $CLIENT_DIR/qdrant.proto | grep -v 'points_internal_service.proto' > $CLIENT_DIR/qdrant_tmp.proto
-cat $CLIENT_DIR/qdrant.proto | grep -v 'raft_service.proto' > $CLIENT_DIR/qdrant_tmp.proto
+cat $CLIENT_DIR/qdrant.proto \
+ | grep -v 'collections_internal_service.proto' \
+ | grep -v 'points_internal_service.proto' \
+ | grep -v 'raft_service.proto' \
+  > $CLIENT_DIR/qdrant_tmp.proto
 mv $CLIENT_DIR/qdrant_tmp.proto $CLIENT_DIR/qdrant.proto
 
 python -m grpc_tools.protoc -I $CLIENT_DIR --python_betterproto_out=$CLIENT_DIR $CLIENT_DIR/*.proto

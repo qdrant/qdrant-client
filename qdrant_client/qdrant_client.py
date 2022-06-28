@@ -123,11 +123,14 @@ class QdrantClient:
                query_vector: Union[np.ndarray, List[float]],
                query_filter: Optional[types.Filter] = None,
                search_params: Optional[types.SearchParams] = None,
-               top: int = 10,
+               limit: int = 10,
+               offset: int = 0,
                with_payload: Union[bool, List[str], types.PayloadSelector] = True,
                with_vector: bool = False,
                score_threshold: Optional[float] = None,
-               append_payload=True) -> List[types.ScoredPoint]:
+               append_payload=True,
+               top: int = None,
+               ) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
 
         Args:
@@ -137,7 +140,11 @@ class QdrantClient:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
             search_params: Additional search params
-            top: How many results return
+            limit: How many results return
+            offset:
+                Offset of the first result to return.
+                May be used to paginate results.
+                Note: large offset values may cause performance issues.
             with_payload:
                 - Specify which stored payload should be attached to the result.
                 - If `True` - attach all payload
@@ -155,6 +162,7 @@ class QdrantClient:
                 on the Distance function used.
                 E.g. for cosine similarity only higher scores will be returned.
             append_payload: Same as `with_payload`. Deprecated.
+            top: Same as `limit`. Deprecated.
 
         Examples:
 
@@ -178,6 +186,10 @@ class QdrantClient:
         Returns:
             List of found close points with similarity scores.
         """
+        if top is not None:
+            limit = top
+            logger.warning("Usage of `top` is deprecated. Please consider using `limit` instead")
+
         if not append_payload:
             logger.warning("Usage of `append_payload` is deprecated. Please consider using `with_payload` instead")
             with_payload = append_payload
@@ -206,7 +218,8 @@ class QdrantClient:
                 collection_name=collection_name,
                 vector=query_vector,
                 filter=query_filter,
-                top=top,
+                limit=limit,
+                offset=offset,
                 with_vector=with_vector,
                 with_payload=with_payload,
                 params=search_params,
@@ -230,7 +243,8 @@ class QdrantClient:
                 search_request=rest.SearchRequest(
                     vector=query_vector,
                     filter=query_filter,
-                    top=top,
+                    limit=limit,
+                    offset=offset,
                     params=search_params,
                     with_vector=with_vector,
                     with_payload=with_payload,
@@ -247,10 +261,12 @@ class QdrantClient:
             negative: List[types.PointId] = None,
             query_filter: Optional[types.Filter] = None,
             search_params: Optional[types.SearchParams] = None,
-            top: int = 10,
+            limit: int = 10,
+            offset: int = 0,
             with_payload: Union[bool, List[str], types.PayloadSelector] = True,
             with_vector: bool = False,
             score_threshold: Optional[float] = None,
+            top: int = None,
     ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
 
@@ -271,7 +287,11 @@ class QdrantClient:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
             search_params: Additional search params
-            top: How many results return
+            limit: How many results return
+            offset:
+                Offset of the first result to return.
+                May be used to paginate results.
+                Note: large offset values may cause performance issues.
             with_payload:
                 - Specify which stored payload should be attached to the result.
                 - If `True` - attach all payload
@@ -288,10 +308,15 @@ class QdrantClient:
                 Score of the returned result might be higher or smaller than the threshold depending
                 on the Distance function used.
                 E.g. for cosine similarity only higher scores will be returned.
+            top: Same as `limit`. Deprecated.
 
         Returns:
             List of recommended points with similarity scores.
         """
+
+        if top is not None:
+            limit = top
+            logger.warning("Usage of `top` is deprecated. Please consider using `limit` instead")
 
         if negative is None:
             negative = []
@@ -328,7 +353,8 @@ class QdrantClient:
                 positive=positive,
                 negative=negative,
                 filter=query_filter,
-                top=top,
+                limit=limit,
+                offset=offset,
                 with_vector=with_vector,
                 with_payload=with_payload,
                 params=search_params,
@@ -363,7 +389,8 @@ class QdrantClient:
                     negative=negative,
                     params=search_params,
                     positive=positive,
-                    top=top,
+                    limit=limit,
+                    offset=offset,
                     with_payload=with_payload,
                     with_vector=with_vector,
                     score_threshold=score_threshold

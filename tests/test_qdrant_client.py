@@ -111,7 +111,7 @@ def test_qdrant_client_integration(prefer_grpc):
         query_vector=query_vector,
         query_filter=None,  # Don't use any filters for now, search across all indexed points
         append_payload=True,  # Also return a stored payload for found points
-        top=5  # Return 5 closest points
+        limit=5  # Return 5 closest points
     )
 
     assert len(hits) == 5
@@ -145,7 +145,7 @@ def test_qdrant_client_integration(prefer_grpc):
             ]
         ),
         append_payload=True,  # Also return a stored payload for found points
-        top=5  # Return 5 closest points
+        limit=5  # Return 5 closest points
     )
 
     print("Filtered search result (`random_num` >= 0.5):")
@@ -254,7 +254,7 @@ def test_qdrant_client_integration(prefer_grpc):
                 )
             ]
         ),
-        top=5,
+        limit=5,
         with_payload=True,
         with_vector=False
     )

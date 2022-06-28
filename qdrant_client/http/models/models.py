@@ -68,6 +68,7 @@ class CollectionInfo(BaseModel):
         ..., description="Current statistics and configuration of the collection"
     )
     vectors_count: int = Field(..., description="Number of vectors in collection")
+    points_count: int = Field(..., description="Number of points in collection")
     segments_count: int = Field(..., description="Number of segments in collection")
     disk_data_size: int = Field(..., description="Disk space, used by collection")
     ram_data_size: int = Field(..., description="RAM used by collection")
@@ -544,6 +545,7 @@ class RaftInfo(BaseModel):
     )
     leader: Optional[int] = Field(None, description="Leader of the current term")
     role: Optional["StateRole"] = Field(None, description="Role of this peer in the current term")
+    is_voter: bool = Field(..., description="Is this peer a voter or a learner")
 
 
 class Range(BaseModel):
@@ -566,7 +568,11 @@ class RecommendRequest(BaseModel):
     negative: List["ExtendedPointId"] = Field(..., description="Try to avoid vectors like this")
     filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(None, description="Additional search params")
-    top: int = Field(..., description="Max number of result to return")
+    limit: int = Field(..., description="Max number of result to return")
+    offset: Optional[int] = Field(
+        0,
+        description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
+    )
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Select which payload to return with the response. Default: None"
     )
@@ -662,7 +668,11 @@ class SearchRequest(BaseModel):
     vector: List[float] = Field(..., description="Look for vectors closest to this")
     filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(None, description="Additional search params")
-    top: int = Field(..., description="Max number of result to return")
+    limit: int = Field(..., description="Max number of result to return")
+    offset: Optional[int] = Field(
+        0,
+        description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
+    )
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Select which payload to return with the response. Default: None"
     )

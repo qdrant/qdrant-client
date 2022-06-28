@@ -121,7 +121,8 @@ class GrpcToRest:
             ram_data_size=model.ram_data_size,
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
-            vectors_count=model.vectors_count
+            vectors_count=model.vectors_count,
+            points_count=model.points_count,
         )
 
     @classmethod
@@ -292,7 +293,7 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_payload(cls, model: Dict[str, grpc.betterproto_lib_google_protobuf.Value]) -> rest.Payload:
+    def convert_payload(cls, model: Dict[str, grpc.Value]) -> rest.Payload:
         return dict(
             (key, value_to_json(val))
             for key, val in
@@ -502,6 +503,7 @@ class RestToGrpc:
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
             vectors_count=model.vectors_count,
+            points_count=model.points_count,
         )
 
     @classmethod
@@ -656,7 +658,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_payload(cls, model: rest.Payload) -> Dict[str, grpc.betterproto_lib_google_protobuf.Value]:
+    def convert_payload(cls, model: rest.Payload) -> Dict[str, grpc.Value]:
         return dict((key, json_to_value(val)) for key, val in model.items())
 
     @classmethod
