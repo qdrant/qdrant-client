@@ -971,7 +971,7 @@ class QdrantClient:
         if self._prefer_grpc:
             updater_class = GrpcBatchUploader
             port = self._grpc_port
-            start_method = 'spawn'
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
         else:
             updater_class = RestBatchUploader
             port = self._port
