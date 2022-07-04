@@ -1,6 +1,8 @@
 import os
 from enum import Enum
-from multiprocessing import Queue, Process, Value
+from multiprocessing import Queue, Value, get_context
+from multiprocessing.context import BaseContext
+from multiprocessing.process import BaseProcess
 from queue import Empty
 from typing import Iterable, Any, Type, Optional, List
 
@@ -79,24 +81,25 @@ def _worker(worker_class: Type[Worker],
 
 class ParallelWorkerPool:
 
-    def __init__(self, num_workers, worker: Type[Worker]):
+    def __init__(self, num_workers, worker: Type[Worker], start_method=None):
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Optional[Queue] = None
         self.output_queue: Optional[Queue] = None
-        self.processes: List[Process] = []
+        self.ctx: Optional[BaseContext] = get_context(start_method)
+        self.processes: List[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
 
         self.num_active_workers: Optional[Value] = None
 
     def start(self, **kwargs):
-        self.input_queue = Queue(self.queue_size)
-        self.output_queue = Queue(self.queue_size)
+        self.input_queue = self.ctx.Queue(self.queue_size)
+        self.output_queue = self.ctx.Queue(self.queue_size)
 
-        self.num_active_workers = Value('i', self.num_workers)
+        self.num_active_workers = self.ctx.Value('i', self.num_workers)
 
         for worker_id in range(0, self.num_workers):
-            process = Process(
+            process = self.ctx.Process(
                 target=_worker,
                 args=(
                     self.worker_class,

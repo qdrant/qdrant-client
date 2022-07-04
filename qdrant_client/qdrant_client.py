@@ -1,6 +1,7 @@
 import asyncio
 import json
 from typing import Optional, Iterable, List, Union, Tuple
+from multiprocessing import get_all_start_methods
 
 import numpy as np
 from loguru import logger
@@ -854,6 +855,11 @@ class QdrantClient:
         Returns:
             Detailed information about the collection
         """
+        if self._prefer_grpc:
+            return GrpcToRest.convert_collection_info(
+                asyncio.get_event_loop().run_until_complete(self._grpc_collections_client.get(
+                    collection_name=collection_name
+                )).result)
         return self.http.collections_api.get_collection(collection_name=collection_name).result
 
     def update_collection(
@@ -990,9 +996,11 @@ class QdrantClient:
         if self._prefer_grpc:
             updater_class = GrpcBatchUploader
             port = self._grpc_port
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
         else:
             updater_class = RestBatchUploader
             port = self._port
+            start_method = None  # preserve default
 
         batches_iterator = updater_class.iterate_batches(vectors=vectors,
                                                          payload=payload,
@@ -1003,7 +1011,7 @@ class QdrantClient:
             for _ in tqdm(updater.process(batches_iterator)):
                 pass
         else:
-            pool = ParallelWorkerPool(parallel, updater_class)
+            pool = ParallelWorkerPool(parallel, updater_class, start_method=start_method)
             for _ in tqdm(pool.unordered_map(batches_iterator,
                                              collection_name=collection_name,
                                              host=self._host,
