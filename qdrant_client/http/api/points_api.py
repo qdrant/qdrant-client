@@ -10,6 +10,7 @@ from qdrant_client.http.models import models as m
 
 SetIntStr = Set[Union[int, str]]
 DictIntStrAny = Dict[Union[int, str], Any]
+file = None
 
 
 def generate_encoders_by_class_tuples(type_encoder_map: Dict[Any, Callable]) -> Dict[Callable, Tuple]:
@@ -180,6 +181,28 @@ class _PointsApi:
             json=body,
         )
 
+    def _build_for_count_points(
+        self,
+        collection_name: str,
+        count_request: m.CountRequest = None,
+    ):
+        """
+        Count points which matches given filtering condition
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        body = jsonable_encoder(count_request)
+
+        return self.api_client.request(
+            type_=m.InlineResponse20011,
+            method="POST",
+            url="/collections/{collection_name}/points/count",
+            path_params=path_params,
+            json=body,
+        )
+
     def _build_for_delete_payload(
         self,
         collection_name: str,
@@ -250,7 +273,7 @@ class _PointsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
             path_params=path_params,
@@ -271,7 +294,7 @@ class _PointsApi:
         body = jsonable_encoder(point_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2008,
             method="POST",
             url="/collections/{collection_name}/points",
             path_params=path_params,
@@ -293,7 +316,7 @@ class _PointsApi:
         body = jsonable_encoder(recommend_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/points/recommend",
             path_params=path_params,
@@ -315,7 +338,7 @@ class _PointsApi:
         body = jsonable_encoder(scroll_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2009,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
             path_params=path_params,
@@ -337,7 +360,7 @@ class _PointsApi:
         body = jsonable_encoder(search_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/points/search",
             path_params=path_params,
@@ -417,6 +440,19 @@ class AsyncPointsApi(_PointsApi):
             points_selector=points_selector,
         )
 
+    async def count_points(
+        self,
+        collection_name: str,
+        count_request: m.CountRequest = None,
+    ) -> m.InlineResponse20011:
+        """
+        Count points which matches given filtering condition
+        """
+        return await self._build_for_count_points(
+            collection_name=collection_name,
+            count_request=count_request,
+        )
+
     async def delete_payload(
         self,
         collection_name: str,
@@ -451,7 +487,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Retrieve full information of single point by id
         """
@@ -464,7 +500,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
         Retrieve multiple points by specified IDs
         """
@@ -477,7 +513,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse20010:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -490,7 +526,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2009:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -503,7 +539,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse20010:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -559,6 +595,19 @@ class SyncPointsApi(_PointsApi):
             points_selector=points_selector,
         )
 
+    def count_points(
+        self,
+        collection_name: str,
+        count_request: m.CountRequest = None,
+    ) -> m.InlineResponse20011:
+        """
+        Count points which matches given filtering condition
+        """
+        return self._build_for_count_points(
+            collection_name=collection_name,
+            count_request=count_request,
+        )
+
     def delete_payload(
         self,
         collection_name: str,
@@ -593,7 +642,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Retrieve full information of single point by id
         """
@@ -606,7 +655,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
         Retrieve multiple points by specified IDs
         """
@@ -619,7 +668,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse20010:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -632,7 +681,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2009:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -645,7 +694,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse20010:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
