@@ -30,3 +30,5 @@ UpdateResult = rest.UpdateResult
 Record = rest.Record
 CollectionsResponse = rest.CollectionsResponse
 CollectionInfo = rest.CollectionInfo
+CountResult = rest.CountResult
+SnapshotDescription = rest.SnapshotDescription

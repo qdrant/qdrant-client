@@ -10,6 +10,7 @@ from qdrant_client.http.models import models as m
 
 SetIntStr = Set[Union[int, str]]
 DictIntStrAny = Dict[Union[int, str], Any]
+file = None
 
 
 def generate_encoders_by_class_tuples(type_encoder_map: Dict[Any, Callable]) -> Dict[Callable, Tuple]:
@@ -208,6 +209,24 @@ class _CollectionsApi:
             json=body,
         )
 
+    def _build_for_create_snapshot(
+        self,
+        collection_name: str,
+    ):
+        """
+        Create new snapshot for a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        return self.api_client.request(
+            type_=m.InlineResponse2006,
+            method="POST",
+            url="/collections/{collection_name}/snapshots",
+            path_params=path_params,
+        )
+
     def _build_for_delete_collection(
         self,
         collection_name: str,
@@ -288,6 +307,44 @@ class _CollectionsApi:
             url="/collections",
         )
 
+    def _build_for_get_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ):
+        """
+        Download specified snapshot from a collection as a file
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "snapshot_name": str(snapshot_name),
+        }
+
+        return self.api_client.request(
+            type_=file,
+            method="GET",
+            url="/collections/{collection_name}/snapshots/{snapshot_name}",
+            path_params=path_params,
+        )
+
+    def _build_for_list_snapshots(
+        self,
+        collection_name: str,
+    ):
+        """
+        Get list of snapshots for a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        return self.api_client.request(
+            type_=m.InlineResponse2005,
+            method="GET",
+            url="/collections/{collection_name}/snapshots",
+            path_params=path_params,
+        )
+
     def _build_for_update_aliases(
         self,
         timeout: int = None,
@@ -363,6 +420,17 @@ class AsyncCollectionsApi(_CollectionsApi):
             create_field_index=create_field_index,
         )
 
+    async def create_snapshot(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2006:
+        """
+        Create new snapshot for a collection
+        """
+        return await self._build_for_create_snapshot(
+            collection_name=collection_name,
+        )
+
     async def delete_collection(
         self,
         collection_name: str,
@@ -409,6 +477,30 @@ class AsyncCollectionsApi(_CollectionsApi):
         Get list name of all existing collections
         """
         return await self._build_for_get_collections()
+
+    async def get_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ) -> file:
+        """
+        Download specified snapshot from a collection as a file
+        """
+        return await self._build_for_get_snapshot(
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
+        )
+
+    async def list_snapshots(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2005:
+        """
+        Get list of snapshots for a collection
+        """
+        return await self._build_for_list_snapshots(
+            collection_name=collection_name,
+        )
 
     async def update_aliases(
         self,
@@ -467,6 +559,17 @@ class SyncCollectionsApi(_CollectionsApi):
             create_field_index=create_field_index,
         )
 
+    def create_snapshot(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2006:
+        """
+        Create new snapshot for a collection
+        """
+        return self._build_for_create_snapshot(
+            collection_name=collection_name,
+        )
+
     def delete_collection(
         self,
         collection_name: str,
@@ -513,6 +616,30 @@ class SyncCollectionsApi(_CollectionsApi):
         Get list name of all existing collections
         """
         return self._build_for_get_collections()
+
+    def get_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ) -> file:
+        """
+        Download specified snapshot from a collection as a file
+        """
+        return self._build_for_get_snapshot(
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
+        )
+
+    def list_snapshots(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2005:
+        """
+        Get list of snapshots for a collection
+        """
+        return self._build_for_list_snapshots(
+            collection_name=collection_name,
+        )
 
     def update_aliases(
         self,

@@ -485,6 +485,39 @@ class QdrantClient:
 
             return scroll_result.points, scroll_result.next_page_offset
 
+    def count(
+            self,
+            collection_name,
+            count_filter: Optional[types.Filter] = None,
+            exact: bool = True,
+    ) -> types.CountResult:
+        """Count points in the collection.
+
+        Count points in the collection matching the given filter.
+
+        Args:
+            collection_name: name of the collection to count points in
+            count_filter: filtering conditions
+            exact:
+                If `True` - provide the exact count of points matching the filter.
+                If `False` - provide the approximate count of points matching the filter. Works faster.
+
+        Returns:
+            Amount of points in the collection matching the filter.
+        """
+        if isinstance(count_filter, grpc.Filter):
+            count_filter = GrpcToRest.convert_filter(model=count_filter)
+
+        count_result = self.openapi_client.points_api.count_points(
+            collection_name=collection_name,
+            count_request=rest.CountRequest(
+                filter=count_filter,
+                exact=exact
+            )
+        ).result
+
+        return count_result
+
     def upsert(
             self,
             collection_name: str,
@@ -1067,3 +1100,27 @@ class QdrantClient:
             field_name=field_name,
             wait=wait
         )
+
+    def list_snapshots(self, collection_name: str) -> List[types.SnapshotDescription]:
+        """List all snapshots for a given collection.
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            List of snapshots
+        """
+        return self.openapi_client.collections_api.list_snapshots(collection_name=collection_name).result
+
+    def create_snapshot(self, collection_name: str) -> types.SnapshotDescription:
+        """Create snapshot for a given collection.
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            Snapshot description
+        """
+        return self.openapi_client.collections_api.create_snapshot(
+            collection_name=collection_name
+        ).result

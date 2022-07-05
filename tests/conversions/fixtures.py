@@ -1,3 +1,4 @@
+import datetime
 from typing import List
 
 import betterproto
@@ -292,6 +293,14 @@ retrieved_point = grpc.RetrievedPoint(
     vector=[1., 2., 3., 4.]
 )
 
+count_result = grpc.CountResult(count=5)
+
+snapshot_description = grpc.SnapshotDescription(
+    name="my_snapshot",
+    creation_time=datetime.datetime.now(),
+    size=100500
+)
+
 fixtures = {
     "CollectionParams": [collection_params],
     "CollectionConfig": [collection_config],
@@ -355,7 +364,9 @@ fixtures = {
     ],
     "RetrievedPoint": [
         retrieved_point
-    ]
+    ],
+    "CountResult": [count_result],
+    "SnapshotDescription": [snapshot_description],
 }
 
 

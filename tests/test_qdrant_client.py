@@ -81,6 +81,23 @@ def test_qdrant_client_integration(prefer_grpc):
     # If you need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
     sleep(1)
 
+    result_count = client.count(
+        COLLECTION_NAME,
+        count_filter=Filter(
+            must=[
+                FieldCondition(
+                    key='rand_number',  # Condition based on values of `rand_number` field.
+                    range=Range(
+                        gte=0.5  # Select only those results where `rand_number` >= 0.5
+                    )
+                )
+            ]
+        )
+    )
+
+    assert result_count.count < 900
+    assert result_count.count > 100
+
     client.update_collection_aliases(
         change_aliases_operations=[
             CreateAliasOperation(

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Dict, Any
 
 import betterproto
@@ -451,6 +452,20 @@ class GrpcToRest:
     def convert_record(cls, model: grpc.RetrievedPoint) -> rest.Record:
         return cls.convert_retrieved_point(model)
 
+    @classmethod
+    def convert_count_result(cls, model: grpc.CountResult) -> rest.CountResult:
+        return rest.CountResult(
+            count=model.count
+        )
+
+    @classmethod
+    def convert_snapshot_description(cls, model: grpc.SnapshotDescription) -> rest.SnapshotDescription:
+        return rest.SnapshotDescription(
+            name=model.name,
+            creation_time=model.creation_time.isoformat(),
+            size=model.size,
+        )
+
 
 # ----------------------------------------
 #
@@ -890,3 +905,15 @@ class RestToGrpc:
     @classmethod
     def convert_retrieved_point(cls, model: rest.Record) -> grpc.RetrievedPoint:
         return cls.convert_record(model)
+
+    @classmethod
+    def convert_count_result(cls, model: rest.CountResult) -> grpc.CountResult:
+        return grpc.CountResult(count=model.count)
+
+    @classmethod
+    def convert_snapshot_description(cls, model: rest.SnapshotDescription) -> grpc.SnapshotDescription:
+        return grpc.SnapshotDescription(
+            name=model.name,
+            creation_time=datetime.fromisoformat(model.creation_time),
+            size=model.size,
+        )

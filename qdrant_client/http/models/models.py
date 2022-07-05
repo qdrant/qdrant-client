@@ -96,6 +96,21 @@ class CollectionsResponse(BaseModel):
     collections: List["CollectionDescription"] = Field(..., description="")
 
 
+class CountRequest(BaseModel):
+    """
+    Count Request Counts the number of points which satisfy the given filter. If filter is not provided, the count of all points in the collection will be returned.
+    """
+
+    filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
+    exact: Optional[bool] = Field(
+        True, description="If true, count exact number of points. If false, count approximate number of points faster."
+    )
+
+
+class CountResult(BaseModel):
+    count: int = Field(..., description="Number of points which satisfy the conditions")
+
+
 class CreateAlias(BaseModel):
     """
     Create alternative name for a collection. Collection will be available under both names for search, retrieve,
@@ -273,6 +288,9 @@ class HnswConfig(BaseModel):
         ...,
         description="Minimal size (in KiloBytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
     )
+    max_indexing_threads: Optional[int] = Field(
+        0, description="Number of parallel threads used for background index building. If 0 - auto selection."
+    )
 
 
 class HnswConfigDiff(BaseModel):
@@ -306,6 +324,22 @@ class InlineResponse2001(BaseModel):
     result: Optional["CollectionsResponse"] = Field(None, description="")
 
 
+class InlineResponse20010(BaseModel):
+    time: Optional[float] = Field(None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
+    result: Optional[List["ScoredPoint"]] = Field(None, description="")
+
+
+class InlineResponse20011(BaseModel):
+    time: Optional[float] = Field(None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
+    result: Optional["CountResult"] = Field(None, description="")
+
+
 class InlineResponse2002(BaseModel):
     time: Optional[float] = Field(None, description="Time spent to process this request")
     status: Literal[
@@ -335,7 +369,7 @@ class InlineResponse2005(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["Record"] = Field(None, description="")
+    result: Optional[List["SnapshotDescription"]] = Field(None, description="")
 
 
 class InlineResponse2006(BaseModel):
@@ -343,7 +377,7 @@ class InlineResponse2006(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["Record"]] = Field(None, description="")
+    result: Optional["SnapshotDescription"] = Field(None, description="")
 
 
 class InlineResponse2007(BaseModel):
@@ -351,7 +385,7 @@ class InlineResponse2007(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ScrollResult"] = Field(None, description="")
+    result: Optional["Record"] = Field(None, description="")
 
 
 class InlineResponse2008(BaseModel):
@@ -359,7 +393,15 @@ class InlineResponse2008(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(None, description="")
+    result: Optional[List["Record"]] = Field(None, description="")
+
+
+class InlineResponse2009(BaseModel):
+    time: Optional[float] = Field(None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
+    result: Optional["ScrollResult"] = Field(None, description="")
 
 
 class IsEmptyCondition(BaseModel):
@@ -686,6 +728,12 @@ class SearchRequest(BaseModel):
 class SetPayload(BaseModel):
     payload: "Payload" = Field(..., description="")
     points: List["ExtendedPointId"] = Field(..., description="Assigns payload to each point in this list")
+
+
+class SnapshotDescription(BaseModel):
+    name: str = Field(..., description="")
+    creation_time: str = Field(..., description="")
+    size: int = Field(..., description="")
 
 
 class StateRole(str, Enum):
