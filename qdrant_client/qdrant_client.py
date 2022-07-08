@@ -1,7 +1,6 @@
 import asyncio
-import json
-from typing import Optional, Iterable, List, Union, Tuple
 from multiprocessing import get_all_start_methods
+from typing import Optional, Iterable, List, Union, Tuple
 
 import numpy as np
 from loguru import logger
@@ -53,12 +52,14 @@ class QdrantClient:
                  port=6333,
                  grpc_port=6334,
                  prefer_grpc=False,
+                 https=False,
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._host = host
         self._port = port
-        self.openapi_client = SyncApis(host=f"http://{host}:{port}", **kwargs)
+        protocol = "https" if https else "http"
+        self.openapi_client = SyncApis(host=f"{protocol}://{host}:{port}", **kwargs)
 
         self._grpc_channel = None
         self._grpc_points_client = None
