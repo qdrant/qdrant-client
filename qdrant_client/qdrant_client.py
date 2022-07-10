@@ -58,8 +58,8 @@ class QdrantClient:
         self._grpc_port = grpc_port
         self._host = host
         self._port = port
-        protocol = "https" if https else "http"
-        self.openapi_client = SyncApis(host=f"{protocol}://{host}:{port}", **kwargs)
+        self.rest_uri = f"http{'s' if https else ''}://{host}:{port}"
+        self.openapi_client = SyncApis(host=self.rest_uri, **kwargs)
 
         self._grpc_channel = None
         self._grpc_points_client = None
@@ -1029,27 +1029,31 @@ class QdrantClient:
         """
         if self._prefer_grpc:
             updater_class = GrpcBatchUploader
-            port = self._grpc_port
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            updater_kwargs = {
+                "collection_name": collection_name,
+                "host": self._host,
+                "port": self._grpc_port,
+            }
         else:
             updater_class = RestBatchUploader
-            port = self._port
             start_method = None  # preserve default
+            updater_kwargs = {
+                "collection_name": collection_name,
+                "uri": self.rest_uri
+            }
 
         batches_iterator = updater_class.iterate_batches(vectors=vectors,
                                                          payload=payload,
                                                          ids=ids,
                                                          batch_size=batch_size)
         if parallel == 1:
-            updater = updater_class.start(collection_name=collection_name, host=self._host, port=port)
+            updater = updater_class.start(**updater_kwargs)
             for _ in tqdm(updater.process(batches_iterator)):
                 pass
         else:
             pool = ParallelWorkerPool(parallel, updater_class, start_method=start_method)
-            for _ in tqdm(pool.unordered_map(batches_iterator,
-                                             collection_name=collection_name,
-                                             host=self._host,
-                                             port=port)):
+            for _ in tqdm(pool.unordered_map(batches_iterator, **updater_kwargs)):
                 pass
 
     def create_payload_index(self,

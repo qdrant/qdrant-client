@@ -26,15 +26,15 @@ def upload_batch(openapi_client: SyncApis, collection_name: str, batch) -> bool:
 
 class RestBatchUploader(BaseUploader):
 
-    def __init__(self, host, port, collection_name):
+    def __init__(self, uri, collection_name):
         self.collection_name = collection_name
-        self.openapi_client = SyncApis(host=f"http://{host}:{port}")
+        self.openapi_client = SyncApis(host=uri)
 
     @classmethod
-    def start(cls, collection_name=None, host="localhost", port=6333, **kwargs) -> 'RestBatchUploader':
+    def start(cls, collection_name=None, uri="http://localhost:6333", **kwargs) -> 'RestBatchUploader':
         if not collection_name:
             raise RuntimeError("Collection name could not be empty")
-        return cls(host=host, port=port, collection_name=collection_name)
+        return cls(uri=uri, collection_name=collection_name)
 
     def process(self, items: Iterable[Any]) -> Iterable[Any]:
         for batch in items:
