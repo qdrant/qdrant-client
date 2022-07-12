@@ -30,7 +30,8 @@ Create a new collection
 ```python
 client.recreate_collection(
     collection_name="my_collection",
-    vector_size=100
+    vector_size=100,
+    distance="Cosine"
 )
 ```
 
