@@ -1129,3 +1129,19 @@ class QdrantClient:
         return self.openapi_client.collections_api.create_snapshot(
             collection_name=collection_name
         ).result
+
+    def list_full_snapshots(self) -> List[types.SnapshotDescription]:
+        """List all snapshots for a whole storage
+
+        Returns:
+            List of snapshots
+        """
+        return self.openapi_client.snapshots_api.list_full_snapshots().result
+
+    def create_full_snapshot(self) -> types.SnapshotDescription:
+        """Create snapshot for a whole storage.
+
+        Returns:
+            Snapshot description
+        """
+        return self.openapi_client.snapshots_api.create_full_snapshot().result

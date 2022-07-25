@@ -153,6 +153,24 @@ class _CollectionsApi:
     def __init__(self, api_client: "Union[ApiClient, AsyncApiClient]"):
         self.api_client = api_client
 
+    def _build_for_collection_cluster_info(
+        self,
+        collection_name: str,
+    ):
+        """
+        Get cluster information for a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        return self.api_client.request(
+            type_=m.InlineResponse2006,
+            method="GET",
+            url="/collections/{collection_name}/cluster",
+            path_params=path_params,
+        )
+
     def _build_for_create_collection(
         self,
         collection_name: str,
@@ -173,7 +191,7 @@ class _CollectionsApi:
         body = jsonable_encoder(create_collection)
 
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse2004,
             method="PUT",
             url="/collections/{collection_name}",
             path_params=path_params,
@@ -201,7 +219,7 @@ class _CollectionsApi:
         body = jsonable_encoder(create_field_index)
 
         return self.api_client.request(
-            type_=m.InlineResponse2004,
+            type_=m.InlineResponse2005,
             method="PUT",
             url="/collections/{collection_name}/index",
             path_params=path_params,
@@ -221,7 +239,7 @@ class _CollectionsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2008,
             method="POST",
             url="/collections/{collection_name}/snapshots",
             path_params=path_params,
@@ -244,7 +262,7 @@ class _CollectionsApi:
             query_params["timeout"] = str(timeout)
 
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse2004,
             method="DELETE",
             url="/collections/{collection_name}",
             path_params=path_params,
@@ -270,7 +288,7 @@ class _CollectionsApi:
             query_params["wait"] = str(wait).lower()
 
         return self.api_client.request(
-            type_=m.InlineResponse2004,
+            type_=m.InlineResponse2005,
             method="DELETE",
             url="/collections/{collection_name}/index/{field_name}",
             path_params=path_params,
@@ -289,7 +307,7 @@ class _CollectionsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2002,
+            type_=m.InlineResponse2003,
             method="GET",
             url="/collections/{collection_name}",
             path_params=path_params,
@@ -302,7 +320,7 @@ class _CollectionsApi:
         Get list name of all existing collections
         """
         return self.api_client.request(
-            type_=m.InlineResponse2001,
+            type_=m.InlineResponse2002,
             method="GET",
             url="/collections",
         )
@@ -339,7 +357,7 @@ class _CollectionsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/snapshots",
             path_params=path_params,
@@ -357,7 +375,7 @@ class _CollectionsApi:
         body = jsonable_encoder(change_aliases_operation)
 
         return self.api_client.request(
-            type_=m.InlineResponse2003, method="POST", url="/collections/aliases", params=query_params, json=body
+            type_=m.InlineResponse2004, method="POST", url="/collections/aliases", params=query_params, json=body
         )
 
     def _build_for_update_collection(
@@ -380,7 +398,7 @@ class _CollectionsApi:
         body = jsonable_encoder(update_collection)
 
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse2004,
             method="PATCH",
             url="/collections/{collection_name}",
             path_params=path_params,
@@ -390,12 +408,23 @@ class _CollectionsApi:
 
 
 class AsyncCollectionsApi(_CollectionsApi):
+    async def collection_cluster_info(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2006:
+        """
+        Get cluster information for a collection
+        """
+        return await self._build_for_collection_cluster_info(
+            collection_name=collection_name,
+        )
+
     async def create_collection(
         self,
         collection_name: str,
         timeout: int = None,
         create_collection: m.CreateCollection = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2004:
         """
         Create new collection with given parameters
         """
@@ -410,7 +439,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         wait: bool = None,
         create_field_index: m.CreateFieldIndex = None,
-    ) -> m.InlineResponse2004:
+    ) -> m.InlineResponse2005:
         """
         Create index for field in collection
         """
@@ -423,7 +452,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def create_snapshot(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
         Create new snapshot for a collection
         """
@@ -435,7 +464,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         timeout: int = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2004:
         """
         Drop collection and all associated data
         """
@@ -449,7 +478,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         field_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse2004:
+    ) -> m.InlineResponse2005:
         """
         Delete field index for collection
         """
@@ -462,7 +491,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def get_collection(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Get detailed information about specified existing collection
         """
@@ -472,7 +501,7 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def get_collections(
         self,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Get list name of all existing collections
         """
@@ -494,7 +523,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Get list of snapshots for a collection
         """
@@ -506,7 +535,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         timeout: int = None,
         change_aliases_operation: m.ChangeAliasesOperation = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2004:
         return await self._build_for_update_aliases(
             timeout=timeout,
             change_aliases_operation=change_aliases_operation,
@@ -517,7 +546,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         timeout: int = None,
         update_collection: m.UpdateCollection = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2004:
         """
         Update parameters of the existing collection
         """
@@ -529,12 +558,23 @@ class AsyncCollectionsApi(_CollectionsApi):
 
 
 class SyncCollectionsApi(_CollectionsApi):
+    def collection_cluster_info(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2006:
+        """
+        Get cluster information for a collection
+        """
+        return self._build_for_collection_cluster_info(
+            collection_name=collection_name,
+        )
+
     def create_collection(
         self,
         collection_name: str,
         timeout: int = None,
         create_collection: m.CreateCollection = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2004:
         """
         Create new collection with given parameters
         """
@@ -549,7 +589,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         wait: bool = None,
         create_field_index: m.CreateFieldIndex = None,
-    ) -> m.InlineResponse2004:
+    ) -> m.InlineResponse2005:
         """
         Create index for field in collection
         """
@@ -562,7 +602,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def create_snapshot(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
         Create new snapshot for a collection
         """
@@ -574,7 +614,7 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         timeout: int = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2004:
         """
         Drop collection and all associated data
         """
@@ -588,7 +628,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         field_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse2004:
+    ) -> m.InlineResponse2005:
         """
         Delete field index for collection
         """
@@ -601,7 +641,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def get_collection(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Get detailed information about specified existing collection
         """
@@ -611,7 +651,7 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def get_collections(
         self,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Get list name of all existing collections
         """
@@ -633,7 +673,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2007:
         """
         Get list of snapshots for a collection
         """
@@ -645,7 +685,7 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         timeout: int = None,
         change_aliases_operation: m.ChangeAliasesOperation = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2004:
         return self._build_for_update_aliases(
             timeout=timeout,
             change_aliases_operation=change_aliases_operation,
@@ -656,7 +696,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         timeout: int = None,
         update_collection: m.UpdateCollection = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2004:
         """
         Update parameters of the existing collection
         """

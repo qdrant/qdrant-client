@@ -6,7 +6,9 @@ from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
 from qdrant_client.http.api.cluster_api import AsyncClusterApi, SyncClusterApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
+from qdrant_client.http.api.default_api import AsyncDefaultApi, SyncDefaultApi
 from qdrant_client.http.api.points_api import AsyncPointsApi, SyncPointsApi
+from qdrant_client.http.api.snapshots_api import AsyncSnapshotsApi, SyncSnapshotsApi
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
 
 ClientT = TypeVar("ClientT", bound="ApiClient")
@@ -19,7 +21,9 @@ class AsyncApis(Generic[AsyncClientT]):
 
         self.cluster_api = AsyncClusterApi(self.client)
         self.collections_api = AsyncCollectionsApi(self.client)
+        self.default_api = AsyncDefaultApi(self.client)
         self.points_api = AsyncPointsApi(self.client)
+        self.snapshots_api = AsyncSnapshotsApi(self.client)
 
 
 class SyncApis(Generic[ClientT]):
@@ -28,7 +32,9 @@ class SyncApis(Generic[ClientT]):
 
         self.cluster_api = SyncClusterApi(self.client)
         self.collections_api = SyncCollectionsApi(self.client)
+        self.default_api = SyncDefaultApi(self.client)
         self.points_api = SyncPointsApi(self.client)
+        self.snapshots_api = SyncSnapshotsApi(self.client)
 
 
 T = TypeVar("T")

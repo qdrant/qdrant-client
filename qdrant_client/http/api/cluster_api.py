@@ -160,27 +160,67 @@ class _ClusterApi:
         Get information about the current state and composition of the cluster
         """
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse2001,
             method="GET",
             url="/cluster",
+        )
+
+    def _build_for_collection_cluster_info(
+        self,
+        collection_name: str,
+    ):
+        """
+        Get cluster information for a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        return self.api_client.request(
+            type_=m.InlineResponse2006,
+            method="GET",
+            url="/collections/{collection_name}/cluster",
+            path_params=path_params,
         )
 
 
 class AsyncClusterApi(_ClusterApi):
     async def cluster_status(
         self,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         """
         Get information about the current state and composition of the cluster
         """
         return await self._build_for_cluster_status()
 
+    async def collection_cluster_info(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2006:
+        """
+        Get cluster information for a collection
+        """
+        return await self._build_for_collection_cluster_info(
+            collection_name=collection_name,
+        )
+
 
 class SyncClusterApi(_ClusterApi):
     def cluster_status(
         self,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         """
         Get information about the current state and composition of the cluster
         """
         return self._build_for_cluster_status()
+
+    def collection_cluster_info(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2006:
+        """
+        Get cluster information for a collection
+        """
+        return self._build_for_collection_cluster_info(
+            collection_name=collection_name,
+        )
