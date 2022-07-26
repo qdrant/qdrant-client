@@ -149,78 +149,50 @@ if TYPE_CHECKING:
     from qdrant_client.http.api_client import ApiClient
 
 
-class _ClusterApi:
+class _DefaultApi:
     def __init__(self, api_client: "Union[ApiClient, AsyncApiClient]"):
         self.api_client = api_client
 
-    def _build_for_cluster_status(
+    def _build_for_telemetry(
         self,
+        anonymize: bool = None,
     ):
         """
-        Get information about the current state and composition of the cluster
+        Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
-        return self.api_client.request(
-            type_=m.InlineResponse2001,
-            method="GET",
-            url="/cluster",
-        )
-
-    def _build_for_collection_cluster_info(
-        self,
-        collection_name: str,
-    ):
-        """
-        Get cluster information for a collection
-        """
-        path_params = {
-            "collection_name": str(collection_name),
-        }
+        query_params = {}
+        if anonymize is not None:
+            query_params["anonymize"] = str(anonymize).lower()
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse200,
             method="GET",
-            url="/collections/{collection_name}/cluster",
-            path_params=path_params,
+            url="/telemetry",
+            params=query_params,
         )
 
 
-class AsyncClusterApi(_ClusterApi):
-    async def cluster_status(
+class AsyncDefaultApi(_DefaultApi):
+    async def telemetry(
         self,
-    ) -> m.InlineResponse2001:
+        anonymize: bool = None,
+    ) -> m.InlineResponse200:
         """
-        Get information about the current state and composition of the cluster
+        Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
-        return await self._build_for_cluster_status()
-
-    async def collection_cluster_info(
-        self,
-        collection_name: str,
-    ) -> m.InlineResponse2006:
-        """
-        Get cluster information for a collection
-        """
-        return await self._build_for_collection_cluster_info(
-            collection_name=collection_name,
+        return await self._build_for_telemetry(
+            anonymize=anonymize,
         )
 
 
-class SyncClusterApi(_ClusterApi):
-    def cluster_status(
+class SyncDefaultApi(_DefaultApi):
+    def telemetry(
         self,
-    ) -> m.InlineResponse2001:
+        anonymize: bool = None,
+    ) -> m.InlineResponse200:
         """
-        Get information about the current state and composition of the cluster
+        Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
-        return self._build_for_cluster_status()
-
-    def collection_cluster_info(
-        self,
-        collection_name: str,
-    ) -> m.InlineResponse2006:
-        """
-        Get cluster information for a collection
-        """
-        return self._build_for_collection_cluster_info(
-            collection_name=collection_name,
+        return self._build_for_telemetry(
+            anonymize=anonymize,
         )

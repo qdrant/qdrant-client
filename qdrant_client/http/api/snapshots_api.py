@@ -149,78 +149,232 @@ if TYPE_CHECKING:
     from qdrant_client.http.api_client import ApiClient
 
 
-class _ClusterApi:
+class _SnapshotsApi:
     def __init__(self, api_client: "Union[ApiClient, AsyncApiClient]"):
         self.api_client = api_client
 
-    def _build_for_cluster_status(
+    def _build_for_create_full_snapshot(
         self,
     ):
         """
-        Get information about the current state and composition of the cluster
+        Create new snapshot of the whole storage
         """
         return self.api_client.request(
-            type_=m.InlineResponse2001,
-            method="GET",
-            url="/cluster",
+            type_=m.InlineResponse2008,
+            method="POST",
+            url="/snapshots",
         )
 
-    def _build_for_collection_cluster_info(
+    def _build_for_create_snapshot(
         self,
         collection_name: str,
     ):
         """
-        Get cluster information for a collection
+        Create new snapshot for a collection
         """
         path_params = {
             "collection_name": str(collection_name),
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2008,
+            method="POST",
+            url="/collections/{collection_name}/snapshots",
+            path_params=path_params,
+        )
+
+    def _build_for_get_full_snapshot(
+        self,
+        snapshot_name: str,
+    ):
+        """
+        Download specified snapshot of the whole storage as a file
+        """
+        path_params = {
+            "snapshot_name": str(snapshot_name),
+        }
+
+        return self.api_client.request(
+            type_=file,
             method="GET",
-            url="/collections/{collection_name}/cluster",
+            url="/snapshots/{snapshot_name}",
+            path_params=path_params,
+        )
+
+    def _build_for_get_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ):
+        """
+        Download specified snapshot from a collection as a file
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "snapshot_name": str(snapshot_name),
+        }
+
+        return self.api_client.request(
+            type_=file,
+            method="GET",
+            url="/collections/{collection_name}/snapshots/{snapshot_name}",
+            path_params=path_params,
+        )
+
+    def _build_for_list_full_snapshots(
+        self,
+    ):
+        """
+        Get list of snapshots of the whole storage
+        """
+        return self.api_client.request(
+            type_=m.InlineResponse2007,
+            method="GET",
+            url="/snapshots",
+        )
+
+    def _build_for_list_snapshots(
+        self,
+        collection_name: str,
+    ):
+        """
+        Get list of snapshots for a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        return self.api_client.request(
+            type_=m.InlineResponse2007,
+            method="GET",
+            url="/collections/{collection_name}/snapshots",
             path_params=path_params,
         )
 
 
-class AsyncClusterApi(_ClusterApi):
-    async def cluster_status(
+class AsyncSnapshotsApi(_SnapshotsApi):
+    async def create_full_snapshot(
         self,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2008:
         """
-        Get information about the current state and composition of the cluster
+        Create new snapshot of the whole storage
         """
-        return await self._build_for_cluster_status()
+        return await self._build_for_create_full_snapshot()
 
-    async def collection_cluster_info(
+    async def create_snapshot(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
-        Get cluster information for a collection
+        Create new snapshot for a collection
         """
-        return await self._build_for_collection_cluster_info(
+        return await self._build_for_create_snapshot(
+            collection_name=collection_name,
+        )
+
+    async def get_full_snapshot(
+        self,
+        snapshot_name: str,
+    ) -> file:
+        """
+        Download specified snapshot of the whole storage as a file
+        """
+        return await self._build_for_get_full_snapshot(
+            snapshot_name=snapshot_name,
+        )
+
+    async def get_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ) -> file:
+        """
+        Download specified snapshot from a collection as a file
+        """
+        return await self._build_for_get_snapshot(
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
+        )
+
+    async def list_full_snapshots(
+        self,
+    ) -> m.InlineResponse2007:
+        """
+        Get list of snapshots of the whole storage
+        """
+        return await self._build_for_list_full_snapshots()
+
+    async def list_snapshots(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2007:
+        """
+        Get list of snapshots for a collection
+        """
+        return await self._build_for_list_snapshots(
             collection_name=collection_name,
         )
 
 
-class SyncClusterApi(_ClusterApi):
-    def cluster_status(
+class SyncSnapshotsApi(_SnapshotsApi):
+    def create_full_snapshot(
         self,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2008:
         """
-        Get information about the current state and composition of the cluster
+        Create new snapshot of the whole storage
         """
-        return self._build_for_cluster_status()
+        return self._build_for_create_full_snapshot()
 
-    def collection_cluster_info(
+    def create_snapshot(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
-        Get cluster information for a collection
+        Create new snapshot for a collection
         """
-        return self._build_for_collection_cluster_info(
+        return self._build_for_create_snapshot(
+            collection_name=collection_name,
+        )
+
+    def get_full_snapshot(
+        self,
+        snapshot_name: str,
+    ) -> file:
+        """
+        Download specified snapshot of the whole storage as a file
+        """
+        return self._build_for_get_full_snapshot(
+            snapshot_name=snapshot_name,
+        )
+
+    def get_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ) -> file:
+        """
+        Download specified snapshot from a collection as a file
+        """
+        return self._build_for_get_snapshot(
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
+        )
+
+    def list_full_snapshots(
+        self,
+    ) -> m.InlineResponse2007:
+        """
+        Get list of snapshots of the whole storage
+        """
+        return self._build_for_list_full_snapshots()
+
+    def list_snapshots(
+        self,
+        collection_name: str,
+    ) -> m.InlineResponse2007:
+        """
+        Get list of snapshots for a collection
+        """
+        return self._build_for_list_snapshots(
             collection_name=collection_name,
         )

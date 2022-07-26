@@ -678,6 +678,16 @@ class GeoPoint(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class CreateFullSnapshotRequest(betterproto.Message):
+    pass
+
+
+@dataclass(eq=False, repr=False)
+class ListFullSnapshotsRequest(betterproto.Message):
+    pass
+
+
+@dataclass(eq=False, repr=False)
 class CreateSnapshotRequest(betterproto.Message):
     collection_name: str = betterproto.string_field(1)
 
@@ -1097,6 +1107,22 @@ class SnapshotsStub(betterproto.ServiceStub):
 
         return await self._unary_unary(
             "/qdrant.Snapshots/List", request, ListSnapshotsResponse
+        )
+
+    async def create_full(self) -> "CreateSnapshotResponse":
+
+        request = CreateFullSnapshotRequest()
+
+        return await self._unary_unary(
+            "/qdrant.Snapshots/CreateFull", request, CreateSnapshotResponse
+        )
+
+    async def list_full(self) -> "ListSnapshotsResponse":
+
+        request = ListFullSnapshotsRequest()
+
+        return await self._unary_unary(
+            "/qdrant.Snapshots/ListFull", request, ListSnapshotsResponse
         )
 
 
@@ -1613,6 +1639,12 @@ class SnapshotsBase(ServiceBase):
     async def list(self, collection_name: str) -> "ListSnapshotsResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
+    async def create_full(self) -> "CreateSnapshotResponse":
+        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
+
+    async def list_full(self) -> "ListSnapshotsResponse":
+        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
+
     async def __rpc_create(self, stream: grpclib.server.Stream) -> None:
         request = await stream.recv_message()
 
@@ -1633,6 +1665,22 @@ class SnapshotsBase(ServiceBase):
         response = await self.list(**request_kwargs)
         await stream.send_message(response)
 
+    async def __rpc_create_full(self, stream: grpclib.server.Stream) -> None:
+        request = await stream.recv_message()
+
+        request_kwargs = {}
+
+        response = await self.create_full(**request_kwargs)
+        await stream.send_message(response)
+
+    async def __rpc_list_full(self, stream: grpclib.server.Stream) -> None:
+        request = await stream.recv_message()
+
+        request_kwargs = {}
+
+        response = await self.list_full(**request_kwargs)
+        await stream.send_message(response)
+
     def __mapping__(self) -> Dict[str, grpclib.const.Handler]:
         return {
             "/qdrant.Snapshots/Create": grpclib.const.Handler(
@@ -1645,6 +1693,18 @@ class SnapshotsBase(ServiceBase):
                 self.__rpc_list,
                 grpclib.const.Cardinality.UNARY_UNARY,
                 ListSnapshotsRequest,
+                ListSnapshotsResponse,
+            ),
+            "/qdrant.Snapshots/CreateFull": grpclib.const.Handler(
+                self.__rpc_create_full,
+                grpclib.const.Cardinality.UNARY_UNARY,
+                CreateFullSnapshotRequest,
+                CreateSnapshotResponse,
+            ),
+            "/qdrant.Snapshots/ListFull": grpclib.const.Handler(
+                self.__rpc_list_full,
+                grpclib.const.Cardinality.UNARY_UNARY,
+                ListFullSnapshotsRequest,
                 ListSnapshotsResponse,
             ),
         }
