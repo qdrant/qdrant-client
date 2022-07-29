@@ -68,6 +68,11 @@ class QdrantClient:
             self._init_grpc_points_client()
             self._init_grpc_collections_client()
 
+    def __del__(self):
+        if self._grpc_channel is not None:
+            self._grpc_channel.close()
+        self.openapi_client.client._client.close()
+
     def _init_grpc_points_client(self):
         if self._grpc_channel is None:
             from grpclib.client import Channel
