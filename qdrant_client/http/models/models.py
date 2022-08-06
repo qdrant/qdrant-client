@@ -11,6 +11,10 @@ from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictInt, StrictStr
 
 
+class AbortTransferOperation(BaseModel):
+    abort_transfer: "MoveShard" = Field(..., description="")
+
+
 class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
     debug: bool = Field(..., description="")
@@ -59,6 +63,7 @@ class ClusterStatusOneOf1(BaseModel):
     peer_id: int = Field(..., description="ID of this peer")
     peers: Dict[str, "PeerInfo"] = Field(..., description="Peers composition of the cluster with main information")
     raft_info: "RaftInfo" = Field(..., description="Description of enabled cluster")
+    consensus_thread_status: "ConsensusThreadStatus" = Field(..., description="Description of enabled cluster")
 
 
 class CollectionClusterInfo(BaseModel):
@@ -70,6 +75,7 @@ class CollectionClusterInfo(BaseModel):
     shard_count: int = Field(..., description="Total number of shards")
     local_shards: List["LocalShardInfo"] = Field(..., description="Local shards")
     remote_shards: List["RemoteShardInfo"] = Field(..., description="Remote shards")
+    shard_transfers: List["ShardTransferInfo"] = Field(..., description="Shard transfers")
 
 
 class CollectionConfig(BaseModel):
@@ -93,6 +99,7 @@ class CollectionInfo(BaseModel):
         ..., description="Current statistics and configuration of the collection"
     )
     vectors_count: int = Field(..., description="Number of vectors in collection")
+    indexed_vectors_count: int = Field(..., description="Number of indexed vectors in the collection")
     points_count: int = Field(..., description="Number of points in collection")
     segments_count: int = Field(..., description="Number of segments in collection")
     disk_data_size: int = Field(..., description="Disk space, used by collection")
@@ -137,6 +144,25 @@ class ConsensusConfigTelemetry(BaseModel):
     max_message_queue_size: int = Field(..., description="")
     tick_period_ms: int = Field(..., description="")
     bootstrap_timeout_sec: int = Field(..., description="")
+
+
+class ConsensusThreadStatusOneOf(BaseModel):
+    consensus_thread_status: Literal[
+        "working",
+    ] = Field(..., description="")
+
+
+class ConsensusThreadStatusOneOf1(BaseModel):
+    consensus_thread_status: Literal[
+        "stopped",
+    ] = Field(..., description="")
+
+
+class ConsensusThreadStatusOneOf2(BaseModel):
+    consensus_thread_status: Literal[
+        "stopped_with_err",
+    ] = Field(..., description="")
+    err: str = Field(..., description="")
 
 
 class CountRequest(BaseModel):
@@ -440,7 +466,7 @@ class InlineResponse2002(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionsResponse"] = Field(None, description="")
+    result: Optional[bool] = Field(None, description="")
 
 
 class InlineResponse2003(BaseModel):
@@ -448,7 +474,7 @@ class InlineResponse2003(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionInfo"] = Field(None, description="")
+    result: Optional["CollectionsResponse"] = Field(None, description="")
 
 
 class InlineResponse2004(BaseModel):
@@ -456,7 +482,7 @@ class InlineResponse2004(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[bool] = Field(None, description="")
+    result: Optional["CollectionInfo"] = Field(None, description="")
 
 
 class InlineResponse2005(BaseModel):
@@ -532,6 +558,32 @@ class MatchValue(BaseModel):
     value: "ValueVariants" = Field(..., description="")
 
 
+class MoveShard(BaseModel):
+    shard_id: int = Field(..., description="")
+    to_peer_id: int = Field(..., description="")
+    from_peer_id: int = Field(..., description="")
+
+
+class MoveShardOperation(BaseModel):
+    move_shard: "MoveShard" = Field(..., description="")
+
+
+class OptimizerTelemetryOneOf(BaseModel):
+    indexing: "OptimizerTelemetryOneOfIndexing" = Field(..., description="")
+
+
+class OptimizerTelemetryOneOf1(BaseModel):
+    merge: "OptimizerTelemetryOneOfIndexing" = Field(..., description="")
+
+
+class OptimizerTelemetryOneOf2(BaseModel):
+    vacuum: "OptimizerTelemetryOneOfIndexing" = Field(..., description="")
+
+
+class OptimizerTelemetryOneOfIndexing(BaseModel):
+    optimizations: "TelemetryOperationStatistics" = Field(..., description="")
+
+
 class OptimizersConfig(BaseModel):
     deleted_threshold: float = Field(
         ...,
@@ -544,13 +596,13 @@ class OptimizersConfig(BaseModel):
         ...,
         description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads If `default_segment_number = 0`, will be automatically selected by the number of available CPUs",
     )
-    max_segment_size: int = Field(
-        ...,
-        description="Do not create segments larger this size (in KiloBytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256",
+    max_segment_size: Optional[int] = Field(
+        None,
+        description="Do not create segments larger this size (in KiloBytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256 If not set, will be automatically selected considering the number of available CPUs.",
     )
-    memmap_threshold: int = Field(
-        ...,
-        description="Maximum size (in KiloBytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file. To enable memmap storage, lower the threshold Note: 1Kb = 1 vector of size 256",
+    memmap_threshold: Optional[int] = Field(
+        None,
+        description="Maximum size (in KiloBytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file. To enable memmap storage, lower the threshold Note: 1Kb = 1 vector of size 256 If not set, mmap will not be used.",
     )
     indexing_threshold: int = Field(
         ...,
@@ -623,6 +675,12 @@ class PayloadIndexInfo(BaseModel):
     """
 
     data_type: "PayloadSchemaType" = Field(..., description="Payload field type &amp; index information")
+
+
+class PayloadIndexTelemetry(BaseModel):
+    points_values_count: int = Field(..., description="")
+    points_count: int = Field(..., description="")
+    histogram_bucket_size: Optional[int] = Field(None, description="")
 
 
 class PayloadSchemaType(str, Enum):
@@ -891,7 +949,7 @@ class SegmentTelemetry(BaseModel):
     info: "SegmentInfo" = Field(..., description="")
     config: "SegmentConfig" = Field(..., description="")
     vector_index: "VectorIndexTelemetry" = Field(..., description="")
-    payload_field_indices: List[Any] = Field(..., description="")
+    payload_field_indices: List["PayloadIndexTelemetry"] = Field(..., description="")
 
 
 class SegmentType(str, Enum):
@@ -922,16 +980,27 @@ class ShardTelemetryOneOf1(BaseModel):
 
 class ShardTelemetryOneOf1Local(BaseModel):
     segments: List["SegmentTelemetry"] = Field(..., description="")
+    optimizers: List["OptimizerTelemetry"] = Field(..., description="")
 
 
 class ShardTelemetryOneOf2(BaseModel):
     proxy: Any = Field(..., description="")
 
 
+class ShardTelemetryOneOf3(BaseModel):
+    forward_proxy: Any = Field(..., description="")
+
+
 class ShardTelemetryOneOfRemote(BaseModel):
     shard_id: int = Field(..., description="")
     searches: "TelemetryOperationStatistics" = Field(..., description="")
     updates: "TelemetryOperationStatistics" = Field(..., description="")
+
+
+class ShardTransferInfo(BaseModel):
+    shard_id: int = Field(..., description="")
+    _from: int = Field(..., description="")
+    to: int = Field(..., description="")
 
 
 class SnapshotDescription(BaseModel):
@@ -974,6 +1043,8 @@ class TelemetryData(BaseModel):
     configs: "ConfigsTelemetry" = Field(..., description="")
     collections: List["CollectionTelemetry"] = Field(..., description="")
     web: "WebApiTelemetry" = Field(..., description="")
+    grpc_calls_statistics: "TelemetryOperationStatistics" = Field(..., description="")
+    cluster_status: "ClusterStatus" = Field(..., description="")
 
 
 class TelemetryOperationStatistics(BaseModel):
@@ -1042,6 +1113,10 @@ AliasOperations = Union[
     DeleteAliasOperation,
     RenameAliasOperation,
 ]
+ClusterOperations = Union[
+    MoveShardOperation,
+    AbortTransferOperation,
+]
 ClusterStatus = Union[
     ClusterStatusOneOf,
     ClusterStatusOneOf1,
@@ -1051,6 +1126,11 @@ Condition = Union[
     IsEmptyCondition,
     HasIdCondition,
     Filter,
+]
+ConsensusThreadStatus = Union[
+    ConsensusThreadStatusOneOf,
+    ConsensusThreadStatusOneOf1,
+    ConsensusThreadStatusOneOf2,
 ]
 ExtendedPointId = Union[
     StrictInt,
@@ -1064,6 +1144,11 @@ Match = Union[
     MatchValue,
     MatchKeyword,
     MatchInteger,
+]
+OptimizerTelemetry = Union[
+    OptimizerTelemetryOneOf,
+    OptimizerTelemetryOneOf1,
+    OptimizerTelemetryOneOf2,
 ]
 OptimizersStatus = Union[
     OptimizersStatusOneOf,
@@ -1089,6 +1174,7 @@ ShardTelemetry = Union[
     ShardTelemetryOneOf,
     ShardTelemetryOneOf1,
     ShardTelemetryOneOf2,
+    ShardTelemetryOneOf3,
 ]
 StorageType = Union[
     StorageTypeOneOf,

@@ -124,6 +124,7 @@ class GrpcToRest:
             status=cls.convert_collection_status(model.status),
             vectors_count=model.vectors_count,
             points_count=model.points_count,
+            indexed_vectors_count=model.indexed_vectors_count or 0,
         )
 
     @classmethod
