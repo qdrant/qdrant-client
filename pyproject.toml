@@ -20,12 +20,12 @@ numpy = "^1.21"
 pydantic = "^1.8"
 tqdm = "^4.56.0"
 loguru = "^0.5.3"
-typing-extensions = "^3.10.0"
+typing-extensions = "^4.0.0"
 grpcio = { version = "^1.46.0", allow-prereleases = true }
 betterproto = { version = "2.0.0b4", allow-prereleases = true }
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^7.1"
 grpcio-tools = "^1.46.0"
 sphinx = "^4.4.0"
 qdrant-sphinx-theme = { git = "https://github.com/qdrant/qdrant_sphinx_theme.git", branch = "master" }
