@@ -69,9 +69,17 @@ class QdrantClient:
             self._init_grpc_collections_client()
 
     def __del__(self):
+        self.close()
+
+    def close(self):
         if self._grpc_channel is not None:
             self._grpc_channel.close()
-        self.openapi_client.client._client.close()
+
+        try:
+            self.openapi_client.client._client.close()
+        except AttributeError as e:
+            if str(e) != "'NoneType' object has no attribute 'CLOSED'":
+                raise e
 
     def _init_grpc_points_client(self):
         if self._grpc_channel is None:
