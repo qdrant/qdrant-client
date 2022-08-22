@@ -45,6 +45,8 @@ class QdrantClient:
         port: Port of the REST API interface. Default: 6333
         grpc_port: Port of the gRPC interface. Default: 6334
         prefer_grpc: If `true` - use gPRC interface whenever possible in custom methods.
+        https: If `true` - use HTTPS(SSL) protocol. Default: `false`
+        api_key: API key for authentication in Qdrant Cloud. Default: `None`
         **kwargs: Additional arguments passed directly into REST client initialization
     """
 
@@ -53,23 +55,42 @@ class QdrantClient:
                  port=6333,
                  grpc_port=6334,
                  prefer_grpc=False,
-                 https=False,
+                 https=None,
+                 api_key=None,
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._host = host
         self._port = port
+
+        self._https = https
+        self._api_key = api_key
+
+        http2 = kwargs.pop("http2", False)
+        grpc_headers = {}
+        rest_headers = kwargs.pop("headers", {})
+        if api_key is not None:
+            if self._https is False:
+                warnings.warn("Api key is used with unsecure connection.")
+            if self._https is None:
+                self._https = True
+
+            http2 = True
+
+            rest_headers['api-key'] = api_key
+            grpc_headers['api-key'] = api_key
+
         self.rest_uri = f"http{'s' if https else ''}://{host}:{port}"
-        self.openapi_client = SyncApis(host=self.rest_uri, **kwargs)
+        self.openapi_client = SyncApis(host=self.rest_uri, headers=rest_headers, http2=http2, **kwargs)
 
         self._grpc_channel = None
-        self._grpc_points_client = None
-        self._grpc_collections_client = None
+        self._grpc_points_client: Optional[grpc.PointsStub] = None
+        self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._event_loop = None
         if prefer_grpc:
             asyncio.set_event_loop(self.event_loop)
-            self._init_grpc_points_client()
-            self._init_grpc_collections_client()
+            self._init_grpc_points_client(grpc_headers)
+            self._init_grpc_collections_client(grpc_headers)
 
     @property
     def event_loop(self):
@@ -77,13 +98,12 @@ class QdrantClient:
             self._event_loop = asyncio.get_event_loop_policy().get_event_loop()
         return self._event_loop
 
-
     def __del__(self):
         if self._grpc_channel is not None:
             self._grpc_channel.close()
         self.openapi_client.client._client.close()
 
-    def _init_grpc_points_client(self):
+    def _init_grpc_points_client(self, metadata=None):
         if self._grpc_channel is None:
             from grpclib.client import Channel
             with warnings.catch_warnings():
@@ -91,10 +111,11 @@ class QdrantClient:
                 # https://github.com/vmagamedov/grpclib/issues/161
                 # Which makes sense
                 warnings.simplefilter("ignore", category=DeprecationWarning)
-                self._grpc_channel = Channel(host=self._host, port=self._grpc_port, loop=self.event_loop)
-        self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
+                self._grpc_channel = Channel(host=self._host, port=self._grpc_port, loop=self.event_loop,
+                                             ssl=self._https)
+        self._grpc_points_client = grpc.PointsStub(self._grpc_channel, metadata=metadata)
 
-    def _init_grpc_collections_client(self):
+    def _init_grpc_collections_client(self, metadata=None):
         if self._grpc_channel is None:
             from grpclib.client import Channel
             with warnings.catch_warnings():
@@ -102,8 +123,9 @@ class QdrantClient:
                 # https://github.com/vmagamedov/grpclib/issues/161
                 # Which makes sense
                 warnings.simplefilter("ignore", category=DeprecationWarning)
-                self._grpc_channel = Channel(host=self._host, port=self._grpc_port, loop=self.event_loop)
-        self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
+                self._grpc_channel = Channel(host=self._host, port=self._grpc_port, loop=self.event_loop,
+                                             ssl=self._https)
+        self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel, metadata=metadata)
 
     @property
     def grpc_collections(self):
@@ -901,6 +923,12 @@ class QdrantClient:
         Returns:
             List of the collections
         """
+        if self._prefer_grpc:
+            response = self.event_loop.run_until_complete(self._grpc_collections_client.list()).collections
+            return types.CollectionsResponse(
+                collections=[GrpcToRest.convert_collection_description(description) for description in response]
+            )
+
         return self.http.collections_api.get_collections().result
 
     def get_collection(self, collection_name: str) -> types.CollectionInfo:

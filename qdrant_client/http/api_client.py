@@ -64,7 +64,7 @@ class ApiClient:
         if path_params is None:
             path_params = {}
         url = (self.host or "") + url.format(**path_params)
-        request = Request(method, url, **kwargs)
+        request = self._client.build_request(method, url, **kwargs)
         return self.send(request, type_)
 
     @overload
@@ -133,7 +133,7 @@ class AsyncApiClient:
         if path_params is None:
             path_params = {}
         url = (self.host or "") + url.format(**path_params)
-        request = Request(method, url, **kwargs)
+        request = self._async_client.build_request(method, url, **kwargs)
         return await self.send(request, type_)
 
     @overload
