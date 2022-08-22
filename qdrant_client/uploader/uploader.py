@@ -1,7 +1,8 @@
+import itertools
 import math
 from abc import ABC
 from itertools import islice, count
-from typing import Optional, Iterable, Any, Callable
+from typing import Optional, Iterable, Any, Callable, Union, List
 
 import numpy as np
 
@@ -26,14 +27,13 @@ class BaseUploader(Worker, ABC):
 
     @classmethod
     def iterate_batches(cls,
-                        vectors: np.ndarray,
+                        vectors: Union[np.ndarray, Iterable[List[float]]],
                         payload: Optional[Iterable[dict]],
                         ids: Optional[Iterable[ExtendedPointId]],
                         batch_size: int,
                         ) -> Iterable:
-        num_vectors, _dim = vectors.shape
         if ids is None:
-            ids = range(num_vectors)
+            ids = itertools.count()
 
         ids_batches = iter_batch(ids, batch_size)
         if payload is None:
@@ -41,7 +41,11 @@ class BaseUploader(Worker, ABC):
         else:
             payload_batches = iter_batch(payload, batch_size)
 
-        num_batches = int(math.ceil(num_vectors / batch_size))
-        vector_batches = (vectors[i * batch_size:(i + 1) * batch_size].tolist() for i in range(num_batches))
+        if isinstance(vectors, np.ndarray):
+            num_vectors = vectors.shape[0]
+            num_batches = int(math.ceil(num_vectors / batch_size))
+            vector_batches = (vectors[i * batch_size:(i + 1) * batch_size].tolist() for i in range(num_batches))
+        else:
+            vector_batches = iter_batch(vectors, batch_size)
 
         yield from zip(ids_batches, vector_batches, payload_batches)

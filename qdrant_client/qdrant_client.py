@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 from multiprocessing import get_all_start_methods
 from typing import Optional, Iterable, List, Union, Tuple
 
@@ -64,9 +65,18 @@ class QdrantClient:
         self._grpc_channel = None
         self._grpc_points_client = None
         self._grpc_collections_client = None
+        self._event_loop = None
         if prefer_grpc:
+            asyncio.set_event_loop(self.event_loop)
             self._init_grpc_points_client()
             self._init_grpc_collections_client()
+
+    @property
+    def event_loop(self):
+        if self._event_loop is None:
+            self._event_loop = asyncio.get_event_loop_policy().get_event_loop()
+        return self._event_loop
+
 
     def __del__(self):
         if self._grpc_channel is not None:
@@ -76,13 +86,23 @@ class QdrantClient:
     def _init_grpc_points_client(self):
         if self._grpc_channel is None:
             from grpclib.client import Channel
-            self._grpc_channel = Channel(host=self._host, port=self._grpc_port)
+            with warnings.catch_warnings():
+                # It looks, like explicit event loop is going to be un-deprecated:
+                # https://github.com/vmagamedov/grpclib/issues/161
+                # Which makes sense
+                warnings.simplefilter("ignore", category=DeprecationWarning)
+                self._grpc_channel = Channel(host=self._host, port=self._grpc_port, loop=self.event_loop)
         self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
     def _init_grpc_collections_client(self):
         if self._grpc_channel is None:
             from grpclib.client import Channel
-            self._grpc_channel = Channel(host=self._host, port=self._grpc_port)
+            with warnings.catch_warnings():
+                # It looks, like explicit event loop is going to be un-deprecated:
+                # https://github.com/vmagamedov/grpclib/issues/161
+                # Which makes sense
+                warnings.simplefilter("ignore", category=DeprecationWarning)
+                self._grpc_channel = Channel(host=self._host, port=self._grpc_port, loop=self.event_loop)
         self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
 
     @property
@@ -219,9 +239,7 @@ class QdrantClient:
             )):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            loop = asyncio.get_event_loop()
-
-            res: grpc.SearchResponse = loop.run_until_complete(self._grpc_points_client.search(
+            res: grpc.SearchResponse = self.event_loop.run_until_complete(self._grpc_points_client.search(
                 collection_name=collection_name,
                 vector=query_vector,
                 filter=query_filter,
@@ -353,7 +371,7 @@ class QdrantClient:
             )):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            loop = asyncio.get_event_loop()
+            loop = self.event_loop
 
             res: grpc.SearchResponse = loop.run_until_complete(self._grpc_points_client.recommend(
                 collection_name=collection_name,
@@ -453,7 +471,7 @@ class QdrantClient:
             )):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            loop = asyncio.get_event_loop()
+            loop = self.event_loop
 
             res: grpc.ScrollResponse = loop.run_until_complete(self._grpc_points_client.scroll(
                 collection_name=collection_name,
@@ -563,7 +581,7 @@ class QdrantClient:
                 ]
 
             return GrpcToRest.convert_update_result(
-                asyncio.get_event_loop().run_until_complete(self._grpc_points_client.upsert(
+                self.event_loop.run_until_complete(self._grpc_points_client.upsert(
                     collection_name=collection_name,
                     wait=wait,
                     points=points
@@ -627,7 +645,7 @@ class QdrantClient:
                 for idx in ids
             ]
 
-            result = asyncio.get_event_loop().run_until_complete(
+            result = self.event_loop.run_until_complete(
                 self._grpc_points_client.get(
                     collection_name=collection_name,
                     ids=ids,
@@ -682,7 +700,7 @@ class QdrantClient:
                 points_selector = RestToGrpc.convert_points_selector(points_selector)
 
             return GrpcToRest.convert_update_result(
-                asyncio.get_event_loop().run_until_complete(self._grpc_points_client.delete(
+                self.event_loop.run_until_complete(self._grpc_points_client.delete(
                     collection_name=collection_name,
                     wait=wait,
                     points=points_selector
@@ -739,7 +757,7 @@ class QdrantClient:
                 for idx in points
             ]
             return GrpcToRest.convert_update_result(
-                asyncio.get_event_loop().run_until_complete(self._grpc_points_client.set_payload(
+                self.event_loop.run_until_complete(self._grpc_points_client.set_payload(
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
@@ -787,7 +805,7 @@ class QdrantClient:
                 for idx in points
             ]
             return GrpcToRest.convert_update_result(
-                asyncio.get_event_loop().run_until_complete(self._grpc_points_client.delete_payload(
+                self.event_loop.run_until_complete(self._grpc_points_client.delete_payload(
                     collection_name=collection_name,
                     wait=wait,
                     keys=keys,
@@ -831,7 +849,7 @@ class QdrantClient:
                 points_selector = RestToGrpc.convert_points_selector(points_selector)
 
             return GrpcToRest.convert_update_result(
-                asyncio.get_event_loop().run_until_complete(self._grpc_points_client.clear_payload(
+                self.event_loop.run_until_complete(self._grpc_points_client.clear_payload(
                     collection_name=collection_name,
                     wait=wait,
                     points=points_selector
@@ -896,7 +914,7 @@ class QdrantClient:
         """
         if self._prefer_grpc:
             return GrpcToRest.convert_collection_info(
-                asyncio.get_event_loop().run_until_complete(self._grpc_collections_client.get(
+                self.event_loop.run_until_complete(self._grpc_collections_client.get(
                     collection_name=collection_name
                 )).result)
         return self.http.collections_api.get_collection(collection_name=collection_name).result
@@ -1017,7 +1035,7 @@ class QdrantClient:
 
     def upload_collection(self,
                           collection_name,
-                          vectors: np.ndarray,
+                          vectors: Union[np.ndarray, Iterable[List[float]]],
                           payload: Optional[Iterable[dict]] = None,
                           ids: Optional[Iterable[types.PointId]] = None,
                           batch_size: int = 64,
@@ -1026,7 +1044,7 @@ class QdrantClient:
 
         Args:
             collection_name:  Name of the collection to upload to
-            vectors: np.ndarray of vectors to upload. Might be mmaped
+            vectors: np.ndarray or an iterable over vectors to upload. Might be mmaped
             payload: Iterable of vectors payload, Optional, Default: None
             ids: Iterable of custom vectors ids, Optional, Default: None
             batch_size: How many vectors upload per-request, Default: 64

@@ -40,12 +40,21 @@ def create_random_vectors():
     return vectors_path
 
 
-@pytest.mark.parametrize(
-    "prefer_grpc", [False, True]
-)
-def test_qdrant_client_integration(prefer_grpc):
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+@pytest.mark.parametrize("numpy_upload", [False, True])
+def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     vectors_path = create_random_vectors()
-    vectors = np.memmap(vectors_path, dtype='float32', mode='r', shape=(NUM_VECTORS, DIM))
+
+    if numpy_upload:
+        vectors = np.memmap(vectors_path, dtype='float32', mode='r', shape=(NUM_VECTORS, DIM))
+        vectors_2 = vectors[2].tolist()
+    else:
+        vectors = [
+            np.random.rand(DIM).tolist()
+            for _ in range(NUM_VECTORS)
+        ]
+        vectors_2 = vectors[2]
+
     payload = random_payload()
 
     client = QdrantClient(prefer_grpc=prefer_grpc)
@@ -196,7 +205,7 @@ def test_qdrant_client_integration(prefer_grpc):
     client.upsert(
         collection_name=COLLECTION_NAME,
         wait=True,
-        points=[PointStruct(id=2, payload={"hello": "world"}, vector=vectors[2].tolist())]
+        points=[PointStruct(id=2, payload={"hello": "world"}, vector=vectors_2)]
     )
 
     got_points = client.retrieve(

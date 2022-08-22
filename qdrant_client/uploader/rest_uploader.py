@@ -8,6 +8,11 @@ from qdrant_client.uploader.uploader import BaseUploader
 def upload_batch(openapi_client: SyncApis, collection_name: str, batch) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
+    # Make sure we do not send too many ids in case there is an iterable over vectors,
+    # and we do not know how many ids are required in advance
+    if len(ids_batch) > len(vectors_batch):
+        ids_batch = ids_batch[:len(vectors_batch)]
+
     if payload_batch is not None:
         payload_batch = list(payload_batch)
 
