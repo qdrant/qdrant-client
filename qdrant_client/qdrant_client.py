@@ -67,8 +67,8 @@ class QdrantClient:
         self._api_key = api_key
 
         http2 = kwargs.pop("http2", False)
-        grpc_headers = {}
-        rest_headers = kwargs.pop("headers", {})
+        self._grpc_headers = {}
+        self._rest_headers = kwargs.pop("headers", {})
         if api_key is not None:
             if self._https is False:
                 warnings.warn("Api key is used with unsecure connection.")
@@ -77,11 +77,17 @@ class QdrantClient:
 
             http2 = True
 
-            rest_headers['api-key'] = api_key
-            grpc_headers['api-key'] = api_key
+            self._rest_headers['api-key'] = api_key
+            self._grpc_headers['api-key'] = api_key
 
-        self.rest_uri = f"http{'s' if https else ''}://{host}:{port}"
-        self.openapi_client = SyncApis(host=self.rest_uri, headers=rest_headers, http2=http2, **kwargs)
+        self.rest_uri = f"http{'s' if self._https else ''}://{host}:{port}"
+        self._rest_args = {
+            "headers": self._rest_headers,
+            "http2": http2,
+            **kwargs
+        }
+
+        self.openapi_client = SyncApis(host=self.rest_uri, **self._rest_args)
 
         self._grpc_channel = None
         self._grpc_points_client: Optional[grpc.PointsStub] = None
@@ -89,8 +95,8 @@ class QdrantClient:
         self._event_loop = None
         if prefer_grpc:
             asyncio.set_event_loop(self.event_loop)
-            self._init_grpc_points_client(grpc_headers)
-            self._init_grpc_collections_client(grpc_headers)
+            self._init_grpc_points_client(self._grpc_headers)
+            self._init_grpc_collections_client(self._grpc_headers)
 
     @property
     def event_loop(self):
@@ -1067,8 +1073,7 @@ class QdrantClient:
                           payload: Optional[Iterable[dict]] = None,
                           ids: Optional[Iterable[types.PointId]] = None,
                           batch_size: int = 64,
-                          parallel: int = 1,
-                          **kwargs):
+                          parallel: int = 1):
         """Upload vectors and payload to the collection
 
         Args:
@@ -1086,20 +1091,22 @@ class QdrantClient:
                 "collection_name": collection_name,
                 "host": self._host,
                 "port": self._grpc_port,
+                "ssl": self._https,
+                "metadata": self._grpc_headers,
             }
         else:
             updater_class = RestBatchUploader
             start_method = None  # preserve default
             updater_kwargs = {
                 "collection_name": collection_name,
-                "uri": self.rest_uri
+                "uri": self.rest_uri,
+                **self._rest_args
             }
 
         batches_iterator = updater_class.iterate_batches(vectors=vectors,
                                                          payload=payload,
                                                          ids=ids,
                                                          batch_size=batch_size)
-        updater_kwargs.update(kwargs)
         if parallel == 1:
             updater = updater_class.start(**updater_kwargs)
             for _ in tqdm(updater.process(batches_iterator)):

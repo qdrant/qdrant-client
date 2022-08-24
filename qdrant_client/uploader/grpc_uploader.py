@@ -43,21 +43,23 @@ async def upload_batch_grpc(points_client: PointsStub, collection_name: str, bat
 
 class GrpcBatchUploader(BaseUploader):
 
-    def __init__(self, host, port, collection_name):
+    def __init__(self, host, port, collection_name, metadata=None, **kwargs):
         self.collection_name = collection_name
         self._host = host
         self._port = port
+        self._kwargs = kwargs
+        self._metadata = metadata
 
     @classmethod
     def start(cls, collection_name=None, host="localhost", port=6334, **kwargs) -> 'GrpcBatchUploader':
         if not collection_name:
             raise RuntimeError("Collection name could not be empty")
 
-        return cls(host=host, port=port, collection_name=collection_name)
+        return cls(host=host, port=port, collection_name=collection_name, **kwargs)
 
     async def process_upload(self, items):
-        async with Channel(host=self._host, port=self._port) as channel:
-            points_client = PointsStub(channel)
+        async with Channel(host=self._host, port=self._port, **self._kwargs) as channel:
+            points_client = PointsStub(channel, metadata=self._metadata)
             for batch in items:
                 yield await upload_batch_grpc(points_client, self.collection_name, batch)
 
