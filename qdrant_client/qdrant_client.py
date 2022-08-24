@@ -1067,7 +1067,8 @@ class QdrantClient:
                           payload: Optional[Iterable[dict]] = None,
                           ids: Optional[Iterable[types.PointId]] = None,
                           batch_size: int = 64,
-                          parallel: int = 1):
+                          parallel: int = 1,
+                          **kwargs):
         """Upload vectors and payload to the collection
 
         Args:
@@ -1098,6 +1099,7 @@ class QdrantClient:
                                                          payload=payload,
                                                          ids=ids,
                                                          batch_size=batch_size)
+        updater_kwargs.update(kwargs)
         if parallel == 1:
             updater = updater_class.start(**updater_kwargs)
             for _ in tqdm(updater.process(batches_iterator)):
