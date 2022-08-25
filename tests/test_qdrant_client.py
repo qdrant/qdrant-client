@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from qdrant_client import QdrantClient
+from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointStruct, HasIdCondition, PointIdsList, \
     PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff
@@ -19,15 +20,17 @@ NUM_VECTORS = 1_000
 COLLECTION_NAME = 'client_test'
 COLLECTION_NAME_ALIAS = 'client_test_alias'
 
+def one_random_payload_please(idx):
+    return {
+        "id": idx + 100,
+        "text_data": uuid.uuid4().hex,
+        "rand_number": random.random(),
+        "text_array": [uuid.uuid4().hex, uuid.uuid4().hex]
+    }
 
 def random_payload():
     for i in range(NUM_VECTORS):
-        yield {
-            "id": i + 100,
-            "text_data": uuid.uuid4().hex,
-            "rand_number": random.random(),
-            "text_array": [uuid.uuid4().hex, uuid.uuid4().hex]
-        }
+        yield one_random_payload_please(i)
 
 
 def create_random_vectors():
@@ -38,6 +41,59 @@ def create_random_vectors():
     fp[:] = data[:]
     fp.flush()
     return vectors_path
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_record_upload(prefer_grpc):
+    records = (
+        Record(
+            id=idx,
+            vector=np.random.rand(DIM).tolist(),
+            payload=one_random_payload_please(idx)
+        )
+        for idx in range(NUM_VECTORS)
+    )
+
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vector_size=DIM,
+        distance=Distance.DOT,
+    )
+
+    client.upload_records(
+        collection_name=COLLECTION_NAME,
+        records=records,
+        parallel=2
+    )
+
+    # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
+    # Let's give it a second to actually add all points to a collection.
+    # If you need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
+    sleep(1)
+
+    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+
+    assert collection_info.points_count == NUM_VECTORS
+
+    result_count = client.count(
+        COLLECTION_NAME,
+        count_filter=Filter(
+            must=[
+                FieldCondition(
+                    key='rand_number',  # Condition based on values of `rand_number` field.
+                    range=Range(
+                        gte=0.5  # Select only those results where `rand_number` >= 0.5
+                    )
+                )
+            ]
+        )
+    )
+
+    assert result_count.count < 900
+    assert result_count.count > 100
+
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])

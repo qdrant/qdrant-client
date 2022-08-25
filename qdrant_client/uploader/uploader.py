@@ -6,6 +6,7 @@ from typing import Optional, Iterable, Any, Callable, Union, List
 
 import numpy as np
 
+from qdrant_client.conversions.common_types import Record
 from qdrant_client.http.models import ExtendedPointId
 from qdrant_client.parallel_processor import Worker
 
@@ -24,6 +25,19 @@ def iter_batch(iterable, size) -> Iterable:
 
 
 class BaseUploader(Worker, ABC):
+
+    @classmethod
+    def iterate_records_batches(cls,
+                                records: Iterable[Record],
+                                batch_size: int
+                                ) -> Iterable:
+
+        record_batches = iter_batch(records, batch_size)
+        for record_batch in record_batches:
+            ids_batch = [record.id for record in record_batch]
+            vectors_batch = [record.vector for record in record_batch]
+            payload_batch = [record.payload for record in record_batch]
+            yield ids_batch, vectors_batch, payload_batch
 
     @classmethod
     def iterate_batches(cls,

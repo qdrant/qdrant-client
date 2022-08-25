@@ -1,7 +1,7 @@
 import asyncio
 import warnings
 from multiprocessing import get_all_start_methods
-from typing import Optional, Iterable, List, Union, Tuple
+from typing import Optional, Iterable, List, Union, Tuple, Type
 
 import numpy as np
 from loguru import logger
@@ -15,6 +15,7 @@ from qdrant_client.http import models as rest
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
+from qdrant_client.uploader.uploader import BaseUploader
 
 
 class QdrantClient:
@@ -1067,8 +1068,69 @@ class QdrantClient:
             timeout=timeout
         )
 
+    @property
+    def _updater_class(self) -> Type[BaseUploader]:
+        if self._prefer_grpc:
+            return GrpcBatchUploader
+        else:
+            return RestBatchUploader
+
+    def _upload_collection(
+            self,
+            batches_iterator: Iterable,
+            collection_name: str,
+            parallel: int = 1
+    ):
+        if self._prefer_grpc:
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            updater_kwargs = {
+                "collection_name": collection_name,
+                "host": self._host,
+                "port": self._grpc_port,
+                "ssl": self._https,
+                "metadata": self._grpc_headers,
+            }
+        else:
+            start_method = None  # preserve default
+            updater_kwargs = {
+                "collection_name": collection_name,
+                "uri": self.rest_uri,
+                **self._rest_args
+            }
+
+        if parallel == 1:
+            updater = self._updater_class.start(**updater_kwargs)
+            for _ in tqdm(updater.process(batches_iterator)):
+                pass
+        else:
+            pool = ParallelWorkerPool(parallel, self._updater_class, start_method=start_method)
+            for _ in tqdm(pool.unordered_map(batches_iterator, **updater_kwargs)):
+                pass
+
+    def upload_records(
+            self,
+            collection_name: str,
+            records: Iterable[types.Record],
+            batch_size: int = 64,
+            parallel: int = 1
+    ):
+        """Upload records to the collection
+
+        Similar to `upload_collection` method, but operates with records, rather than vector and payload individually.
+
+        Args:
+            collection_name:  Name of the collection to upload to
+            records: Iterator over records to upload
+            batch_size: How many vectors upload per-request, Default: 64
+            parallel: Number of parallel processes of upload
+
+        """
+
+        batches_iterator = self._updater_class.iterate_records_batches(records=records, batch_size=batch_size)
+        self._upload_collection(batches_iterator, collection_name, parallel)
+
     def upload_collection(self,
-                          collection_name,
+                          collection_name: str,
                           vectors: Union[np.ndarray, Iterable[List[float]]],
                           payload: Optional[Iterable[dict]] = None,
                           ids: Optional[Iterable[types.PointId]] = None,
@@ -1084,37 +1146,11 @@ class QdrantClient:
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload
         """
-        if self._prefer_grpc:
-            updater_class = GrpcBatchUploader
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-            updater_kwargs = {
-                "collection_name": collection_name,
-                "host": self._host,
-                "port": self._grpc_port,
-                "ssl": self._https,
-                "metadata": self._grpc_headers,
-            }
-        else:
-            updater_class = RestBatchUploader
-            start_method = None  # preserve default
-            updater_kwargs = {
-                "collection_name": collection_name,
-                "uri": self.rest_uri,
-                **self._rest_args
-            }
-
-        batches_iterator = updater_class.iterate_batches(vectors=vectors,
-                                                         payload=payload,
-                                                         ids=ids,
-                                                         batch_size=batch_size)
-        if parallel == 1:
-            updater = updater_class.start(**updater_kwargs)
-            for _ in tqdm(updater.process(batches_iterator)):
-                pass
-        else:
-            pool = ParallelWorkerPool(parallel, updater_class, start_method=start_method)
-            for _ in tqdm(pool.unordered_map(batches_iterator, **updater_kwargs)):
-                pass
+        batches_iterator = self._updater_class.iterate_batches(vectors=vectors,
+                                                               payload=payload,
+                                                               ids=ids,
+                                                               batch_size=batch_size)
+        self._upload_collection(batches_iterator, collection_name, parallel)
 
     def create_payload_index(self,
                              collection_name: str,
