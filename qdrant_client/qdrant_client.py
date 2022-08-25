@@ -5,7 +5,6 @@ from typing import Optional, Iterable, List, Union, Tuple, Type
 
 import numpy as np
 from loguru import logger
-from tqdm import tqdm
 
 from qdrant_client import grpc
 from qdrant_client.conversions import common_types as types
@@ -1100,11 +1099,11 @@ class QdrantClient:
 
         if parallel == 1:
             updater = self._updater_class.start(**updater_kwargs)
-            for _ in tqdm(updater.process(batches_iterator)):
+            for _ in updater.process(batches_iterator):
                 pass
         else:
             pool = ParallelWorkerPool(parallel, self._updater_class, start_method=start_method)
-            for _ in tqdm(pool.unordered_map(batches_iterator, **updater_kwargs)):
+            for _ in pool.unordered_map(batches_iterator, **updater_kwargs):
                 pass
 
     def upload_records(
