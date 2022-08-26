@@ -102,7 +102,11 @@ class QdrantClient:
     @property
     def event_loop(self):
         if self._event_loop is None:
-            self._event_loop = asyncio.get_event_loop_policy().get_event_loop()
+            try:
+                self._event_loop = asyncio.get_event_loop_policy().get_event_loop()
+            except RuntimeError:
+                self._event_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(self._event_loop)
         return self._event_loop
 
     def __del__(self):
