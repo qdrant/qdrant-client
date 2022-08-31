@@ -7,7 +7,8 @@ import httpx
 import numpy as np
 from loguru import logger
 
-from qdrant_client import grpc
+from qdrant_client import grpc as grpc
+from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import RestToGrpc, GrpcToRest
 from qdrant_client.http import SyncApis
@@ -75,8 +76,8 @@ class QdrantClient:
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
 
         http2 = kwargs.pop("http2", False)
-        self._grpc_headers = {}
-        self._rest_headers = kwargs.pop("headers", {})
+        self._grpc_headers = []
+        self._rest_headers = kwargs.pop("metadata", {})
         if api_key is not None:
             if self._https is False:
                 warnings.warn("Api key is used with unsecure connection.")
@@ -86,7 +87,7 @@ class QdrantClient:
             http2 = True
 
             self._rest_headers['api-key'] = api_key
-            self._grpc_headers['api-key'] = api_key
+            self._grpc_headers.append(('api-key', api_key))
 
         self.rest_uri = f"http{'s' if self._https else ''}://{host}:{port}"
         self._rest_args = {
@@ -105,7 +106,6 @@ class QdrantClient:
         self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._event_loop = None
         if prefer_grpc:
-            asyncio.set_event_loop(self.event_loop)
             self._init_grpc_points_client(self._grpc_headers)
             self._init_grpc_collections_client(self._grpc_headers)
 
@@ -125,27 +125,13 @@ class QdrantClient:
 
     def _init_grpc_points_client(self, metadata=None):
         if self._grpc_channel is None:
-            from grpclib.client import Channel
-            with warnings.catch_warnings():
-                # It looks, like explicit event loop is going to be un-deprecated:
-                # https://github.com/vmagamedov/grpclib/issues/161
-                # Which makes sense
-                warnings.simplefilter("ignore", category=DeprecationWarning)
-                self._grpc_channel = Channel(host=self._host, port=self._grpc_port, loop=self.event_loop,
-                                             ssl=self._https)
-        self._grpc_points_client = grpc.PointsStub(self._grpc_channel, metadata=metadata)
+            self._grpc_channel = get_channel(host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata)
+        self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
     def _init_grpc_collections_client(self, metadata=None):
         if self._grpc_channel is None:
-            from grpclib.client import Channel
-            with warnings.catch_warnings():
-                # It looks, like explicit event loop is going to be un-deprecated:
-                # https://github.com/vmagamedov/grpclib/issues/161
-                # Which makes sense
-                warnings.simplefilter("ignore", category=DeprecationWarning)
-                self._grpc_channel = Channel(host=self._host, port=self._grpc_port, loop=self.event_loop,
-                                             ssl=self._https)
-        self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel, metadata=metadata)
+            self._grpc_channel = get_channel(host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata)
+        self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
 
     @property
     def grpc_collections(self):
@@ -202,10 +188,12 @@ class QdrantClient:
                 RestToGrpc.convert_search_request(r, collection_name) if isinstance(r, rest.SearchRequest) else r
                 for r in requests
             ]
-            res: grpc.SearchBatchResponse = self.event_loop.run_until_complete(self._grpc_points_client.search_batch(
-                collection_name=collection_name,
-                search_points=requests,
-            ))
+            res: grpc.SearchBatchResponse = self._grpc_points_client.SearchBatch(
+                grpc.SearchBatchPoints(
+                    collection_name=collection_name,
+                    search_points=requests,
+                )
+            )
 
             return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in res.result]
         else:
@@ -333,7 +321,7 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            res: grpc.SearchResponse = self.event_loop.run_until_complete(self._grpc_points_client.search(
+            res: grpc.SearchResponse = self._grpc_points_client.Search(grpc.SearchPoints(
                 collection_name=collection_name,
                 vector=vector,
                 vector_name=vector_name,
@@ -396,10 +384,12 @@ class QdrantClient:
                 RestToGrpc.convert_recommend_request(r, collection_name) if isinstance(r, rest.RecommendRequest) else r
                 for r in requests
             ]
-            res: grpc.SearchBatchResponse = self.event_loop.run_until_complete(self._grpc_points_client.recommend_batch(
-                collection_name=collection_name,
-                recommend_points=requests,
-            ))
+            res: grpc.SearchBatchResponse = self._grpc_points_client.RecommendBatch(
+                grpc.RecommendBatchPoints(
+                    collection_name=collection_name,
+                    recommend_points=requests,
+                )
+            )
 
             return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in res.result]
         else:
@@ -516,9 +506,7 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            loop = self.event_loop
-
-            res: grpc.SearchResponse = loop.run_until_complete(self._grpc_points_client.recommend(
+            res: grpc.SearchResponse = self._grpc_points_client.Recommend(grpc.RecommendPoints(
                 collection_name=collection_name,
                 positive=positive,
                 negative=negative,
@@ -625,9 +613,7 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            loop = self.event_loop
-
-            res: grpc.ScrollResponse = loop.run_until_complete(self._grpc_points_client.scroll(
+            res: grpc.ScrollResponse = self._grpc_points_client.Scroll(grpc.ScrollPoints(
                 collection_name=collection_name,
                 filter=scroll_filter,
                 offset=offset,
@@ -736,8 +722,7 @@ class QdrantClient:
                     for point in points
                 ]
 
-            return GrpcToRest.convert_update_result(
-                self.event_loop.run_until_complete(self._grpc_points_client.upsert(
+            return GrpcToRest.convert_update_result(self._grpc_points_client.Upsert(grpc.UpsertPoints(
                     collection_name=collection_name,
                     wait=wait,
                     points=points
@@ -808,8 +793,7 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            result = self.event_loop.run_until_complete(
-                self._grpc_points_client.get(
+            result = self._grpc_points_client.Get(grpc.GetPoints(
                     collection_name=collection_name,
                     ids=ids,
                     with_payload=with_payload,
@@ -863,7 +847,7 @@ class QdrantClient:
                 points_selector = RestToGrpc.convert_points_selector(points_selector)
 
             return GrpcToRest.convert_update_result(
-                self.event_loop.run_until_complete(self._grpc_points_client.delete(
+                self._grpc_points_client.Delete(grpc.DeletePoints(
                     collection_name=collection_name,
                     wait=wait,
                     points=points_selector
@@ -920,7 +904,7 @@ class QdrantClient:
                 for idx in points
             ]
             return GrpcToRest.convert_update_result(
-                self.event_loop.run_until_complete(self._grpc_points_client.set_payload(
+                self._grpc_points_client.SetPayload(grpc.SetPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
@@ -968,7 +952,7 @@ class QdrantClient:
                 for idx in points
             ]
             return GrpcToRest.convert_update_result(
-                self.event_loop.run_until_complete(self._grpc_points_client.delete_payload(
+                self._grpc_points_client.DeletePayload(grpc.DeletePayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     keys=keys,
@@ -1012,7 +996,7 @@ class QdrantClient:
                 points_selector = RestToGrpc.convert_points_selector(points_selector)
 
             return GrpcToRest.convert_update_result(
-                self.event_loop.run_until_complete(self._grpc_points_client.clear_payload(
+                self._grpc_points_client.ClearPayload(grpc.ClearPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     points=points_selector
@@ -1065,7 +1049,7 @@ class QdrantClient:
             List of the collections
         """
         if self._prefer_grpc:
-            response = self.event_loop.run_until_complete(self._grpc_collections_client.list()).collections
+            response = self._grpc_collections_client.List(grpc.ListCollectionsRequest()).collections
             return types.CollectionsResponse(
                 collections=[GrpcToRest.convert_collection_description(description) for description in response]
             )
@@ -1083,7 +1067,7 @@ class QdrantClient:
         """
         if self._prefer_grpc:
             return GrpcToRest.convert_collection_info(
-                self.event_loop.run_until_complete(self._grpc_collections_client.get(
+                self._grpc_collections_client.Get(grpc.GetCollectionInfoRequest(
                     collection_name=collection_name
                 )).result)
         return self.http.collections_api.get_collection(collection_name=collection_name).result
@@ -1222,7 +1206,7 @@ class QdrantClient:
                 "metadata": self._grpc_headers,
             }
         else:
-            start_method = None  # preserve default
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             updater_kwargs = {
                 "collection_name": collection_name,
                 "uri": self.rest_uri,
@@ -1313,7 +1297,7 @@ class QdrantClient:
             warnings.warn("field_type is deprecated, use field_schema instead", DeprecationWarning)
             field_schema = field_type
 
-        if isinstance(field_schema, grpc.PayloadSchemaType):
+        if isinstance(field_schema, int):  # type(grpc.PayloadSchemaType) == int
             field_schema = GrpcToRest.convert_payload_schema_type(field_schema)
 
         return self.openapi_client.collections_api.create_field_index(

@@ -1,10 +1,11 @@
 import datetime
 from typing import List
 
-import betterproto
+from google.protobuf.message import Message
+from google.protobuf.timestamp_pb2 import Timestamp
 
-from qdrant_client import grpc
-from qdrant_client.conversions.conversion import json_to_value
+from qdrant_client import grpc as grpc
+from qdrant_client.conversions.conversion import payload_to_grpc
 
 point_id = grpc.PointId(num=1)
 point_id_1 = grpc.PointId(num=2)
@@ -118,6 +119,11 @@ collection_params = grpc.CollectionParams(
     on_disk_payload=True,
 )
 
+collection_params_2 = grpc.CollectionParams(
+    vector_size=100,
+    distance=grpc.Dot,
+)
+
 hnsw_config = grpc.HnswConfigDiff(
     m=16,
     ef_construct=100,
@@ -154,7 +160,7 @@ collection_config = grpc.CollectionConfig(
     wal_config=wal_config,
 )
 
-payload_value = json_to_value({
+payload_value = {
     "int": 1,
     "float": 0.23,
     "keyword": "hello world",
@@ -162,16 +168,19 @@ payload_value = json_to_value({
     "null": None,
     "dict": {"a": 1, "b": "bbb"},
     "list": [1, 2, 3, 5, 6],
-    "list_with_dict": [{}, {}, {}]
+    "list_with_dict": [{}, {}, {}, []],
+    "empty_list": [],
+}
+
+payload = payload_to_grpc({
+    "payload": payload_value
 })
 
 single_vector = grpc.Vectors(vector=grpc.Vector(data=[1., 2., 3., 4.]))
 
 scored_point = grpc.ScoredPoint(
     id=point_id,
-    payload={
-        "payload": payload_value
-    },
+    payload=payload,
     score=0.99,
     vectors=single_vector,
     version=12
@@ -269,9 +278,9 @@ delete_alias = grpc.DeleteAlias(
 point_struct = grpc.PointStruct(
     id=point_id_1,
     vectors=grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, -1., -.2])),
-    payload={
+    payload=payload_to_grpc({
         "my_payload": payload_value
-    },
+    }),
 )
 
 point_struct_multivec = grpc.PointStruct(
@@ -284,9 +293,9 @@ point_struct_multivec = grpc.PointStruct(
             }
         )
     ),
-    payload={
+    payload=payload_to_grpc({
         "my_payload": payload_value
-    },
+    }),
 )
 
 collection_description = grpc.CollectionDescription(
@@ -313,15 +322,18 @@ with_payload_exclude = grpc.WithPayloadSelector(exclude=grpc.PayloadExcludeSelec
 
 retrieved_point = grpc.RetrievedPoint(
     id=point_id_1,
-    payload={"key": payload_value},
+    payload=payload_to_grpc({"key": payload_value}),
     vectors=single_vector
 )
 
 count_result = grpc.CountResult(count=5)
 
+timestamp = Timestamp()
+timestamp.FromDatetime(datetime.datetime.now())
+
 snapshot_description = grpc.SnapshotDescription(
     name="my_snapshot",
-    creation_time=datetime.datetime.now(),
+    creation_time=timestamp,
     size=100500
 )
 
@@ -396,7 +408,7 @@ text_index_params_3 = grpc.TextIndexParams(
 )
 
 fixtures = {
-    "CollectionParams": [collection_params],
+    "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
     "ScoredPoint": [scored_point],
     "CreateAlias": [create_alias],
@@ -474,7 +486,7 @@ fixtures = {
 }
 
 
-def get_grpc_fixture(model_name: str) -> List[betterproto.Message]:
+def get_grpc_fixture(model_name: str) -> List[Message]:
     if model_name not in fixtures:
         raise RuntimeError(f"Model {model_name} not found in fixtures")
     return fixtures[model_name]
