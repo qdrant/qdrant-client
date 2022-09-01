@@ -204,6 +204,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     for hit in hits:
         print(hit)
 
+    client.create_payload_index(COLLECTION_NAME, "id_str", PayloadSchemaType.KEYWORD)
     #  and use it as a query
     hits = client.search(
         collection_name=COLLECTION_NAME,
