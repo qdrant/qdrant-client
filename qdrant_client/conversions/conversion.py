@@ -47,7 +47,10 @@ def value_to_json(value: Value) -> Any:
             return {}
         return dict((key, value_to_json(val)) for key, val in value_["structValue"]['fields'].items())
     if "listValue" in value_:
-        return list(value_to_json(val) for val in value_["listValue"]['values'])
+        if 'values' in value_["listValue"]:
+            return list(value_to_json(val) for val in value_["listValue"]['values'])
+        else:
+            return []
     if "nullValue" in value_:
         return None
     raise ValueError(f"Not supported value: {value_}")  # pragma: no cover

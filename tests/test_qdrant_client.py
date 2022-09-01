@@ -23,7 +23,7 @@ COLLECTION_NAME_ALIAS = 'client_test_alias'
 def one_random_payload_please(idx):
     return {
         "id": idx + 100,
-        "id_str": [str(idx + 100), str(idx + 1000)],
+        "id_str": [str(random.randint(1, 30)).zfill(2) for _ in range(random.randint(0, 5))],
         "text_data": uuid.uuid4().hex,
         "rand_number": random.random(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex]
@@ -97,7 +97,8 @@ def test_record_upload(prefer_grpc):
 
 
 
-@pytest.mark.parametrize("prefer_grpc", [False, True])
+@pytest.mark.parametrize("prefer_grpc", [True])
+# @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("numpy_upload", [False, True])
 def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     vectors_path = create_random_vectors()
@@ -213,7 +214,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
             must=[
                 FieldCondition(
                     key="id_str",
-                    match=MatchValue(value="123")
+                    match=MatchValue(value="11")
                 )
             ]
         ),
@@ -221,8 +222,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         limit=5
     )
 
-    assert len(hits) == 1
-    assert (hits[0].payload['id_str'] == '123') or ('123' in hits[0].payload['id_str'])
+    assert ('11' in hits[0].payload['id_str'])
 
     client.update_collection(
         collection_name=COLLECTION_NAME,
@@ -482,6 +482,8 @@ def test_serialization():
             "d": {
                 "val1": "val2",
                 "val2": [1, 2, 3],
+                "val3": [],
+                "val4": {},
             },
             "e": True,
             "f": None,
