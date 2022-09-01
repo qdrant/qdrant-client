@@ -23,6 +23,7 @@ COLLECTION_NAME_ALIAS = 'client_test_alias'
 def one_random_payload_please(idx):
     return {
         "id": idx + 100,
+        "id_str": [str(random.randint(1, 30)).zfill(2) for _ in range(random.randint(0, 5))],
         "text_data": uuid.uuid4().hex,
         "rand_number": random.random(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex]
@@ -93,7 +94,6 @@ def test_record_upload(prefer_grpc):
 
     assert result_count.count < 900
     assert result_count.count > 100
-
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
@@ -192,7 +192,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         collection_name=COLLECTION_NAME,
         query_vector=query_vector,
         query_filter=None,  # Don't use any filters for now, search across all indexed points
-        append_payload=True,  # Also return a stored payload for found points
+        with_payload=True,  # Also return a stored payload for found points
         limit=5  # Return 5 closest points
     )
 
@@ -202,6 +202,25 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     print("Search result:")
     for hit in hits:
         print(hit)
+
+    client.create_payload_index(COLLECTION_NAME, "id_str", PayloadSchemaType.KEYWORD)
+    #  and use it as a query
+    hits = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        query_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="id_str",
+                    match=MatchValue(value="11")
+                )
+            ]
+        ),
+        with_payload=True,
+        limit=5
+    )
+
+    assert ('11' in hits[0].payload['id_str'])
 
     client.update_collection(
         collection_name=COLLECTION_NAME,
@@ -461,6 +480,8 @@ def test_serialization():
             "d": {
                 "val1": "val2",
                 "val2": [1, 2, 3],
+                "val3": [],
+                "val4": {},
             },
             "e": True,
             "f": None,
