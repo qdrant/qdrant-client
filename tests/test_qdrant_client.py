@@ -23,6 +23,7 @@ COLLECTION_NAME_ALIAS = 'client_test_alias'
 def one_random_payload_please(idx):
     return {
         "id": idx + 100,
+        "id_str": [str(idx + 100), str(idx + 1000)],
         "text_data": uuid.uuid4().hex,
         "rand_number": random.random(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex]
@@ -192,7 +193,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         collection_name=COLLECTION_NAME,
         query_vector=query_vector,
         query_filter=None,  # Don't use any filters for now, search across all indexed points
-        append_payload=True,  # Also return a stored payload for found points
+        with_payload=True,  # Also return a stored payload for found points
         limit=5  # Return 5 closest points
     )
 
@@ -202,6 +203,25 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     print("Search result:")
     for hit in hits:
         print(hit)
+
+    #  and use it as a query
+    hits = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        query_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="id_str",
+                    match=MatchValue(value="123")
+                )
+            ]
+        ),
+        with_payload=True,
+        limit=5
+    )
+
+    assert len(hits) == 1
+    assert (hits[0].payload['id_str'] == '123') or ('123' in hits[0].payload['id_str'])
 
     client.update_collection(
         collection_name=COLLECTION_NAME,
