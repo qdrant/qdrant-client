@@ -96,9 +96,7 @@ def test_record_upload(prefer_grpc):
     assert result_count.count > 100
 
 
-
-@pytest.mark.parametrize("prefer_grpc", [True])
-# @pytest.mark.parametrize("prefer_grpc", [False, True])
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("numpy_upload", [False, True])
 def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     vectors_path = create_random_vectors()
