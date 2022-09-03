@@ -92,9 +92,11 @@ class QdrantClient:
         self._rest_args = {
             "headers": self._rest_headers,
             "http2": http2,
-            "limits": limits,
             **kwargs
         }
+
+        if limits is not None:
+            self._rest_args['limits'] = limits
 
         self.openapi_client = SyncApis(host=self.rest_uri, **self._rest_args)
 
