@@ -68,7 +68,7 @@ class QdrantClient:
         self._api_key = api_key
 
         limits = kwargs.pop('limits', None)
-        if limits is not None:
+        if limits is None:
             if self._host in ['localhost', '127.0.0.1']:
                 # Disable keep-alive for local connections
                 # Cause in some cases, it may cause extra delays
