@@ -3,6 +3,7 @@ import warnings
 from multiprocessing import get_all_start_methods
 from typing import Optional, Iterable, List, Union, Tuple, Type
 
+import httpx
 import numpy as np
 from loguru import logger
 
@@ -66,6 +67,13 @@ class QdrantClient:
         self._https = https
         self._api_key = api_key
 
+        limits = kwargs.pop('limits', None)
+        if limits is None:
+            if self._host in ['localhost', '127.0.0.1']:
+                # Disable keep-alive for local connections
+                # Cause in some cases, it may cause extra delays
+                limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
+
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = {}
         self._rest_headers = kwargs.pop("headers", {})
@@ -86,6 +94,9 @@ class QdrantClient:
             "http2": http2,
             **kwargs
         }
+
+        if limits is not None:
+            self._rest_args['limits'] = limits
 
         self.openapi_client = SyncApis(host=self.rest_uri, **self._rest_args)
 
