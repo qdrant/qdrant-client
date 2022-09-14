@@ -173,7 +173,7 @@ class _PointsApi:
         body = jsonable_encoder(points_selector)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.CreateFieldIndex200Response,
             method="POST",
             url="/collections/{collection_name}/points/payload/clear",
             path_params=path_params,
@@ -196,7 +196,7 @@ class _PointsApi:
         body = jsonable_encoder(count_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.CountPoints200Response,
             method="POST",
             url="/collections/{collection_name}/points/count",
             path_params=path_params,
@@ -223,7 +223,7 @@ class _PointsApi:
         body = jsonable_encoder(delete_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.CreateFieldIndex200Response,
             method="POST",
             url="/collections/{collection_name}/points/payload/delete",
             path_params=path_params,
@@ -251,7 +251,7 @@ class _PointsApi:
         body = jsonable_encoder(points_selector)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.CreateFieldIndex200Response,
             method="POST",
             url="/collections/{collection_name}/points/delete",
             path_params=path_params,
@@ -273,7 +273,7 @@ class _PointsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2009,
+            type_=m.GetPoint200Response,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
             path_params=path_params,
@@ -294,9 +294,31 @@ class _PointsApi:
         body = jsonable_encoder(point_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.GetPoints200Response,
             method="POST",
             url="/collections/{collection_name}/points",
+            path_params=path_params,
+            json=body,
+        )
+
+    def _build_for_recommend_batch_points(
+        self,
+        collection_name: str,
+        recommend_request_batch: m.RecommendRequestBatch = None,
+    ):
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        body = jsonable_encoder(recommend_request_batch)
+
+        return self.api_client.request(
+            type_=m.SearchBatchPoints200Response,
+            method="POST",
+            url="/collections/{collection_name}/points/recommend/batch",
             path_params=path_params,
             json=body,
         )
@@ -316,7 +338,7 @@ class _PointsApi:
         body = jsonable_encoder(recommend_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.SearchPoints200Response,
             method="POST",
             url="/collections/{collection_name}/points/recommend",
             path_params=path_params,
@@ -338,9 +360,31 @@ class _PointsApi:
         body = jsonable_encoder(scroll_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.ScrollPoints200Response,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
+            path_params=path_params,
+            json=body,
+        )
+
+    def _build_for_search_batch_points(
+        self,
+        collection_name: str,
+        search_request_batch: m.SearchRequestBatch = None,
+    ):
+        """
+        Retrieve by batch the closest points based on vector similarity and given filtering conditions
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        body = jsonable_encoder(search_request_batch)
+
+        return self.api_client.request(
+            type_=m.SearchBatchPoints200Response,
+            method="POST",
+            url="/collections/{collection_name}/points/search/batch",
             path_params=path_params,
             json=body,
         )
@@ -360,7 +404,7 @@ class _PointsApi:
         body = jsonable_encoder(search_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.SearchPoints200Response,
             method="POST",
             url="/collections/{collection_name}/points/search",
             path_params=path_params,
@@ -387,7 +431,7 @@ class _PointsApi:
         body = jsonable_encoder(set_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.CreateFieldIndex200Response,
             method="POST",
             url="/collections/{collection_name}/points/payload",
             path_params=path_params,
@@ -415,7 +459,7 @@ class _PointsApi:
         body = jsonable_encoder(point_insert_operations)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.CreateFieldIndex200Response,
             method="PUT",
             url="/collections/{collection_name}/points",
             path_params=path_params,
@@ -430,7 +474,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Remove all payload for specified points
         """
@@ -444,7 +488,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.CountPoints200Response:
         """
         Count points which matches given filtering condition
         """
@@ -458,7 +502,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Delete specified key payload for points
         """
@@ -473,7 +517,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Delete points
         """
@@ -487,7 +531,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse2009:
+    ) -> m.GetPoint200Response:
         """
         Retrieve full information of single point by id
         """
@@ -500,7 +544,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20010:
+    ) -> m.GetPoints200Response:
         """
         Retrieve multiple points by specified IDs
         """
@@ -509,11 +553,24 @@ class AsyncPointsApi(_PointsApi):
             point_request=point_request,
         )
 
+    async def recommend_batch_points(
+        self,
+        collection_name: str,
+        recommend_request_batch: m.RecommendRequestBatch = None,
+    ) -> m.SearchBatchPoints200Response:
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples.
+        """
+        return await self._build_for_recommend_batch_points(
+            collection_name=collection_name,
+            recommend_request_batch=recommend_request_batch,
+        )
+
     async def recommend_points(
         self,
         collection_name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.SearchPoints200Response:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -526,7 +583,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.ScrollPoints200Response:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -535,11 +592,24 @@ class AsyncPointsApi(_PointsApi):
             scroll_request=scroll_request,
         )
 
+    async def search_batch_points(
+        self,
+        collection_name: str,
+        search_request_batch: m.SearchRequestBatch = None,
+    ) -> m.SearchBatchPoints200Response:
+        """
+        Retrieve by batch the closest points based on vector similarity and given filtering conditions
+        """
+        return await self._build_for_search_batch_points(
+            collection_name=collection_name,
+            search_request_batch=search_request_batch,
+        )
+
     async def search_points(
         self,
         collection_name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.SearchPoints200Response:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -553,7 +623,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Set payload for points
         """
@@ -568,7 +638,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
@@ -585,7 +655,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Remove all payload for specified points
         """
@@ -599,7 +669,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.CountPoints200Response:
         """
         Count points which matches given filtering condition
         """
@@ -613,7 +683,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Delete specified key payload for points
         """
@@ -628,7 +698,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Delete points
         """
@@ -642,7 +712,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse2009:
+    ) -> m.GetPoint200Response:
         """
         Retrieve full information of single point by id
         """
@@ -655,7 +725,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20010:
+    ) -> m.GetPoints200Response:
         """
         Retrieve multiple points by specified IDs
         """
@@ -664,11 +734,24 @@ class SyncPointsApi(_PointsApi):
             point_request=point_request,
         )
 
+    def recommend_batch_points(
+        self,
+        collection_name: str,
+        recommend_request_batch: m.RecommendRequestBatch = None,
+    ) -> m.SearchBatchPoints200Response:
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples.
+        """
+        return self._build_for_recommend_batch_points(
+            collection_name=collection_name,
+            recommend_request_batch=recommend_request_batch,
+        )
+
     def recommend_points(
         self,
         collection_name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.SearchPoints200Response:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -681,7 +764,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.ScrollPoints200Response:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -690,11 +773,24 @@ class SyncPointsApi(_PointsApi):
             scroll_request=scroll_request,
         )
 
+    def search_batch_points(
+        self,
+        collection_name: str,
+        search_request_batch: m.SearchRequestBatch = None,
+    ) -> m.SearchBatchPoints200Response:
+        """
+        Retrieve by batch the closest points based on vector similarity and given filtering conditions
+        """
+        return self._build_for_search_batch_points(
+            collection_name=collection_name,
+            search_request_batch=search_request_batch,
+        )
+
     def search_points(
         self,
         collection_name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.SearchPoints200Response:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -708,7 +804,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Set payload for points
         """
@@ -723,7 +819,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.CreateFieldIndex200Response:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """

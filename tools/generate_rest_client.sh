@@ -16,6 +16,7 @@ cd $(mktemp -d)
 
 git clone git@github.com:qdrant/pydantic_openapi_v3.git
 cd pydantic_openapi_v3
+git checkout dependency-updates-fix-local
 
 poetry install
 

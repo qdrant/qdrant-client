@@ -165,7 +165,7 @@ class _DefaultApi:
             query_params["anonymize"] = str(anonymize).lower()
 
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.Telemetry200Response,
             method="GET",
             url="/telemetry",
             params=query_params,
@@ -176,7 +176,7 @@ class AsyncDefaultApi(_DefaultApi):
     async def telemetry(
         self,
         anonymize: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.Telemetry200Response:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
@@ -189,7 +189,7 @@ class SyncDefaultApi(_DefaultApi):
     def telemetry(
         self,
         anonymize: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.Telemetry200Response:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
