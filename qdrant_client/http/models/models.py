@@ -1,4 +1,3 @@
-from datetime import datetime, date
 from enum import Enum
 from typing import List, Union
 
@@ -16,11 +15,9 @@ AppBuildTelemetry = dict
 Batch = dict
 ChangeAliasesOperation = dict
 ClusterConfigTelemetry = dict
-ClusterStatus200Response = dict
 ClusterStatusOneOf = dict
 ClusterStatusOneOf1 = dict
 CollectionClusterInfo = dict
-CollectionClusterInfo200Response = dict
 CollectionConfig = dict
 CollectionDescription = dict
 CollectionInfo = dict
@@ -40,15 +37,12 @@ ConsensusConfigTelemetry = dict
 ConsensusThreadStatusOneOf = dict
 ConsensusThreadStatusOneOf1 = dict
 ConsensusThreadStatusOneOf2 = dict
-CountPoints200Response = dict
 CountRequest = dict
 CountResult = dict
 CreateAlias = dict
 CreateAliasOperation = dict
 CreateCollection = dict
 CreateFieldIndex = dict
-CreateFieldIndex200Response = dict
-CreateSnapshot200Response = dict
 DeleteAlias = dict
 DeleteAliasOperation = dict
 DeletePayload = dict
@@ -69,17 +63,27 @@ FilterSelector = dict
 GeoBoundingBox = dict
 GeoPoint = dict
 GeoRadius = dict
-GetCollection200Response = dict
-GetCollections200Response = dict
-GetPoint200Response = dict
-GetPoints200Response = dict
 HasIdCondition = dict
 HnswConfig = dict
 HnswConfigDiff = dict
 IndexesOneOf = dict
 IndexesOneOf1 = dict
+InlineResponse200 = dict
+InlineResponse2001 = dict
+InlineResponse20010 = dict
+InlineResponse20011 = dict
+InlineResponse20012 = dict
+InlineResponse20013 = dict
+InlineResponse20014 = dict
+InlineResponse2002 = dict
+InlineResponse2003 = dict
+InlineResponse2004 = dict
+InlineResponse2005 = dict
+InlineResponse2006 = dict
+InlineResponse2007 = dict
+InlineResponse2008 = dict
+InlineResponse2009 = dict
 IsEmptyCondition = dict
-ListSnapshots200Response = dict
 LocalShardInfo = dict
 MatchText = dict
 MatchValue = dict
@@ -136,17 +140,13 @@ RecommendRequest = dict
 RecommendRequestBatch = dict
 Record = dict
 RemoteShardInfo = dict
-RemovePeer200Response = dict
 RenameAlias = dict
 RenameAliasOperation = dict
 RunningEnvironmentTelemetry = dict
 ScoredPoint = dict
-ScrollPoints200Response = dict
 ScrollRequest = dict
 ScrollResult = dict
-SearchBatchPoints200Response = dict
 SearchParams = dict
-SearchPoints200Response = dict
 SearchRequest = dict
 SearchRequestBatch = dict
 SegmentConfig = dict
@@ -181,7 +181,6 @@ class StateRole(str, Enum):
 
 StorageTypeOneOf = dict
 StorageTypeOneOf1 = dict
-Telemetry200Response = dict
 TelemetryData = dict
 TelemetryOperationStatistics = dict
 
@@ -213,18 +212,6 @@ AliasOperations = Union[
     DeleteAliasOperation,
     RenameAliasOperation,
 ]
-BatchPayloadsInner = Union[
-    Payload,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
 BatchVectorStruct = Union[
     List[[float]],
     {str: ([[float]],)},
@@ -237,18 +224,6 @@ ClusterStatus = Union[
     ClusterStatusOneOf,
     ClusterStatusOneOf1,
 ]
-CollectionParamsDistance = Union[
-    Distance,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
 Condition = Union[
     FieldCondition,
     IsEmptyCondition,
@@ -260,105 +235,9 @@ ConsensusThreadStatus = Union[
     ConsensusThreadStatusOneOf1,
     ConsensusThreadStatusOneOf2,
 ]
-CreateCollectionDistance = Union[
-    Distance,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-CreateCollectionHnswConfig = Union[
-    HnswConfigDiff,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-CreateCollectionOptimizersConfig = Union[
-    OptimizersConfigDiff,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-CreateCollectionWalConfig = Union[
-    WalConfigDiff,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
 ExtendedPointId = Union[
     StrictInt,
     StrictStr,
-]
-FieldConditionGeoBoundingBox = Union[
-    GeoBoundingBox,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-FieldConditionGeoRadius = Union[
-    GeoRadius,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-FieldConditionRange = Union[
-    Range,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-FieldConditionValuesCount = Union[
-    ValuesCount,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
 ]
 Indexes = Union[
     IndexesOneOf,
@@ -396,81 +275,9 @@ PointInsertOperations = Union[
     PointsBatch,
     PointsList,
 ]
-PointStructPayload = Union[
-    Payload,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
 PointsSelector = Union[
     PointIdsList,
     FilterSelector,
-]
-RaftInfoRole = Union[
-    StateRole,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-RecordPayload = Union[
-    Payload,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-ScrollRequestFilter = Union[
-    Filter,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-SearchRequestFilter = Union[
-    Filter,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-SearchRequestParams = Union[
-    SearchParams,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
 ]
 ShardTelemetry = Union[
     ShardTelemetryOneOf,
@@ -481,18 +288,6 @@ ShardTelemetry = Union[
 StorageType = Union[
     StorageTypeOneOf,
     StorageTypeOneOf1,
-]
-UpdateCollectionOptimizersConfig = Union[
-    OptimizersConfigDiff,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
 ]
 ValueVariants = Union[
     StrictBool,
@@ -511,132 +306,12 @@ WithVector = Union[
     List[StrictStr],
     StrictBool,
 ]
-CollectionParamsVectors = Union[
-    VectorsConfig,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-CreateCollectionVectors = Union[
-    VectorsConfig,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-FieldConditionMatch = Union[
-    Match,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
     PayloadSchemaParams,
-]
-PayloadIndexInfoParams = Union[
-    PayloadSchemaParams,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-RecordVector = Union[
-    VectorStruct,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-ScrollRequestOffset = Union[
-    ExtendedPointId,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-ScrollResultNextPageOffset = Union[
-    ExtendedPointId,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
 ]
 WithPayloadInterface = Union[
     PayloadSelector,
     List[StrictStr],
     StrictBool,
-]
-CreateFieldIndexFieldSchema = Union[
-    PayloadFieldSchema,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-PointRequestWithPayload = Union[
-    WithPayloadInterface,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
-]
-SearchRequestWithPayload = Union[
-    WithPayloadInterface,
-    bool,
-    date,
-    datetime,
-    dict,
-    float,
-    int,
-    list,
-    str,
-    none_type,
 ]

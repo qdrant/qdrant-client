@@ -160,7 +160,7 @@ class _SnapshotsApi:
         Create new snapshot of the whole storage
         """
         return self.api_client.request(
-            type_=m.CreateSnapshot200Response,
+            type_=m.InlineResponse2008,
             method="POST",
             url="/snapshots",
         )
@@ -177,7 +177,7 @@ class _SnapshotsApi:
         }
 
         return self.api_client.request(
-            type_=m.CreateSnapshot200Response,
+            type_=m.InlineResponse2008,
             method="POST",
             url="/collections/{collection_name}/snapshots",
             path_params=path_params,
@@ -228,7 +228,7 @@ class _SnapshotsApi:
         Get list of snapshots of the whole storage
         """
         return self.api_client.request(
-            type_=m.ListSnapshots200Response,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/snapshots",
         )
@@ -245,7 +245,7 @@ class _SnapshotsApi:
         }
 
         return self.api_client.request(
-            type_=m.ListSnapshots200Response,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/snapshots",
             path_params=path_params,
@@ -255,7 +255,7 @@ class _SnapshotsApi:
 class AsyncSnapshotsApi(_SnapshotsApi):
     async def create_full_snapshot(
         self,
-    ) -> m.CreateSnapshot200Response:
+    ) -> m.InlineResponse2008:
         """
         Create new snapshot of the whole storage
         """
@@ -264,7 +264,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
     async def create_snapshot(
         self,
         collection_name: str,
-    ) -> m.CreateSnapshot200Response:
+    ) -> m.InlineResponse2008:
         """
         Create new snapshot for a collection
         """
@@ -298,7 +298,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
 
     async def list_full_snapshots(
         self,
-    ) -> m.ListSnapshots200Response:
+    ) -> m.InlineResponse2007:
         """
         Get list of snapshots of the whole storage
         """
@@ -307,7 +307,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
     async def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.ListSnapshots200Response:
+    ) -> m.InlineResponse2007:
         """
         Get list of snapshots for a collection
         """
@@ -319,7 +319,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
 class SyncSnapshotsApi(_SnapshotsApi):
     def create_full_snapshot(
         self,
-    ) -> m.CreateSnapshot200Response:
+    ) -> m.InlineResponse2008:
         """
         Create new snapshot of the whole storage
         """
@@ -328,7 +328,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
     def create_snapshot(
         self,
         collection_name: str,
-    ) -> m.CreateSnapshot200Response:
+    ) -> m.InlineResponse2008:
         """
         Create new snapshot for a collection
         """
@@ -362,7 +362,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
 
     def list_full_snapshots(
         self,
-    ) -> m.ListSnapshots200Response:
+    ) -> m.InlineResponse2007:
         """
         Get list of snapshots of the whole storage
         """
@@ -371,7 +371,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
     def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.ListSnapshots200Response:
+    ) -> m.InlineResponse2007:
         """
         Get list of snapshots for a collection
         """
