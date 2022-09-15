@@ -31,6 +31,14 @@ class PayloadSchemaType(betterproto.Enum):
     Integer = 2
     Float = 3
     Geo = 4
+    Text = 5
+
+
+class TokenizerType(betterproto.Enum):
+    Unknown = 0
+    Prefix = 1
+    Whitespace = 2
+    Word = 3
 
 
 class NullValue(betterproto.Enum):
@@ -49,12 +57,32 @@ class FieldType(betterproto.Enum):
     FieldTypeInteger = 1
     FieldTypeFloat = 2
     FieldTypeGeo = 3
+    FieldTypeText = 4
 
 
 class UpdateStatus(betterproto.Enum):
     UnknownUpdateStatus = 0
     Acknowledged = 1
     Completed = 2
+
+
+@dataclass(eq=False, repr=False)
+class VectorParams(betterproto.Message):
+    size: int = betterproto.uint64_field(1)
+    distance: "Distance" = betterproto.enum_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class VectorParamsMap(betterproto.Message):
+    map: Dict[str, "VectorParams"] = betterproto.map_field(
+        1, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
+    )
+
+
+@dataclass(eq=False, repr=False)
+class VectorsConfig(betterproto.Message):
+    params: "VectorParams" = betterproto.message_field(1, group="config")
+    params_map: "VectorParamsMap" = betterproto.message_field(2, group="config")
 
 
 @dataclass(eq=False, repr=False)
@@ -181,8 +209,12 @@ class OptimizersConfigDiff(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class CreateCollection(betterproto.Message):
     collection_name: str = betterproto.string_field(1)
-    vector_size: int = betterproto.uint64_field(2)
-    distance: "Distance" = betterproto.enum_field(3)
+    vector_size: Optional[int] = betterproto.uint64_field(
+        2, optional=True, group="_vector_size"
+    )
+    distance: Optional["Distance"] = betterproto.enum_field(
+        3, optional=True, group="_distance"
+    )
     hnsw_config: Optional["HnswConfigDiff"] = betterproto.message_field(
         4, optional=True, group="_hnsw_config"
     )
@@ -201,6 +233,18 @@ class CreateCollection(betterproto.Message):
     timeout: Optional[int] = betterproto.uint64_field(
         9, optional=True, group="_timeout"
     )
+    vectors_config: Optional["VectorsConfig"] = betterproto.message_field(
+        10, optional=True, group="_vectors_config"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.vector_size:
+            warnings.warn(
+                "CreateCollection.vector_size is deprecated", DeprecationWarning
+            )
+        if self.distance:
+            warnings.warn("CreateCollection.distance is deprecated", DeprecationWarning)
 
 
 @dataclass(eq=False, repr=False)
@@ -230,10 +274,26 @@ class CollectionOperationResponse(betterproto.Message):
 
 @dataclass(eq=False, repr=False)
 class CollectionParams(betterproto.Message):
-    vector_size: int = betterproto.uint64_field(1)
-    distance: "Distance" = betterproto.enum_field(2)
+    vector_size: Optional[int] = betterproto.uint64_field(
+        1, optional=True, group="_vector_size"
+    )
+    distance: Optional["Distance"] = betterproto.enum_field(
+        2, optional=True, group="_distance"
+    )
     shard_number: int = betterproto.uint32_field(3)
     on_disk_payload: bool = betterproto.bool_field(4)
+    vectors_config: Optional["VectorsConfig"] = betterproto.message_field(
+        5, optional=True, group="_vectors_config"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.vector_size:
+            warnings.warn(
+                "CollectionParams.vector_size is deprecated", DeprecationWarning
+            )
+        if self.distance:
+            warnings.warn("CollectionParams.distance is deprecated", DeprecationWarning)
 
 
 @dataclass(eq=False, repr=False)
@@ -245,8 +305,32 @@ class CollectionConfig(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class TextIndexParams(betterproto.Message):
+    tokenizer: "TokenizerType" = betterproto.enum_field(1)
+    lowercase: Optional[bool] = betterproto.bool_field(
+        2, optional=True, group="_lowercase"
+    )
+    min_token_len: Optional[int] = betterproto.uint64_field(
+        3, optional=True, group="_min_token_len"
+    )
+    max_token_len: Optional[int] = betterproto.uint64_field(
+        4, optional=True, group="_max_token_len"
+    )
+
+
+@dataclass(eq=False, repr=False)
+class PayloadIndexParams(betterproto.Message):
+    text_index_params: "TextIndexParams" = betterproto.message_field(
+        1, group="index_params"
+    )
+
+
+@dataclass(eq=False, repr=False)
 class PayloadSchemaInfo(betterproto.Message):
     data_type: "PayloadSchemaType" = betterproto.enum_field(1)
+    params: Optional["PayloadIndexParams"] = betterproto.message_field(
+        2, optional=True, group="_params"
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -371,6 +455,11 @@ class PointId(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class Vector(betterproto.Message):
+    data: List[float] = betterproto.float_field(1)
+
+
+@dataclass(eq=False, repr=False)
 class UpsertPoints(betterproto.Message):
     collection_name: str = betterproto.string_field(1)
     wait: Optional[bool] = betterproto.bool_field(2, optional=True, group="_wait")
@@ -392,6 +481,14 @@ class GetPoints(betterproto.Message):
         3, optional=True, group="_with_vector"
     )
     with_payload: "WithPayloadSelector" = betterproto.message_field(4)
+    with_vectors: Optional["WithVectorsSelector"] = betterproto.message_field(
+        5, optional=True, group="_with_vectors"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.with_vector:
+            warnings.warn("GetPoints.with_vector is deprecated", DeprecationWarning)
 
 
 @dataclass(eq=False, repr=False)
@@ -427,6 +524,9 @@ class CreateFieldIndexCollection(betterproto.Message):
     field_type: Optional["FieldType"] = betterproto.enum_field(
         4, optional=True, group="_field_type"
     )
+    field_index_params: Optional["PayloadIndexParams"] = betterproto.message_field(
+        5, optional=True, group="_field_index_params"
+    )
 
 
 @dataclass(eq=False, repr=False)
@@ -458,6 +558,30 @@ class WithPayloadSelector(betterproto.Message):
 
 
 @dataclass(eq=False, repr=False)
+class NamedVectors(betterproto.Message):
+    vectors: Dict[str, "Vector"] = betterproto.map_field(
+        1, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
+    )
+
+
+@dataclass(eq=False, repr=False)
+class Vectors(betterproto.Message):
+    vector: "Vector" = betterproto.message_field(1, group="vectors_options")
+    vectors: "NamedVectors" = betterproto.message_field(2, group="vectors_options")
+
+
+@dataclass(eq=False, repr=False)
+class VectorsSelector(betterproto.Message):
+    names: List[str] = betterproto.string_field(1)
+
+
+@dataclass(eq=False, repr=False)
+class WithVectorsSelector(betterproto.Message):
+    enable: bool = betterproto.bool_field(1, group="selector_options")
+    include: "VectorsSelector" = betterproto.message_field(2, group="selector_options")
+
+
+@dataclass(eq=False, repr=False)
 class SearchParams(betterproto.Message):
     # Params relevant to HNSW index. Size of the beam in a beam-search.Larger the
     # value - more accurate the result, more time required for search.
@@ -481,6 +605,23 @@ class SearchPoints(betterproto.Message):
         8, optional=True, group="_score_threshold"
     )
     offset: Optional[int] = betterproto.uint64_field(9, optional=True, group="_offset")
+    vector_name: Optional[str] = betterproto.string_field(
+        10, optional=True, group="_vector_name"
+    )
+    with_vectors: Optional["WithVectorsSelector"] = betterproto.message_field(
+        11, optional=True, group="_with_vectors"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.with_vector:
+            warnings.warn("SearchPoints.with_vector is deprecated", DeprecationWarning)
+
+
+@dataclass(eq=False, repr=False)
+class SearchBatchPoints(betterproto.Message):
+    collection_name: str = betterproto.string_field(1)
+    search_points: List["SearchPoints"] = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -495,6 +636,14 @@ class ScrollPoints(betterproto.Message):
         5, optional=True, group="_with_vector"
     )
     with_payload: "WithPayloadSelector" = betterproto.message_field(6)
+    with_vectors: Optional["WithVectorsSelector"] = betterproto.message_field(
+        7, optional=True, group="_with_vectors"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.with_vector:
+            warnings.warn("ScrollPoints.with_vector is deprecated", DeprecationWarning)
 
 
 @dataclass(eq=False, repr=False)
@@ -513,6 +662,23 @@ class RecommendPoints(betterproto.Message):
         9, optional=True, group="_score_threshold"
     )
     offset: Optional[int] = betterproto.uint64_field(10, optional=True, group="_offset")
+    using: Optional[str] = betterproto.string_field(11, optional=True, group="_using")
+    with_vectors: Optional["WithVectorsSelector"] = betterproto.message_field(
+        12, optional=True, group="_with_vectors"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.with_vector:
+            warnings.warn(
+                "RecommendPoints.with_vector is deprecated", DeprecationWarning
+            )
+
+
+@dataclass(eq=False, repr=False)
+class RecommendBatchPoints(betterproto.Message):
+    collection_name: str = betterproto.string_field(1)
+    recommend_points: List["RecommendPoints"] = betterproto.message_field(2)
 
 
 @dataclass(eq=False, repr=False)
@@ -543,11 +709,30 @@ class ScoredPoint(betterproto.Message):
     score: float = betterproto.float_field(3)
     vector: List[float] = betterproto.float_field(4)
     version: int = betterproto.uint64_field(5)
+    vectors: Optional["Vectors"] = betterproto.message_field(
+        6, optional=True, group="_vectors"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.vector:
+            warnings.warn("ScoredPoint.vector is deprecated", DeprecationWarning)
 
 
 @dataclass(eq=False, repr=False)
 class SearchResponse(betterproto.Message):
     result: List["ScoredPoint"] = betterproto.message_field(1)
+    time: float = betterproto.double_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class BatchResult(betterproto.Message):
+    result: List["ScoredPoint"] = betterproto.message_field(1)
+
+
+@dataclass(eq=False, repr=False)
+class SearchBatchResponse(betterproto.Message):
+    result: List["BatchResult"] = betterproto.message_field(1)
     time: float = betterproto.double_field(2)
 
 
@@ -578,6 +763,14 @@ class RetrievedPoint(betterproto.Message):
         2, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
     vector: List[float] = betterproto.float_field(3)
+    vectors: Optional["Vectors"] = betterproto.message_field(
+        4, optional=True, group="_vectors"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.vector:
+            warnings.warn("RetrievedPoint.vector is deprecated", DeprecationWarning)
 
 
 @dataclass(eq=False, repr=False)
@@ -589,6 +782,12 @@ class GetResponse(betterproto.Message):
 @dataclass(eq=False, repr=False)
 class RecommendResponse(betterproto.Message):
     result: List["ScoredPoint"] = betterproto.message_field(1)
+    time: float = betterproto.double_field(2)
+
+
+@dataclass(eq=False, repr=False)
+class RecommendBatchResponse(betterproto.Message):
+    result: List["BatchResult"] = betterproto.message_field(1)
     time: float = betterproto.double_field(2)
 
 
@@ -634,6 +833,7 @@ class Match(betterproto.Message):
     keyword: str = betterproto.string_field(1, group="match_value")
     integer: int = betterproto.int64_field(2, group="match_value")
     boolean: bool = betterproto.bool_field(3, group="match_value")
+    text: str = betterproto.string_field(4, group="match_value")
 
 
 @dataclass(eq=False, repr=False)
@@ -684,6 +884,14 @@ class PointStruct(betterproto.Message):
     payload: Dict[str, "Value"] = betterproto.map_field(
         3, betterproto.TYPE_STRING, betterproto.TYPE_MESSAGE
     )
+    vectors: Optional["Vectors"] = betterproto.message_field(
+        4, optional=True, group="_vectors"
+    )
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.vector:
+            warnings.warn("PointStruct.vector is deprecated", DeprecationWarning)
 
 
 @dataclass(eq=False, repr=False)
@@ -764,14 +972,15 @@ class CollectionsStub(betterproto.ServiceStub):
         self,
         *,
         collection_name: str = "",
-        vector_size: int = 0,
-        distance: "Distance" = 0,
+        vector_size: Optional[int] = None,
+        distance: Optional["Distance"] = None,
         hnsw_config: Optional["HnswConfigDiff"] = None,
         wal_config: Optional["WalConfigDiff"] = None,
         optimizers_config: Optional["OptimizersConfigDiff"] = None,
         shard_number: Optional[int] = None,
         on_disk_payload: Optional[bool] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
+        vectors_config: Optional["VectorsConfig"] = None
     ) -> "CollectionOperationResponse":
 
         request = CreateCollection()
@@ -787,6 +996,8 @@ class CollectionsStub(betterproto.ServiceStub):
         request.shard_number = shard_number
         request.on_disk_payload = on_disk_payload
         request.timeout = timeout
+        if vectors_config is not None:
+            request.vectors_config = vectors_config
 
         return await self._unary_unary(
             "/qdrant.Collections/Create", request, CollectionOperationResponse
@@ -884,7 +1095,8 @@ class PointsStub(betterproto.ServiceStub):
         collection_name: str = "",
         ids: Optional[List["PointId"]] = None,
         with_vector: Optional[bool] = None,
-        with_payload: "WithPayloadSelector" = None
+        with_payload: "WithPayloadSelector" = None,
+        with_vectors: Optional["WithVectorsSelector"] = None
     ) -> "GetResponse":
         ids = ids or []
 
@@ -895,6 +1107,8 @@ class PointsStub(betterproto.ServiceStub):
         request.with_vector = with_vector
         if with_payload is not None:
             request.with_payload = with_payload
+        if with_vectors is not None:
+            request.with_vectors = with_vectors
 
         return await self._unary_unary("/qdrant.Points/Get", request, GetResponse)
 
@@ -965,7 +1179,8 @@ class PointsStub(betterproto.ServiceStub):
         collection_name: str = "",
         wait: Optional[bool] = None,
         field_name: str = "",
-        field_type: Optional["FieldType"] = None
+        field_type: Optional["FieldType"] = None,
+        field_index_params: Optional["PayloadIndexParams"] = None
     ) -> "PointsOperationResponse":
 
         request = CreateFieldIndexCollection()
@@ -973,6 +1188,8 @@ class PointsStub(betterproto.ServiceStub):
         request.wait = wait
         request.field_name = field_name
         request.field_type = field_type
+        if field_index_params is not None:
+            request.field_index_params = field_index_params
 
         return await self._unary_unary(
             "/qdrant.Points/CreateFieldIndex", request, PointsOperationResponse
@@ -1006,7 +1223,9 @@ class PointsStub(betterproto.ServiceStub):
         with_payload: "WithPayloadSelector" = None,
         params: "SearchParams" = None,
         score_threshold: Optional[float] = None,
-        offset: Optional[int] = None
+        offset: Optional[int] = None,
+        vector_name: Optional[str] = None,
+        with_vectors: Optional["WithVectorsSelector"] = None
     ) -> "SearchResponse":
         vector = vector or []
 
@@ -1023,8 +1242,28 @@ class PointsStub(betterproto.ServiceStub):
             request.params = params
         request.score_threshold = score_threshold
         request.offset = offset
+        request.vector_name = vector_name
+        if with_vectors is not None:
+            request.with_vectors = with_vectors
 
         return await self._unary_unary("/qdrant.Points/Search", request, SearchResponse)
+
+    async def search_batch(
+        self,
+        *,
+        collection_name: str = "",
+        search_points: Optional[List["SearchPoints"]] = None
+    ) -> "SearchBatchResponse":
+        search_points = search_points or []
+
+        request = SearchBatchPoints()
+        request.collection_name = collection_name
+        if search_points is not None:
+            request.search_points = search_points
+
+        return await self._unary_unary(
+            "/qdrant.Points/SearchBatch", request, SearchBatchResponse
+        )
 
     async def scroll(
         self,
@@ -1034,7 +1273,8 @@ class PointsStub(betterproto.ServiceStub):
         offset: Optional["PointId"] = None,
         limit: Optional[int] = None,
         with_vector: Optional[bool] = None,
-        with_payload: "WithPayloadSelector" = None
+        with_payload: "WithPayloadSelector" = None,
+        with_vectors: Optional["WithVectorsSelector"] = None
     ) -> "ScrollResponse":
 
         request = ScrollPoints()
@@ -1047,6 +1287,8 @@ class PointsStub(betterproto.ServiceStub):
         request.with_vector = with_vector
         if with_payload is not None:
             request.with_payload = with_payload
+        if with_vectors is not None:
+            request.with_vectors = with_vectors
 
         return await self._unary_unary("/qdrant.Points/Scroll", request, ScrollResponse)
 
@@ -1062,7 +1304,9 @@ class PointsStub(betterproto.ServiceStub):
         with_payload: "WithPayloadSelector" = None,
         params: "SearchParams" = None,
         score_threshold: Optional[float] = None,
-        offset: Optional[int] = None
+        offset: Optional[int] = None,
+        using: Optional[str] = None,
+        with_vectors: Optional["WithVectorsSelector"] = None
     ) -> "RecommendResponse":
         positive = positive or []
         negative = negative or []
@@ -1083,9 +1327,29 @@ class PointsStub(betterproto.ServiceStub):
             request.params = params
         request.score_threshold = score_threshold
         request.offset = offset
+        request.using = using
+        if with_vectors is not None:
+            request.with_vectors = with_vectors
 
         return await self._unary_unary(
             "/qdrant.Points/Recommend", request, RecommendResponse
+        )
+
+    async def recommend_batch(
+        self,
+        *,
+        collection_name: str = "",
+        recommend_points: Optional[List["RecommendPoints"]] = None
+    ) -> "RecommendBatchResponse":
+        recommend_points = recommend_points or []
+
+        request = RecommendBatchPoints()
+        request.collection_name = collection_name
+        if recommend_points is not None:
+            request.recommend_points = recommend_points
+
+        return await self._unary_unary(
+            "/qdrant.Points/RecommendBatch", request, RecommendBatchResponse
         )
 
     async def count(
@@ -1161,14 +1425,15 @@ class CollectionsBase(ServiceBase):
     async def create(
         self,
         collection_name: str,
-        vector_size: int,
-        distance: "Distance",
+        vector_size: Optional[int],
+        distance: Optional["Distance"],
         hnsw_config: Optional["HnswConfigDiff"],
         wal_config: Optional["WalConfigDiff"],
         optimizers_config: Optional["OptimizersConfigDiff"],
         shard_number: Optional[int],
         on_disk_payload: Optional[bool],
         timeout: Optional[int],
+        vectors_config: Optional["VectorsConfig"],
     ) -> "CollectionOperationResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
@@ -1221,6 +1486,7 @@ class CollectionsBase(ServiceBase):
             "shard_number": request.shard_number,
             "on_disk_payload": request.on_disk_payload,
             "timeout": request.timeout,
+            "vectors_config": request.vectors_config,
         }
 
         response = await self.create(**request_kwargs)
@@ -1321,6 +1587,7 @@ class PointsBase(ServiceBase):
         ids: Optional[List["PointId"]],
         with_vector: Optional[bool],
         with_payload: "WithPayloadSelector",
+        with_vectors: Optional["WithVectorsSelector"],
     ) -> "GetResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
@@ -1353,6 +1620,7 @@ class PointsBase(ServiceBase):
         wait: Optional[bool],
         field_name: str,
         field_type: Optional["FieldType"],
+        field_index_params: Optional["PayloadIndexParams"],
     ) -> "PointsOperationResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
@@ -1372,7 +1640,14 @@ class PointsBase(ServiceBase):
         params: "SearchParams",
         score_threshold: Optional[float],
         offset: Optional[int],
+        vector_name: Optional[str],
+        with_vectors: Optional["WithVectorsSelector"],
     ) -> "SearchResponse":
+        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
+
+    async def search_batch(
+        self, collection_name: str, search_points: Optional[List["SearchPoints"]]
+    ) -> "SearchBatchResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
     async def scroll(
@@ -1383,6 +1658,7 @@ class PointsBase(ServiceBase):
         limit: Optional[int],
         with_vector: Optional[bool],
         with_payload: "WithPayloadSelector",
+        with_vectors: Optional["WithVectorsSelector"],
     ) -> "ScrollResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
@@ -1398,7 +1674,14 @@ class PointsBase(ServiceBase):
         params: "SearchParams",
         score_threshold: Optional[float],
         offset: Optional[int],
+        using: Optional[str],
+        with_vectors: Optional["WithVectorsSelector"],
     ) -> "RecommendResponse":
+        raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
+
+    async def recommend_batch(
+        self, collection_name: str, recommend_points: Optional[List["RecommendPoints"]]
+    ) -> "RecommendBatchResponse":
         raise grpclib.GRPCError(grpclib.const.Status.UNIMPLEMENTED)
 
     async def count(
@@ -1438,6 +1721,7 @@ class PointsBase(ServiceBase):
             "ids": request.ids,
             "with_vector": request.with_vector,
             "with_payload": request.with_payload,
+            "with_vectors": request.with_vectors,
         }
 
         response = await self.get(**request_kwargs)
@@ -1489,6 +1773,7 @@ class PointsBase(ServiceBase):
             "wait": request.wait,
             "field_name": request.field_name,
             "field_type": request.field_type,
+            "field_index_params": request.field_index_params,
         }
 
         response = await self.create_field_index(**request_kwargs)
@@ -1519,9 +1804,22 @@ class PointsBase(ServiceBase):
             "params": request.params,
             "score_threshold": request.score_threshold,
             "offset": request.offset,
+            "vector_name": request.vector_name,
+            "with_vectors": request.with_vectors,
         }
 
         response = await self.search(**request_kwargs)
+        await stream.send_message(response)
+
+    async def __rpc_search_batch(self, stream: grpclib.server.Stream) -> None:
+        request = await stream.recv_message()
+
+        request_kwargs = {
+            "collection_name": request.collection_name,
+            "search_points": request.search_points,
+        }
+
+        response = await self.search_batch(**request_kwargs)
         await stream.send_message(response)
 
     async def __rpc_scroll(self, stream: grpclib.server.Stream) -> None:
@@ -1534,6 +1832,7 @@ class PointsBase(ServiceBase):
             "limit": request.limit,
             "with_vector": request.with_vector,
             "with_payload": request.with_payload,
+            "with_vectors": request.with_vectors,
         }
 
         response = await self.scroll(**request_kwargs)
@@ -1553,9 +1852,22 @@ class PointsBase(ServiceBase):
             "params": request.params,
             "score_threshold": request.score_threshold,
             "offset": request.offset,
+            "using": request.using,
+            "with_vectors": request.with_vectors,
         }
 
         response = await self.recommend(**request_kwargs)
+        await stream.send_message(response)
+
+    async def __rpc_recommend_batch(self, stream: grpclib.server.Stream) -> None:
+        request = await stream.recv_message()
+
+        request_kwargs = {
+            "collection_name": request.collection_name,
+            "recommend_points": request.recommend_points,
+        }
+
+        response = await self.recommend_batch(**request_kwargs)
         await stream.send_message(response)
 
     async def __rpc_count(self, stream: grpclib.server.Stream) -> None:
@@ -1626,6 +1938,12 @@ class PointsBase(ServiceBase):
                 SearchPoints,
                 SearchResponse,
             ),
+            "/qdrant.Points/SearchBatch": grpclib.const.Handler(
+                self.__rpc_search_batch,
+                grpclib.const.Cardinality.UNARY_UNARY,
+                SearchBatchPoints,
+                SearchBatchResponse,
+            ),
             "/qdrant.Points/Scroll": grpclib.const.Handler(
                 self.__rpc_scroll,
                 grpclib.const.Cardinality.UNARY_UNARY,
@@ -1637,6 +1955,12 @@ class PointsBase(ServiceBase):
                 grpclib.const.Cardinality.UNARY_UNARY,
                 RecommendPoints,
                 RecommendResponse,
+            ),
+            "/qdrant.Points/RecommendBatch": grpclib.const.Handler(
+                self.__rpc_recommend_batch,
+                grpclib.const.Cardinality.UNARY_UNARY,
+                RecommendBatchPoints,
+                RecommendBatchResponse,
             ),
             "/qdrant.Points/Count": grpclib.const.Handler(
                 self.__rpc_count,
