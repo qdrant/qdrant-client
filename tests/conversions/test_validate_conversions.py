@@ -137,7 +137,6 @@ def test_vector_batch_conversion():
     batch = [[1, 2, 3], [3, 4, 5]]
     res = RestToGrpc.convert_batch_vector_struct(batch, 0)
     assert len(res) == 2
-    print(res)
     assert res == [grpc.Vectors(vector=grpc.Vector(data=[1, 2, 3])), grpc.Vectors(vector=grpc.Vector(data=[3, 4, 5]))]
 
     batch = {"image": [[1, 2, 3]]}
@@ -152,10 +151,9 @@ def test_vector_batch_conversion():
                    grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[3, 4, 5])}))]
 
     batch = {"image": [[1, 2, 3], [3, 4, 5]],
-             "restaurants": [[6, 7, 8]]}
+             "restaurants": [[6, 7, 8], [9, 10, 11]]}
     res = RestToGrpc.convert_batch_vector_struct(batch, 2)
     assert len(res) == 2
-    assert res == [grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1, 2, 3])})),
-                   grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[3, 4, 5])})),
-                   grpc.Vectors(vectors=grpc.NamedVectors(vectors={"restaurants": grpc.Vector(data=[6, 7, 8])}))]
+    assert res == [grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1, 2, 3]), "restaurants": grpc.Vector(data=[6, 7, 8])})),
+                   grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[3, 4, 5]), "restaurants": grpc.Vector(data=[9, 10, 11])}))]
 
