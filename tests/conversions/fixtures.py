@@ -104,10 +104,17 @@ filter_ = grpc.Filter(
     ]
 )
 
-collection_params = grpc.CollectionParams(
-    vector_size=100,
+vector_param = grpc.VectorParams(
+    size=100,
     distance=grpc.Distance.Cosine,
-    shard_number=10
+)
+
+single_vector_config = grpc.VectorsConfig(params=vector_param)
+
+collection_params = grpc.CollectionParams(
+    vectors_config=single_vector_config,
+    shard_number=10,
+    on_disk_payload=True,
 )
 
 hnsw_config = grpc.HnswConfigDiff(
@@ -316,13 +323,6 @@ snapshot_description = grpc.SnapshotDescription(
     size=100500
 )
 
-vector_param = grpc.VectorParams(
-    size=100,
-    distance=grpc.Distance.Cosine,
-)
-
-single_vector_config = grpc.VectorsConfig(params=vector_param)
-
 vector_config = grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map={
     "image": vector_param,
     "text": grpc.VectorParams(
@@ -330,6 +330,35 @@ vector_config = grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map={
         distance=grpc.Distance.Cosine,
     )
 }))
+
+search_points = grpc.SearchPoints(
+    collection_name="collection-123",
+    vector=[1., 2., 3., 5.],
+    filter=filter_,
+    limit=100,
+    with_vector=None,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    vector_name="abc",
+    with_vectors=grpc.WithVectorsSelector(include=grpc.VectorsSelector(names=["abc", "def"])),
+)
+
+search_points_all_vectors = grpc.SearchPoints(
+    collection_name="collection-123",
+    vector=[1., 2., 3., 5.],
+    filter=filter_,
+    limit=100,
+    with_vector=None,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    vector_name="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+)
+
 
 fixtures = {
     "CollectionParams": [collection_params],
@@ -399,6 +428,7 @@ fixtures = {
     "SnapshotDescription": [snapshot_description],
     "VectorParams": [vector_param],
     "VectorsConfig": [single_vector_config, vector_config],
+    "SearchPoints": [search_points, search_points_all_vectors],
 }
 
 

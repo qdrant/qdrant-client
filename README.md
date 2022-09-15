@@ -28,12 +28,11 @@ client = QdrantClient(host="localhost", port=6333)
 
 Create a new collection
 ```python
-from qdrant_client.http.models import Distance
+from qdrant_client.http.models import Distance, VectorParams
 
 client.recreate_collection(
     collection_name="my_collection",
-    vector_size=100,
-    distance=Distance.COSINE
+    vectors_config=VectorParams(size=100, distance=Distance.COSINE),
 )
 ```
 

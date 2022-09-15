@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple, Optional
 
 import betterproto
 
@@ -369,9 +369,10 @@ class GrpcToRest:
     def convert_collection_params(cls, model: grpc.CollectionParams) -> rest.CollectionParams:
         return rest.CollectionParams(
             vectors=cls.convert_vectors_config(model.vectors_config) if model.vectors_config is not None else None,
-            distance=cls.convert_distance(model.distance),
             shard_number=model.shard_number,
-            vector_size=model.vector_size
+            vector_size=model.vector_size,
+            distance=cls.convert_distance(model.distance) if model.distance is not None else None,
+            on_disk_payload=model.on_disk_payload,
         )
 
     @classmethod
@@ -510,6 +511,37 @@ class GrpcToRest:
         if name == "vectors":
             return cls.convert_named_vectors(val)
         raise ValueError(f"invalid Vectors model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vectors_selector(cls, model: grpc.VectorsSelector) -> List[str]:
+        return model.names
+
+    @classmethod
+    def convert_with_vectors_selector(cls, model: grpc.WithVectorsSelector) -> rest.WithVector:
+        name, val = betterproto.which_one_of(model, "selector_options")
+        if name == "enable":
+            return val
+        if name == "include":
+            return cls.convert_vectors_selector(val)
+        raise ValueError(f"invalid WithVectorsSelector model: {model}")
+
+    @classmethod
+    def convert_search_points(cls, model: grpc.SearchPoints) -> rest.SearchRequest:
+        return rest.SearchRequest(
+            vector=rest.NamedVector(
+                name=model.vector_name,
+                vector=model.vector
+            ),
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            limit=model.limit,
+            with_payload=cls.convert_with_payload_interface(
+                model.with_payload) if model.with_payload is not None else None,
+            params=cls.convert_search_params(model.params) if model.params is not None else None,
+            score_threshold=model.score_threshold,
+            offset=model.offset,
+            with_vector=cls.convert_with_vectors_selector(
+                model.with_vectors) if model.with_vectors is not None else None,
+        )
 
 
 # ----------------------------------------
@@ -807,7 +839,8 @@ class RestToGrpc:
             vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
             vector_size=model.vector_size,
             shard_number=model.shard_number,
-            distance=cls.convert_distance(model.distance)
+            on_disk_payload=model.on_disk_payload or False,
+            distance=cls.convert_distance(model.distance) if model.distance is not None else None,
         )
 
     @classmethod
@@ -998,7 +1031,7 @@ class RestToGrpc:
                 ))
             )
         else:
-            raise ValueError(f"invalid VectorStruct model: {model}")
+            raise ValueError(f"invalid VectorStruct model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_with_vectors(cls, model: rest.WithVector) -> grpc.WithVectorsSelector:
@@ -1009,7 +1042,7 @@ class RestToGrpc:
                 include=grpc.VectorsSelector(names=model)
             )
         else:
-            raise ValueError(f"invalid WithVectors model: {model}")
+            raise ValueError(f"invalid WithVectors model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_batch_vector_struct(cls, model: rest.BatchVectorStruct, num_records: int) -> List[grpc.Vectors]:
@@ -1025,5 +1058,34 @@ class RestToGrpc:
                     result[i][key] = item
             return [cls.convert_vector_struct(item) for item in result]
         else:
-            raise ValueError(f"invalid BatchVectorStruct model: {model}")
+            raise ValueError(f"invalid BatchVectorStruct model: {model}")  # pragma: no cover
 
+    @classmethod
+    def convert_named_vector_struct(cls, model: rest.NamedVectorStruct) -> Tuple[List[float], Optional[str]]:
+        if isinstance(model, list):
+            return model, None
+        elif isinstance(model, rest.NamedVector):
+            return model.vector, model.name
+
+    @classmethod
+    def convert_search_request(cls, model: rest.SearchRequest, collection_name: str) -> grpc.SearchPoints:
+        vector, name = cls.convert_named_vector_struct(model.vector)
+
+        return grpc.SearchPoints(
+            collection_name=collection_name,
+            vector=vector,
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            limit=model.limit,
+            with_vector=None,
+            with_payload=cls.convert_with_payload_interface(
+                model.with_payload) if model.with_payload is not None else None,
+            params=cls.convert_search_params(model.params) if model.params is not None else None,
+            score_threshold=model.score_threshold,
+            offset=model.offset,
+            vector_name=name,
+            with_vectors=cls.convert_with_vectors(model.with_vector) if model.with_vector is not None else None,
+        )
+
+    @classmethod
+    def convert_search_points(cls, model: rest.SearchRequest, collection_name: str) -> grpc.SearchPoints:
+        return cls.convert_search_request(model, collection_name)

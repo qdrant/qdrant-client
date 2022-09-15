@@ -12,13 +12,15 @@ from qdrant_client import QdrantClient
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointStruct, HasIdCondition, PointIdsList, \
-    PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff
+    PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff, VectorParams, \
+    VectorsConfig
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 
 DIM = 100
 NUM_VECTORS = 1_000
 COLLECTION_NAME = 'client_test'
 COLLECTION_NAME_ALIAS = 'client_test_alias'
+
 
 def one_random_payload_please(idx):
     return {
@@ -28,6 +30,7 @@ def one_random_payload_please(idx):
         "rand_number": random.random(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex]
     }
+
 
 def random_payload():
     for i in range(NUM_VECTORS):
@@ -59,8 +62,7 @@ def test_record_upload(prefer_grpc):
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
-        vector_size=DIM,
-        distance=Distance.DOT,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
     )
 
     client.upload_records(
@@ -117,8 +119,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
-        vector_size=DIM,
-        distance=Distance.DOT,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
     )
 
     # Call Qdrant API to retrieve list of existing collections
@@ -176,7 +177,8 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
 
     # Create payload index for field `rand_number`
     # If indexed field appear in filtering condition - search operation could be performed faster
-    index_create_result = client.create_payload_index(COLLECTION_NAME, "rand_number", PayloadSchemaType.FLOAT)
+    index_create_result = client.create_payload_index(COLLECTION_NAME, field_name="rand_number",
+                                                      field_schema=PayloadSchemaType.FLOAT)
     pprint(index_create_result.dict())
 
     # Let's now check details about our new collection
@@ -203,7 +205,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     for hit in hits:
         print(hit)
 
-    client.create_payload_index(COLLECTION_NAME, "id_str", PayloadSchemaType.KEYWORD)
+    client.create_payload_index(COLLECTION_NAME, "id_str", field_schema=PayloadSchemaType.KEYWORD)
     #  and use it as a query
     hits = client.search(
         collection_name=COLLECTION_NAME,
@@ -257,7 +259,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         collection_name=COLLECTION_NAME,
         ids=[1, 2, 3],
         with_payload=True,
-        with_vector=True
+        with_vectors=True
     )
 
     assert len(got_points) == 3
@@ -272,7 +274,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         collection_name=COLLECTION_NAME,
         ids=[1, 2, 3],
         with_payload=True,
-        with_vector=True
+        with_vectors=True
     )
 
     assert len(got_points) == 1
@@ -287,7 +289,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         collection_name=COLLECTION_NAME,
         ids=[1, 2, 3],
         with_payload=True,
-        with_vector=True
+        with_vectors=True
     )
 
     assert len(got_points) == 2
@@ -305,7 +307,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         collection_name=COLLECTION_NAME,
         ids=[1, 2],
         with_payload=True,
-        with_vector=True
+        with_vectors=True
     )
 
     for point in got_points:
@@ -321,7 +323,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         collection_name=COLLECTION_NAME,
         ids=[1],
         with_payload=True,
-        with_vector=True
+        with_vectors=True
     )
 
     for point in got_points:
@@ -336,7 +338,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         collection_name=COLLECTION_NAME,
         ids=[1, 2],
         with_payload=True,
-        with_vector=True
+        with_vectors=True
     )
 
     for point in got_points:
@@ -357,7 +359,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         ),
         limit=5,
         with_payload=True,
-        with_vector=False
+        with_vectors=False
     )
 
     assert len(recommended_points) == 5
@@ -377,7 +379,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         limit=5,
         offset=None,
         with_payload=True,
-        with_vector=False
+        with_vectors=False
     )
 
     assert len(scrolled_points) == 5
@@ -391,8 +393,7 @@ def test_points_crud(prefer_grpc):
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
-        vector_size=DIM,
-        distance=Distance.DOT
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
     )
 
     # Create a single point

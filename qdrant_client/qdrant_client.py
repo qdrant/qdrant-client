@@ -122,7 +122,6 @@ class QdrantClient:
     def __del__(self):
         if self._grpc_channel is not None:
             self._grpc_channel.close()
-        self.openapi_client.client._client.close()
 
     def _init_grpc_points_client(self, metadata=None):
         if self._grpc_channel is None:
@@ -1222,7 +1221,8 @@ class QdrantClient:
     def create_payload_index(self,
                              collection_name: str,
                              field_name: str,
-                             field_type: types.PayloadSchemaType,
+                             field_schema: types.PayloadSchemaType = None,
+                             field_type: types.PayloadSchemaType = None,
                              wait: bool = True,
                              ):
         """Creates index for a given payload field.
@@ -1231,7 +1231,8 @@ class QdrantClient:
         Args:
             collection_name: Name of the collection
             field_name: Name of the payload field
-            field_type: Type of data to index
+            field_schema: Type of data to index
+            field_type: Same as field_schema, but deprecated
             wait: Await for the results to be processed.
 
                 - If `true`, result will be returned only when all changes are applied
@@ -1240,12 +1241,16 @@ class QdrantClient:
         Returns:
             Operation Result
         """
-        if isinstance(field_type, grpc.PayloadSchemaType):
-            field_type = GrpcToRest.convert_payload_schema_type(field_type)
+        if field_type is not None:
+            warnings.warn("field_type is deprecated, use field_schema instead", DeprecationWarning)
+            field_schema = field_type
+
+        if isinstance(field_schema, grpc.PayloadSchemaType):
+            field_schema = GrpcToRest.convert_payload_schema_type(field_schema)
 
         return self.openapi_client.collections_api.create_field_index(
             collection_name=collection_name,
-            create_field_index=rest.CreateFieldIndex(field_name=field_name, field_type=field_type),
+            create_field_index=rest.CreateFieldIndex(field_name=field_name, field_schema=field_schema),
             wait=wait
         )
 

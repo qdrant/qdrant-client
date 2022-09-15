@@ -34,7 +34,7 @@ async def upload_batch_grpc(points_client: PointsStub, collection_name: str, bat
     points = [
         PointStruct(
             id=RestToGrpc.convert_extended_point_id(idx) if not isinstance(idx, PointId) else idx,
-            vector=vector,
+            vectors=RestToGrpc.convert_vector_struct(vector),
             payload=payload_to_grpc(payload or {}),
         ) for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
     ]

@@ -1,11 +1,10 @@
 import inspect
 import re
-from typing import Union
+from inspect import getmembers
 
 import betterproto
 from loguru import logger
 from pydantic import BaseModel
-from inspect import getmembers
 
 from tests.conversions.fixtures import get_grpc_fixture, fixtures as class_fixtures
 
@@ -103,9 +102,8 @@ def test_conversion_completeness():
 
 def test_vector_batch_conversion():
     from qdrant_client import grpc
-    from qdrant_client.http.models import models as rest
 
-    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+    from qdrant_client.conversions.conversion import RestToGrpc
     batch = []
     res = RestToGrpc.convert_batch_vector_struct(batch, 1)
     assert len(res) == 0
