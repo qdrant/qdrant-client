@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import betterproto
 
@@ -327,7 +327,7 @@ class GrpcToRest:
         return rest.PointStruct(
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
-            vector=model.vector,
+            vector=cls.convert_vectors(model.vectors),
         )
 
     @classmethod
@@ -491,7 +491,25 @@ class GrpcToRest:
             )
         raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
 
+    @classmethod
+    def convert_vector(cls, model: grpc.Vector) -> List[float]:
+        return model.data
 
+    @classmethod
+    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, List[float]]:
+        return {
+            name: cls.convert_vector(vector)
+            for name, vector in model.vectors.items()
+        }
+
+    @classmethod
+    def convert_vectors(cls, model: grpc.Vectors) -> rest.VectorStruct:
+        name, val = betterproto.which_one_of(model, "vectors_options")
+        if name == "vector":
+            return cls.convert_vector(val)
+        if name == "vectors":
+            return cls.convert_named_vectors(val)
+        raise ValueError(f"invalid Vectors model: {model}")  # pragma: no cover
 
 
 # ----------------------------------------
@@ -696,7 +714,7 @@ class RestToGrpc:
     def convert_point_struct(cls, model: rest.PointStruct) -> grpc.PointStruct:
         return grpc.PointStruct(
             id=cls.convert_extended_point_id(model.id),
-            vector=model.vector,
+            vectors=cls.convert_vector_struct(model.vector),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None
         )
 
@@ -965,3 +983,47 @@ class RestToGrpc:
             )))
         else:
             raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vector_struct(cls, model: rest.VectorStruct) -> grpc.Vectors:
+        if isinstance(model, list):
+            return grpc.Vectors(
+                vector=grpc.Vector(data=model)
+            )
+        elif isinstance(model, dict):
+            return grpc.Vectors(
+                vectors=grpc.NamedVectors(vectors=dict(
+                    (key, grpc.Vector(data=val))
+                    for key, val in model.items()
+                ))
+            )
+        else:
+            raise ValueError(f"invalid VectorStruct model: {model}")
+
+    @classmethod
+    def convert_with_vectors(cls, model: rest.WithVector) -> grpc.WithVectorsSelector:
+        if isinstance(model, bool):
+            return grpc.WithVectorsSelector(enable=model)
+        elif isinstance(model, list):
+            return grpc.WithVectorsSelector(
+                include=grpc.VectorsSelector(names=model)
+            )
+        else:
+            raise ValueError(f"invalid WithVectors model: {model}")
+
+    @classmethod
+    def convert_batch_vector_struct(cls, model: rest.BatchVectorStruct, num_records: int) -> List[grpc.Vectors]:
+        """
+
+        """
+        if isinstance(model, list):
+            return [cls.convert_vector_struct(item) for item in model]
+        elif isinstance(model, dict):
+            result = [{} for _ in range(num_records)]
+            for key, val in model.items():
+                for i, item in enumerate(val):
+                    result[i][key] = item
+            return [cls.convert_vector_struct(item) for item in result]
+        else:
+            raise ValueError(f"invalid BatchVectorStruct model: {model}")
+

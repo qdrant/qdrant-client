@@ -32,3 +32,5 @@ CollectionsResponse = rest.CollectionsResponse
 CollectionInfo = rest.CollectionInfo
 CountResult = rest.CountResult
 SnapshotDescription = rest.SnapshotDescription
+NamedVector = rest.NamedVector
+VectorParams = rest.VectorParams

@@ -259,7 +259,22 @@ delete_alias = grpc.DeleteAlias(
 
 point_struct = grpc.PointStruct(
     id=point_id_1,
-    vector=[1.0, 2.0, -1., -.2],
+    vectors=grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, -1., -.2])),
+    payload={
+        "my_payload": payload_value
+    },
+)
+
+point_struct_multivec = grpc.PointStruct(
+    id=point_id_1,
+    vectors=grpc.Vectors(
+        vectors=grpc.NamedVectors(
+            vectors={
+                "image": grpc.Vector(data=[1.0, 2.0, -1., -.2]),
+                "text": grpc.Vector(data=[1.0, 2.0, -1., -.2]),
+            }
+        )
+    ),
     payload={
         "my_payload": payload_value
     },
@@ -316,7 +331,6 @@ vector_config = grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map={
     )
 }))
 
-
 fixtures = {
     "CollectionParams": [collection_params],
     "CollectionConfig": [collection_config],
@@ -345,7 +359,7 @@ fixtures = {
     "UpdateResult": [update_result, update_result_completed],
     "IsEmptyCondition": [is_empty],
     "DeleteAlias": [delete_alias],
-    "PointStruct": [point_struct],
+    "PointStruct": [point_struct, point_struct_multivec],
     "CollectionDescription": [collection_description],
     "GeoPoint": [geo_point],
     "WalConfigDiff": [wal_config],

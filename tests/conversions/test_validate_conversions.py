@@ -100,3 +100,62 @@ def test_conversion_completeness():
 
             assert grpc_fixture.to_dict() == fixture.to_dict(), f"{model_class_name} conversion is broken"
 
+
+def test_vector_batch_conversion():
+    from qdrant_client import grpc
+    from qdrant_client.http.models import models as rest
+
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+    batch = []
+    res = RestToGrpc.convert_batch_vector_struct(batch, 1)
+    assert len(res) == 0
+
+    batch = {}
+    res = RestToGrpc.convert_batch_vector_struct(batch, 1)
+    assert len(res) == 1
+    assert res == [grpc.Vectors(vectors=grpc.NamedVectors(vectors={}))]
+
+    batch = []
+    res = RestToGrpc.convert_batch_vector_struct(batch, 1)
+    assert len(res) == 0
+
+    batch = [[]]
+    res = RestToGrpc.convert_batch_vector_struct(batch, 1)
+    assert len(res) == 1
+    assert res == [grpc.Vectors(vector=grpc.Vector(data=[]))]
+
+    batch = [[1, 2, 3]]
+    res = RestToGrpc.convert_batch_vector_struct(batch, 1)
+    assert len(res) == 1
+    assert res == [grpc.Vectors(vector=grpc.Vector(data=[1, 2, 3]))]
+
+    batch = [[1, 2, 3]]
+    res = RestToGrpc.convert_batch_vector_struct(batch, 1)
+    assert len(res) == 1
+    assert res == [grpc.Vectors(vector=grpc.Vector(data=[1, 2, 3]))]
+
+    batch = [[1, 2, 3], [3, 4, 5]]
+    res = RestToGrpc.convert_batch_vector_struct(batch, 0)
+    assert len(res) == 2
+    print(res)
+    assert res == [grpc.Vectors(vector=grpc.Vector(data=[1, 2, 3])), grpc.Vectors(vector=grpc.Vector(data=[3, 4, 5]))]
+
+    batch = {"image": [[1, 2, 3]]}
+    res = RestToGrpc.convert_batch_vector_struct(batch, 1)
+    assert len(res) == 1
+    assert res == [grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1, 2, 3])}))]
+
+    batch = {"image": [[1, 2, 3], [3, 4, 5]]}
+    res = RestToGrpc.convert_batch_vector_struct(batch, 2)
+    assert len(res) == 2
+    assert res == [grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1, 2, 3])})),
+                   grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[3, 4, 5])}))]
+
+    batch = {"image": [[1, 2, 3], [3, 4, 5]],
+             "restaurants": [[6, 7, 8]]}
+    res = RestToGrpc.convert_batch_vector_struct(batch, 2)
+    assert len(res) == 2
+    assert res == [grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1, 2, 3])})),
+                   grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[3, 4, 5])})),
+                   grpc.Vectors(vectors=grpc.NamedVectors(vectors={"restaurants": grpc.Vector(data=[6, 7, 8])}))]
+
