@@ -164,13 +164,15 @@ payload_value = json_to_value({
     "list_with_dict": [{}, {}, {}]
 })
 
+single_vector = grpc.Vectors(vector=grpc.Vector(data=[1., 2., 3., 4.]))
+
 scored_point = grpc.ScoredPoint(
     id=point_id,
     payload={
         "payload": payload_value
     },
     score=0.99,
-    vector=[1.0, 2.0, 0.0, -1.0],
+    vectors=single_vector,
     version=12
 )
 
@@ -238,8 +240,7 @@ collection_info = grpc.CollectionInfo(
 
 create_collection = grpc.CreateCollection(
     collection_name="my_collection",
-    vector_size=100,
-    distance=grpc.Distance.Euclid,
+    vectors_config=grpc.VectorsConfig(params=grpc.VectorParams(size=100, distance=grpc.Distance.Euclid)),
     hnsw_config=hnsw_config,
     wal_config=wal_config,
     optimizers_config=optimizer_config,
@@ -312,7 +313,7 @@ with_payload_exclude = grpc.WithPayloadSelector(exclude=grpc.PayloadExcludeSelec
 retrieved_point = grpc.RetrievedPoint(
     id=point_id_1,
     payload={"key": payload_value},
-    vector=[1., 2., 3., 4.]
+    vectors=single_vector
 )
 
 count_result = grpc.CountResult(count=5)
@@ -359,6 +360,20 @@ search_points_all_vectors = grpc.SearchPoints(
     with_vectors=grpc.WithVectorsSelector(enable=True),
 )
 
+recommend_points = grpc.RecommendPoints(
+    collection_name="collection-123",
+    positive=[point_id_1, point_id_2],
+    negative=[point_id],
+    filter=filter_,
+    limit=100,
+    with_vector=None,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+)
 
 fixtures = {
     "CollectionParams": [collection_params],
@@ -429,6 +444,7 @@ fixtures = {
     "VectorParams": [vector_param],
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
+    "RecommendPoints": [recommend_points],
 }
 
 

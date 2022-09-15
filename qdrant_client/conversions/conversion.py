@@ -281,7 +281,7 @@ class GrpcToRest:
             vectors=cls.convert_vectors_config(model.vectors_config) if model.vectors_config is not None else None,
             collection_name=model.collection_name,
             vector_size=model.vector_size,
-            distance=cls.convert_distance(model.distance),
+            distance=cls.convert_distance(model.distance) if model.distance is not None else None,
             hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
             wal_config=cls.convert_wal_config(model.wal_config),
             optimizers_config=cls.convert_optimizer_config(model.optimizers_config),
@@ -294,7 +294,7 @@ class GrpcToRest:
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
             score=model.score,
-            vector=model.vector,
+            vector=cls.convert_vectors(model.vectors) if model.vectors is not None else None,
             version=model.version,
         )
 
@@ -452,7 +452,7 @@ class GrpcToRest:
         return rest.Record(
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
-            vector=model.vector
+            vector=cls.convert_vectors(model.vectors) if model.vectors is not None else None,
         )
 
     @classmethod
@@ -541,6 +541,23 @@ class GrpcToRest:
             offset=model.offset,
             with_vector=cls.convert_with_vectors_selector(
                 model.with_vectors) if model.with_vectors is not None else None,
+        )
+
+    @classmethod
+    def convert_recommend_points(cls, model: grpc.RecommendPoints) -> rest.RecommendRequest:
+        return rest.RecommendRequest(
+            positive=[cls.convert_point_id(point_id) for point_id in model.positive],
+            negative=[cls.convert_point_id(point_id) for point_id in model.negative],
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            limit=model.limit,
+            with_payload=cls.convert_with_payload_interface(
+                model.with_payload) if model.with_payload is not None else None,
+            params=cls.convert_search_params(model.params) if model.params is not None else None,
+            score_threshold=model.score_threshold,
+            offset=model.offset,
+            with_vector=cls.convert_with_vectors_selector(
+                model.with_vectors) if model.with_vectors is not None else None,
+            using=model.using,
         )
 
 
@@ -707,7 +724,7 @@ class RestToGrpc:
         return grpc.CreateCollection(
             vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
             collection_name=collection_name,
-            distance=cls.convert_distance(model.distance),
+            distance=cls.convert_distance(model.distance) if model.distance is not None else None,
             hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config) if model.hnsw_config is not None else None,
             optimizers_config=cls.convert_optimizers_config_diff(
                 model.optimizers_config) if model.optimizers_config is not None else None,
@@ -722,7 +739,7 @@ class RestToGrpc:
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
             score=model.score,
-            vector=model.vector,
+            vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
             version=model.version
         )
 
@@ -979,7 +996,7 @@ class RestToGrpc:
         return grpc.RetrievedPoint(
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
-            vector=model.vector
+            vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
         )
 
     @classmethod
@@ -1089,3 +1106,25 @@ class RestToGrpc:
     @classmethod
     def convert_search_points(cls, model: rest.SearchRequest, collection_name: str) -> grpc.SearchPoints:
         return cls.convert_search_request(model, collection_name)
+
+    @classmethod
+    def convert_recommend_request(cls, model: rest.RecommendRequest, collection_name: str) -> grpc.RecommendPoints:
+        return grpc.RecommendPoints(
+            collection_name=collection_name,
+            positive=[cls.convert_extended_point_id(point_id) for point_id in model.positive],
+            negative=[cls.convert_extended_point_id(point_id) for point_id in model.negative],
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            limit=model.limit,
+            with_vector=None,
+            with_payload=cls.convert_with_payload_interface(
+                model.with_payload) if model.with_payload is not None else None,
+            params=cls.convert_search_params(model.params) if model.params is not None else None,
+            score_threshold=model.score_threshold,
+            offset=model.offset,
+            with_vectors=cls.convert_with_vectors(model.with_vector) if model.with_vector is not None else None,
+            using=model.using,
+        )
+
+    @classmethod
+    def convert_recommend_points(cls, model: rest.RecommendRequest, collection_name: str) -> grpc.RecommendPoints:
+        return cls.convert_recommend_request(model, collection_name)
