@@ -209,13 +209,16 @@ class CreateCollection(BaseModel):
     """
 
     vectors: Optional["VectorsConfig"] = Field(
-        None, description="Operation for creating new collection and (optionally) specify index params"
+        None,
+        description="Vector data config. It is possible to provide one config for single vector mode and list of configs for multiple vectors mode.",
     )
     vector_size: Optional[int] = Field(
-        None, description="Operation for creating new collection and (optionally) specify index params"
+        None,
+        description="Deprecated size setup for single-vector mode. It&#x27;s required to set one vector_size or vectors field.",
     )
     distance: Optional["Distance"] = Field(
-        None, description="Operation for creating new collection and (optionally) specify index params"
+        None,
+        description="Deprecated distance setup for single-vector mode. It&#x27;s required to set one vector_size or vectors field.",
     )
     shard_number: Optional[int] = Field(
         None,
@@ -579,8 +582,12 @@ class MoveShardOperation(BaseModel):
 
 
 class NamedVector(BaseModel):
-    name: str = Field(..., description="")
-    vector: List[float] = Field(..., description="")
+    """
+    Vector data with name
+    """
+
+    name: str = Field(..., description="Name of vector data")
+    vector: List[float] = Field(..., description="Vector data")
 
 
 class OptimizerTelemetryOneOf(BaseModel):
@@ -829,10 +836,7 @@ class RecommendRequest(BaseModel):
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Select which payload to return with the response. Default: None"
     )
-    with_vector: Optional["WithVector"] = Field(
-        None,
-        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.",
-    )
+    with_vector: Optional["WithVector"] = Field(None, description="Whether to return the point vector with the result?")
     score_threshold: Optional[float] = Field(
         None,
         description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
@@ -959,10 +963,7 @@ class SearchRequest(BaseModel):
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Select which payload to return with the response. Default: None"
     )
-    with_vector: Optional["WithVector"] = Field(
-        None,
-        description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
-    )
+    with_vector: Optional["WithVector"] = Field(None, description="Whether to return the point vector with the result?")
     score_threshold: Optional[float] = Field(
         None,
         description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
@@ -1142,8 +1143,12 @@ class ValuesCount(BaseModel):
 
 
 class VectorDataConfig(BaseModel):
+    """
+    Config of single vector data storage
+    """
+
     size: int = Field(..., description="Size of a vectors used")
-    distance: "Distance" = Field(..., description="")
+    distance: "Distance" = Field(..., description="Config of single vector data storage")
 
 
 class VectorIndexTelemetry(BaseModel):
@@ -1154,8 +1159,12 @@ class VectorIndexTelemetry(BaseModel):
 
 
 class VectorParams(BaseModel):
+    """
+    Params of single vector data storage
+    """
+
     size: int = Field(..., description="Size of a vectors used")
-    distance: "Distance" = Field(..., description="")
+    distance: "Distance" = Field(..., description="Params of single vector data storage")
 
 
 class WalConfig(BaseModel):

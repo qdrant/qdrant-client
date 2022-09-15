@@ -4,6 +4,7 @@ import uuid
 from pprint import pprint
 from tempfile import mkdtemp
 from time import sleep
+from typing import List
 
 import numpy as np
 import pytest
@@ -13,7 +14,7 @@ from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointStruct, HasIdCondition, PointIdsList, \
     PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff, VectorParams, \
-    VectorsConfig
+    VectorsConfig, SearchRequest, RecommendRequest
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 
 DIM = 100
@@ -188,6 +189,9 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     # Now we can actually search in the collection
     # Let's create some random vector
     query_vector = np.random.rand(DIM)
+    query_vector_1: List[float] = list(np.random.rand(DIM))
+    query_vector_2: List[float] = list(np.random.rand(DIM))
+    query_vector_3: List[float] = list(np.random.rand(DIM))
 
     #  and use it as a query
     hits = client.search(
@@ -261,6 +265,81 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         with_payload=True,
         with_vectors=True
     )
+
+    # ------------------  Test for batch queries ------------------
+    filter_1 = Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.3))])
+    filter_2 = Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.5))])
+    filter_3 = Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])
+
+    search_queries = [
+        SearchRequest(
+            vector=query_vector_1,
+            filter=filter_1,
+            limit=5,
+            with_payload=True,
+        ),
+        SearchRequest(
+            vector=query_vector_2,
+            filter=filter_2,
+            limit=5,
+            with_payload=True,
+        ),
+        SearchRequest(
+            vector=query_vector_3,
+            filter=filter_3,
+            limit=5,
+            with_payload=True,
+        )
+    ]
+    single_search_result_1 = client.search(collection_name=COLLECTION_NAME, query_vector=query_vector_1,
+                                           query_filter=filter_1, limit=5)
+    single_search_result_2 = client.search(collection_name=COLLECTION_NAME, query_vector=query_vector_2,
+                                           query_filter=filter_2, limit=5)
+    single_search_result_3 = client.search(collection_name=COLLECTION_NAME, query_vector=query_vector_3,
+                                           query_filter=filter_3, limit=5)
+
+    batch_search_result = client.search_batch(collection_name=COLLECTION_NAME, requests=search_queries)
+
+    assert len(batch_search_result) == 3
+    assert batch_search_result[0] == single_search_result_1
+    assert batch_search_result[1] == single_search_result_2
+    assert batch_search_result[2] == single_search_result_3
+
+    recommend_queries = [
+        RecommendRequest(
+            positive=[1],
+            negative=[],
+            filter=filter_1,
+            limit=5,
+            with_payload=True,
+        ),
+        RecommendRequest(
+            positive=[2],
+            negative=[],
+            filter=filter_2,
+            limit=5,
+            with_payload=True,
+        ),
+        RecommendRequest(
+            positive=[3],
+            negative=[],
+            filter=filter_3,
+            limit=5,
+            with_payload=True,
+        )
+    ]
+    reco_result_1 = client.recommend(collection_name=COLLECTION_NAME, positive=[1], query_filter=filter_1, limit=5)
+    reco_result_2 = client.recommend(collection_name=COLLECTION_NAME, positive=[2], query_filter=filter_2, limit=5)
+    reco_result_3 = client.recommend(collection_name=COLLECTION_NAME, positive=[3], query_filter=filter_3, limit=5)
+
+    batch_reco_result = client.recommend_batch(collection_name=COLLECTION_NAME, requests=recommend_queries)
+
+    assert len(batch_reco_result) == 3
+    assert batch_reco_result[0] == reco_result_1
+    assert batch_reco_result[1] == reco_result_2
+    assert batch_reco_result[2] == reco_result_3
+
+    # ------------------  End of batch queries test ----------------
 
     assert len(got_points) == 3
 

@@ -187,6 +187,38 @@ class QdrantClient:
         """
         return self.openapi_client
 
+    def search_batch(self, collection_name: str, requests: List[types.SearchRequest]) -> List[List[types.ScoredPoint]]:
+        """Search for points in multiple collections
+
+        Args:
+            collection_name: Name of the collection
+            requests: List of search requests
+
+        Returns:
+            List of search responses
+        """
+        if self._prefer_grpc:
+            requests = [
+                RestToGrpc.convert_search_request(r, collection_name) if isinstance(r, rest.SearchRequest) else r
+                for r in requests
+            ]
+            res: grpc.SearchBatchResponse = self.event_loop.run_until_complete(self._grpc_points_client.search_batch(
+                collection_name=collection_name,
+                search_points=requests,
+            ))
+
+            return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in res.result]
+        else:
+            requests = [
+                GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r
+                for r in requests
+            ]
+            res: List[List[rest.ScoredPoint]] = self.http.points_api.search_batch_points(
+                collection_name=collection_name,
+                search_request_batch=rest.SearchRequestBatch(searches=requests)
+            ).result
+            return res
+
     def search(self,
                collection_name: str,
                query_vector: Union[np.ndarray, List[float], Tuple[str, List[float]], types.NamedVector],
@@ -344,6 +376,42 @@ class QdrantClient:
             )
 
             return search_result.result
+
+    def recommend_batch(
+            self,
+            collection_name: str,
+            requests: List[types.RecommendRequest]
+    ) -> List[List[types.ScoredPoint]]:
+        """Perform multiple recommend requests in batch mode
+
+        Args:
+            collection_name: Name of the collection
+            requests: List of recommend requests
+
+        Returns:
+            List of recommend responses
+        """
+        if self._prefer_grpc:
+            requests = [
+                RestToGrpc.convert_recommend_request(r, collection_name) if isinstance(r, rest.RecommendRequest) else r
+                for r in requests
+            ]
+            res: grpc.SearchBatchResponse = self.event_loop.run_until_complete(self._grpc_points_client.recommend_batch(
+                collection_name=collection_name,
+                recommend_points=requests,
+            ))
+
+            return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in res.result]
+        else:
+            requests = [
+                GrpcToRest.convert_recommend_points(r) if isinstance(r, grpc.RecommendPoints) else r
+                for r in requests
+            ]
+            res: List[List[rest.ScoredPoint]] = self.http.points_api.recommend_batch_points(
+                collection_name=collection_name,
+                recommend_request_batch=rest.RecommendRequestBatch(searches=requests)
+            ).result
+            return res
 
     def recommend(
             self,
