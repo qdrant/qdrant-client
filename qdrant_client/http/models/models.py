@@ -8,7 +8,7 @@ except ImportError:
     from typing_extensions import Literal
 
 from pydantic import BaseModel, Field
-from pydantic.types import StrictBool, StrictInt, StrictStr
+from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
 
 class AbortTransferOperation(BaseModel):
@@ -24,7 +24,7 @@ class AppBuildTelemetry(BaseModel):
 
 class Batch(BaseModel):
     ids: List["ExtendedPointId"] = Field(..., description="")
-    vectors: List[List[float]] = Field(..., description="")
+    vectors: "BatchVectorStruct" = Field(..., description="")
     payloads: Optional[List["Payload"]] = Field(None, description="")
 
 
@@ -109,8 +109,11 @@ class CollectionInfo(BaseModel):
 
 
 class CollectionParams(BaseModel):
-    vector_size: int = Field(..., description="Size of a vectors used")
-    distance: "Distance" = Field(..., description="")
+    vectors: Optional["VectorsConfig"] = Field(None, description="Configuration of the vector storage")
+    vector_size: Optional[int] = Field(None, description="Size of a vectors used")
+    distance: Optional["Distance"] = Field(
+        None, description="Type of distance function used for measuring distance between vectors"
+    )
     shard_number: Optional[int] = Field(1, description="Number of shards the collection has")
     on_disk_payload: Optional[bool] = Field(
         False,
@@ -205,11 +208,14 @@ class CreateCollection(BaseModel):
     Operation for creating new collection and (optionally) specify index params
     """
 
-    vector_size: int = Field(
-        ..., description="Operation for creating new collection and (optionally) specify index params"
+    vectors: Optional["VectorsConfig"] = Field(
+        None, description="Operation for creating new collection and (optionally) specify index params"
     )
-    distance: "Distance" = Field(
-        ..., description="Operation for creating new collection and (optionally) specify index params"
+    vector_size: Optional[int] = Field(
+        None, description="Operation for creating new collection and (optionally) specify index params"
+    )
+    distance: Optional["Distance"] = Field(
+        None, description="Operation for creating new collection and (optionally) specify index params"
     )
     shard_number: Optional[int] = Field(
         None,
@@ -232,7 +238,7 @@ class CreateCollection(BaseModel):
 
 class CreateFieldIndex(BaseModel):
     field_name: str = Field(..., description="")
-    field_type: Optional["PayloadSchemaType"] = Field(None, description="")
+    field_schema: Optional["PayloadFieldSchema"] = Field(None, description="")
 
 
 class DeleteAlias(BaseModel):
@@ -458,6 +464,14 @@ class InlineResponse20013(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
+    result: Optional[List[List["ScoredPoint"]]] = Field(None, description="")
+
+
+class InlineResponse20014(BaseModel):
+    time: Optional[float] = Field(None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
     result: Optional["CountResult"] = Field(None, description="")
 
 
@@ -538,24 +552,20 @@ class LocalShardInfo(BaseModel):
     points_count: int = Field(..., description="Number of points in the shard")
 
 
-class MatchInteger(BaseModel):
+class MatchText(BaseModel):
     """
-    Match filter request (deprecated)
-    """
-
-    integer: int = Field(..., description="Integer value to match")
-
-
-class MatchKeyword(BaseModel):
-    """
-    Match by keyword (deprecated)
+    Full-text match of the strings.
     """
 
-    keyword: str = Field(..., description="Keyword value to match")
+    text: str = Field(..., description="Full-text match of the strings.")
 
 
 class MatchValue(BaseModel):
-    value: "ValueVariants" = Field(..., description="")
+    """
+    Exact match of the given value
+    """
+
+    value: "ValueVariants" = Field(..., description="Exact match of the given value")
 
 
 class MoveShard(BaseModel):
@@ -566,6 +576,11 @@ class MoveShard(BaseModel):
 
 class MoveShardOperation(BaseModel):
     move_shard: "MoveShard" = Field(..., description="")
+
+
+class NamedVector(BaseModel):
+    name: str = Field(..., description="")
+    vector: List[float] = Field(..., description="")
 
 
 class OptimizerTelemetryOneOf(BaseModel):
@@ -606,7 +621,7 @@ class OptimizersConfig(BaseModel):
     )
     indexing_threshold: int = Field(
         ...,
-        description="Maximum size (in KiloBytes) of vectors allowed for plain index. Default value based on https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md Note: 1Kb = 1 vector of size 256",
+        description="Maximum size (in KiloBytes) of vectors allowed for plain index. Default value based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt; Note: 1Kb = 1 vector of size 256",
     )
     flush_interval_sec: int = Field(..., description="Minimum interval between forced flushes.")
     max_optimization_threads: int = Field(..., description="Maximum available threads for optimization workers")
@@ -634,7 +649,7 @@ class OptimizersConfigDiff(BaseModel):
     )
     indexing_threshold: Optional[int] = Field(
         None,
-        description="Maximum size (in KiloBytes) of vectors allowed for plain index. Default value based on https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md Note: 1Kb = 1 vector of size 256",
+        description="Maximum size (in KiloBytes) of vectors allowed for plain index. Default value based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt; Note: 1Kb = 1 vector of size 256",
     )
     flush_interval_sec: Optional[int] = Field(None, description="Minimum interval between forced flushes.")
     max_optimization_threads: Optional[int] = Field(
@@ -671,10 +686,13 @@ class PayloadField(BaseModel):
 
 class PayloadIndexInfo(BaseModel):
     """
-    Payload field type &amp; index information
+    Display payload field type &amp; index information
     """
 
-    data_type: "PayloadSchemaType" = Field(..., description="Payload field type &amp; index information")
+    data_type: "PayloadSchemaType" = Field(..., description="Display payload field type &amp; index information")
+    params: Optional["PayloadSchemaParams"] = Field(
+        None, description="Display payload field type &amp; index information"
+    )
 
 
 class PayloadIndexTelemetry(BaseModel):
@@ -683,11 +701,22 @@ class PayloadIndexTelemetry(BaseModel):
     histogram_bucket_size: Optional[int] = Field(None, description="")
 
 
+class PayloadSchemaParamsOneOf(BaseModel):
+    type: Literal[
+        "text",
+    ] = Field(..., description="")
+    tokenizer: Optional["TokenizerType"] = Field(None, description="")
+    min_token_len: Optional[int] = Field(None, description="")
+    max_token_len: Optional[int] = Field(None, description="")
+    lowercase: Optional[bool] = Field(None, description="If true, lowercase all tokens. Default: true")
+
+
 class PayloadSchemaType(str, Enum):
     KEYWORD = "keyword"
     INTEGER = "integer"
     FLOAT = "float"
     GEO = "geo"
+    TEXT = "text"
 
 
 class PayloadSelectorExclude(BaseModel):
@@ -735,12 +764,12 @@ class PointRequest(BaseModel):
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Select which payload to return with the response. Default: All"
     )
-    with_vector: Optional[bool] = Field(False, description="Whether to return the point vector with the result?")
+    with_vector: Optional["WithVector"] = Field(None, description="")
 
 
 class PointStruct(BaseModel):
     id: "ExtendedPointId" = Field(..., description="")
-    vector: List[float] = Field(..., description="Vector")
+    vector: "VectorStruct" = Field(..., description="")
     payload: Optional["Payload"] = Field(None, description="Payload values (optional)")
 
 
@@ -800,11 +829,21 @@ class RecommendRequest(BaseModel):
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Select which payload to return with the response. Default: None"
     )
-    with_vector: Optional[bool] = Field(False, description="Whether to return the point vector with the result?")
+    with_vector: Optional["WithVector"] = Field(
+        None,
+        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.",
+    )
     score_threshold: Optional[float] = Field(
         None,
         description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
     )
+    using: Optional["UsingVector"] = Field(
+        None, description="Define which vector to use for recommendation, if not specified - try to use default vector"
+    )
+
+
+class RecommendRequestBatch(BaseModel):
+    searches: List["RecommendRequest"] = Field(..., description="")
 
 
 class Record(BaseModel):
@@ -814,7 +853,7 @@ class Record(BaseModel):
 
     id: "ExtendedPointId" = Field(..., description="Point data")
     payload: Optional["Payload"] = Field(None, description="Payload - values assigned to the point")
-    vector: Optional[List[float]] = Field(None, description="Vector of the point")
+    vector: Optional["VectorStruct"] = Field(None, description="Vector of the point")
 
 
 class RemoteShardInfo(BaseModel):
@@ -858,7 +897,7 @@ class ScoredPoint(BaseModel):
     version: int = Field(..., description="Point version")
     score: float = Field(..., description="Points vector distance to the query vector")
     payload: Optional["Payload"] = Field(None, description="Payload - values assigned to the point")
-    vector: Optional[List[float]] = Field(None, description="Vector of the point")
+    vector: Optional["VectorStruct"] = Field(None, description="Vector of the point")
 
 
 class ScrollRequest(BaseModel):
@@ -874,7 +913,9 @@ class ScrollRequest(BaseModel):
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Select which payload to return with the response. Default: All"
     )
-    with_vector: Optional[bool] = Field(False, description="Whether to return the point vector with the result?")
+    with_vector: Optional["WithVector"] = Field(
+        None, description="Scroll request - paginate over all points which matches given condition"
+    )
 
 
 class ScrollResult(BaseModel):
@@ -904,7 +945,10 @@ class SearchRequest(BaseModel):
     Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.
     """
 
-    vector: List[float] = Field(..., description="Look for vectors closest to this")
+    vector: "NamedVectorStruct" = Field(
+        ...,
+        description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
+    )
     filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
@@ -915,16 +959,22 @@ class SearchRequest(BaseModel):
     with_payload: Optional["WithPayloadInterface"] = Field(
         None, description="Select which payload to return with the response. Default: None"
     )
-    with_vector: Optional[bool] = Field(False, description="Whether to return the point vector with the result?")
+    with_vector: Optional["WithVector"] = Field(
+        None,
+        description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
+    )
     score_threshold: Optional[float] = Field(
         None,
         description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
     )
 
 
+class SearchRequestBatch(BaseModel):
+    searches: List["SearchRequest"] = Field(..., description="")
+
+
 class SegmentConfig(BaseModel):
-    vector_size: int = Field(..., description="Size of a vectors used")
-    distance: "Distance" = Field(..., description="")
+    vector_data: Dict[str, "VectorDataConfig"] = Field(..., description="")
     index: "Indexes" = Field(..., description="")
     storage_type: "StorageType" = Field(..., description="")
     payload_storage_type: Optional["PayloadStorageType"] = Field(None, description="")
@@ -948,7 +998,7 @@ class SegmentInfo(BaseModel):
 class SegmentTelemetry(BaseModel):
     info: "SegmentInfo" = Field(..., description="")
     config: "SegmentConfig" = Field(..., description="")
-    vector_index: "VectorIndexTelemetry" = Field(..., description="")
+    vector_index: Dict[str, "VectorIndexTelemetry"] = Field(..., description="")
     payload_field_indices: List["PayloadIndexTelemetry"] = Field(..., description="")
 
 
@@ -1005,7 +1055,7 @@ class ShardTransferInfo(BaseModel):
 
 class SnapshotDescription(BaseModel):
     name: str = Field(..., description="")
-    creation_time: str = Field(..., description="")
+    creation_time: Optional[str] = Field(None, description="")
     size: int = Field(..., description="")
 
 
@@ -1053,6 +1103,12 @@ class TelemetryOperationStatistics(BaseModel):
     ok_avg_time: "Duration" = Field(..., description="")
 
 
+class TokenizerType(str, Enum):
+    PREFIX = "prefix"
+    WHITESPACE = "whitespace"
+    WORD = "word"
+
+
 class UpdateCollection(BaseModel):
     """
     Operation for updating parameters of the existing collection
@@ -1085,11 +1141,21 @@ class ValuesCount(BaseModel):
     lte: Optional[int] = Field(None, description="point.key.length() &lt;= values_count.lte")
 
 
+class VectorDataConfig(BaseModel):
+    size: int = Field(..., description="Size of a vectors used")
+    distance: "Distance" = Field(..., description="")
+
+
 class VectorIndexTelemetry(BaseModel):
     small_cardinality_searches: "TelemetryOperationStatistics" = Field(..., description="")
     large_cardinality_searches: "TelemetryOperationStatistics" = Field(..., description="")
     positive_check_cardinality_searches: "TelemetryOperationStatistics" = Field(..., description="")
     negative_check_cardinality_searches: "TelemetryOperationStatistics" = Field(..., description="")
+
+
+class VectorParams(BaseModel):
+    size: int = Field(..., description="Size of a vectors used")
+    distance: "Distance" = Field(..., description="")
 
 
 class WalConfig(BaseModel):
@@ -1112,6 +1178,10 @@ AliasOperations = Union[
     CreateAliasOperation,
     DeleteAliasOperation,
     RenameAliasOperation,
+]
+BatchVectorStruct = Union[
+    List[[float]],
+    {str: ([[float]],)},
 ]
 ClusterOperations = Union[
     MoveShardOperation,
@@ -1142,8 +1212,11 @@ Indexes = Union[
 ]
 Match = Union[
     MatchValue,
-    MatchKeyword,
-    MatchInteger,
+    MatchText,
+]
+NamedVectorStruct = Union[
+    NamedVector,
+    List[StrictFloat],
 ]
 OptimizerTelemetry = Union[
     OptimizerTelemetryOneOf,
@@ -1153,6 +1226,9 @@ OptimizerTelemetry = Union[
 OptimizersStatus = Union[
     OptimizersStatusOneOf,
     OptimizersStatusOneOf1,
+]
+PayloadSchemaParams = Union[
+    PayloadSchemaParamsOneOf,
 ]
 PayloadSelector = Union[
     PayloadSelectorInclude,
@@ -1180,10 +1256,29 @@ StorageType = Union[
     StorageTypeOneOf,
     StorageTypeOneOf1,
 ]
+UsingVector = Union[
+    StrictStr,
+]
 ValueVariants = Union[
     StrictBool,
     StrictInt,
     StrictStr,
+]
+VectorStruct = Union[
+    List[StrictFloat],
+    {str: ([float],)},
+]
+VectorsConfig = Union[
+    VectorParams,
+    {str: (VectorParams,)},
+]
+WithVector = Union[
+    List[StrictStr],
+    StrictBool,
+]
+PayloadFieldSchema = Union[
+    PayloadSchemaType,
+    PayloadSchemaParams,
 ]
 WithPayloadInterface = Union[
     PayloadSelector,
