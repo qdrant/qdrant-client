@@ -278,6 +278,7 @@ class GrpcToRest:
     @classmethod
     def convert_create_collection(cls, model: grpc.CreateCollection) -> rest.CreateCollection:
         return rest.CreateCollection(
+            vectors=cls.convert_vectors_config(model.vectors_config) if model.vectors_config is not None else None,
             collection_name=model.collection_name,
             vector_size=model.vector_size,
             distance=cls.convert_distance(model.distance),
@@ -367,6 +368,7 @@ class GrpcToRest:
     @classmethod
     def convert_collection_params(cls, model: grpc.CollectionParams) -> rest.CollectionParams:
         return rest.CollectionParams(
+            vectors=cls.convert_vectors_config(model.vectors_config) if model.vectors_config is not None else None,
             distance=cls.convert_distance(model.distance),
             shard_number=model.shard_number,
             vector_size=model.vector_size
@@ -469,6 +471,27 @@ class GrpcToRest:
             creation_time=model.creation_time.isoformat(),
             size=model.size,
         )
+
+    @classmethod
+    def convert_vector_params(cls, model: grpc.VectorParams) -> rest.VectorParams:
+        return rest.VectorParams(
+            size=model.size,
+            distance=cls.convert_distance(model.distance)
+        )
+
+    @classmethod
+    def convert_vectors_config(cls, model: grpc.VectorsConfig) -> rest.VectorsConfig:
+        name, val = betterproto.which_one_of(model, "config")
+        if name == "params":
+            return cls.convert_vector_params(val)
+        if name == "params_map":
+            return dict(
+                (key, cls.convert_vector_params(vec_params))
+                for key, vec_params in val.map.items()
+            )
+        raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
+
+
 
 
 # ----------------------------------------
@@ -632,6 +655,7 @@ class RestToGrpc:
     @classmethod
     def convert_create_collection(cls, model: rest.CreateCollection, collection_name: str) -> grpc.CreateCollection:
         return grpc.CreateCollection(
+            vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
             collection_name=collection_name,
             distance=cls.convert_distance(model.distance),
             hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config) if model.hnsw_config is not None else None,
@@ -762,6 +786,7 @@ class RestToGrpc:
     @classmethod
     def convert_collection_params(cls, model: rest.CollectionParams) -> grpc.CollectionParams:
         return grpc.CollectionParams(
+            vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
             vector_size=model.vector_size,
             shard_number=model.shard_number,
             distance=cls.convert_distance(model.distance)
@@ -921,3 +946,22 @@ class RestToGrpc:
             creation_time=datetime.fromisoformat(model.creation_time),
             size=model.size,
         )
+
+    @classmethod
+    def convert_vector_params(cls, model: rest.VectorParams) -> grpc.VectorParams:
+        return grpc.VectorParams(
+            size=model.size,
+            distance=cls.convert_distance(model.distance)
+        )
+
+    @classmethod
+    def convert_vectors_config(cls, model: rest.VectorsConfig) -> grpc.VectorsConfig:
+        if isinstance(model, rest.VectorParams):
+            return grpc.VectorsConfig(params=cls.convert_vector_params(model))
+        elif isinstance(model, dict):
+            return grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map=dict(
+                (key, cls.convert_vector_params(val))
+                for key, val in model.items()
+            )))
+        else:
+            raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover

@@ -1180,8 +1180,8 @@ AliasOperations = Union[
     RenameAliasOperation,
 ]
 BatchVectorStruct = Union[
-    List[[float]],
-    {str: ([[float]],)},
+    List[List[StrictFloat]],
+    Dict[StrictStr, List[List[StrictFloat]]],
 ]
 ClusterOperations = Union[
     MoveShardOperation,
@@ -1266,11 +1266,11 @@ ValueVariants = Union[
 ]
 VectorStruct = Union[
     List[StrictFloat],
-    {str: ([float],)},
+    Dict[StrictStr, List[StrictFloat]],
 ]
 VectorsConfig = Union[
     VectorParams,
-    {str: (VectorParams,)},
+    Dict[StrictStr, VectorParams],
 ]
 WithVector = Union[
     List[StrictStr],

@@ -174,9 +174,9 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         ]
     )
 
-    # Create payload index for field `random_num`
+    # Create payload index for field `rand_number`
     # If indexed field appear in filtering condition - search operation could be performed faster
-    index_create_result = client.create_payload_index(COLLECTION_NAME, "random_num", PayloadSchemaType.FLOAT)
+    index_create_result = client.create_payload_index(COLLECTION_NAME, "rand_number", PayloadSchemaType.FLOAT)
     pprint(index_create_result.dict())
 
     # Let's now check details about our new collection
@@ -249,7 +249,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         limit=5  # Return 5 closest points
     )
 
-    print("Filtered search result (`random_num` >= 0.5):")
+    print("Filtered search result (`rand_number` >= 0.5):")
     for hit in hits:
         print(hit)
 

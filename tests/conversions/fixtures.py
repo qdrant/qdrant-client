@@ -301,6 +301,22 @@ snapshot_description = grpc.SnapshotDescription(
     size=100500
 )
 
+vector_param = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Cosine,
+)
+
+single_vector_config = grpc.VectorsConfig(params=vector_param)
+
+vector_config = grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map={
+    "image": vector_param,
+    "text": grpc.VectorParams(
+        size=123,
+        distance=grpc.Distance.Cosine,
+    )
+}))
+
+
 fixtures = {
     "CollectionParams": [collection_params],
     "CollectionConfig": [collection_config],
@@ -367,10 +383,12 @@ fixtures = {
     ],
     "CountResult": [count_result],
     "SnapshotDescription": [snapshot_description],
+    "VectorParams": [vector_param],
+    "VectorsConfig": [single_vector_config, vector_config],
 }
 
 
 def get_grpc_fixture(model_name: str) -> List[betterproto.Message]:
     if model_name not in fixtures:
-        raise RuntimeError(f"Model {model_name} not fount in fixtures")
+        raise RuntimeError(f"Model {model_name} not found in fixtures")
     return fixtures[model_name]
