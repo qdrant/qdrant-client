@@ -104,20 +104,9 @@ class QdrantClient:
         self._grpc_channel = None
         self._grpc_points_client: Optional[grpc.PointsStub] = None
         self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
-        self._event_loop = None
         if prefer_grpc:
             self._init_grpc_points_client(self._grpc_headers)
             self._init_grpc_collections_client(self._grpc_headers)
-
-    @property
-    def event_loop(self):
-        if self._event_loop is None:
-            try:
-                self._event_loop = asyncio.get_event_loop_policy().get_event_loop()
-            except RuntimeError:
-                self._event_loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(self._event_loop)
-        return self._event_loop
 
     def __del__(self):
         if self._grpc_channel is not None:
