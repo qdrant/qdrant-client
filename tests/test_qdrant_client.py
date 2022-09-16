@@ -100,6 +100,61 @@ def test_record_upload(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_multiple_vectors(prefer_grpc):
+    num_vectors = 100
+    records = [
+        Record(
+            id=idx,
+            vector={
+                "image": np.random.rand(DIM).tolist(),
+                "text": np.random.rand(DIM * 2).tolist(),
+            },
+            payload=one_random_payload_please(idx)
+        ) for idx in range(num_vectors)
+    ]
+
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config={
+            "image": VectorParams(size=DIM, distance=Distance.DOT),
+            "text": VectorParams(size=DIM * 2, distance=Distance.COSINE),
+        }
+    )
+
+    client.upload_records(
+        collection_name=COLLECTION_NAME,
+        records=records,
+        parallel=1
+    )
+
+    query_vector = list(np.random.rand(DIM))
+
+    hits = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=("image", query_vector),
+        with_vectors=True,
+        limit=5  # Return 5 closest points
+    )
+
+    assert len(hits) == 5
+    assert "image" in hits[0].vector
+    assert "text" in hits[0].vector
+
+    hits = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=("text", query_vector * 2),
+        with_vectors=True,
+        limit=5  # Return 5 closest points
+    )
+
+    assert len(hits) == 5
+    assert "image" in hits[0].vector
+    assert "text" in hits[0].vector
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("numpy_upload", [False, True])
 def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     vectors_path = create_random_vectors()
