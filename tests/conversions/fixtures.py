@@ -21,6 +21,7 @@ is_empty = grpc.IsEmptyCondition(key="my.field")
 match_keyword = grpc.Match(keyword="hello")
 match_integer = grpc.Match(integer=42)
 match_bool = grpc.Match(boolean=True)
+match_text = grpc.Match(text="hello")
 
 field_condition_match = grpc.FieldCondition(
     key="match_field",
@@ -375,6 +376,25 @@ recommend_points = grpc.RecommendPoints(
     with_vectors=grpc.WithVectorsSelector(enable=True),
 )
 
+text_index_params_1 = grpc.TextIndexParams(
+    tokenizer=grpc.TokenizerType.Prefix,
+    lowercase=True,
+    min_token_len=2,
+    max_token_len=10,
+)
+
+text_index_params_2 = grpc.TextIndexParams(
+    tokenizer=grpc.TokenizerType.Whitespace,
+    lowercase=False,
+    max_token_len=10,
+)
+
+text_index_params_3 = grpc.TextIndexParams(
+    tokenizer=grpc.TokenizerType.Word,
+    lowercase=True,
+    min_token_len=2,
+)
+
 fixtures = {
     "CollectionParams": [collection_params],
     "CollectionConfig": [collection_config],
@@ -430,6 +450,7 @@ fixtures = {
         match_keyword,
         match_integer,
         match_bool,
+        match_text
     ],
     "WithPayloadSelector": [
         with_payload_bool,
@@ -445,6 +466,11 @@ fixtures = {
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
     "RecommendPoints": [recommend_points],
+    "TextIndexParams": [
+        text_index_params_1,
+        text_index_params_2,
+        text_index_params_3,
+    ]
 }
 
 

@@ -708,16 +708,6 @@ class PayloadIndexTelemetry(BaseModel):
     histogram_bucket_size: Optional[int] = Field(None, description="")
 
 
-class PayloadSchemaParamsOneOf(BaseModel):
-    type: Literal[
-        "text",
-    ] = Field(..., description="")
-    tokenizer: Optional["TokenizerType"] = Field(None, description="")
-    min_token_len: Optional[int] = Field(None, description="")
-    max_token_len: Optional[int] = Field(None, description="")
-    lowercase: Optional[bool] = Field(None, description="If true, lowercase all tokens. Default: true")
-
-
 class PayloadSchemaType(str, Enum):
     KEYWORD = "keyword"
     INTEGER = "integer"
@@ -1104,6 +1094,18 @@ class TelemetryOperationStatistics(BaseModel):
     ok_avg_time: "Duration" = Field(..., description="")
 
 
+class TextIndexParams(BaseModel):
+    type: "TextIndexType" = Field(..., description="")
+    tokenizer: Optional["TokenizerType"] = Field(None, description="")
+    min_token_len: Optional[int] = Field(None, description="")
+    max_token_len: Optional[int] = Field(None, description="")
+    lowercase: Optional[bool] = Field(None, description="If true, lowercase all tokens. Default: true")
+
+
+class TextIndexType(str, Enum):
+    TEXT = "text"
+
+
 class TokenizerType(str, Enum):
     PREFIX = "prefix"
     WHITESPACE = "whitespace"
@@ -1237,7 +1239,7 @@ OptimizersStatus = Union[
     OptimizersStatusOneOf1,
 ]
 PayloadSchemaParams = Union[
-    PayloadSchemaParamsOneOf,
+    TextIndexParams,
 ]
 PayloadSelector = Union[
     PayloadSelectorInclude,

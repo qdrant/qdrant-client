@@ -356,6 +356,8 @@ class GrpcToRest:
             return rest.MatchValue(value=val)
         if name == "keyword":
             return rest.MatchValue(value=val)
+        if name == "text":
+            return rest.MatchText(text=val)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -558,6 +560,26 @@ class GrpcToRest:
             with_vector=cls.convert_with_vectors_selector(
                 model.with_vectors) if model.with_vectors is not None else None,
             using=model.using,
+        )
+
+    @classmethod
+    def convert_tokenizer_type(cls, model: grpc.TokenizerType) -> rest.TokenizerType:
+        if model == grpc.TokenizerType.Prefix:
+            return rest.TokenizerType.PREFIX
+        if model == grpc.TokenizerType.Whitespace:
+            return rest.TokenizerType.WHITESPACE
+        if model == grpc.TokenizerType.Word:
+            return rest.TokenizerType.WORD
+        raise ValueError(f"invalid TokenizerType model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_text_index_params(cls, model: grpc.TextIndexParams) -> rest.TextIndexParams:
+        return rest.TextIndexParams(
+            type="text",
+            tokenizer=cls.convert_tokenizer_type(model.tokenizer) if model.tokenizer is not None else None,
+            min_token_len=model.min_token_len,
+            max_token_len=model.max_token_len,
+            lowercase=model.lowercase,
         )
 
 
@@ -910,10 +932,8 @@ class RestToGrpc:
                 return grpc.Match(integer=model.value)
             if isinstance(model.value, str):
                 return grpc.Match(keyword=model.value)
-        if isinstance(model, rest.MatchKeyword):
-            return grpc.Match(keyword=model.keyword)
-        if isinstance(model, rest.MatchInteger):
-            return grpc.Match(integer=model.integer)
+        if isinstance(model, rest.MatchText):
+            return grpc.Match(text=model.text)
 
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
@@ -1128,3 +1148,23 @@ class RestToGrpc:
     @classmethod
     def convert_recommend_points(cls, model: rest.RecommendRequest, collection_name: str) -> grpc.RecommendPoints:
         return cls.convert_recommend_request(model, collection_name)
+
+    @classmethod
+    def convert_tokenizer_type(cls, model: rest.TokenizerType) -> grpc.TokenizerType:
+        if model == rest.TokenizerType.WORD:
+            return grpc.TokenizerType.Word
+        elif model == rest.TokenizerType.WHITESPACE:
+            return grpc.TokenizerType.Whitespace
+        elif model == rest.TokenizerType.PREFIX:
+            return grpc.TokenizerType.Prefix
+        else:
+            raise ValueError(f"invalid TokenizerType model: {model}")
+
+    @classmethod
+    def convert_text_index_params(cls, model: rest.TextIndexParams) -> grpc.TextIndexParams:
+        return grpc.TextIndexParams(
+            tokenizer=cls.convert_tokenizer_type(model.tokenizer) if model.tokenizer is not None else None,
+            lowercase=model.lowercase,
+            min_token_len=model.min_token_len,
+            max_token_len=model.max_token_len,
+        )

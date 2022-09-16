@@ -14,13 +14,25 @@ from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointStruct, HasIdCondition, PointIdsList, \
     PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff, VectorParams, \
-    VectorsConfig, SearchRequest, RecommendRequest
+    SearchRequest, RecommendRequest, TextIndexParams, TokenizerType, MatchText
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 
 DIM = 100
 NUM_VECTORS = 1_000
 COLLECTION_NAME = 'client_test'
 COLLECTION_NAME_ALIAS = 'client_test_alias'
+
+random_words = [
+    'cat', 'dog', 'mouse', 'bird', 'fish', 'horse', 'cow', 'pig', 'sheep', 'goat', 'chicken', 'duck', 'rabbit',
+    'frog', 'snake', 'lizard', 'turtle', 'bear', 'wolf', 'fox', 'monkey', 'ape', 'gorilla', 'elephant', 'rhino',
+    'giraffe', 'zebra', 'deer', 'camel', 'lion', 'tiger', 'leopard', 'hyena', 'jaguar', 'cheetah', 'kangaroo',
+    'koala', 'panda', 'sloth', 'hippo', 'whale', 'dolphin', 'shark', 'octopus', 'squid', 'crab', 'lobster', 'snail',
+    'ant', 'bee', 'butterfly', 'dragonfly', 'mosquito', 'fly', 'grasshopper', 'spider', 'scorpion', 'ladybug',
+]
+
+
+def random_real_word():
+    return random.choice(random_words)
 
 
 def one_random_payload_please(idx):
@@ -29,7 +41,8 @@ def one_random_payload_please(idx):
         "id_str": [str(random.randint(1, 30)).zfill(2) for _ in range(random.randint(0, 5))],
         "text_data": uuid.uuid4().hex,
         "rand_number": random.random(),
-        "text_array": [uuid.uuid4().hex, uuid.uuid4().hex]
+        "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
+        "words": f"{random_real_word()} {random_real_word()}"
     }
 
 
@@ -320,6 +333,38 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         with_payload=True,
         with_vectors=True
     )
+
+    # ------------------ Test for full-text filtering ------------------
+
+    # Create index for full-text search
+    client.create_payload_index(COLLECTION_NAME, "words", field_schema=TextIndexParams(
+        type="text",
+        tokenizer=TokenizerType.WORD,
+        min_token_len=2,
+        max_token_len=15,
+        lowercase=True,
+    ))
+
+    for i in range(10):
+        query_word = random_real_word()
+        hits, _offset = client.scroll(
+            collection_name=COLLECTION_NAME,
+            scroll_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="words",
+                        match=MatchText(text=query_word)
+                    )
+                ]
+            ),
+            with_payload=True,
+            limit=10
+        )
+
+        assert len(hits) > 0
+
+        for hit in hits:
+            assert query_word in hit.payload['words']
 
     # ------------------  Test for batch queries ------------------
     filter_1 = Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.3))])
