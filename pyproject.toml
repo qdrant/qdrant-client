@@ -22,8 +22,7 @@ tqdm = "^4.56.0"
 loguru = "^0.5.3"
 typing-extensions = "^4.0.0"
 grpcio = { version = "^1.46.0", allow-prereleases = true }
-betterproto = { version = "2.0.0b4", allow-prereleases = true }
-nest-asyncio = "^1.5.5"
+grpcio-tools = "^1.48.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1"

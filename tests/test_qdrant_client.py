@@ -13,8 +13,9 @@ from qdrant_client import QdrantClient
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.http.models import Filter, FieldCondition, Range, PointStruct, HasIdCondition, PointIdsList, \
-    PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff, VectorParams, \
-    SearchRequest, RecommendRequest, TextIndexParams, TokenizerType, MatchText
+    VectorParams, \
+    SearchRequest, RecommendRequest, TextIndexParams, TokenizerType, MatchText, \
+    PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 
 DIM = 100
@@ -670,7 +671,8 @@ def test_serialization():
     print("\n")
     print(point.payload)
     data = point.SerializeToString()
-    res = PointStructGrpc().parse(data)
+    res = PointStructGrpc()
+    res.ParseFromString(data)
     print(res.payload)
     print(grpc_to_payload(res.payload))
 
