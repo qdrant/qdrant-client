@@ -38,6 +38,10 @@ jobs:
         run: |
           ./tests/integration-tests.sh
         shell: bash
+      - name: Backward compatibility integration tests
+        run: |
+          QDRANT_VERSION='v0.10.0' ./tests/integration-tests.sh
+        shell: bash
       - name: Check conversion coverage
         run: |
           ./tests/coverage-test.sh

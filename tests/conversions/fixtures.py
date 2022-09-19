@@ -113,6 +113,8 @@ vector_param = grpc.VectorParams(
 
 single_vector_config = grpc.VectorsConfig(params=vector_param)
 
+multiple_vector_config = grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map={"text_vector": vector_param}))
+
 collection_params = grpc.CollectionParams(
     vectors_config=single_vector_config,
     shard_number=10,
@@ -120,8 +122,7 @@ collection_params = grpc.CollectionParams(
 )
 
 collection_params_2 = grpc.CollectionParams(
-    vector_size=100,
-    distance=grpc.Dot,
+    vectors_config=multiple_vector_config
 )
 
 hnsw_config = grpc.HnswConfigDiff(
@@ -221,8 +222,6 @@ collection_info_ok = grpc.CollectionInfo(
     optimizer_status=optimizer_status,
     vectors_count=100000,
     segments_count=6,
-    disk_data_size=0,
-    ram_data_size=0,
     config=collection_config,
     payload_schema={
         "keyword_field": payload_schema_keyword,
@@ -237,8 +236,6 @@ collection_info = grpc.CollectionInfo(
     optimizer_status=optimizer_status_error,
     vectors_count=100000,
     segments_count=6,
-    disk_data_size=0,
-    ram_data_size=0,
     config=collection_config,
     payload_schema={
         "keyword_field": payload_schema_keyword,
@@ -350,7 +347,6 @@ search_points = grpc.SearchPoints(
     vector=[1., 2., 3., 5.],
     filter=filter_,
     limit=100,
-    with_vector=None,
     with_payload=with_payload_bool,
     params=search_params,
     score_threshold=0.123,
@@ -364,7 +360,6 @@ search_points_all_vectors = grpc.SearchPoints(
     vector=[1., 2., 3., 5.],
     filter=filter_,
     limit=100,
-    with_vector=None,
     with_payload=with_payload_bool,
     params=search_params,
     score_threshold=0.123,
@@ -379,7 +374,6 @@ recommend_points = grpc.RecommendPoints(
     negative=[point_id],
     filter=filter_,
     limit=100,
-    with_vector=None,
     with_payload=with_payload_bool,
     params=search_params,
     score_threshold=0.123,

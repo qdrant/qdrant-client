@@ -649,11 +649,11 @@ def test_value_serialization():
 
 def test_serialization():
     from qdrant_client.grpc import PointStruct as PointStructGrpc
-    from qdrant_client.grpc import PointId as PointIdGrpc
+    from qdrant_client.grpc import PointId as PointIdGrpc, Vectors, Vector
 
     point = PointStructGrpc(
         id=PointIdGrpc(num=1),
-        vector=[1., 2., 3., 4.],
+        vectors=Vectors(vector=Vector(data=[1., 2., 3., 4.])),
         payload=payload_to_grpc({
             "a": 123,
             "b": "text",
