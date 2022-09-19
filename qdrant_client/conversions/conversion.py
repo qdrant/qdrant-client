@@ -122,10 +122,8 @@ class GrpcToRest:
     def convert_collection_info(cls, model: grpc.CollectionInfo) -> rest.CollectionInfo:
         return rest.CollectionInfo(
             config=cls.convert_collection_config(model.config),
-            disk_data_size=model.disk_data_size,
             optimizer_status=cls.convert_optimizer_status(model.optimizer_status),
             payload_schema=cls.convert_payload_schema(model.payload_schema),
-            ram_data_size=model.ram_data_size,
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
             vectors_count=model.vectors_count,
@@ -283,8 +281,6 @@ class GrpcToRest:
         return rest.CreateCollection(
             vectors=cls.convert_vectors_config(model.vectors_config) if model.HasField("vectors_config") else None,
             collection_name=model.collection_name,
-            vector_size=model.vector_size if model.HasField("vector_size") else None,
-            distance=cls.convert_distance(model.distance) if model.HasField("distance") else None,
             hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
             wal_config=cls.convert_wal_config(model.wal_config),
             optimizers_config=cls.convert_optimizer_config(model.optimizers_config),
@@ -375,8 +371,6 @@ class GrpcToRest:
         return rest.CollectionParams(
             vectors=cls.convert_vectors_config(model.vectors_config) if model.HasField("vectors_config") else None,
             shard_number=model.shard_number,
-            vector_size=model.vector_size if model.HasField("vector_size") else None,
-            distance=cls.convert_distance(model.distance) if model.HasField("distance") else None,
             on_disk_payload=model.on_disk_payload,
         )
 
@@ -635,11 +629,9 @@ class RestToGrpc:
     def convert_collection_info(cls, model: rest.CollectionInfo) -> grpc.CollectionInfo:
         return grpc.CollectionInfo(
             config=cls.convert_collection_config(model.config) if model.config else None,
-            disk_data_size=model.disk_data_size,
             optimizer_status=cls.convert_optimizer_status(model.optimizer_status),
             payload_schema=cls.convert_payload_schema(
                 model.payload_schema) if model.payload_schema is not None else None,
-            ram_data_size=model.ram_data_size,
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
             vectors_count=model.vectors_count,
@@ -755,12 +747,10 @@ class RestToGrpc:
         return grpc.CreateCollection(
             vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
             collection_name=collection_name,
-            distance=cls.convert_distance(model.distance) if model.distance is not None else None,
             hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config) if model.hnsw_config is not None else None,
             optimizers_config=cls.convert_optimizers_config_diff(
                 model.optimizers_config) if model.optimizers_config is not None else None,
             shard_number=model.shard_number,
-            vector_size=model.vector_size,
             wal_config=cls.convert_wal_config_diff(model.wal_config) if model.wal_config is not None else None,
         )
 
@@ -885,10 +875,8 @@ class RestToGrpc:
     def convert_collection_params(cls, model: rest.CollectionParams) -> grpc.CollectionParams:
         return grpc.CollectionParams(
             vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
-            vector_size=model.vector_size,
             shard_number=model.shard_number,
             on_disk_payload=model.on_disk_payload or False,
-            distance=cls.convert_distance(model.distance) if model.distance is not None else None,
         )
 
     @classmethod
@@ -1124,7 +1112,6 @@ class RestToGrpc:
             vector=vector,
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
             limit=model.limit,
-            with_vector=None,
             with_payload=cls.convert_with_payload_interface(
                 model.with_payload) if model.with_payload is not None else None,
             params=cls.convert_search_params(model.params) if model.params is not None else None,
@@ -1146,7 +1133,6 @@ class RestToGrpc:
             negative=[cls.convert_extended_point_id(point_id) for point_id in model.negative],
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
             limit=model.limit,
-            with_vector=None,
             with_payload=cls.convert_with_payload_interface(
                 model.with_payload) if model.with_payload is not None else None,
             params=cls.convert_search_params(model.params) if model.params is not None else None,

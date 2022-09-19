@@ -102,18 +102,12 @@ class CollectionInfo(BaseModel):
     indexed_vectors_count: int = Field(..., description="Number of indexed vectors in the collection")
     points_count: int = Field(..., description="Number of points in collection")
     segments_count: int = Field(..., description="Number of segments in collection")
-    disk_data_size: Optional[int] = Field(None, description="Disk space, used by collection")
-    ram_data_size: Optional[int] = Field(None, description="RAM used by collection")
     config: "CollectionConfig" = Field(..., description="Current statistics and configuration of the collection")
     payload_schema: Dict[str, "PayloadIndexInfo"] = Field(..., description="Types of stored payload")
 
 
 class CollectionParams(BaseModel):
-    vectors: Optional["VectorsConfig"] = Field(None, description="Configuration of the vector storage")
-    vector_size: Optional[int] = Field(None, description="Size of a vectors used")
-    distance: Optional["Distance"] = Field(
-        None, description="Type of distance function used for measuring distance between vectors"
-    )
+    vectors: "VectorsConfig" = Field(..., description="")
     shard_number: Optional[int] = Field(1, description="Number of shards the collection has")
     on_disk_payload: Optional[bool] = Field(
         False,
@@ -208,17 +202,8 @@ class CreateCollection(BaseModel):
     Operation for creating new collection and (optionally) specify index params
     """
 
-    vectors: Optional["VectorsConfig"] = Field(
-        None,
-        description="Vector data config. It is possible to provide one config for single vector mode and list of configs for multiple vectors mode.",
-    )
-    vector_size: Optional[int] = Field(
-        None,
-        description="Deprecated size setup for single-vector mode. It&#x27;s required to set one vector_size or vectors field.",
-    )
-    distance: Optional["Distance"] = Field(
-        None,
-        description="Deprecated distance setup for single-vector mode. It&#x27;s required to set one vector_size or vectors field.",
+    vectors: "VectorsConfig" = Field(
+        ..., description="Operation for creating new collection and (optionally) specify index params"
     )
     shard_number: Optional[int] = Field(
         None,
