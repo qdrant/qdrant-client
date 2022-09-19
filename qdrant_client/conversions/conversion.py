@@ -3,7 +3,12 @@ from typing import Dict, Any, List, Tuple, Optional
 
 from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.json_format import MessageToDict
-from google.protobuf.pyext._message import MessageMapContainer
+
+try:
+    from google.protobuf.pyext._message import MessageMapContainer
+except ImportError:
+    pass
+
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http.models import models as rest
@@ -298,7 +303,7 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_payload(cls, model: MessageMapContainer) -> rest.Payload:
+    def convert_payload(cls, model: "MessageMapContainer") -> rest.Payload:
         return dict(
             (key, value_to_json(model[key]))
             for key in model
