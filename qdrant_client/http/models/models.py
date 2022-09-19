@@ -102,8 +102,8 @@ class CollectionInfo(BaseModel):
     indexed_vectors_count: int = Field(..., description="Number of indexed vectors in the collection")
     points_count: int = Field(..., description="Number of points in collection")
     segments_count: int = Field(..., description="Number of segments in collection")
-    disk_data_size: int = Field(..., description="Disk space, used by collection")
-    ram_data_size: int = Field(..., description="RAM used by collection")
+    disk_data_size: Optional[int] = Field(None, description="Disk space, used by collection")
+    ram_data_size: Optional[int] = Field(None, description="RAM used by collection")
     config: "CollectionConfig" = Field(..., description="Current statistics and configuration of the collection")
     payload_schema: Dict[str, "PayloadIndexInfo"] = Field(..., description="Types of stored payload")
 
