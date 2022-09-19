@@ -1,10 +1,11 @@
 import datetime
 from typing import List
 
-import betterproto
+from google.protobuf.message import Message
+from google.protobuf.timestamp_pb2 import Timestamp
 
-from qdrant_client import grpc
-from qdrant_client.conversions.conversion import json_to_value
+from qdrant_client import grpc as grpc
+from qdrant_client.conversions.conversion import payload_to_grpc
 
 point_id = grpc.PointId(num=1)
 point_id_1 = grpc.PointId(num=2)
@@ -21,6 +22,7 @@ is_empty = grpc.IsEmptyCondition(key="my.field")
 match_keyword = grpc.Match(keyword="hello")
 match_integer = grpc.Match(integer=42)
 match_bool = grpc.Match(boolean=True)
+match_text = grpc.Match(text="hello")
 
 field_condition_match = grpc.FieldCondition(
     key="match_field",
@@ -104,10 +106,22 @@ filter_ = grpc.Filter(
     ]
 )
 
-collection_params = grpc.CollectionParams(
-    vector_size=100,
+vector_param = grpc.VectorParams(
+    size=100,
     distance=grpc.Distance.Cosine,
-    shard_number=10
+)
+
+single_vector_config = grpc.VectorsConfig(params=vector_param)
+
+collection_params = grpc.CollectionParams(
+    vectors_config=single_vector_config,
+    shard_number=10,
+    on_disk_payload=True,
+)
+
+collection_params_2 = grpc.CollectionParams(
+    vector_size=100,
+    distance=grpc.Dot,
 )
 
 hnsw_config = grpc.HnswConfigDiff(
@@ -146,7 +160,7 @@ collection_config = grpc.CollectionConfig(
     wal_config=wal_config,
 )
 
-payload_value = json_to_value({
+payload_value = {
     "int": 1,
     "float": 0.23,
     "keyword": "hello world",
@@ -154,16 +168,21 @@ payload_value = json_to_value({
     "null": None,
     "dict": {"a": 1, "b": "bbb"},
     "list": [1, 2, 3, 5, 6],
-    "list_with_dict": [{}, {}, {}]
+    "list_with_dict": [{}, {}, {}, []],
+    "empty_list": [],
+}
+
+payload = payload_to_grpc({
+    "payload": payload_value
 })
+
+single_vector = grpc.Vectors(vector=grpc.Vector(data=[1., 2., 3., 4.]))
 
 scored_point = grpc.ScoredPoint(
     id=point_id,
-    payload={
-        "payload": payload_value
-    },
+    payload=payload,
     score=0.99,
-    vector=[1.0, 2.0, 0.0, -1.0],
+    vectors=single_vector,
     version=12
 )
 
@@ -231,8 +250,7 @@ collection_info = grpc.CollectionInfo(
 
 create_collection = grpc.CreateCollection(
     collection_name="my_collection",
-    vector_size=100,
-    distance=grpc.Distance.Euclid,
+    vectors_config=grpc.VectorsConfig(params=grpc.VectorParams(size=100, distance=grpc.Distance.Euclid)),
     hnsw_config=hnsw_config,
     wal_config=wal_config,
     optimizers_config=optimizer_config,
@@ -259,10 +277,25 @@ delete_alias = grpc.DeleteAlias(
 
 point_struct = grpc.PointStruct(
     id=point_id_1,
-    vector=[1.0, 2.0, -1., -.2],
-    payload={
+    vectors=grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, -1., -.2])),
+    payload=payload_to_grpc({
         "my_payload": payload_value
-    },
+    }),
+)
+
+point_struct_multivec = grpc.PointStruct(
+    id=point_id_1,
+    vectors=grpc.Vectors(
+        vectors=grpc.NamedVectors(
+            vectors={
+                "image": grpc.Vector(data=[1.0, 2.0, -1., -.2]),
+                "text": grpc.Vector(data=[1.0, 2.0, -1., -.2]),
+            }
+        )
+    ),
+    payload=payload_to_grpc({
+        "my_payload": payload_value
+    }),
 )
 
 collection_description = grpc.CollectionDescription(
@@ -289,20 +322,93 @@ with_payload_exclude = grpc.WithPayloadSelector(exclude=grpc.PayloadExcludeSelec
 
 retrieved_point = grpc.RetrievedPoint(
     id=point_id_1,
-    payload={"key": payload_value},
-    vector=[1., 2., 3., 4.]
+    payload=payload_to_grpc({"key": payload_value}),
+    vectors=single_vector
 )
 
 count_result = grpc.CountResult(count=5)
 
+timestamp = Timestamp()
+timestamp.FromDatetime(datetime.datetime.now())
+
 snapshot_description = grpc.SnapshotDescription(
     name="my_snapshot",
-    creation_time=datetime.datetime.now(),
+    creation_time=timestamp,
     size=100500
 )
 
+vector_config = grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map={
+    "image": vector_param,
+    "text": grpc.VectorParams(
+        size=123,
+        distance=grpc.Distance.Cosine,
+    )
+}))
+
+search_points = grpc.SearchPoints(
+    collection_name="collection-123",
+    vector=[1., 2., 3., 5.],
+    filter=filter_,
+    limit=100,
+    with_vector=None,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    vector_name="abc",
+    with_vectors=grpc.WithVectorsSelector(include=grpc.VectorsSelector(names=["abc", "def"])),
+)
+
+search_points_all_vectors = grpc.SearchPoints(
+    collection_name="collection-123",
+    vector=[1., 2., 3., 5.],
+    filter=filter_,
+    limit=100,
+    with_vector=None,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    vector_name="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+)
+
+recommend_points = grpc.RecommendPoints(
+    collection_name="collection-123",
+    positive=[point_id_1, point_id_2],
+    negative=[point_id],
+    filter=filter_,
+    limit=100,
+    with_vector=None,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+)
+
+text_index_params_1 = grpc.TextIndexParams(
+    tokenizer=grpc.TokenizerType.Prefix,
+    lowercase=True,
+    min_token_len=2,
+    max_token_len=10,
+)
+
+text_index_params_2 = grpc.TextIndexParams(
+    tokenizer=grpc.TokenizerType.Whitespace,
+    lowercase=False,
+    max_token_len=10,
+)
+
+text_index_params_3 = grpc.TextIndexParams(
+    tokenizer=grpc.TokenizerType.Word,
+    lowercase=True,
+    min_token_len=2,
+)
+
 fixtures = {
-    "CollectionParams": [collection_params],
+    "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
     "ScoredPoint": [scored_point],
     "CreateAlias": [create_alias],
@@ -329,7 +435,7 @@ fixtures = {
     "UpdateResult": [update_result, update_result_completed],
     "IsEmptyCondition": [is_empty],
     "DeleteAlias": [delete_alias],
-    "PointStruct": [point_struct],
+    "PointStruct": [point_struct, point_struct_multivec],
     "CollectionDescription": [collection_description],
     "GeoPoint": [geo_point],
     "WalConfigDiff": [wal_config],
@@ -356,6 +462,7 @@ fixtures = {
         match_keyword,
         match_integer,
         match_bool,
+        match_text
     ],
     "WithPayloadSelector": [
         with_payload_bool,
@@ -367,10 +474,19 @@ fixtures = {
     ],
     "CountResult": [count_result],
     "SnapshotDescription": [snapshot_description],
+    "VectorParams": [vector_param],
+    "VectorsConfig": [single_vector_config, vector_config],
+    "SearchPoints": [search_points, search_points_all_vectors],
+    "RecommendPoints": [recommend_points],
+    "TextIndexParams": [
+        text_index_params_1,
+        text_index_params_2,
+        text_index_params_3,
+    ]
 }
 
 
-def get_grpc_fixture(model_name: str) -> List[betterproto.Message]:
+def get_grpc_fixture(model_name: str) -> List[Message]:
     if model_name not in fixtures:
-        raise RuntimeError(f"Model {model_name} not fount in fixtures")
+        raise RuntimeError(f"Model {model_name} not found in fixtures")
     return fixtures[model_name]

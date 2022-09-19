@@ -1,9 +1,11 @@
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List, Tuple, Optional
 
-import betterproto
+from google.protobuf.timestamp_pb2 import Timestamp
+from google.protobuf.json_format import MessageToDict
+from google.protobuf.pyext._message import MessageMapContainer
 
-from qdrant_client import grpc
+from qdrant_client import grpc as grpc
 from qdrant_client.http.models import models as rest
 from qdrant_client.grpc import Value, ListValue, Struct, NullValue
 
@@ -28,7 +30,7 @@ def json_to_value(payload: Any) -> Value:
 
 def value_to_json(value: Value) -> Any:
     if isinstance(value, Value):
-        value_ = value.to_dict(casing=betterproto.Casing.CAMEL)
+        value_ = MessageToDict(value, preserving_proto_field_name=False)
     else:
         value_ = value
 
@@ -74,7 +76,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_condition(cls, model: grpc.Condition) -> rest.Condition:
-        name, val = betterproto.which_one_of(model, "condition_one_of")
+        name = model.WhichOneof("condition_one_of")
+        val = getattr(model, name)
 
         if name == "field":
             return cls.convert_field_condition(val)
@@ -98,10 +101,10 @@ class GrpcToRest:
     @classmethod
     def convert_range(cls, model: grpc.Range) -> rest.Range:
         return rest.Range(
-            gt=model.gt,
-            gte=model.gte,
-            lt=model.lt,
-            lte=model.lte,
+            gt=model.gt if model.HasField("gt") else None,
+            gte=model.gte if model.HasField("gte") else None,
+            lt=model.lt if model.HasField("lt") else None,
+            lte=model.lte if model.HasField("lte") else None,
         )
 
     @classmethod
@@ -149,30 +152,30 @@ class GrpcToRest:
     @classmethod
     def convert_hnsw_config_diff(cls, model: grpc.HnswConfigDiff) -> rest.HnswConfigDiff:
         return rest.HnswConfigDiff(
-            ef_construct=model.ef_construct,
-            m=model.m,
-            full_scan_threshold=model.full_scan_threshold
+            ef_construct=model.ef_construct if model.HasField("ef_construct") else None,
+            m=model.m if model.HasField("m") else None,
+            full_scan_threshold=model.full_scan_threshold if model.HasField("full_scan_threshold") else None
         )
 
     @classmethod
     def convert_hnsw_config(cls, model: grpc.HnswConfigDiff) -> rest.HnswConfig:
         return rest.HnswConfig(
-            ef_construct=model.ef_construct,
-            m=model.m,
-            full_scan_threshold=model.full_scan_threshold
+            ef_construct=model.ef_construct if model.HasField("ef_construct") else None,
+            m=model.m if model.HasField("m") else None,
+            full_scan_threshold=model.full_scan_threshold if model.HasField("full_scan_threshold") else None
         )
 
     @classmethod
     def convert_optimizer_config(cls, model: grpc.OptimizersConfigDiff) -> rest.OptimizersConfig:
         return rest.OptimizersConfig(
-            default_segment_number=model.default_segment_number,
-            deleted_threshold=model.deleted_threshold,
-            flush_interval_sec=model.flush_interval_sec,
-            indexing_threshold=model.indexing_threshold,
-            max_optimization_threads=model.max_optimization_threads,
-            max_segment_size=model.max_segment_size,
-            memmap_threshold=model.memmap_threshold,
-            vacuum_min_vector_number=model.vacuum_min_vector_number
+            default_segment_number=model.default_segment_number if model.HasField("default_segment_number") else None,
+            deleted_threshold=model.deleted_threshold if model.HasField("deleted_threshold") else None,
+            flush_interval_sec=model.flush_interval_sec if model.HasField("flush_interval_sec") else None,
+            indexing_threshold=model.indexing_threshold if model.HasField("indexing_threshold") else None,
+            max_optimization_threads=model.max_optimization_threads if model.HasField("max_optimization_threads") else None,
+            max_segment_size=model.max_segment_size if model.HasField("max_segment_size") else None,
+            memmap_threshold=model.memmap_threshold if model.HasField("memmap_threshold") else None,
+            vacuum_min_vector_number=model.vacuum_min_vector_number if model.HasField("vacuum_min_vector_number") else None
         )
 
     @classmethod
@@ -188,8 +191,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_wal_config(cls, model: grpc.WalConfigDiff) -> rest.WalConfig:
-        return rest.WalConfig(wal_capacity_mb=model.wal_capacity_mb,
-                              wal_segments_ahead=model.wal_segments_ahead)
+        return rest.WalConfig(wal_capacity_mb=model.wal_capacity_mb if model.HasField("wal_capacity_mb") else None,
+                              wal_segments_ahead=model.wal_segments_ahead if model.HasField("wal_segments_ahead") else None)
 
     @classmethod
     def convert_payload_schema(cls, model: Dict[str, grpc.PayloadSchemaInfo]) -> Dict[str, rest.PayloadIndexInfo]:
@@ -244,12 +247,12 @@ class GrpcToRest:
 
     @classmethod
     def convert_point_id(cls, model: grpc.PointId) -> rest.ExtendedPointId:
-        name, val = betterproto.which_one_of(model, "point_id_options")
+        name = model.WhichOneof("point_id_options")
 
         if name == "num":
-            return val
+            return model.num
         if name == "uuid":
-            return val
+            return model.uuid
         raise ValueError(f"invalid PointId model: {model}")  # pragma: no cover
 
     @classmethod
@@ -278,9 +281,10 @@ class GrpcToRest:
     @classmethod
     def convert_create_collection(cls, model: grpc.CreateCollection) -> rest.CreateCollection:
         return rest.CreateCollection(
+            vectors=cls.convert_vectors_config(model.vectors_config) if model.HasField("vectors_config") else None,
             collection_name=model.collection_name,
-            vector_size=model.vector_size,
-            distance=cls.convert_distance(model.distance),
+            vector_size=model.vector_size if model.HasField("vector_size") else None,
+            distance=cls.convert_distance(model.distance) if model.HasField("distance") else None,
             hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
             wal_config=cls.convert_wal_config(model.wal_config),
             optimizers_config=cls.convert_optimizer_config(model.optimizers_config),
@@ -291,27 +295,26 @@ class GrpcToRest:
     def convert_scored_point(cls, model: grpc.ScoredPoint) -> rest.ScoredPoint:
         return rest.ScoredPoint(
             id=cls.convert_point_id(model.id),
-            payload=cls.convert_payload(model.payload) if model.payload is not None else None,
+            payload=cls.convert_payload(model.payload),
             score=model.score,
-            vector=model.vector,
+            vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
             version=model.version,
         )
 
     @classmethod
-    def convert_payload(cls, model: Dict[str, grpc.Value]) -> rest.Payload:
+    def convert_payload(cls, model: MessageMapContainer) -> rest.Payload:
         return dict(
-            (key, value_to_json(val))
-            for key, val in
-            model.items()
+            (key, value_to_json(model[key]))
+            for key in model
         )
 
     @classmethod
     def convert_values_count(cls, model: grpc.ValuesCount) -> rest.ValuesCount:
         return rest.ValuesCount(
-            gt=model.gt,
-            gte=model.gte,
-            lt=model.lt,
-            lte=model.lte,
+            gt=model.gt if model.HasField("gt") else None,
+            gte=model.gte if model.HasField("gte") else None,
+            lt=model.lt if model.HasField("lt") else None,
+            lte=model.lte if model.HasField("lte") else None,
         )
 
     @classmethod
@@ -326,16 +329,16 @@ class GrpcToRest:
         return rest.PointStruct(
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
-            vector=model.vector,
+            vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
         )
 
     @classmethod
     def convert_field_condition(cls, model: grpc.FieldCondition) -> rest.FieldCondition:
-        geo_bounding_box = cls.convert_geo_bounding_box(model.geo_bounding_box) if model.geo_bounding_box else None
-        geo_radius = cls.convert_geo_radius(model.geo_radius) if model.geo_radius else None
-        match = cls.convert_match(model.match) if model.match else None
-        range_ = cls.convert_range(model.range) if model.range else None
-        values_count = cls.convert_values_count(model.values_count) if model.values_count else None
+        geo_bounding_box = cls.convert_geo_bounding_box(model.geo_bounding_box) if model.HasField('geo_bounding_box') else None
+        geo_radius = cls.convert_geo_radius(model.geo_radius) if model.HasField('geo_radius') else None
+        match = cls.convert_match(model.match) if model.HasField('match') else None
+        range_ = cls.convert_range(model.range) if model.HasField('range') else None
+        values_count = cls.convert_values_count(model.values_count) if model.HasField('values_count') else None
         return rest.FieldCondition(
             key=model.key,
             geo_bounding_box=geo_bounding_box,
@@ -347,7 +350,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_match(cls, model: grpc.Match) -> rest.Match:
-        name, val = betterproto.which_one_of(model, "match_value")
+        name = model.WhichOneof("match_value")
+        val = getattr(model, name)
 
         if name == "integer":
             return rest.MatchValue(value=val)
@@ -355,41 +359,45 @@ class GrpcToRest:
             return rest.MatchValue(value=val)
         if name == "keyword":
             return rest.MatchValue(value=val)
+        if name == "text":
+            return rest.MatchText(text=val)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_wal_config_diff(cls, model: grpc.WalConfigDiff) -> rest.WalConfigDiff:
         return rest.WalConfigDiff(
-            wal_capacity_mb=model.wal_capacity_mb,
-            wal_segments_ahead=model.wal_segments_ahead
+            wal_capacity_mb=model.wal_capacity_mb if model.HasField("wal_capacity_mb") else None,
+            wal_segments_ahead=model.wal_segments_ahead if model.HasField("wal_segments_ahead") else None
         )
 
     @classmethod
     def convert_collection_params(cls, model: grpc.CollectionParams) -> rest.CollectionParams:
         return rest.CollectionParams(
-            distance=cls.convert_distance(model.distance),
+            vectors=cls.convert_vectors_config(model.vectors_config) if model.HasField("vectors_config") else None,
             shard_number=model.shard_number,
-            vector_size=model.vector_size
+            vector_size=model.vector_size if model.HasField("vector_size") else None,
+            distance=cls.convert_distance(model.distance) if model.HasField("distance") else None,
+            on_disk_payload=model.on_disk_payload,
         )
 
     @classmethod
     def convert_optimizers_config_diff(cls, model: grpc.OptimizersConfigDiff) -> rest.OptimizersConfigDiff:
         return rest.OptimizersConfigDiff(
-            default_segment_number=model.default_segment_number,
-            deleted_threshold=model.deleted_threshold,
-            flush_interval_sec=model.flush_interval_sec,
-            indexing_threshold=model.indexing_threshold,
-            max_optimization_threads=model.max_optimization_threads,
-            max_segment_size=model.max_segment_size,
-            memmap_threshold=model.memmap_threshold,
-            vacuum_min_vector_number=model.vacuum_min_vector_number,
+            default_segment_number=model.default_segment_number if model.HasField("default_segment_number") else None,
+            deleted_threshold=model.deleted_threshold if model.HasField("deleted_threshold") else None,
+            flush_interval_sec=model.flush_interval_sec if model.HasField("flush_interval_sec") else None,
+            indexing_threshold=model.indexing_threshold if model.HasField("indexing_threshold") else None,
+            max_optimization_threads=model.max_optimization_threads if model.HasField("max_optimization_threads") else None,
+            max_segment_size=model.max_segment_size if model.HasField("max_segment_size") else None,
+            memmap_threshold=model.memmap_threshold if model.HasField("memmap_threshold") else None,
+            vacuum_min_vector_number=model.vacuum_min_vector_number if model.HasField("vacuum_min_vector_number") else None,
         )
 
     @classmethod
     def convert_update_collection(cls, model: grpc.UpdateCollection) -> rest.UpdateCollection:
         return rest.UpdateCollection(
             optimizers_config=cls.convert_optimizers_config_diff(
-                model.optimizers_config) if model.optimizers_config is not None else None
+                model.optimizers_config) if model.HasField('optimizers_config') else None
         )
 
     @classmethod
@@ -401,7 +409,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_alias_operations(cls, model: grpc.AliasOperations) -> rest.AliasOperations:
-        name, val = betterproto.which_one_of(model, "action")
+        name = model.WhichOneof("action")
+        val = getattr(model, name)
 
         if name == "rename_alias":
             return rest.RenameAliasOperation(rename_alias=cls.convert_rename_alias(val))
@@ -414,7 +423,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_points_selector(cls, model: grpc.PointsSelector) -> rest.PointsSelector:
-        name, val = betterproto.which_one_of(model, "points_selector_one_of")
+        name = model.WhichOneof("points_selector_one_of")
+        val = getattr(model, name)
 
         if name == "points":
             return rest.PointIdsList(points=[
@@ -429,14 +439,15 @@ class GrpcToRest:
 
     @classmethod
     def convert_with_payload_selector(cls, model: grpc.WithPayloadSelector) -> rest.WithPayloadInterface:
-        name, val = betterproto.which_one_of(model, "selector_options")
+        name = model.WhichOneof("selector_options")
+        val = getattr(model, name)
 
         if name == "enable":
             return val
         if name == "include":
-            return val.fields
+            return list(val.fields)
         if name == "exclude":
-            return rest.PayloadSelectorExclude(exclude=val.fields)
+            return rest.PayloadSelectorExclude(exclude=list(val.fields))
 
         raise ValueError(f"invalid WithPayloadSelector model: {model}")  # pragma: no cover
 
@@ -448,8 +459,8 @@ class GrpcToRest:
     def convert_retrieved_point(cls, model: grpc.RetrievedPoint) -> rest.Record:
         return rest.Record(
             id=cls.convert_point_id(model.id),
-            payload=cls.convert_payload(model.payload) if model.payload is not None else None,
-            vector=model.vector
+            payload=cls.convert_payload(model.payload),
+            vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
         )
 
     @classmethod
@@ -466,8 +477,118 @@ class GrpcToRest:
     def convert_snapshot_description(cls, model: grpc.SnapshotDescription) -> rest.SnapshotDescription:
         return rest.SnapshotDescription(
             name=model.name,
-            creation_time=model.creation_time.isoformat(),
+            creation_time=model.creation_time.ToDatetime().isoformat() if model.HasField("creation_time") else None,
             size=model.size,
+        )
+
+    @classmethod
+    def convert_vector_params(cls, model: grpc.VectorParams) -> rest.VectorParams:
+        return rest.VectorParams(
+            size=model.size,
+            distance=cls.convert_distance(model.distance)
+        )
+
+    @classmethod
+    def convert_vectors_config(cls, model: grpc.VectorsConfig) -> rest.VectorsConfig:
+        name = model.WhichOneof("config")
+        val = getattr(model, name)
+
+        if name == "params":
+            return cls.convert_vector_params(val)
+        if name == "params_map":
+            return dict(
+                (key, cls.convert_vector_params(vec_params))
+                for key, vec_params in val.map.items()
+            )
+        raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vector(cls, model: grpc.Vector) -> List[float]:
+        return model.data[:]
+
+    @classmethod
+    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, List[float]]:
+        return {
+            name: cls.convert_vector(vector)
+            for name, vector in model.vectors.items()
+        }
+
+    @classmethod
+    def convert_vectors(cls, model: grpc.Vectors) -> rest.VectorStruct:
+        name = model.WhichOneof("vectors_options")
+        val = getattr(model, name)
+        if name == "vector":
+            return cls.convert_vector(val)
+        if name == "vectors":
+            return cls.convert_named_vectors(val)
+        raise ValueError(f"invalid Vectors model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vectors_selector(cls, model: grpc.VectorsSelector) -> List[str]:
+        return model.names[:]
+
+    @classmethod
+    def convert_with_vectors_selector(cls, model: grpc.WithVectorsSelector) -> rest.WithVector:
+        name = model.WhichOneof("selector_options")
+        val = getattr(model, name)
+        if name == "enable":
+            return val
+        if name == "include":
+            return cls.convert_vectors_selector(val)
+        raise ValueError(f"invalid WithVectorsSelector model: {model}")
+
+    @classmethod
+    def convert_search_points(cls, model: grpc.SearchPoints) -> rest.SearchRequest:
+        return rest.SearchRequest(
+            vector=rest.NamedVector(
+                name=model.vector_name,
+                vector=model.vector[:]
+            ),
+            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
+            limit=model.limit,
+            with_payload=cls.convert_with_payload_interface(
+                model.with_payload) if model.HasField("with_payload") else None,
+            params=cls.convert_search_params(model.params) if model.HasField("params") else None,
+            score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
+            offset=model.offset if model.HasField("offset") else None,
+            with_vector=cls.convert_with_vectors_selector(
+                model.with_vectors) if model.HasField("with_vectors") else None,
+        )
+
+    @classmethod
+    def convert_recommend_points(cls, model: grpc.RecommendPoints) -> rest.RecommendRequest:
+        return rest.RecommendRequest(
+            positive=[cls.convert_point_id(point_id) for point_id in model.positive],
+            negative=[cls.convert_point_id(point_id) for point_id in model.negative],
+            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
+            limit=model.limit,
+            with_payload=cls.convert_with_payload_interface(model.with_payload) if model.HasField("with_payload") else None,
+            params=cls.convert_search_params(model.params) if model.HasField("params") else None,
+            score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
+            offset=model.offset if model.HasField("offset") else None,
+            with_vector=cls.convert_with_vectors_selector(
+                model.with_vectors) if model.HasField("with_vectors") else None,
+            using=model.using,
+        )
+
+    @classmethod
+    def convert_tokenizer_type(cls, model: grpc.TokenizerType) -> rest.TokenizerType:
+        if model == grpc.Prefix:
+            return rest.TokenizerType.PREFIX
+        if model == grpc.Whitespace:
+            return rest.TokenizerType.WHITESPACE
+        if model == grpc.Word:
+            return rest.TokenizerType.WORD
+        raise ValueError(f"invalid TokenizerType model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_text_index_params(cls, model: grpc.TextIndexParams) -> rest.TextIndexParams:
+        return rest.TextIndexParams(
+            type="text",
+            tokenizer=cls.convert_tokenizer_type(model.tokenizer),
+            min_token_len=model.min_token_len if model.HasField("min_token_len") else None,
+            max_token_len=model.max_token_len if model.HasField("max_token_len") else None,
+            lowercase=model.lowercase if model.HasField("lowercase") else None,
         )
 
 
@@ -632,8 +753,9 @@ class RestToGrpc:
     @classmethod
     def convert_create_collection(cls, model: rest.CreateCollection, collection_name: str) -> grpc.CreateCollection:
         return grpc.CreateCollection(
+            vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
             collection_name=collection_name,
-            distance=cls.convert_distance(model.distance),
+            distance=cls.convert_distance(model.distance) if model.distance is not None else None,
             hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config) if model.hnsw_config is not None else None,
             optimizers_config=cls.convert_optimizers_config_diff(
                 model.optimizers_config) if model.optimizers_config is not None else None,
@@ -648,7 +770,7 @@ class RestToGrpc:
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
             score=model.score,
-            vector=model.vector,
+            vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
             version=model.version
         )
 
@@ -672,8 +794,8 @@ class RestToGrpc:
     def convert_point_struct(cls, model: rest.PointStruct) -> grpc.PointStruct:
         return grpc.PointStruct(
             id=cls.convert_extended_point_id(model.id),
-            vector=model.vector,
-            payload=cls.convert_payload(model.payload) if model.payload is not None else None
+            vectors=cls.convert_vector_struct(model.vector),
+            payload=cls.convert_payload(model.payload)
         )
 
     @classmethod
@@ -762,9 +884,11 @@ class RestToGrpc:
     @classmethod
     def convert_collection_params(cls, model: rest.CollectionParams) -> grpc.CollectionParams:
         return grpc.CollectionParams(
+            vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
             vector_size=model.vector_size,
             shard_number=model.shard_number,
-            distance=cls.convert_distance(model.distance)
+            on_disk_payload=model.on_disk_payload or False,
+            distance=cls.convert_distance(model.distance) if model.distance is not None else None,
         )
 
     @classmethod
@@ -817,10 +941,8 @@ class RestToGrpc:
                 return grpc.Match(integer=model.value)
             if isinstance(model.value, str):
                 return grpc.Match(keyword=model.value)
-        if isinstance(model, rest.MatchKeyword):
-            return grpc.Match(keyword=model.keyword)
-        if isinstance(model, rest.MatchInteger):
-            return grpc.Match(integer=model.integer)
+        if isinstance(model, rest.MatchText):
+            return grpc.Match(text=model.text)
 
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
@@ -889,7 +1011,7 @@ class RestToGrpc:
         if isinstance(model, bool):
             return grpc.WithPayloadSelector(enable=model)
         elif isinstance(model, list):
-            return grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(model))
+            return grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(fields=model))
         elif isinstance(model, (
                 rest.PayloadSelectorInclude,
                 rest.PayloadSelectorExclude,
@@ -902,8 +1024,8 @@ class RestToGrpc:
     def convert_record(cls, model: rest.Record) -> grpc.RetrievedPoint:
         return grpc.RetrievedPoint(
             id=cls.convert_extended_point_id(model.id),
-            payload=cls.convert_payload(model.payload) if model.payload is not None else None,
-            vector=model.vector
+            payload=cls.convert_payload(model.payload),
+            vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
         )
 
     @classmethod
@@ -916,8 +1038,144 @@ class RestToGrpc:
 
     @classmethod
     def convert_snapshot_description(cls, model: rest.SnapshotDescription) -> grpc.SnapshotDescription:
+        timestamp = Timestamp()
+        timestamp.FromDatetime(datetime.fromisoformat(model.creation_time))
         return grpc.SnapshotDescription(
             name=model.name,
-            creation_time=datetime.fromisoformat(model.creation_time),
+            creation_time=timestamp,
             size=model.size,
+        )
+
+    @classmethod
+    def convert_vector_params(cls, model: rest.VectorParams) -> grpc.VectorParams:
+        return grpc.VectorParams(
+            size=model.size,
+            distance=cls.convert_distance(model.distance)
+        )
+
+    @classmethod
+    def convert_vectors_config(cls, model: rest.VectorsConfig) -> grpc.VectorsConfig:
+        if isinstance(model, rest.VectorParams):
+            return grpc.VectorsConfig(params=cls.convert_vector_params(model))
+        elif isinstance(model, dict):
+            return grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map=dict(
+                (key, cls.convert_vector_params(val))
+                for key, val in model.items()
+            )))
+        else:
+            raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vector_struct(cls, model: rest.VectorStruct) -> grpc.Vectors:
+        if isinstance(model, list):
+            return grpc.Vectors(
+                vector=grpc.Vector(data=model)
+            )
+        elif isinstance(model, dict):
+            return grpc.Vectors(
+                vectors=grpc.NamedVectors(vectors=dict(
+                    (key, grpc.Vector(data=val))
+                    for key, val in model.items()
+                ))
+            )
+        else:
+            raise ValueError(f"invalid VectorStruct model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_with_vectors(cls, model: rest.WithVector) -> grpc.WithVectorsSelector:
+        if isinstance(model, bool):
+            return grpc.WithVectorsSelector(enable=model)
+        elif isinstance(model, list):
+            return grpc.WithVectorsSelector(
+                include=grpc.VectorsSelector(names=model)
+            )
+        else:
+            raise ValueError(f"invalid WithVectors model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_batch_vector_struct(cls, model: rest.BatchVectorStruct, num_records: int) -> List[grpc.Vectors]:
+        """
+
+        """
+        if isinstance(model, list):
+            return [cls.convert_vector_struct(item) for item in model]
+        elif isinstance(model, dict):
+            result = [{} for _ in range(num_records)]
+            for key, val in model.items():
+                for i, item in enumerate(val):
+                    result[i][key] = item
+            return [cls.convert_vector_struct(item) for item in result]
+        else:
+            raise ValueError(f"invalid BatchVectorStruct model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_named_vector_struct(cls, model: rest.NamedVectorStruct) -> Tuple[List[float], Optional[str]]:
+        if isinstance(model, list):
+            return model, None
+        elif isinstance(model, rest.NamedVector):
+            return model.vector, model.name
+
+    @classmethod
+    def convert_search_request(cls, model: rest.SearchRequest, collection_name: str) -> grpc.SearchPoints:
+        vector, name = cls.convert_named_vector_struct(model.vector)
+
+        return grpc.SearchPoints(
+            collection_name=collection_name,
+            vector=vector,
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            limit=model.limit,
+            with_vector=None,
+            with_payload=cls.convert_with_payload_interface(
+                model.with_payload) if model.with_payload is not None else None,
+            params=cls.convert_search_params(model.params) if model.params is not None else None,
+            score_threshold=model.score_threshold,
+            offset=model.offset,
+            vector_name=name,
+            with_vectors=cls.convert_with_vectors(model.with_vector) if model.with_vector is not None else None,
+        )
+
+    @classmethod
+    def convert_search_points(cls, model: rest.SearchRequest, collection_name: str) -> grpc.SearchPoints:
+        return cls.convert_search_request(model, collection_name)
+
+    @classmethod
+    def convert_recommend_request(cls, model: rest.RecommendRequest, collection_name: str) -> grpc.RecommendPoints:
+        return grpc.RecommendPoints(
+            collection_name=collection_name,
+            positive=[cls.convert_extended_point_id(point_id) for point_id in model.positive],
+            negative=[cls.convert_extended_point_id(point_id) for point_id in model.negative],
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            limit=model.limit,
+            with_vector=None,
+            with_payload=cls.convert_with_payload_interface(
+                model.with_payload) if model.with_payload is not None else None,
+            params=cls.convert_search_params(model.params) if model.params is not None else None,
+            score_threshold=model.score_threshold,
+            offset=model.offset,
+            with_vectors=cls.convert_with_vectors(model.with_vector) if model.with_vector is not None else None,
+            using=model.using,
+        )
+
+    @classmethod
+    def convert_recommend_points(cls, model: rest.RecommendRequest, collection_name: str) -> grpc.RecommendPoints:
+        return cls.convert_recommend_request(model, collection_name)
+
+    @classmethod
+    def convert_tokenizer_type(cls, model: rest.TokenizerType) -> grpc.TokenizerType:
+        if model == rest.TokenizerType.WORD:
+            return grpc.TokenizerType.Word
+        elif model == rest.TokenizerType.WHITESPACE:
+            return grpc.TokenizerType.Whitespace
+        elif model == rest.TokenizerType.PREFIX:
+            return grpc.TokenizerType.Prefix
+        else:
+            raise ValueError(f"invalid TokenizerType model: {model}")
+
+    @classmethod
+    def convert_text_index_params(cls, model: rest.TextIndexParams) -> grpc.TextIndexParams:
+        return grpc.TextIndexParams(
+            tokenizer=cls.convert_tokenizer_type(model.tokenizer) if model.tokenizer is not None else None,
+            lowercase=model.lowercase,
+            min_token_len=model.min_token_len,
+            max_token_len=model.max_token_len,
         )

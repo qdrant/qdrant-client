@@ -196,7 +196,7 @@ class _PointsApi:
         body = jsonable_encoder(count_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points/count",
             path_params=path_params,
@@ -301,6 +301,28 @@ class _PointsApi:
             json=body,
         )
 
+    def _build_for_recommend_batch_points(
+        self,
+        collection_name: str,
+        recommend_request_batch: m.RecommendRequestBatch = None,
+    ):
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        body = jsonable_encoder(recommend_request_batch)
+
+        return self.api_client.request(
+            type_=m.InlineResponse20013,
+            method="POST",
+            url="/collections/{collection_name}/points/recommend/batch",
+            path_params=path_params,
+            json=body,
+        )
+
     def _build_for_recommend_points(
         self,
         collection_name: str,
@@ -341,6 +363,28 @@ class _PointsApi:
             type_=m.InlineResponse20011,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
+            path_params=path_params,
+            json=body,
+        )
+
+    def _build_for_search_batch_points(
+        self,
+        collection_name: str,
+        search_request_batch: m.SearchRequestBatch = None,
+    ):
+        """
+        Retrieve by batch the closest points based on vector similarity and given filtering conditions
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        body = jsonable_encoder(search_request_batch)
+
+        return self.api_client.request(
+            type_=m.InlineResponse20013,
+            method="POST",
+            url="/collections/{collection_name}/points/search/batch",
             path_params=path_params,
             json=body,
         )
@@ -444,7 +488,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Count points which matches given filtering condition
         """
@@ -509,6 +553,19 @@ class AsyncPointsApi(_PointsApi):
             point_request=point_request,
         )
 
+    async def recommend_batch_points(
+        self,
+        collection_name: str,
+        recommend_request_batch: m.RecommendRequestBatch = None,
+    ) -> m.InlineResponse20013:
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples.
+        """
+        return await self._build_for_recommend_batch_points(
+            collection_name=collection_name,
+            recommend_request_batch=recommend_request_batch,
+        )
+
     async def recommend_points(
         self,
         collection_name: str,
@@ -533,6 +590,19 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_scroll_points(
             collection_name=collection_name,
             scroll_request=scroll_request,
+        )
+
+    async def search_batch_points(
+        self,
+        collection_name: str,
+        search_request_batch: m.SearchRequestBatch = None,
+    ) -> m.InlineResponse20013:
+        """
+        Retrieve by batch the closest points based on vector similarity and given filtering conditions
+        """
+        return await self._build_for_search_batch_points(
+            collection_name=collection_name,
+            search_request_batch=search_request_batch,
         )
 
     async def search_points(
@@ -599,7 +669,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Count points which matches given filtering condition
         """
@@ -664,6 +734,19 @@ class SyncPointsApi(_PointsApi):
             point_request=point_request,
         )
 
+    def recommend_batch_points(
+        self,
+        collection_name: str,
+        recommend_request_batch: m.RecommendRequestBatch = None,
+    ) -> m.InlineResponse20013:
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples.
+        """
+        return self._build_for_recommend_batch_points(
+            collection_name=collection_name,
+            recommend_request_batch=recommend_request_batch,
+        )
+
     def recommend_points(
         self,
         collection_name: str,
@@ -688,6 +771,19 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_scroll_points(
             collection_name=collection_name,
             scroll_request=scroll_request,
+        )
+
+    def search_batch_points(
+        self,
+        collection_name: str,
+        search_request_batch: m.SearchRequestBatch = None,
+    ) -> m.InlineResponse20013:
+        """
+        Retrieve by batch the closest points based on vector similarity and given filtering conditions
+        """
+        return self._build_for_search_batch_points(
+            collection_name=collection_name,
+            search_request_batch=search_request_batch,
         )
 
     def search_points(

@@ -1,7 +1,8 @@
+from itertools import count
 from typing import Iterable, Any
 
 from qdrant_client.http import SyncApis
-from qdrant_client.http.models import PointsBatch, Batch
+from qdrant_client.http.models import Batch, PointsList, PointStruct
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -15,15 +16,21 @@ def upload_batch(openapi_client: SyncApis, collection_name: str, batch) -> bool:
 
     if payload_batch is not None:
         payload_batch = list(payload_batch)
+    else:
+        payload_batch = (None for _ in count())
+
+    points = [
+        PointStruct(
+            id=idx,
+            vector=vector,
+            payload=payload,
+        ) for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
+    ]
 
     openapi_client.points_api.upsert_points(
         collection_name=collection_name,
-        point_insert_operations=PointsBatch(
-            batch=Batch(
-                ids=ids_batch,
-                payloads=payload_batch,
-                vectors=vectors_batch
-            )
+        point_insert_operations=PointsList(
+            points=points
         )
     )
     return True

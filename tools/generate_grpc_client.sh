@@ -15,7 +15,7 @@ PROTO_DIR="$(pwd)/lib/api/src/grpc/proto"
 # Ensure current path is project root
 cd $PROJECT_ROOT
 
-CLIENT_DIR="qdrant_client/grpc"
+CLIENT_DIR="qdrant_client/proto"
 
 cp $PROTO_DIR/*.proto $CLIENT_DIR/
 
@@ -30,8 +30,9 @@ cat $CLIENT_DIR/qdrant.proto \
   > $CLIENT_DIR/qdrant_tmp.proto
 mv $CLIENT_DIR/qdrant_tmp.proto $CLIENT_DIR/qdrant.proto
 
-python -m grpc_tools.protoc -I $CLIENT_DIR --python_betterproto_out=$CLIENT_DIR $CLIENT_DIR/*.proto
+python -m grpc_tools.protoc --proto_path=qdrant_client/proto/ -I ./qdrant_client/grpc ./qdrant_client/proto/*.proto --python_out=./qdrant_client/grpc --grpc_python_out=./qdrant_client/grpc
 
-mv $CLIENT_DIR/qdrant/__init__.py $CLIENT_DIR/__init__.py
+# maybe I'll remove this crutch when google makes normal imports for issue from 2016
+# https://github.com/protocolbuffers/protobuf/issues/1491
 
-rmdir $CLIENT_DIR/qdrant/
+sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./qdrant_client/grpc/*.py

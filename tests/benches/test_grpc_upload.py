@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance
+from qdrant_client.http.models import Distance, VectorParams
 
 COLLECTION_NAME = 'test_grpc_upload'
 VECTOR_SIZE = 256
@@ -17,7 +17,7 @@ def get_data(num_vectors: int):
 
 def prepare_collection_rest():
     client = QdrantClient()
-    client.recreate_collection(COLLECTION_NAME, vector_size=VECTOR_SIZE, distance=Distance.COSINE)
+    client.recreate_collection(COLLECTION_NAME, vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE))
 
 
 def upload_data(data):

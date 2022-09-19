@@ -1,6 +1,22 @@
 syntax = "proto3";
 package qdrant;
 
+message VectorParams {
+  uint64 size = 1; // Size of the vectors
+  Distance distance = 2; // Distance function used for comparing vectors
+}
+
+message VectorParamsMap {
+  map<string, VectorParams> map = 1;
+}
+
+message VectorsConfig {
+  oneof config {
+    VectorParams params = 1;
+    VectorParamsMap params_map = 2;
+  }
+}
+
 message GetCollectionInfoRequest {
   string collection_name = 1; // Name of the collection
 }
@@ -42,6 +58,7 @@ enum PayloadSchemaType {
   Integer = 2;
   Float = 3;
   Geo = 4;
+  Text = 5;
 }
 
 message OptimizerStatus {
@@ -131,14 +148,15 @@ message OptimizersConfigDiff {
 
 message CreateCollection {
   string collection_name = 1; // Name of the collection
-  uint64 vector_size = 2; // Size of the vectors
-  Distance distance = 3; // Distance function used for comparing vectors
+  optional uint64 vector_size = 2 [deprecated = true]; // Size of the vectors
+  optional Distance distance = 3 [deprecated = true]; // Distance function used for comparing vectors
   optional HnswConfigDiff hnsw_config = 4; // Configuration of vector index
   optional WalConfigDiff wal_config = 5; // Configuration of the Write-Ahead-Log
   optional OptimizersConfigDiff optimizers_config = 6; // Configuration of the optimizers
   optional uint32 shard_number = 7; // Number of shards in the collection, default = 1
   optional bool on_disk_payload = 8; // If true - point's payload will not be stored in memory
   optional uint64 timeout = 9; // Wait timeout for operation commit in seconds, if not specified - default value will be supplied
+  optional VectorsConfig vectors_config = 10; // Configuration for vectors
 }
 
 message UpdateCollection {
@@ -158,10 +176,11 @@ message CollectionOperationResponse {
 }
 
 message CollectionParams {
-  uint64 vector_size = 1; // Size of the vectors
-  Distance distance = 2; // Distance function used for comparing vectors
+  optional uint64 vector_size = 1 [deprecated = true]; // Size of the vectors
+  optional Distance distance = 2 [deprecated = true]; // Distance function used for comparing vectors
   uint32 shard_number = 3; // Number of shards in collection
   bool on_disk_payload = 4; // If true - point's payload will not be stored in memory
+  optional VectorsConfig vectors_config = 5; // Configuration for vectors
 }
 
 message CollectionConfig {
@@ -171,8 +190,29 @@ message CollectionConfig {
   WalConfigDiff wal_config = 4; // Configuration of the Write-Ahead-Log
 }
 
+enum TokenizerType {
+  Unknown = 0;
+  Prefix = 1;
+  Whitespace = 2;
+  Word = 3;
+}
+
+message TextIndexParams {
+  TokenizerType tokenizer = 1; // Tokenizer type
+  optional bool lowercase = 2; // If true - all tokens will be lowercased
+  optional uint64 min_token_len = 3; // Minimal token length
+  optional uint64 max_token_len = 4; // Maximal token length
+}
+
+message PayloadIndexParams {
+  oneof index_params {
+    TextIndexParams text_index_params = 1; // Parameters for text index
+  }
+}
+
 message PayloadSchemaInfo {
   PayloadSchemaType data_type = 1; // Field data type
+  optional PayloadIndexParams params = 2; // Field index parameters
 }
 
 message CollectionInfo {
