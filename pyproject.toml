@@ -19,9 +19,9 @@ httpx = { version = "^0.23.0", extras = ["http2"] }
 numpy = "^1.21"
 pydantic = "^1.8"
 tqdm = "^4.56.0"
-loguru = "^0.5.3"
+loguru = "0.*"
 typing-extensions = "^4.0.0"
-grpcio = { version = "^1.46.0", allow-prereleases = true }
+grpcio = { version = "^1.41.0", allow-prereleases = true }
 grpcio-tools = "^1.48.0"
 
 [tool.poetry.dev-dependencies]
