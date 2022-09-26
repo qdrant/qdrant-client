@@ -6,7 +6,7 @@ from multiprocessing.process import BaseProcess
 from queue import Empty
 from typing import Iterable, Any, Type, Optional, List
 
-from loguru import logger
+import logging
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
@@ -44,7 +44,7 @@ def _worker(worker_class: Type[Worker],
     if kwargs is None:
         kwargs = {}
 
-    logger.info(f"Reader worker: {worker_id} PID: {os.getpid()}")
+    logging.info(f"Reader worker: {worker_id} PID: {os.getpid()}")
     try:
         worker = worker_class.start(**kwargs)
 
@@ -59,7 +59,7 @@ def _worker(worker_class: Type[Worker],
         for processed_item in worker.process(input_queue_iterable()):
             output_queue.put(processed_item)
     except Exception as e:  # pylint: disable=broad-except
-        logger.exception(e)
+        logging.exception(e)
         output_queue.put(QueueSignals.error)
     finally:
         # It's important that we close and join the queue here before
@@ -76,7 +76,7 @@ def _worker(worker_class: Type[Worker],
         with num_active_workers.get_lock():
             num_active_workers.value -= 1
 
-        logger.info(f"Reader worker {worker_id} finished")
+        logging.info(f"Reader worker {worker_id} finished")
 
 
 class ParallelWorkerPool:

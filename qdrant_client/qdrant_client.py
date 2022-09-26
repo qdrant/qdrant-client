@@ -5,7 +5,7 @@ from typing import Optional, Iterable, List, Union, Tuple, Type, Dict
 
 import httpx
 import numpy as np
-from loguru import logger
+import logging
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
@@ -269,10 +269,10 @@ class QdrantClient:
         """
         if top is not None:
             limit = top
-            logger.warning("Usage of `top` is deprecated. Please consider using `limit` instead")
+            logging.warning("Usage of `top` is deprecated. Please consider using `limit` instead")
 
         if not append_payload:
-            logger.warning("Usage of `append_payload` is deprecated. Please consider using `with_payload` instead")
+            logging.warning("Usage of `append_payload` is deprecated. Please consider using `with_payload` instead")
             with_payload = append_payload
 
         if isinstance(query_vector, np.ndarray):
@@ -459,7 +459,7 @@ class QdrantClient:
 
         if top is not None:
             limit = top
-            logger.warning("Usage of `top` is deprecated. Please consider using `limit` instead")
+            logging.warning("Usage of `top` is deprecated. Please consider using `limit` instead")
 
         if negative is None:
             negative = []
