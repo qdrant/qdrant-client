@@ -3,7 +3,7 @@ import re
 from inspect import getmembers
 
 from google.protobuf.json_format import MessageToDict
-from loguru import logger
+import logging
 
 from tests.conversions.fixtures import get_grpc_fixture, fixtures as class_fixtures
 
@@ -32,7 +32,7 @@ def test_conversion_completeness():
         fixtures = get_grpc_fixture(model_class_name)
         for fixture in fixtures:
             if fixture is ...:
-                logger.warning(f"Fixture for {model_class_name} skipped")
+                logging.warning(f"Fixture for {model_class_name} skipped")
                 continue
 
             try:
@@ -56,7 +56,7 @@ def test_conversion_completeness():
                 else:
                     grpc_fixture = rest_to_grpc_convert[back_convert_function_name](rest_fixture)
             except Exception as e:
-                logger.warning(f"Error with {fixture}")
+                logging.warning(f"Error with {fixture}")
                 raise e
 
             assert MessageToDict(grpc_fixture) == MessageToDict(fixture), f"{model_class_name} conversion is broken"
