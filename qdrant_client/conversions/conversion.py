@@ -215,6 +215,8 @@ class GrpcToRest:
             return rest.PayloadSchemaType.INTEGER
         elif model == grpc.PayloadSchemaType.Keyword:
             return rest.PayloadSchemaType.KEYWORD
+        elif model == grpc.PayloadSchemaType.Text:
+            return rest.PayloadSchemaType.TEXT
         else:
             raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
 
