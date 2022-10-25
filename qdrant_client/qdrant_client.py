@@ -1065,6 +1065,7 @@ class QdrantClient:
             self,
             collection_name: str,
             optimizer_config: Optional[types.OptimizersConfigDiff],
+            collection_params: Optional[types.CollectionParamsDiff] = None,
             timeout: Optional[int] = None
     ):
         """Update parameters of the collection
@@ -1072,6 +1073,7 @@ class QdrantClient:
         Args:
             collection_name: Name of the collection
             optimizer_config: Override for optimizer configuration
+            collection_params: Override for collection parameters
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
@@ -1081,10 +1083,15 @@ class QdrantClient:
         """
         if isinstance(optimizer_config, grpc.OptimizersConfigDiff):
             optimizer_config = GrpcToRest.convert_optimizers_config_diff(optimizer_config)
+
+        if isinstance(collection_params, grpc.CollectionParamsDiff):
+            collection_params = GrpcToRest.convert_collection_params_diff(collection_params)
+
         return self.http.collections_api.update_collection(
             collection_name,
             update_collection=rest.UpdateCollection(
-                optimizers_config=optimizer_config
+                optimizers_config=optimizer_config,
+                params=collection_params
             ),
             timeout=timeout
         )
@@ -1115,6 +1122,8 @@ class QdrantClient:
                             collection_name: str,
                             vectors_config: Union[types.VectorParams, Dict[str, types.VectorParams]],
                             shard_number: Optional[int] = None,
+                            replication_factor: Optional[int] = None,
+                            write_consistency_factor: Optional[int] = None,
                             on_disk_payload: Optional[bool] = None,
                             hnsw_config: Optional[types.HnswConfigDiff] = None,
                             optimizers_config: Optional[types.OptimizersConfigDiff] = None,
@@ -1130,6 +1139,17 @@ class QdrantClient:
                 If dict is passed, service will create a vector storage for each key in the dict.
                 If single VectorParams is passed, service will create a single anonymous vector storage.
             shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            replication_factor:
+                Replication factor for collection. Default is 1, minimum is 1.
+                Defines how many copies of each shard will be created.
+                Have effect only in distributed mode.
+            write_consistency_factor:
+                Write consistency factor for collection. Default is 1, minimum is 1.
+                Defines how many replicas should apply the operation for us to consider it successful.
+                Increasing this number will make the collection more resilient to inconsistencies, but will
+                also make it fail if not enough replicas are available.
+                Does not have any performance impact.
+                Have effect only in distributed mode.
             on_disk_payload:
                 If true - point`s payload will not be stored in memory.
                 It will be read from the disk every time it is requested.
@@ -1160,6 +1180,8 @@ class QdrantClient:
         create_collection_request = rest.CreateCollection(
             vectors=vectors_config,
             shard_number=shard_number,
+            replication_factor=replication_factor,
+            write_consistency_factor=write_consistency_factor,
             on_disk_payload=on_disk_payload,
             hnsw_config=hnsw_config,
             optimizers_config=optimizers_config,

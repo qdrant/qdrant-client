@@ -149,9 +149,32 @@ if TYPE_CHECKING:
     from qdrant_client.http.api_client import ApiClient
 
 
-class _DefaultApi:
+class _ServiceApi:
     def __init__(self, api_client: "Union[ApiClient, AsyncApiClient]"):
         self.api_client = api_client
+
+    def _build_for_get_locks(
+        self,
+    ):
+        """
+        Get lock options. If write is locked, all write operations and collection creation are forbidden
+        """
+        return self.api_client.request(
+            type_=m.InlineResponse2001,
+            method="GET",
+            url="/locks",
+        )
+
+    def _build_for_post_locks(
+        self,
+        locks_option: m.LocksOption = None,
+    ):
+        """
+        Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
+        """
+        body = jsonable_encoder(locks_option)
+
+        return self.api_client.request(type_=m.InlineResponse2001, method="POST", url="/locks", json=body)
 
     def _build_for_telemetry(
         self,
@@ -172,7 +195,26 @@ class _DefaultApi:
         )
 
 
-class AsyncDefaultApi(_DefaultApi):
+class AsyncServiceApi(_ServiceApi):
+    async def get_locks(
+        self,
+    ) -> m.InlineResponse2001:
+        """
+        Get lock options. If write is locked, all write operations and collection creation are forbidden
+        """
+        return await self._build_for_get_locks()
+
+    async def post_locks(
+        self,
+        locks_option: m.LocksOption = None,
+    ) -> m.InlineResponse2001:
+        """
+        Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
+        """
+        return await self._build_for_post_locks(
+            locks_option=locks_option,
+        )
+
     async def telemetry(
         self,
         anonymize: bool = None,
@@ -185,7 +227,26 @@ class AsyncDefaultApi(_DefaultApi):
         )
 
 
-class SyncDefaultApi(_DefaultApi):
+class SyncServiceApi(_ServiceApi):
+    def get_locks(
+        self,
+    ) -> m.InlineResponse2001:
+        """
+        Get lock options. If write is locked, all write operations and collection creation are forbidden
+        """
+        return self._build_for_get_locks()
+
+    def post_locks(
+        self,
+        locks_option: m.LocksOption = None,
+    ) -> m.InlineResponse2001:
+        """
+        Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
+        """
+        return self._build_for_post_locks(
+            locks_option=locks_option,
+        )
+
     def telemetry(
         self,
         anonymize: bool = None,

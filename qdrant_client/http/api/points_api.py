@@ -173,7 +173,7 @@ class _PointsApi:
         body = jsonable_encoder(points_selector)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload/clear",
             path_params=path_params,
@@ -196,7 +196,7 @@ class _PointsApi:
         body = jsonable_encoder(count_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20014,
+            type_=m.InlineResponse20015,
             method="POST",
             url="/collections/{collection_name}/points/count",
             path_params=path_params,
@@ -223,7 +223,7 @@ class _PointsApi:
         body = jsonable_encoder(delete_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload/delete",
             path_params=path_params,
@@ -251,7 +251,7 @@ class _PointsApi:
         body = jsonable_encoder(points_selector)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/delete",
             path_params=path_params,
@@ -273,7 +273,7 @@ class _PointsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2009,
+            type_=m.InlineResponse20010,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
             path_params=path_params,
@@ -294,7 +294,7 @@ class _PointsApi:
         body = jsonable_encoder(point_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.InlineResponse20011,
             method="POST",
             url="/collections/{collection_name}/points",
             path_params=path_params,
@@ -316,7 +316,7 @@ class _PointsApi:
         body = jsonable_encoder(recommend_request_batch)
 
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points/recommend/batch",
             path_params=path_params,
@@ -338,7 +338,7 @@ class _PointsApi:
         body = jsonable_encoder(recommend_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20013,
             method="POST",
             url="/collections/{collection_name}/points/recommend",
             path_params=path_params,
@@ -360,7 +360,7 @@ class _PointsApi:
         body = jsonable_encoder(scroll_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20012,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
             path_params=path_params,
@@ -382,7 +382,7 @@ class _PointsApi:
         body = jsonable_encoder(search_request_batch)
 
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points/search/batch",
             path_params=path_params,
@@ -404,7 +404,7 @@ class _PointsApi:
         body = jsonable_encoder(search_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20013,
             method="POST",
             url="/collections/{collection_name}/points/search",
             path_params=path_params,
@@ -431,7 +431,7 @@ class _PointsApi:
         body = jsonable_encoder(set_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload",
             path_params=path_params,
@@ -459,7 +459,7 @@ class _PointsApi:
         body = jsonable_encoder(point_insert_operations)
 
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points",
             path_params=path_params,
@@ -474,7 +474,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Remove all payload for specified points
         """
@@ -488,7 +488,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20015:
         """
         Count points which matches given filtering condition
         """
@@ -502,7 +502,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Delete specified key payload for points
         """
@@ -517,7 +517,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Delete points
         """
@@ -531,7 +531,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse20010:
         """
         Retrieve full information of single point by id
         """
@@ -544,7 +544,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Retrieve multiple points by specified IDs
         """
@@ -557,7 +557,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         recommend_request_batch: m.RecommendRequestBatch = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -570,7 +570,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20013:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -583,7 +583,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -596,7 +596,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         search_request_batch: m.SearchRequestBatch = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
@@ -609,7 +609,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20013:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -623,7 +623,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Set payload for points
         """
@@ -638,7 +638,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
@@ -655,7 +655,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Remove all payload for specified points
         """
@@ -669,7 +669,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20015:
         """
         Count points which matches given filtering condition
         """
@@ -683,7 +683,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Delete specified key payload for points
         """
@@ -698,7 +698,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Delete points
         """
@@ -712,7 +712,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse20010:
         """
         Retrieve full information of single point by id
         """
@@ -725,7 +725,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Retrieve multiple points by specified IDs
         """
@@ -738,7 +738,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         recommend_request_batch: m.RecommendRequestBatch = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -751,7 +751,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20013:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -764,7 +764,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -777,7 +777,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         search_request_batch: m.SearchRequestBatch = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
@@ -790,7 +790,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20013:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -804,7 +804,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Set payload for points
         """
@@ -819,7 +819,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2006:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """

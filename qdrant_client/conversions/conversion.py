@@ -9,7 +9,6 @@ try:
 except ImportError:
     pass
 
-
 from qdrant_client import grpc as grpc
 from qdrant_client.http.models import models as rest
 from qdrant_client.grpc import Value, ListValue, Struct, NullValue
@@ -175,10 +174,12 @@ class GrpcToRest:
             deleted_threshold=model.deleted_threshold if model.HasField("deleted_threshold") else None,
             flush_interval_sec=model.flush_interval_sec if model.HasField("flush_interval_sec") else None,
             indexing_threshold=model.indexing_threshold if model.HasField("indexing_threshold") else None,
-            max_optimization_threads=model.max_optimization_threads if model.HasField("max_optimization_threads") else None,
+            max_optimization_threads=model.max_optimization_threads if model.HasField(
+                "max_optimization_threads") else None,
             max_segment_size=model.max_segment_size if model.HasField("max_segment_size") else None,
             memmap_threshold=model.memmap_threshold if model.HasField("memmap_threshold") else None,
-            vacuum_min_vector_number=model.vacuum_min_vector_number if model.HasField("vacuum_min_vector_number") else None
+            vacuum_min_vector_number=model.vacuum_min_vector_number if model.HasField(
+                "vacuum_min_vector_number") else None
         )
 
     @classmethod
@@ -195,7 +196,8 @@ class GrpcToRest:
     @classmethod
     def convert_wal_config(cls, model: grpc.WalConfigDiff) -> rest.WalConfig:
         return rest.WalConfig(wal_capacity_mb=model.wal_capacity_mb if model.HasField("wal_capacity_mb") else None,
-                              wal_segments_ahead=model.wal_segments_ahead if model.HasField("wal_segments_ahead") else None)
+                              wal_segments_ahead=model.wal_segments_ahead if model.HasField(
+                                  "wal_segments_ahead") else None)
 
     @classmethod
     def convert_payload_schema(cls, model: Dict[str, grpc.PayloadSchemaInfo]) -> Dict[str, rest.PayloadIndexInfo]:
@@ -203,7 +205,10 @@ class GrpcToRest:
 
     @classmethod
     def convert_payload_schema_info(cls, model: grpc.PayloadSchemaInfo) -> rest.PayloadIndexInfo:
-        return rest.PayloadIndexInfo(data_type=cls.convert_payload_schema_type(model.data_type))
+        return rest.PayloadIndexInfo(
+            data_type=cls.convert_payload_schema_type(model.data_type),
+            points=model.points,
+        )
 
     @classmethod
     def convert_payload_schema_type(cls, model: grpc.PayloadSchemaType) -> rest.PayloadSchemaType:
@@ -274,7 +279,10 @@ class GrpcToRest:
 
     @classmethod
     def convert_search_params(cls, model: grpc.SearchParams) -> rest.SearchParams:
-        return rest.SearchParams(hnsw_ef=model.hnsw_ef)
+        return rest.SearchParams(
+            hnsw_ef=model.hnsw_ef if model.HasField("hnsw_ef") else None,
+            exact=model.exact if model.HasField("exact") else None,
+        )
 
     @classmethod
     def convert_create_alias(cls, model: grpc.CreateAlias) -> rest.CreateAlias:
@@ -337,7 +345,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_field_condition(cls, model: grpc.FieldCondition) -> rest.FieldCondition:
-        geo_bounding_box = cls.convert_geo_bounding_box(model.geo_bounding_box) if model.HasField('geo_bounding_box') else None
+        geo_bounding_box = cls.convert_geo_bounding_box(model.geo_bounding_box) if model.HasField(
+            'geo_bounding_box') else None
         geo_radius = cls.convert_geo_radius(model.geo_radius) if model.HasField('geo_radius') else None
         match = cls.convert_match(model.match) if model.HasField('match') else None
         range_ = cls.convert_range(model.range) if model.HasField('range') else None
@@ -379,6 +388,9 @@ class GrpcToRest:
             vectors=cls.convert_vectors_config(model.vectors_config) if model.HasField("vectors_config") else None,
             shard_number=model.shard_number,
             on_disk_payload=model.on_disk_payload,
+            replication_factor=model.replication_factor if model.HasField("replication_factor") else None,
+            write_consistency_factor=model.write_consistency_factor if model.HasField(
+                "write_consistency_factor") else None,
         )
 
     @classmethod
@@ -388,10 +400,12 @@ class GrpcToRest:
             deleted_threshold=model.deleted_threshold if model.HasField("deleted_threshold") else None,
             flush_interval_sec=model.flush_interval_sec if model.HasField("flush_interval_sec") else None,
             indexing_threshold=model.indexing_threshold if model.HasField("indexing_threshold") else None,
-            max_optimization_threads=model.max_optimization_threads if model.HasField("max_optimization_threads") else None,
+            max_optimization_threads=model.max_optimization_threads if model.HasField(
+                "max_optimization_threads") else None,
             max_segment_size=model.max_segment_size if model.HasField("max_segment_size") else None,
             memmap_threshold=model.memmap_threshold if model.HasField("memmap_threshold") else None,
-            vacuum_min_vector_number=model.vacuum_min_vector_number if model.HasField("vacuum_min_vector_number") else None,
+            vacuum_min_vector_number=model.vacuum_min_vector_number if model.HasField(
+                "vacuum_min_vector_number") else None,
         )
 
     @classmethod
@@ -563,7 +577,8 @@ class GrpcToRest:
             negative=[cls.convert_point_id(point_id) for point_id in model.negative],
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
             limit=model.limit,
-            with_payload=cls.convert_with_payload_interface(model.with_payload) if model.HasField("with_payload") else None,
+            with_payload=cls.convert_with_payload_interface(model.with_payload) if model.HasField(
+                "with_payload") else None,
             params=cls.convert_search_params(model.params) if model.HasField("params") else None,
             score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
             offset=model.offset if model.HasField("offset") else None,
@@ -590,6 +605,14 @@ class GrpcToRest:
             min_token_len=model.min_token_len if model.HasField("min_token_len") else None,
             max_token_len=model.max_token_len if model.HasField("max_token_len") else None,
             lowercase=model.lowercase if model.HasField("lowercase") else None,
+        )
+
+    @classmethod
+    def convert_collection_params_diff(cls, model: grpc.CollectionParamsDiff) -> rest.CollectionParamsDiff:
+        return rest.CollectionParamsDiff(
+            replication_factor=model.replication_factor if model.HasField("replication_factor") else None,
+            write_consistency_factor=model.write_consistency_factor if model.HasField(
+                "write_consistency_factor") else None,
         )
 
 
@@ -739,7 +762,8 @@ class RestToGrpc:
     @classmethod
     def convert_search_params(cls, model: rest.SearchParams) -> grpc.SearchParams:
         return grpc.SearchParams(
-            hnsw_ef=model.hnsw_ef
+            hnsw_ef=model.hnsw_ef,
+            exact=model.exact,
         )
 
     @classmethod
@@ -884,6 +908,8 @@ class RestToGrpc:
             vectors_config=cls.convert_vectors_config(model.vectors) if model.vectors is not None else None,
             shard_number=model.shard_number,
             on_disk_payload=model.on_disk_payload or False,
+            write_consistency_factor=model.write_consistency_factor,
+            replication_factor=model.replication_factor,
         )
 
     @classmethod
@@ -1171,4 +1197,11 @@ class RestToGrpc:
             lowercase=model.lowercase,
             min_token_len=model.min_token_len,
             max_token_len=model.max_token_len,
+        )
+
+    @classmethod
+    def convert_collection_params_diff(cls, model: rest.CollectionParamsDiff) -> grpc.CollectionParamsDiff:
+        return grpc.CollectionParamsDiff(
+            replication_factor=model.replication_factor,
+            write_consistency_factor=model.write_consistency_factor,
         )

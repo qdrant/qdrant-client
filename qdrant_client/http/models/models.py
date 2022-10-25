@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
@@ -17,6 +18,11 @@ class AbortTransferOperation(BaseModel):
 
 class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
+    features: Optional["AppFeaturesTelemetry"] = Field(None, description="")
+    system: Optional["RunningEnvironmentTelemetry"] = Field(None, description="")
+
+
+class AppFeaturesTelemetry(BaseModel):
     debug: bool = Field(..., description="")
     web_feature: bool = Field(..., description="")
     service_debug_feature: bool = Field(..., description="")
@@ -40,7 +46,6 @@ class ChangeAliasesOperation(BaseModel):
 
 
 class ClusterConfigTelemetry(BaseModel):
-    enabled: bool = Field(..., description="")
     grpc_timeout_ms: int = Field(..., description="")
     p2p: "P2pConfigTelemetry" = Field(..., description="")
     consensus: "ConsensusConfigTelemetry" = Field(..., description="")
@@ -64,6 +69,25 @@ class ClusterStatusOneOf1(BaseModel):
     peers: Dict[str, "PeerInfo"] = Field(..., description="Peers composition of the cluster with main information")
     raft_info: "RaftInfo" = Field(..., description="Description of enabled cluster")
     consensus_thread_status: "ConsensusThreadStatus" = Field(..., description="Description of enabled cluster")
+    message_send_failures: Dict[str, "MessageSendErrors"] = Field(
+        ...,
+        description="Consequent failures of message send operations in consensus by peer address. On the first success to send to that peer - entry is removed from this hashmap.",
+    )
+
+
+class ClusterStatusTelemetry(BaseModel):
+    number_of_peers: int = Field(..., description="")
+    term: int = Field(..., description="")
+    commit: int = Field(..., description="")
+    pending_operations: int = Field(..., description="")
+    role: Optional["StateRole"] = Field(None, description="")
+    is_voter: bool = Field(..., description="")
+
+
+class ClusterTelemetry(BaseModel):
+    enabled: bool = Field(..., description="")
+    status: Optional["ClusterStatusTelemetry"] = Field(None, description="")
+    config: Optional["ClusterConfigTelemetry"] = Field(None, description="")
 
 
 class CollectionClusterInfo(BaseModel):
@@ -98,10 +122,20 @@ class CollectionInfo(BaseModel):
     optimizer_status: "OptimizersStatus" = Field(
         ..., description="Current statistics and configuration of the collection"
     )
-    vectors_count: int = Field(..., description="Number of vectors in collection")
-    indexed_vectors_count: int = Field(..., description="Number of indexed vectors in the collection")
-    points_count: int = Field(..., description="Number of points in collection")
-    segments_count: int = Field(..., description="Number of segments in collection")
+    vectors_count: int = Field(
+        ...,
+        description="Number of vectors in collection All vectors in collection are available for querying Calculated as `points_count x vectors_per_point` Where `vectors_per_point` is a number of named vectors in schema",
+    )
+    indexed_vectors_count: int = Field(
+        ...,
+        description="Number of indexed vectors in the collection. Indexed vectors in large segments are faster to query, as it is stored in vector index (HNSW)",
+    )
+    points_count: int = Field(
+        ..., description="Number of points (vectors + payloads) in collection Each point could be accessed by unique id"
+    )
+    segments_count: int = Field(
+        ..., description="Number of segments in collection. Each segment has independent vector as payload indexes"
+    )
     config: "CollectionConfig" = Field(..., description="Current statistics and configuration of the collection")
     payload_schema: Dict[str, "PayloadIndexInfo"] = Field(..., description="Types of stored payload")
 
@@ -109,9 +143,21 @@ class CollectionInfo(BaseModel):
 class CollectionParams(BaseModel):
     vectors: "VectorsConfig" = Field(..., description="")
     shard_number: Optional[int] = Field(1, description="Number of shards the collection has")
+    replication_factor: Optional[int] = Field(1, description="Number of replicas for each shard")
+    write_consistency_factor: Optional[int] = Field(
+        1,
+        description="Defines how many replicas should apply the operation for us to consider it successful. Increasing this number will make the collection more resilient to inconsistencies, but will also make it fail if not enough replicas are available. Does not have any performance impact.",
+    )
     on_disk_payload: Optional[bool] = Field(
         False,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
+    )
+
+
+class CollectionParamsDiff(BaseModel):
+    replication_factor: Optional[int] = Field(None, description="Number of replicas for each shard")
+    write_consistency_factor: Optional[int] = Field(
+        None, description="Minimal number successful responses from replicas to consider operation successful"
     )
 
 
@@ -123,18 +169,24 @@ class CollectionStatus(str, Enum):
 
 class CollectionTelemetry(BaseModel):
     id: str = Field(..., description="")
+    init_time_ms: int = Field(..., description="")
     config: "CollectionConfig" = Field(..., description="")
-    init_time: "Duration" = Field(..., description="")
-    shards: List["ShardTelemetry"] = Field(..., description="")
+    shards: List["ReplicaSetTelemetry"] = Field(..., description="")
+
+
+class CollectionsAggregatedTelemetry(BaseModel):
+    vectors: int = Field(..., description="")
+    optimizers_status: "OptimizersStatus" = Field(..., description="")
+    params: "CollectionParams" = Field(..., description="")
 
 
 class CollectionsResponse(BaseModel):
     collections: List["CollectionDescription"] = Field(..., description="")
 
 
-class ConfigsTelemetry(BaseModel):
-    service_config: "ServiceConfigTelemetry" = Field(..., description="")
-    cluster_config: "ClusterConfigTelemetry" = Field(..., description="")
+class CollectionsTelemetry(BaseModel):
+    number_of_collections: int = Field(..., description="")
+    collections: Optional[List["CollectionTelemetryEnum"]] = Field(None, description="")
 
 
 class ConsensusConfigTelemetry(BaseModel):
@@ -147,6 +199,7 @@ class ConsensusThreadStatusOneOf(BaseModel):
     consensus_thread_status: Literal[
         "working",
     ] = Field(..., description="")
+    last_update: datetime = Field(..., description="")
 
 
 class ConsensusThreadStatusOneOf1(BaseModel):
@@ -209,6 +262,11 @@ class CreateCollection(BaseModel):
         None,
         description="Number of shards in collection. Default is 1 for standalone, otherwise equal to the number of nodes Minimum is 1",
     )
+    replication_factor: Optional[int] = Field(None, description="Number of shards replicas. Default is 1 Minimum is 1")
+    write_consistency_factor: Optional[int] = Field(
+        None,
+        description="Defines how many replicas should apply the operation for us to consider it successful. Increasing this number will make the collection more resilient to inconsistencies, but will also make it fail if not enough replicas are available. Does not have any performance impact.",
+    )
     on_disk_payload: Optional[bool] = Field(
         None,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
@@ -256,9 +314,8 @@ class Distance(str, Enum):
     DOT = "Dot"
 
 
-class Duration(BaseModel):
-    secs: int = Field(..., description="")
-    nanos: int = Field(..., description="")
+class DropReplicaOperation(BaseModel):
+    drop_replica: "Replica" = Field(..., description="")
 
 
 class ErrorResponse(BaseModel):
@@ -330,6 +387,10 @@ class GeoRadius(BaseModel):
         description="Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
     )
     radius: float = Field(..., description="Radius of the area in meters")
+
+
+class GrpcTelemetry(BaseModel):
+    responses: Dict[str, "OperationDurationStatistics"] = Field(..., description="")
 
 
 class HasIdCondition(BaseModel):
@@ -420,7 +481,7 @@ class InlineResponse2001(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ClusterStatus"] = Field(None, description="")
+    result: Optional["LocksOption"] = Field(None, description="")
 
 
 class InlineResponse20010(BaseModel):
@@ -428,7 +489,7 @@ class InlineResponse20010(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["Record"]] = Field(None, description="")
+    result: Optional["Record"] = Field(None, description="")
 
 
 class InlineResponse20011(BaseModel):
@@ -436,7 +497,7 @@ class InlineResponse20011(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ScrollResult"] = Field(None, description="")
+    result: Optional[List["Record"]] = Field(None, description="")
 
 
 class InlineResponse20012(BaseModel):
@@ -444,7 +505,7 @@ class InlineResponse20012(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(None, description="")
+    result: Optional["ScrollResult"] = Field(None, description="")
 
 
 class InlineResponse20013(BaseModel):
@@ -452,10 +513,18 @@ class InlineResponse20013(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List[List["ScoredPoint"]]] = Field(None, description="")
+    result: Optional[List["ScoredPoint"]] = Field(None, description="")
 
 
 class InlineResponse20014(BaseModel):
+    time: Optional[float] = Field(None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
+    result: Optional[List[List["ScoredPoint"]]] = Field(None, description="")
+
+
+class InlineResponse20015(BaseModel):
     time: Optional[float] = Field(None, description="Time spent to process this request")
     status: Literal[
         "ok",
@@ -468,7 +537,7 @@ class InlineResponse2002(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[bool] = Field(None, description="")
+    result: Optional["ClusterStatus"] = Field(None, description="")
 
 
 class InlineResponse2003(BaseModel):
@@ -476,7 +545,7 @@ class InlineResponse2003(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionsResponse"] = Field(None, description="")
+    result: Optional[bool] = Field(None, description="")
 
 
 class InlineResponse2004(BaseModel):
@@ -484,7 +553,7 @@ class InlineResponse2004(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionInfo"] = Field(None, description="")
+    result: Optional["CollectionsResponse"] = Field(None, description="")
 
 
 class InlineResponse2005(BaseModel):
@@ -492,7 +561,7 @@ class InlineResponse2005(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["UpdateResult"] = Field(None, description="")
+    result: Optional["CollectionInfo"] = Field(None, description="")
 
 
 class InlineResponse2006(BaseModel):
@@ -500,7 +569,7 @@ class InlineResponse2006(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionClusterInfo"] = Field(None, description="")
+    result: Optional["UpdateResult"] = Field(None, description="")
 
 
 class InlineResponse2007(BaseModel):
@@ -508,7 +577,7 @@ class InlineResponse2007(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["SnapshotDescription"]] = Field(None, description="")
+    result: Optional["CollectionClusterInfo"] = Field(None, description="")
 
 
 class InlineResponse2008(BaseModel):
@@ -516,7 +585,7 @@ class InlineResponse2008(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["SnapshotDescription"] = Field(None, description="")
+    result: Optional[List["SnapshotDescription"]] = Field(None, description="")
 
 
 class InlineResponse2009(BaseModel):
@@ -524,7 +593,7 @@ class InlineResponse2009(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["Record"] = Field(None, description="")
+    result: Optional["SnapshotDescription"] = Field(None, description="")
 
 
 class IsEmptyCondition(BaseModel):
@@ -538,6 +607,18 @@ class IsEmptyCondition(BaseModel):
 class LocalShardInfo(BaseModel):
     shard_id: int = Field(..., description="Local shard id")
     points_count: int = Field(..., description="Number of points in the shard")
+    state: "ReplicaState" = Field(..., description="")
+
+
+class LocalShardTelemetry(BaseModel):
+    variant_name: Optional[str] = Field(None, description="")
+    segments: List["SegmentTelemetry"] = Field(..., description="")
+    optimizations: "OptimizerTelemetry" = Field(..., description="")
+
+
+class LocksOption(BaseModel):
+    error_message: Optional[str] = Field(None, description="")
+    write: bool = Field(..., description="")
 
 
 class MatchText(BaseModel):
@@ -554,6 +635,15 @@ class MatchValue(BaseModel):
     """
 
     value: "ValueVariants" = Field(..., description="Exact match of the given value")
+
+
+class MessageSendErrors(BaseModel):
+    """
+    Message send failures for a particular peer
+    """
+
+    count: int = Field(..., description="Message send failures for a particular peer")
+    latest_error: Optional[str] = Field(None, description="Message send failures for a particular peer")
 
 
 class MoveShard(BaseModel):
@@ -575,20 +665,17 @@ class NamedVector(BaseModel):
     vector: List[float] = Field(..., description="Vector data")
 
 
-class OptimizerTelemetryOneOf(BaseModel):
-    indexing: "OptimizerTelemetryOneOfIndexing" = Field(..., description="")
+class OperationDurationStatistics(BaseModel):
+    count: int = Field(..., description="")
+    fail_count: Optional[int] = Field(None, description="")
+    avg_duration_micros: Optional[float] = Field(None, description="")
+    min_duration_micros: Optional[float] = Field(None, description="")
+    max_duration_micros: Optional[float] = Field(None, description="")
 
 
-class OptimizerTelemetryOneOf1(BaseModel):
-    merge: "OptimizerTelemetryOneOfIndexing" = Field(..., description="")
-
-
-class OptimizerTelemetryOneOf2(BaseModel):
-    vacuum: "OptimizerTelemetryOneOfIndexing" = Field(..., description="")
-
-
-class OptimizerTelemetryOneOfIndexing(BaseModel):
-    optimizations: "TelemetryOperationStatistics" = Field(..., description="")
+class OptimizerTelemetry(BaseModel):
+    status: "OptimizersStatus" = Field(..., description="")
+    optimizations: "OperationDurationStatistics" = Field(..., description="")
 
 
 class OptimizersConfig(BaseModel):
@@ -685,9 +772,11 @@ class PayloadIndexInfo(BaseModel):
     params: Optional["PayloadSchemaParams"] = Field(
         None, description="Display payload field type &amp; index information"
     )
+    points: int = Field(..., description="Number of points indexed with this index")
 
 
 class PayloadIndexTelemetry(BaseModel):
+    field_name: Optional[str] = Field(None, description="")
     points_values_count: int = Field(..., description="")
     points_count: int = Field(..., description="")
     histogram_bucket_size: Optional[int] = Field(None, description="")
@@ -710,23 +799,9 @@ class PayloadSelectorInclude(BaseModel):
 
 
 class PayloadStorageTypeOneOf(BaseModel):
-    """
-    Store payload in memory and use persistence storage only if vectors are changed
-    """
-
-    type: Literal[
-        "in_memory",
-    ] = Field(..., description="Store payload in memory and use persistence storage only if vectors are changed")
-
-
-class PayloadStorageTypeOneOf1(BaseModel):
-    """
-    Store payload on disk only, read each time it is requested
-    """
-
     type: Literal[
         "on_disk",
-    ] = Field(..., description="Store payload on disk only, read each time it is requested")
+    ] = Field(..., description="")
 
 
 class PeerInfo(BaseModel):
@@ -838,6 +913,13 @@ class Record(BaseModel):
 class RemoteShardInfo(BaseModel):
     shard_id: int = Field(..., description="Remote shard id")
     peer_id: int = Field(..., description="Remote peer id")
+    state: "ReplicaState" = Field(..., description="")
+
+
+class RemoteShardTelemetry(BaseModel):
+    shard_id: int = Field(..., description="")
+    searches: "OperationDurationStatistics" = Field(..., description="")
+    updates: "OperationDurationStatistics" = Field(..., description="")
 
 
 class RenameAlias(BaseModel):
@@ -855,6 +937,32 @@ class RenameAliasOperation(BaseModel):
     """
 
     rename_alias: "RenameAlias" = Field(..., description="Change alias to a new one")
+
+
+class Replica(BaseModel):
+    shard_id: int = Field(..., description="")
+    peer_id: int = Field(..., description="")
+
+
+class ReplicaSetTelemetry(BaseModel):
+    id: int = Field(..., description="")
+    local: Optional["LocalShardTelemetry"] = Field(None, description="")
+    remote: List["RemoteShardTelemetry"] = Field(..., description="")
+
+
+class ReplicaState(str, Enum):
+    ACTIVE = "Active"
+    DEAD = "Dead"
+    PARTIAL = "Partial"
+
+
+class ReplicateShardOperation(BaseModel):
+    replicate_shard: "MoveShard" = Field(..., description="")
+
+
+class RequestsTelemetry(BaseModel):
+    rest: "WebApiTelemetry" = Field(..., description="")
+    grpc: "GrpcTelemetry" = Field(..., description="")
 
 
 class RunningEnvironmentTelemetry(BaseModel):
@@ -917,6 +1025,9 @@ class SearchParams(BaseModel):
         None,
         description="Params relevant to HNSW index /// Size of the beam in a beam-search. Larger the value - more accurate the result, more time required for search.",
     )
+    exact: Optional[bool] = Field(
+        False, description="Search without approximation. If set to true, search may run long but with exact results."
+    )
 
 
 class SearchRequest(BaseModel):
@@ -974,7 +1085,7 @@ class SegmentInfo(BaseModel):
 class SegmentTelemetry(BaseModel):
     info: "SegmentInfo" = Field(..., description="")
     config: "SegmentConfig" = Field(..., description="")
-    vector_index: Dict[str, "VectorIndexTelemetry"] = Field(..., description="")
+    vector_index_searches: List["VectorIndexSearchesTelemetry"] = Field(..., description="")
     payload_field_indices: List["PayloadIndexTelemetry"] = Field(..., description="")
 
 
@@ -984,49 +1095,19 @@ class SegmentType(str, Enum):
     SPECIAL = "special"
 
 
-class ServiceConfigTelemetry(BaseModel):
-    grpc_enable: bool = Field(..., description="")
-    max_request_size_mb: int = Field(..., description="")
-    max_workers: Optional[int] = Field(None, description="")
-    enable_cors: bool = Field(..., description="")
-
-
 class SetPayload(BaseModel):
     payload: "Payload" = Field(..., description="")
     points: List["ExtendedPointId"] = Field(..., description="Assigns payload to each point in this list")
-
-
-class ShardTelemetryOneOf(BaseModel):
-    remote: "ShardTelemetryOneOfRemote" = Field(..., description="")
-
-
-class ShardTelemetryOneOf1(BaseModel):
-    local: "ShardTelemetryOneOf1Local" = Field(..., description="")
-
-
-class ShardTelemetryOneOf1Local(BaseModel):
-    segments: List["SegmentTelemetry"] = Field(..., description="")
-    optimizers: List["OptimizerTelemetry"] = Field(..., description="")
-
-
-class ShardTelemetryOneOf2(BaseModel):
-    proxy: Any = Field(..., description="")
-
-
-class ShardTelemetryOneOf3(BaseModel):
-    forward_proxy: Any = Field(..., description="")
-
-
-class ShardTelemetryOneOfRemote(BaseModel):
-    shard_id: int = Field(..., description="")
-    searches: "TelemetryOperationStatistics" = Field(..., description="")
-    updates: "TelemetryOperationStatistics" = Field(..., description="")
 
 
 class ShardTransferInfo(BaseModel):
     shard_id: int = Field(..., description="")
     _from: int = Field(..., description="")
     to: int = Field(..., description="")
+    sync: bool = Field(
+        ...,
+        description="If `true` transfer is a synchronization of a replicas If `false` transfer is a moving of a shard from one peer to another",
+    )
 
 
 class SnapshotDescription(BaseModel):
@@ -1043,40 +1124,23 @@ class StateRole(str, Enum):
 
 
 class StorageTypeOneOf(BaseModel):
-    """
-    Store vectors in memory and use persistence storage only if vectors are changed
-    """
-
     type: Literal[
         "in_memory",
-    ] = Field(..., description="Store vectors in memory and use persistence storage only if vectors are changed")
+    ] = Field(..., description="")
 
 
 class StorageTypeOneOf1(BaseModel):
-    """
-    Use memmap to store vectors, a little slower than `InMemory`, but requires little RAM
-    """
-
     type: Literal[
         "mmap",
-    ] = Field(..., description="Use memmap to store vectors, a little slower than `InMemory`, but requires little RAM")
+    ] = Field(..., description="")
 
 
 class TelemetryData(BaseModel):
     id: str = Field(..., description="")
     app: "AppBuildTelemetry" = Field(..., description="")
-    system: "RunningEnvironmentTelemetry" = Field(..., description="")
-    configs: "ConfigsTelemetry" = Field(..., description="")
-    collections: List["CollectionTelemetry"] = Field(..., description="")
-    web: "WebApiTelemetry" = Field(..., description="")
-    grpc_calls_statistics: "TelemetryOperationStatistics" = Field(..., description="")
-    cluster_status: "ClusterStatus" = Field(..., description="")
-
-
-class TelemetryOperationStatistics(BaseModel):
-    ok_count: int = Field(..., description="")
-    fail_count: int = Field(..., description="")
-    ok_avg_time: "Duration" = Field(..., description="")
+    collections: "CollectionsTelemetry" = Field(..., description="")
+    cluster: "ClusterTelemetry" = Field(..., description="")
+    requests: "RequestsTelemetry" = Field(..., description="")
 
 
 class TextIndexParams(BaseModel):
@@ -1105,6 +1169,9 @@ class UpdateCollection(BaseModel):
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         None,
         description="Custom params for Optimizers.  If none - values from service configuration file are used. This operation is blocking, it will only proceed ones all current optimizations are complete",
+    )
+    params: Optional["CollectionParamsDiff"] = Field(
+        None, description="Collection base params.  If none - values from service configuration file are used."
     )
 
 
@@ -1138,11 +1205,15 @@ class VectorDataConfig(BaseModel):
     distance: "Distance" = Field(..., description="Config of single vector data storage")
 
 
-class VectorIndexTelemetry(BaseModel):
-    small_cardinality_searches: "TelemetryOperationStatistics" = Field(..., description="")
-    large_cardinality_searches: "TelemetryOperationStatistics" = Field(..., description="")
-    positive_check_cardinality_searches: "TelemetryOperationStatistics" = Field(..., description="")
-    negative_check_cardinality_searches: "TelemetryOperationStatistics" = Field(..., description="")
+class VectorIndexSearchesTelemetry(BaseModel):
+    index_name: Optional[str] = Field(None, description="")
+    unfiltered_plain: "OperationDurationStatistics" = Field(..., description="")
+    unfiltered_hnsw: "OperationDurationStatistics" = Field(..., description="")
+    filtered_plain: "OperationDurationStatistics" = Field(..., description="")
+    filtered_small_cardinality: "OperationDurationStatistics" = Field(..., description="")
+    filtered_large_cardinality: "OperationDurationStatistics" = Field(..., description="")
+    filtered_exact: "OperationDurationStatistics" = Field(..., description="")
+    unfiltered_exact: "OperationDurationStatistics" = Field(..., description="")
 
 
 class VectorParams(BaseModel):
@@ -1167,7 +1238,7 @@ class WalConfigDiff(BaseModel):
 
 
 class WebApiTelemetry(BaseModel):
-    responses: Dict[str, int] = Field(..., description="")
+    responses: Dict[str, Dict[str, "OperationDurationStatistics"]] = Field(..., description="")
 
 
 AliasOperations = Union[
@@ -1181,11 +1252,17 @@ BatchVectorStruct = Union[
 ]
 ClusterOperations = Union[
     MoveShardOperation,
+    ReplicateShardOperation,
     AbortTransferOperation,
+    DropReplicaOperation,
 ]
 ClusterStatus = Union[
     ClusterStatusOneOf,
     ClusterStatusOneOf1,
+]
+CollectionTelemetryEnum = Union[
+    CollectionTelemetry,
+    CollectionsAggregatedTelemetry,
 ]
 Condition = Union[
     FieldCondition,
@@ -1214,11 +1291,6 @@ NamedVectorStruct = Union[
     NamedVector,
     List[StrictFloat],
 ]
-OptimizerTelemetry = Union[
-    OptimizerTelemetryOneOf,
-    OptimizerTelemetryOneOf1,
-    OptimizerTelemetryOneOf2,
-]
 OptimizersStatus = Union[
     OptimizersStatusOneOf,
     OptimizersStatusOneOf1,
@@ -1231,8 +1303,8 @@ PayloadSelector = Union[
     PayloadSelectorExclude,
 ]
 PayloadStorageType = Union[
+    StorageTypeOneOf,
     PayloadStorageTypeOneOf,
-    PayloadStorageTypeOneOf1,
 ]
 PointInsertOperations = Union[
     PointsBatch,
@@ -1241,12 +1313,6 @@ PointInsertOperations = Union[
 PointsSelector = Union[
     PointIdsList,
     FilterSelector,
-]
-ShardTelemetry = Union[
-    ShardTelemetryOneOf,
-    ShardTelemetryOneOf1,
-    ShardTelemetryOneOf2,
-    ShardTelemetryOneOf3,
 ]
 StorageType = Union[
     StorageTypeOneOf,

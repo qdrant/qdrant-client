@@ -122,7 +122,9 @@ collection_params = grpc.CollectionParams(
 )
 
 collection_params_2 = grpc.CollectionParams(
-    vectors_config=multiple_vector_config
+    vectors_config=multiple_vector_config,
+    replication_factor=2,
+    write_consistency_factor=1
 )
 
 hnsw_config = grpc.HnswConfigDiff(
@@ -193,7 +195,11 @@ create_alias = grpc.CreateAlias(
 )
 
 search_params = grpc.SearchParams(
-    hnsw_ef=128
+    hnsw_ef=128,
+)
+
+search_params_2 = grpc.SearchParams(
+    exact=True,
 )
 
 rename_alias = grpc.RenameAlias(
@@ -401,13 +407,18 @@ text_index_params_3 = grpc.TextIndexParams(
     min_token_len=2,
 )
 
+collections_params_diff = grpc.CollectionParamsDiff(
+    replication_factor=2,
+    write_consistency_factor=2,
+)
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
     "ScoredPoint": [scored_point],
     "CreateAlias": [create_alias],
     "GeoBoundingBox": [geo_bounding_box],
-    "SearchParams": [search_params],
+    "SearchParams": [search_params, search_params_2],
     "HasIdCondition": [has_id_condition],
     "RenameAlias": [rename_alias],
     "ValuesCount": [values_count],
@@ -476,7 +487,8 @@ fixtures = {
         text_index_params_1,
         text_index_params_2,
         text_index_params_3,
-    ]
+    ],
+    "CollectionParamsDiff": [collections_params_diff],
 }
 
 
