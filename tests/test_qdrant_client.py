@@ -634,6 +634,9 @@ def test_insert_float():
 
 
 def test_locks():
+    if os.getenv("QDRANT_VERSION") < 'v0.11.0':
+        return  # Locks are supported since v0.11.0
+
     client = QdrantClient()
 
     client.recreate_collection(
