@@ -32,6 +32,7 @@ CountResult = rest.CountResult
 SnapshotDescription = rest.SnapshotDescription
 NamedVector = rest.NamedVector
 VectorParams = rest.VectorParams
+LocksOption = rest.LocksOption
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]

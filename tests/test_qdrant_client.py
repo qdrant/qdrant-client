@@ -633,6 +633,54 @@ def test_insert_float():
     assert isinstance(point.payload['value'], float)
 
 
+def test_locks():
+    client = QdrantClient()
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    client.lock_storage(reason="testing reason")
+
+    try:
+        # Create a single point
+        client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=[
+                PointStruct(
+                    id=123,
+                    payload={"test": "value"},
+                    vector=np.random.rand(DIM).tolist()
+                )
+            ],
+            wait=True,
+        )
+        assert False, "Should not be able to insert a point when storage is locked"
+    except Exception as e:
+        assert "testing reason" in str(e)
+        pass
+
+    lock_options = client.get_locks()
+    assert lock_options.write is True
+    assert lock_options.error_message == "testing reason"
+
+    client.unlock_storage()
+
+    # should be fine now
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(
+                id=123,
+                payload={"test": "value"},
+                vector=np.random.rand(DIM).tolist()
+            )
+        ],
+        wait=True,
+    )
+
+
 def test_legacy_imports():
     try:
         from qdrant_openapi_client.models.models import Filter, FieldCondition

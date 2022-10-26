@@ -1376,3 +1376,18 @@ class QdrantClient:
             Snapshot description
         """
         return self.openapi_client.snapshots_api.create_full_snapshot().result
+
+    def lock_storage(self, reason: str):
+        """Lock storage for writing.
+        """
+        return self.openapi_client.service_api.post_locks(rest.LocksOption(error_message=reason, write=True))
+
+    def unlock_storage(self):
+        """Unlock storage for writing.
+        """
+        return self.openapi_client.service_api.post_locks(rest.LocksOption(write=False))
+
+    def get_locks(self) -> types.LocksOption:
+        """Get current locks state.
+        """
+        return self.openapi_client.service_api.get_locks().result
