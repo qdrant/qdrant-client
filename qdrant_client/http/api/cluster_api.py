@@ -160,7 +160,7 @@ class _ClusterApi:
         Get information about the current state and composition of the cluster
         """
         return self.api_client.request(
-            type_=m.InlineResponse2001,
+            type_=m.InlineResponse2002,
             method="GET",
             url="/cluster",
         )
@@ -177,7 +177,7 @@ class _ClusterApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/cluster",
             path_params=path_params,
@@ -186,6 +186,7 @@ class _ClusterApi:
     def _build_for_remove_peer(
         self,
         peer_id: int,
+        force: bool = None,
     ):
         """
         Tries to remove peer from the cluster. Will return an error if peer has shards on it.
@@ -194,11 +195,16 @@ class _ClusterApi:
             "peer_id": str(peer_id),
         }
 
+        query_params = {}
+        if force is not None:
+            query_params["force"] = str(force).lower()
+
         return self.api_client.request(
-            type_=m.InlineResponse2002,
+            type_=m.InlineResponse2003,
             method="DELETE",
             url="/cluster/peer/{peer_id}",
             path_params=path_params,
+            params=query_params,
         )
 
     def _build_for_update_collection_cluster(
@@ -218,7 +224,7 @@ class _ClusterApi:
         body = jsonable_encoder(cluster_operations)
 
         return self.api_client.request(
-            type_=m.InlineResponse2002,
+            type_=m.InlineResponse2003,
             method="POST",
             url="/collections/{collection_name}/cluster",
             path_params=path_params,
@@ -230,7 +236,7 @@ class _ClusterApi:
 class AsyncClusterApi(_ClusterApi):
     async def cluster_status(
         self,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Get information about the current state and composition of the cluster
         """
@@ -239,7 +245,7 @@ class AsyncClusterApi(_ClusterApi):
     async def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """
@@ -250,12 +256,14 @@ class AsyncClusterApi(_ClusterApi):
     async def remove_peer(
         self,
         peer_id: int,
-    ) -> m.InlineResponse2002:
+        force: bool = None,
+    ) -> m.InlineResponse2003:
         """
         Tries to remove peer from the cluster. Will return an error if peer has shards on it.
         """
         return await self._build_for_remove_peer(
             peer_id=peer_id,
+            force=force,
         )
 
     async def update_collection_cluster(
@@ -263,7 +271,7 @@ class AsyncClusterApi(_ClusterApi):
         collection_name: str,
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         return await self._build_for_update_collection_cluster(
             collection_name=collection_name,
             timeout=timeout,
@@ -274,7 +282,7 @@ class AsyncClusterApi(_ClusterApi):
 class SyncClusterApi(_ClusterApi):
     def cluster_status(
         self,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Get information about the current state and composition of the cluster
         """
@@ -283,7 +291,7 @@ class SyncClusterApi(_ClusterApi):
     def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """
@@ -294,12 +302,14 @@ class SyncClusterApi(_ClusterApi):
     def remove_peer(
         self,
         peer_id: int,
-    ) -> m.InlineResponse2002:
+        force: bool = None,
+    ) -> m.InlineResponse2003:
         """
         Tries to remove peer from the cluster. Will return an error if peer has shards on it.
         """
         return self._build_for_remove_peer(
             peer_id=peer_id,
+            force=force,
         )
 
     def update_collection_cluster(
@@ -307,7 +317,7 @@ class SyncClusterApi(_ClusterApi):
         collection_name: str,
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         return self._build_for_update_collection_cluster(
             collection_name=collection_name,
             timeout=timeout,

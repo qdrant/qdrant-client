@@ -9,6 +9,7 @@ PayloadSelector = Union[rest.PayloadSelector, grpc.WithPayloadSelector]
 Distance = Union[rest.Distance, int]  # type(grpc.Distance) == int
 HnswConfigDiff = Union[rest.HnswConfigDiff, grpc.HnswConfigDiff]
 OptimizersConfigDiff = Union[rest.OptimizersConfigDiff, grpc.OptimizersConfigDiff]
+CollectionParamsDiff = Union[rest.CollectionParamsDiff, grpc.CollectionParamsDiff]
 WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
 PointId = Union[int, str, grpc.PointId]
 PayloadSchemaType = Union[rest.PayloadSchemaType, rest.PayloadSchemaParams, int]  # type(grpc.PayloadSchemaType) == int
@@ -31,6 +32,7 @@ CountResult = rest.CountResult
 SnapshotDescription = rest.SnapshotDescription
 NamedVector = rest.NamedVector
 VectorParams = rest.VectorParams
+LocksOption = rest.LocksOption
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
