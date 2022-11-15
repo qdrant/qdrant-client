@@ -772,8 +772,7 @@ class PayloadIndexInfo(BaseModel):
     params: Optional["PayloadSchemaParams"] = Field(
         None, description="Display payload field type &amp; index information"
     )
-    # backward compatibility, may be overwritten with the next release
-    points: Optional[int] = Field(None, description="Number of points indexed with this index")
+    points: int = Field(..., description="Number of points indexed with this index")
 
 
 class PayloadIndexTelemetry(BaseModel):
@@ -1115,6 +1114,13 @@ class SnapshotDescription(BaseModel):
     name: str = Field(..., description="")
     creation_time: Optional[str] = Field(None, description="")
     size: int = Field(..., description="")
+
+
+class SnapshotRecover(BaseModel):
+    location: str = Field(
+        ...,
+        description="Examples: - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot` - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`",
+    )
 
 
 class StateRole(str, Enum):

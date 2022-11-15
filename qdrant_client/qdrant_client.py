@@ -712,10 +712,10 @@ class QdrantClient:
                 ]
 
             return GrpcToRest.convert_update_result(self._grpc_points_client.Upsert(grpc.UpsertPoints(
-                    collection_name=collection_name,
-                    wait=wait,
-                    points=points
-                )).result)
+                collection_name=collection_name,
+                wait=wait,
+                points=points
+            )).result)
         else:
             if isinstance(points, list):
                 points = [
@@ -783,11 +783,11 @@ class QdrantClient:
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             result = self._grpc_points_client.Get(grpc.GetPoints(
-                    collection_name=collection_name,
-                    ids=ids,
-                    with_payload=with_payload,
-                    with_vectors=with_vectors
-                )).result
+                collection_name=collection_name,
+                ids=ids,
+                with_payload=with_payload,
+                with_vectors=with_vectors
+            )).result
 
             return [
                 GrpcToRest.convert_retrieved_point(record)
@@ -1376,6 +1376,23 @@ class QdrantClient:
             Snapshot description
         """
         return self.openapi_client.snapshots_api.create_full_snapshot().result
+
+    def recover_snapshot(self, collection_name: str, location: str) -> bool:
+        """Recover collection from snapshot.
+
+        Args:
+            collection_name: Name of the collection
+            location:
+                URL of the snapshot.
+                Example:
+                    - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
+                    - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
+
+        """
+        return self.openapi_client.snapshots_api.recover_from_snapshot(
+            collection_name=collection_name,
+            recover_snapshot=rest.SnapshotRecover(location=location)
+        ).result
 
     def lock_storage(self, reason: str):
         """Lock storage for writing.
