@@ -772,7 +772,8 @@ class PayloadIndexInfo(BaseModel):
     params: Optional["PayloadSchemaParams"] = Field(
         None, description="Display payload field type &amp; index information"
     )
-    points: int = Field(..., description="Number of points indexed with this index")
+    # backward compatibility, may be overwritten with the next release
+    points: Optional[int] = Field(None, description="Number of points indexed with this index")
 
 
 class PayloadIndexTelemetry(BaseModel):
