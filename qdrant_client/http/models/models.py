@@ -1117,6 +1117,13 @@ class SnapshotDescription(BaseModel):
     size: int = Field(..., description="")
 
 
+class SnapshotRecover(BaseModel):
+    location: str = Field(
+        ...,
+        description="Examples: - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot` - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`",
+    )
+
+
 class StateRole(str, Enum):
     FOLLOWER = "Follower"
     CANDIDATE = "Candidate"

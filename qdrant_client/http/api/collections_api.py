@@ -363,6 +363,28 @@ class _CollectionsApi:
             path_params=path_params,
         )
 
+    def _build_for_recover_from_snapshot(
+        self,
+        collection_name: str,
+        snapshot_recover: m.SnapshotRecover = None,
+    ):
+        """
+        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        body = jsonable_encoder(snapshot_recover)
+
+        return self.api_client.request(
+            type_=m.InlineResponse2003,
+            method="PUT",
+            url="/collections/{collection_name}/snapshots/recover",
+            path_params=path_params,
+            json=body,
+        )
+
     def _build_for_update_aliases(
         self,
         timeout: int = None,
@@ -556,6 +578,19 @@ class AsyncCollectionsApi(_CollectionsApi):
             collection_name=collection_name,
         )
 
+    async def recover_from_snapshot(
+        self,
+        collection_name: str,
+        snapshot_recover: m.SnapshotRecover = None,
+    ) -> m.InlineResponse2003:
+        """
+        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection.
+        """
+        return await self._build_for_recover_from_snapshot(
+            collection_name=collection_name,
+            snapshot_recover=snapshot_recover,
+        )
+
     async def update_aliases(
         self,
         timeout: int = None,
@@ -716,6 +751,19 @@ class SyncCollectionsApi(_CollectionsApi):
         """
         return self._build_for_list_snapshots(
             collection_name=collection_name,
+        )
+
+    def recover_from_snapshot(
+        self,
+        collection_name: str,
+        snapshot_recover: m.SnapshotRecover = None,
+    ) -> m.InlineResponse2003:
+        """
+        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection.
+        """
+        return self._build_for_recover_from_snapshot(
+            collection_name=collection_name,
+            snapshot_recover=snapshot_recover,
         )
 
     def update_aliases(
