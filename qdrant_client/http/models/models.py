@@ -82,6 +82,8 @@ class ClusterStatusTelemetry(BaseModel):
     pending_operations: int = Field(..., description="")
     role: Optional["StateRole"] = Field(None, description="")
     is_voter: bool = Field(..., description="")
+    peer_id: Optional[int] = Field(None, description="")
+    consensus_thread_status: "ConsensusThreadStatus" = Field(..., description="")
 
 
 class ClusterTelemetry(BaseModel):
@@ -172,6 +174,7 @@ class CollectionTelemetry(BaseModel):
     init_time_ms: int = Field(..., description="")
     config: "CollectionConfig" = Field(..., description="")
     shards: List["ReplicaSetTelemetry"] = Field(..., description="")
+    transfers: List["ShardTransferInfo"] = Field(..., description="")
 
 
 class CollectionsAggregatedTelemetry(BaseModel):
@@ -421,6 +424,9 @@ class HnswConfig(BaseModel):
     max_indexing_threads: Optional[int] = Field(
         0, description="Number of parallel threads used for background index building. If 0 - auto selection."
     )
+    on_disk: Optional[bool] = Field(
+        None, description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false"
+    )
 
 
 class HnswConfigDiff(BaseModel):
@@ -435,6 +441,12 @@ class HnswConfigDiff(BaseModel):
     full_scan_threshold: Optional[int] = Field(
         None,
         description="Minimal size (in KiloBytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
+    )
+    max_indexing_threads: Optional[int] = Field(
+        None, description="Number of parallel threads used for background index building. If 0 - auto selection."
+    )
+    on_disk: Optional[bool] = Field(
+        None, description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false"
     )
 
 
@@ -919,6 +931,7 @@ class RemoteShardInfo(BaseModel):
 
 class RemoteShardTelemetry(BaseModel):
     shard_id: int = Field(..., description="")
+    peer_id: Optional[int] = Field(None, description="")
     searches: "OperationDurationStatistics" = Field(..., description="")
     updates: "OperationDurationStatistics" = Field(..., description="")
 
@@ -949,6 +962,7 @@ class ReplicaSetTelemetry(BaseModel):
     id: int = Field(..., description="")
     local: Optional["LocalShardTelemetry"] = Field(None, description="")
     remote: List["RemoteShardTelemetry"] = Field(..., description="")
+    replicate_states: Dict[str, "ReplicaState"] = Field(..., description="")
 
 
 class ReplicaState(str, Enum):
