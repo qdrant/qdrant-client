@@ -131,7 +131,18 @@ hnsw_config = grpc.HnswConfigDiff(
     m=16,
     ef_construct=100,
     full_scan_threshold=10000,
+    max_indexing_threads=0,
+    on_disk=False,
 )
+
+hnsw_config_2 = grpc.HnswConfigDiff(
+    m=16,
+    ef_construct=100,
+    full_scan_threshold=10000,
+    max_indexing_threads=2,
+    on_disk=True,
+)
+
 
 optimizer_config = grpc.OptimizersConfigDiff(
     deleted_threshold=0.2,
@@ -444,7 +455,7 @@ fixtures = {
     "CollectionDescription": [collection_description],
     "GeoPoint": [geo_point],
     "WalConfigDiff": [wal_config],
-    "HnswConfigDiff": [hnsw_config],
+    "HnswConfigDiff": [hnsw_config, hnsw_config_2],
     "Range": [range_],
     "UpdateCollection": [update_collection],
     "Condition": [

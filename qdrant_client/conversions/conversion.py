@@ -156,7 +156,9 @@ class GrpcToRest:
         return rest.HnswConfigDiff(
             ef_construct=model.ef_construct if model.HasField("ef_construct") else None,
             m=model.m if model.HasField("m") else None,
-            full_scan_threshold=model.full_scan_threshold if model.HasField("full_scan_threshold") else None
+            full_scan_threshold=model.full_scan_threshold if model.HasField("full_scan_threshold") else None,
+            max_indexing_threads=model.max_indexing_threads if model.HasField("max_indexing_threads") else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
         )
 
     @classmethod
@@ -164,7 +166,9 @@ class GrpcToRest:
         return rest.HnswConfig(
             ef_construct=model.ef_construct if model.HasField("ef_construct") else None,
             m=model.m if model.HasField("m") else None,
-            full_scan_threshold=model.full_scan_threshold if model.HasField("full_scan_threshold") else None
+            full_scan_threshold=model.full_scan_threshold if model.HasField("full_scan_threshold") else None,
+            max_indexing_threads=model.max_indexing_threads if model.HasField("max_indexing_threads") else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
         )
 
     @classmethod
@@ -829,6 +833,8 @@ class RestToGrpc:
             ef_construct=model.ef_construct,
             full_scan_threshold=model.full_scan_threshold,
             m=model.m,
+            max_indexing_threads=model.max_indexing_threads,
+            on_disk=model.on_disk,
         )
 
     @classmethod
@@ -882,6 +888,8 @@ class RestToGrpc:
             ef_construct=model.ef_construct,
             full_scan_threshold=model.full_scan_threshold,
             m=model.m,
+            max_indexing_threads=model.max_indexing_threads,
+            on_disk=model.on_disk,
         )
 
     @classmethod
