@@ -825,7 +825,7 @@ class QdrantClient:
                 ]))
         elif isinstance(points, grpc.PointsSelector):
             points_selector = points
-        elif isinstance(points, rest.PointsSelector):
+        elif isinstance(points, (rest.PointIdsList, rest.FilterSelector)):
             points_selector = RestToGrpc.convert_points_selector(points)
         elif isinstance(points, rest.Filter):
             points_selector = RestToGrpc.convert_points_selector(rest.FilterSelector.construct(filter=points))
@@ -850,7 +850,7 @@ class QdrantClient:
             points_selector = rest.PointIdsList.construct(points=_points)
         elif isinstance(points, grpc.PointsSelector):
             points_selector = GrpcToRest.convert_points_selector(points)
-        elif isinstance(points, rest.PointsSelector):
+        elif isinstance(points, (rest.PointIdsList, rest.FilterSelector)):
             points_selector = points
         elif isinstance(points, rest.Filter):
             points_selector = rest.FilterSelector.construct(filter=points)
@@ -887,11 +887,10 @@ class QdrantClient:
                 _points = selector.points
             elif isinstance(selector, rest.FilterSelector):
                 _filter = selector.filter
-        elif isinstance(points, rest.PointsSelector):
-            if isinstance(points, rest.PointIdsList):
-                _points = points.points
-            elif isinstance(points, rest.FilterSelector):
-                _filter = points.filter
+        elif isinstance(points, rest.PointIdsList):
+            _points = points.points
+        elif isinstance(points, rest.FilterSelector):
+            _filter = points.filter
         elif isinstance(points, rest.Filter):
             _filter = points
         elif isinstance(points, grpc.Filter):
