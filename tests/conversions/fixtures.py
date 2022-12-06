@@ -141,6 +141,7 @@ hnsw_config_2 = grpc.HnswConfigDiff(
     full_scan_threshold=10000,
     max_indexing_threads=2,
     on_disk=True,
+    payload_m=32,
 )
 
 

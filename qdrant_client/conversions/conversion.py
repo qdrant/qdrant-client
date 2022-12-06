@@ -159,6 +159,7 @@ class GrpcToRest:
             full_scan_threshold=model.full_scan_threshold if model.HasField("full_scan_threshold") else None,
             max_indexing_threads=model.max_indexing_threads if model.HasField("max_indexing_threads") else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            payload_m=model.payload_m if model.HasField("payload_m") else None,
         )
 
     @classmethod
@@ -169,6 +170,7 @@ class GrpcToRest:
             full_scan_threshold=model.full_scan_threshold if model.HasField("full_scan_threshold") else None,
             max_indexing_threads=model.max_indexing_threads if model.HasField("max_indexing_threads") else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            payload_m=model.payload_m if model.HasField("payload_m") else None,
         )
 
     @classmethod
@@ -835,6 +837,7 @@ class RestToGrpc:
             m=model.m,
             max_indexing_threads=model.max_indexing_threads,
             on_disk=model.on_disk,
+            payload_m=model.payload_m,
         )
 
     @classmethod
@@ -890,6 +893,7 @@ class RestToGrpc:
             m=model.m,
             max_indexing_threads=model.max_indexing_threads,
             on_disk=model.on_disk,
+            payload_m=model.payload_m,
         )
 
     @classmethod

@@ -34,6 +34,11 @@ class PointsStub(object):
                 request_serializer=points__pb2.SetPayloadPoints.SerializeToString,
                 response_deserializer=points__pb2.PointsOperationResponse.FromString,
                 )
+        self.OverwritePayload = channel.unary_unary(
+                '/qdrant.Points/OverwritePayload',
+                request_serializer=points__pb2.SetPayloadPoints.SerializeToString,
+                response_deserializer=points__pb2.PointsOperationResponse.FromString,
+                )
         self.DeletePayload = channel.unary_unary(
                 '/qdrant.Points/DeletePayload',
                 request_serializer=points__pb2.DeletePayloadPoints.SerializeToString,
@@ -116,6 +121,14 @@ class PointsServicer(object):
     def SetPayload(self, request, context):
         """
         Set payload for points
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OverwritePayload(self, request, context):
+        """
+        Overwrite payload for points
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -221,6 +234,11 @@ def add_PointsServicer_to_server(servicer, server):
             ),
             'SetPayload': grpc.unary_unary_rpc_method_handler(
                     servicer.SetPayload,
+                    request_deserializer=points__pb2.SetPayloadPoints.FromString,
+                    response_serializer=points__pb2.PointsOperationResponse.SerializeToString,
+            ),
+            'OverwritePayload': grpc.unary_unary_rpc_method_handler(
+                    servicer.OverwritePayload,
                     request_deserializer=points__pb2.SetPayloadPoints.FromString,
                     response_serializer=points__pb2.PointsOperationResponse.SerializeToString,
             ),
@@ -347,6 +365,23 @@ class Points(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Points/SetPayload',
+            points__pb2.SetPayloadPoints.SerializeToString,
+            points__pb2.PointsOperationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def OverwritePayload(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/OverwritePayload',
             points__pb2.SetPayloadPoints.SerializeToString,
             points__pb2.PointsOperationResponse.FromString,
             options, channel_credentials,

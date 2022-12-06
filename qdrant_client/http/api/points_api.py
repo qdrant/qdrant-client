@@ -301,6 +301,34 @@ class _PointsApi:
             json=body,
         )
 
+    def _build_for_overwrite_payload(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        set_payload: m.SetPayload = None,
+    ):
+        """
+        Replace full payload of points with new one
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+
+        body = jsonable_encoder(set_payload)
+
+        return self.api_client.request(
+            type_=m.InlineResponse2006,
+            method="PUT",
+            url="/collections/{collection_name}/points/payload",
+            path_params=path_params,
+            params=query_params,
+            json=body,
+        )
+
     def _build_for_recommend_batch_points(
         self,
         collection_name: str,
@@ -418,7 +446,7 @@ class _PointsApi:
         set_payload: m.SetPayload = None,
     ):
         """
-        Set payload for points
+        Set payload values for points
         """
         path_params = {
             "collection_name": str(collection_name),
@@ -553,6 +581,21 @@ class AsyncPointsApi(_PointsApi):
             point_request=point_request,
         )
 
+    async def overwrite_payload(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        set_payload: m.SetPayload = None,
+    ) -> m.InlineResponse2006:
+        """
+        Replace full payload of points with new one
+        """
+        return await self._build_for_overwrite_payload(
+            collection_name=collection_name,
+            wait=wait,
+            set_payload=set_payload,
+        )
+
     async def recommend_batch_points(
         self,
         collection_name: str,
@@ -625,7 +668,7 @@ class AsyncPointsApi(_PointsApi):
         set_payload: m.SetPayload = None,
     ) -> m.InlineResponse2006:
         """
-        Set payload for points
+        Set payload values for points
         """
         return await self._build_for_set_payload(
             collection_name=collection_name,
@@ -734,6 +777,21 @@ class SyncPointsApi(_PointsApi):
             point_request=point_request,
         )
 
+    def overwrite_payload(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        set_payload: m.SetPayload = None,
+    ) -> m.InlineResponse2006:
+        """
+        Replace full payload of points with new one
+        """
+        return self._build_for_overwrite_payload(
+            collection_name=collection_name,
+            wait=wait,
+            set_payload=set_payload,
+        )
+
     def recommend_batch_points(
         self,
         collection_name: str,
@@ -806,7 +864,7 @@ class SyncPointsApi(_PointsApi):
         set_payload: m.SetPayload = None,
     ) -> m.InlineResponse2006:
         """
-        Set payload for points
+        Set payload values for points
         """
         return self._build_for_set_payload(
             collection_name=collection_name,
