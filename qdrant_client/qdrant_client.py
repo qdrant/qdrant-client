@@ -815,7 +815,7 @@ class QdrantClient:
     @classmethod
     def _try_argument_to_grpc_selector(
             cls,
-            points: Union[List[types.PointId], types.Filter, types.PointsSelector]
+            points: types.PointsSelector
     ) -> grpc.PointsSelector:
         if isinstance(points, list):
             points_selector = grpc.PointsSelector(
@@ -840,7 +840,7 @@ class QdrantClient:
     @classmethod
     def _try_argument_to_rest_selector(
             cls,
-            points: Union[List[types.PointId], types.Filter, types.PointsSelector]
+            points: types.PointsSelector
     ) -> 'rest.PointsSelector':
         if isinstance(points, list):
             _points = [
@@ -861,9 +861,18 @@ class QdrantClient:
         return points_selector
 
     @classmethod
+    def _points_selector_to_points_list(cls, points_selector: grpc.PointsSelector) -> List[grpc.PointId]:
+        name = points_selector.WhichOneof("points_selector_one_of")
+        val = getattr(points_selector, name)
+
+        if name == "points":
+            return list(val.ids)
+        return []
+
+    @classmethod
     def _try_argument_to_rest_points_and_filter(
             cls,
-            points: Union[List[types.PointId], types.Filter, types.PointsSelector]
+            points: types.PointsSelector
     ) -> 'Tuple[Optional[List[rest.ExtendedPointId]], Optional[rest.Filter]]':
         _points = None
         _filter = None
@@ -895,7 +904,7 @@ class QdrantClient:
     def delete(
             self,
             collection_name: str,
-            points_selector: Union[List[types.PointId], types.Filter, types.PointsSelector],
+            points_selector: types.PointsSelector,
             wait: bool = True,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
@@ -936,7 +945,7 @@ class QdrantClient:
             self,
             collection_name: str,
             payload: types.Payload,
-            points: Union[List[types.PointId], types.Filter, types.PointsSelector],
+            points: types.PointsSelector,
             wait: bool = True,
     ) -> types.UpdateResult:
         """Modifies payload of the specified points
@@ -979,7 +988,7 @@ class QdrantClient:
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
-                    points=[],  # deprecated
+                    points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector
                 )).result)
         else:
@@ -999,7 +1008,7 @@ class QdrantClient:
             self,
             collection_name: str,
             payload: types.Payload,
-            points: Union[List[types.PointId], types.Filter, types.PointsSelector],
+            points: types.PointsSelector,
             wait: bool = True,
     ) -> types.UpdateResult:
         """Overwrites payload of the specified points
@@ -1044,7 +1053,7 @@ class QdrantClient:
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
-                    points=[],  # deprecated
+                    points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector
                 )).result)
         else:
@@ -1064,7 +1073,7 @@ class QdrantClient:
             self,
             collection_name: str,
             keys: List[str],
-            points: Union[List[types.PointId], types.Filter, types.PointsSelector],
+            points: types.PointsSelector,
             wait: bool = True,
     ):
         """Remove values from point's payload
@@ -1091,7 +1100,7 @@ class QdrantClient:
                     collection_name=collection_name,
                     wait=wait,
                     keys=keys,
-                    points=[],
+                    points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector
                 )).result)
         else:
@@ -1109,7 +1118,7 @@ class QdrantClient:
     def clear_payload(
             self,
             collection_name: str,
-            points_selector: Union[List[types.PointId], types.Filter, types.PointsSelector],
+            points_selector: types.PointsSelector,
             wait: bool = True,
     ):
         """Delete all payload for selected points
