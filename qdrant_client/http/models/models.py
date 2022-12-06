@@ -307,8 +307,11 @@ class DeleteAliasOperation(BaseModel):
 
 
 class DeletePayload(BaseModel):
-    keys: List[str] = Field(..., description="")
-    points: List["ExtendedPointId"] = Field(..., description="Deletes values from each point in this list")
+    keys: List[str] = Field(..., description="List of payload keys to remove from payload")
+    points: Optional[List["ExtendedPointId"]] = Field(None, description="Deletes values from each point in this list")
+    filter: Optional["Filter"] = Field(
+        None, description="Deletes values from points that satisfy this filter condition"
+    )
 
 
 class Distance(str, Enum):
@@ -427,6 +430,9 @@ class HnswConfig(BaseModel):
     on_disk: Optional[bool] = Field(
         None, description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false"
     )
+    payload_m: Optional[int] = Field(
+        None, description="Custom M param for hnsw graph built for payload index. If not set, default M will be used."
+    )
 
 
 class HnswConfigDiff(BaseModel):
@@ -447,6 +453,9 @@ class HnswConfigDiff(BaseModel):
     )
     on_disk: Optional[bool] = Field(
         None, description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false"
+    )
+    payload_m: Optional[int] = Field(
+        None, description="Custom M param for additional payload-aware HNSW links. If not set, default M will be used."
     )
 
 
@@ -1112,7 +1121,10 @@ class SegmentType(str, Enum):
 
 class SetPayload(BaseModel):
     payload: "Payload" = Field(..., description="")
-    points: List["ExtendedPointId"] = Field(..., description="Assigns payload to each point in this list")
+    points: Optional[List["ExtendedPointId"]] = Field(None, description="Assigns payload to each point in this list")
+    filter: Optional["Filter"] = Field(
+        None, description="Assigns payload to each point that satisfy this filter condition"
+    )
 
 
 class ShardTransferInfo(BaseModel):
@@ -1131,11 +1143,17 @@ class SnapshotDescription(BaseModel):
     size: int = Field(..., description="")
 
 
+class SnapshotPriority(str, Enum):
+    SNAPSHOT = "snapshot"
+    REPLICA = "replica"
+
+
 class SnapshotRecover(BaseModel):
     location: str = Field(
         ...,
         description="Examples: - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot` - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`",
     )
+    priority: Optional["SnapshotPriority"] = Field(None, description="")
 
 
 class StateRole(str, Enum):

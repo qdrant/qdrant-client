@@ -612,6 +612,82 @@ def test_points_crud(prefer_grpc):
     )
 
 
+@pytest.mark.parametrize(
+    "prefer_grpc", [False, True]
+)
+def test_conditional_payload_update(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+    version = os.getenv("QDRANT_VERSION")
+    if version is not None and version < 'v0.11.5':
+        return
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(id=1001, payload={"a": 1}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=1002, payload={"a": 2}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=1003, payload={"b": 1}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=1004, payload={"b": 2}, vector=np.random.rand(DIM).tolist()),
+        ],
+        wait=True,
+    )
+
+    client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={
+            "c": 1
+        },
+        points=Filter(
+            must=[
+                FieldCondition(key="a", range=Range(gte=1))
+            ]
+        ),
+        wait=True
+    )
+
+    points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1001, 1002, 1003, 1004],
+        with_payload=True,
+        with_vectors=False
+    )
+
+    points = sorted(points, key=lambda p: p.id)
+
+    assert points[0].payload.get("c") == 1
+    assert points[1].payload.get("c") == 1
+    assert points[2].payload.get("c") is None
+    assert points[3].payload.get("c") is None
+
+    client.overwrite_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"c": 2},
+        points=Filter(
+            must=[
+                FieldCondition(key="b", range=Range(le=10))
+            ]
+        )
+    )
+
+    points = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[1001, 1002, 1003, 1004],
+        with_payload=True,
+        with_vectors=False
+    )
+    points = sorted(points, key=lambda p: p.id)
+
+    assert points[0].payload.get("c") == 1
+    assert points[1].payload.get("c") == 1
+    assert points[2].payload == {"c": 2}
+    assert points[3].payload == {"c": 2}
+
+
 def test_has_id_condition():
     query = Filter(
         must=[

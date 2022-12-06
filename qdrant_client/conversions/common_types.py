@@ -33,6 +33,7 @@ SnapshotDescription = rest.SnapshotDescription
 NamedVector = rest.NamedVector
 VectorParams = rest.VectorParams
 LocksOption = rest.LocksOption
+SnapshotPriority = rest.SnapshotPriority
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]

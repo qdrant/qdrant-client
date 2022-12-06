@@ -812,10 +812,90 @@ class QdrantClient:
                 )
             ).result
 
+    @classmethod
+    def _try_argument_to_grpc_selector(
+            cls,
+            points: Union[List[types.PointId], types.Filter, types.PointsSelector]
+    ) -> grpc.PointsSelector:
+        if isinstance(points, list):
+            points_selector = grpc.PointsSelector(
+                points=grpc.PointsIdsList(ids=[
+                    RestToGrpc.convert_extended_point_id(idx) if isinstance(idx, (int, str)) else idx
+                    for idx in points
+                ]))
+        elif isinstance(points, grpc.PointsSelector):
+            points_selector = points
+        elif isinstance(points, rest.PointsSelector):
+            points_selector = RestToGrpc.convert_points_selector(points)
+        elif isinstance(points, rest.Filter):
+            points_selector = RestToGrpc.convert_points_selector(rest.FilterSelector.construct(filter=points))
+        elif isinstance(points, grpc.Filter):
+            points_selector = grpc.PointsSelector(
+                filter=points
+            )
+        else:
+            raise ValueError(f"Unsupported points selector type: {type(points)}")
+        return points_selector
+
+    @classmethod
+    def _try_argument_to_rest_selector(
+            cls,
+            points: Union[List[types.PointId], types.Filter, types.PointsSelector]
+    ) -> 'rest.PointsSelector':
+        if isinstance(points, list):
+            _points = [
+                GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
+                for idx in points
+            ]
+            points_selector = rest.PointIdsList.construct(points=_points)
+        elif isinstance(points, grpc.PointsSelector):
+            points_selector = GrpcToRest.convert_points_selector(points)
+        elif isinstance(points, rest.PointsSelector):
+            points_selector = points
+        elif isinstance(points, rest.Filter):
+            points_selector = rest.FilterSelector.construct(filter=points)
+        elif isinstance(points, grpc.Filter):
+            points_selector = rest.FilterSelector.construct(filter=GrpcToRest.convert_filter(points))
+        else:
+            raise ValueError(f"Unsupported points selector type: {type(points)}")
+        return points_selector
+
+    @classmethod
+    def _try_argument_to_rest_points_and_filter(
+            cls,
+            points: Union[List[types.PointId], types.Filter, types.PointsSelector]
+    ) -> 'Tuple[Optional[List[rest.ExtendedPointId]], Optional[rest.Filter]]':
+        _points = None
+        _filter = None
+        if isinstance(points, list):
+            _points = [
+                GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
+                for idx in points
+            ]
+        elif isinstance(points, grpc.PointsSelector):
+            selector = GrpcToRest.convert_points_selector(points)
+            if isinstance(selector, rest.PointIdsList):
+                _points = selector.points
+            elif isinstance(selector, rest.FilterSelector):
+                _filter = selector.filter
+        elif isinstance(points, rest.PointsSelector):
+            if isinstance(points, rest.PointIdsList):
+                _points = points.points
+            elif isinstance(points, rest.FilterSelector):
+                _filter = points.filter
+        elif isinstance(points, rest.Filter):
+            _filter = points
+        elif isinstance(points, grpc.Filter):
+            _filter = GrpcToRest.convert_filter(points)
+        else:
+            raise ValueError(f"Unsupported points selector type: {type(points)}")
+
+        return _points, _filter
+
     def delete(
             self,
             collection_name: str,
-            points_selector: types.PointsSelector,
+            points_selector: Union[List[types.PointId], types.Filter, types.PointsSelector],
             wait: bool = True,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
@@ -827,13 +907,15 @@ class QdrantClient:
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points_selector: Selects points based on list of IDs or filter
+                 Example:
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
 
         Returns:
             Operation result
         """
         if self._prefer_grpc:
-            if isinstance(points_selector, (rest.PointIdsList, rest.FilterSelector)):
-                points_selector = RestToGrpc.convert_points_selector(points_selector)
+            points_selector = self._try_argument_to_grpc_selector(points_selector)
 
             return GrpcToRest.convert_update_result(
                 self._grpc_points_client.Delete(grpc.DeletePoints(
@@ -842,8 +924,7 @@ class QdrantClient:
                     points=points_selector
                 )).result)
         else:
-            if isinstance(points_selector, grpc.PointsSelector):
-                points_selector = GrpcToRest.convert_points_selector(points_selector)
+            points_selector = self._try_argument_to_rest_selector(points_selector)
 
             self.openapi_client.points_api.delete_points(
                 collection_name=collection_name,
@@ -855,7 +936,7 @@ class QdrantClient:
             self,
             collection_name: str,
             payload: types.Payload,
-            points: List[types.PointId],
+            points: Union[List[types.PointId], types.Filter, types.PointsSelector],
             wait: bool = True,
     ) -> types.UpdateResult:
         """Modifies payload of the specified points
@@ -882,35 +963,100 @@ class QdrantClient:
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
-            points: List of affected points. Example: `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+            points: List of affected points, filter or points selector.
+             Example:
+                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
 
         Returns:
             Operation result
         """
         if self._prefer_grpc:
-            points = [
-                RestToGrpc.convert_extended_point_id(idx) if isinstance(idx, (int, str)) else idx
-                for idx in points
-            ]
+            points_selector = self._try_argument_to_grpc_selector(points)
+
             return GrpcToRest.convert_update_result(
                 self._grpc_points_client.SetPayload(grpc.SetPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
-                    points=points
+                    points=[],  # deprecated
+                    points_selector=points_selector
                 )).result)
         else:
-            points = [
-                GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
-                for idx in points
-            ]
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
 
             return self.openapi_client.points_api.set_payload(
                 collection_name=collection_name,
                 wait=wait,
                 set_payload=rest.SetPayload(
                     payload=payload,
-                    points=points
+                    points=_points,
+                    filter=_filter,
+                )
+            )
+
+    def overwrite_payload(
+            self,
+            collection_name: str,
+            payload: types.Payload,
+            points: Union[List[types.PointId], types.Filter, types.PointsSelector],
+            wait: bool = True,
+    ) -> types.UpdateResult:
+        """Overwrites payload of the specified points
+        After this operation is applied, only the specified payload will be present in the point.
+        The existing payload, even if the key is not specified in the payload, will be deleted.
+
+        Examples:
+
+        `Set payload`::
+
+            # Overwrite payload value with key `"key"` to points 1, 2, 3.
+            # If any other valid payload value exists - it will be deleted
+            qdrant_client.overwrite_payload(
+                collection_name="test_collection",
+                wait=True,
+                payload={
+                    "key": "value"
+                },
+                points=[1,2,3]
+            )
+
+        Args:
+            collection_name: Name of the collection
+            wait: Await for the results to be processed.
+
+                - If `true`, result will be returned only when all changes are applied
+                - If `false`, result will be returned immediately after the confirmation of receiving.
+            payload: Key-value pairs of payload to assign
+            points: List of affected points, filter or points selector.
+             Example:
+                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+
+        Returns:
+            Operation result
+        """
+        if self._prefer_grpc:
+            points_selector = self._try_argument_to_grpc_selector(points)
+
+            return GrpcToRest.convert_update_result(
+                self._grpc_points_client.OverwritePayload(grpc.SetPayloadPoints(
+                    collection_name=collection_name,
+                    wait=wait,
+                    payload=RestToGrpc.convert_payload(payload),
+                    points=[],  # deprecated
+                    points_selector=points_selector
+                )).result)
+        else:
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+
+            return self.openapi_client.points_api.overwrite_payload(
+                collection_name=collection_name,
+                wait=wait,
+                set_payload=rest.SetPayload(
+                    payload=payload,
+                    points=_points,
+                    filter=_filter,
                 )
             )
 
@@ -918,7 +1064,7 @@ class QdrantClient:
             self,
             collection_name: str,
             keys: List[str],
-            points: List[types.PointId],
+            points: Union[List[types.PointId], types.Filter, types.PointsSelector],
             wait: bool = True,
     ):
         """Remove values from point's payload
@@ -930,41 +1076,40 @@ class QdrantClient:
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             keys: List of payload keys to remove
-            points: List of affected points. Example: `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+            points: List of affected points, filter or points selector.
+                Example:
+                   - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                   - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
 
         Returns:
             Operation result
         """
         if self._prefer_grpc:
-            points = [
-                RestToGrpc.convert_extended_point_id(idx) if isinstance(idx, (int, str)) else idx
-                for idx in points
-            ]
+            points_selector = self._try_argument_to_grpc_selector(points)
             return GrpcToRest.convert_update_result(
                 self._grpc_points_client.DeletePayload(grpc.DeletePayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     keys=keys,
-                    points=points
+                    points=[],
+                    points_selector=points_selector
                 )).result)
         else:
-            points = [
-                GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
-                for idx in points
-            ]
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             return self.openapi_client.points_api.delete_payload(
                 collection_name=collection_name,
                 wait=wait,
                 delete_payload=rest.DeletePayload(
                     keys=keys,
-                    points=points
+                    points=_points,
+                    filter=_filter,
                 )
             )
 
     def clear_payload(
             self,
             collection_name: str,
-            points_selector: types.PointsSelector,
+            points_selector: Union[List[types.PointId], types.Filter, types.PointsSelector],
             wait: bool = True,
     ):
         """Delete all payload for selected points
@@ -975,14 +1120,16 @@ class QdrantClient:
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            points_selector: Selects points based on list of IDs or filter
+            points_selector: List of affected points, filter or points selector.
+                Example:
+                   - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                   - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
 
         Returns:
             Operation result
         """
         if self._prefer_grpc:
-            if isinstance(points_selector, (rest.PointIdsList, rest.FilterSelector)):
-                points_selector = RestToGrpc.convert_points_selector(points_selector)
+            points_selector = self._try_argument_to_grpc_selector(points_selector)
 
             return GrpcToRest.convert_update_result(
                 self._grpc_points_client.ClearPayload(grpc.ClearPayloadPoints(
@@ -991,8 +1138,7 @@ class QdrantClient:
                     points=points_selector
                 )).result)
         else:
-            if isinstance(points_selector, grpc.PointsSelector):
-                points_selector = GrpcToRest.convert_points_selector(points_selector)
+            points_selector = self._try_argument_to_rest_selector(points_selector)
 
             return self.openapi_client.points_api.clear_payload(
                 collection_name=collection_name,
@@ -1377,7 +1523,8 @@ class QdrantClient:
         """
         return self.openapi_client.snapshots_api.create_full_snapshot().result
 
-    def recover_snapshot(self, collection_name: str, location: str) -> bool:
+    def recover_snapshot(self, collection_name: str, location: str,
+                         priority: Optional[types.SnapshotPriority] = None) -> bool:
         """Recover collection from snapshot.
 
         Args:
@@ -1387,11 +1534,16 @@ class QdrantClient:
                 Example:
                     - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
                     - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
+            priority:
+                Defines source of truth for snapshot recovery
+                    - `snapshot` means - prefer snapshot data over the current state
+                    - `replica` means - prefer existing data over the snapshot
+                Default: `replica`
 
         """
         return self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
-            recover_snapshot=rest.SnapshotRecover(location=location)
+            recover_snapshot=rest.SnapshotRecover(location=location, priority=priority)
         ).result
 
     def lock_storage(self, reason: str):
