@@ -49,6 +49,10 @@ class QdrantClient:
         prefer_grpc: If `true` - use gPRC interface whenever possible in custom methods.
         https: If `true` - use HTTPS(SSL) protocol. Default: `false`
         api_key: API key for authentication in Qdrant Cloud. Default: `None`
+        prefix:
+            If not `None` - add `prefix` to the REST URL path.
+            Example: `service/v1` will result in `http://localhost:6333/service/v1/{qdrant-endpoint}` for REST API.
+            Default: `None`
         **kwargs: Additional arguments passed directly into REST client initialization
     """
 
@@ -59,11 +63,16 @@ class QdrantClient:
                  prefer_grpc=False,
                  https=None,
                  api_key=None,
+                 prefix=None,
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._host = host
         self._port = port
+        self._prefix = prefix
+
+        if prefix is not None and len(prefix) > 0 and prefix[0] != '/':
+            self._prefix = f"/{prefix}"
 
         self._https = https
         self._api_key = api_key
@@ -89,7 +98,7 @@ class QdrantClient:
             self._rest_headers['api-key'] = api_key
             self._grpc_headers.append(('api-key', api_key))
 
-        self.rest_uri = f"http{'s' if self._https else ''}://{host}:{port}"
+        self.rest_uri = f"http{'s' if self._https else ''}://{host}:{port}{self._prefix if self._prefix is not None else ''}"
         self._rest_args = {
             "headers": self._rest_headers,
             "http2": http2,
