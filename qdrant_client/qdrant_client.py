@@ -49,7 +49,10 @@ class QdrantClient:
         prefer_grpc: If `true` - use gPRC interface whenever possible in custom methods.
         https: If `true` - use HTTPS(SSL) protocol. Default: `false`
         api_key: API key for authentication in Qdrant Cloud. Default: `None`
-        prefix: If not `None` - add `prefix` after `port` in the rest uri. Default: `None`
+        prefix:
+            If defined, it specifies a string to concat at the end of the rest URI.
+            - If no `/` is defined at the beginning of `prefix`, it'll be added by default.
+            E.g: if `prefix=qdrant` and `host=example.com`, it will generate `http://example.com:6333/qdrant`
         **kwargs: Additional arguments passed directly into REST client initialization
     """
 
