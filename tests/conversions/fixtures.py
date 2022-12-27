@@ -424,6 +424,15 @@ collections_params_diff = grpc.CollectionParamsDiff(
     write_consistency_factor=2,
 )
 
+lookup_location_1 = grpc.LookupLocation(
+    collection_name="collection-123",
+)
+
+lookup_location_2 = grpc.LookupLocation(
+    collection_name="collection-123",
+    vector_name="vector-123",
+)
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -501,6 +510,7 @@ fixtures = {
         text_index_params_3,
     ],
     "CollectionParamsDiff": [collections_params_diff],
+    "LookupLocation": [lookup_location_1, lookup_location_2],
 }
 
 

@@ -15,6 +15,8 @@ PointId = Union[int, str, grpc.PointId]
 PayloadSchemaType = Union[rest.PayloadSchemaType, rest.PayloadSchemaParams, int]  # type(grpc.PayloadSchemaType) == int
 Points = Union[rest.Batch, List[Union[rest.PointStruct, grpc.PointStruct]]]
 PointsSelector = Union[List[PointId], rest.Filter, grpc.Filter, rest.PointsSelector, grpc.PointsSelector]
+LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
+
 AliasOperations = Union[
     rest.CreateAliasOperation,
     rest.RenameAliasOperation,

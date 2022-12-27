@@ -591,6 +591,7 @@ class GrpcToRest:
             with_vector=cls.convert_with_vectors_selector(
                 model.with_vectors) if model.HasField("with_vectors") else None,
             using=model.using,
+            lookup_from=cls.convert_lookup_location(model.lookup_from) if model.HasField("lookup_from") else None,
         )
 
     @classmethod
@@ -619,6 +620,13 @@ class GrpcToRest:
             replication_factor=model.replication_factor if model.HasField("replication_factor") else None,
             write_consistency_factor=model.write_consistency_factor if model.HasField(
                 "write_consistency_factor") else None,
+        )
+
+    @classmethod
+    def convert_lookup_location(cls, model: grpc.LookupLocation) -> rest.LookupLocation:
+        return rest.LookupLocation(
+            collection=model.collection_name,
+            vector=model.vector_name if model.HasField("vector_name") else None,
         )
 
 
@@ -1185,6 +1193,7 @@ class RestToGrpc:
             offset=model.offset,
             with_vectors=cls.convert_with_vectors(model.with_vector) if model.with_vector is not None else None,
             using=model.using,
+            lookup_from=cls.convert_lookup_location(model.lookup_from) if model.lookup_from is not None else None,
         )
 
     @classmethod
@@ -1216,4 +1225,11 @@ class RestToGrpc:
         return grpc.CollectionParamsDiff(
             replication_factor=model.replication_factor,
             write_consistency_factor=model.write_consistency_factor,
+        )
+
+    @classmethod
+    def convert_lookup_location(cls, model: rest.LookupLocation) -> grpc.LookupLocation:
+        return grpc.LookupLocation(
+            collection_name=model.collection,
+            vector_name=model.vector,
         )
