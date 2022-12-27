@@ -50,9 +50,9 @@ class QdrantClient:
         https: If `true` - use HTTPS(SSL) protocol. Default: `false`
         api_key: API key for authentication in Qdrant Cloud. Default: `None`
         prefix:
-            If defined, it specifies a string to concat at the end of the rest URI.
-            - If no `/` is defined at the beginning of `prefix`, it'll be added by default.
-            E.g: if `prefix=qdrant` and `host=example.com`, it will generate `http://example.com:6333/qdrant`
+            If not `None` - add `prefix` to the REST URL path.
+            Example: `service/v1` will result in `http://localhost:6333/service/v1/{qdrant-endpoint}` for REST API.
+            Default: `None`
         **kwargs: Additional arguments passed directly into REST client initialization
     """
 
