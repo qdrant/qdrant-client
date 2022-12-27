@@ -405,6 +405,7 @@ class QdrantClient:
             with_vectors: Union[bool, List[str]] = False,
             score_threshold: Optional[float] = None,
             using: Optional[str] = None,
+            lookup_from: Optional[types.LookupLocation] = None,
             top: int = None,
     ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
@@ -451,6 +452,9 @@ class QdrantClient:
             using:
                 Name of the vectors to use for recommendations.
                 If `None` - use default vectors.
+            lookup_from:
+                Defines a location (collection and vector field name), used to lookup vectors for recommendations.
+                If `None` - use current collection will be used.
             top: Same as `limit`. Deprecated.
 
         Returns:
@@ -495,6 +499,9 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
+            if isinstance(lookup_from, rest.LookupLocation):
+                lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
+
             res: grpc.SearchResponse = self._grpc_points_client.Recommend(grpc.RecommendPoints(
                 collection_name=collection_name,
                 positive=positive,
@@ -506,7 +513,8 @@ class QdrantClient:
                 with_payload=with_payload,
                 params=search_params,
                 score_threshold=score_threshold,
-                using=using
+                using=using,
+                lookup_from=lookup_from,
             ))
 
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
@@ -530,6 +538,9 @@ class QdrantClient:
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
+            if isinstance(lookup_from, grpc.LookupLocation):
+                lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
+
             return self.openapi_client.points_api.recommend_points(
                 collection_name=collection_name,
                 recommend_request=rest.RecommendRequest(
@@ -542,6 +553,7 @@ class QdrantClient:
                     with_payload=with_payload,
                     with_vector=with_vectors,
                     score_threshold=score_threshold,
+                    lookup_from=lookup_from,
                     using=using
                 )
             ).result

@@ -642,6 +642,18 @@ class LocksOption(BaseModel):
     write: bool = Field(..., description="")
 
 
+class LookupLocation(BaseModel):
+    """
+    Defines a location to use for looking up the vector. Specifies collection and vector field name.
+    """
+
+    collection: str = Field(..., description="Name of the collection used for lookup")
+    vector: Optional[str] = Field(
+        None,
+        description="Optional name of the vector field within the collection. If not provided, the default vector field will be used.",
+    )
+
+
 class MatchText(BaseModel):
     """
     Full-text match of the strings.
@@ -897,7 +909,7 @@ class RecommendRequest(BaseModel):
     """
 
     positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
-    negative: List["ExtendedPointId"] = Field(..., description="Try to avoid vectors like this")
+    negative: Optional[List["ExtendedPointId"]] = Field([], description="Try to avoid vectors like this")
     filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
@@ -915,6 +927,10 @@ class RecommendRequest(BaseModel):
     )
     using: Optional["UsingVector"] = Field(
         None, description="Define which vector to use for recommendation, if not specified - try to use default vector"
+    )
+    lookup_from: Optional["LookupLocation"] = Field(
+        None,
+        description="The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
     )
 
 
