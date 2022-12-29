@@ -73,7 +73,7 @@ def test_record_upload(prefer_grpc):
         for idx in range(NUM_VECTORS)
     )
 
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=3.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
