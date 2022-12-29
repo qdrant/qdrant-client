@@ -955,7 +955,7 @@ class QdrantClient:
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
 
-            self.openapi_client.points_api.delete_points(
+            return self.openapi_client.points_api.delete_points(
                 collection_name=collection_name,
                 wait=wait,
                 points_selector=points_selector
