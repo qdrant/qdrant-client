@@ -53,6 +53,9 @@ class QdrantClient:
             If not `None` - add `prefix` to the REST URL path.
             Example: `service/v1` will result in `http://localhost:6333/service/v1/{qdrant-endpoint}` for REST API.
             Default: `None`
+        timeout:
+            Timeout for REST and gRPC API requests.
+            Default: 5.0 seconds for REST and unlimited for gRPC
         **kwargs: Additional arguments passed directly into REST client initialization
     """
 
@@ -64,12 +67,14 @@ class QdrantClient:
                  https=None,
                  api_key=None,
                  prefix=None,
+                 timeout=None,
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._host = host
         self._port = port
         self._prefix = prefix
+        self._timeout = timeout
 
         if prefix is not None and len(prefix) > 0 and prefix[0] != '/':
             self._prefix = f"/{prefix}"
@@ -107,6 +112,9 @@ class QdrantClient:
 
         if limits is not None:
             self._rest_args['limits'] = limits
+
+        if self._timeout is not None:
+            self._rest_args['timeout'] = self._timeout
 
         self.openapi_client = SyncApis(host=self.rest_uri, **self._rest_args)
 
@@ -190,7 +198,7 @@ class QdrantClient:
                 grpc.SearchBatchPoints(
                     collection_name=collection_name,
                     search_points=requests,
-                )
+                ), timeout=self._timeout
             )
 
             return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in res.result]
@@ -330,7 +338,7 @@ class QdrantClient:
                 with_payload=with_payload,
                 params=search_params,
                 score_threshold=score_threshold
-            ))
+            ), timeout=self._timeout)
 
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
 
@@ -386,7 +394,8 @@ class QdrantClient:
                 grpc.RecommendBatchPoints(
                     collection_name=collection_name,
                     recommend_points=requests,
-                )
+                ),
+                timeout=self._timeout
             )
 
             return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in res.result]
@@ -524,7 +533,7 @@ class QdrantClient:
                 score_threshold=score_threshold,
                 using=using,
                 lookup_from=lookup_from,
-            ))
+            ), timeout=self._timeout)
 
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
@@ -630,7 +639,7 @@ class QdrantClient:
                 with_vectors=with_vectors,
                 with_payload=with_payload,
                 limit=limit
-            ))
+            ), timeout=self._timeout)
 
             return [
                        GrpcToRest.convert_retrieved_point(point)
@@ -736,7 +745,7 @@ class QdrantClient:
                 collection_name=collection_name,
                 wait=wait,
                 points=points
-            )).result)
+            ), timeout=self._timeout).result)
         else:
             if isinstance(points, list):
                 points = [
@@ -808,7 +817,7 @@ class QdrantClient:
                 ids=ids,
                 with_payload=with_payload,
                 with_vectors=with_vectors
-            )).result
+            ), timeout=self._timeout).result
 
             return [
                 GrpcToRest.convert_retrieved_point(record)
@@ -951,7 +960,7 @@ class QdrantClient:
                     collection_name=collection_name,
                     wait=wait,
                     points=points_selector
-                )).result)
+                ), timeout=self._timeout).result)
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
 
@@ -1010,7 +1019,7 @@ class QdrantClient:
                     payload=RestToGrpc.convert_payload(payload),
                     points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector
-                )).result)
+                ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
 
@@ -1075,7 +1084,7 @@ class QdrantClient:
                     payload=RestToGrpc.convert_payload(payload),
                     points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector
-                )).result)
+                ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
 
@@ -1122,7 +1131,7 @@ class QdrantClient:
                     keys=keys,
                     points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector
-                )).result)
+                ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             return self.openapi_client.points_api.delete_payload(
@@ -1165,7 +1174,7 @@ class QdrantClient:
                     collection_name=collection_name,
                     wait=wait,
                     points=points_selector
-                )).result)
+                ), timeout=self._timeout).result)
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
 
@@ -1213,7 +1222,8 @@ class QdrantClient:
             List of the collections
         """
         if self._prefer_grpc:
-            response = self._grpc_collections_client.List(grpc.ListCollectionsRequest()).collections
+            response = self._grpc_collections_client.List(grpc.ListCollectionsRequest(),
+                                                          timeout=self._timeout).collections
             return types.CollectionsResponse(
                 collections=[GrpcToRest.convert_collection_description(description) for description in response]
             )
@@ -1233,7 +1243,7 @@ class QdrantClient:
             return GrpcToRest.convert_collection_info(
                 self._grpc_collections_client.Get(grpc.GetCollectionInfoRequest(
                     collection_name=collection_name
-                )).result)
+                ), timeout=self._timeout).result)
         return self.http.collections_api.get_collection(collection_name=collection_name).result
 
     def update_collection(
