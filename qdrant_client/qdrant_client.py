@@ -1,4 +1,3 @@
-import asyncio
 import warnings
 from multiprocessing import get_all_start_methods
 from typing import Optional, Iterable, List, Union, Tuple, Type, Dict
@@ -60,14 +59,14 @@ class QdrantClient:
     """
 
     def __init__(self,
-                 host="localhost",
-                 port=6333,
-                 grpc_port=6334,
-                 prefer_grpc=False,
-                 https=None,
-                 api_key=None,
-                 prefix=None,
-                 timeout=None,
+                 host: str = "localhost",
+                 port: int = 6333,
+                 grpc_port: int = 6334,
+                 prefer_grpc: bool = False,
+                 https: Optional[bool] = None,
+                 api_key: Optional[str] =None,
+                 prefix: Optional[str] = None,
+                 timeout: Optional[float] = None,
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
@@ -116,7 +115,7 @@ class QdrantClient:
         if self._timeout is not None:
             self._rest_args['timeout'] = self._timeout
 
-        self.openapi_client = SyncApis(host=self.rest_uri, **self._rest_args)
+        self.openapi_client: SyncApis = SyncApis(host=self.rest_uri, **self._rest_args)
 
         self._grpc_channel = None
         self._grpc_points_client: Optional[grpc.PointsStub] = None
@@ -194,24 +193,25 @@ class QdrantClient:
                 RestToGrpc.convert_search_request(r, collection_name) if isinstance(r, rest.SearchRequest) else r
                 for r in requests
             ]
-            res: grpc.SearchBatchResponse = self._grpc_points_client.SearchBatch(
+
+            grpc_res: grpc.SearchBatchResponse = self.grpc_points.SearchBatch(  # type: ignore
                 grpc.SearchBatchPoints(
                     collection_name=collection_name,
                     search_points=requests,
                 ), timeout=self._timeout
             )
 
-            return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in res.result]
+            return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result]  # type: ignore
         else:
             requests = [
                 GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r
                 for r in requests
             ]
-            res: List[List[rest.ScoredPoint]] = self.http.points_api.search_batch_points(
+            http_res: List[List[rest.ScoredPoint]] = self.http.points_api.search_batch_points(
                 collection_name=collection_name,
                 search_request_batch=rest.SearchRequestBatch(searches=requests)
             ).result
-            return res
+            return http_res
 
     def search(self,
                collection_name: str,
@@ -224,7 +224,7 @@ class QdrantClient:
                with_vectors: Union[bool, List[str]] = False,
                score_threshold: Optional[float] = None,
                append_payload=True,
-               top: int = None,
+               top: Optional[int] = None,
                ) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
 
@@ -305,7 +305,7 @@ class QdrantClient:
                 vector_name = query_vector[0]
                 vector = query_vector[1]
             else:
-                vector = query_vector
+                vector = list(query_vector)
 
             if isinstance(query_filter, rest.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
@@ -327,7 +327,7 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            res: grpc.SearchResponse = self._grpc_points_client.Search(grpc.SearchPoints(
+            res: grpc.SearchResponse = self.grpc_points.Search(grpc.SearchPoints(  # type: ignore
                 collection_name=collection_name,
                 vector=vector,
                 vector_name=vector_name,
@@ -340,7 +340,7 @@ class QdrantClient:
                 score_threshold=score_threshold
             ), timeout=self._timeout)
 
-            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]  # type: ignore
 
         else:
             if isinstance(query_vector, tuple):
@@ -390,7 +390,7 @@ class QdrantClient:
                 RestToGrpc.convert_recommend_request(r, collection_name) if isinstance(r, rest.RecommendRequest) else r
                 for r in requests
             ]
-            res: grpc.SearchBatchResponse = self._grpc_points_client.RecommendBatch(
+            grpc_res: grpc.SearchBatchResponse = self.grpc_points.RecommendBatch(  # type: ignore
                 grpc.RecommendBatchPoints(
                     collection_name=collection_name,
                     recommend_points=requests,
@@ -398,23 +398,23 @@ class QdrantClient:
                 timeout=self._timeout
             )
 
-            return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in res.result]
+            return [[GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result]  # type: ignore
         else:
             requests = [
                 GrpcToRest.convert_recommend_points(r) if isinstance(r, grpc.RecommendPoints) else r
                 for r in requests
             ]
-            res: List[List[rest.ScoredPoint]] = self.http.points_api.recommend_batch_points(
+            http_res: List[List[rest.ScoredPoint]] = self.http.points_api.recommend_batch_points(
                 collection_name=collection_name,
                 recommend_request_batch=rest.RecommendRequestBatch(searches=requests)
             ).result
-            return res
+            return http_res
 
     def recommend(
             self,
             collection_name: str,
             positive: List[types.PointId],
-            negative: List[types.PointId] = None,
+            negative: Optional[List[types.PointId]] = None,
             query_filter: Optional[types.Filter] = None,
             search_params: Optional[types.SearchParams] = None,
             limit: int = 10,
@@ -424,8 +424,8 @@ class QdrantClient:
             score_threshold: Optional[float] = None,
             using: Optional[str] = None,
             lookup_from: Optional[types.LookupLocation] = None,
-            top: int = None,
-    ) -> List[types.ScoredPoint]:
+            top: Optional[int] = None,
+    ) -> Optional[List[types.ScoredPoint]]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
 
         Provide IDs of the stored points, and Qdrant will perform search based on already existing vectors.
@@ -520,7 +520,7 @@ class QdrantClient:
             if isinstance(lookup_from, rest.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
-            res: grpc.SearchResponse = self._grpc_points_client.Recommend(grpc.RecommendPoints(
+            res: grpc.SearchResponse = self.grpc_points.Recommend(grpc.RecommendPoints(  # type: ignore
                 collection_name=collection_name,
                 positive=positive,
                 negative=negative,
@@ -535,7 +535,7 @@ class QdrantClient:
                 lookup_from=lookup_from,
             ), timeout=self._timeout)
 
-            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]  # type: ignore
         else:
             positive = [
                 GrpcToRest.convert_point_id(point_id) if isinstance(point_id, grpc.PointId) else point_id
@@ -584,7 +584,7 @@ class QdrantClient:
             offset: Optional[types.PointId] = None,
             with_payload: Union[bool, List[str], types.PayloadSelector] = True,
             with_vectors: Union[bool, List[str]] = False,
-    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+    ) -> Tuple[Optional[List[types.Record]], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
 
         This method provides a way to iterate over all stored points with some optional filtering condition.
@@ -632,7 +632,7 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            res: grpc.ScrollResponse = self._grpc_points_client.Scroll(grpc.ScrollPoints(
+            res: grpc.ScrollResponse = self.grpc_points.Scroll(grpc.ScrollPoints(  # type: ignore
                 collection_name=collection_name,
                 filter=scroll_filter,
                 offset=offset,
@@ -643,8 +643,8 @@ class QdrantClient:
 
             return [
                        GrpcToRest.convert_retrieved_point(point)
-                       for point in res.result
-                   ], res.next_page_offset
+                       for point in res.result  # type: ignore
+                   ], res.next_page_offset  # type: ignore
         else:
             if isinstance(offset, grpc.PointId):
                 offset = GrpcToRest.convert_point_id(offset)
@@ -655,7 +655,7 @@ class QdrantClient:
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
-            scroll_result: rest.ScrollResult = self.openapi_client.points_api.scroll_points(
+            scroll_result: Optional[rest.ScrollResult] = self.openapi_client.points_api.scroll_points(
                 collection_name=collection_name,
                 scroll_request=rest.ScrollRequest(
                     filter=scroll_filter,
@@ -666,14 +666,14 @@ class QdrantClient:
                 )
             ).result
 
-            return scroll_result.points, scroll_result.next_page_offset
+            return (scroll_result.points, scroll_result.next_page_offset) if scroll_result is not None else (None, None)
 
     def count(
             self,
             collection_name,
             count_filter: Optional[types.Filter] = None,
             exact: bool = True,
-    ) -> types.CountResult:
+    ) -> Optional[types.CountResult]:
         """Count points in the collection.
 
         Count points in the collection matching the given filter.
@@ -706,7 +706,7 @@ class QdrantClient:
             collection_name: str,
             points: types.Points,
             wait: bool = True,
-    ) -> types.UpdateResult:
+    ) -> Optional[types.UpdateResult]:
         """Update or insert a new point into the collection.
 
         If point with given ID already exists - it will be overwritten.
@@ -724,8 +724,10 @@ class QdrantClient:
         """
         if self._prefer_grpc:
             if isinstance(points, rest.Batch):
-                vectors_batch: List[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(points.vectors,
-                                                                                           len(points.ids))
+                vectors_batch: List[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(  # type: ignore
+                    points.vectors,
+                    len(points.ids)
+                )
                 points = [
                     grpc.PointStruct(
                         id=RestToGrpc.convert_extended_point_id(points.ids[idx]),
@@ -741,7 +743,7 @@ class QdrantClient:
                     for point in points
                 ]
 
-            return GrpcToRest.convert_update_result(self._grpc_points_client.Upsert(grpc.UpsertPoints(
+            return GrpcToRest.convert_update_result(self.grpc_points.Upsert(grpc.UpsertPoints(
                 collection_name=collection_name,
                 wait=wait,
                 points=points
@@ -771,7 +773,7 @@ class QdrantClient:
             ids: List[types.PointId],
             with_payload: Union[bool, List[str], types.PayloadSelector] = True,
             with_vectors: Union[bool, List[str]] = False,
-    ) -> List[types.Record]:
+    ) -> Optional[List[types.Record]]:
         """Retrieve stored points by IDs
 
         Args:
@@ -812,7 +814,7 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            result = self._grpc_points_client.Get(grpc.GetPoints(
+            result = self.grpc_points.Get(grpc.GetPoints(
                 collection_name=collection_name,
                 ids=ids,
                 with_payload=with_payload,
@@ -845,8 +847,8 @@ class QdrantClient:
     @classmethod
     def _try_argument_to_grpc_selector(
             cls,
-            points: types.PointsSelector
-    ) -> grpc.PointsSelector:
+            points: types.PointsSelector  # type: ignore
+    ) -> grpc.PointsSelector:  # type: ignore
         if isinstance(points, list):
             points_selector = grpc.PointsSelector(
                 points=grpc.PointsIdsList(ids=[
@@ -871,7 +873,7 @@ class QdrantClient:
     def _try_argument_to_rest_selector(
             cls,
             points: types.PointsSelector
-    ) -> 'rest.PointsSelector':
+    ) -> 'rest.PointsSelector':  # type: ignore
         if isinstance(points, list):
             _points = [
                 GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
@@ -891,8 +893,11 @@ class QdrantClient:
         return points_selector
 
     @classmethod
-    def _points_selector_to_points_list(cls, points_selector: grpc.PointsSelector) -> List[grpc.PointId]:
-        name = points_selector.WhichOneof("points_selector_one_of")
+    def _points_selector_to_points_list(
+            cls,
+            points_selector: grpc.PointsSelector  # type: ignore
+    ) -> List[grpc.PointId]:  # type: ignore
+        name = points_selector.WhichOneof("points_selector_one_of")  # type: ignore
         val = getattr(points_selector, name)
 
         if name == "points":
@@ -903,7 +908,7 @@ class QdrantClient:
     def _try_argument_to_rest_points_and_filter(
             cls,
             points: types.PointsSelector
-    ) -> 'Tuple[Optional[List[rest.ExtendedPointId]], Optional[rest.Filter]]':
+    ) -> 'Tuple[Optional[List[rest.ExtendedPointId]], Optional[rest.Filter]]':  # type: ignore
         _points = None
         _filter = None
         if isinstance(points, list):
@@ -956,7 +961,7 @@ class QdrantClient:
             points_selector = self._try_argument_to_grpc_selector(points_selector)
 
             return GrpcToRest.convert_update_result(
-                self._grpc_points_client.Delete(grpc.DeletePoints(
+                self.grpc_points.Delete(grpc.DeletePoints(
                     collection_name=collection_name,
                     wait=wait,
                     points=points_selector
@@ -967,7 +972,7 @@ class QdrantClient:
             return self.openapi_client.points_api.delete_points(
                 collection_name=collection_name,
                 wait=wait,
-                points_selector=points_selector
+                points_selector=points_selector  # type: ignore
             )
 
     def set_payload(
@@ -1013,7 +1018,7 @@ class QdrantClient:
             points_selector = self._try_argument_to_grpc_selector(points)
 
             return GrpcToRest.convert_update_result(
-                self._grpc_points_client.SetPayload(grpc.SetPayloadPoints(
+                self.grpc_points.SetPayload(grpc.SetPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
@@ -1078,7 +1083,7 @@ class QdrantClient:
             points_selector = self._try_argument_to_grpc_selector(points)
 
             return GrpcToRest.convert_update_result(
-                self._grpc_points_client.OverwritePayload(grpc.SetPayloadPoints(
+                self.grpc_points.OverwritePayload(grpc.SetPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
@@ -1125,7 +1130,7 @@ class QdrantClient:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
             return GrpcToRest.convert_update_result(
-                self._grpc_points_client.DeletePayload(grpc.DeletePayloadPoints(
+                self.grpc_points.DeletePayload(grpc.DeletePayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     keys=keys,
@@ -1170,7 +1175,7 @@ class QdrantClient:
             points_selector = self._try_argument_to_grpc_selector(points_selector)
 
             return GrpcToRest.convert_update_result(
-                self._grpc_points_client.ClearPayload(grpc.ClearPayloadPoints(
+                self.grpc_points.ClearPayload(grpc.ClearPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     points=points_selector
@@ -1181,7 +1186,7 @@ class QdrantClient:
             return self.openapi_client.points_api.clear_payload(
                 collection_name=collection_name,
                 wait=wait,
-                points_selector=points_selector
+                points_selector=points_selector  # type: ignore
             ).result
 
     def update_collection_aliases(
@@ -1222,7 +1227,7 @@ class QdrantClient:
             List of the collections
         """
         if self._prefer_grpc:
-            response = self._grpc_collections_client.List(grpc.ListCollectionsRequest(),
+            response = self.grpc_collections.List(grpc.ListCollectionsRequest(),
                                                           timeout=self._timeout).collections
             return types.CollectionsResponse(
                 collections=[GrpcToRest.convert_collection_description(description) for description in response]
@@ -1241,7 +1246,7 @@ class QdrantClient:
         """
         if self._prefer_grpc:
             return GrpcToRest.convert_collection_info(
-                self._grpc_collections_client.Get(grpc.GetCollectionInfoRequest(
+                self.grpc_collections.Get(grpc.GetCollectionInfoRequest(
                     collection_name=collection_name
                 ), timeout=self._timeout).result)
         return self.http.collections_api.get_collection(collection_name=collection_name).result
@@ -1469,8 +1474,8 @@ class QdrantClient:
     def create_payload_index(self,
                              collection_name: str,
                              field_name: str,
-                             field_schema: types.PayloadSchemaType = None,
-                             field_type: types.PayloadSchemaType = None,
+                             field_schema: Optional[types.PayloadSchemaType] = None,
+                             field_type: Optional[types.PayloadSchemaType] = None,
                              wait: bool = True,
                              ):
         """Creates index for a given payload field.
@@ -1522,7 +1527,7 @@ class QdrantClient:
             wait=wait
         )
 
-    def list_snapshots(self, collection_name: str) -> List[types.SnapshotDescription]:
+    def list_snapshots(self, collection_name: str) -> Optional[List[types.SnapshotDescription]]:
         """List all snapshots for a given collection.
 
         Args:
@@ -1533,7 +1538,7 @@ class QdrantClient:
         """
         return self.openapi_client.collections_api.list_snapshots(collection_name=collection_name).result
 
-    def create_snapshot(self, collection_name: str) -> types.SnapshotDescription:
+    def create_snapshot(self, collection_name: str) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a given collection.
 
         Args:
@@ -1546,7 +1551,7 @@ class QdrantClient:
             collection_name=collection_name
         ).result
 
-    def list_full_snapshots(self) -> List[types.SnapshotDescription]:
+    def list_full_snapshots(self) -> Optional[List[types.SnapshotDescription]]:
         """List all snapshots for a whole storage
 
         Returns:
@@ -1554,7 +1559,7 @@ class QdrantClient:
         """
         return self.openapi_client.snapshots_api.list_full_snapshots().result
 
-    def create_full_snapshot(self) -> types.SnapshotDescription:
+    def create_full_snapshot(self) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a whole storage.
 
         Returns:
@@ -1563,7 +1568,7 @@ class QdrantClient:
         return self.openapi_client.snapshots_api.create_full_snapshot().result
 
     def recover_snapshot(self, collection_name: str, location: str,
-                         priority: Optional[types.SnapshotPriority] = None) -> bool:
+                         priority: Optional[types.SnapshotPriority] = None) -> Optional[bool]:
         """Recover collection from snapshot.
 
         Args:
@@ -1582,7 +1587,7 @@ class QdrantClient:
         """
         return self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
-            recover_snapshot=rest.SnapshotRecover(location=location, priority=priority)
+            snapshot_recover=rest.SnapshotRecover(location=location, priority=priority)
         ).result
 
     def lock_storage(self, reason: str):
@@ -1595,7 +1600,7 @@ class QdrantClient:
         """
         return self.openapi_client.service_api.post_locks(rest.LocksOption(write=False))
 
-    def get_locks(self) -> types.LocksOption:
+    def get_locks(self) -> Optional[types.LocksOption]:
         """Get current locks state.
         """
         return self.openapi_client.service_api.get_locks().result
