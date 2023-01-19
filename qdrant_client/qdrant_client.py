@@ -1582,7 +1582,7 @@ class QdrantClient:
         """
         return self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
-            recover_snapshot=rest.SnapshotRecover(location=location, priority=priority)
+            snapshot_recover=rest.SnapshotRecover(location=location, priority=priority)
         ).result
 
     def lock_storage(self, reason: str):
