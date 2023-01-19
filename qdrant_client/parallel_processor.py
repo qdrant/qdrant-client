@@ -114,14 +114,15 @@ class ParallelWorkerPool:
             self.processes.append(process)
 
     def unordered_map(self, stream: Iterable[Any], *args, **kwargs) -> Iterable[Any]:
-        if self.output_queue is None:
-            raise ValueError("Output queue was not initialized")
-
-        if self.input_queue is None:
-            raise ValueError("Input queue was not initialized")
-
         try:
             self.start(**kwargs)
+
+            if self.output_queue is None:
+                raise ValueError("Output queue was not initialized")
+
+            if self.input_queue is None:
+                raise ValueError("Input queue was not initialized")
+
             pushed = 0
             read = 0
             for item in stream:
@@ -159,8 +160,10 @@ class ParallelWorkerPool:
                 yield out_item
                 read += 1
         finally:
-            self.input_queue.close()
-            self.output_queue.close()
+            if self.input_queue is not None:
+                self.input_queue.close()
+            if self.output_queue is not None:
+                self.output_queue.close()
 
     def join_or_terminate(self, timeout=1):
         """
