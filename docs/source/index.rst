@@ -48,6 +48,24 @@ Get info about created collection
    my_collection_info = client.http.collections_api.get_collection("my_collection")
    print(my_collection_info.dict())
 
+Insert vectors into a collection
+
+.. code-block:: python
+
+   from qdrant_client.http.models import PointStruct
+
+   vectors = np.random.rand(100, 100)
+   client.upsert(
+       collection_name="my_collection",
+       points=[
+           PointStruct(
+               id=idx,
+               vector=vector,
+           )
+           for idx, vector in enumerate(vectors)
+       ]
+   )
+
 Search for similar vectors
 
 .. code-block:: python
