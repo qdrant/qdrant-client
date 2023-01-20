@@ -117,11 +117,8 @@ class ParallelWorkerPool:
         try:
             self.start(**kwargs)
 
-            if self.output_queue is None:
-                raise ValueError("Output queue was not initialized")
-
-            if self.input_queue is None:
-                raise ValueError("Input queue was not initialized")
+            assert self.input_queue is not None, "Input queue was not initialized"
+            assert self.output_queue is not None, "Output queue was not initialized"
 
             pushed = 0
             read = 0
@@ -160,10 +157,10 @@ class ParallelWorkerPool:
                 yield out_item
                 read += 1
         finally:
-            if self.input_queue is not None:
-                self.input_queue.close()
-            if self.output_queue is not None:
-                self.output_queue.close()
+            assert self.input_queue is not None, "Input queue is None"
+            assert self.output_queue is not None, "Output queue is None"
+            self.input_queue.close()
+            self.output_queue.close()
 
     def join_or_terminate(self, timeout=1):
         """

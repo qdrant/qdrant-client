@@ -425,7 +425,7 @@ class QdrantClient:
             using: Optional[str] = None,
             lookup_from: Optional[types.LookupLocation] = None,
             top: Optional[int] = None,
-    ) -> Optional[List[types.ScoredPoint]]:
+    ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
 
         Provide IDs of the stored points, and Qdrant will perform search based on already existing vectors.
@@ -559,7 +559,7 @@ class QdrantClient:
             if isinstance(lookup_from, grpc.LookupLocation):
                 lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
 
-            return self.openapi_client.points_api.recommend_points(
+            result = self.openapi_client.points_api.recommend_points(
                 collection_name=collection_name,
                 recommend_request=rest.RecommendRequest(
                     filter=query_filter,
@@ -575,6 +575,8 @@ class QdrantClient:
                     using=using
                 )
             ).result
+            assert result is not None, "Recommend points API returned None"
+            return result
 
     def scroll(
             self,
@@ -584,7 +586,7 @@ class QdrantClient:
             offset: Optional[types.PointId] = None,
             with_payload: Union[bool, List[str], types.PayloadSelector] = True,
             with_vectors: Union[bool, List[str]] = False,
-    ) -> Tuple[Optional[List[types.Record]], Optional[types.PointId]]:
+    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
 
         This method provides a way to iterate over all stored points with some optional filtering condition.
@@ -665,15 +667,16 @@ class QdrantClient:
                     with_vector=with_vectors
                 )
             ).result
+            assert scroll_result is not None, "Scroll points API returned None result"
 
-            return (scroll_result.points, scroll_result.next_page_offset) if scroll_result is not None else (None, None)
+            return scroll_result.points, scroll_result.next_page_offset
 
     def count(
             self,
             collection_name,
             count_filter: Optional[types.Filter] = None,
             exact: bool = True,
-    ) -> Optional[types.CountResult]:
+    ) -> types.CountResult:
         """Count points in the collection.
 
         Count points in the collection matching the given filter.
@@ -698,7 +701,7 @@ class QdrantClient:
                 exact=exact
             )
         ).result
-
+        assert count_result is not None, "Count points returned None result"
         return count_result
 
     def upsert(
@@ -706,7 +709,7 @@ class QdrantClient:
             collection_name: str,
             points: types.Points,
             wait: bool = True,
-    ) -> Optional[types.UpdateResult]:
+    ) -> types.UpdateResult:
         """Update or insert a new point into the collection.
 
         If point with given ID already exists - it will be overwritten.
@@ -743,11 +746,17 @@ class QdrantClient:
                     for point in points
                 ]
 
-            return GrpcToRest.convert_update_result(self.grpc_points.Upsert(grpc.UpsertPoints(
-                collection_name=collection_name,
-                wait=wait,
-                points=points
-            ), timeout=self._timeout).result)
+            grpc_result = self.grpc_points.Upsert(
+                grpc.UpsertPoints(
+                    collection_name=collection_name,
+                    wait=wait,
+                    points=points
+                ),
+                timeout=self._timeout
+            ).result
+
+            assert grpc_result is not None, "Upsert returned None result"
+            return GrpcToRest.convert_update_result(grpc_result)
         else:
             if isinstance(points, list):
                 points = [
@@ -761,19 +770,21 @@ class QdrantClient:
             if isinstance(points, rest.Batch):
                 points = rest.PointsBatch(batch=points)
 
-            return self.openapi_client.points_api.upsert_points(
+            http_result = self.openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
                 wait=wait,
                 point_insert_operations=points
             ).result
+            assert http_result is not None, "Upsert returned None result"
+            return http_result
 
     def retrieve(
-            self,
-            collection_name: str,
-            ids: List[types.PointId],
-            with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-            with_vectors: Union[bool, List[str]] = False,
-    ) -> Optional[List[types.Record]]:
+        self,
+        collection_name: str,
+        ids: List[types.PointId],
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+    ) -> List[types.Record]:
         """Retrieve stored points by IDs
 
         Args:
@@ -814,12 +825,17 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            result = self.grpc_points.Get(grpc.GetPoints(
-                collection_name=collection_name,
-                ids=ids,
-                with_payload=with_payload,
-                with_vectors=with_vectors
-            ), timeout=self._timeout).result
+            result = self.grpc_points.Get(
+                grpc.GetPoints(
+                    collection_name=collection_name,
+                    ids=ids,
+                    with_payload=with_payload,
+                    with_vectors=with_vectors
+                ),
+                timeout=self._timeout
+            ).result
+
+            assert result is not None, "Retrieve returned None result"
 
             return [
                 GrpcToRest.convert_retrieved_point(record)
@@ -835,7 +851,7 @@ class QdrantClient:
                 for idx in ids
             ]
 
-            return self.openapi_client.points_api.get_points(
+            http_result = self.openapi_client.points_api.get_points(
                 collection_name=collection_name,
                 point_request=rest.PointRequest(
                     ids=ids,
@@ -843,6 +859,8 @@ class QdrantClient:
                     with_vector=with_vectors
                 )
             ).result
+            assert http_result is not None, "Retrieve API returned None result"
+            return http_result
 
     @classmethod
     def _try_argument_to_grpc_selector(
@@ -1527,7 +1545,7 @@ class QdrantClient:
             wait=wait
         )
 
-    def list_snapshots(self, collection_name: str) -> Optional[List[types.SnapshotDescription]]:
+    def list_snapshots(self, collection_name: str) -> List[types.SnapshotDescription]:
         """List all snapshots for a given collection.
 
         Args:
@@ -1536,7 +1554,11 @@ class QdrantClient:
         Returns:
             List of snapshots
         """
-        return self.openapi_client.collections_api.list_snapshots(collection_name=collection_name).result
+        snapshots = self.openapi_client.collections_api.list_snapshots(
+            collection_name=collection_name
+        ).result
+        assert snapshots is not None, "List snapshots API returned None result"
+        return snapshots
 
     def create_snapshot(self, collection_name: str) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a given collection.
@@ -1551,24 +1573,32 @@ class QdrantClient:
             collection_name=collection_name
         ).result
 
-    def list_full_snapshots(self) -> Optional[List[types.SnapshotDescription]]:
+    def list_full_snapshots(self) -> List[types.SnapshotDescription]:
         """List all snapshots for a whole storage
 
         Returns:
             List of snapshots
         """
-        return self.openapi_client.snapshots_api.list_full_snapshots().result
+        snapshots = self.openapi_client.snapshots_api.list_full_snapshots().result
+        assert snapshots is not None, "List full snapshots API returned None result"
+        return snapshots
 
-    def create_full_snapshot(self) -> Optional[types.SnapshotDescription]:
+    def create_full_snapshot(self) -> types.SnapshotDescription:
         """Create snapshot for a whole storage.
 
         Returns:
             Snapshot description
         """
-        return self.openapi_client.snapshots_api.create_full_snapshot().result
+        snapshot_description = self.openapi_client.snapshots_api.create_full_snapshot().result
+        assert snapshot_description is not None, "Create full snapshot API returned None result"
+        return snapshot_description
 
-    def recover_snapshot(self, collection_name: str, location: str,
-                         priority: Optional[types.SnapshotPriority] = None) -> Optional[bool]:
+    def recover_snapshot(
+            self,
+            collection_name: str,
+            location: str,
+            priority: Optional[types.SnapshotPriority] = None
+    ) -> bool:
         """Recover collection from snapshot.
 
         Args:
@@ -1585,10 +1615,12 @@ class QdrantClient:
                 Default: `replica`
 
         """
-        return self.openapi_client.snapshots_api.recover_from_snapshot(
+        success = self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
             snapshot_recover=rest.SnapshotRecover(location=location, priority=priority)
         ).result
+        assert success is not None, "Recover from snapshot API returned None result"
+        return success
 
     def lock_storage(self, reason: str):
         """Lock storage for writing.
