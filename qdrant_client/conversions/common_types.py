@@ -1,3 +1,9 @@
+import sys
+
+if sys.version_info > (3, 9):
+    from typing import TypeAlias
+else:
+    from typing_extensions import TypeAlias
 from typing import Union, List
 
 from qdrant_client import grpc as grpc
@@ -23,19 +29,19 @@ AliasOperations = Union[
     rest.DeleteAliasOperation,
     grpc.AliasOperations
 ]
-Payload = rest.Payload
+Payload: TypeAlias = rest.Payload
 
-ScoredPoint = rest.ScoredPoint
-UpdateResult = rest.UpdateResult
-Record = rest.Record
-CollectionsResponse = rest.CollectionsResponse
-CollectionInfo = rest.CollectionInfo
-CountResult = rest.CountResult
-SnapshotDescription = rest.SnapshotDescription
-NamedVector = rest.NamedVector
-VectorParams = rest.VectorParams
-LocksOption = rest.LocksOption
-SnapshotPriority = rest.SnapshotPriority
+ScoredPoint: TypeAlias = rest.ScoredPoint
+UpdateResult: TypeAlias = rest.UpdateResult
+Record: TypeAlias = rest.Record
+CollectionsResponse: TypeAlias = rest.CollectionsResponse
+CollectionInfo: TypeAlias = rest.CollectionInfo
+CountResult: TypeAlias = rest.CountResult
+SnapshotDescription: TypeAlias = rest.SnapshotDescription
+NamedVector: TypeAlias = rest.NamedVector
+VectorParams: TypeAlias = rest.VectorParams
+LocksOption: TypeAlias = rest.LocksOption
+SnapshotPriority: TypeAlias = rest.SnapshotPriority
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]

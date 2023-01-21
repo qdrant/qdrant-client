@@ -5,7 +5,7 @@ from google.protobuf.timestamp_pb2 import Timestamp
 from google.protobuf.json_format import MessageToDict
 
 try:
-    from google.protobuf.pyext._message import MessageMapContainer
+    from google.protobuf.pyext._message import MessageMapContainer  # type: ignore
 except ImportError:
     pass
 
@@ -1135,13 +1135,10 @@ class RestToGrpc:
 
     @classmethod
     def convert_batch_vector_struct(cls, model: rest.BatchVectorStruct, num_records: int) -> List[grpc.Vectors]:
-        """
-
-        """
         if isinstance(model, list):
             return [cls.convert_vector_struct(item) for item in model]
         elif isinstance(model, dict):
-            result = [{} for _ in range(num_records)]
+            result: List[Dict[int, Dict]] = [{} for _ in range(num_records)]
             for key, val in model.items():
                 for i, item in enumerate(val):
                     result[i][key] = item
@@ -1153,7 +1150,7 @@ class RestToGrpc:
     def convert_named_vector_struct(cls, model: rest.NamedVectorStruct) -> Tuple[List[float], Optional[str]]:
         if isinstance(model, list):
             return model, None
-        elif isinstance(model, rest.NamedVector):
+        else:
             return model.vector, model.name
 
     @classmethod
