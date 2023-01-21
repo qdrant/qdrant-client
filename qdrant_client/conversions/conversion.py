@@ -1138,7 +1138,7 @@ class RestToGrpc:
         if isinstance(model, list):
             return [cls.convert_vector_struct(item) for item in model]
         elif isinstance(model, dict):
-            result: List[Dict[int, Dict]] = [{} for _ in range(num_records)]
+            result: List[Dict] = [{} for _ in range(num_records)]
             for key, val in model.items():
                 for i, item in enumerate(val):
                     result[i][key] = item
