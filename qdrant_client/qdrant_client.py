@@ -11,7 +11,7 @@ from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import RestToGrpc, GrpcToRest
 from qdrant_client.http import SyncApis
-from qdrant_client.http import models as rest
+from qdrant_client.http import models as rest_models
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
@@ -190,7 +190,7 @@ class QdrantClient:
         """
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_search_request(r, collection_name) if isinstance(r, rest.SearchRequest) else r
+                RestToGrpc.convert_search_request(r, collection_name) if isinstance(r, rest_models.SearchRequest) else r
                 for r in requests
             ]
 
@@ -207,9 +207,9 @@ class QdrantClient:
                 GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r
                 for r in requests
             ]
-            http_res: List[List[rest.ScoredPoint]] = self.http.points_api.search_batch_points(
+            http_res: List[List[rest_models.ScoredPoint]] = self.http.points_api.search_batch_points(
                 collection_name=collection_name,
-                search_request_batch=rest.SearchRequestBatch(searches=requests)
+                search_request_batch=rest_models.SearchRequestBatch(searches=requests)
             ).result
             return http_res
 
@@ -307,17 +307,17 @@ class QdrantClient:
             else:
                 vector = list(query_vector)
 
-            if isinstance(query_filter, rest.Filter):
+            if isinstance(query_filter, rest_models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
-            if isinstance(search_params, rest.SearchParams):
+            if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
             if isinstance(with_payload, (
                     bool,
                     list,
-                    rest.PayloadSelectorInclude,
-                    rest.PayloadSelectorExclude
+                    rest_models.PayloadSelectorInclude,
+                    rest_models.PayloadSelectorExclude
             )):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
@@ -357,7 +357,7 @@ class QdrantClient:
 
             search_result = self.http.points_api.search_points(
                 collection_name=collection_name,
-                search_request=rest.SearchRequest(
+                search_request=rest_models.SearchRequest(
                     vector=query_vector,
                     filter=query_filter,
                     limit=limit,
@@ -387,7 +387,7 @@ class QdrantClient:
         """
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_recommend_request(r, collection_name) if isinstance(r, rest.RecommendRequest) else r
+                RestToGrpc.convert_recommend_request(r, collection_name) if isinstance(r, rest_models.RecommendRequest) else r
                 for r in requests
             ]
             grpc_res: grpc.SearchBatchResponse = self.grpc_points.RecommendBatch(
@@ -404,9 +404,9 @@ class QdrantClient:
                 GrpcToRest.convert_recommend_points(r) if isinstance(r, grpc.RecommendPoints) else r
                 for r in requests
             ]
-            http_res: List[List[rest.ScoredPoint]] = self.http.points_api.recommend_batch_points(
+            http_res: List[List[rest_models.ScoredPoint]] = self.http.points_api.recommend_batch_points(
                 collection_name=collection_name,
-                recommend_request_batch=rest.RecommendRequestBatch(searches=requests)
+                recommend_request_batch=rest_models.RecommendRequestBatch(searches=requests)
             ).result
             return http_res
 
@@ -497,17 +497,17 @@ class QdrantClient:
                 for point_id in negative
             ]
 
-            if isinstance(query_filter, rest.Filter):
+            if isinstance(query_filter, rest_models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
-            if isinstance(search_params, rest.SearchParams):
+            if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
             if isinstance(with_payload, (
                     bool,
                     list,
-                    rest.PayloadSelectorInclude,
-                    rest.PayloadSelectorExclude
+                    rest_models.PayloadSelectorInclude,
+                    rest_models.PayloadSelectorExclude
             )):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
@@ -517,7 +517,7 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(lookup_from, rest.LookupLocation):
+            if isinstance(lookup_from, rest_models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
             res: grpc.SearchResponse = self.grpc_points.Recommend(grpc.RecommendPoints(
@@ -561,7 +561,7 @@ class QdrantClient:
 
             result = self.openapi_client.points_api.recommend_points(
                 collection_name=collection_name,
-                recommend_request=rest.RecommendRequest(
+                recommend_request=rest_models.RecommendRequest(
                     filter=query_filter,
                     negative=negative,
                     params=search_params,
@@ -617,14 +617,14 @@ class QdrantClient:
             if isinstance(offset, (int, str)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
 
-            if isinstance(scroll_filter, rest.Filter):
+            if isinstance(scroll_filter, rest_models.Filter):
                 scroll_filter = RestToGrpc.convert_filter(model=scroll_filter)
 
             if isinstance(with_payload, (
                     bool,
                     list,
-                    rest.PayloadSelectorInclude,
-                    rest.PayloadSelectorExclude
+                    rest_models.PayloadSelectorInclude,
+                    rest_models.PayloadSelectorExclude
             )):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
@@ -657,9 +657,9 @@ class QdrantClient:
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
-            scroll_result: Optional[rest.ScrollResult] = self.openapi_client.points_api.scroll_points(
+            scroll_result: Optional[rest_models.ScrollResult] = self.openapi_client.points_api.scroll_points(
                 collection_name=collection_name,
-                scroll_request=rest.ScrollRequest(
+                scroll_request=rest_models.ScrollRequest(
                     filter=scroll_filter,
                     limit=limit,
                     offset=offset,
@@ -696,7 +696,7 @@ class QdrantClient:
 
         count_result = self.openapi_client.points_api.count_points(
             collection_name=collection_name,
-            count_request=rest.CountRequest(
+            count_request=rest_models.CountRequest(
                 filter=count_filter,
                 exact=exact
             )
@@ -726,7 +726,7 @@ class QdrantClient:
             Operation result
         """
         if self._prefer_grpc:
-            if isinstance(points, rest.Batch):
+            if isinstance(points, rest_models.Batch):
                 vectors_batch: List[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(
                     points.vectors,
                     len(points.ids)
@@ -742,7 +742,7 @@ class QdrantClient:
             if isinstance(points, list):
                 points = [
                     RestToGrpc.convert_point_struct(point)
-                    if isinstance(point, rest.PointStruct) else point
+                    if isinstance(point, rest_models.PointStruct) else point
                     for point in points
                 ]
 
@@ -765,10 +765,10 @@ class QdrantClient:
                     for point in points
                 ]
 
-                points = rest.PointsList(points=points)
+                points = rest_models.PointsList(points=points)
 
-            if isinstance(points, rest.Batch):
-                points = rest.PointsBatch(batch=points)
+            if isinstance(points, rest_models.Batch):
+                points = rest_models.PointsBatch(batch=points)
 
             http_result = self.openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
@@ -809,8 +809,8 @@ class QdrantClient:
             if isinstance(with_payload, (
                     bool,
                     list,
-                    rest.PayloadSelectorInclude,
-                    rest.PayloadSelectorExclude
+                    rest_models.PayloadSelectorInclude,
+                    rest_models.PayloadSelectorExclude
             )):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
@@ -853,7 +853,7 @@ class QdrantClient:
 
             http_result = self.openapi_client.points_api.get_points(
                 collection_name=collection_name,
-                point_request=rest.PointRequest(
+                point_request=rest_models.PointRequest(
                     ids=ids,
                     with_payload=with_payload,
                     with_vector=with_vectors
@@ -875,10 +875,10 @@ class QdrantClient:
                 ]))
         elif isinstance(points, grpc.PointsSelector):
             points_selector = points
-        elif isinstance(points, (rest.PointIdsList, rest.FilterSelector)):
+        elif isinstance(points, (rest_models.PointIdsList, rest_models.FilterSelector)):
             points_selector = RestToGrpc.convert_points_selector(points)
-        elif isinstance(points, rest.Filter):
-            points_selector = RestToGrpc.convert_points_selector(rest.FilterSelector.construct(filter=points))
+        elif isinstance(points, rest_models.Filter):
+            points_selector = RestToGrpc.convert_points_selector(rest_models.FilterSelector.construct(filter=points))
         elif isinstance(points, grpc.Filter):
             points_selector = grpc.PointsSelector(
                 filter=points
@@ -891,21 +891,21 @@ class QdrantClient:
     def _try_argument_to_rest_selector(
             cls,
             points: types.PointsSelector
-    ) -> 'rest.PointsSelector':  # type: ignore
+    ) -> rest_models.PointsSelector:
         if isinstance(points, list):
             _points = [
                 GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
                 for idx in points
             ]
-            points_selector = rest.PointIdsList.construct(points=_points)
+            points_selector = rest_models.PointIdsList.construct(points=_points)
         elif isinstance(points, grpc.PointsSelector):
             points_selector = GrpcToRest.convert_points_selector(points)
-        elif isinstance(points, (rest.PointIdsList, rest.FilterSelector)):
+        elif isinstance(points, (rest_models.PointIdsList, rest_models.FilterSelector)):
             points_selector = points
-        elif isinstance(points, rest.Filter):
-            points_selector = rest.FilterSelector.construct(filter=points)
+        elif isinstance(points, rest_models.Filter):
+            points_selector = rest_models.FilterSelector.construct(filter=points)
         elif isinstance(points, grpc.Filter):
-            points_selector = rest.FilterSelector.construct(filter=GrpcToRest.convert_filter(points))
+            points_selector = rest_models.FilterSelector.construct(filter=GrpcToRest.convert_filter(points))
         else:
             raise ValueError(f"Unsupported points selector type: {type(points)}")
         return points_selector
@@ -926,7 +926,7 @@ class QdrantClient:
     def _try_argument_to_rest_points_and_filter(
             cls,
             points: types.PointsSelector
-    ) -> 'Tuple[Optional[List[rest.ExtendedPointId]], Optional[rest.Filter]]':  # type: ignore
+    ) -> Tuple[Optional[List[rest_models.ExtendedPointId]], Optional[rest_models.Filter]]:
         _points = None
         _filter = None
         if isinstance(points, list):
@@ -936,15 +936,15 @@ class QdrantClient:
             ]
         elif isinstance(points, grpc.PointsSelector):
             selector = GrpcToRest.convert_points_selector(points)
-            if isinstance(selector, rest.PointIdsList):
+            if isinstance(selector, rest_models.PointIdsList):
                 _points = selector.points
-            elif isinstance(selector, rest.FilterSelector):
+            elif isinstance(selector, rest_models.FilterSelector):
                 _filter = selector.filter
-        elif isinstance(points, rest.PointIdsList):
+        elif isinstance(points, rest_models.PointIdsList):
             _points = points.points
-        elif isinstance(points, rest.FilterSelector):
+        elif isinstance(points, rest_models.FilterSelector):
             _filter = points.filter
-        elif isinstance(points, rest.Filter):
+        elif isinstance(points, rest_models.Filter):
             _filter = points
         elif isinstance(points, grpc.Filter):
             _filter = GrpcToRest.convert_filter(points)
@@ -1049,7 +1049,7 @@ class QdrantClient:
             return self.openapi_client.points_api.set_payload(
                 collection_name=collection_name,
                 wait=wait,
-                set_payload=rest.SetPayload(
+                set_payload=rest_models.SetPayload(
                     payload=payload,
                     points=_points,
                     filter=_filter,
@@ -1114,7 +1114,7 @@ class QdrantClient:
             return self.openapi_client.points_api.overwrite_payload(
                 collection_name=collection_name,
                 wait=wait,
-                set_payload=rest.SetPayload(
+                set_payload=rest_models.SetPayload(
                     payload=payload,
                     points=_points,
                     filter=_filter,
@@ -1160,7 +1160,7 @@ class QdrantClient:
             return self.openapi_client.points_api.delete_payload(
                 collection_name=collection_name,
                 wait=wait,
-                delete_payload=rest.DeletePayload(
+                delete_payload=rest_models.DeletePayload(
                     keys=keys,
                     points=_points,
                     filter=_filter,
@@ -1233,7 +1233,7 @@ class QdrantClient:
 
         return self.http.collections_api.update_aliases(
             timeout=timeout,
-            change_aliases_operation=rest.ChangeAliasesOperation(
+            change_aliases_operation=rest_models.ChangeAliasesOperation(
                 actions=change_aliases_operation
             )
         )
@@ -1297,7 +1297,7 @@ class QdrantClient:
 
         return self.http.collections_api.update_collection(
             collection_name,
-            update_collection=rest.UpdateCollection(
+            update_collection=rest_models.UpdateCollection(
                 optimizers_config=optimizer_config,
                 params=collection_params
             ),
@@ -1385,7 +1385,7 @@ class QdrantClient:
 
         self.delete_collection(collection_name)
 
-        create_collection_request = rest.CreateCollection(
+        create_collection_request = rest_models.CreateCollection(
             vectors=vectors_config,
             shard_number=shard_number,
             replication_factor=replication_factor,
@@ -1521,7 +1521,7 @@ class QdrantClient:
 
         return self.openapi_client.collections_api.create_field_index(
             collection_name=collection_name,
-            create_field_index=rest.CreateFieldIndex(field_name=field_name, field_schema=field_schema),
+            create_field_index=rest_models.CreateFieldIndex(field_name=field_name, field_schema=field_schema),
             wait=wait
         )
 
@@ -1617,7 +1617,7 @@ class QdrantClient:
         """
         success = self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
-            snapshot_recover=rest.SnapshotRecover(location=location, priority=priority)
+            snapshot_recover=rest_models.SnapshotRecover(location=location, priority=priority)
         ).result
         assert success is not None, "Recover from snapshot API returned None result"
         return success
@@ -1625,12 +1625,12 @@ class QdrantClient:
     def lock_storage(self, reason: str):
         """Lock storage for writing.
         """
-        return self.openapi_client.service_api.post_locks(rest.LocksOption(error_message=reason, write=True))
+        return self.openapi_client.service_api.post_locks(rest_models.LocksOption(error_message=reason, write=True))
 
     def unlock_storage(self):
         """Unlock storage for writing.
         """
-        return self.openapi_client.service_api.post_locks(rest.LocksOption(write=False))
+        return self.openapi_client.service_api.post_locks(rest_models.LocksOption(write=False))
 
     def get_locks(self) -> Optional[types.LocksOption]:
         """Get current locks state.
