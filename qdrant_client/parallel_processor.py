@@ -1,6 +1,7 @@
 import os
 from enum import Enum
-from multiprocessing import Queue, Value, get_context
+from multiprocessing import Queue, get_context
+from multiprocessing.sharedctypes import Synchronized as BaseValue
 from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from queue import Empty
@@ -32,7 +33,7 @@ class Worker:
 def _worker(worker_class: Type[Worker],
             input_queue: Queue,
             output_queue: Queue,
-            num_active_workers: Value,
+            num_active_workers: BaseValue,
             worker_id: int,
             kwargs=None) -> None:
     """
@@ -90,7 +91,7 @@ class ParallelWorkerPool:
         self.processes: List[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
 
-        self.num_active_workers: Optional[Value] = None
+        self.num_active_workers: Optional[BaseValue] = None
 
     def start(self, **kwargs):
         self.input_queue = self.ctx.Queue(self.queue_size)
@@ -115,6 +116,10 @@ class ParallelWorkerPool:
     def unordered_map(self, stream: Iterable[Any], *args, **kwargs) -> Iterable[Any]:
         try:
             self.start(**kwargs)
+
+            assert self.input_queue is not None, "Input queue was not initialized"
+            assert self.output_queue is not None, "Output queue was not initialized"
+
             pushed = 0
             read = 0
             for item in stream:
@@ -152,6 +157,8 @@ class ParallelWorkerPool:
                 yield out_item
                 read += 1
         finally:
+            assert self.input_queue is not None, "Input queue is None"
+            assert self.output_queue is not None, "Output queue is None"
             self.input_queue.close()
             self.output_queue.close()
 

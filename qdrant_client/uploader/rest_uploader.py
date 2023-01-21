@@ -40,7 +40,7 @@ class RestBatchUploader(BaseUploader):
 
     def __init__(self, uri, collection_name, **kwargs: Any):
         self.collection_name = collection_name
-        self.openapi_client = SyncApis(host=uri, **kwargs)
+        self.openapi_client: SyncApis = SyncApis(host=uri, **kwargs)
 
     @classmethod
     def start(cls, collection_name=None, uri="http://localhost:6333", **kwargs) -> 'RestBatchUploader':

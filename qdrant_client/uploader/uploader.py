@@ -2,7 +2,7 @@ import itertools
 import math
 from abc import ABC
 from itertools import islice, count
-from typing import Optional, Iterable, Any, Callable, Union, List
+from typing import Optional, Iterable, Union, List, Generator
 
 import numpy as np
 
@@ -25,12 +25,10 @@ def iter_batch(iterable, size) -> Iterable:
 
 
 class BaseUploader(Worker, ABC):
-
     @classmethod
-    def iterate_records_batches(cls,
-                                records: Iterable[Record],
-                                batch_size: int
-                                ) -> Iterable:
+    def iterate_records_batches(
+        cls, records: Iterable[Record], batch_size: int
+    ) -> Iterable:
 
         record_batches = iter_batch(records, batch_size)
         for record_batch in record_batches:
@@ -40,25 +38,30 @@ class BaseUploader(Worker, ABC):
             yield ids_batch, vectors_batch, payload_batch
 
     @classmethod
-    def iterate_batches(cls,
-                        vectors: Union[np.ndarray, Iterable[List[float]]],
-                        payload: Optional[Iterable[dict]],
-                        ids: Optional[Iterable[ExtendedPointId]],
-                        batch_size: int,
-                        ) -> Iterable:
+    def iterate_batches(
+        cls,
+        vectors: Union[np.ndarray, Iterable[List[float]]],
+        payload: Optional[Iterable[dict]],
+        ids: Optional[Iterable[ExtendedPointId]],
+        batch_size: int,
+    ) -> Iterable:
         if ids is None:
             ids = itertools.count()
 
         ids_batches = iter_batch(ids, batch_size)
         if payload is None:
-            payload_batches = (None for _ in count())
+            payload_batches: Union[Generator, Iterable] = (None for _ in count())
         else:
             payload_batches = iter_batch(payload, batch_size)
 
         if isinstance(vectors, np.ndarray):
             num_vectors = vectors.shape[0]
             num_batches = int(math.ceil(num_vectors / batch_size))
-            vector_batches = (vectors[i * batch_size:(i + 1) * batch_size].tolist() for i in range(num_batches))
+            vector_batches: Union[Generator, Iterable] = (
+                vectors[i * batch_size : (i + 1) * batch_size].tolist()
+                for i in range(num_batches)
+            )
+
         else:
             vector_batches = iter_batch(vectors, batch_size)
 
