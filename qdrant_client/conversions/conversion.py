@@ -1150,8 +1150,10 @@ class RestToGrpc:
     def convert_named_vector_struct(cls, model: rest.NamedVectorStruct) -> Tuple[List[float], Optional[str]]:
         if isinstance(model, list):
             return model, None
-        else:
+        elif isinstance(model, rest.NamedVector):
             return model.vector, model.name
+        else:
+            raise ValueError(f"invalid NamedVectorStruct model: {model}")
 
     @classmethod
     def convert_search_request(cls, model: rest.SearchRequest, collection_name: str) -> grpc.SearchPoints:

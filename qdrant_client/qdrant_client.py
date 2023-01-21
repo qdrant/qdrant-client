@@ -64,7 +64,7 @@ class QdrantClient:
                  grpc_port: int = 6334,
                  prefer_grpc: bool = False,
                  https: Optional[bool] = None,
-                 api_key: Optional[str] =None,
+                 api_key: Optional[str] = None,
                  prefix: Optional[str] = None,
                  timeout: Optional[float] = None,
                  **kwargs):
@@ -779,11 +779,11 @@ class QdrantClient:
             return http_result
 
     def retrieve(
-        self,
-        collection_name: str,
-        ids: List[types.PointId],
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+            self,
+            collection_name: str,
+            ids: List[types.PointId],
+            with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+            with_vectors: Union[bool, List[str]] = False,
     ) -> List[types.Record]:
         """Retrieve stored points by IDs
 
@@ -1246,7 +1246,7 @@ class QdrantClient:
         """
         if self._prefer_grpc:
             response = self.grpc_collections.List(grpc.ListCollectionsRequest(),
-                                                          timeout=self._timeout).collections
+                                                  timeout=self._timeout).collections
             return types.CollectionsResponse(
                 collections=[GrpcToRest.convert_collection_description(description) for description in response]
             )
