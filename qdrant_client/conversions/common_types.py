@@ -1,9 +1,10 @@
 import sys
 
-if sys.version_info > (3, 9):
+if sys.version_info >= (3, 10):
     from typing import TypeAlias
 else:
     from typing_extensions import TypeAlias
+
 from typing import Union, List
 
 from qdrant_client import grpc as grpc
