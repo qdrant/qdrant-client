@@ -1617,7 +1617,7 @@ class QdrantClient:
         """
         success = self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
-            snapshot_recover=rest.SnapshotRecover(location=location, priority=priority)
+            snapshot_recover=rest_models.SnapshotRecover(location=location, priority=priority)
         ).result
         assert success is not None, "Recover from snapshot API returned None result"
         return success
