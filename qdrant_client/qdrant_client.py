@@ -5,6 +5,7 @@ from typing import Optional, Iterable, List, Union, Tuple, Type, Dict
 import httpx
 import numpy as np
 import logging
+from urllib.parse import urlparse
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
@@ -70,7 +71,7 @@ class QdrantClient:
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
-        self._host = host
+        self._host = self._remove_scheme_from_host(host)
         self._port = port
         self._prefix = prefix
         self._timeout = timeout
@@ -102,7 +103,7 @@ class QdrantClient:
             self._rest_headers['api-key'] = api_key
             self._grpc_headers.append(('api-key', api_key))
 
-        self.rest_uri = f"http{'s' if self._https else ''}://{host}:{port}{self._prefix if self._prefix is not None else ''}"
+        self.rest_uri = f"http{'s' if self._https else ''}://{self._host}:{port}{self._prefix if self._prefix is not None else ''}"
         self._rest_args = {
             "headers": self._rest_headers,
             "http2": http2,
@@ -137,6 +138,13 @@ class QdrantClient:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata)
         self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
+    
+    def _remove_scheme_from_host(self, host: str) -> str:
+        """
+        Strip any scheme from the host string. E.g. http://, https://
+        """
+        return urlparse(host).hostname or host
+
 
     @property
     def grpc_collections(self):
