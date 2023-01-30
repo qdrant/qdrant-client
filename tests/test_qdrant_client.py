@@ -62,6 +62,23 @@ def create_random_vectors():
     return vectors_path
 
 
+def test_rest_init():
+    client = QdrantClient()
+    assert client.rest_uri == 'http://localhost:6333'
+
+    client = QdrantClient(https=True, port=7333)
+    assert client.rest_uri == 'https://localhost:7333'
+
+    client = QdrantClient(host='hidden_port_addr.com', prefix='custom')
+    assert client.rest_uri == 'http://hidden_port_addr.com:6333/custom'
+
+    client = QdrantClient(host='hidden_port_addr.com', port=None)
+    assert client.rest_uri == 'http://hidden_port_addr.com'
+
+    client = QdrantClient(host='hidden_port_addr.com', port=None, prefix='custom', )
+    assert client.rest_uri == 'http://hidden_port_addr.com/custom'
+
+
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_record_upload(prefer_grpc):
     records = (
