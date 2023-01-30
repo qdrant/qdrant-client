@@ -1,6 +1,6 @@
 import warnings
 from multiprocessing import get_all_start_methods
-from typing import Optional, Iterable, List, Union, Tuple, Type, Dict
+from typing import Optional, Iterable, List, Union, Tuple, Type, Dict, Any, Sequence, Mapping
 
 import httpx
 import numpy as np
@@ -10,7 +10,7 @@ from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import RestToGrpc, GrpcToRest
-from qdrant_client.http import SyncApis
+from qdrant_client.http import SyncApis, ApiClient
 from qdrant_client.http import models as rest_models
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
@@ -119,7 +119,7 @@ class QdrantClient:
         if self._timeout is not None:
             self._rest_args['timeout'] = self._timeout
 
-        self.openapi_client: SyncApis = SyncApis(host=self.rest_uri, **self._rest_args)
+        self.openapi_client: SyncApis[ApiClient] = SyncApis(host=self.rest_uri, **self._rest_args)
 
         self._grpc_channel = None
         self._grpc_points_client: Optional[grpc.PointsStub] = None
@@ -182,7 +182,7 @@ class QdrantClient:
         """
         return self.openapi_client
 
-    def search_batch(self, collection_name: str, requests: List[types.SearchRequest]) -> List[List[types.ScoredPoint]]:
+    def search_batch(self, collection_name: str, requests: Sequence[types.SearchRequest]) -> List[List[types.ScoredPoint]]:
         """Search for points in multiple collections
 
         Args:
@@ -219,15 +219,15 @@ class QdrantClient:
 
     def search(self,
                collection_name: str,
-               query_vector: Union[np.ndarray, List[float], Tuple[str, List[float]], types.NamedVector],
+               query_vector: Union[types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector],
                query_filter: Optional[types.Filter] = None,
                search_params: Optional[types.SearchParams] = None,
                limit: int = 10,
                offset: int = 0,
-               with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-               with_vectors: Union[bool, List[str]] = False,
+               with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+               with_vectors: Union[bool, Sequence[str]] = False,
                score_threshold: Optional[float] = None,
-               append_payload=True,
+               append_payload: bool = True,
                top: Optional[int] = None,
                ) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
@@ -378,7 +378,7 @@ class QdrantClient:
     def recommend_batch(
             self,
             collection_name: str,
-            requests: List[types.RecommendRequest]
+            requests: Sequence[types.RecommendRequest]
     ) -> List[List[types.ScoredPoint]]:
         """Perform multiple recommend requests in batch mode
 
@@ -417,8 +417,8 @@ class QdrantClient:
     def recommend(
             self,
             collection_name: str,
-            positive: List[types.PointId],
-            negative: Optional[List[types.PointId]] = None,
+            positive: Sequence[types.PointId],
+            negative: Optional[Sequence[types.PointId]] = None,
             query_filter: Optional[types.Filter] = None,
             search_params: Optional[types.SearchParams] = None,
             limit: int = 10,
@@ -588,8 +588,8 @@ class QdrantClient:
             scroll_filter: Optional[types.Filter] = None,
             limit: int = 10,
             offset: Optional[types.PointId] = None,
-            with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-            with_vectors: Union[bool, List[str]] = False,
+            with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+            with_vectors: Union[bool, Sequence[str]] = False,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
 
@@ -677,7 +677,7 @@ class QdrantClient:
 
     def count(
             self,
-            collection_name,
+            collection_name: str,
             count_filter: Optional[types.Filter] = None,
             exact: bool = True,
     ) -> types.CountResult:
@@ -785,9 +785,9 @@ class QdrantClient:
     def retrieve(
             self,
             collection_name: str,
-            ids: List[types.PointId],
-            with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-            with_vectors: Union[bool, List[str]] = False,
+            ids: Sequence[types.PointId],
+            with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+            with_vectors: Union[bool, Sequence[str]] = False,
     ) -> List[types.Record]:
         """Retrieve stored points by IDs
 
@@ -823,11 +823,7 @@ class QdrantClient:
                 for idx in ids
             ]
 
-            if isinstance(with_vectors, (
-                    bool,
-                    list,
-            )):
-                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
+            with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             result = self.grpc_points.Get(
                 grpc.GetPoints(
@@ -1128,7 +1124,7 @@ class QdrantClient:
     def delete_payload(
             self,
             collection_name: str,
-            keys: List[str],
+            keys: Sequence[str],
             points: types.PointsSelector,
             wait: bool = True,
     ):
@@ -1213,7 +1209,7 @@ class QdrantClient:
 
     def update_collection_aliases(
             self,
-            change_aliases_operations: List[types.AliasOperations],
+            change_aliases_operations: Sequence[types.AliasOperations],
             timeout: Optional[int] = None
     ):
         """Operation for performing changes of collection aliases.
@@ -1332,7 +1328,7 @@ class QdrantClient:
 
     def recreate_collection(self,
                             collection_name: str,
-                            vectors_config: Union[types.VectorParams, Dict[str, types.VectorParams]],
+                            vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
                             shard_number: Optional[int] = None,
                             replication_factor: Optional[int] = None,
                             write_consistency_factor: Optional[int] = None,
@@ -1469,8 +1465,8 @@ class QdrantClient:
 
     def upload_collection(self,
                           collection_name: str,
-                          vectors: Union[np.ndarray, Iterable[List[float]]],
-                          payload: Optional[Iterable[dict]] = None,
+                          vectors: Union[types.NumpyArray, Iterable[List[float]]],
+                          payload: Optional[Iterable[Dict[Any, Any]]] = None,
                           ids: Optional[Iterable[types.PointId]] = None,
                           batch_size: int = 64,
                           parallel: int = 1):

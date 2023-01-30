@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import Optional, List, Any
 
 import grpc
 
 
-def get_channel(host: str, port: int, ssl: bool, metadata: Optional[list] = None) -> grpc.Channel:
+def get_channel(host: str, port: int, ssl: bool, metadata: Optional[List[Any]] = None) -> grpc.Channel:
     if ssl:
 
         if metadata:

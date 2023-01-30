@@ -785,7 +785,7 @@ class P2pConfigTelemetry(BaseModel):
     connection_pool_size: int = Field(..., description="")
 
 
-Payload = dict
+Payload = Dict[Any, Any]
 
 
 class PayloadField(BaseModel):

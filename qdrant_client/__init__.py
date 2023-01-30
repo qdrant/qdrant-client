@@ -1,1 +1,1 @@
-from .qdrant_client import QdrantClient
+from .qdrant_client import QdrantClient as QdrantClient
