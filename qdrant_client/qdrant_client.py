@@ -220,7 +220,7 @@ class QdrantClient:
 
     def search(self,
                collection_name: str,
-               query_vector: Union[npt.NDArray[np.floating[Any]], Sequence[float], Tuple[str, List[float]], types.NamedVector],
+               query_vector: Union["npt.NDArray[np.floating[Any]]", Sequence[float], Tuple[str, List[float]], types.NamedVector],
                query_filter: Optional[types.Filter] = None,
                search_params: Optional[types.SearchParams] = None,
                limit: int = 10,
@@ -1466,7 +1466,7 @@ class QdrantClient:
 
     def upload_collection(self,
                           collection_name: str,
-                          vectors: Union[npt.NDArray[np.floating[Any]], Iterable[List[float]]],
+                          vectors: Union["npt.NDArray[np.floating[Any]]", Iterable[List[float]]],
                           payload: Optional[Iterable[Dict[Any, Any]]] = None,
                           ids: Optional[Iterable[types.PointId]] = None,
                           batch_size: int = 64,
