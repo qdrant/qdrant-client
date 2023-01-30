@@ -61,7 +61,7 @@ class QdrantClient:
 
     def __init__(self,
                  host: str = "localhost",
-                 port: int = 6333,
+                 port: Optional[int] = 6333,
                  grpc_port: int = 6334,
                  prefer_grpc: bool = False,
                  https: Optional[bool] = None,
@@ -73,11 +73,11 @@ class QdrantClient:
         self._grpc_port = grpc_port
         self._host = host
         self._port = port
-        self._prefix = prefix
+        self._prefix = prefix if prefix is not None else ''
         self._timeout = timeout
 
-        if prefix is not None and len(prefix) > 0 and prefix[0] != '/':
-            self._prefix = f"/{prefix}"
+        if len(self._prefix) > 0 and self._prefix[0] != '/':
+            self._prefix = f"/{self._prefix}"
 
         self._https = https
         self._api_key = api_key
@@ -103,7 +103,11 @@ class QdrantClient:
             self._rest_headers['api-key'] = api_key
             self._grpc_headers.append(('api-key', api_key))
 
-        self.rest_uri = f"http{'s' if self._https else ''}://{host}:{port}{self._prefix if self._prefix is not None else ''}"
+        protocol = 'https' if self._https else 'http'
+        address = f"{host}:{port}" if port is not None else host
+
+        self.rest_uri = f"{protocol}://{address}{self._prefix}"
+
         self._rest_args = {
             "headers": self._rest_headers,
             "http2": http2,
