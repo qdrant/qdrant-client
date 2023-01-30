@@ -4,7 +4,6 @@ from typing import Optional, Iterable, List, Union, Tuple, Type, Dict, Any, Sequ
 
 import httpx
 import numpy as np
-import numpy.typing as npt
 import logging
 
 from qdrant_client import grpc as grpc
@@ -220,7 +219,7 @@ class QdrantClient:
 
     def search(self,
                collection_name: str,
-               query_vector: Union["npt.NDArray[np.floating[Any]]", Sequence[float], Tuple[str, List[float]], types.NamedVector],
+               query_vector: Union[types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector],
                query_filter: Optional[types.Filter] = None,
                search_params: Optional[types.SearchParams] = None,
                limit: int = 10,
@@ -1466,7 +1465,7 @@ class QdrantClient:
 
     def upload_collection(self,
                           collection_name: str,
-                          vectors: Union["npt.NDArray[np.floating[Any]]", Iterable[List[float]]],
+                          vectors: Union[types.NumpyArray, Iterable[List[float]]],
                           payload: Optional[Iterable[Dict[Any, Any]]] = None,
                           ids: Optional[Iterable[types.PointId]] = None,
                           batch_size: int = 64,

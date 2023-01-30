@@ -1,7 +1,11 @@
 import sys
 
+import numpy as np
+import numpy.typing as npt
+
+
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias
+    from typing import TypeAlias, Any
 else:
     from typing_extensions import TypeAlias
 
@@ -9,6 +13,7 @@ from typing import Union, List
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
+
 
 Filter = Union[rest.Filter, grpc.Filter]
 SearchParams = Union[rest.SearchParams, grpc.SearchParams]
@@ -46,3 +51,25 @@ SnapshotPriority: TypeAlias = rest.SnapshotPriority
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
+
+# we can't use `nptyping` package due to numpy/python-version incompatibilities
+# thus we need to define precise type annotations until we support python3.7
+_np_numeric: TypeAlias = Union[
+    np.bool8,
+    np.int8,
+    np.int16,
+    np.int32,
+    np.int64,
+    np.uint8,
+    np.uint16,
+    np.uint32,
+    np.uint64,
+    np.intp,
+    np.uintp,
+    np.float16,
+    np.float32,
+    np.float64,
+    np.float96,
+    np.float128,
+]
+NumpyArray: TypeAlias = npt.NDArray[Any, _np_numeric]
