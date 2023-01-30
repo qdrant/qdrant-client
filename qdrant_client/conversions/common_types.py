@@ -54,8 +54,8 @@ RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations until we support python3.7
-_np_numeric: TypeAlias = Union[
-    np.bool8,
+_np_numeric = Union[
+    np.bool_,  # pylance can't handle np.bool8 alias
     np.int8,
     np.int16,
     np.int32,
@@ -69,7 +69,6 @@ _np_numeric: TypeAlias = Union[
     np.float16,
     np.float32,
     np.float64,
-    np.float96,
-    np.float128,
+    np.longdouble  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
-NumpyArray: TypeAlias = npt.NDArray[Any, _np_numeric]
+NumpyArray = npt.NDArray[_np_numeric]
