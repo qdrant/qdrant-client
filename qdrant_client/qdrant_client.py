@@ -60,6 +60,7 @@ class QdrantClient:
         host: Host name of Qdrant service. If url and host are None, set to 'localhost'.
             Default: `None`
         **kwargs: Additional arguments passed directly into REST client initialization
+
     """
 
     def __init__(self,
