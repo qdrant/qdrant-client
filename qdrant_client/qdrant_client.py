@@ -43,11 +43,12 @@ class QdrantClient:
         - For gRPC: :class:`~qdrant_client.grpc.PointsStub` and :class:`~qdrant_client.grpc.CollectionsStub`
 
     Args:
-        host: Host name of Qdrant service. Default: `localhost`
+        url: either host or str of "Optional[scheme], host, Optional[port], Optional[prefix]".
+            Default: `None`
         port: Port of the REST API interface. Default: 6333
         grpc_port: Port of the gRPC interface. Default: 6334
         prefer_grpc: If `true` - use gPRC interface whenever possible in custom methods.
-        https: If `true` - use HTTPS(SSL) protocol. Default: `false`
+        https: If `true` - use HTTPS(SSL) protocol. Default: `None`
         api_key: API key for authentication in Qdrant Cloud. Default: `None`
         prefix:
             If not `None` - add `prefix` to the REST URL path.
@@ -56,6 +57,8 @@ class QdrantClient:
         timeout:
             Timeout for REST and gRPC API requests.
             Default: 5.0 seconds for REST and unlimited for gRPC
+        host: Host name of Qdrant service. If url and host are None, set to 'localhost'.
+            Default: `None`
         **kwargs: Additional arguments passed directly into REST client initialization
     """
 
@@ -72,7 +75,9 @@ class QdrantClient:
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
-        self._scheme = 'https' if https or (https is None and api_key is not None) else 'http'
+        self._https = https if https is not None else api_key is not None
+        self._scheme = 'https' if self._https else 'http'
+
         self._prefix = prefix or ''
         if len(self._prefix) > 0 and self._prefix[0] != '/':
             self._prefix = f"/{self._prefix}"
