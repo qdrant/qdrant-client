@@ -1,6 +1,7 @@
 import warnings
 from multiprocessing import get_all_start_methods
 from typing import Optional, Iterable, List, Union, Tuple, Type, Dict, Any, Sequence, Mapping
+from urllib.parse import urlparse, ParseResult
 
 import httpx
 import numpy as np
@@ -59,7 +60,7 @@ class QdrantClient:
     """
 
     def __init__(self,
-                 host: str = "localhost",
+                 url: Optional[str] = None,
                  port: Optional[int] = 6333,
                  grpc_port: int = 6334,
                  prefer_grpc: bool = False,
@@ -67,18 +68,36 @@ class QdrantClient:
                  api_key: Optional[str] = None,
                  prefix: Optional[str] = None,
                  timeout: Optional[float] = None,
+                 host: Optional[str] = None,
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
-        self._host = host
-        self._port = port
-        self._prefix = prefix if prefix is not None else ''
-        self._timeout = timeout
-
+        self._scheme = 'https' if https or (https is None and api_key is not None) else 'http'
+        self._prefix = prefix or ''
         if len(self._prefix) > 0 and self._prefix[0] != '/':
             self._prefix = f"/{self._prefix}"
 
-        self._https = https
+        if url is not None and host is not None:
+            raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
+
+        elif url:
+            scheme, self._host, self._port, _prefix = self._parse_url(url)
+            self._scheme = scheme if scheme else self._scheme
+            self._port = self._port if self._port else port
+
+            if self._prefix and _prefix:
+                raise ValueError(
+                    "Prefix can be set either in `url` or in `prefix`. "
+                    f"url is {url}, prefix is {prefix}"
+                )
+
+            if self._scheme not in ('http', 'https'):
+                raise ValueError(f'Unknown scheme: {self._scheme}')
+        else:
+            self._host = host or 'localhost'
+            self._port = port
+
+        self._timeout = timeout
         self._api_key = api_key
 
         limits = kwargs.pop('limits', None)
@@ -92,20 +111,16 @@ class QdrantClient:
         self._grpc_headers = []
         self._rest_headers = kwargs.pop("metadata", {})
         if api_key is not None:
-            if self._https is False:
+            if self._scheme == 'http':
                 warnings.warn("Api key is used with unsecure connection.")
-            if self._https is None:
-                self._https = True
 
             http2 = True
 
             self._rest_headers['api-key'] = api_key
             self._grpc_headers.append(('api-key', api_key))
 
-        protocol = 'https' if self._https else 'http'
-        address = f"{host}:{port}" if port is not None else host
-
-        self.rest_uri = f"{protocol}://{address}{self._prefix}"
+        address = f"{self._host}:{self._port}" if self._port is not None else self._host
+        self.rest_uri = f"{self._scheme}://{address}{self._prefix}"
 
         self._rest_args = {
             "headers": self._rest_headers,
@@ -129,8 +144,19 @@ class QdrantClient:
             self._init_grpc_collections_client(self._grpc_headers)
 
     def __del__(self):
-        if self._grpc_channel is not None:
+        if getattr(self, '_grpc_channel', None):
             self._grpc_channel.close()
+
+    @staticmethod
+    def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
+        parse_result: ParseResult = urlparse(url)
+        scheme, netloc, prefix = parse_result.scheme, parse_result.netloc, parse_result.path
+        if ':' in netloc:
+            host, port = netloc.split(':')
+            port = int(port)
+        else:
+            host, port = netloc, None
+        return scheme, host, port, prefix
 
     def _init_grpc_points_client(self, metadata=None):
         if self._grpc_channel is None:
