@@ -5,6 +5,7 @@ from typing import Optional, Iterable, List, Union, Tuple, Type, Dict, Any, Sequ
 import httpx
 import numpy as np
 import logging
+from urllib3.util import parse_url, Url
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
@@ -42,11 +43,12 @@ class QdrantClient:
         - For gRPC: :class:`~qdrant_client.grpc.PointsStub` and :class:`~qdrant_client.grpc.CollectionsStub`
 
     Args:
-        host: Host name of Qdrant service. Default: `localhost`
+        url: either host or str of "Optional[scheme], host, Optional[port], Optional[prefix]".
+            Default: `None`
         port: Port of the REST API interface. Default: 6333
         grpc_port: Port of the gRPC interface. Default: 6334
         prefer_grpc: If `true` - use gPRC interface whenever possible in custom methods.
-        https: If `true` - use HTTPS(SSL) protocol. Default: `false`
+        https: If `true` - use HTTPS(SSL) protocol. Default: `None`
         api_key: API key for authentication in Qdrant Cloud. Default: `None`
         prefix:
             If not `None` - add `prefix` to the REST URL path.
@@ -55,11 +57,14 @@ class QdrantClient:
         timeout:
             Timeout for REST and gRPC API requests.
             Default: 5.0 seconds for REST and unlimited for gRPC
+        host: Host name of Qdrant service. If url and host are None, set to 'localhost'.
+            Default: `None`
         **kwargs: Additional arguments passed directly into REST client initialization
+
     """
 
     def __init__(self,
-                 host: str = "localhost",
+                 url: Optional[str] = None,
                  port: Optional[int] = 6333,
                  grpc_port: int = 6334,
                  prefer_grpc: bool = False,
@@ -67,18 +72,39 @@ class QdrantClient:
                  api_key: Optional[str] = None,
                  prefix: Optional[str] = None,
                  timeout: Optional[float] = None,
+                 host: Optional[str] = None,
                  **kwargs):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
-        self._host = host
-        self._port = port
-        self._prefix = prefix if prefix is not None else ''
-        self._timeout = timeout
+        self._https = https if https is not None else api_key is not None
+        self._scheme = 'https' if self._https else 'http'
 
+        self._prefix = prefix or ''
         if len(self._prefix) > 0 and self._prefix[0] != '/':
             self._prefix = f"/{self._prefix}"
 
-        self._https = https
+        if url is not None and host is not None:
+            raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
+
+        elif url:
+            parsed_url: Url = parse_url(url)
+            self._host, self._port = parsed_url.host, parsed_url.port
+            self._scheme = parsed_url.scheme if parsed_url.scheme else self._scheme
+            self._port = self._port if self._port else port
+
+            if self._prefix and parsed_url.path:
+                raise ValueError(
+                    "Prefix can be set either in `url` or in `prefix`. "
+                    f"url is {url}, prefix is {parsed_url.path}"
+                )
+
+            if self._scheme not in ('http', 'https'):
+                raise ValueError(f'Unknown scheme: {self._scheme}')
+        else:
+            self._host = host or 'localhost'
+            self._port = port
+
+        self._timeout = timeout
         self._api_key = api_key
 
         limits = kwargs.pop('limits', None)
@@ -92,20 +118,16 @@ class QdrantClient:
         self._grpc_headers = []
         self._rest_headers = kwargs.pop("metadata", {})
         if api_key is not None:
-            if self._https is False:
+            if self._scheme == 'http':
                 warnings.warn("Api key is used with unsecure connection.")
-            if self._https is None:
-                self._https = True
 
             http2 = True
 
             self._rest_headers['api-key'] = api_key
             self._grpc_headers.append(('api-key', api_key))
 
-        protocol = 'https' if self._https else 'http'
-        address = f"{host}:{port}" if port is not None else host
-
-        self.rest_uri = f"{protocol}://{address}{self._prefix}"
+        address = f"{self._host}:{self._port}" if self._port is not None else self._host
+        self.rest_uri = f"{self._scheme}://{address}{self._prefix}"
 
         self._rest_args = {
             "headers": self._rest_headers,
@@ -129,8 +151,19 @@ class QdrantClient:
             self._init_grpc_collections_client(self._grpc_headers)
 
     def __del__(self):
-        if self._grpc_channel is not None:
+        if getattr(self, '_grpc_channel', None):
             self._grpc_channel.close()
+
+    @staticmethod
+    def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
+        parse_result: Url = parse_url(url)
+        scheme, host, port, prefix = (
+            parse_result.scheme,
+            parse_result.host,
+            parse_result.port,
+            parse_result.path
+        )
+        return scheme, host, port, prefix
 
     def _init_grpc_points_client(self, metadata=None):
         if self._grpc_channel is None:
