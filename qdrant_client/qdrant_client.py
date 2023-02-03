@@ -1,11 +1,11 @@
 import warnings
 from multiprocessing import get_all_start_methods
 from typing import Optional, Iterable, List, Union, Tuple, Type, Dict, Any, Sequence, Mapping
-from urllib.parse import urlparse, ParseResult
 
 import httpx
 import numpy as np
 import logging
+from urllib3.util import parse_url, Url
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
@@ -155,13 +155,13 @@ class QdrantClient:
 
     @staticmethod
     def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
-        parse_result: ParseResult = urlparse(url)
-        scheme, netloc, prefix = parse_result.scheme, parse_result.netloc, parse_result.path
-        if ':' in netloc:
-            host, port = netloc.split(':')
-            port = int(port)
-        else:
-            host, port = netloc, None
+        parse_result: Url = parse_url(url)
+        scheme, host, port, prefix = (
+            parse_result.scheme,
+            parse_result.host,
+            parse_result.port,
+            parse_result.path
+        )
         return scheme, host, port, prefix
 
     def _init_grpc_points_client(self, metadata=None):

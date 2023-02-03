@@ -91,6 +91,12 @@ def test_rest_init():
     client = QdrantClient(url='http://localhost:6333', prefix='custom')
     assert client.rest_uri == 'http://localhost:6333/custom'
 
+    client = QdrantClient("my-domain.com")
+    assert client.rest_uri == 'http://my-domain.com:6333'
+
+    client = QdrantClient("my-domain.com:80")
+    assert client.rest_uri == 'http://my-domain.com:80'
+
     with pytest.raises(ValueError):
         QdrantClient(url='http://localhost:6333', host="localhost")
 
