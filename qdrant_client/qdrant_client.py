@@ -87,14 +87,15 @@ class QdrantClient:
             raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
 
         elif url:
-            scheme, self._host, self._port, _prefix = self._parse_url(url)
-            self._scheme = scheme if scheme else self._scheme
+            parsed_url: Url = parse_url(url)
+            self._host, self._port = parsed_url.host, parsed_url.port
+            self._scheme = parsed_url.scheme if parsed_url.scheme else self._scheme
             self._port = self._port if self._port else port
 
-            if self._prefix and _prefix:
+            if self._prefix and parsed_url.path:
                 raise ValueError(
                     "Prefix can be set either in `url` or in `prefix`. "
-                    f"url is {url}, prefix is {prefix}"
+                    f"url is {url}, prefix is {parsed_url.path}"
                 )
 
             if self._scheme not in ('http', 'https'):
