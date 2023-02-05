@@ -12,6 +12,7 @@ import pytest
 from qdrant_client import QdrantClient
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
+from qdrant_client.http.models import Batch
 from qdrant_client.models import Filter, FieldCondition, Range, PointStruct, HasIdCondition, PointIdsList, \
     VectorParams, \
     SearchRequest, RecommendRequest, TextIndexParams, TokenizerType, MatchText, \
@@ -629,6 +630,15 @@ def test_points_crud(prefer_grpc):
             )
         ],
         wait=True,
+    )
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=Batch(
+            ids=[3, 4],
+            vectors=[np.random.rand(DIM).tolist(), np.random.rand(DIM).tolist()],
+            payload=[{"test": "value", "test2": "value2"}, {"test": "value", "test2": {"haha": "???"}}],
+        )
     )
 
     # Read a single point
