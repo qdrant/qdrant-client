@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
 
 from pydantic.json import ENCODERS_BY_TYPE
 from pydantic.main import BaseModel
+from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
 SetIntStr = Set[Union[int, str]]
@@ -157,6 +158,7 @@ class _PointsApi:
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
     ):
         """
@@ -169,11 +171,13 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
 
         body = jsonable_encoder(points_selector)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/payload/clear",
             path_params=path_params,
@@ -196,7 +200,7 @@ class _PointsApi:
         body = jsonable_encoder(count_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20015,
+            type_=m.InlineResponse20016,
             method="POST",
             url="/collections/{collection_name}/points/count",
             path_params=path_params,
@@ -207,6 +211,7 @@ class _PointsApi:
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         delete_payload: m.DeletePayload = None,
     ):
         """
@@ -219,11 +224,13 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
 
         body = jsonable_encoder(delete_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/payload/delete",
             path_params=path_params,
@@ -235,6 +242,7 @@ class _PointsApi:
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
     ):
         """
@@ -247,11 +255,13 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
 
         body = jsonable_encoder(points_selector)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/delete",
             path_params=path_params,
@@ -263,6 +273,7 @@ class _PointsApi:
         self,
         collection_name: str,
         id: m.ExtendedPointId,
+        consistency: m.ReadConsistency = None,
     ):
         """
         Retrieve full information of single point by id
@@ -272,16 +283,22 @@ class _PointsApi:
             "id": str(id),
         }
 
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.InlineResponse20011,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
             path_params=path_params,
+            params=query_params,
         )
 
     def _build_for_get_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         point_request: m.PointRequest = None,
     ):
         """
@@ -291,13 +308,18 @@ class _PointsApi:
             "collection_name": str(collection_name),
         }
 
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
         body = jsonable_encoder(point_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20012,
             method="POST",
             url="/collections/{collection_name}/points",
             path_params=path_params,
+            params=query_params,
             json=body,
         )
 
@@ -305,6 +327,7 @@ class _PointsApi:
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
     ):
         """
@@ -317,11 +340,13 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
 
         body = jsonable_encoder(set_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="PUT",
             url="/collections/{collection_name}/points/payload",
             path_params=path_params,
@@ -332,6 +357,7 @@ class _PointsApi:
     def _build_for_recommend_batch_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
     ):
         """
@@ -341,19 +367,25 @@ class _PointsApi:
             "collection_name": str(collection_name),
         }
 
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
         body = jsonable_encoder(recommend_request_batch)
 
         return self.api_client.request(
-            type_=m.InlineResponse20014,
+            type_=m.InlineResponse20015,
             method="POST",
             url="/collections/{collection_name}/points/recommend/batch",
             path_params=path_params,
+            params=query_params,
             json=body,
         )
 
     def _build_for_recommend_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         recommend_request: m.RecommendRequest = None,
     ):
         """
@@ -363,19 +395,25 @@ class _PointsApi:
             "collection_name": str(collection_name),
         }
 
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
         body = jsonable_encoder(recommend_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points/recommend",
             path_params=path_params,
+            params=query_params,
             json=body,
         )
 
     def _build_for_scroll_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         scroll_request: m.ScrollRequest = None,
     ):
         """
@@ -385,19 +423,25 @@ class _PointsApi:
             "collection_name": str(collection_name),
         }
 
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
         body = jsonable_encoder(scroll_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20013,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
             path_params=path_params,
+            params=query_params,
             json=body,
         )
 
     def _build_for_search_batch_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         search_request_batch: m.SearchRequestBatch = None,
     ):
         """
@@ -407,19 +451,25 @@ class _PointsApi:
             "collection_name": str(collection_name),
         }
 
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
         body = jsonable_encoder(search_request_batch)
 
         return self.api_client.request(
-            type_=m.InlineResponse20014,
+            type_=m.InlineResponse20015,
             method="POST",
             url="/collections/{collection_name}/points/search/batch",
             path_params=path_params,
+            params=query_params,
             json=body,
         )
 
     def _build_for_search_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         search_request: m.SearchRequest = None,
     ):
         """
@@ -429,13 +479,18 @@ class _PointsApi:
             "collection_name": str(collection_name),
         }
 
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
         body = jsonable_encoder(search_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points/search",
             path_params=path_params,
+            params=query_params,
             json=body,
         )
 
@@ -443,6 +498,7 @@ class _PointsApi:
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
     ):
         """
@@ -455,11 +511,13 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
 
         body = jsonable_encoder(set_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="POST",
             url="/collections/{collection_name}/points/payload",
             path_params=path_params,
@@ -471,6 +529,7 @@ class _PointsApi:
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         point_insert_operations: m.PointInsertOperations = None,
     ):
         """
@@ -483,11 +542,13 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
 
         body = jsonable_encoder(point_insert_operations)
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2007,
             method="PUT",
             url="/collections/{collection_name}/points",
             path_params=path_params,
@@ -501,14 +562,16 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Remove all payload for specified points
         """
         return await self._build_for_clear_payload(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             points_selector=points_selector,
         )
 
@@ -516,7 +579,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20015:
+    ) -> m.InlineResponse20016:
         """
         Count points which matches given filtering condition
         """
@@ -529,14 +592,16 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Delete specified key payload for points
         """
         return await self._build_for_delete_payload(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             delete_payload=delete_payload,
         )
 
@@ -544,14 +609,16 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Delete points
         """
         return await self._build_for_delete_points(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             points_selector=points_selector,
         )
 
@@ -559,25 +626,29 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse20010:
+        consistency: m.ReadConsistency = None,
+    ) -> m.InlineResponse20011:
         """
         Retrieve full information of single point by id
         """
         return await self._build_for_get_point(
             collection_name=collection_name,
             id=id,
+            consistency=consistency,
         )
 
     async def get_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Retrieve multiple points by specified IDs
         """
         return await self._build_for_get_points(
             collection_name=collection_name,
+            consistency=consistency,
             point_request=point_request,
         )
 
@@ -585,79 +656,91 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Replace full payload of points with new one
         """
         return await self._build_for_overwrite_payload(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             set_payload=set_payload,
         )
 
     async def recommend_batch_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20015:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
         return await self._build_for_recommend_batch_points(
             collection_name=collection_name,
+            consistency=consistency,
             recommend_request_batch=recommend_request_batch,
         )
 
     async def recommend_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
         return await self._build_for_recommend_points(
             collection_name=collection_name,
+            consistency=consistency,
             recommend_request=recommend_request,
         )
 
     async def scroll_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20013:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
         return await self._build_for_scroll_points(
             collection_name=collection_name,
+            consistency=consistency,
             scroll_request=scroll_request,
         )
 
     async def search_batch_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         search_request_batch: m.SearchRequestBatch = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20015:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
         return await self._build_for_search_batch_points(
             collection_name=collection_name,
+            consistency=consistency,
             search_request_batch=search_request_batch,
         )
 
     async def search_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
         return await self._build_for_search_points(
             collection_name=collection_name,
+            consistency=consistency,
             search_request=search_request,
         )
 
@@ -665,14 +748,16 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Set payload values for points
         """
         return await self._build_for_set_payload(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             set_payload=set_payload,
         )
 
@@ -680,14 +765,16 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
         return await self._build_for_upsert_points(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             point_insert_operations=point_insert_operations,
         )
 
@@ -697,14 +784,16 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Remove all payload for specified points
         """
         return self._build_for_clear_payload(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             points_selector=points_selector,
         )
 
@@ -712,7 +801,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20015:
+    ) -> m.InlineResponse20016:
         """
         Count points which matches given filtering condition
         """
@@ -725,14 +814,16 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Delete specified key payload for points
         """
         return self._build_for_delete_payload(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             delete_payload=delete_payload,
         )
 
@@ -740,14 +831,16 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Delete points
         """
         return self._build_for_delete_points(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             points_selector=points_selector,
         )
 
@@ -755,25 +848,29 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         id: m.ExtendedPointId,
-    ) -> m.InlineResponse20010:
+        consistency: m.ReadConsistency = None,
+    ) -> m.InlineResponse20011:
         """
         Retrieve full information of single point by id
         """
         return self._build_for_get_point(
             collection_name=collection_name,
             id=id,
+            consistency=consistency,
         )
 
     def get_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Retrieve multiple points by specified IDs
         """
         return self._build_for_get_points(
             collection_name=collection_name,
+            consistency=consistency,
             point_request=point_request,
         )
 
@@ -781,79 +878,91 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Replace full payload of points with new one
         """
         return self._build_for_overwrite_payload(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             set_payload=set_payload,
         )
 
     def recommend_batch_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20015:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
         return self._build_for_recommend_batch_points(
             collection_name=collection_name,
+            consistency=consistency,
             recommend_request_batch=recommend_request_batch,
         )
 
     def recommend_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
         return self._build_for_recommend_points(
             collection_name=collection_name,
+            consistency=consistency,
             recommend_request=recommend_request,
         )
 
     def scroll_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20013:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
         return self._build_for_scroll_points(
             collection_name=collection_name,
+            consistency=consistency,
             scroll_request=scroll_request,
         )
 
     def search_batch_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         search_request_batch: m.SearchRequestBatch = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20015:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
         return self._build_for_search_batch_points(
             collection_name=collection_name,
+            consistency=consistency,
             search_request_batch=search_request_batch,
         )
 
     def search_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
         return self._build_for_search_points(
             collection_name=collection_name,
+            consistency=consistency,
             search_request=search_request,
         )
 
@@ -861,14 +970,16 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Set payload values for points
         """
         return self._build_for_set_payload(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             set_payload=set_payload,
         )
 
@@ -876,13 +987,15 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        ordering: WriteOrdering = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2007:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
         return self._build_for_upsert_points(
             collection_name=collection_name,
             wait=wait,
+            ordering=ordering,
             point_insert_operations=point_insert_operations,
         )

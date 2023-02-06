@@ -629,6 +629,36 @@ class GrpcToRest:
             vector=model.vector_name if model.HasField("vector_name") else None,
         )
 
+    @classmethod
+    def convert_write_ordering(cls, model: grpc.WriteOrdering) -> rest.WriteOrdering:
+        if model.type == grpc.WriteOrderingType.Weak:
+            return rest.WriteOrdering.WEAK
+        if model.type == grpc.WriteOrderingType.Medium:
+            return rest.WriteOrdering.MEDIUM
+        if model.type == grpc.WriteOrderingType.Strong:
+            return rest.WriteOrdering.STRONG
+        raise ValueError(f"invalid WriteOrdering model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_read_consistency(cls, model: grpc.ReadConsistency) -> rest.ReadConsistency:
+        name = model.WhichOneof("value")
+        val = getattr(model, name)
+        if name == "factor":
+            return val
+        if name == "type":
+            return cls.convert_read_consistency_type(val)
+        raise ValueError(f"invalid ReadConsistency model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_read_consistency_type(cls, model: grpc.ReadConsistencyType) -> rest.ReadConsistencyType:
+        if model == grpc.All:
+            return rest.ReadConsistencyType.ALL
+        if model == grpc.Majority:
+            return rest.ReadConsistencyType.MAJORITY
+        if model == grpc.Quorum:
+            return rest.ReadConsistencyType.QUORUM
+        raise ValueError(f"invalid ReadConsistencyType model: {model}")  # pragma: no cover
+
 
 # ----------------------------------------
 #
@@ -1232,3 +1262,38 @@ class RestToGrpc:
             collection_name=model.collection,
             vector_name=model.vector,
         )
+
+    @classmethod
+    def convert_read_consistency(cls, model: rest.ReadConsistency) -> grpc.ReadConsistency:
+        if isinstance(model, int):
+            return grpc.ReadConsistency(
+                factor=model,
+            )
+        elif isinstance(model, rest.ReadConsistencyType):
+            return grpc.ReadConsistency(
+                type=cls.convert_read_consistency_type(model),
+            )
+        else:
+            raise ValueError(f"invalid ReadConsistency model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_read_consistency_type(cls, model: rest.ReadConsistencyType) -> grpc.ReadConsistencyType:
+        if model == rest.ReadConsistencyType.MAJORITY:
+            return grpc.ReadConsistencyType.Majority
+        elif model == rest.ReadConsistencyType.ALL:
+            return grpc.ReadConsistencyType.All
+        elif model == rest.ReadConsistencyType.QUORUM:
+            return grpc.ReadConsistencyType.Quorum
+        else:
+            raise ValueError(f"invalid ReadConsistencyType model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_write_ordering(cls, model: rest.WriteOrdering) -> grpc.WriteOrdering:
+        if model == rest.WriteOrdering.WEAK:
+            return grpc.WriteOrdering(type=grpc.WriteOrderingType.Weak)
+        elif model == rest.WriteOrdering.MEDIUM:
+            return grpc.WriteOrdering(type=grpc.WriteOrderingType.Medium)
+        elif model == rest.WriteOrdering.STRONG:
+            return grpc.WriteOrdering(type=grpc.WriteOrderingType.Strong)
+        else:
+            raise ValueError(f"invalid WriteOrdering model: {model}")  # pragma: no cover

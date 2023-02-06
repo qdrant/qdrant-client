@@ -433,6 +433,34 @@ lookup_location_2 = grpc.LookupLocation(
     vector_name="vector-123",
 )
 
+read_consistency = grpc.ReadConsistency(
+    factor=1,
+)
+
+read_consistency_0 = grpc.ReadConsistency(
+    type=grpc.ReadConsistencyType.Majority,
+)
+
+read_consistency_1 = grpc.ReadConsistency(
+    type=grpc.ReadConsistencyType.All,
+)
+
+read_consistency_2 = grpc.ReadConsistency(
+    type=grpc.ReadConsistencyType.Quorum,
+)
+
+ordering_0 = grpc.WriteOrdering(
+    type=grpc.WriteOrderingType.Weak,
+)
+
+ordering_1 = grpc.WriteOrdering(
+    type=grpc.WriteOrderingType.Medium,
+)
+
+ordering_2 = grpc.WriteOrdering(
+    type=grpc.WriteOrderingType.Strong,
+)
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -511,6 +539,8 @@ fixtures = {
     ],
     "CollectionParamsDiff": [collections_params_diff],
     "LookupLocation": [lookup_location_1, lookup_location_2],
+    "ReadConsistency": [read_consistency, read_consistency_0, read_consistency_1, read_consistency_2],
+    "WriteOrdering": [ordering_0, ordering_1, ordering_2],
 }
 
 

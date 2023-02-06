@@ -24,6 +24,11 @@ class SnapshotsStub(object):
                 request_serializer=snapshots__service__pb2.ListSnapshotsRequest.SerializeToString,
                 response_deserializer=snapshots__service__pb2.ListSnapshotsResponse.FromString,
                 )
+        self.Delete = channel.unary_unary(
+                '/qdrant.Snapshots/Delete',
+                request_serializer=snapshots__service__pb2.DeleteSnapshotRequest.SerializeToString,
+                response_deserializer=snapshots__service__pb2.DeleteSnapshotResponse.FromString,
+                )
         self.CreateFull = channel.unary_unary(
                 '/qdrant.Snapshots/CreateFull',
                 request_serializer=snapshots__service__pb2.CreateFullSnapshotRequest.SerializeToString,
@@ -33,6 +38,11 @@ class SnapshotsStub(object):
                 '/qdrant.Snapshots/ListFull',
                 request_serializer=snapshots__service__pb2.ListFullSnapshotsRequest.SerializeToString,
                 response_deserializer=snapshots__service__pb2.ListSnapshotsResponse.FromString,
+                )
+        self.DeleteFull = channel.unary_unary(
+                '/qdrant.Snapshots/DeleteFull',
+                request_serializer=snapshots__service__pb2.DeleteFullSnapshotRequest.SerializeToString,
+                response_deserializer=snapshots__service__pb2.DeleteSnapshotResponse.FromString,
                 )
 
 
@@ -55,6 +65,14 @@ class SnapshotsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Delete(self, request, context):
+        """
+        Delete collection snapshots
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def CreateFull(self, request, context):
         """
         Create full storage snapshot
@@ -64,6 +82,14 @@ class SnapshotsServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ListFull(self, request, context):
+        """
+        List full storage snapshots
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteFull(self, request, context):
         """
         List full storage snapshots
         """
@@ -84,6 +110,11 @@ def add_SnapshotsServicer_to_server(servicer, server):
                     request_deserializer=snapshots__service__pb2.ListSnapshotsRequest.FromString,
                     response_serializer=snapshots__service__pb2.ListSnapshotsResponse.SerializeToString,
             ),
+            'Delete': grpc.unary_unary_rpc_method_handler(
+                    servicer.Delete,
+                    request_deserializer=snapshots__service__pb2.DeleteSnapshotRequest.FromString,
+                    response_serializer=snapshots__service__pb2.DeleteSnapshotResponse.SerializeToString,
+            ),
             'CreateFull': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateFull,
                     request_deserializer=snapshots__service__pb2.CreateFullSnapshotRequest.FromString,
@@ -93,6 +124,11 @@ def add_SnapshotsServicer_to_server(servicer, server):
                     servicer.ListFull,
                     request_deserializer=snapshots__service__pb2.ListFullSnapshotsRequest.FromString,
                     response_serializer=snapshots__service__pb2.ListSnapshotsResponse.SerializeToString,
+            ),
+            'DeleteFull': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteFull,
+                    request_deserializer=snapshots__service__pb2.DeleteFullSnapshotRequest.FromString,
+                    response_serializer=snapshots__service__pb2.DeleteSnapshotResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -139,6 +175,23 @@ class Snapshots(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def Delete(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Snapshots/Delete',
+            snapshots__service__pb2.DeleteSnapshotRequest.SerializeToString,
+            snapshots__service__pb2.DeleteSnapshotResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def CreateFull(request,
             target,
             options=(),
@@ -169,5 +222,22 @@ class Snapshots(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Snapshots/ListFull',
             snapshots__service__pb2.ListFullSnapshotsRequest.SerializeToString,
             snapshots__service__pb2.ListSnapshotsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DeleteFull(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Snapshots/DeleteFull',
+            snapshots__service__pb2.DeleteFullSnapshotRequest.SerializeToString,
+            snapshots__service__pb2.DeleteSnapshotResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

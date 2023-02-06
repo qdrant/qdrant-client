@@ -44,6 +44,16 @@ class CollectionsStub(object):
                 request_serializer=collections__pb2.ChangeAliases.SerializeToString,
                 response_deserializer=collections__pb2.CollectionOperationResponse.FromString,
                 )
+        self.ListCollectionAliases = channel.unary_unary(
+                '/qdrant.Collections/ListCollectionAliases',
+                request_serializer=collections__pb2.ListCollectionAliasesRequest.SerializeToString,
+                response_deserializer=collections__pb2.ListAliasesResponse.FromString,
+                )
+        self.ListAliases = channel.unary_unary(
+                '/qdrant.Collections/ListAliases',
+                request_serializer=collections__pb2.ListAliasesRequest.SerializeToString,
+                response_deserializer=collections__pb2.ListAliasesResponse.FromString,
+                )
 
 
 class CollectionsServicer(object):
@@ -97,6 +107,22 @@ class CollectionsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListCollectionAliases(self, request, context):
+        """
+        Get list of all aliases for a collection
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListAliases(self, request, context):
+        """
+        Get list of all aliases for all existing collections
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CollectionsServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -129,6 +155,16 @@ def add_CollectionsServicer_to_server(servicer, server):
                     servicer.UpdateAliases,
                     request_deserializer=collections__pb2.ChangeAliases.FromString,
                     response_serializer=collections__pb2.CollectionOperationResponse.SerializeToString,
+            ),
+            'ListCollectionAliases': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListCollectionAliases,
+                    request_deserializer=collections__pb2.ListCollectionAliasesRequest.FromString,
+                    response_serializer=collections__pb2.ListAliasesResponse.SerializeToString,
+            ),
+            'ListAliases': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListAliases,
+                    request_deserializer=collections__pb2.ListAliasesRequest.FromString,
+                    response_serializer=collections__pb2.ListAliasesResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -239,5 +275,39 @@ class Collections(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/UpdateAliases',
             collections__pb2.ChangeAliases.SerializeToString,
             collections__pb2.CollectionOperationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListCollectionAliases(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/ListCollectionAliases',
+            collections__pb2.ListCollectionAliasesRequest.SerializeToString,
+            collections__pb2.ListAliasesResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ListAliases(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/ListAliases',
+            collections__pb2.ListAliasesRequest.SerializeToString,
+            collections__pb2.ListAliasesResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

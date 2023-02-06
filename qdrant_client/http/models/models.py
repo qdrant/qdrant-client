@@ -16,6 +16,11 @@ class AbortTransferOperation(BaseModel):
     abort_transfer: "MoveShard" = Field(..., description="")
 
 
+class AliasDescription(BaseModel):
+    alias_name: str = Field(..., description="")
+    collection_name: str = Field(..., description="")
+
+
 class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
     features: Optional["AppFeaturesTelemetry"] = Field(None, description="")
@@ -183,6 +188,10 @@ class CollectionsAggregatedTelemetry(BaseModel):
     params: "CollectionParams" = Field(..., description="")
 
 
+class CollectionsAliasesResponse(BaseModel):
+    aliases: List["AliasDescription"] = Field(..., description="")
+
+
 class CollectionsResponse(BaseModel):
     collections: List["CollectionDescription"] = Field(..., description="")
 
@@ -283,6 +292,7 @@ class CreateCollection(BaseModel):
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
     )
+    init_from: Optional["InitFrom"] = Field(None, description="Specify other collection to copy data from.")
 
 
 class CreateFieldIndex(BaseModel):
@@ -489,6 +499,16 @@ class IndexesOneOf1(BaseModel):
     )
 
 
+class InitFrom(BaseModel):
+    """
+    Operation for creating new collection and (optionally) specify index params
+    """
+
+    collection: str = Field(
+        ..., description="Operation for creating new collection and (optionally) specify index params"
+    )
+
+
 class InlineResponse200(BaseModel):
     time: Optional[float] = Field(None, description="Time spent to process this request")
     status: Literal[
@@ -510,7 +530,7 @@ class InlineResponse20010(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["Record"] = Field(None, description="")
+    result: Optional["SnapshotDescription"] = Field(None, description="")
 
 
 class InlineResponse20011(BaseModel):
@@ -518,7 +538,7 @@ class InlineResponse20011(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["Record"]] = Field(None, description="")
+    result: Optional["Record"] = Field(None, description="")
 
 
 class InlineResponse20012(BaseModel):
@@ -526,7 +546,7 @@ class InlineResponse20012(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ScrollResult"] = Field(None, description="")
+    result: Optional[List["Record"]] = Field(None, description="")
 
 
 class InlineResponse20013(BaseModel):
@@ -534,7 +554,7 @@ class InlineResponse20013(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(None, description="")
+    result: Optional["ScrollResult"] = Field(None, description="")
 
 
 class InlineResponse20014(BaseModel):
@@ -542,10 +562,18 @@ class InlineResponse20014(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List[List["ScoredPoint"]]] = Field(None, description="")
+    result: Optional[List["ScoredPoint"]] = Field(None, description="")
 
 
 class InlineResponse20015(BaseModel):
+    time: Optional[float] = Field(None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
+    result: Optional[List[List["ScoredPoint"]]] = Field(None, description="")
+
+
+class InlineResponse20016(BaseModel):
     time: Optional[float] = Field(None, description="Time spent to process this request")
     status: Literal[
         "ok",
@@ -590,7 +618,7 @@ class InlineResponse2006(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["UpdateResult"] = Field(None, description="")
+    result: Optional["CollectionsAliasesResponse"] = Field(None, description="")
 
 
 class InlineResponse2007(BaseModel):
@@ -598,7 +626,7 @@ class InlineResponse2007(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionClusterInfo"] = Field(None, description="")
+    result: Optional["UpdateResult"] = Field(None, description="")
 
 
 class InlineResponse2008(BaseModel):
@@ -606,7 +634,7 @@ class InlineResponse2008(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["SnapshotDescription"]] = Field(None, description="")
+    result: Optional["CollectionClusterInfo"] = Field(None, description="")
 
 
 class InlineResponse2009(BaseModel):
@@ -614,7 +642,7 @@ class InlineResponse2009(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["SnapshotDescription"] = Field(None, description="")
+    result: Optional[List["SnapshotDescription"]] = Field(None, description="")
 
 
 class IsEmptyCondition(BaseModel):
@@ -805,8 +833,7 @@ class PayloadIndexInfo(BaseModel):
     params: Optional["PayloadSchemaParams"] = Field(
         None, description="Display payload field type &amp; index information"
     )
-    # backward compatibility, may be overwritten with the next release
-    points: Optional[int] = Field(None, description="Number of points indexed with this index")
+    points: int = Field(..., description="Number of points indexed with this index")
 
 
 class PayloadIndexTelemetry(BaseModel):
@@ -903,6 +930,12 @@ class Range(BaseModel):
     lte: Optional[float] = Field(None, description="point.key &lt;= range.lte")
 
 
+class ReadConsistencyType(str, Enum):
+    MAJORITY = "majority"
+    QUORUM = "quorum"
+    ALL = "all"
+
+
 class RecommendRequest(BaseModel):
     """
     Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.
@@ -994,6 +1027,7 @@ class ReplicaState(str, Enum):
     ACTIVE = "Active"
     DEAD = "Dead"
     PARTIAL = "Partial"
+    INITIALIZING = "Initializing"
 
 
 class ReplicateShardOperation(BaseModel):
@@ -1297,6 +1331,12 @@ class WebApiTelemetry(BaseModel):
     responses: Dict[str, Dict[str, "OperationDurationStatistics"]] = Field(..., description="")
 
 
+class WriteOrdering(str, Enum):
+    WEAK = "weak"
+    MEDIUM = "medium"
+    STRONG = "strong"
+
+
 AliasOperations = Union[
     CreateAliasOperation,
     DeleteAliasOperation,
@@ -1369,6 +1409,10 @@ PointInsertOperations = Union[
 PointsSelector = Union[
     PointIdsList,
     FilterSelector,
+]
+ReadConsistency = Union[
+    ReadConsistencyType,
+    StrictInt,
 ]
 StorageType = Union[
     StorageTypeOneOf,

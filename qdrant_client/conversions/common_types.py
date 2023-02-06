@@ -48,9 +48,14 @@ NamedVector: TypeAlias = rest.NamedVector
 VectorParams: TypeAlias = rest.VectorParams
 LocksOption: TypeAlias = rest.LocksOption
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
+CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
+InitFrom: TypeAlias = rest.InitFrom
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
+
+ReadConsistency = rest.ReadConsistency
+WriteOrdering = rest.WriteOrdering
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations until we support python3.7

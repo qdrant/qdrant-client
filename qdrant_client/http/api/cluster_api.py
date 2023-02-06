@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
 
 from pydantic.json import ENCODERS_BY_TYPE
 from pydantic.main import BaseModel
+from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
 SetIntStr = Set[Union[int, str]]
@@ -177,7 +178,7 @@ class _ClusterApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2008,
             method="GET",
             url="/collections/{collection_name}/cluster",
             path_params=path_params,
@@ -245,7 +246,7 @@ class AsyncClusterApi(_ClusterApi):
     async def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2008:
         """
         Get cluster information for a collection
         """
@@ -291,7 +292,7 @@ class SyncClusterApi(_ClusterApi):
     def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2008:
         """
         Get cluster information for a collection
         """
