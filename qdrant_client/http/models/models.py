@@ -28,6 +28,9 @@ class AppFeaturesTelemetry(BaseModel):
     service_debug_feature: bool = Field(..., description="")
 
 
+Payload = Dict[Any, Any]
+
+
 class Batch(BaseModel):
     ids: List["ExtendedPointId"] = Field(..., description="")
     vectors: "BatchVectorStruct" = Field(..., description="")
@@ -783,9 +786,6 @@ class OptimizersStatusOneOf1(BaseModel):
 
 class P2pConfigTelemetry(BaseModel):
     connection_pool_size: int = Field(..., description="")
-
-
-Payload = Dict[Any, Any]
 
 
 class PayloadField(BaseModel):
