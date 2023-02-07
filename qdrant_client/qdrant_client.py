@@ -1117,13 +1117,14 @@ class QdrantClient:
                 ), timeout=self._timeout).result)
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
-
-            return self.openapi_client.points_api.delete_points(
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.delete_points(
                 collection_name=collection_name,
                 wait=wait,
                 points_selector=points_selector,
                 ordering=ordering,
-            )
+            ).result
+            assert result is not None, "Delete points returned None"
+            return result
 
     def set_payload(
             self,
@@ -1188,8 +1189,7 @@ class QdrantClient:
                 ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
-
-            return self.openapi_client.points_api.set_payload(
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.set_payload(
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
@@ -1198,7 +1198,9 @@ class QdrantClient:
                     points=_points,
                     filter=_filter,
                 )
-            )
+            ).result
+            assert result is not None, "Set payload returned None"
+            return result
 
     def overwrite_payload(
             self,
@@ -1265,8 +1267,7 @@ class QdrantClient:
                 ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
-
-            return self.openapi_client.points_api.overwrite_payload(
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.overwrite_payload(
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
@@ -1275,7 +1276,9 @@ class QdrantClient:
                     points=_points,
                     filter=_filter,
                 )
-            )
+            ).result
+            assert result is not None, "Overwrite payload returned None"
+            return result
 
     def delete_payload(
             self,
@@ -1803,10 +1806,12 @@ class QdrantClient:
         Returns:
             True if snapshot was deleted
         """
-        return self.openapi_client.collections_api.delete_snapshot(
+        result: Optional[bool] = self.openapi_client.collections_api.delete_snapshot(
             collection_name=collection_name,
             snapshot_name=snapshot_name,
         ).result
+        assert result is not None, "Delete snapshot API returned None"
+        return result
 
     def list_full_snapshots(self) -> List[types.SnapshotDescription]:
         """List all snapshots for a whole storage
@@ -1837,9 +1842,11 @@ class QdrantClient:
         Returns:
             True if snapshot was deleted
         """
-        return self.openapi_client.snapshots_api.delete_full_snapshot(
+        result: Optional[bool] = self.openapi_client.snapshots_api.delete_full_snapshot(
             snapshot_name=snapshot_name,
         ).result
+        assert result is not None, "Delete full snapshot API returned None"
+        return result
 
     def recover_snapshot(
             self,
