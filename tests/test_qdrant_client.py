@@ -288,6 +288,18 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         ]
     )
 
+    version = os.getenv("QDRANT_VERSION")
+    if version is not None and version >= 'v1.0.0':
+        collection_aliases = client.get_collection_aliases(COLLECTION_NAME)
+
+        assert collection_aliases.aliases[0].collection_name == COLLECTION_NAME
+        assert collection_aliases.aliases[0].alias_name == COLLECTION_NAME_ALIAS
+
+        all_aliases = client.get_aliases()
+
+        assert all_aliases.aliases[0].collection_name == COLLECTION_NAME
+        assert all_aliases.aliases[0].alias_name == COLLECTION_NAME_ALIAS
+
     # Create payload index for field `rand_number`
     # If indexed field appear in filtering condition - search operation could be performed faster
     index_create_result = client.create_payload_index(COLLECTION_NAME, field_name="rand_number",

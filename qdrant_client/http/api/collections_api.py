@@ -166,7 +166,7 @@ class _CollectionsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/cluster",
             path_params=path_params,
@@ -223,7 +223,7 @@ class _CollectionsApi:
         body = jsonable_encoder(create_field_index)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/index",
             path_params=path_params,
@@ -295,7 +295,7 @@ class _CollectionsApi:
             query_params["ordering"] = str(ordering)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="DELETE",
             url="/collections/{collection_name}/index/{field_name}",
             path_params=path_params,
@@ -352,7 +352,7 @@ class _CollectionsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2008,
             method="GET",
             url="/collections/{collection_name}/aliases",
             path_params=path_params,
@@ -377,21 +377,9 @@ class _CollectionsApi:
         Get list of all existing collections aliases
         """
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2008,
             method="GET",
             url="/aliases",
-        )
-
-    def _build_for_get_collections_mappings(
-        self,
-    ):
-        """
-        Get list of all existing collections aliases
-        """
-        return self.api_client.request(
-            type_=m.InlineResponse2006,
-            method="GET",
-            url="/collections/aliases",
         )
 
     def _build_for_get_snapshot(
@@ -527,7 +515,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """
@@ -556,7 +544,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         create_field_index: m.CreateFieldIndex = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Create index for field in collection
         """
@@ -597,7 +585,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete field index for collection
         """
@@ -635,7 +623,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def get_collection_aliases(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
         Get list of all aliases for a collection
         """
@@ -653,19 +641,11 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def get_collections_aliases(
         self,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
         Get list of all existing collections aliases
         """
         return await self._build_for_get_collections_aliases()
-
-    async def get_collections_mappings(
-        self,
-    ) -> m.InlineResponse2006:
-        """
-        Get list of all existing collections aliases
-        """
-        return await self._build_for_get_collections_mappings()
 
     async def get_snapshot(
         self,
@@ -746,7 +726,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """
@@ -775,7 +755,7 @@ class SyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         create_field_index: m.CreateFieldIndex = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Create index for field in collection
         """
@@ -816,7 +796,7 @@ class SyncCollectionsApi(_CollectionsApi):
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete field index for collection
         """
@@ -854,7 +834,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def get_collection_aliases(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
         Get list of all aliases for a collection
         """
@@ -872,19 +852,11 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def get_collections_aliases(
         self,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2008:
         """
         Get list of all existing collections aliases
         """
         return self._build_for_get_collections_aliases()
-
-    def get_collections_mappings(
-        self,
-    ) -> m.InlineResponse2006:
-        """
-        Get list of all existing collections aliases
-        """
-        return self._build_for_get_collections_mappings()
 
     def get_snapshot(
         self,

@@ -177,7 +177,7 @@ class _PointsApi:
         body = jsonable_encoder(points_selector)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload/clear",
             path_params=path_params,
@@ -230,7 +230,7 @@ class _PointsApi:
         body = jsonable_encoder(delete_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload/delete",
             path_params=path_params,
@@ -261,7 +261,7 @@ class _PointsApi:
         body = jsonable_encoder(points_selector)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/delete",
             path_params=path_params,
@@ -346,7 +346,7 @@ class _PointsApi:
         body = jsonable_encoder(set_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points/payload",
             path_params=path_params,
@@ -517,7 +517,7 @@ class _PointsApi:
         body = jsonable_encoder(set_payload)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload",
             path_params=path_params,
@@ -548,7 +548,7 @@ class _PointsApi:
         body = jsonable_encoder(point_insert_operations)
 
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points",
             path_params=path_params,
@@ -564,7 +564,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Remove all payload for specified points
         """
@@ -594,7 +594,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete specified key payload for points
         """
@@ -611,7 +611,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete points
         """
@@ -658,7 +658,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Replace full payload of points with new one
         """
@@ -750,7 +750,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Set payload values for points
         """
@@ -767,7 +767,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
@@ -786,7 +786,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Remove all payload for specified points
         """
@@ -816,7 +816,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete specified key payload for points
         """
@@ -833,7 +833,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete points
         """
@@ -880,7 +880,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Replace full payload of points with new one
         """
@@ -972,7 +972,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Set payload values for points
         """
@@ -989,7 +989,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """

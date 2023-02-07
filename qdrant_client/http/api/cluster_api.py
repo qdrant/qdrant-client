@@ -178,7 +178,7 @@ class _ClusterApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/cluster",
             path_params=path_params,
@@ -246,7 +246,7 @@ class AsyncClusterApi(_ClusterApi):
     async def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """
@@ -292,7 +292,7 @@ class SyncClusterApi(_ClusterApi):
     def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """

@@ -1183,7 +1183,6 @@ class QdrantClient:
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
-                    points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector,
                     ordering=ordering,
                 ), timeout=self._timeout).result)
@@ -1261,7 +1260,6 @@ class QdrantClient:
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
-                    points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector,
                     ordering=ordering,
                 ), timeout=self._timeout).result)
@@ -1320,7 +1318,6 @@ class QdrantClient:
                     collection_name=collection_name,
                     wait=wait,
                     keys=keys,
-                    points=self._points_selector_to_points_list(points_selector),  # deprecated
                     points_selector=points_selector,
                     ordering=ordering,
                 ), timeout=self._timeout).result)
@@ -1430,7 +1427,7 @@ class QdrantClient:
         Returns:
             Collection aliases
         """
-        return self.http.collections_api.get_collection_aliases(collection_name=collection_name)
+        return self.http.collections_api.get_collection_aliases(collection_name=collection_name).result
 
     def get_aliases(self) -> types.CollectionsAliasesResponse:
         """Get all aliases
@@ -1438,7 +1435,7 @@ class QdrantClient:
         Returns:
             All aliases of all collections
         """
-        return self.http.collections_api.get_collections_aliases()
+        return self.http.collections_api.get_collections_aliases().result
 
     def get_collections(self) -> types.CollectionsResponse:
         """Get list name of all existing collections

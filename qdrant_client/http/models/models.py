@@ -618,7 +618,7 @@ class InlineResponse2006(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionsAliasesResponse"] = Field(None, description="")
+    result: Optional["UpdateResult"] = Field(None, description="")
 
 
 class InlineResponse2007(BaseModel):
@@ -626,7 +626,7 @@ class InlineResponse2007(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["UpdateResult"] = Field(None, description="")
+    result: Optional["CollectionClusterInfo"] = Field(None, description="")
 
 
 class InlineResponse2008(BaseModel):
@@ -634,7 +634,7 @@ class InlineResponse2008(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionClusterInfo"] = Field(None, description="")
+    result: Optional["CollectionsAliasesResponse"] = Field(None, description="")
 
 
 class InlineResponse2009(BaseModel):
