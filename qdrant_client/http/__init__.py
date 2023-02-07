@@ -1,7 +1,11 @@
 import inspect
 
 from pydantic import BaseModel
-from qdrant_client.http.api_client import ApiClient, AsyncApis, SyncApis  # noqa F401
+from qdrant_client.http.api_client import (  # noqa F401
+    ApiClient as ApiClient,
+    AsyncApis as AsyncApis,
+    SyncApis as SyncApis,
+)
 from qdrant_client.http.models import models
 
 for model in inspect.getmembers(models, inspect.isclass):
