@@ -54,8 +54,8 @@ InitFrom: TypeAlias = rest.InitFrom
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 
-ReadConsistency = rest.ReadConsistency
-WriteOrdering = rest.WriteOrdering
+ReadConsistency: TypeAlias = rest.ReadConsistency
+WriteOrdering: TypeAlias = rest.WriteOrdering
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations until we support python3.7
@@ -76,4 +76,4 @@ _np_numeric = Union[
     np.float64,
     np.longdouble  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
-NumpyArray = npt.NDArray[_np_numeric]
+NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
