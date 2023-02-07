@@ -649,7 +649,7 @@ def test_points_crud(prefer_grpc):
         points=Batch(
             ids=[3, 4],
             vectors=[np.random.rand(DIM).tolist(), np.random.rand(DIM).tolist()],
-            payload=[{"test": "value", "test2": "value2"}, {"test": "value", "test2": {"haha": "???"}}],
+            payloads=[{"test": "value", "test2": "value2"}, {"test": "value", "test2": {"haha": "???"}}],
         )
     )
 
