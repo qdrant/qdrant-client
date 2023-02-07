@@ -11,6 +11,8 @@ except ImportError:
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
+Payload = Dict[Any, Any]
+
 
 class AbortTransferOperation(BaseModel):
     abort_transfer: "MoveShard" = Field(..., description="")
@@ -31,9 +33,6 @@ class AppFeaturesTelemetry(BaseModel):
     debug: bool = Field(..., description="")
     web_feature: bool = Field(..., description="")
     service_debug_feature: bool = Field(..., description="")
-
-
-Payload = Dict[Any, Any]
 
 
 class Batch(BaseModel):
