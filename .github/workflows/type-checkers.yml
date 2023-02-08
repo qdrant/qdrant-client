@@ -32,4 +32,4 @@ jobs:
 
       - name: pyright
         run: |
-          peotry run pyright tests/type_stub.py
+          poetry run pyright tests/type_stub.py
