@@ -7,7 +7,7 @@ def get_channel(host: str, port: int, ssl: bool, metadata: Optional[List[Any]] =
     if ssl:
 
         if metadata:
-            def metadata_callback(context, callback):
+            def metadata_callback(context: Any, callback: Any) -> None:
                 # for more info see grpc docs
                 callback(metadata, None)
 

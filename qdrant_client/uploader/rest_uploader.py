@@ -1,12 +1,12 @@
 from itertools import count
-from typing import Iterable, Any
+from typing import Iterable, Any, Tuple, Union, Optional, Generator
 
 from qdrant_client.http import SyncApis
 from qdrant_client.http.models import Batch, PointsList, PointStruct
 from qdrant_client.uploader.uploader import BaseUploader
 
 
-def upload_batch(openapi_client: SyncApis, collection_name: str, batch) -> bool:
+def upload_batch(openapi_client: SyncApis, collection_name: str, batch: Union[Tuple, Batch]) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
     # Make sure we do not send too many ids in case there is an iterable over vectors,
@@ -38,16 +38,16 @@ def upload_batch(openapi_client: SyncApis, collection_name: str, batch) -> bool:
 
 class RestBatchUploader(BaseUploader):
 
-    def __init__(self, uri, collection_name, **kwargs: Any):
+    def __init__(self, uri: str, collection_name: str, **kwargs: Any):
         self.collection_name = collection_name
         self.openapi_client: SyncApis = SyncApis(host=uri, **kwargs)
 
     @classmethod
-    def start(cls, collection_name=None, uri="http://localhost:6333", **kwargs) -> 'RestBatchUploader':
+    def start(cls, collection_name: Optional[str] = None, uri: str = "http://localhost:6333", **kwargs: Any) -> 'RestBatchUploader':
         if not collection_name:
             raise RuntimeError("Collection name could not be empty")
         return cls(uri=uri, collection_name=collection_name, **kwargs)
 
-    def process(self, items: Iterable[Any]) -> Iterable[Any]:
+    def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         for batch in items:
             yield upload_batch(self.openapi_client, self.collection_name, batch)

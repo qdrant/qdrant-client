@@ -1,0 +1,35 @@
+name: type-checkers
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: [3.8]
+        os: [ubuntu-latest]
+
+    name: Python ${{ matrix.python-version }} test
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip poetry
+          poetry install
+
+      - name: mypy
+        run: |
+          poetry run mypy . --disallow-incomplete-defs --disallow-untyped-defs
+
+      - name: pyright
+        run: |
+          peotry run pyright tests/type_stub.py
