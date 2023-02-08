@@ -73,7 +73,7 @@ class QdrantClient:
                  prefix: Optional[str] = None,
                  timeout: Optional[float] = None,
                  host: Optional[str] = None,
-                 **kwargs):
+                 **kwargs: Any):
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._https = https if https is not None else api_key is not None
@@ -150,8 +150,8 @@ class QdrantClient:
             self._init_grpc_points_client(self._grpc_headers)
             self._init_grpc_collections_client(self._grpc_headers)
 
-    def __del__(self):
-        if getattr(self, '_grpc_channel', None):
+    def __del__(self) -> None:
+        if hasattr(self, '_grpc_channel') and self._grpc_channel is not None:
             self._grpc_channel.close()
 
     @staticmethod
@@ -165,18 +165,18 @@ class QdrantClient:
         )
         return scheme, host, port, prefix
 
-    def _init_grpc_points_client(self, metadata=None):
+    def _init_grpc_points_client(self, metadata: Optional[List[Any]] = None) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata)
         self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
-    def _init_grpc_collections_client(self, metadata=None):
+    def _init_grpc_collections_client(self, metadata: Optional[List[Any]] = None) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata)
         self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
 
     @property
-    def grpc_collections(self):
+    def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
 
         Returns:
@@ -187,7 +187,7 @@ class QdrantClient:
         return self._grpc_collections_client
 
     @property
-    def grpc_points(self):
+    def grpc_points(self) -> grpc.PointsStub:
         """gRPC client for points methods
 
         Returns:
@@ -198,7 +198,7 @@ class QdrantClient:
         return self._grpc_points_client
 
     @property
-    def rest(self):
+    def rest(self) -> SyncApis[ApiClient]:
         """REST Client
 
         Returns:
@@ -207,7 +207,7 @@ class QdrantClient:
         return self.openapi_client
 
     @property
-    def http(self):
+    def http(self) -> SyncApis[ApiClient]:
         """REST Client
 
         Returns:
@@ -1287,7 +1287,7 @@ class QdrantClient:
             points: types.PointsSelector,
             wait: bool = True,
             ordering: Optional[types.WriteOrdering] = None,
-    ):
+    ) -> types.UpdateResult:
         """Remove values from point's payload
 
         Args:
@@ -1326,7 +1326,7 @@ class QdrantClient:
                 ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
-            return self.openapi_client.points_api.delete_payload(
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.delete_payload(
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
@@ -1336,6 +1336,8 @@ class QdrantClient:
                     filter=_filter,
                 )
             )
+            assert result is not None, "Delete payload returned None"
+            return result
 
     def clear_payload(
             self,
@@ -1343,7 +1345,7 @@ class QdrantClient:
             points_selector: types.PointsSelector,
             wait: bool = True,
             ordering: Optional[types.WriteOrdering] = None,
-    ):
+    ) -> types.UpdateResult:
         """Delete all payload for selected points
 
         Args:
@@ -1382,19 +1384,20 @@ class QdrantClient:
                 ), timeout=self._timeout).result)
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
-
-            return self.openapi_client.points_api.clear_payload(
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.clear_payload(
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
                 points_selector=points_selector
             ).result
+            assert result is not None, "Clear payload returned None"
+            return result
 
     def update_collection_aliases(
             self,
             change_aliases_operations: Sequence[types.AliasOperations],
             timeout: Optional[int] = None
-    ):
+    ) -> bool:
         """Operation for performing changes of collection aliases.
 
         Alias changes are atomic, meaning that no collection modifications can happen between alias operations.
@@ -1413,13 +1416,14 @@ class QdrantClient:
             if isinstance(operation, grpc.AliasOperations) else operation
             for operation in change_aliases_operations
         ]
-
-        return self.http.collections_api.update_aliases(
+        result: Optional[bool] = self.http.collections_api.update_aliases(
             timeout=timeout,
             change_aliases_operation=rest_models.ChangeAliasesOperation(
                 actions=change_aliases_operation
             )
         )
+        assert result is not None, "Update aliases returned None"
+        return result
 
     def get_collection_aliases(self, collection_name: str) -> types.CollectionsAliasesResponse:
         """Get collection aliases
@@ -1477,7 +1481,7 @@ class QdrantClient:
             optimizer_config: Optional[types.OptimizersConfigDiff],
             collection_params: Optional[types.CollectionParamsDiff] = None,
             timeout: Optional[int] = None
-    ):
+    ) -> bool:
         """Update parameters of the collection
 
         Args:
@@ -1497,7 +1501,7 @@ class QdrantClient:
         if isinstance(collection_params, grpc.CollectionParamsDiff):
             collection_params = GrpcToRest.convert_collection_params_diff(collection_params)
 
-        return self.http.collections_api.update_collection(
+        result: Optional[bool] = self.http.collections_api.update_collection(
             collection_name,
             update_collection=rest_models.UpdateCollection(
                 optimizers_config=optimizer_config,
@@ -1505,12 +1509,14 @@ class QdrantClient:
             ),
             timeout=timeout
         )
+        assert result is not None, "Update collection returned None"
+        return result
 
     def delete_collection(
             self,
             collection_name: str,
             timeout: Optional[int] = None
-    ):
+    ) -> bool:
         """Removes collection and all it's data
 
         Args:
@@ -1522,11 +1528,12 @@ class QdrantClient:
         Returns:
             Operation result
         """
-
-        return self.http.collections_api.delete_collection(
+        result: Optional[bool] = self.http.collections_api.delete_collection(
             collection_name,
             timeout=timeout
         )
+        assert result is not None, "Delete collection returned None"
+        return result
 
     def recreate_collection(self,
                             collection_name: str,
@@ -1540,7 +1547,7 @@ class QdrantClient:
                             wal_config: Optional[types.WalConfigDiff] = None,
                             init_from: Optional[types.InitFrom] = None,
                             timeout: Optional[int] = None,
-                            ):
+                            ) -> bool:
         """Delete and create empty collection with given parameters
 
         Args:
@@ -1601,11 +1608,13 @@ class QdrantClient:
             init_from=init_from
         )
 
-        self.http.collections_api.create_collection(
+        result: Optional[bool] = self.http.collections_api.create_collection(
             collection_name=collection_name,
             create_collection=create_collection_request,
             timeout=timeout
         )
+        assert result is not None, "Create collection returned None"
+        return result
 
     @property
     def _updater_class(self) -> Type[BaseUploader]:
@@ -1619,7 +1628,7 @@ class QdrantClient:
             batches_iterator: Iterable,
             collection_name: str,
             parallel: int = 1
-    ):
+    ) -> None:
         if self._prefer_grpc:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             updater_kwargs = {
@@ -1652,7 +1661,7 @@ class QdrantClient:
             records: Iterable[types.Record],
             batch_size: int = 64,
             parallel: int = 1
-    ):
+    ) -> None:
         """Upload records to the collection
 
         Similar to `upload_collection` method, but operates with records, rather than vector and payload individually.
@@ -1674,7 +1683,7 @@ class QdrantClient:
                           payload: Optional[Iterable[Dict[Any, Any]]] = None,
                           ids: Optional[Iterable[types.PointId]] = None,
                           batch_size: int = 64,
-                          parallel: int = 1):
+                          parallel: int = 1) -> None:
         """Upload vectors and payload to the collection.
         This method will perform automatic batching of the data.
         If you need to perform a single update, use `upsert` method.
@@ -1701,7 +1710,7 @@ class QdrantClient:
                              field_type: Optional[types.PayloadSchemaType] = None,
                              wait: bool = True,
                              ordering: Optional[types.WriteOrdering] = None,
-                             ):
+                             ) -> types.UpdateResult:
         """Creates index for a given payload field.
         Indexed fields allow to perform filtered search operations faster.
 
@@ -1732,15 +1741,17 @@ class QdrantClient:
         if isinstance(field_schema, int):  # type(grpc.PayloadSchemaType) == int
             field_schema = GrpcToRest.convert_payload_schema_type(field_schema)
 
-        return self.openapi_client.collections_api.create_field_index(
+        result: Optional[types.UpdateResult] = self.openapi_client.collections_api.create_field_index(
             collection_name=collection_name,
             create_field_index=rest_models.CreateFieldIndex(field_name=field_name, field_schema=field_schema),
             wait=wait,
             ordering=ordering,
         )
+        assert result is not None, "Create field index returned None"
+        return result
 
     def delete_payload_index(self, collection_name: str, field_name: str, wait: bool = True,
-                             ordering: Optional[types.WriteOrdering] = None):
+                             ordering: Optional[types.WriteOrdering] = None) -> types.UpdateResult:
         """Removes index for a given payload field.
 
         Args:
@@ -1761,12 +1772,14 @@ class QdrantClient:
         Returns:
             Operation Result
         """
-        return self.openapi_client.collections_api.delete_field_index(
+        result: Optional[types.UpdateResult] = self.openapi_client.collections_api.delete_field_index(
             collection_name=collection_name,
             field_name=field_name,
             wait=wait,
             ordering=ordering,
         )
+        assert result is not None, "Delete field index returned None"
+        return result
 
     def list_snapshots(self, collection_name: str) -> List[types.SnapshotDescription]:
         """List all snapshots for a given collection.
@@ -1877,17 +1890,24 @@ class QdrantClient:
         assert success is not None, "Recover from snapshot API returned None result"
         return success
 
-    def lock_storage(self, reason: str):
-        """Lock storage for writing.
-        """
-        return self.openapi_client.service_api.post_locks(rest_models.LocksOption(error_message=reason, write=True))
+    def lock_storage(self, reason: str) -> types.LocksOption:
+        """Lock storage for writing."""
+        result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
+            rest_models.LocksOption(error_message=reason, write=True)
+        )
+        assert result is not None, "Lock storage returned None"
+        return result
 
-    def unlock_storage(self):
-        """Unlock storage for writing.
-        """
-        return self.openapi_client.service_api.post_locks(rest_models.LocksOption(write=False))
+    def unlock_storage(self) -> types.LocksOption:
+        """Unlock storage for writing."""
+        result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
+            rest_models.LocksOption(write=False)
+        )
+        assert result is not None, "Post locks returned None"
+        return result
 
-    def get_locks(self) -> Optional[types.LocksOption]:
-        """Get current locks state.
-        """
-        return self.openapi_client.service_api.get_locks().result
+    def get_locks(self) -> types.LocksOption:
+        """Get current locks state."""
+        result: Optional[types.LocksOption] = self.openapi_client.service_api.get_locks().result
+        assert result is not None, "Get locks returned None"
+        return result
