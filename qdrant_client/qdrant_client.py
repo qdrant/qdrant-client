@@ -215,12 +215,24 @@ class QdrantClient:
         """
         return self.openapi_client
 
-    def search_batch(self, collection_name: str, requests: Sequence[types.SearchRequest]) -> List[List[types.ScoredPoint]]:
+    def search_batch(
+            self,
+            collection_name: str,
+            requests: Sequence[types.SearchRequest],
+            consistency: Optional[types.ReadConsistency] = None,
+    ) -> List[List[types.ScoredPoint]]:
         """Search for points in multiple collections
 
         Args:
             collection_name: Name of the collection
             requests: List of search requests
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
 
         Returns:
             List of search responses
@@ -231,10 +243,14 @@ class QdrantClient:
                 for r in requests
             ]
 
+            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
             grpc_res: grpc.SearchBatchResponse = self.grpc_points.SearchBatch(
                 grpc.SearchBatchPoints(
                     collection_name=collection_name,
                     search_points=requests,
+                    read_consistency=consistency
                 ), timeout=self._timeout
             )
 
@@ -246,6 +262,7 @@ class QdrantClient:
             ]
             http_res: List[List[rest_models.ScoredPoint]] = self.http.points_api.search_batch_points(
                 collection_name=collection_name,
+                consistency=consistency,
                 search_request_batch=rest_models.SearchRequestBatch(searches=requests)
             ).result
             return http_res
@@ -261,7 +278,7 @@ class QdrantClient:
                with_vectors: Union[bool, Sequence[str]] = False,
                score_threshold: Optional[float] = None,
                append_payload: bool = True,
-               top: Optional[int] = None,
+               consistency: Optional[types.ReadConsistency] = None,
                ) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
 
@@ -297,7 +314,13 @@ class QdrantClient:
                 on the Distance function used.
                 E.g. for cosine similarity only higher scores will be returned.
             append_payload: Same as `with_payload`. Deprecated.
-            top: Same as `limit`. Deprecated.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
 
         Examples:
 
@@ -321,9 +344,6 @@ class QdrantClient:
         Returns:
             List of found close points with similarity scores.
         """
-        if top is not None:
-            limit = top
-            logging.warning("Usage of `top` is deprecated. Please consider using `limit` instead")
 
         if not append_payload:
             logging.warning("Usage of `append_payload` is deprecated. Please consider using `with_payload` instead")
@@ -364,6 +384,9 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
+            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
             res: grpc.SearchResponse = self.grpc_points.Search(grpc.SearchPoints(
                 collection_name=collection_name,
                 vector=vector,
@@ -374,7 +397,8 @@ class QdrantClient:
                 with_vectors=with_vectors,
                 with_payload=with_payload,
                 params=search_params,
-                score_threshold=score_threshold
+                score_threshold=score_threshold,
+                read_consistency=consistency,
             ), timeout=self._timeout)
 
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
@@ -394,6 +418,7 @@ class QdrantClient:
 
             search_result = self.http.points_api.search_points(
                 collection_name=collection_name,
+                consistency=consistency,
                 search_request=rest_models.SearchRequest(
                     vector=query_vector,
                     filter=query_filter,
@@ -402,7 +427,7 @@ class QdrantClient:
                     params=search_params,
                     with_vector=with_vectors,
                     with_payload=with_payload,
-                    score_threshold=score_threshold
+                    score_threshold=score_threshold,
                 )
             )
 
@@ -411,26 +436,40 @@ class QdrantClient:
     def recommend_batch(
             self,
             collection_name: str,
-            requests: Sequence[types.RecommendRequest]
+            requests: Sequence[types.RecommendRequest],
+            consistency: Optional[types.ReadConsistency] = None,
     ) -> List[List[types.ScoredPoint]]:
         """Perform multiple recommend requests in batch mode
 
         Args:
             collection_name: Name of the collection
             requests: List of recommend requests
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
 
         Returns:
             List of recommend responses
         """
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_recommend_request(r, collection_name) if isinstance(r, rest_models.RecommendRequest) else r
+                RestToGrpc.convert_recommend_request(r, collection_name) if isinstance(r,
+                                                                                       rest_models.RecommendRequest) else r
                 for r in requests
             ]
+
+            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
             grpc_res: grpc.SearchBatchResponse = self.grpc_points.RecommendBatch(
                 grpc.RecommendBatchPoints(
                     collection_name=collection_name,
                     recommend_points=requests,
+                    read_consistency=consistency,
                 ),
                 timeout=self._timeout
             )
@@ -443,6 +482,7 @@ class QdrantClient:
             ]
             http_res: List[List[rest_models.ScoredPoint]] = self.http.points_api.recommend_batch_points(
                 collection_name=collection_name,
+                consistency=consistency,
                 recommend_request_batch=rest_models.RecommendRequestBatch(searches=requests)
             ).result
             return http_res
@@ -461,7 +501,7 @@ class QdrantClient:
             score_threshold: Optional[float] = None,
             using: Optional[str] = None,
             lookup_from: Optional[types.LookupLocation] = None,
-            top: Optional[int] = None,
+            consistency: Optional[types.ReadConsistency] = None,
     ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
 
@@ -510,15 +550,17 @@ class QdrantClient:
             lookup_from:
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
                 If `None` - use current collection will be used.
-            top: Same as `limit`. Deprecated.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
 
         Returns:
             List of recommended points with similarity scores.
         """
-
-        if top is not None:
-            limit = top
-            logging.warning("Usage of `top` is deprecated. Please consider using `limit` instead")
 
         if negative is None:
             negative = []
@@ -557,6 +599,9 @@ class QdrantClient:
             if isinstance(lookup_from, rest_models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
+            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
             res: grpc.SearchResponse = self.grpc_points.Recommend(grpc.RecommendPoints(
                 collection_name=collection_name,
                 positive=positive,
@@ -570,6 +615,7 @@ class QdrantClient:
                 score_threshold=score_threshold,
                 using=using,
                 lookup_from=lookup_from,
+                read_consistency=consistency,
             ), timeout=self._timeout)
 
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
@@ -598,6 +644,7 @@ class QdrantClient:
 
             result = self.openapi_client.points_api.recommend_points(
                 collection_name=collection_name,
+                consistency=consistency,
                 recommend_request=rest_models.RecommendRequest(
                     filter=query_filter,
                     negative=negative,
@@ -623,6 +670,7 @@ class QdrantClient:
             offset: Optional[types.PointId] = None,
             with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
             with_vectors: Union[bool, Sequence[str]] = False,
+            consistency: Optional[types.ReadConsistency] = None,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
 
@@ -645,6 +693,13 @@ class QdrantClient:
                 - If `False` - Do not attach vector.
                 - If List of string - include only specified fields
                 - Default: `False`
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
 
         Returns:
             A pair of (List of points) and (optional offset for the next scroll request).
@@ -671,13 +726,17 @@ class QdrantClient:
             )):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
+            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
             res: grpc.ScrollResponse = self.grpc_points.Scroll(grpc.ScrollPoints(
                 collection_name=collection_name,
                 filter=scroll_filter,
                 offset=offset,
                 with_vectors=with_vectors,
                 with_payload=with_payload,
-                limit=limit
+                limit=limit,
+                read_consistency=consistency
             ), timeout=self._timeout)
 
             return [
@@ -696,6 +755,7 @@ class QdrantClient:
 
             scroll_result: Optional[rest_models.ScrollResult] = self.openapi_client.points_api.scroll_points(
                 collection_name=collection_name,
+                consistency=consistency,
                 scroll_request=rest_models.ScrollRequest(
                     filter=scroll_filter,
                     limit=limit,
@@ -746,6 +806,7 @@ class QdrantClient:
             collection_name: str,
             points: types.Points,
             wait: bool = True,
+            ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
         """Update or insert a new point into the collection.
 
@@ -758,6 +819,13 @@ class QdrantClient:
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points: Batch or list of points to insert
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -783,11 +851,15 @@ class QdrantClient:
                     for point in points
                 ]
 
+            if isinstance(ordering, rest_models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             grpc_result = self.grpc_points.Upsert(
                 grpc.UpsertPoints(
                     collection_name=collection_name,
                     wait=wait,
-                    points=points
+                    points=points,
+                    ordering=ordering
                 ),
                 timeout=self._timeout
             ).result
@@ -810,7 +882,8 @@ class QdrantClient:
             http_result = self.openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
                 wait=wait,
-                point_insert_operations=points
+                point_insert_operations=points,
+                ordering=ordering
             ).result
             assert http_result is not None, "Upsert returned None result"
             return http_result
@@ -821,6 +894,7 @@ class QdrantClient:
             ids: Sequence[types.PointId],
             with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
             with_vectors: Union[bool, Sequence[str]] = False,
+            consistency: Optional[types.ReadConsistency] = None,
     ) -> List[types.Record]:
         """Retrieve stored points by IDs
 
@@ -838,6 +912,13 @@ class QdrantClient:
                 - If `False` - Do not attach vector.
                 - If List of string - Attach only specified vectors.
                 - Default: `False`
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
 
         Returns:
             List of points
@@ -858,12 +939,16 @@ class QdrantClient:
 
             with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
+            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
             result = self.grpc_points.Get(
                 grpc.GetPoints(
                     collection_name=collection_name,
                     ids=ids,
                     with_payload=with_payload,
-                    with_vectors=with_vectors
+                    with_vectors=with_vectors,
+                    read_consistency=consistency
                 ),
                 timeout=self._timeout
             ).result
@@ -886,6 +971,7 @@ class QdrantClient:
 
             http_result = self.openapi_client.points_api.get_points(
                 collection_name=collection_name,
+                consistency=consistency,
                 point_request=rest_models.PointRequest(
                     ids=ids,
                     with_payload=with_payload,
@@ -991,6 +1077,7 @@ class QdrantClient:
             collection_name: str,
             points_selector: types.PointsSelector,
             wait: bool = True,
+            ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
 
@@ -1004,6 +1091,13 @@ class QdrantClient:
                  Example:
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -1011,20 +1105,26 @@ class QdrantClient:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points_selector)
 
+            if isinstance(ordering, rest_models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             return GrpcToRest.convert_update_result(
                 self.grpc_points.Delete(grpc.DeletePoints(
                     collection_name=collection_name,
                     wait=wait,
-                    points=points_selector
+                    points=points_selector,
+                    ordering=ordering,
                 ), timeout=self._timeout).result)
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
-
-            return self.openapi_client.points_api.delete_points(
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.delete_points(
                 collection_name=collection_name,
                 wait=wait,
-                points_selector=points_selector
-            )
+                points_selector=points_selector,
+                ordering=ordering,
+            ).result
+            assert result is not None, "Delete points returned None"
+            return result
 
     def set_payload(
             self,
@@ -1032,6 +1132,7 @@ class QdrantClient:
             payload: types.Payload,
             points: types.PointsSelector,
             wait: bool = True,
+            ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
         """Modifies payload of the specified points
 
@@ -1061,6 +1162,13 @@ class QdrantClient:
              Example:
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -1068,26 +1176,31 @@ class QdrantClient:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
 
+            if isinstance(ordering, rest_models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             return GrpcToRest.convert_update_result(
                 self.grpc_points.SetPayload(grpc.SetPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
-                    points=self._points_selector_to_points_list(points_selector),  # deprecated
-                    points_selector=points_selector
+                    points_selector=points_selector,
+                    ordering=ordering,
                 ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
-
-            return self.openapi_client.points_api.set_payload(
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.set_payload(
                 collection_name=collection_name,
                 wait=wait,
+                ordering=ordering,
                 set_payload=rest_models.SetPayload(
                     payload=payload,
                     points=_points,
                     filter=_filter,
                 )
-            )
+            ).result
+            assert result is not None, "Set payload returned None"
+            return result
 
     def overwrite_payload(
             self,
@@ -1095,6 +1208,7 @@ class QdrantClient:
             payload: types.Payload,
             points: types.PointsSelector,
             wait: bool = True,
+            ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
         """Overwrites payload of the specified points
         After this operation is applied, only the specified payload will be present in the point.
@@ -1126,6 +1240,13 @@ class QdrantClient:
              Example:
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -1133,26 +1254,31 @@ class QdrantClient:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
 
+            if isinstance(ordering, rest_models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             return GrpcToRest.convert_update_result(
                 self.grpc_points.OverwritePayload(grpc.SetPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     payload=RestToGrpc.convert_payload(payload),
-                    points=self._points_selector_to_points_list(points_selector),  # deprecated
-                    points_selector=points_selector
+                    points_selector=points_selector,
+                    ordering=ordering,
                 ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
-
-            return self.openapi_client.points_api.overwrite_payload(
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.overwrite_payload(
                 collection_name=collection_name,
                 wait=wait,
+                ordering=ordering,
                 set_payload=rest_models.SetPayload(
                     payload=payload,
                     points=_points,
                     filter=_filter,
                 )
-            )
+            ).result
+            assert result is not None, "Overwrite payload returned None"
+            return result
 
     def delete_payload(
             self,
@@ -1160,6 +1286,7 @@ class QdrantClient:
             keys: Sequence[str],
             points: types.PointsSelector,
             wait: bool = True,
+            ordering: Optional[types.WriteOrdering] = None,
     ):
         """Remove values from point's payload
 
@@ -1174,25 +1301,35 @@ class QdrantClient:
                 Example:
                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
         """
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
+            if isinstance(ordering, rest_models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
             return GrpcToRest.convert_update_result(
                 self.grpc_points.DeletePayload(grpc.DeletePayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
                     keys=keys,
-                    points=self._points_selector_to_points_list(points_selector),  # deprecated
-                    points_selector=points_selector
+                    points_selector=points_selector,
+                    ordering=ordering,
                 ), timeout=self._timeout).result)
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             return self.openapi_client.points_api.delete_payload(
                 collection_name=collection_name,
                 wait=wait,
+                ordering=ordering,
                 delete_payload=rest_models.DeletePayload(
                     keys=keys,
                     points=_points,
@@ -1205,6 +1342,7 @@ class QdrantClient:
             collection_name: str,
             points_selector: types.PointsSelector,
             wait: bool = True,
+            ordering: Optional[types.WriteOrdering] = None,
     ):
         """Delete all payload for selected points
 
@@ -1218,6 +1356,13 @@ class QdrantClient:
                 Example:
                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -1225,11 +1370,15 @@ class QdrantClient:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points_selector)
 
+            if isinstance(ordering, rest_models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
             return GrpcToRest.convert_update_result(
                 self.grpc_points.ClearPayload(grpc.ClearPayloadPoints(
                     collection_name=collection_name,
                     wait=wait,
-                    points=points_selector
+                    points=points_selector,
+                    ordering=ordering,
                 ), timeout=self._timeout).result)
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
@@ -1237,6 +1386,7 @@ class QdrantClient:
             return self.openapi_client.points_api.clear_payload(
                 collection_name=collection_name,
                 wait=wait,
+                ordering=ordering,
                 points_selector=points_selector
             ).result
 
@@ -1270,6 +1420,25 @@ class QdrantClient:
                 actions=change_aliases_operation
             )
         )
+
+    def get_collection_aliases(self, collection_name: str) -> types.CollectionsAliasesResponse:
+        """Get collection aliases
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            Collection aliases
+        """
+        return self.http.collections_api.get_collection_aliases(collection_name=collection_name).result
+
+    def get_aliases(self) -> types.CollectionsAliasesResponse:
+        """Get all aliases
+
+        Returns:
+            All aliases of all collections
+        """
+        return self.http.collections_api.get_collections_aliases().result
 
     def get_collections(self) -> types.CollectionsResponse:
         """Get list name of all existing collections
@@ -1369,7 +1538,8 @@ class QdrantClient:
                             hnsw_config: Optional[types.HnswConfigDiff] = None,
                             optimizers_config: Optional[types.OptimizersConfigDiff] = None,
                             wal_config: Optional[types.WalConfigDiff] = None,
-                            timeout: Optional[int] = None
+                            init_from: Optional[types.InitFrom] = None,
+                            timeout: Optional[int] = None,
                             ):
         """Delete and create empty collection with given parameters
 
@@ -1399,6 +1569,7 @@ class QdrantClient:
             hnsw_config: Params for HNSW index
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
+            init_from: Use data stored in another collection to initialize this collection
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
@@ -1426,7 +1597,8 @@ class QdrantClient:
             on_disk_payload=on_disk_payload,
             hnsw_config=hnsw_config,
             optimizers_config=optimizers_config,
-            wal_config=wal_config
+            wal_config=wal_config,
+            init_from=init_from
         )
 
         self.http.collections_api.create_collection(
@@ -1528,6 +1700,7 @@ class QdrantClient:
                              field_schema: Optional[types.PayloadSchemaType] = None,
                              field_type: Optional[types.PayloadSchemaType] = None,
                              wait: bool = True,
+                             ordering: Optional[types.WriteOrdering] = None,
                              ):
         """Creates index for a given payload field.
         Indexed fields allow to perform filtered search operations faster.
@@ -1541,6 +1714,13 @@ class QdrantClient:
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
 
         Returns:
             Operation Result
@@ -1555,10 +1735,12 @@ class QdrantClient:
         return self.openapi_client.collections_api.create_field_index(
             collection_name=collection_name,
             create_field_index=rest_models.CreateFieldIndex(field_name=field_name, field_schema=field_schema),
-            wait=wait
+            wait=wait,
+            ordering=ordering,
         )
 
-    def delete_payload_index(self, collection_name: str, field_name: str, wait: bool = True):
+    def delete_payload_index(self, collection_name: str, field_name: str, wait: bool = True,
+                             ordering: Optional[types.WriteOrdering] = None):
         """Removes index for a given payload field.
 
         Args:
@@ -1568,6 +1750,13 @@ class QdrantClient:
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
 
         Returns:
             Operation Result
@@ -1575,7 +1764,8 @@ class QdrantClient:
         return self.openapi_client.collections_api.delete_field_index(
             collection_name=collection_name,
             field_name=field_name,
-            wait=wait
+            wait=wait,
+            ordering=ordering,
         )
 
     def list_snapshots(self, collection_name: str) -> List[types.SnapshotDescription]:
@@ -1606,6 +1796,23 @@ class QdrantClient:
             collection_name=collection_name
         ).result
 
+    def delete_snapshot(self, collection_name: str, snapshot_name: str) -> bool:
+        """Delete snapshot for a given collection.
+
+        Args:
+            collection_name: Name of the collection
+            snapshot_name: Snapshot id
+
+        Returns:
+            True if snapshot was deleted
+        """
+        result: Optional[bool] = self.openapi_client.collections_api.delete_snapshot(
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
+        ).result
+        assert result is not None, "Delete snapshot API returned None"
+        return result
+
     def list_full_snapshots(self) -> List[types.SnapshotDescription]:
         """List all snapshots for a whole storage
 
@@ -1625,6 +1832,21 @@ class QdrantClient:
         snapshot_description = self.openapi_client.snapshots_api.create_full_snapshot().result
         assert snapshot_description is not None, "Create full snapshot API returned None result"
         return snapshot_description
+
+    def delete_full_snapshot(self, snapshot_name: str) -> bool:
+        """Delete snapshot for a whole storage.
+
+        Args:
+            snapshot_name: Snapshot name
+
+        Returns:
+            True if snapshot was deleted
+        """
+        result: Optional[bool] = self.openapi_client.snapshots_api.delete_full_snapshot(
+            snapshot_name=snapshot_name,
+        ).result
+        assert result is not None, "Delete full snapshot API returned None"
+        return result
 
     def recover_snapshot(
             self,

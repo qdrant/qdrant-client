@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
 
 from pydantic.json import ENCODERS_BY_TYPE
 from pydantic.main import BaseModel
+from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
 SetIntStr = Set[Union[int, str]]

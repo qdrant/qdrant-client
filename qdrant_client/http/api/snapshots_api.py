@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
 
 from pydantic.json import ENCODERS_BY_TYPE
 from pydantic.main import BaseModel
+from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
 SetIntStr = Set[Union[int, str]]
@@ -160,7 +161,7 @@ class _SnapshotsApi:
         Create new snapshot of the whole storage
         """
         return self.api_client.request(
-            type_=m.InlineResponse2009,
+            type_=m.InlineResponse20010,
             method="POST",
             url="/snapshots",
         )
@@ -177,9 +178,47 @@ class _SnapshotsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2009,
+            type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/snapshots",
+            path_params=path_params,
+        )
+
+    def _build_for_delete_full_snapshot(
+        self,
+        snapshot_name: str,
+    ):
+        """
+        Delete snapshot of the whole storage
+        """
+        path_params = {
+            "snapshot_name": str(snapshot_name),
+        }
+
+        return self.api_client.request(
+            type_=m.InlineResponse2003,
+            method="DELETE",
+            url="/snapshots/{snapshot_name}",
+            path_params=path_params,
+        )
+
+    def _build_for_delete_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ):
+        """
+        Delete snapshot for a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "snapshot_name": str(snapshot_name),
+        }
+
+        return self.api_client.request(
+            type_=m.InlineResponse2003,
+            method="DELETE",
+            url="/collections/{collection_name}/snapshots/{snapshot_name}",
             path_params=path_params,
         )
 
@@ -228,7 +267,7 @@ class _SnapshotsApi:
         Get list of snapshots of the whole storage
         """
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse2009,
             method="GET",
             url="/snapshots",
         )
@@ -245,7 +284,7 @@ class _SnapshotsApi:
         }
 
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse2009,
             method="GET",
             url="/collections/{collection_name}/snapshots",
             path_params=path_params,
@@ -277,7 +316,7 @@ class _SnapshotsApi:
 class AsyncSnapshotsApi(_SnapshotsApi):
     async def create_full_snapshot(
         self,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse20010:
         """
         Create new snapshot of the whole storage
         """
@@ -286,12 +325,36 @@ class AsyncSnapshotsApi(_SnapshotsApi):
     async def create_snapshot(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse20010:
         """
         Create new snapshot for a collection
         """
         return await self._build_for_create_snapshot(
             collection_name=collection_name,
+        )
+
+    async def delete_full_snapshot(
+        self,
+        snapshot_name: str,
+    ) -> m.InlineResponse2003:
+        """
+        Delete snapshot of the whole storage
+        """
+        return await self._build_for_delete_full_snapshot(
+            snapshot_name=snapshot_name,
+        )
+
+    async def delete_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ) -> m.InlineResponse2003:
+        """
+        Delete snapshot for a collection
+        """
+        return await self._build_for_delete_snapshot(
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
         )
 
     async def get_full_snapshot(
@@ -320,7 +383,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
 
     async def list_full_snapshots(
         self,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2009:
         """
         Get list of snapshots of the whole storage
         """
@@ -329,7 +392,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
     async def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2009:
         """
         Get list of snapshots for a collection
         """
@@ -354,7 +417,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
 class SyncSnapshotsApi(_SnapshotsApi):
     def create_full_snapshot(
         self,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse20010:
         """
         Create new snapshot of the whole storage
         """
@@ -363,12 +426,36 @@ class SyncSnapshotsApi(_SnapshotsApi):
     def create_snapshot(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse20010:
         """
         Create new snapshot for a collection
         """
         return self._build_for_create_snapshot(
             collection_name=collection_name,
+        )
+
+    def delete_full_snapshot(
+        self,
+        snapshot_name: str,
+    ) -> m.InlineResponse2003:
+        """
+        Delete snapshot of the whole storage
+        """
+        return self._build_for_delete_full_snapshot(
+            snapshot_name=snapshot_name,
+        )
+
+    def delete_snapshot(
+        self,
+        collection_name: str,
+        snapshot_name: str,
+    ) -> m.InlineResponse2003:
+        """
+        Delete snapshot for a collection
+        """
+        return self._build_for_delete_snapshot(
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
         )
 
     def get_full_snapshot(
@@ -397,7 +484,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
 
     def list_full_snapshots(
         self,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2009:
         """
         Get list of snapshots of the whole storage
         """
@@ -406,7 +493,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
     def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2009:
         """
         Get list of snapshots for a collection
         """
