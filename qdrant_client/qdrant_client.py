@@ -430,8 +430,9 @@ class QdrantClient:
                     score_threshold=score_threshold,
                 )
             )
-
-            return search_result.result
+            result: Optional[List[types.ScoredPoint]] = search_result.result
+            assert result is not None, "Search returned None"
+            return result
 
     def recommend_batch(
             self,
@@ -1335,7 +1336,7 @@ class QdrantClient:
                     points=_points,
                     filter=_filter,
                 )
-            )
+            ).result
             assert result is not None, "Delete payload returned None"
             return result
 
@@ -1421,7 +1422,7 @@ class QdrantClient:
             change_aliases_operation=rest_models.ChangeAliasesOperation(
                 actions=change_aliases_operation
             )
-        )
+        ).result
         assert result is not None, "Update aliases returned None"
         return result
 
@@ -1434,7 +1435,11 @@ class QdrantClient:
         Returns:
             Collection aliases
         """
-        return self.http.collections_api.get_collection_aliases(collection_name=collection_name).result
+        result: Optional[types.CollectionsAliasesResponse] = self.http.collections_api.get_collection_aliases(
+            collection_name=collection_name
+        ).result
+        assert result is not None, "Get collection aliases returned None"
+        return result
 
     def get_aliases(self) -> types.CollectionsAliasesResponse:
         """Get all aliases
@@ -1442,7 +1447,9 @@ class QdrantClient:
         Returns:
             All aliases of all collections
         """
-        return self.http.collections_api.get_collections_aliases().result
+        result: Optional[types.CollectionsAliasesResponse] = self.http.collections_api.get_collections_aliases().result
+        assert result is not None, "Get aliases returned None"
+        return result
 
     def get_collections(self) -> types.CollectionsResponse:
         """Get list name of all existing collections
@@ -1457,7 +1464,9 @@ class QdrantClient:
                 collections=[GrpcToRest.convert_collection_description(description) for description in response]
             )
 
-        return self.http.collections_api.get_collections().result
+        result: Optional[types.CollectionsResponse] = self.http.collections_api.get_collections().result
+        assert result is not None, "Get collections returned None"
+        return result
 
     def get_collection(self, collection_name: str) -> types.CollectionInfo:
         """Get detailed information about specified existing collection
@@ -1473,7 +1482,9 @@ class QdrantClient:
                 self.grpc_collections.Get(grpc.GetCollectionInfoRequest(
                     collection_name=collection_name
                 ), timeout=self._timeout).result)
-        return self.http.collections_api.get_collection(collection_name=collection_name).result
+        result: Optional[types.CollectionInfo] = self.http.collections_api.get_collection(collection_name=collection_name).result
+        assert result is not None, "Get collection returned None"
+        return result
 
     def update_collection(
             self,
@@ -1508,7 +1519,7 @@ class QdrantClient:
                 params=collection_params
             ),
             timeout=timeout
-        )
+        ).result
         assert result is not None, "Update collection returned None"
         return result
 
@@ -1531,7 +1542,7 @@ class QdrantClient:
         result: Optional[bool] = self.http.collections_api.delete_collection(
             collection_name,
             timeout=timeout
-        )
+        ).result
         assert result is not None, "Delete collection returned None"
         return result
 
@@ -1612,7 +1623,7 @@ class QdrantClient:
             collection_name=collection_name,
             create_collection=create_collection_request,
             timeout=timeout
-        )
+        ).result
         assert result is not None, "Create collection returned None"
         return result
 
@@ -1746,7 +1757,7 @@ class QdrantClient:
             create_field_index=rest_models.CreateFieldIndex(field_name=field_name, field_schema=field_schema),
             wait=wait,
             ordering=ordering,
-        )
+        ).result
         assert result is not None, "Create field index returned None"
         return result
 
@@ -1777,7 +1788,7 @@ class QdrantClient:
             field_name=field_name,
             wait=wait,
             ordering=ordering,
-        )
+        ).result
         assert result is not None, "Delete field index returned None"
         return result
 
@@ -1894,7 +1905,7 @@ class QdrantClient:
         """Lock storage for writing."""
         result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
             rest_models.LocksOption(error_message=reason, write=True)
-        )
+        ).result
         assert result is not None, "Lock storage returned None"
         return result
 
@@ -1902,7 +1913,7 @@ class QdrantClient:
         """Unlock storage for writing."""
         result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
             rest_models.LocksOption(write=False)
-        )
+        ).result
         assert result is not None, "Post locks returned None"
         return result
 
