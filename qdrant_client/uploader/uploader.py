@@ -11,7 +11,7 @@ from qdrant_client.http.models import ExtendedPointId
 from qdrant_client.parallel_processor import Worker
 
 
-def iter_batch(iterable, size) -> Iterable:
+def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
     """
     >>> list(iter_batch([1,2,3,4,5], 3))
     [[1, 2, 3], [4, 5]]

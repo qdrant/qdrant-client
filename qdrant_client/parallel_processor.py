@@ -5,7 +5,7 @@ from multiprocessing.sharedctypes import Synchronized as BaseValue
 from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from queue import Empty
-from typing import Iterable, Any, Type, Optional, List
+from typing import Iterable, Any, Type, Optional, List, Dict
 
 import logging
 
@@ -23,7 +23,7 @@ class QueueSignals(str, Enum):
 
 class Worker:
     @classmethod
-    def start(cls, **kwargs) -> 'Worker':
+    def start(cls, **kwargs: Any) -> 'Worker':
         raise NotImplementedError()
 
     def process(self, items: Iterable[Any]) -> Iterable[Any]:
@@ -35,7 +35,7 @@ def _worker(worker_class: Type[Worker],
             output_queue: Queue,
             num_active_workers: BaseValue,
             worker_id: int,
-            kwargs=None) -> None:
+            kwargs: Optional[Dict[str, Any]] = None) -> None:
     """
     A worker that pulls data pints off the input queue, and places the execution result on the output queue.
     When there are no data pints left on the input queue, it decrements
@@ -82,24 +82,27 @@ def _worker(worker_class: Type[Worker],
 
 class ParallelWorkerPool:
 
-    def __init__(self, num_workers, worker: Type[Worker], start_method=None):
+    def __init__(self, num_workers: int, worker: Type[Worker], start_method: Optional[str] = None):
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Optional[Queue] = None
         self.output_queue: Optional[Queue] = None
-        self.ctx: Optional[BaseContext] = get_context(start_method)
+        self.ctx: BaseContext = get_context(start_method)
         self.processes: List[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
 
         self.num_active_workers: Optional[BaseValue] = None
 
-    def start(self, **kwargs):
+    def start(self, **kwargs: Any) -> None:
         self.input_queue = self.ctx.Queue(self.queue_size)
         self.output_queue = self.ctx.Queue(self.queue_size)
 
-        self.num_active_workers = self.ctx.Value('i', self.num_workers)
+        ctx_value = self.ctx.Value('i', self.num_workers)
+        assert isinstance(ctx_value, BaseValue)
+        self.num_active_workers = ctx_value
 
         for worker_id in range(0, self.num_workers):
+            assert hasattr(self.ctx, 'Process')
             process = self.ctx.Process(
                 target=_worker,
                 args=(
@@ -113,7 +116,7 @@ class ParallelWorkerPool:
             process.start()
             self.processes.append(process)
 
-    def unordered_map(self, stream: Iterable[Any], *args, **kwargs) -> Iterable[Any]:
+    def unordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
         try:
             self.start(**kwargs)
 
@@ -162,7 +165,7 @@ class ParallelWorkerPool:
             self.input_queue.close()
             self.output_queue.close()
 
-    def join_or_terminate(self, timeout=1):
+    def join_or_terminate(self, timeout: Optional[int] = 1) -> None:
         """
         Emergency shutdown
         @param timeout:

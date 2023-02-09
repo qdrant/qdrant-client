@@ -12,7 +12,6 @@ homepage = "https://github.com/qdrant/qdrant_client"
 repository = "https://github.com/qdrant/qdrant_client"
 keywords = ["vector", "search", "neural", "matching", "client"]
 
-
 [tool.poetry.dependencies]
 python = ">=3.7,<=3.11"
 httpx = { version = ">=0.14.0", extras = ["http2"] }
@@ -22,12 +21,18 @@ typing-extensions = "^4.0.0"
 grpcio = { version = ">=1.41.0", allow-prereleases = true }
 grpcio-tools = ">=1.41.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.1"
 grpcio-tools = "^1.46.0"
 sphinx = "^4.4.0"
 qdrant-sphinx-theme = { git = "https://github.com/qdrant/qdrant_sphinx_theme.git", branch = "master" }
 coverage = "^6.3.3"
+
+[tool.poetry.group.types.dependencies]
+pyright = "^1.1.293"
+mypy = "^1.0.0"
+types-protobuf = "^4.21.0.5"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
