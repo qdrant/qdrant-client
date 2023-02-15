@@ -1482,7 +1482,8 @@ class QdrantClient:
                 self.grpc_collections.Get(grpc.GetCollectionInfoRequest(
                     collection_name=collection_name
                 ), timeout=self._timeout).result)
-        result: Optional[types.CollectionInfo] = self.http.collections_api.get_collection(collection_name=collection_name).result
+        result: Optional[types.CollectionInfo] = self.http.collections_api.get_collection(
+            collection_name=collection_name).result
         assert result is not None, "Get collection returned None"
         return result
 
@@ -1638,10 +1639,20 @@ class QdrantClient:
             self,
             batches_iterator: Iterable,
             collection_name: str,
-            parallel: int = 1
+            parallel: int = 1,
+            method: Optional[str] = None,
     ) -> None:
-        if self._prefer_grpc:
+
+        if method is not None:
+            if method in get_all_start_methods():
+                start_method = method
+            else:
+                raise ValueError(
+                    f"Start methods {method} is not available, available methods: {get_all_start_methods()}")
+        else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+
+        if self._prefer_grpc:
             updater_kwargs = {
                 "collection_name": collection_name,
                 "host": self._host,
@@ -1650,7 +1661,6 @@ class QdrantClient:
                 "metadata": self._grpc_headers,
             }
         else:
-            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
             updater_kwargs = {
                 "collection_name": collection_name,
                 "uri": self.rest_uri,
@@ -1671,7 +1681,8 @@ class QdrantClient:
             collection_name: str,
             records: Iterable[types.Record],
             batch_size: int = 64,
-            parallel: int = 1
+            parallel: int = 1,
+            method: Optional[str] = None,
     ) -> None:
         """Upload records to the collection
 
@@ -1682,19 +1693,23 @@ class QdrantClient:
             records: Iterator over records to upload
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload
+            method: Start method for parallel processes, Default: forkserver
 
         """
 
         batches_iterator = self._updater_class.iterate_records_batches(records=records, batch_size=batch_size)
-        self._upload_collection(batches_iterator, collection_name, parallel)
+        self._upload_collection(batches_iterator, collection_name, parallel, method)
 
-    def upload_collection(self,
-                          collection_name: str,
-                          vectors: Union[types.NumpyArray, Iterable[List[float]]],
-                          payload: Optional[Iterable[Dict[Any, Any]]] = None,
-                          ids: Optional[Iterable[types.PointId]] = None,
-                          batch_size: int = 64,
-                          parallel: int = 1) -> None:
+    def upload_collection(
+            self,
+            collection_name: str,
+            vectors: Union[types.NumpyArray, Iterable[List[float]]],
+            payload: Optional[Iterable[Dict[Any, Any]]] = None,
+            ids: Optional[Iterable[types.PointId]] = None,
+            batch_size: int = 64,
+            parallel: int = 1,
+            method: Optional[str] = None,
+    ) -> None:
         """Upload vectors and payload to the collection.
         This method will perform automatic batching of the data.
         If you need to perform a single update, use `upsert` method.
@@ -1707,12 +1722,13 @@ class QdrantClient:
             ids: Iterable of custom vectors ids, Optional, Default: None
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload
+            method: Start method for parallel processes, Default: forkserver
         """
         batches_iterator = self._updater_class.iterate_batches(vectors=vectors,
                                                                payload=payload,
                                                                ids=ids,
                                                                batch_size=batch_size)
-        self._upload_collection(batches_iterator, collection_name, parallel)
+        self._upload_collection(batches_iterator, collection_name, parallel, method)
 
     def create_payload_index(self,
                              collection_name: str,
