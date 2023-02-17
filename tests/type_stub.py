@@ -6,7 +6,7 @@ from qdrant_client.http import models as rest_models
 qdrant_client = QdrantClient()
 qdrant_client.clear_payload("collection", [123])
 qdrant_client.count(
-    "collection", rest_models.Filter(should=None, must=None, must_not=None), exact=True
+    "collection", rest_models.Filter()
 )
 qdrant_client.create_full_snapshot()
 qdrant_client.create_payload_index("collection", "asd", 3)
@@ -29,15 +29,15 @@ qdrant_client.recommend(
     "collection",
     [],
     [],
-    rest_models.Filter(should=None, must=None, must_not=None),
-    rest_models.SearchParams(hnsw_ef=None, exact=None),
+    rest_models.Filter(),
+    rest_models.SearchParams(),
     10,
     0,
     True,
     True,
     1.0,
     "using",
-    rest_models.LookupLocation(collection="", vector=None),
+    rest_models.LookupLocation(collection=""),
     1,
 )
 qdrant_client.recommend_batch(
@@ -68,25 +68,9 @@ qdrant_client.recreate_collection(
     2,
     True,
     True,
-    rest_models.HnswConfigDiff(
-        m=16,
-        ef_construct=16,
-        full_scan_threshold=5,
-        max_indexing_threads=1,
-        on_disk=True,
-        payload_m=16,
-    ),
-    rest_models.OptimizersConfigDiff(
-        deleted_threshold=0.5,
-        vacuum_min_vector_number=1000,
-        default_segment_number=3,
-        max_segment_size=2,
-        memmap_threshold=3,
-        indexing_threshold=5,
-        flush_interval_sec=3000,
-        max_optimization_threads=1,
-    ),
-    rest_models.WalConfigDiff(wal_capacity_mb=1024, wal_segments_ahead=3),
+    rest_models.HnswConfigDiff(),
+    rest_models.OptimizersConfigDiff(),
+    rest_models.WalConfigDiff(),
     None,
     5,
 )
@@ -98,13 +82,7 @@ qdrant_client.search_batch(
     [
         rest_models.SearchRequest(
             vector=[1.0, 0.0, 3.0],
-            filter=None,
-            params=None,
             limit=10,
-            offset=0,
-            with_payload=False,
-            with_vector=True,
-            score_threshold=0.33,
         )
     ],
 )
