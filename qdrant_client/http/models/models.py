@@ -25,8 +25,8 @@ class AliasDescription(BaseModel):
 
 class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
-    features: Optional["AppFeaturesTelemetry"] = Field(None, description="")
-    system: Optional["RunningEnvironmentTelemetry"] = Field(None, description="")
+    features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
+    system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
 
 
 class AppFeaturesTelemetry(BaseModel):
@@ -38,7 +38,7 @@ class AppFeaturesTelemetry(BaseModel):
 class Batch(BaseModel):
     ids: List["ExtendedPointId"] = Field(..., description="")
     vectors: "BatchVectorStruct" = Field(..., description="")
-    payloads: Optional[List["Payload"]] = Field(None, description="")
+    payloads: Optional[List["Payload"]] = Field(default=None, description="")
 
 
 class ChangeAliasesOperation(BaseModel):
@@ -87,16 +87,16 @@ class ClusterStatusTelemetry(BaseModel):
     term: int = Field(..., description="")
     commit: int = Field(..., description="")
     pending_operations: int = Field(..., description="")
-    role: Optional["StateRole"] = Field(None, description="")
+    role: Optional["StateRole"] = Field(default=None, description="")
     is_voter: bool = Field(..., description="")
-    peer_id: Optional[int] = Field(None, description="")
+    peer_id: Optional[int] = Field(default=None, description="")
     consensus_thread_status: "ConsensusThreadStatus" = Field(..., description="")
 
 
 class ClusterTelemetry(BaseModel):
     enabled: bool = Field(..., description="")
-    status: Optional["ClusterStatusTelemetry"] = Field(None, description="")
-    config: Optional["ClusterConfigTelemetry"] = Field(None, description="")
+    status: Optional["ClusterStatusTelemetry"] = Field(default=None, description="")
+    config: Optional["ClusterConfigTelemetry"] = Field(default=None, description="")
 
 
 class CollectionClusterInfo(BaseModel):
@@ -151,22 +151,22 @@ class CollectionInfo(BaseModel):
 
 class CollectionParams(BaseModel):
     vectors: "VectorsConfig" = Field(..., description="")
-    shard_number: Optional[int] = Field(1, description="Number of shards the collection has")
-    replication_factor: Optional[int] = Field(1, description="Number of replicas for each shard")
+    shard_number: Optional[int] = Field(default=1, description="Number of shards the collection has")
+    replication_factor: Optional[int] = Field(default=1, description="Number of replicas for each shard")
     write_consistency_factor: Optional[int] = Field(
-        1,
+        default=1,
         description="Defines how many replicas should apply the operation for us to consider it successful. Increasing this number will make the collection more resilient to inconsistencies, but will also make it fail if not enough replicas are available. Does not have any performance impact.",
     )
     on_disk_payload: Optional[bool] = Field(
-        False,
+        default=False,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
     )
 
 
 class CollectionParamsDiff(BaseModel):
-    replication_factor: Optional[int] = Field(None, description="Number of replicas for each shard")
+    replication_factor: Optional[int] = Field(default=None, description="Number of replicas for each shard")
     write_consistency_factor: Optional[int] = Field(
-        None, description="Minimal number successful responses from replicas to consider operation successful"
+        default=None, description="Minimal number successful responses from replicas to consider operation successful"
     )
 
 
@@ -200,7 +200,7 @@ class CollectionsResponse(BaseModel):
 
 class CollectionsTelemetry(BaseModel):
     number_of_collections: int = Field(..., description="")
-    collections: Optional[List["CollectionTelemetryEnum"]] = Field(None, description="")
+    collections: Optional[List["CollectionTelemetryEnum"]] = Field(default=None, description="")
 
 
 class ConsensusConfigTelemetry(BaseModel):
@@ -234,9 +234,9 @@ class CountRequest(BaseModel):
     Count Request Counts the number of points which satisfy the given filter. If filter is not provided, the count of all points in the collection will be returned.
     """
 
-    filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     exact: Optional[bool] = Field(
-        True,
+        default=True,
         description="If true, count exact number of points. If false, count approximate number of points faster. Approximate count might be unreliable during the indexing process. Default: true",
     )
 
@@ -273,33 +273,37 @@ class CreateCollection(BaseModel):
         ..., description="Operation for creating new collection and (optionally) specify index params"
     )
     shard_number: Optional[int] = Field(
-        None,
+        default=None,
         description="Number of shards in collection. Default is 1 for standalone, otherwise equal to the number of nodes Minimum is 1",
     )
-    replication_factor: Optional[int] = Field(None, description="Number of shards replicas. Default is 1 Minimum is 1")
+    replication_factor: Optional[int] = Field(
+        default=None, description="Number of shards replicas. Default is 1 Minimum is 1"
+    )
     write_consistency_factor: Optional[int] = Field(
-        None,
+        default=None,
         description="Defines how many replicas should apply the operation for us to consider it successful. Increasing this number will make the collection more resilient to inconsistencies, but will also make it fail if not enough replicas are available. Does not have any performance impact.",
     )
     on_disk_payload: Optional[bool] = Field(
-        None,
+        default=None,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
     )
     hnsw_config: Optional["HnswConfigDiff"] = Field(
-        None, description="Custom params for HNSW index. If none - values from service configuration file are used."
+        default=None,
+        description="Custom params for HNSW index. If none - values from service configuration file are used.",
     )
     wal_config: Optional["WalConfigDiff"] = Field(
-        None, description="Custom params for WAL. If none - values from service configuration file are used."
+        default=None, description="Custom params for WAL. If none - values from service configuration file are used."
     )
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
-        None, description="Custom params for Optimizers.  If none - values from service configuration file are used."
+        default=None,
+        description="Custom params for Optimizers.  If none - values from service configuration file are used.",
     )
-    init_from: Optional["InitFrom"] = Field(None, description="Specify other collection to copy data from.")
+    init_from: Optional["InitFrom"] = Field(default=None, description="Specify other collection to copy data from.")
 
 
 class CreateFieldIndex(BaseModel):
     field_name: str = Field(..., description="")
-    field_schema: Optional["PayloadFieldSchema"] = Field(None, description="")
+    field_schema: Optional["PayloadFieldSchema"] = Field(default=None, description="")
 
 
 class DeleteAlias(BaseModel):
@@ -320,9 +324,11 @@ class DeleteAliasOperation(BaseModel):
 
 class DeletePayload(BaseModel):
     keys: List[str] = Field(..., description="List of payload keys to remove from payload")
-    points: Optional[List["ExtendedPointId"]] = Field(None, description="Deletes values from each point in this list")
+    points: Optional[List["ExtendedPointId"]] = Field(
+        default=None, description="Deletes values from each point in this list"
+    )
     filter: Optional["Filter"] = Field(
-        None, description="Deletes values from points that satisfy this filter condition"
+        default=None, description="Deletes values from points that satisfy this filter condition"
     )
 
 
@@ -337,13 +343,13 @@ class DropReplicaOperation(BaseModel):
 
 
 class ErrorResponse(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
-    status: Optional["ErrorResponseStatus"] = Field(None, description="")
-    result: Optional[Any] = Field(None, description="")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional["ErrorResponseStatus"] = Field(default=None, description="")
+    result: Optional[Any] = Field(default=None, description="")
 
 
 class ErrorResponseStatus(BaseModel):
-    error: Optional[str] = Field(None, description="Description of the occurred error.")
+    error: Optional[str] = Field(default=None, description="Description of the occurred error.")
 
 
 class FieldCondition(BaseModel):
@@ -352,19 +358,21 @@ class FieldCondition(BaseModel):
     """
 
     key: str = Field(..., description="Payload key")
-    match: Optional["Match"] = Field(None, description="Check if point has field with a given value")
-    range: Optional["Range"] = Field(None, description="Check if points value lies in a given range")
+    match: Optional["Match"] = Field(default=None, description="Check if point has field with a given value")
+    range: Optional["Range"] = Field(default=None, description="Check if points value lies in a given range")
     geo_bounding_box: Optional["GeoBoundingBox"] = Field(
-        None, description="Check if points geo location lies in a given area"
+        default=None, description="Check if points geo location lies in a given area"
     )
-    geo_radius: Optional["GeoRadius"] = Field(None, description="Check if geo point is within a given radius")
-    values_count: Optional["ValuesCount"] = Field(None, description="Check number of values of the field")
+    geo_radius: Optional["GeoRadius"] = Field(default=None, description="Check if geo point is within a given radius")
+    values_count: Optional["ValuesCount"] = Field(default=None, description="Check number of values of the field")
 
 
 class Filter(BaseModel):
-    should: Optional[List["Condition"]] = Field(None, description="At least one of those conditions should match")
-    must: Optional[List["Condition"]] = Field(None, description="All conditions must match")
-    must_not: Optional[List["Condition"]] = Field(None, description="All conditions must NOT match")
+    should: Optional[List["Condition"]] = Field(
+        default=None, description="At least one of those conditions should match"
+    )
+    must: Optional[List["Condition"]] = Field(default=None, description="All conditions must match")
+    must_not: Optional[List["Condition"]] = Field(default=None, description="All conditions must NOT match")
 
 
 class FilterSelector(BaseModel):
@@ -437,37 +445,42 @@ class HnswConfig(BaseModel):
         description="Minimal size (in KiloBytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
     )
     max_indexing_threads: Optional[int] = Field(
-        0, description="Number of parallel threads used for background index building. If 0 - auto selection."
+        default=0, description="Number of parallel threads used for background index building. If 0 - auto selection."
     )
     on_disk: Optional[bool] = Field(
-        None, description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false"
+        default=None,
+        description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false",
     )
     payload_m: Optional[int] = Field(
-        None, description="Custom M param for hnsw graph built for payload index. If not set, default M will be used."
+        default=None,
+        description="Custom M param for hnsw graph built for payload index. If not set, default M will be used.",
     )
 
 
 class HnswConfigDiff(BaseModel):
     m: Optional[int] = Field(
-        None,
+        default=None,
         description="Number of edges per node in the index graph. Larger the value - more accurate the search, more space required.",
     )
     ef_construct: Optional[int] = Field(
-        None,
+        default=None,
         description="Number of neighbours to consider during the index building. Larger the value - more accurate the search, more time required to build index.",
     )
     full_scan_threshold: Optional[int] = Field(
-        None,
+        default=None,
         description="Minimal size (in KiloBytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
     )
     max_indexing_threads: Optional[int] = Field(
-        None, description="Number of parallel threads used for background index building. If 0 - auto selection."
+        default=None,
+        description="Number of parallel threads used for background index building. If 0 - auto selection.",
     )
     on_disk: Optional[bool] = Field(
-        None, description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false"
+        default=None,
+        description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false",
     )
     payload_m: Optional[int] = Field(
-        None, description="Custom M param for additional payload-aware HNSW links. If not set, default M will be used."
+        default=None,
+        description="Custom M param for additional payload-aware HNSW links. If not set, default M will be used.",
     )
 
 
@@ -512,139 +525,139 @@ class InitFrom(BaseModel):
 
 
 class InlineResponse200(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["TelemetryData"]] = Field(None, description="")
+    result: Optional[List["TelemetryData"]] = Field(default=None, description="")
 
 
 class InlineResponse2001(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["LocksOption"] = Field(None, description="")
+    result: Optional["LocksOption"] = Field(default=None, description="")
 
 
 class InlineResponse20010(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["SnapshotDescription"] = Field(None, description="")
+    result: Optional["SnapshotDescription"] = Field(default=None, description="")
 
 
 class InlineResponse20011(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["Record"] = Field(None, description="")
+    result: Optional["Record"] = Field(default=None, description="")
 
 
 class InlineResponse20012(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["Record"]] = Field(None, description="")
+    result: Optional[List["Record"]] = Field(default=None, description="")
 
 
 class InlineResponse20013(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ScrollResult"] = Field(None, description="")
+    result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
 class InlineResponse20014(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(None, description="")
+    result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
 
 
 class InlineResponse20015(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List[List["ScoredPoint"]]] = Field(None, description="")
+    result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
 
 
 class InlineResponse20016(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CountResult"] = Field(None, description="")
+    result: Optional["CountResult"] = Field(default=None, description="")
 
 
 class InlineResponse2002(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ClusterStatus"] = Field(None, description="")
+    result: Optional["ClusterStatus"] = Field(default=None, description="")
 
 
 class InlineResponse2003(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[bool] = Field(None, description="")
+    result: Optional[bool] = Field(default=None, description="")
 
 
 class InlineResponse2004(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionsResponse"] = Field(None, description="")
+    result: Optional["CollectionsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2005(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionInfo"] = Field(None, description="")
+    result: Optional["CollectionInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2006(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["UpdateResult"] = Field(None, description="")
+    result: Optional["UpdateResult"] = Field(default=None, description="")
 
 
 class InlineResponse2007(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionClusterInfo"] = Field(None, description="")
+    result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2008(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["CollectionsAliasesResponse"] = Field(None, description="")
+    result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2009(BaseModel):
-    time: Optional[float] = Field(None, description="Time spent to process this request")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["SnapshotDescription"]] = Field(None, description="")
+    result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
 class IsEmptyCondition(BaseModel):
@@ -662,13 +675,13 @@ class LocalShardInfo(BaseModel):
 
 
 class LocalShardTelemetry(BaseModel):
-    variant_name: Optional[str] = Field(None, description="")
+    variant_name: Optional[str] = Field(default=None, description="")
     segments: List["SegmentTelemetry"] = Field(..., description="")
     optimizations: "OptimizerTelemetry" = Field(..., description="")
 
 
 class LocksOption(BaseModel):
-    error_message: Optional[str] = Field(None, description="")
+    error_message: Optional[str] = Field(default=None, description="")
     write: bool = Field(..., description="")
 
 
@@ -679,7 +692,7 @@ class LookupLocation(BaseModel):
 
     collection: str = Field(..., description="Name of the collection used for lookup")
     vector: Optional[str] = Field(
-        None,
+        default=None,
         description="Optional name of the vector field within the collection. If not provided, the default vector field will be used.",
     )
 
@@ -706,7 +719,7 @@ class MessageSendErrors(BaseModel):
     """
 
     count: int = Field(..., description="Message send failures for a particular peer")
-    latest_error: Optional[str] = Field(None, description="Message send failures for a particular peer")
+    latest_error: Optional[str] = Field(default=None, description="Message send failures for a particular peer")
 
 
 class MoveShard(BaseModel):
@@ -730,10 +743,10 @@ class NamedVector(BaseModel):
 
 class OperationDurationStatistics(BaseModel):
     count: int = Field(..., description="")
-    fail_count: Optional[int] = Field(None, description="")
-    avg_duration_micros: Optional[float] = Field(None, description="")
-    min_duration_micros: Optional[float] = Field(None, description="")
-    max_duration_micros: Optional[float] = Field(None, description="")
+    fail_count: Optional[int] = Field(default=None, description="")
+    avg_duration_micros: Optional[float] = Field(default=None, description="")
+    min_duration_micros: Optional[float] = Field(default=None, description="")
+    max_duration_micros: Optional[float] = Field(default=None, description="")
 
 
 class OptimizerTelemetry(BaseModel):
@@ -754,11 +767,11 @@ class OptimizersConfig(BaseModel):
         description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads If `default_segment_number = 0`, will be automatically selected by the number of available CPUs",
     )
     max_segment_size: Optional[int] = Field(
-        None,
+        default=None,
         description="Do not create segments larger this size (in KiloBytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256 If not set, will be automatically selected considering the number of available CPUs.",
     )
     memmap_threshold: Optional[int] = Field(
-        None,
+        default=None,
         description="Maximum size (in KiloBytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file. To enable memmap storage, lower the threshold Note: 1Kb = 1 vector of size 256 If not set, mmap will not be used.",
     )
     indexing_threshold: int = Field(
@@ -771,31 +784,31 @@ class OptimizersConfig(BaseModel):
 
 class OptimizersConfigDiff(BaseModel):
     deleted_threshold: Optional[float] = Field(
-        None,
+        default=None,
         description="The minimal fraction of deleted vectors in a segment, required to perform segment optimization",
     )
     vacuum_min_vector_number: Optional[int] = Field(
-        None, description="The minimal number of vectors in a segment, required to perform segment optimization"
+        default=None, description="The minimal number of vectors in a segment, required to perform segment optimization"
     )
     default_segment_number: Optional[int] = Field(
-        None,
+        default=None,
         description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads If `default_segment_number = 0`, will be automatically selected by the number of available CPUs",
     )
     max_segment_size: Optional[int] = Field(
-        None,
+        default=None,
         description="Do not create segments larger this size (in KiloBytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256",
     )
     memmap_threshold: Optional[int] = Field(
-        None,
+        default=None,
         description="Maximum size (in KiloBytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file. To enable memmap storage, lower the threshold Note: 1Kb = 1 vector of size 256",
     )
     indexing_threshold: Optional[int] = Field(
-        None,
+        default=None,
         description="Maximum size (in KiloBytes) of vectors allowed for plain index. Default value based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt; Note: 1Kb = 1 vector of size 256",
     )
-    flush_interval_sec: Optional[int] = Field(None, description="Minimum interval between forced flushes.")
+    flush_interval_sec: Optional[int] = Field(default=None, description="Minimum interval between forced flushes.")
     max_optimization_threads: Optional[int] = Field(
-        None, description="Maximum available threads for optimization workers"
+        default=None, description="Maximum available threads for optimization workers"
     )
 
 
@@ -830,16 +843,16 @@ class PayloadIndexInfo(BaseModel):
 
     data_type: "PayloadSchemaType" = Field(..., description="Display payload field type &amp; index information")
     params: Optional["PayloadSchemaParams"] = Field(
-        None, description="Display payload field type &amp; index information"
+        default=None, description="Display payload field type &amp; index information"
     )
     points: int = Field(..., description="Number of points indexed with this index")
 
 
 class PayloadIndexTelemetry(BaseModel):
-    field_name: Optional[str] = Field(None, description="")
+    field_name: Optional[str] = Field(default=None, description="")
     points_values_count: int = Field(..., description="")
     points_count: int = Field(..., description="")
-    histogram_bucket_size: Optional[int] = Field(None, description="")
+    histogram_bucket_size: Optional[int] = Field(default=None, description="")
 
 
 class PayloadSchemaType(str, Enum):
@@ -879,15 +892,15 @@ class PointIdsList(BaseModel):
 class PointRequest(BaseModel):
     ids: List["ExtendedPointId"] = Field(..., description="Look for points with ids")
     with_payload: Optional["WithPayloadInterface"] = Field(
-        None, description="Select which payload to return with the response. Default: All"
+        default=None, description="Select which payload to return with the response. Default: All"
     )
-    with_vector: Optional["WithVector"] = Field(None, description="")
+    with_vector: Optional["WithVector"] = Field(default=None, description="")
 
 
 class PointStruct(BaseModel):
     id: "ExtendedPointId" = Field(..., description="")
     vector: "VectorStruct" = Field(..., description="")
-    payload: Optional["Payload"] = Field(None, description="Payload values (optional)")
+    payload: Optional["Payload"] = Field(default=None, description="Payload values (optional)")
 
 
 class PointsBatch(BaseModel):
@@ -913,8 +926,8 @@ class RaftInfo(BaseModel):
     pending_operations: int = Field(
         ..., description="Number of consensus operations pending to be applied on this peer"
     )
-    leader: Optional[int] = Field(None, description="Leader of the current term")
-    role: Optional["StateRole"] = Field(None, description="Role of this peer in the current term")
+    leader: Optional[int] = Field(default=None, description="Leader of the current term")
+    role: Optional["StateRole"] = Field(default=None, description="Role of this peer in the current term")
     is_voter: bool = Field(..., description="Is this peer a voter or a learner")
 
 
@@ -923,10 +936,10 @@ class Range(BaseModel):
     Range filter request
     """
 
-    lt: Optional[float] = Field(None, description="point.key &lt; range.lt")
-    gt: Optional[float] = Field(None, description="point.key &gt; range.gt")
-    gte: Optional[float] = Field(None, description="point.key &gt;= range.gte")
-    lte: Optional[float] = Field(None, description="point.key &lt;= range.lte")
+    lt: Optional[float] = Field(default=None, description="point.key &lt; range.lt")
+    gt: Optional[float] = Field(default=None, description="point.key &gt; range.gt")
+    gte: Optional[float] = Field(default=None, description="point.key &gt;= range.gte")
+    lte: Optional[float] = Field(default=None, description="point.key &lt;= range.lte")
 
 
 class ReadConsistencyType(str, Enum):
@@ -941,27 +954,30 @@ class RecommendRequest(BaseModel):
     """
 
     positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
-    negative: Optional[List["ExtendedPointId"]] = Field([], description="Try to avoid vectors like this")
-    filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(None, description="Additional search params")
+    negative: Optional[List["ExtendedPointId"]] = Field(default=[], description="Try to avoid vectors like this")
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
-        0,
+        default=0,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default: None"
     )
-    with_vector: Optional["WithVector"] = Field(None, description="Whether to return the point vector with the result?")
+    with_vector: Optional["WithVector"] = Field(
+        default=None, description="Whether to return the point vector with the result?"
+    )
     score_threshold: Optional[float] = Field(
-        None,
+        default=None,
         description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
     )
     using: Optional["UsingVector"] = Field(
-        None, description="Define which vector to use for recommendation, if not specified - try to use default vector"
+        default=None,
+        description="Define which vector to use for recommendation, if not specified - try to use default vector",
     )
     lookup_from: Optional["LookupLocation"] = Field(
-        None,
+        default=None,
         description="The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
     )
 
@@ -976,8 +992,8 @@ class Record(BaseModel):
     """
 
     id: "ExtendedPointId" = Field(..., description="Point data")
-    payload: Optional["Payload"] = Field(None, description="Payload - values assigned to the point")
-    vector: Optional["VectorStruct"] = Field(None, description="Vector of the point")
+    payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
+    vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
 
 
 class RemoteShardInfo(BaseModel):
@@ -988,7 +1004,7 @@ class RemoteShardInfo(BaseModel):
 
 class RemoteShardTelemetry(BaseModel):
     shard_id: int = Field(..., description="")
-    peer_id: Optional[int] = Field(None, description="")
+    peer_id: Optional[int] = Field(default=None, description="")
     searches: "OperationDurationStatistics" = Field(..., description="")
     updates: "OperationDurationStatistics" = Field(..., description="")
 
@@ -1017,7 +1033,7 @@ class Replica(BaseModel):
 
 class ReplicaSetTelemetry(BaseModel):
     id: int = Field(..., description="")
-    local: Optional["LocalShardTelemetry"] = Field(None, description="")
+    local: Optional["LocalShardTelemetry"] = Field(default=None, description="")
     remote: List["RemoteShardTelemetry"] = Field(..., description="")
     replicate_states: Dict[str, "ReplicaState"] = Field(..., description="")
 
@@ -1039,12 +1055,12 @@ class RequestsTelemetry(BaseModel):
 
 
 class RunningEnvironmentTelemetry(BaseModel):
-    distribution: Optional[str] = Field(None, description="")
-    distribution_version: Optional[str] = Field(None, description="")
+    distribution: Optional[str] = Field(default=None, description="")
+    distribution_version: Optional[str] = Field(default=None, description="")
     is_docker: bool = Field(..., description="")
-    cores: Optional[int] = Field(None, description="")
-    ram_size: Optional[int] = Field(None, description="")
-    disk_size: Optional[int] = Field(None, description="")
+    cores: Optional[int] = Field(default=None, description="")
+    ram_size: Optional[int] = Field(default=None, description="")
+    disk_size: Optional[int] = Field(default=None, description="")
     cpu_flags: str = Field(..., description="")
 
 
@@ -1056,8 +1072,8 @@ class ScoredPoint(BaseModel):
     id: "ExtendedPointId" = Field(..., description="Search result")
     version: int = Field(..., description="Point version")
     score: float = Field(..., description="Points vector distance to the query vector")
-    payload: Optional["Payload"] = Field(None, description="Payload - values assigned to the point")
-    vector: Optional["VectorStruct"] = Field(None, description="Vector of the point")
+    payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
+    vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
 
 
 class ScrollRequest(BaseModel):
@@ -1065,16 +1081,16 @@ class ScrollRequest(BaseModel):
     Scroll request - paginate over all points which matches given condition
     """
 
-    offset: Optional["ExtendedPointId"] = Field(None, description="Start ID to read points from.")
-    limit: Optional[int] = Field(None, description="Page size. Default: 10")
+    offset: Optional["ExtendedPointId"] = Field(default=None, description="Start ID to read points from.")
+    limit: Optional[int] = Field(default=None, description="Page size. Default: 10")
     filter: Optional["Filter"] = Field(
-        None, description="Look only for points which satisfies this conditions. If not provided - all points."
+        default=None, description="Look only for points which satisfies this conditions. If not provided - all points."
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        None, description="Select which payload to return with the response. Default: All"
+        default=None, description="Select which payload to return with the response. Default: All"
     )
     with_vector: Optional["WithVector"] = Field(
-        None, description="Scroll request - paginate over all points which matches given condition"
+        default=None, description="Scroll request - paginate over all points which matches given condition"
     )
 
 
@@ -1085,7 +1101,7 @@ class ScrollResult(BaseModel):
 
     points: List["Record"] = Field(..., description="List of retrieved points")
     next_page_offset: Optional["ExtendedPointId"] = Field(
-        None, description="Offset which should be used to retrieve a next page result"
+        default=None, description="Offset which should be used to retrieve a next page result"
     )
 
 
@@ -1095,11 +1111,12 @@ class SearchParams(BaseModel):
     """
 
     hnsw_ef: Optional[int] = Field(
-        None,
+        default=None,
         description="Params relevant to HNSW index /// Size of the beam in a beam-search. Larger the value - more accurate the result, more time required for search.",
     )
     exact: Optional[bool] = Field(
-        False, description="Search without approximation. If set to true, search may run long but with exact results."
+        default=False,
+        description="Search without approximation. If set to true, search may run long but with exact results.",
     )
 
 
@@ -1112,19 +1129,21 @@ class SearchRequest(BaseModel):
         ...,
         description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
     )
-    filter: Optional["Filter"] = Field(None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(None, description="Additional search params")
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
-        0,
+        default=0,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default: None"
     )
-    with_vector: Optional["WithVector"] = Field(None, description="Whether to return the point vector with the result?")
+    with_vector: Optional["WithVector"] = Field(
+        default=None, description="Whether to return the point vector with the result?"
+    )
     score_threshold: Optional[float] = Field(
-        None,
+        default=None,
         description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
     )
 
@@ -1137,7 +1156,7 @@ class SegmentConfig(BaseModel):
     vector_data: Dict[str, "VectorDataConfig"] = Field(..., description="")
     index: "Indexes" = Field(..., description="")
     storage_type: "StorageType" = Field(..., description="")
-    payload_storage_type: Optional["PayloadStorageType"] = Field(None, description="")
+    payload_storage_type: Optional["PayloadStorageType"] = Field(default=None, description="")
 
 
 class SegmentInfo(BaseModel):
@@ -1170,9 +1189,11 @@ class SegmentType(str, Enum):
 
 class SetPayload(BaseModel):
     payload: "Payload" = Field(..., description="")
-    points: Optional[List["ExtendedPointId"]] = Field(None, description="Assigns payload to each point in this list")
+    points: Optional[List["ExtendedPointId"]] = Field(
+        default=None, description="Assigns payload to each point in this list"
+    )
     filter: Optional["Filter"] = Field(
-        None, description="Assigns payload to each point that satisfy this filter condition"
+        default=None, description="Assigns payload to each point that satisfy this filter condition"
     )
 
 
@@ -1188,7 +1209,7 @@ class ShardTransferInfo(BaseModel):
 
 class SnapshotDescription(BaseModel):
     name: str = Field(..., description="")
-    creation_time: Optional[str] = Field(None, description="")
+    creation_time: Optional[str] = Field(default=None, description="")
     size: int = Field(..., description="")
 
 
@@ -1202,7 +1223,7 @@ class SnapshotRecover(BaseModel):
         ...,
         description="Examples: - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot` - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`",
     )
-    priority: Optional["SnapshotPriority"] = Field(None, description="")
+    priority: Optional["SnapshotPriority"] = Field(default=None, description="")
 
 
 class StateRole(str, Enum):
@@ -1234,10 +1255,10 @@ class TelemetryData(BaseModel):
 
 class TextIndexParams(BaseModel):
     type: "TextIndexType" = Field(..., description="")
-    tokenizer: Optional["TokenizerType"] = Field(None, description="")
-    min_token_len: Optional[int] = Field(None, description="")
-    max_token_len: Optional[int] = Field(None, description="")
-    lowercase: Optional[bool] = Field(None, description="If true, lowercase all tokens. Default: true")
+    tokenizer: Optional["TokenizerType"] = Field(default=None, description="")
+    min_token_len: Optional[int] = Field(default=None, description="")
+    max_token_len: Optional[int] = Field(default=None, description="")
+    lowercase: Optional[bool] = Field(default=None, description="If true, lowercase all tokens. Default: true")
 
 
 class TextIndexType(str, Enum):
@@ -1256,11 +1277,11 @@ class UpdateCollection(BaseModel):
     """
 
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
-        None,
+        default=None,
         description="Custom params for Optimizers.  If none - values from service configuration file are used. This operation is blocking, it will only proceed ones all current optimizations are complete",
     )
     params: Optional["CollectionParamsDiff"] = Field(
-        None, description="Collection base params.  If none - values from service configuration file are used."
+        default=None, description="Collection base params.  If none - values from service configuration file are used."
     )
 
 
@@ -1279,10 +1300,10 @@ class ValuesCount(BaseModel):
     Values count filter request
     """
 
-    lt: Optional[int] = Field(None, description="point.key.length() &lt; values_count.lt")
-    gt: Optional[int] = Field(None, description="point.key.length() &gt; values_count.gt")
-    gte: Optional[int] = Field(None, description="point.key.length() &gt;= values_count.gte")
-    lte: Optional[int] = Field(None, description="point.key.length() &lt;= values_count.lte")
+    lt: Optional[int] = Field(default=None, description="point.key.length() &lt; values_count.lt")
+    gt: Optional[int] = Field(default=None, description="point.key.length() &gt; values_count.gt")
+    gte: Optional[int] = Field(default=None, description="point.key.length() &gt;= values_count.gte")
+    lte: Optional[int] = Field(default=None, description="point.key.length() &lt;= values_count.lte")
 
 
 class VectorDataConfig(BaseModel):
@@ -1295,7 +1316,7 @@ class VectorDataConfig(BaseModel):
 
 
 class VectorIndexSearchesTelemetry(BaseModel):
-    index_name: Optional[str] = Field(None, description="")
+    index_name: Optional[str] = Field(default=None, description="")
     unfiltered_plain: "OperationDurationStatistics" = Field(..., description="")
     unfiltered_hnsw: "OperationDurationStatistics" = Field(..., description="")
     filtered_plain: "OperationDurationStatistics" = Field(..., description="")
@@ -1320,9 +1341,9 @@ class WalConfig(BaseModel):
 
 
 class WalConfigDiff(BaseModel):
-    wal_capacity_mb: Optional[int] = Field(None, description="Size of a single WAL segment in MB")
+    wal_capacity_mb: Optional[int] = Field(default=None, description="Size of a single WAL segment in MB")
     wal_segments_ahead: Optional[int] = Field(
-        None, description="Number of WAL segments to create ahead of actually used ones"
+        default=None, description="Number of WAL segments to create ahead of actually used ones"
     )
 
 
