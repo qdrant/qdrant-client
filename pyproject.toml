@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qdrant_client"
-version = "1.0.1"
+version = "1.0.2"
 description = "Client library for the Qdrant vector search engine"
 authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
@@ -20,6 +20,7 @@ pydantic = "^1.8"
 typing-extensions = "^4.0.0"
 grpcio = { version = ">=1.41.0", allow-prereleases = true }
 grpcio-tools = ">=1.41.0"
+urllib3 = "^1.26.14"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1"

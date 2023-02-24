@@ -1233,7 +1233,7 @@ files = [
 name = "urllib3"
 version = "1.26.14"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 files = [
@@ -1265,4 +1265,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.7,<=3.11"
-content-hash = "2de7d44c6f3524211348855749e6c64e183aa3e1e9008f4c34da6081818c0542"
+content-hash = "a7fc705d7a14535e53802816b067af21d4e9b223e88f35ca6976f011204a1296"
