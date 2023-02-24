@@ -69,7 +69,7 @@ hits = client.search(
     query_vector=query_vector,
     query_filter=None,  # Don't use any filters for now, search across all indexed points
     append_payload=True,  # Also return a stored payload for found points
-    top=5  # Return 5 closest points
+    limit=5  # Return 5 closest points
 )
 ```
 
@@ -92,7 +92,7 @@ hits = client.search(
         ]
     ),
     append_payload=True,  # Also return a stored payload for found points
-    top=5  # Return 5 closest points
+    limit=5  # Return 5 closest points
 )
 ```
 
