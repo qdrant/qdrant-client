@@ -1703,7 +1703,7 @@ class QdrantClient:
     def upload_collection(
             self,
             collection_name: str,
-            vectors: Union[types.NumpyArray, Iterable[List[float]]],
+            vectors: Union[types.NumpyArray, Dict[str, types.NumpyArray], Iterable[List[float]]],
             payload: Optional[Iterable[Dict[Any, Any]]] = None,
             ids: Optional[Iterable[types.PointId]] = None,
             batch_size: int = 64,
