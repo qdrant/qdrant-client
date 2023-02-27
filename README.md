@@ -28,7 +28,7 @@ client = QdrantClient(host="localhost", port=6333)
 
 Create a new collection
 ```python
-from qdrant_client.http.models import Distance, VectorParams
+from qdrant_client.models import Distance, VectorParams
 
 client.recreate_collection(
     collection_name="my_collection",
@@ -38,14 +38,15 @@ client.recreate_collection(
 
 Get info about created collection
 ```python
-my_collection_info = client.http.collections_api.get_collection("my_collection")
+my_collection_info = client.get_collection("my_collection")
 print(my_collection_info.dict())
 ```
 
 Insert vectors into a collection
 
 ```python
-from qdrant_client.http.models import PointStruct
+import numpy as np
+from qdrant_client.models import PointStruct
 
 vectors = np.random.rand(100, 100)
 client.upsert(
@@ -53,7 +54,7 @@ client.upsert(
     points=[
         PointStruct(
             id=idx,
-            vector=vector,
+            vector=vector.tolist(),
         )
         for idx, vector in enumerate(vectors)
     ]
