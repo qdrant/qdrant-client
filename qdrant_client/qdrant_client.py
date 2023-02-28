@@ -765,9 +765,9 @@ class QdrantClient:
             ), timeout=self._timeout)
 
             return [
-                GrpcToRest.convert_retrieved_point(point)
-                for point in res.result
-            ], res.next_page_offset
+                       GrpcToRest.convert_retrieved_point(point)
+                       for point in res.result
+                   ], GrpcToRest.convert_point_id(res.next_page_offset) if res.HasField("next_page_offset") else None
         else:
             if isinstance(offset, grpc.PointId):
                 offset = GrpcToRest.convert_point_id(offset)

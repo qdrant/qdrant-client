@@ -3,7 +3,6 @@ import sys
 import numpy as np
 import numpy.typing as npt
 
-
 if sys.version_info >= (3, 10):
     from typing import TypeAlias, Any
 else:
@@ -13,7 +12,6 @@ from typing import Union, List
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
-
 
 Filter = Union[rest.Filter, grpc.Filter]
 SearchParams = Union[rest.SearchParams, grpc.SearchParams]
@@ -76,4 +74,8 @@ _np_numeric = Union[
     np.float64,
     np.longdouble  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
-NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
+
+try:
+    NumpyArray: TypeAlias = npt.NDArray[_np_numeric]  # type: ignore
+except AttributeError:
+    NumpyArray = np.ndarray  # type: ignore

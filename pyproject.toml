@@ -13,9 +13,12 @@ repository = "https://github.com/qdrant/qdrant_client"
 keywords = ["vector", "search", "neural", "matching", "client"]
 
 [tool.poetry.dependencies]
-python = ">=3.7,<=3.11"
+python = ">=3.7,<3.12"
 httpx = { version = ">=0.14.0", extras = ["http2"] }
-numpy = ">=1.21"
+numpy = [
+    { version = "<1.21", python = "<3.8" },
+    { version = ">=1.21", python = ">=3.8" }
+]
 pydantic = "^1.8"
 typing-extensions = "^4.0.0"
 grpcio = { version = ">=1.41.0", allow-prereleases = true }
@@ -38,3 +41,6 @@ types-protobuf = "^4.21.0.5"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+typeCheckingMode = "strict"
