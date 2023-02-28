@@ -6,7 +6,7 @@ from qdrant_client.http.models import Batch, PointsList, PointStruct
 from qdrant_client.uploader.uploader import BaseUploader
 
 
-def upload_batch(openapi_client: SyncApis, collection_name: str, batch: Union[Tuple, Batch]) -> bool:
+def upload_batch(openapi_client: SyncApis, collection_name: str, batch: Union[Tuple, Batch], max_retries: int) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
     # Make sure we do not send too many ids in case there is an iterable over vectors,
@@ -27,27 +27,33 @@ def upload_batch(openapi_client: SyncApis, collection_name: str, batch: Union[Tu
         ) for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
     ]
 
-    openapi_client.points_api.upsert_points(
-        collection_name=collection_name,
-        point_insert_operations=PointsList(
-            points=points
-        )
-    )
-    return True
+    for attempt in range(max_retries):
+        try:
+            openapi_client.points_api.upsert_points(
+                collection_name=collection_name,
+                point_insert_operations=PointsList(
+                    points=points
+                )
+            )
+            return True
+        except Exception as e:
+            if attempt == (max_retries - 1):
+                raise e
 
 
 class RestBatchUploader(BaseUploader):
 
-    def __init__(self, uri: str, collection_name: str, **kwargs: Any):
+    def __init__(self, uri: str, collection_name: str, max_retries: int, **kwargs: Any):
         self.collection_name = collection_name
         self.openapi_client: SyncApis = SyncApis(host=uri, **kwargs)
+        self.max_retries = max_retries
 
     @classmethod
-    def start(cls, collection_name: Optional[str] = None, uri: str = "http://localhost:6333", **kwargs: Any) -> 'RestBatchUploader':
+    def start(cls, collection_name: Optional[str] = None, uri: str = "http://localhost:6333", max_retries: int = 3, **kwargs: Any) -> 'RestBatchUploader':
         if not collection_name:
             raise RuntimeError("Collection name could not be empty")
-        return cls(uri=uri, collection_name=collection_name, **kwargs)
+        return cls(uri=uri, collection_name=collection_name, max_retries=max_retries, **kwargs)
 
     def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         for batch in items:
-            yield upload_batch(self.openapi_client, self.collection_name, batch)
+            yield upload_batch(self.openapi_client, self.collection_name, batch, self.max_retries)
