@@ -1,4 +1,5 @@
 from itertools import count
+import logging
 from typing import Iterable, Any, Union, Tuple, Optional, Generator
 
 from qdrant_client import grpc as grpc
@@ -16,7 +17,8 @@ def upload_batch_grpc(points_client: PointsStub, collection_name: str, batch: Un
 
     points = [
         PointStruct(
-            id=RestToGrpc.convert_extended_point_id(idx) if not isinstance(idx, PointId) else idx,
+            id=RestToGrpc.convert_extended_point_id(
+                idx) if not isinstance(idx, PointId) else idx,
             vectors=RestToGrpc.convert_vector_struct(vector),
             payload=payload_to_grpc(payload or {}),
         ) for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
@@ -24,11 +26,17 @@ def upload_batch_grpc(points_client: PointsStub, collection_name: str, batch: Un
 
     for attempt in range(max_retries):
         try:
-            points_client.Upsert(grpc.UpsertPoints(collection_name=collection_name, points=points))
+            points_client.Upsert(grpc.UpsertPoints(
+                collection_name=collection_name, points=points))
             return True
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             if attempt == (max_retries - 1):
-                raise e
+                logging.exception(e)
+                return False
+        else:
+            logging.warn(
+                f"Batch upload failed {attempt + 1} times. Retrying...")
+            continue
 
 
 class GrpcBatchUploader(BaseUploader):
@@ -41,7 +49,7 @@ class GrpcBatchUploader(BaseUploader):
         self._kwargs = kwargs
 
     @classmethod
-    def start(cls, collection_name: Optional[str] = None, host: str ="localhost", port: int = 6334, max_retries: int = 3, **kwargs: Any) -> 'GrpcBatchUploader':
+    def start(cls, collection_name: Optional[str] = None, host: str = "localhost", port: int = 6334, max_retries: int = 3, **kwargs: Any) -> 'GrpcBatchUploader':
         if not collection_name:
             raise RuntimeError("Collection name could not be empty")
 

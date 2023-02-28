@@ -1,4 +1,5 @@
 from itertools import count
+import logging
 from typing import Iterable, Any, Tuple, Union, Optional, Generator
 
 from qdrant_client.http import SyncApis
@@ -37,8 +38,13 @@ def upload_batch(openapi_client: SyncApis, collection_name: str, batch: Union[Tu
             )
             return True
         except Exception as e:
-            if attempt == (max_retries - 1):
-                raise e
+            if attempt == (max_retries - 1):  # pylint: disable=broad-except
+                logging.exception(e)
+                return False
+        else:
+            logging.warn(
+                f"Batch upload failed {attempt + 1} times. Retrying...")
+            continue
 
 
 class RestBatchUploader(BaseUploader):
