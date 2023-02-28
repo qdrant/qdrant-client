@@ -3,9 +3,8 @@ import sys
 import numpy as np
 import numpy.typing as npt
 
-
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias, Any
+    from typing import TypeAlias, Any, Type
 else:
     from typing_extensions import TypeAlias
 
@@ -13,7 +12,6 @@ from typing import Union, List
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
-
 
 Filter = Union[rest.Filter, grpc.Filter]
 SearchParams = Union[rest.SearchParams, grpc.SearchParams]
@@ -57,5 +55,27 @@ RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
 
-NumpyArray = np.ndarray
+# we can't use `nptyping` package due to numpy/python-version incompatibilities
+# thus we need to define precise type annotations until we support python3.7
+_np_numeric = Union[
+    np.bool_,  # pylance can't handle np.bool8 alias
+    np.int8,
+    np.int16,
+    np.int32,
+    np.int64,
+    np.uint8,
+    np.uint16,
+    np.uint32,
+    np.uint64,
+    np.intp,
+    np.uintp,
+    np.float16,
+    np.float32,
+    np.float64,
+    np.longdouble  # np.float96 and np.float128 are platform dependant aliases for longdouble
+]
 
+try:
+    NumpyArray: TypeAlias = npt.NDArray[_np_numeric]  # type: ignore
+except AttributeError:
+    NumpyArray = np.ndarray  # type: ignore

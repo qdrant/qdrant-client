@@ -1,3 +1,5 @@
+import numpy as np
+
 from qdrant_client import QdrantClient
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
@@ -115,5 +117,8 @@ qdrant_client.upsert("collection", [])
 
 qdrant_client.search(
     "collection", [123], with_payload=["str", "another one", "and another one"]
+)
+qdrant_client.search(
+    "collection", np.array([123]), with_payload=["str", "another one", "and another one"]
 )
 qdrant_client.upload_collection("collection", [])
