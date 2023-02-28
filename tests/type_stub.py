@@ -118,7 +118,10 @@ qdrant_client.upsert("collection", [])
 qdrant_client.search(
     "collection", [123], with_payload=["str", "another one", "and another one"]
 )
+# pyright currently is not happy with np.array and treating it as a "partially unknown type"
 qdrant_client.search(
-    "collection", np.array([123]), with_payload=["str", "another one", "and another one"]
+    "collection",
+    np.array([123]),  # type: ignore
+    with_payload=["str", "another one", "and another one"]
 )
 qdrant_client.upload_collection("collection", [])
