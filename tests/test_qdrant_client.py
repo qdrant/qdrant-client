@@ -617,7 +617,30 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         with_vectors=False
     )
 
+    assert isinstance(next_page, (int, str))
+
     assert len(scrolled_points) == 5
+
+    _, next_page = client.scroll(
+        collection_name=COLLECTION_NAME,
+        scroll_filter=Filter(
+            must=[  # These conditions are required for scroll results
+                FieldCondition(
+                    key='rand_number',  # Condition based on values of `rand_number` field.
+                    range=Range(
+                        lte=0.5  # Return only those results where `rand_number` <= 0.5
+                    )
+                )
+            ]
+        ),
+        limit=1000,
+        offset=None,
+        with_payload=True,
+        with_vectors=False
+    )
+
+    assert next_page is None
+
 
 
 @pytest.mark.parametrize(
