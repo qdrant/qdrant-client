@@ -76,4 +76,9 @@ _np_numeric = Union[
     np.float64,
     np.longdouble  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
-NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
+
+try:
+    NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
+except AttributeError:
+    NumpyArray = np.ndarray
+
