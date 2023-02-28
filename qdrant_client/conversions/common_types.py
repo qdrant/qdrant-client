@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias, Any, Type
+    from typing import TypeAlias, Any
 else:
     from typing_extensions import TypeAlias
 
