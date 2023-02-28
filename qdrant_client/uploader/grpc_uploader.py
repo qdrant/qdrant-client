@@ -38,6 +38,8 @@ def upload_batch_grpc(points_client: PointsStub, collection_name: str, batch: Un
                 f"Batch upload failed {attempt + 1} times. Retrying...")
             continue
 
+    return False # suppress mypy complaints
+
 
 class GrpcBatchUploader(BaseUploader):
 

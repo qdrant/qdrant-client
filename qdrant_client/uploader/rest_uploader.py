@@ -46,6 +46,8 @@ def upload_batch(openapi_client: SyncApis, collection_name: str, batch: Union[Tu
                 f"Batch upload failed {attempt + 1} times. Retrying...")
             continue
 
+    return False  # suppress mypy complaints
+
 
 class RestBatchUploader(BaseUploader):
 
