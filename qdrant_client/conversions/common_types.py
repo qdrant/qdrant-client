@@ -56,7 +56,7 @@ ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
-# thus we need to define precise type annotations until we support python3.7
+# thus we need to define precise type annotations while we support python3.7
 _np_numeric = Union[
     np.bool_,  # pylance can't handle np.bool8 alias
     np.int8,
@@ -75,7 +75,7 @@ _np_numeric = Union[
     np.longdouble  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
 
-try:
-    NumpyArray: TypeAlias = npt.NDArray[_np_numeric]  # type: ignore
-except AttributeError:
-    NumpyArray = np.ndarray  # type: ignore
+if sys.version_info >= (3, 8):
+    NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
+else:
+    NumpyArray = np.ndarray
