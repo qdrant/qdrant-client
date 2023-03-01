@@ -85,4 +85,7 @@ if sys.version_info >= (3, 8):
     import numpy.typing as npt
     NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
 else:
-    NumpyArray = np.ndarray
+    NumpyArray: TypeAlias = np.ndarray
+
+if __name__ == '__main__':
+    print(NumpyArray)
