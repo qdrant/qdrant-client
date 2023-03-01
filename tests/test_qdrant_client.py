@@ -13,23 +13,92 @@ from qdrant_client import QdrantClient
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.http.models import Batch
-from qdrant_client.models import Filter, FieldCondition, Range, PointStruct, HasIdCondition, PointIdsList, \
-    VectorParams, \
-    SearchRequest, RecommendRequest, TextIndexParams, TokenizerType, MatchText, \
-    PayloadSchemaType, MatchValue, Distance, CreateAliasOperation, CreateAlias, OptimizersConfigDiff
+from qdrant_client.models import (
+    CreateAlias,
+    CreateAliasOperation,
+    Distance,
+    FieldCondition,
+    Filter,
+    HasIdCondition,
+    MatchText,
+    MatchValue,
+    OptimizersConfigDiff,
+    PayloadSchemaType,
+    PointIdsList,
+    PointStruct,
+    Range,
+    RecommendRequest,
+    SearchRequest,
+    TextIndexParams,
+    TokenizerType,
+    VectorParams,
+)
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 
 DIM = 100
 NUM_VECTORS = 1_000
-COLLECTION_NAME = 'client_test'
-COLLECTION_NAME_ALIAS = 'client_test_alias'
+COLLECTION_NAME = "client_test"
+COLLECTION_NAME_ALIAS = "client_test_alias"
 
 random_words = [
-    'cat', 'dog', 'mouse', 'bird', 'fish', 'horse', 'cow', 'pig', 'sheep', 'goat', 'chicken', 'duck', 'rabbit',
-    'frog', 'snake', 'lizard', 'turtle', 'bear', 'wolf', 'fox', 'monkey', 'ape', 'gorilla', 'elephant', 'rhino',
-    'giraffe', 'zebra', 'deer', 'camel', 'lion', 'tiger', 'leopard', 'hyena', 'jaguar', 'cheetah', 'kangaroo',
-    'koala', 'panda', 'sloth', 'hippo', 'whale', 'dolphin', 'shark', 'octopus', 'squid', 'crab', 'lobster', 'snail',
-    'ant', 'bee', 'butterfly', 'dragonfly', 'mosquito', 'fly', 'grasshopper', 'spider', 'scorpion', 'ladybug',
+    "cat",
+    "dog",
+    "mouse",
+    "bird",
+    "fish",
+    "horse",
+    "cow",
+    "pig",
+    "sheep",
+    "goat",
+    "chicken",
+    "duck",
+    "rabbit",
+    "frog",
+    "snake",
+    "lizard",
+    "turtle",
+    "bear",
+    "wolf",
+    "fox",
+    "monkey",
+    "ape",
+    "gorilla",
+    "elephant",
+    "rhino",
+    "giraffe",
+    "zebra",
+    "deer",
+    "camel",
+    "lion",
+    "tiger",
+    "leopard",
+    "hyena",
+    "jaguar",
+    "cheetah",
+    "kangaroo",
+    "koala",
+    "panda",
+    "sloth",
+    "hippo",
+    "whale",
+    "dolphin",
+    "shark",
+    "octopus",
+    "squid",
+    "crab",
+    "lobster",
+    "snail",
+    "ant",
+    "bee",
+    "butterfly",
+    "dragonfly",
+    "mosquito",
+    "fly",
+    "grasshopper",
+    "spider",
+    "scorpion",
+    "ladybug",
 ]
 
 
@@ -44,7 +113,7 @@ def one_random_payload_please(idx):
         "text_data": uuid.uuid4().hex,
         "rand_number": random.random(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
-        "words": f"{random_real_word()} {random_real_word()}"
+        "words": f"{random_real_word()} {random_real_word()}",
     }
 
 
@@ -54,8 +123,8 @@ def random_payload():
 
 
 def create_random_vectors():
-    vectors_path = os.path.join(mkdtemp(), 'vectors.npy')
-    fp = np.memmap(vectors_path, dtype='float32', mode='w+', shape=(NUM_VECTORS, DIM))
+    vectors_path = os.path.join(mkdtemp(), "vectors.npy")
+    fp = np.memmap(vectors_path, dtype="float32", mode="w+", shape=(NUM_VECTORS, DIM))
 
     data = np.random.rand(NUM_VECTORS, DIM).astype(np.float32)
     fp[:] = data[:]
@@ -65,54 +134,54 @@ def create_random_vectors():
 
 def test_rest_init():
     client = QdrantClient()
-    assert client.rest_uri == 'http://localhost:6333'
+    assert client.rest_uri == "http://localhost:6333"
 
     client = QdrantClient(https=True)
-    assert client.rest_uri == 'https://localhost:6333'
+    assert client.rest_uri == "https://localhost:6333"
 
     client = QdrantClient(https=True, port=7333)
-    assert client.rest_uri == 'https://localhost:7333'
+    assert client.rest_uri == "https://localhost:7333"
 
-    client = QdrantClient(host='hidden_port_addr.com', prefix='custom')
-    assert client.rest_uri == 'http://hidden_port_addr.com:6333/custom'
+    client = QdrantClient(host="hidden_port_addr.com", prefix="custom")
+    assert client.rest_uri == "http://hidden_port_addr.com:6333/custom"
 
-    client = QdrantClient(host='hidden_port_addr.com', port=None)
-    assert client.rest_uri == 'http://hidden_port_addr.com'
+    client = QdrantClient(host="hidden_port_addr.com", port=None)
+    assert client.rest_uri == "http://hidden_port_addr.com"
 
-    client = QdrantClient(host='hidden_port_addr.com', port=None, prefix='custom', )
-    assert client.rest_uri == 'http://hidden_port_addr.com/custom'
+    client = QdrantClient(
+        host="hidden_port_addr.com",
+        port=None,
+        prefix="custom",
+    )
+    assert client.rest_uri == "http://hidden_port_addr.com/custom"
 
-    client = QdrantClient('http://hidden_port_addr.com', port=None)
-    assert client.rest_uri == 'http://hidden_port_addr.com'
+    client = QdrantClient("http://hidden_port_addr.com", port=None)
+    assert client.rest_uri == "http://hidden_port_addr.com"
 
     # url takes precedence over port, which has default value for a backward compatibility
-    client = QdrantClient(url='http://localhost:6333', port=7333)
-    assert client.rest_uri == 'http://localhost:6333'
+    client = QdrantClient(url="http://localhost:6333", port=7333)
+    assert client.rest_uri == "http://localhost:6333"
 
-    client = QdrantClient(url='http://localhost:6333', prefix='custom')
-    assert client.rest_uri == 'http://localhost:6333/custom'
+    client = QdrantClient(url="http://localhost:6333", prefix="custom")
+    assert client.rest_uri == "http://localhost:6333/custom"
 
     client = QdrantClient("my-domain.com")
-    assert client.rest_uri == 'http://my-domain.com:6333'
+    assert client.rest_uri == "http://my-domain.com:6333"
 
     client = QdrantClient("my-domain.com:80")
-    assert client.rest_uri == 'http://my-domain.com:80'
+    assert client.rest_uri == "http://my-domain.com:80"
 
     with pytest.raises(ValueError):
-        QdrantClient(url='http://localhost:6333', host="localhost")
+        QdrantClient(url="http://localhost:6333", host="localhost")
 
     with pytest.raises(ValueError):
-        QdrantClient(url='http://localhost:6333/origin', prefix='custom')
+        QdrantClient(url="http://localhost:6333/origin", prefix="custom")
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_record_upload(prefer_grpc):
     records = (
-        Record(
-            id=idx,
-            vector=np.random.rand(DIM).tolist(),
-            payload=one_random_payload_please(idx)
-        )
+        Record(id=idx, vector=np.random.rand(DIM).tolist(), payload=one_random_payload_please(idx))
         for idx in range(NUM_VECTORS)
     )
 
@@ -123,11 +192,7 @@ def test_record_upload(prefer_grpc):
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
     )
 
-    client.upload_records(
-        collection_name=COLLECTION_NAME,
-        records=records,
-        parallel=2
-    )
+    client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=2)
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
     # Let's give it a second to actually add all points to a collection.
@@ -143,13 +208,11 @@ def test_record_upload(prefer_grpc):
         count_filter=Filter(
             must=[
                 FieldCondition(
-                    key='rand_number',  # Condition based on values of `rand_number` field.
-                    range=Range(
-                        gte=0.5  # Select only those results where `rand_number` >= 0.5
-                    )
+                    key="rand_number",  # Condition based on values of `rand_number` field.
+                    range=Range(gte=0.5),  # Select only those results where `rand_number` >= 0.5
                 )
             ]
-        )
+        ),
     )
 
     assert result_count.count < 900
@@ -166,8 +229,9 @@ def test_multiple_vectors(prefer_grpc):
                 "image": np.random.rand(DIM).tolist(),
                 "text": np.random.rand(DIM * 2).tolist(),
             },
-            payload=one_random_payload_please(idx)
-        ) for idx in range(num_vectors)
+            payload=one_random_payload_please(idx),
+        )
+        for idx in range(num_vectors)
     ]
 
     client = QdrantClient(prefer_grpc=prefer_grpc)
@@ -177,14 +241,10 @@ def test_multiple_vectors(prefer_grpc):
         vectors_config={
             "image": VectorParams(size=DIM, distance=Distance.DOT),
             "text": VectorParams(size=DIM * 2, distance=Distance.COSINE),
-        }
+        },
     )
 
-    client.upload_records(
-        collection_name=COLLECTION_NAME,
-        records=records,
-        parallel=1
-    )
+    client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=1)
 
     query_vector = list(np.random.rand(DIM))
 
@@ -192,7 +252,7 @@ def test_multiple_vectors(prefer_grpc):
         collection_name=COLLECTION_NAME,
         query_vector=("image", query_vector),
         with_vectors=True,
-        limit=5  # Return 5 closest points
+        limit=5,  # Return 5 closest points
     )
 
     assert len(hits) == 5
@@ -203,7 +263,7 @@ def test_multiple_vectors(prefer_grpc):
         collection_name=COLLECTION_NAME,
         query_vector=("text", query_vector * 2),
         with_vectors=True,
-        limit=5  # Return 5 closest points
+        limit=5,  # Return 5 closest points
     )
 
     assert len(hits) == 5
@@ -217,13 +277,10 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     vectors_path = create_random_vectors()
 
     if numpy_upload:
-        vectors = np.memmap(vectors_path, dtype='float32', mode='r', shape=(NUM_VECTORS, DIM))
+        vectors = np.memmap(vectors_path, dtype="float32", mode="r", shape=(NUM_VECTORS, DIM))
         vectors_2 = vectors[2].tolist()
     else:
-        vectors = [
-            np.random.rand(DIM).tolist()
-            for _ in range(NUM_VECTORS)
-        ]
+        vectors = [np.random.rand(DIM).tolist() for _ in range(NUM_VECTORS)]
         vectors_2 = vectors[2]
 
     payload = random_payload()
@@ -252,7 +309,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         vectors=vectors,
         payload=payload,
         ids=None,  # Let client auto-assign sequential ids
-        parallel=2
+        parallel=2,
     )
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
@@ -265,13 +322,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         count_filter=Filter(
             must=[
                 FieldCondition(
-                    key='rand_number',  # Condition based on values of `rand_number` field.
-                    range=Range(
-                        gte=0.5  # Select only those results where `rand_number` >= 0.5
-                    )
+                    key="rand_number",  # Condition based on values of `rand_number` field.
+                    range=Range(gte=0.5),  # Select only those results where `rand_number` >= 0.5
                 )
             ]
-        )
+        ),
     )
 
     assert result_count.count < 900
@@ -281,15 +336,14 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         change_aliases_operations=[
             CreateAliasOperation(
                 create_alias=CreateAlias(
-                    collection_name=COLLECTION_NAME,
-                    alias_name=COLLECTION_NAME_ALIAS
+                    collection_name=COLLECTION_NAME, alias_name=COLLECTION_NAME_ALIAS
                 )
             )
         ]
     )
 
     version = os.getenv("QDRANT_VERSION")
-    if version is not None and version >= 'v1.0.0':
+    if version is not None and version >= "v1.0.0":
         collection_aliases = client.get_collection_aliases(COLLECTION_NAME)
 
         assert collection_aliases.aliases[0].collection_name == COLLECTION_NAME
@@ -302,8 +356,9 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
 
     # Create payload index for field `rand_number`
     # If indexed field appear in filtering condition - search operation could be performed faster
-    index_create_result = client.create_payload_index(COLLECTION_NAME, field_name="rand_number",
-                                                      field_schema=PayloadSchemaType.FLOAT)
+    index_create_result = client.create_payload_index(
+        COLLECTION_NAME, field_name="rand_number", field_schema=PayloadSchemaType.FLOAT
+    )
     pprint(index_create_result.dict())
 
     # Let's now check details about our new collection
@@ -323,7 +378,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         query_vector=query_vector,
         query_filter=None,  # Don't use any filters for now, search across all indexed points
         with_payload=True,  # Also return a stored payload for found points
-        limit=5  # Return 5 closest points
+        limit=5,  # Return 5 closest points
     )
 
     assert len(hits) == 5
@@ -338,25 +393,16 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     hits = client.search(
         collection_name=COLLECTION_NAME,
         query_vector=query_vector,
-        query_filter=Filter(
-            must=[
-                FieldCondition(
-                    key="id_str",
-                    match=MatchValue(value="11")
-                )
-            ]
-        ),
+        query_filter=Filter(must=[FieldCondition(key="id_str", match=MatchValue(value="11"))]),
         with_payload=True,
-        limit=5
+        limit=5,
     )
 
-    assert ('11' in hits[0].payload['id_str'])
+    assert "11" in hits[0].payload["id_str"]
 
     client.update_collection(
         collection_name=COLLECTION_NAME,
-        optimizer_config=OptimizersConfigDiff(
-            max_segment_size=10000
-        )
+        optimizer_config=OptimizersConfigDiff(max_segment_size=10000),
     )
 
     assert client.get_collection(COLLECTION_NAME).config.optimizer_config.max_segment_size == 10000
@@ -368,15 +414,13 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         query_filter=Filter(
             must=[  # These conditions are required for search results
                 FieldCondition(
-                    key='rand_number',  # Condition based on values of `rand_number` field.
-                    range=Range(
-                        gte=0.5  # Select only those results where `rand_number` >= 0.5
-                    )
+                    key="rand_number",  # Condition based on values of `rand_number` field.
+                    range=Range(gte=0.5),  # Select only those results where `rand_number` >= 0.5
                 )
             ]
         ),
         append_payload=True,  # Also return a stored payload for found points
-        limit=5  # Return 5 closest points
+        limit=5,  # Return 5 closest points
     )
 
     print("Filtered search result (`rand_number` >= 0.5):")
@@ -384,48 +428,44 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         print(hit)
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
-        ids=[1, 2, 3],
-        with_payload=True,
-        with_vectors=True
+        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
     )
 
     # ------------------ Test for full-text filtering ------------------
 
     # Create index for full-text search
-    client.create_payload_index(COLLECTION_NAME, "words", field_schema=TextIndexParams(
-        type="text",
-        tokenizer=TokenizerType.WORD,
-        min_token_len=2,
-        max_token_len=15,
-        lowercase=True,
-    ))
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "words",
+        field_schema=TextIndexParams(
+            type="text",
+            tokenizer=TokenizerType.WORD,
+            min_token_len=2,
+            max_token_len=15,
+            lowercase=True,
+        ),
+    )
 
     for i in range(10):
         query_word = random_real_word()
         hits, _offset = client.scroll(
             collection_name=COLLECTION_NAME,
             scroll_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="words",
-                        match=MatchText(text=query_word)
-                    )
-                ]
+                must=[FieldCondition(key="words", match=MatchText(text=query_word))]
             ),
             with_payload=True,
-            limit=10
+            limit=10,
         )
 
         assert len(hits) > 0
 
         for hit in hits:
-            assert query_word in hit.payload['words']
+            assert query_word in hit.payload["words"]
 
     # ------------------  Test for batch queries ------------------
-    filter_1 = Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.3))])
-    filter_2 = Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.5))])
-    filter_3 = Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])
+    filter_1 = Filter(must=[FieldCondition(key="rand_number", range=Range(gte=0.3))])
+    filter_2 = Filter(must=[FieldCondition(key="rand_number", range=Range(gte=0.5))])
+    filter_3 = Filter(must=[FieldCondition(key="rand_number", range=Range(gte=0.7))])
 
     search_queries = [
         SearchRequest(
@@ -445,16 +485,30 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
             filter=filter_3,
             limit=5,
             with_payload=True,
-        )
+        ),
     ]
-    single_search_result_1 = client.search(collection_name=COLLECTION_NAME, query_vector=query_vector_1,
-                                           query_filter=filter_1, limit=5)
-    single_search_result_2 = client.search(collection_name=COLLECTION_NAME, query_vector=query_vector_2,
-                                           query_filter=filter_2, limit=5)
-    single_search_result_3 = client.search(collection_name=COLLECTION_NAME, query_vector=query_vector_3,
-                                           query_filter=filter_3, limit=5)
+    single_search_result_1 = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector_1,
+        query_filter=filter_1,
+        limit=5,
+    )
+    single_search_result_2 = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector_2,
+        query_filter=filter_2,
+        limit=5,
+    )
+    single_search_result_3 = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector_3,
+        query_filter=filter_3,
+        limit=5,
+    )
 
-    batch_search_result = client.search_batch(collection_name=COLLECTION_NAME, requests=search_queries)
+    batch_search_result = client.search_batch(
+        collection_name=COLLECTION_NAME, requests=search_queries
+    )
 
     assert len(batch_search_result) == 3
     assert batch_search_result[0] == single_search_result_1
@@ -482,13 +536,21 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
             filter=filter_3,
             limit=5,
             with_payload=True,
-        )
+        ),
     ]
-    reco_result_1 = client.recommend(collection_name=COLLECTION_NAME, positive=[1], query_filter=filter_1, limit=5)
-    reco_result_2 = client.recommend(collection_name=COLLECTION_NAME, positive=[2], query_filter=filter_2, limit=5)
-    reco_result_3 = client.recommend(collection_name=COLLECTION_NAME, positive=[3], query_filter=filter_3, limit=5)
+    reco_result_1 = client.recommend(
+        collection_name=COLLECTION_NAME, positive=[1], query_filter=filter_1, limit=5
+    )
+    reco_result_2 = client.recommend(
+        collection_name=COLLECTION_NAME, positive=[2], query_filter=filter_2, limit=5
+    )
+    reco_result_3 = client.recommend(
+        collection_name=COLLECTION_NAME, positive=[3], query_filter=filter_3, limit=5
+    )
 
-    batch_reco_result = client.recommend_batch(collection_name=COLLECTION_NAME, requests=recommend_queries)
+    batch_reco_result = client.recommend_batch(
+        collection_name=COLLECTION_NAME, requests=recommend_queries
+    )
 
     assert len(batch_reco_result) == 3
     assert batch_reco_result[0] == reco_result_1
@@ -500,16 +562,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     assert len(got_points) == 3
 
     client.delete(
-        collection_name=COLLECTION_NAME,
-        wait=True,
-        points_selector=PointIdsList(points=[2, 3])
+        collection_name=COLLECTION_NAME, wait=True, points_selector=PointIdsList(points=[2, 3])
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
-        ids=[1, 2, 3],
-        with_payload=True,
-        with_vectors=True
+        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
     )
 
     assert len(got_points) == 1
@@ -517,32 +574,21 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     client.upsert(
         collection_name=COLLECTION_NAME,
         wait=True,
-        points=[PointStruct(id=2, payload={"hello": "world"}, vector=vectors_2)]
+        points=[PointStruct(id=2, payload={"hello": "world"}, vector=vectors_2)],
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
-        ids=[1, 2, 3],
-        with_payload=True,
-        with_vectors=True
+        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
     )
 
     assert len(got_points) == 2
 
     client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={
-            "new_key": 123
-        },
-        points=[1, 2],
-        wait=True
+        collection_name=COLLECTION_NAME, payload={"new_key": 123}, points=[1, 2], wait=True
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
-        ids=[1, 2],
-        with_payload=True,
-        with_vectors=True
+        collection_name=COLLECTION_NAME, ids=[1, 2], with_payload=True, with_vectors=True
     )
 
     for point in got_points:
@@ -555,10 +601,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
-        ids=[1],
-        with_payload=True,
-        with_vectors=True
+        collection_name=COLLECTION_NAME, ids=[1], with_payload=True, with_vectors=True
     )
 
     for point in got_points:
@@ -570,10 +613,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
-        ids=[1, 2],
-        with_payload=True,
-        with_vectors=True
+        collection_name=COLLECTION_NAME, ids=[1, 2], with_payload=True, with_vectors=True
     )
 
     for point in got_points:
@@ -585,16 +625,14 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         query_filter=Filter(
             must=[  # These conditions are required for recommend results
                 FieldCondition(
-                    key='rand_number',  # Condition based on values of `rand_number` field.
-                    range=Range(
-                        lte=0.5  # Select only those results where `rand_number` >= 0.5
-                    )
+                    key="rand_number",  # Condition based on values of `rand_number` field.
+                    range=Range(lte=0.5),  # Select only those results where `rand_number` >= 0.5
                 )
             ]
         ),
         limit=5,
         with_payload=True,
-        with_vectors=False
+        with_vectors=False,
     )
 
     assert len(recommended_points) == 5
@@ -604,17 +642,15 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         scroll_filter=Filter(
             must=[  # These conditions are required for scroll results
                 FieldCondition(
-                    key='rand_number',  # Condition based on values of `rand_number` field.
-                    range=Range(
-                        lte=0.5  # Return only those results where `rand_number` <= 0.5
-                    )
+                    key="rand_number",  # Condition based on values of `rand_number` field.
+                    range=Range(lte=0.5),  # Return only those results where `rand_number` <= 0.5
                 )
             ]
         ),
         limit=5,
         offset=None,
         with_payload=True,
-        with_vectors=False
+        with_vectors=False,
     )
 
     assert isinstance(next_page, (int, str))
@@ -626,26 +662,21 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         scroll_filter=Filter(
             must=[  # These conditions are required for scroll results
                 FieldCondition(
-                    key='rand_number',  # Condition based on values of `rand_number` field.
-                    range=Range(
-                        lte=0.5  # Return only those results where `rand_number` <= 0.5
-                    )
+                    key="rand_number",  # Condition based on values of `rand_number` field.
+                    range=Range(lte=0.5),  # Return only those results where `rand_number` <= 0.5
                 )
             ]
         ),
         limit=1000,
         offset=None,
         with_payload=True,
-        with_vectors=False
+        with_vectors=False,
     )
 
     assert next_page is None
 
 
-
-@pytest.mark.parametrize(
-    "prefer_grpc", [False, True]
-)
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_points_crud(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc)
 
@@ -658,11 +689,7 @@ def test_points_crud(prefer_grpc):
     client.upsert(
         collection_name=COLLECTION_NAME,
         points=[
-            PointStruct(
-                id=123,
-                payload={"test": "value"},
-                vector=np.random.rand(DIM).tolist()
-            )
+            PointStruct(id=123, payload={"test": "value"}, vector=np.random.rand(DIM).tolist())
         ],
         wait=True,
     )
@@ -672,8 +699,11 @@ def test_points_crud(prefer_grpc):
         points=Batch(
             ids=[3, 4],
             vectors=[np.random.rand(DIM).tolist(), np.random.rand(DIM).tolist()],
-            payloads=[{"test": "value", "test2": "value2"}, {"test": "value", "test2": {"haha": "???"}}],
-        )
+            payloads=[
+                {"test": "value", "test2": "value2"},
+                {"test": "value", "test2": {"haha": "???"}},
+            ],
+        ),
     )
 
     # Read a single point
@@ -685,27 +715,18 @@ def test_points_crud(prefer_grpc):
     # Update a single point
 
     client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={
-            "test2": ["value2", "value3"]
-        },
-        points=[123]
+        collection_name=COLLECTION_NAME, payload={"test2": ["value2", "value3"]}, points=[123]
     )
 
     # Delete a single point
-    client.delete(
-        collection_name=COLLECTION_NAME,
-        points_selector=PointIdsList(points=[123])
-    )
+    client.delete(collection_name=COLLECTION_NAME, points_selector=PointIdsList(points=[123]))
 
 
-@pytest.mark.parametrize(
-    "prefer_grpc", [False, True]
-)
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_conditional_payload_update(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc)
     version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < 'v0.11.5':
+    if version is not None and version < "v0.11.5":
         return
 
     client.recreate_collection(
@@ -726,22 +747,16 @@ def test_conditional_payload_update(prefer_grpc):
 
     client.set_payload(
         collection_name=COLLECTION_NAME,
-        payload={
-            "c": 1
-        },
-        points=Filter(
-            must=[
-                FieldCondition(key="a", range=Range(gte=1))
-            ]
-        ),
-        wait=True
+        payload={"c": 1},
+        points=Filter(must=[FieldCondition(key="a", range=Range(gte=1))]),
+        wait=True,
     )
 
     points = client.retrieve(
         collection_name=COLLECTION_NAME,
         ids=[1001, 1002, 1003, 1004],
         with_payload=True,
-        with_vectors=False
+        with_vectors=False,
     )
 
     points = sorted(points, key=lambda p: p.id)
@@ -754,18 +769,14 @@ def test_conditional_payload_update(prefer_grpc):
     client.overwrite_payload(
         collection_name=COLLECTION_NAME,
         payload={"c": 2},
-        points=Filter(
-            must=[
-                FieldCondition(key="b", range=Range(le=10))
-            ]
-        )
+        points=Filter(must=[FieldCondition(key="b", range=Range(le=10))]),
     )
 
     points = client.retrieve(
         collection_name=COLLECTION_NAME,
         ids=[1001, 1002, 1003, 1004],
         with_payload=True,
-        with_vectors=False
+        with_vectors=False,
     )
     points = sorted(points, key=lambda p: p.id)
 
@@ -783,22 +794,18 @@ def test_has_id_condition():
         ]
     ).dict()
 
-    assert query['must'][0]['has_id'] == [42, 43]
+    assert query["must"][0]["has_id"] == [42, 43]
 
 
 def test_insert_float():
-    point = PointStruct(
-        id=123,
-        payload={'value': 0.123},
-        vector=np.random.rand(DIM).tolist()
-    )
+    point = PointStruct(id=123, payload={"value": 0.123}, vector=np.random.rand(DIM).tolist())
 
-    assert isinstance(point.payload['value'], float)
+    assert isinstance(point.payload["value"], float)
 
 
 def test_locks():
     version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < 'v0.11.0':
+    if version is not None and version < "v0.11.0":
         return  # Locks are supported since v0.11.0
 
     client = QdrantClient()
@@ -815,11 +822,7 @@ def test_locks():
         client.upsert(
             collection_name=COLLECTION_NAME,
             points=[
-                PointStruct(
-                    id=123,
-                    payload={"test": "value"},
-                    vector=np.random.rand(DIM).tolist()
-                )
+                PointStruct(id=123, payload={"test": "value"}, vector=np.random.rand(DIM).tolist())
             ],
             wait=True,
         )
@@ -838,11 +841,7 @@ def test_locks():
     client.upsert(
         collection_name=COLLECTION_NAME,
         points=[
-            PointStruct(
-                id=123,
-                payload={"test": "value"},
-                vector=np.random.rand(DIM).tolist()
-            )
+            PointStruct(id=123, payload={"test": "value"}, vector=np.random.rand(DIM).tolist())
         ],
         wait=True,
     )
@@ -850,9 +849,9 @@ def test_locks():
 
 def test_legacy_imports():
     try:
-        from qdrant_openapi_client.models.models import Filter, FieldCondition
         from qdrant_openapi_client.api.points_api import SyncPointsApi
         from qdrant_openapi_client.exceptions import UnexpectedResponse
+        from qdrant_openapi_client.models.models import FieldCondition, Filter
     except ImportError:
         assert False  # can't import, fail
 
@@ -863,25 +862,28 @@ def test_value_serialization():
 
 
 def test_serialization():
+    from qdrant_client.grpc import PointId as PointIdGrpc
     from qdrant_client.grpc import PointStruct as PointStructGrpc
-    from qdrant_client.grpc import PointId as PointIdGrpc, Vectors, Vector
+    from qdrant_client.grpc import Vector, Vectors
 
     point = PointStructGrpc(
         id=PointIdGrpc(num=1),
-        vectors=Vectors(vector=Vector(data=[1., 2., 3., 4.])),
-        payload=payload_to_grpc({
-            "a": 123,
-            "b": "text",
-            "c": [1, 2, 3],
-            "d": {
-                "val1": "val2",
-                "val2": [1, 2, 3],
-                "val3": [],
-                "val4": {},
-            },
-            "e": True,
-            "f": None,
-        })
+        vectors=Vectors(vector=Vector(data=[1.0, 2.0, 3.0, 4.0])),
+        payload=payload_to_grpc(
+            {
+                "a": 123,
+                "b": "text",
+                "c": [1, 2, 3],
+                "d": {
+                    "val1": "val2",
+                    "val2": [1, 2, 3],
+                    "val3": [],
+                    "val4": {},
+                },
+                "e": True,
+                "f": None,
+            }
+        ),
     )
     print("\n")
     print(point.payload)
@@ -892,7 +894,7 @@ def test_serialization():
     print(grpc_to_payload(res.payload))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_qdrant_client_integration()
     test_points_crud()
     test_has_id_condition()

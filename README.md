@@ -1,4 +1,4 @@
-# Python Qdrant client library 
+# Python Qdrant client library
 
 Client library for the [Qdrant](https://github.com/qdrant/qdrant) vector search engine.
 
@@ -14,6 +14,15 @@ It also provides some additional helper methods for frequently required operatio
 ```
 pip install qdrant-client
 ```
+
+
+### Development
+
+This project uses git hooks to run code formatters.
+
+Install `pre-commit` with `pip3 install pre-commit` and set up hooks with `pre-commit install`.
+
+> pre-commit requires python>=3.8
 
 ## Examples
 

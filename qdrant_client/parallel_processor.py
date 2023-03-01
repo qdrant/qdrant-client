@@ -1,13 +1,12 @@
+import logging
 import os
 from enum import Enum
 from multiprocessing import Queue, get_context
-from multiprocessing.sharedctypes import Synchronized as BaseValue
 from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
+from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
-from typing import Iterable, Any, Type, Optional, List, Dict
-
-import logging
+from typing import Any, Dict, Iterable, List, Optional, Type
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
@@ -23,19 +22,21 @@ class QueueSignals(str, Enum):
 
 class Worker:
     @classmethod
-    def start(cls, **kwargs: Any) -> 'Worker':
+    def start(cls, **kwargs: Any) -> "Worker":
         raise NotImplementedError()
 
     def process(self, items: Iterable[Any]) -> Iterable[Any]:
         raise NotImplementedError()
 
 
-def _worker(worker_class: Type[Worker],
-            input_queue: Queue,
-            output_queue: Queue,
-            num_active_workers: BaseValue,
-            worker_id: int,
-            kwargs: Optional[Dict[str, Any]] = None) -> None:
+def _worker(
+    worker_class: Type[Worker],
+    input_queue: Queue,
+    output_queue: Queue,
+    num_active_workers: BaseValue,
+    worker_id: int,
+    kwargs: Optional[Dict[str, Any]] = None,
+) -> None:
     """
     A worker that pulls data pints off the input queue, and places the execution result on the output queue.
     When there are no data pints left on the input queue, it decrements
@@ -81,7 +82,6 @@ def _worker(worker_class: Type[Worker],
 
 
 class ParallelWorkerPool:
-
     def __init__(self, num_workers: int, worker: Type[Worker], start_method: Optional[str] = None):
         self.worker_class = worker
         self.num_workers = num_workers
@@ -97,12 +97,12 @@ class ParallelWorkerPool:
         self.input_queue = self.ctx.Queue(self.queue_size)
         self.output_queue = self.ctx.Queue(self.queue_size)
 
-        ctx_value = self.ctx.Value('i', self.num_workers)
+        ctx_value = self.ctx.Value("i", self.num_workers)
         assert isinstance(ctx_value, BaseValue)
         self.num_active_workers = ctx_value
 
         for worker_id in range(0, self.num_workers):
-            assert hasattr(self.ctx, 'Process')
+            assert hasattr(self.ctx, "Process")
             process = self.ctx.Process(
                 target=_worker,
                 args=(
@@ -111,7 +111,8 @@ class ParallelWorkerPool:
                     self.output_queue,
                     self.num_active_workers,
                     worker_id,
-                    kwargs.copy())
+                    kwargs.copy(),
+                ),
             )
             process.start()
             self.processes.append(process)
@@ -126,7 +127,6 @@ class ParallelWorkerPool:
             pushed = 0
             read = 0
             for item in stream:
-
                 if pushed - read < self.queue_size:
                     try:
                         out_item = self.output_queue.get_nowait()

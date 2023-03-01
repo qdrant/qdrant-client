@@ -4,12 +4,9 @@ from qdrant_client import QdrantClient
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
 
-
 qdrant_client = QdrantClient()
 qdrant_client.clear_payload("collection", [123])
-qdrant_client.count(
-    "collection", rest_models.Filter()
-)
+qdrant_client.count("collection", rest_models.Filter())
 qdrant_client.create_full_snapshot()
 qdrant_client.create_payload_index("collection", "asd", 3)
 qdrant_client.delete("collection", [123])
@@ -60,9 +57,7 @@ qdrant_client.recommend_batch(
         )
     ],
 )
-qdrant_client.recover_snapshot(
-    "collection", "location", rest_models.SnapshotPriority.REPLICA
-)
+qdrant_client.recover_snapshot("collection", "location", rest_models.SnapshotPriority.REPLICA)
 qdrant_client.recreate_collection(
     "collection",
     types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
@@ -106,22 +101,18 @@ qdrant_client.update_collection(
 qdrant_client.update_collection_aliases(
     [
         rest_models.CreateAliasOperation(
-            create_alias=rest_models.CreateAlias(
-                collection_name="heh", alias_name="hah"
-            ),
+            create_alias=rest_models.CreateAlias(collection_name="heh", alias_name="hah"),
         )
     ]
 )
 qdrant_client.upload_records("collection", [])
 qdrant_client.upsert("collection", [])
 
-qdrant_client.search(
-    "collection", [123], with_payload=["str", "another one", "and another one"]
-)
+qdrant_client.search("collection", [123], with_payload=["str", "another one", "and another one"])
 # pyright currently is not happy with np.array and treating it as a "partially unknown type"
 qdrant_client.search(
     "collection",
     np.array([123]),  # type: ignore
-    with_payload=["str", "another one", "and another one"]
+    with_payload=["str", "another one", "and another one"],
 )
 qdrant_client.upload_collection("collection", [])

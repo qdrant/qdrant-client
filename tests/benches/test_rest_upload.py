@@ -1,12 +1,12 @@
 import time
 
-import pytest
 import numpy as np
+import pytest
 
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 
-COLLECTION_NAME = 'test_rest_upload'
+COLLECTION_NAME = "test_rest_upload"
 VECTOR_SIZE = 256
 BATCH_SIZE = 64
 
@@ -17,7 +17,9 @@ def get_data(num_vectors: int):
 
 def prepare_collection_rest():
     client = QdrantClient()
-    client.recreate_collection(COLLECTION_NAME, vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE))
+    client.recreate_collection(
+        COLLECTION_NAME, vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE)
+    )
 
 
 def upload_data(data):
@@ -28,7 +30,7 @@ def upload_data(data):
         payload=None,
         ids=None,
         batch_size=BATCH_SIZE,
-        parallel=2
+        parallel=2,
     )
 
 

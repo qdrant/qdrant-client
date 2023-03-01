@@ -2,17 +2,15 @@ import sys
 
 import numpy as np
 
-
 if sys.version_info >= (3, 10):
-    from typing import TypeAlias, Any
+    from typing import Any, TypeAlias
 else:
     from typing_extensions import TypeAlias
 
-from typing import Union, List
+from typing import List, Union
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
-
 
 Filter = Union[rest.Filter, grpc.Filter]
 SearchParams = Union[rest.SearchParams, grpc.SearchParams]
@@ -23,16 +21,20 @@ OptimizersConfigDiff = Union[rest.OptimizersConfigDiff, grpc.OptimizersConfigDif
 CollectionParamsDiff = Union[rest.CollectionParamsDiff, grpc.CollectionParamsDiff]
 WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
 PointId = Union[int, str, grpc.PointId]
-PayloadSchemaType = Union[rest.PayloadSchemaType, rest.PayloadSchemaParams, int]  # type(grpc.PayloadSchemaType) == int
+PayloadSchemaType = Union[
+    rest.PayloadSchemaType, rest.PayloadSchemaParams, int
+]  # type(grpc.PayloadSchemaType) == int
 Points = Union[rest.Batch, List[Union[rest.PointStruct, grpc.PointStruct]]]
-PointsSelector = Union[List[PointId], rest.Filter, grpc.Filter, rest.PointsSelector, grpc.PointsSelector]
+PointsSelector = Union[
+    List[PointId], rest.Filter, grpc.Filter, rest.PointsSelector, grpc.PointsSelector
+]
 LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
 
 AliasOperations = Union[
     rest.CreateAliasOperation,
     rest.RenameAliasOperation,
     rest.DeleteAliasOperation,
-    grpc.AliasOperations
+    grpc.AliasOperations,
 ]
 Payload: TypeAlias = rest.Payload
 
@@ -73,7 +75,7 @@ _np_numeric = Union[
     np.float16,
     np.float32,
     np.float64,
-    np.longdouble  # np.float96 and np.float128 are platform dependant aliases for longdouble
+    np.longdouble,  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
 
 
@@ -83,6 +85,7 @@ if sys.version_info >= (3, 8):
     # pyproject.toml is configured to install numpy>=1.21 in case of python>=3.8
     # thus we don't need an additional check for numpy version
     import numpy.typing as npt
+
     NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
 else:
     NumpyArray: TypeAlias = np.ndarray
