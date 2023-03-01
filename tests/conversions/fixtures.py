@@ -11,11 +11,13 @@ point_id = grpc.PointId(num=1)
 point_id_1 = grpc.PointId(num=2)
 point_id_2 = grpc.PointId(uuid="f9bcf279-5e66-40f7-856b-3a9d9b6617ee")
 
-has_id_condition = grpc.HasIdCondition(has_id=[
-    point_id,
-    point_id_1,
-    point_id_2,
-])
+has_id_condition = grpc.HasIdCondition(
+    has_id=[
+        point_id,
+        point_id_1,
+        point_id_2,
+    ]
+)
 
 is_empty = grpc.IsEmptyCondition(key="my.field")
 
@@ -24,10 +26,7 @@ match_integer = grpc.Match(integer=42)
 match_bool = grpc.Match(boolean=True)
 match_text = grpc.Match(text="hello")
 
-field_condition_match = grpc.FieldCondition(
-    key="match_field",
-    match=match_keyword
-)
+field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -36,31 +35,18 @@ range_ = grpc.Range(
     gte=4.0,
 )
 
-field_condition_range = grpc.FieldCondition(
-    key="match_field",
-    range=range_
-)
+field_condition_range = grpc.FieldCondition(key="match_field", range=range_)
 
 geo_point = grpc.GeoPoint(lon=12.123, lat=78.212)
 
-geo_radius = grpc.GeoRadius(
-    center=geo_point,
-    radius=10.
-)
+geo_radius = grpc.GeoRadius(center=geo_point, radius=10.0)
 
-field_condition_geo_radius = grpc.FieldCondition(
-    key="match_field",
-    geo_radius=geo_radius
-)
+field_condition_geo_radius = grpc.FieldCondition(key="match_field", geo_radius=geo_radius)
 
-geo_bounding_box = grpc.GeoBoundingBox(
-    top_left=geo_point,
-    bottom_right=geo_point
-)
+geo_bounding_box = grpc.GeoBoundingBox(top_left=geo_point, bottom_right=geo_point)
 
 field_condition_geo_bounding_box = grpc.FieldCondition(
-    key="match_field",
-    geo_bounding_box=geo_bounding_box
+    key="match_field", geo_bounding_box=geo_bounding_box
 )
 
 values_count = grpc.ValuesCount(
@@ -70,10 +56,7 @@ values_count = grpc.ValuesCount(
     lte=4,
 )
 
-field_condition_values_count = grpc.FieldCondition(
-    key="match_field",
-    values_count=values_count
-)
+field_condition_values_count = grpc.FieldCondition(key="match_field", values_count=values_count)
 
 condition_has_id = grpc.Condition(has_id=has_id_condition)
 condition_is_empty = grpc.Condition(is_empty=is_empty)
@@ -91,19 +74,10 @@ filter_ = grpc.Filter(
     ],
     should=[
         condition_field_match,
-
     ],
     must_not=[
-        grpc.Condition(
-            filter=grpc.Filter(
-                must=[
-                    grpc.Condition(
-                        field=field_condition_range
-                    )
-                ]
-            )
-        )
-    ]
+        grpc.Condition(filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)]))
+    ],
 )
 
 vector_param = grpc.VectorParams(
@@ -113,7 +87,9 @@ vector_param = grpc.VectorParams(
 
 single_vector_config = grpc.VectorsConfig(params=vector_param)
 
-multiple_vector_config = grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map={"text_vector": vector_param}))
+multiple_vector_config = grpc.VectorsConfig(
+    params_map=grpc.VectorParamsMap(map={"text_vector": vector_param})
+)
 
 collection_params = grpc.CollectionParams(
     vectors_config=single_vector_config,
@@ -122,9 +98,7 @@ collection_params = grpc.CollectionParams(
 )
 
 collection_params_2 = grpc.CollectionParams(
-    vectors_config=multiple_vector_config,
-    replication_factor=2,
-    write_consistency_factor=1
+    vectors_config=multiple_vector_config, replication_factor=2, write_consistency_factor=1
 )
 
 hnsw_config = grpc.HnswConfigDiff(
@@ -153,7 +127,7 @@ optimizer_config = grpc.OptimizersConfigDiff(
     memmap_threshold=50000,
     indexing_threshold=10000,
     flush_interval_sec=10,
-    max_optimization_threads=0
+    max_optimization_threads=0,
 )
 
 optimizer_config_half = grpc.OptimizersConfigDiff(
@@ -163,10 +137,7 @@ optimizer_config_half = grpc.OptimizersConfigDiff(
     max_segment_size=200000,
 )
 
-wal_config = grpc.WalConfigDiff(
-    wal_capacity_mb=32,
-    wal_segments_ahead=2
-)
+wal_config = grpc.WalConfigDiff(wal_capacity_mb=32, wal_segments_ahead=2)
 
 collection_config = grpc.CollectionConfig(
     params=collection_params,
@@ -187,24 +158,15 @@ payload_value = {
     "empty_list": [],
 }
 
-payload = payload_to_grpc({
-    "payload": payload_value
-})
+payload = payload_to_grpc({"payload": payload_value})
 
-single_vector = grpc.Vectors(vector=grpc.Vector(data=[1., 2., 3., 4.]))
+single_vector = grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, 3.0, 4.0]))
 
 scored_point = grpc.ScoredPoint(
-    id=point_id,
-    payload=payload,
-    score=0.99,
-    vectors=single_vector,
-    version=12
+    id=point_id, payload=payload, score=0.99, vectors=single_vector, version=12
 )
 
-create_alias = grpc.CreateAlias(
-    collection_name="col1",
-    alias_name="col2"
-)
+create_alias = grpc.CreateAlias(collection_name="col1", alias_name="col2")
 
 search_params = grpc.SearchParams(
     hnsw_ef=128,
@@ -214,21 +176,13 @@ search_params_2 = grpc.SearchParams(
     exact=True,
 )
 
-rename_alias = grpc.RenameAlias(
-    old_alias_name="col2",
-    new_alias_name="col3"
-)
+rename_alias = grpc.RenameAlias(old_alias_name="col2", new_alias_name="col3")
 
 collection_status = grpc.CollectionStatus.Yellow
 collection_status_green = grpc.CollectionStatus.Green
 
-optimizer_status = grpc.OptimizerStatus(
-    ok=True
-)
-optimizer_status_error = grpc.OptimizerStatus(
-    ok=False,
-    error="Error!"
-)
+optimizer_status = grpc.OptimizerStatus(ok=True)
+optimizer_status_error = grpc.OptimizerStatus(ok=False, error="Error!")
 
 payload_schema_keyword = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Keyword)
 payload_schema_integer = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Integer)
@@ -265,37 +219,29 @@ collection_info = grpc.CollectionInfo(
 
 create_collection = grpc.CreateCollection(
     collection_name="my_collection",
-    vectors_config=grpc.VectorsConfig(params=grpc.VectorParams(size=100, distance=grpc.Distance.Euclid)),
+    vectors_config=grpc.VectorsConfig(
+        params=grpc.VectorParams(size=100, distance=grpc.Distance.Euclid)
+    ),
     hnsw_config=hnsw_config,
     wal_config=wal_config,
     optimizers_config=optimizer_config,
-    shard_number=10
+    shard_number=10,
 )
 
 update_status = grpc.UpdateStatus.Acknowledged
 
-update_result = grpc.UpdateResult(
-    operation_id=201,
-    status=update_status
-)
+update_result = grpc.UpdateResult(operation_id=201, status=update_status)
 
 update_status_completed = grpc.UpdateStatus.Completed
 
-update_result_completed = grpc.UpdateResult(
-    operation_id=201,
-    status=update_status_completed
-)
+update_result_completed = grpc.UpdateResult(operation_id=201, status=update_status_completed)
 
-delete_alias = grpc.DeleteAlias(
-    alias_name="col3"
-)
+delete_alias = grpc.DeleteAlias(alias_name="col3")
 
 point_struct = grpc.PointStruct(
     id=point_id_1,
-    vectors=grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, -1., -.2])),
-    payload=payload_to_grpc({
-        "my_payload": payload_value
-    }),
+    vectors=grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, -1.0, -0.2])),
+    payload=payload_to_grpc({"my_payload": payload_value}),
 )
 
 point_struct_multivec = grpc.PointStruct(
@@ -303,23 +249,18 @@ point_struct_multivec = grpc.PointStruct(
     vectors=grpc.Vectors(
         vectors=grpc.NamedVectors(
             vectors={
-                "image": grpc.Vector(data=[1.0, 2.0, -1., -.2]),
-                "text": grpc.Vector(data=[1.0, 2.0, -1., -.2]),
+                "image": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
+                "text": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
             }
         )
     ),
-    payload=payload_to_grpc({
-        "my_payload": payload_value
-    }),
+    payload=payload_to_grpc({"my_payload": payload_value}),
 )
 
-collection_description = grpc.CollectionDescription(
-    name="my_col"
-)
+collection_description = grpc.CollectionDescription(name="my_col")
 
 update_collection = grpc.UpdateCollection(
-    collection_name="my_col3",
-    optimizers_config=optimizer_config
+    collection_name="my_col3", optimizers_config=optimizer_config
 )
 
 points_ids_list = grpc.PointsIdsList(ids=[point_id, point_id_2, point_id_2])
@@ -332,13 +273,15 @@ alias_operations_rename = grpc.AliasOperations(rename_alias=rename_alias)
 alias_operations_delete = grpc.AliasOperations(delete_alias=delete_alias)
 
 with_payload_bool = grpc.WithPayloadSelector(enable=True)
-with_payload_include = grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(fields=["color", "price"]))
-with_payload_exclude = grpc.WithPayloadSelector(exclude=grpc.PayloadExcludeSelector(fields=["color", "price"]))
+with_payload_include = grpc.WithPayloadSelector(
+    include=grpc.PayloadIncludeSelector(fields=["color", "price"])
+)
+with_payload_exclude = grpc.WithPayloadSelector(
+    exclude=grpc.PayloadExcludeSelector(fields=["color", "price"])
+)
 
 retrieved_point = grpc.RetrievedPoint(
-    id=point_id_1,
-    payload=payload_to_grpc({"key": payload_value}),
-    vectors=single_vector
+    id=point_id_1, payload=payload_to_grpc({"key": payload_value}), vectors=single_vector
 )
 
 count_result = grpc.CountResult(count=5)
@@ -347,22 +290,24 @@ timestamp = Timestamp()
 timestamp.FromDatetime(datetime.datetime.now())
 
 snapshot_description = grpc.SnapshotDescription(
-    name="my_snapshot",
-    creation_time=timestamp,
-    size=100500
+    name="my_snapshot", creation_time=timestamp, size=100500
 )
 
-vector_config = grpc.VectorsConfig(params_map=grpc.VectorParamsMap(map={
-    "image": vector_param,
-    "text": grpc.VectorParams(
-        size=123,
-        distance=grpc.Distance.Cosine,
+vector_config = grpc.VectorsConfig(
+    params_map=grpc.VectorParamsMap(
+        map={
+            "image": vector_param,
+            "text": grpc.VectorParams(
+                size=123,
+                distance=grpc.Distance.Cosine,
+            ),
+        }
     )
-}))
+)
 
 search_points = grpc.SearchPoints(
     collection_name="collection-123",
-    vector=[1., 2., 3., 5.],
+    vector=[1.0, 2.0, 3.0, 5.0],
     filter=filter_,
     limit=100,
     with_payload=with_payload_bool,
@@ -375,7 +320,7 @@ search_points = grpc.SearchPoints(
 
 search_points_all_vectors = grpc.SearchPoints(
     collection_name="collection-123",
-    vector=[1., 2., 3., 5.],
+    vector=[1.0, 2.0, 3.0, 5.0],
     filter=filter_,
     limit=100,
     with_payload=with_payload_bool,
@@ -472,10 +417,7 @@ fixtures = {
     "RenameAlias": [rename_alias],
     "ValuesCount": [values_count],
     "Filter": [filter_],
-    "OptimizersConfigDiff": [
-        optimizer_config,
-        optimizer_config_half
-    ],
+    "OptimizersConfigDiff": [optimizer_config, optimizer_config_half],
     "CollectionInfo": [collection_info, collection_info_ok],
     "CreateCollection": [create_collection],
     "FieldCondition": [
@@ -483,7 +425,7 @@ fixtures = {
         field_condition_range,
         field_condition_geo_radius,
         field_condition_geo_bounding_box,
-        field_condition_values_count
+        field_condition_values_count,
     ],
     "GeoRadius": [geo_radius],
     "UpdateResult": [update_result, update_result_completed],
@@ -503,29 +445,19 @@ fixtures = {
         condition_geo_bounding_box,
         condition_values_count,
     ],
-    "PointsSelector": [
-        points_selector_list,
-        points_selector_filter
-    ],
+    "PointsSelector": [points_selector_list, points_selector_filter],
     "AliasOperations": [
         alias_operations_create,
         alias_operations_rename,
         alias_operations_delete,
     ],
-    "Match": [
-        match_keyword,
-        match_integer,
-        match_bool,
-        match_text
-    ],
+    "Match": [match_keyword, match_integer, match_bool, match_text],
     "WithPayloadSelector": [
         with_payload_bool,
         with_payload_include,
         with_payload_exclude,
     ],
-    "RetrievedPoint": [
-        retrieved_point
-    ],
+    "RetrievedPoint": [retrieved_point],
     "CountResult": [count_result],
     "SnapshotDescription": [snapshot_description],
     "VectorParams": [vector_param],
@@ -539,7 +471,12 @@ fixtures = {
     ],
     "CollectionParamsDiff": [collections_params_diff],
     "LookupLocation": [lookup_location_1, lookup_location_2],
-    "ReadConsistency": [read_consistency, read_consistency_0, read_consistency_1, read_consistency_2],
+    "ReadConsistency": [
+        read_consistency,
+        read_consistency_0,
+        read_consistency_1,
+        read_consistency_2,
+    ],
     "WriteOrdering": [ordering_0, ordering_1, ordering_2],
 }
 

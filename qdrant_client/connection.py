@@ -1,12 +1,14 @@
-from typing import Optional, List, Any
+from typing import Any, List, Optional
 
 import grpc
 
 
-def get_channel(host: str, port: int, ssl: bool, metadata: Optional[List[Any]] = None) -> grpc.Channel:
+def get_channel(
+    host: str, port: int, ssl: bool, metadata: Optional[List[Any]] = None
+) -> grpc.Channel:
     if ssl:
-
         if metadata:
+
             def metadata_callback(context: Any, callback: Any) -> None:
                 # for more info see grpc docs
                 callback(metadata, None)
@@ -24,6 +26,6 @@ def get_channel(host: str, port: int, ssl: bool, metadata: Optional[List[Any]] =
             creds = grpc.ssl_channel_credentials()
 
         # finally pass in the combined credentials when creating a channel
-        return grpc.secure_channel(f'{host}:{port}', creds)
+        return grpc.secure_channel(f"{host}:{port}", creds)
     else:
-        return grpc.insecure_channel(f'{host}:{port}')
+        return grpc.insecure_channel(f"{host}:{port}")
