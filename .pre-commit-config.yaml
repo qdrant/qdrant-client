@@ -24,6 +24,7 @@ repos:
     hooks:
       - id: black
         name: "Black: The uncompromising Python code formatter"
+        args: ["--line-length", "99"]
 
   - repo: https://github.com/PyCQA/isort
     rev: 5.12.0
