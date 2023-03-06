@@ -334,7 +334,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_scored_point(cls, model: grpc.ScoredPoint) -> rest.ScoredPoint:
-        return rest.ScoredPoint(
+        return rest.ScoredPoint.construct(
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
             score=model.score,
