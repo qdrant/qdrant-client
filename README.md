@@ -33,6 +33,8 @@ Instance a client
 from qdrant_client import QdrantClient
 
 client = QdrantClient(host="localhost", port=6333)
+# or
+client = QdrantClient(url="http://localhost:6333")
 ```
 
 Create a new collection
