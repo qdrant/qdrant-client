@@ -99,6 +99,12 @@ class QdrantClient:
         if url is not None and host is not None:
             raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
 
+        if host is not None and (host.startswith("http://") or host.startswith("https://")):
+            raise ValueError(
+                f"`host` param is not expected to contain protocol (http:// or https://). "
+                f"Try to use `url` parameter instead."
+            )
+
         elif url:
             parsed_url: Url = parse_url(url)
             self._host, self._port = parsed_url.host, parsed_url.port
