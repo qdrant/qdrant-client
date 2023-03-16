@@ -184,6 +184,15 @@ class _ClusterApi:
             path_params=path_params,
         )
 
+    def _build_for_recover_current_peer(
+        self,
+    ):
+        return self.api_client.request(
+            type_=m.InlineResponse2003,
+            method="POST",
+            url="/cluster/recover",
+        )
+
     def _build_for_remove_peer(
         self,
         peer_id: int,
@@ -254,6 +263,11 @@ class AsyncClusterApi(_ClusterApi):
             collection_name=collection_name,
         )
 
+    async def recover_current_peer(
+        self,
+    ) -> m.InlineResponse2003:
+        return await self._build_for_recover_current_peer()
+
     async def remove_peer(
         self,
         peer_id: int,
@@ -299,6 +313,11 @@ class SyncClusterApi(_ClusterApi):
         return self._build_for_collection_cluster_info(
             collection_name=collection_name,
         )
+
+    def recover_current_peer(
+        self,
+    ) -> m.InlineResponse2003:
+        return self._build_for_recover_current_peer()
 
     def remove_peer(
         self,

@@ -145,6 +145,9 @@ class GrpcToRest:
             optimizer_config=cls.convert_optimizer_config(model.optimizer_config),
             params=cls.convert_collection_params(model.params),
             wal_config=cls.convert_wal_config(model.wal_config),
+            quantization_config=cls.convert_quantization_config(model.quantization_config)
+            if model.HasField("quantization_config")
+            else None,
         )
 
     @classmethod
@@ -313,6 +316,9 @@ class GrpcToRest:
         return rest.SearchParams(
             hnsw_ef=model.hnsw_ef if model.HasField("hnsw_ef") else None,
             exact=model.exact if model.HasField("exact") else None,
+            quantization=cls.convert_quantization_search_params(model.quantization)
+            if model.HasField("quantization")
+            else None,
         )
 
     @classmethod
@@ -325,11 +331,14 @@ class GrpcToRest:
             vectors=cls.convert_vectors_config(model.vectors_config)
             if model.HasField("vectors_config")
             else None,
+            shard_number=model.shard_number,
             collection_name=model.collection_name,
             hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
             wal_config=cls.convert_wal_config(model.wal_config),
             optimizers_config=cls.convert_optimizer_config(model.optimizers_config),
-            shard_number=model.shard_number,
+            quantization_config=cls.convert_quantization_config(model.quantization_config)
+            if model.HasField("quantization_config")
+            else None,
         )
 
     @classmethod
@@ -717,6 +726,35 @@ class GrpcToRest:
             return rest.ReadConsistencyType.QUORUM
         raise ValueError(f"invalid ReadConsistencyType model: {model}")  # pragma: no cover
 
+    @classmethod
+    def convert_scalar_quantization_config(
+        cls, model: grpc.ScalarQuantization
+    ) -> rest.ScalarQuantizationConfig:
+        return rest.ScalarQuantizationConfig(
+            type=rest.ScalarType.INT8,
+            quantile=model.quantile if model.HasField("quantile") else None,
+            always_ram=model.always_ram if model.HasField("always_ram") else None,
+        )
+
+    @classmethod
+    def convert_quantization_config(
+        cls, model: grpc.QuantizationConfig
+    ) -> rest.QuantizationConfig:
+        name = model.WhichOneof("quantization")
+        val = getattr(model, name)
+        if name == "scalar":
+            return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
+        raise ValueError(f"invalid QuantizationConfig model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_quantization_search_params(
+        cls, model: grpc.QuantizationSearchParams
+    ) -> rest.QuantizationSearchParams:
+        return rest.QuantizationSearchParams(
+            ignore=model.ignore if model.HasField("ignore") else None,
+            rescore=model.rescore if model.HasField("rescore") else None,
+        )
+
 
 # ----------------------------------------
 #
@@ -857,6 +895,9 @@ class RestToGrpc:
         return grpc.SearchParams(
             hnsw_ef=model.hnsw_ef,
             exact=model.exact,
+            quantization=cls.convert_quantization_search_params(model.quantization)
+            if model.quantization is not None
+            else None,
         )
 
     @classmethod
@@ -881,6 +922,9 @@ class RestToGrpc:
             shard_number=model.shard_number,
             wal_config=cls.convert_wal_config_diff(model.wal_config)
             if model.wal_config is not None
+            else None,
+            quantization_config=cls.convert_quantization_config(model.quantization_config)
+            if model.quantization_config is not None
             else None,
         )
 
@@ -967,6 +1011,9 @@ class RestToGrpc:
             hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
             optimizer_config=cls.convert_optimizers_config(model.optimizer_config),
             wal_config=cls.convert_wal_config(model.wal_config),
+            quantization_config=cls.convert_quantization_config(model.quantization_config)
+            if model.quantization_config is not None
+            else None,
         )
 
     @classmethod
@@ -1374,3 +1421,33 @@ class RestToGrpc:
             return grpc.WriteOrdering(type=grpc.WriteOrderingType.Strong)
         else:
             raise ValueError(f"invalid WriteOrdering model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_scalar_quantization_config(
+        cls, model: rest.ScalarQuantizationConfig
+    ) -> grpc.ScalarQuantization:
+        return grpc.ScalarQuantization(
+            type=grpc.QuantizationType.Int8,
+            quantile=model.quantile,
+            always_ram=model.always_ram,
+        )
+
+    @classmethod
+    def convert_quantization_config(
+        cls, model: rest.QuantizationConfig
+    ) -> grpc.QuantizationConfig:
+        if isinstance(model, rest.ScalarQuantization):
+            return grpc.QuantizationConfig(
+                scalar=cls.convert_scalar_quantization_config(model.scalar)
+            )
+        else:
+            raise ValueError(f"invalid QuantizationConfig model: {model}")
+
+    @classmethod
+    def convert_quantization_search_params(
+        cls, model: rest.QuantizationSearchParams
+    ) -> grpc.QuantizationSearchParams:
+        return grpc.QuantizationSearchParams(
+            ignore=model.ignore,
+            rescore=model.rescore,
+        )
