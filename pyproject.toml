@@ -21,8 +21,14 @@ numpy = [
 ]
 pydantic = "^1.8"
 typing-extensions = "^4.0.0"
-grpcio = { version = ">=1.41.0,<1.49.0", allow-prereleases = true }
-grpcio-tools = ">=1.41.0,<1.49.0"
+grpcio = [
+    { version = ">=1.41.0,<1.49.0", allow-prereleases = true, python = "<3.10" },
+    { version = ">=1.49.0", allow-prereleases = true, python = ">=3.10" }
+]
+grpcio-tools = [
+    { version = ">=1.41.0,<1.49.0", allow-prereleases = true, python = "<3.10" },
+    { version = ">=1.49.0", allow-prereleases = true, python = ">=3.10" }
+]
 urllib3 = "^1.26.14"
 
 [tool.poetry.group.dev.dependencies]
