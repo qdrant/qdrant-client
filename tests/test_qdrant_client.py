@@ -12,22 +12,28 @@ import pytest
 from qdrant_client import QdrantClient
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
-from qdrant_client.http.models import Batch
 from qdrant_client.models import (
+    Batch,
     CreateAlias,
     CreateAliasOperation,
     Distance,
     FieldCondition,
     Filter,
     HasIdCondition,
+    MatchAny,
     MatchText,
     MatchValue,
     OptimizersConfigDiff,
     PayloadSchemaType,
     PointIdsList,
     PointStruct,
+    QuantizationSearchParams,
     Range,
     RecommendRequest,
+    ScalarQuantization,
+    ScalarQuantizationConfig,
+    ScalarType,
+    SearchParams,
     SearchRequest,
     TextIndexParams,
     TokenizerType,
@@ -400,6 +406,38 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
 
     assert "11" in hits[0].payload["id_str"]
 
+    # Compare MatchAny with should filter
+
+    hits_should = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        query_filter=Filter(
+            should=[
+                FieldCondition(key="id_str", match=MatchValue(value="10")),
+                FieldCondition(key="id_str", match=MatchValue(value="11")),
+            ]
+        ),
+        with_payload=True,
+        limit=5,
+    )
+
+    hits_match_any = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        query_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="id_str",
+                    match=MatchAny(any=["10", "11"]),
+                )
+            ]
+        ),
+        with_payload=True,
+        limit=5,
+    )
+
+    assert hits_should == hits_match_any
+
     client.update_collection(
         collection_name=COLLECTION_NAME,
         optimizer_config=OptimizersConfigDiff(max_segment_size=10000),
@@ -720,6 +758,57 @@ def test_points_crud(prefer_grpc):
 
     # Delete a single point
     client.delete(collection_name=COLLECTION_NAME, points_selector=PointIdsList(points=[123]))
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_quantization_config(prefer_grpc):
+    version = os.getenv("QDRANT_VERSION")
+    if version is not None and version < "v1.1.0":
+        return
+
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        quantization=ScalarQuantization(
+            scalar=ScalarQuantizationConfig(
+                type=ScalarType.INT8,
+                quantile=1.0,
+                always_ram=True,
+            ),
+        ),
+    )
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(id=2001, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=2002, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=2003, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=2004, vector=np.random.rand(DIM).tolist()),
+        ],
+        wait=True,
+    )
+
+    collection_info = client.get_collection(COLLECTION_NAME)
+
+    quantization_config = collection_info.config.quantization_config
+
+    assert isinstance(quantization_config, ScalarQuantization)
+    assert quantization_config.scalar.type == ScalarType.INT8
+    assert quantization_config.scalar.quantile == 1.0
+    assert quantization_config.scalar.always_ram is True
+
+    _res = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=np.random.rand(DIM),
+        search_params=SearchParams(
+            quantization=QuantizationSearchParams(
+                rescore=True,
+            )
+        ),
+    )
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])

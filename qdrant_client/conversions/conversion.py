@@ -418,6 +418,10 @@ class GrpcToRest:
             return rest.MatchValue(value=val)
         if name == "text":
             return rest.MatchText(text=val)
+        if name == "keywords":
+            return rest.MatchAny(any=list(val.strings))
+        if name == "integers":
+            return rest.MatchAny(any=list(val.integers))
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -959,7 +963,7 @@ class RestToGrpc:
         return grpc.PointStruct(
             id=cls.convert_extended_point_id(model.id),
             vectors=cls.convert_vector_struct(model.vector),
-            payload=cls.convert_payload(model.payload),
+            payload=cls.convert_payload(model.payload) if model.payload is not None else None,
         )
 
     @classmethod
@@ -1110,6 +1114,14 @@ class RestToGrpc:
                 return grpc.Match(keyword=model.value)
         if isinstance(model, rest.MatchText):
             return grpc.Match(text=model.text)
+        if isinstance(model, rest.MatchAny):
+            if len(model.any) == 0:
+                return grpc.Match(keywords=[])
+            if isinstance(model.any[0], str):
+                return grpc.Match(keywords=grpc.RepeatedStrings(strings=model.any))
+            if isinstance(model.any[0], int):
+                return grpc.Match(integers=grpc.RepeatedIntegers(integers=model.any))
+            raise ValueError(f"invalid MatchAny model: {model}")  # pragma: no cover
 
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 

@@ -25,8 +25,14 @@ match_keyword = grpc.Match(keyword="hello")
 match_integer = grpc.Match(integer=42)
 match_bool = grpc.Match(boolean=True)
 match_text = grpc.Match(text="hello")
+match_keywords = grpc.Match(keywords=grpc.RepeatedStrings(strings=["hello", "world"]))
+match_integers = grpc.Match(integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
 
 field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
+
+field_condition_match_keywords = grpc.FieldCondition(key="match_field", match=match_keywords)
+
+field_condition_match_integers = grpc.FieldCondition(key="match_field", match=match_integers)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -67,11 +73,11 @@ condition_geo_radius = grpc.Condition(field=field_condition_geo_radius)
 condition_geo_bounding_box = grpc.Condition(field=field_condition_geo_bounding_box)
 condition_values_count = grpc.Condition(field=field_condition_values_count)
 
+condition_keywords = grpc.Condition(field=field_condition_match_keywords)
+condition_integers = grpc.Condition(field=field_condition_match_integers)
+
 filter_ = grpc.Filter(
-    must=[
-        condition_has_id,
-        condition_is_empty,
-    ],
+    must=[condition_has_id, condition_is_empty, condition_keywords, condition_integers],
     should=[
         condition_field_match,
     ],
