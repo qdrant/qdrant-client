@@ -771,7 +771,7 @@ def test_quantization_config(prefer_grpc):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        quantization=ScalarQuantization(
+        quantization_config=ScalarQuantization(
             scalar=ScalarQuantizationConfig(
                 type=ScalarType.INT8,
                 quantile=1.0,

@@ -1660,7 +1660,7 @@ class QdrantClient:
         hnsw_config: Optional[types.HnswConfigDiff] = None,
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
-        quantization: Optional[types.QuantizationConfig] = None,
+        quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
     ):
@@ -1692,7 +1692,7 @@ class QdrantClient:
             hnsw_config: Params for HNSW index
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
-            quantization: Params for quantization, if None - quantization will be disabled
+            quantization_config: Params for quantization, if None - quantization will be disabled
             init_from: Use data stored in another collection to initialize this collection
             timeout:
                 Wait for operation commit timeout in seconds.
@@ -1710,8 +1710,8 @@ class QdrantClient:
         if isinstance(wal_config, grpc.WalConfigDiff):
             wal_config = GrpcToRest.convert_wal_config_diff(wal_config)
 
-        if isinstance(quantization, grpc.QuantizationConfig):
-            quantization = GrpcToRest.convert_quantization_config(quantization)
+        if isinstance(quantization_config, grpc.QuantizationConfig):
+            quantization_config = GrpcToRest.convert_quantization_config(quantization_config)
 
         create_collection_request = rest_models.CreateCollection(
             vectors=vectors_config,
@@ -1722,7 +1722,7 @@ class QdrantClient:
             hnsw_config=hnsw_config,
             optimizers_config=optimizers_config,
             wal_config=wal_config,
-            quantization_config=quantization,
+            quantization_config=quantization_config,
             init_from=init_from,
         )
 
@@ -1746,7 +1746,7 @@ class QdrantClient:
         hnsw_config: Optional[types.HnswConfigDiff] = None,
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
-        quantization: Optional[types.QuantizationConfig] = None,
+        quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
     ) -> bool:
@@ -1778,7 +1778,7 @@ class QdrantClient:
             hnsw_config: Params for HNSW index
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
-            quantization: Params for quantization, if None - quantization will be disabled
+            quantization_config: Params for quantization, if None - quantization will be disabled
             init_from: Use data stored in another collection to initialize this collection
             timeout:
                 Wait for operation commit timeout in seconds.
@@ -1800,7 +1800,7 @@ class QdrantClient:
             hnsw_config=hnsw_config,
             optimizers_config=optimizers_config,
             wal_config=wal_config,
-            quantization=quantization,
+            quantization_config=quantization_config,
             init_from=init_from,
             timeout=timeout,
         )
