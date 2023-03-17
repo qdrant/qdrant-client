@@ -407,36 +407,36 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     assert "11" in hits[0].payload["id_str"]
 
     # Compare MatchAny with should filter
+    if not (version is not None and version < "v1.1.0"):
+        hits_should = client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_vector,
+            query_filter=Filter(
+                should=[
+                    FieldCondition(key="id_str", match=MatchValue(value="10")),
+                    FieldCondition(key="id_str", match=MatchValue(value="11")),
+                ]
+            ),
+            with_payload=True,
+            limit=5,
+        )
 
-    hits_should = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        query_filter=Filter(
-            should=[
-                FieldCondition(key="id_str", match=MatchValue(value="10")),
-                FieldCondition(key="id_str", match=MatchValue(value="11")),
-            ]
-        ),
-        with_payload=True,
-        limit=5,
-    )
+        hits_match_any = client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_vector,
+            query_filter=Filter(
+                must=[
+                    FieldCondition(
+                        key="id_str",
+                        match=MatchAny(any=["10", "11"]),
+                    )
+                ]
+            ),
+            with_payload=True,
+            limit=5,
+        )
 
-    hits_match_any = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        query_filter=Filter(
-            must=[
-                FieldCondition(
-                    key="id_str",
-                    match=MatchAny(any=["10", "11"]),
-                )
-            ]
-        ),
-        with_payload=True,
-        limit=5,
-    )
-
-    assert hits_should == hits_match_any
+        assert hits_should == hits_match_any
 
     client.update_collection(
         collection_name=COLLECTION_NAME,
