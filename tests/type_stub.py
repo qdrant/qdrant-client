@@ -3,6 +3,7 @@ import numpy as np
 from qdrant_client import QdrantClient
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
+from qdrant_client.http.models import ScalarQuantizationConfig, ScalarType
 
 qdrant_client = QdrantClient()
 qdrant_client.clear_payload("collection", [123])
@@ -58,6 +59,20 @@ qdrant_client.recommend_batch(
     ],
 )
 qdrant_client.recover_snapshot("collection", "location", rest_models.SnapshotPriority.REPLICA)
+qdrant_client.create_collection(
+    "collection",
+    types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
+    2,
+    2,
+    True,
+    True,
+    rest_models.HnswConfigDiff(),
+    rest_models.OptimizersConfigDiff(),
+    rest_models.WalConfigDiff(),
+    rest_models.QuantizationConfig(scalar=ScalarQuantizationConfig(type=ScalarType.INT8)),
+    None,
+    5,
+)
 qdrant_client.recreate_collection(
     "collection",
     types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
@@ -68,6 +83,7 @@ qdrant_client.recreate_collection(
     rest_models.HnswConfigDiff(),
     rest_models.OptimizersConfigDiff(),
     rest_models.WalConfigDiff(),
+    rest_models.QuantizationConfig(scalar=ScalarQuantizationConfig(type=ScalarType.INT8)),
     None,
     5,
 )

@@ -1663,7 +1663,7 @@ class QdrantClient:
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
-    ):
+    ) -> bool:
         """Create empty collection with given parameters
 
         Args:
