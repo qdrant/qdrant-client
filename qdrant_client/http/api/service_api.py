@@ -166,6 +166,24 @@ class _ServiceApi:
             url="/locks",
         )
 
+    def _build_for_metrics(
+        self,
+        anonymize: bool = None,
+    ):
+        """
+        Collect metrics data including app info, collections info, cluster info and statistics
+        """
+        query_params = {}
+        if anonymize is not None:
+            query_params["anonymize"] = str(anonymize).lower()
+
+        return self.api_client.request(
+            type_=str,
+            method="GET",
+            url="/metrics",
+            params=query_params,
+        )
+
     def _build_for_post_locks(
         self,
         locks_option: m.LocksOption = None,
@@ -205,6 +223,17 @@ class AsyncServiceApi(_ServiceApi):
         """
         return await self._build_for_get_locks()
 
+    async def metrics(
+        self,
+        anonymize: bool = None,
+    ) -> str:
+        """
+        Collect metrics data including app info, collections info, cluster info and statistics
+        """
+        return await self._build_for_metrics(
+            anonymize=anonymize,
+        )
+
     async def post_locks(
         self,
         locks_option: m.LocksOption = None,
@@ -236,6 +265,17 @@ class SyncServiceApi(_ServiceApi):
         Get lock options. If write is locked, all write operations and collection creation are forbidden
         """
         return self._build_for_get_locks()
+
+    def metrics(
+        self,
+        anonymize: bool = None,
+    ) -> str:
+        """
+        Collect metrics data including app info, collections info, cluster info and statistics
+        """
+        return self._build_for_metrics(
+            anonymize=anonymize,
+        )
 
     def post_locks(
         self,

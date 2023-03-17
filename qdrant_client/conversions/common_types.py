@@ -20,6 +20,7 @@ HnswConfigDiff = Union[rest.HnswConfigDiff, grpc.HnswConfigDiff]
 OptimizersConfigDiff = Union[rest.OptimizersConfigDiff, grpc.OptimizersConfigDiff]
 CollectionParamsDiff = Union[rest.CollectionParamsDiff, grpc.CollectionParamsDiff]
 WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
+QuantizationConfig = Union[rest.QuantizationConfig, grpc.QuantizationConfig]
 PointId = Union[int, str, grpc.PointId]
 PayloadSchemaType = Union[
     rest.PayloadSchemaType, rest.PayloadSchemaParams, int

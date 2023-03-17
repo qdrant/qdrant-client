@@ -24,6 +24,7 @@ class AliasDescription(BaseModel):
 
 
 class AppBuildTelemetry(BaseModel):
+    name: str = Field(..., description="")
     version: str = Field(..., description="")
     features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
     system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
@@ -116,6 +117,7 @@ class CollectionConfig(BaseModel):
     hnsw_config: "HnswConfig" = Field(..., description="")
     optimizer_config: "OptimizersConfig" = Field(..., description="")
     wal_config: "WalConfig" = Field(..., description="")
+    quantization_config: Optional["QuantizationConfig"] = Field(default=None, description="")
 
 
 class CollectionDescription(BaseModel):
@@ -299,6 +301,9 @@ class CreateCollection(BaseModel):
         description="Custom params for Optimizers.  If none - values from service configuration file are used.",
     )
     init_from: Optional["InitFrom"] = Field(default=None, description="Specify other collection to copy data from.")
+    quantization_config: Optional["QuantizationConfig"] = Field(
+        default=None, description="Quantization parameters. If none - quantization is disabled."
+    )
 
 
 class CreateFieldIndex(BaseModel):
@@ -697,6 +702,14 @@ class LookupLocation(BaseModel):
     )
 
 
+class MatchAny(BaseModel):
+    """
+    Exact match on any of the given values
+    """
+
+    any: "AnyVariants" = Field(..., description="Exact match on any of the given values")
+
+
 class MatchText(BaseModel):
     """
     Full-text match of the strings.
@@ -911,6 +924,20 @@ class PointsList(BaseModel):
     points: List["PointStruct"] = Field(..., description="")
 
 
+class QuantizationSearchParams(BaseModel):
+    """
+    Additional parameters of the search
+    """
+
+    ignore: Optional[bool] = Field(
+        default=False, description="If true, quantized vectors are ignored. Default is false."
+    )
+    rescore: Optional[bool] = Field(
+        default=False,
+        description="If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. Default is false.",
+    )
+
+
 class RaftInfo(BaseModel):
     """
     Summary information about the current raft state
@@ -1043,6 +1070,7 @@ class ReplicaState(str, Enum):
     DEAD = "Dead"
     PARTIAL = "Partial"
     INITIALIZING = "Initializing"
+    LISTENER = "Listener"
 
 
 class ReplicateShardOperation(BaseModel):
@@ -1062,6 +1090,26 @@ class RunningEnvironmentTelemetry(BaseModel):
     ram_size: Optional[int] = Field(default=None, description="")
     disk_size: Optional[int] = Field(default=None, description="")
     cpu_flags: str = Field(..., description="")
+
+
+class ScalarQuantization(BaseModel):
+    scalar: "ScalarQuantizationConfig" = Field(..., description="")
+
+
+class ScalarQuantizationConfig(BaseModel):
+    type: "ScalarType" = Field(..., description="")
+    quantile: Optional[float] = Field(
+        default=None,
+        description="Quantile for quantization. Expected value range in (0, 1.0]. If not set - use the whole range of values",
+    )
+    always_ram: Optional[bool] = Field(
+        default=None,
+        description="If true - quantized vectors always will be stored in RAM, ignoring the config of main storage",
+    )
+
+
+class ScalarType(str, Enum):
+    INT8 = "int8"
 
 
 class ScoredPoint(BaseModel):
@@ -1118,6 +1166,7 @@ class SearchParams(BaseModel):
         default=False,
         description="Search without approximation. If set to true, search may run long but with exact results.",
     )
+    quantization: Optional["QuantizationSearchParams"] = Field(default=None, description="Quantization params")
 
 
 class SearchRequest(BaseModel):
@@ -1157,6 +1206,9 @@ class SegmentConfig(BaseModel):
     index: "Indexes" = Field(..., description="")
     storage_type: "StorageType" = Field(..., description="")
     payload_storage_type: Optional["PayloadStorageType"] = Field(default=None, description="")
+    quantization_config: Optional["QuantizationConfig"] = Field(
+        default=None, description="Quantization parameters. If none - quantization is disabled."
+    )
 
 
 class SegmentInfo(BaseModel):
@@ -1223,7 +1275,10 @@ class SnapshotRecover(BaseModel):
         ...,
         description="Examples: - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot` - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`",
     )
-    priority: Optional["SnapshotPriority"] = Field(default=None, description="")
+    priority: Optional["SnapshotPriority"] = Field(
+        default=None,
+        description="Defines which data should be used as a source of truth if there are other replicas in the cluster. If set to `Snapshot`, the snapshot will be used as a source of truth, and the current state will be overwritten. If set to `Replica`, the current state will be used as a source of truth, and after recovery if will be synchronized with the snapshot.",
+    )
 
 
 class StateRole(str, Enum):
@@ -1362,6 +1417,10 @@ AliasOperations = Union[
     DeleteAliasOperation,
     RenameAliasOperation,
 ]
+AnyVariants = Union[
+    List[StrictInt],
+    List[StrictStr],
+]
 BatchVectorStruct = Union[
     List[List[StrictFloat]],
     Dict[StrictStr, List[List[StrictFloat]]],
@@ -1402,6 +1461,7 @@ Indexes = Union[
 Match = Union[
     MatchValue,
     MatchText,
+    MatchAny,
 ]
 NamedVectorStruct = Union[
     NamedVector,
@@ -1429,6 +1489,9 @@ PointInsertOperations = Union[
 PointsSelector = Union[
     PointIdsList,
     FilterSelector,
+]
+QuantizationConfig = Union[
+    ScalarQuantization,
 ]
 ReadConsistency = Union[
     ReadConsistencyType,

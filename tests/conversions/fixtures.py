@@ -25,8 +25,14 @@ match_keyword = grpc.Match(keyword="hello")
 match_integer = grpc.Match(integer=42)
 match_bool = grpc.Match(boolean=True)
 match_text = grpc.Match(text="hello")
+match_keywords = grpc.Match(keywords=grpc.RepeatedStrings(strings=["hello", "world"]))
+match_integers = grpc.Match(integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
 
 field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
+
+field_condition_match_keywords = grpc.FieldCondition(key="match_field", match=match_keywords)
+
+field_condition_match_integers = grpc.FieldCondition(key="match_field", match=match_integers)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -67,11 +73,11 @@ condition_geo_radius = grpc.Condition(field=field_condition_geo_radius)
 condition_geo_bounding_box = grpc.Condition(field=field_condition_geo_bounding_box)
 condition_values_count = grpc.Condition(field=field_condition_values_count)
 
+condition_keywords = grpc.Condition(field=field_condition_match_keywords)
+condition_integers = grpc.Condition(field=field_condition_match_integers)
+
 filter_ = grpc.Filter(
-    must=[
-        condition_has_id,
-        condition_is_empty,
-    ],
+    must=[condition_has_id, condition_is_empty, condition_keywords, condition_integers],
     should=[
         condition_field_match,
     ],
@@ -117,7 +123,6 @@ hnsw_config_2 = grpc.HnswConfigDiff(
     on_disk=True,
     payload_m=32,
 )
-
 
 optimizer_config = grpc.OptimizersConfigDiff(
     deleted_threshold=0.2,
@@ -168,12 +173,22 @@ scored_point = grpc.ScoredPoint(
 
 create_alias = grpc.CreateAlias(collection_name="col1", alias_name="col2")
 
+quantization_search_params = grpc.QuantizationSearchParams(
+    ignore=False,
+    rescore=True,
+)
+
 search_params = grpc.SearchParams(
     hnsw_ef=128,
 )
 
 search_params_2 = grpc.SearchParams(
     exact=True,
+)
+
+search_params_3 = grpc.SearchParams(
+    exact=True,
+    quantization=quantization_search_params,
 )
 
 rename_alias = grpc.RenameAlias(old_alias_name="col2", new_alias_name="col3")
@@ -217,6 +232,16 @@ collection_info = grpc.CollectionInfo(
     },
 )
 
+scalar_quantization = grpc.ScalarQuantization(
+    type=grpc.QuantizationType.Int8,
+    quantile=0.99,
+    always_ram=True,
+)
+
+quantization_config = grpc.QuantizationConfig(
+    scalar=scalar_quantization,
+)
+
 create_collection = grpc.CreateCollection(
     collection_name="my_collection",
     vectors_config=grpc.VectorsConfig(
@@ -226,6 +251,7 @@ create_collection = grpc.CreateCollection(
     wal_config=wal_config,
     optimizers_config=optimizer_config,
     shard_number=10,
+    quantization_config=quantization_config,
 )
 
 update_status = grpc.UpdateStatus.Acknowledged
@@ -412,7 +438,7 @@ fixtures = {
     "ScoredPoint": [scored_point],
     "CreateAlias": [create_alias],
     "GeoBoundingBox": [geo_bounding_box],
-    "SearchParams": [search_params, search_params_2],
+    "SearchParams": [search_params, search_params_2, search_params_3],
     "HasIdCondition": [has_id_condition],
     "RenameAlias": [rename_alias],
     "ValuesCount": [values_count],
@@ -478,6 +504,8 @@ fixtures = {
         read_consistency_2,
     ],
     "WriteOrdering": [ordering_0, ordering_1, ordering_2],
+    "QuantizationConfig": [quantization_config],
+    "QuantizationSearchParams": [quantization_search_params],
 }
 
 

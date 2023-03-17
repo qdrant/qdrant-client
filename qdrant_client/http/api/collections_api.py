@@ -423,14 +423,19 @@ class _CollectionsApi:
     def _build_for_recover_from_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
         snapshot_recover: m.SnapshotRecover = None,
     ):
         """
-        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection.
+        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
         path_params = {
             "collection_name": str(collection_name),
         }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
 
         body = jsonable_encoder(snapshot_recover)
 
@@ -439,6 +444,7 @@ class _CollectionsApi:
             method="PUT",
             url="/collections/{collection_name}/snapshots/recover",
             path_params=path_params,
+            params=query_params,
             json=body,
         )
 
@@ -674,13 +680,15 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def recover_from_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
         snapshot_recover: m.SnapshotRecover = None,
     ) -> m.InlineResponse2003:
         """
-        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection.
+        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
         return await self._build_for_recover_from_snapshot(
             collection_name=collection_name,
+            wait=wait,
             snapshot_recover=snapshot_recover,
         )
 
@@ -885,13 +893,15 @@ class SyncCollectionsApi(_CollectionsApi):
     def recover_from_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
         snapshot_recover: m.SnapshotRecover = None,
     ) -> m.InlineResponse2003:
         """
-        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection.
+        Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
         return self._build_for_recover_from_snapshot(
             collection_name=collection_name,
+            wait=wait,
             snapshot_recover=snapshot_recover,
         )
 

@@ -45,7 +45,7 @@ jobs:
         shell: bash
       - name: Backward compatibility integration tests
         run: |
-          QDRANT_VERSION='v0.11.7' ./tests/integration-tests.sh
+          QDRANT_VERSION='v1.0.3' ./tests/integration-tests.sh
         shell: bash
       - name: Check conversion coverage
         run: |

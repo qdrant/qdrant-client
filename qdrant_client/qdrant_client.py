@@ -1649,6 +1649,92 @@ class QdrantClient:
         assert result is not None, "Delete collection returned None"
         return result
 
+    def create_collection(
+        self,
+        collection_name: str,
+        vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        shard_number: Optional[int] = None,
+        replication_factor: Optional[int] = None,
+        write_consistency_factor: Optional[int] = None,
+        on_disk_payload: Optional[bool] = None,
+        hnsw_config: Optional[types.HnswConfigDiff] = None,
+        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
+        wal_config: Optional[types.WalConfigDiff] = None,
+        quantization_config: Optional[types.QuantizationConfig] = None,
+        init_from: Optional[types.InitFrom] = None,
+        timeout: Optional[int] = None,
+    ) -> bool:
+        """Create empty collection with given parameters
+
+        Args:
+            collection_name: Name of the collection to recreate
+            vectors_config:
+                Configuration of the vector storage. Vector params contains size and distance for the vector storage.
+                If dict is passed, service will create a vector storage for each key in the dict.
+                If single VectorParams is passed, service will create a single anonymous vector storage.
+            shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            replication_factor:
+                Replication factor for collection. Default is 1, minimum is 1.
+                Defines how many copies of each shard will be created.
+                Have effect only in distributed mode.
+            write_consistency_factor:
+                Write consistency factor for collection. Default is 1, minimum is 1.
+                Defines how many replicas should apply the operation for us to consider it successful.
+                Increasing this number will make the collection more resilient to inconsistencies, but will
+                also make it fail if not enough replicas are available.
+                Does not have any performance impact.
+                Have effect only in distributed mode.
+            on_disk_payload:
+                If true - point`s payload will not be stored in memory.
+                It will be read from the disk every time it is requested.
+                This setting saves RAM by (slightly) increasing the response time.
+                Note: those payload values that are involved in filtering and are indexed - remain in RAM.
+            hnsw_config: Params for HNSW index
+            optimizers_config: Params for optimizer
+            wal_config: Params for Write-Ahead-Log
+            quantization_config: Params for quantization, if None - quantization will be disabled
+            init_from: Use data stored in another collection to initialize this collection
+            timeout:
+                Wait for operation commit timeout in seconds.
+                If timeout is reached - request will return with service error.
+
+        Returns:
+            Operation result
+        """
+        if isinstance(hnsw_config, grpc.HnswConfigDiff):
+            hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
+
+        if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
+            optimizers_config = GrpcToRest.convert_optimizers_config_diff(optimizers_config)
+
+        if isinstance(wal_config, grpc.WalConfigDiff):
+            wal_config = GrpcToRest.convert_wal_config_diff(wal_config)
+
+        if isinstance(quantization_config, grpc.QuantizationConfig):
+            quantization_config = GrpcToRest.convert_quantization_config(quantization_config)
+
+        create_collection_request = rest_models.CreateCollection(
+            vectors=vectors_config,
+            shard_number=shard_number,
+            replication_factor=replication_factor,
+            write_consistency_factor=write_consistency_factor,
+            on_disk_payload=on_disk_payload,
+            hnsw_config=hnsw_config,
+            optimizers_config=optimizers_config,
+            wal_config=wal_config,
+            quantization_config=quantization_config,
+            init_from=init_from,
+        )
+
+        result: Optional[bool] = self.http.collections_api.create_collection(
+            collection_name=collection_name,
+            create_collection=create_collection_request,
+            timeout=timeout,
+        ).result
+
+        assert result is not None, "Create collection returned None"
+        return result
+
     def recreate_collection(
         self,
         collection_name: str,
@@ -1660,6 +1746,7 @@ class QdrantClient:
         hnsw_config: Optional[types.HnswConfigDiff] = None,
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
+        quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
     ) -> bool:
@@ -1691,6 +1778,7 @@ class QdrantClient:
             hnsw_config: Params for HNSW index
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
+            quantization_config: Params for quantization, if None - quantization will be disabled
             init_from: Use data stored in another collection to initialize this collection
             timeout:
                 Wait for operation commit timeout in seconds.
@@ -1700,19 +1788,11 @@ class QdrantClient:
             Operation result
         """
 
-        if isinstance(hnsw_config, grpc.HnswConfigDiff):
-            hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
+        self.delete_collection(collection_name, timeout=timeout)
 
-        if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
-            optimizers_config = GrpcToRest.convert_optimizers_config_diff(optimizers_config)
-
-        if isinstance(wal_config, grpc.WalConfigDiff):
-            wal_config = GrpcToRest.convert_wal_config_diff(wal_config)
-
-        self.delete_collection(collection_name)
-
-        create_collection_request = rest_models.CreateCollection(
-            vectors=vectors_config,
+        return self.create_collection(
+            collection_name=collection_name,
+            vectors_config=vectors_config,
             shard_number=shard_number,
             replication_factor=replication_factor,
             write_consistency_factor=write_consistency_factor,
@@ -1720,16 +1800,10 @@ class QdrantClient:
             hnsw_config=hnsw_config,
             optimizers_config=optimizers_config,
             wal_config=wal_config,
+            quantization_config=quantization_config,
             init_from=init_from,
-        )
-
-        result: Optional[bool] = self.http.collections_api.create_collection(
-            collection_name=collection_name,
-            create_collection=create_collection_request,
             timeout=timeout,
-        ).result
-        assert result is not None, "Create collection returned None"
-        return result
+        )
 
     @property
     def _updater_class(self) -> Type[BaseUploader]:
