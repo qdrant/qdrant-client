@@ -19,6 +19,7 @@ import numpy as np
 from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
+from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
@@ -30,7 +31,7 @@ from qdrant_client.uploader.rest_uploader import RestBatchUploader
 from qdrant_client.uploader.uploader import BaseUploader
 
 
-class QdrantClient:
+class QdrantClient(QdrantBase):
     """Entry point to communicate with Qdrant service via REST or gPRC API.
 
     It combines interface classes and endpoint implementation.
@@ -850,6 +851,7 @@ class QdrantClient:
         collection_name: str,
         count_filter: Optional[types.Filter] = None,
         exact: bool = True,
+        **kwargs: Any,
     ) -> types.CountResult:
         """Count points in the collection.
 
@@ -1161,11 +1163,11 @@ class QdrantClient:
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points_selector: Selects points based on list of IDs or filter
-                 Example:
+                Example:
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
+
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -1521,7 +1523,9 @@ class QdrantClient:
         assert result is not None, "Update aliases returned None"
         return result
 
-    def get_collection_aliases(self, collection_name: str) -> types.CollectionsAliasesResponse:
+    def get_collection_aliases(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.CollectionsAliasesResponse:
         """Get collection aliases
 
         Args:
@@ -1573,7 +1577,7 @@ class QdrantClient:
         assert result is not None, "Get collections returned None"
         return result
 
-    def get_collection(self, collection_name: str) -> types.CollectionInfo:
+    def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         """Get detailed information about specified existing collection
 
         Args:
@@ -1598,7 +1602,7 @@ class QdrantClient:
     def update_collection(
         self,
         collection_name: str,
-        optimizer_config: Optional[types.OptimizersConfigDiff],
+        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
         timeout: Optional[int] = None,
     ) -> bool:
@@ -2007,7 +2011,9 @@ class QdrantClient:
         assert result is not None, "Delete field index returned None"
         return result
 
-    def list_snapshots(self, collection_name: str) -> List[types.SnapshotDescription]:
+    def list_snapshots(
+        self, collection_name: str, **kwargs: Any
+    ) -> List[types.SnapshotDescription]:
         """List all snapshots for a given collection.
 
         Args:
@@ -2022,7 +2028,9 @@ class QdrantClient:
         assert snapshots is not None, "List snapshots API returned None result"
         return snapshots
 
-    def create_snapshot(self, collection_name: str) -> Optional[types.SnapshotDescription]:
+    def create_snapshot(
+        self, collection_name: str, **kwargs: Any
+    ) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a given collection.
 
         Args:
@@ -2035,7 +2043,7 @@ class QdrantClient:
             collection_name=collection_name
         ).result
 
-    def delete_snapshot(self, collection_name: str, snapshot_name: str) -> bool:
+    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
         """Delete snapshot for a given collection.
 
         Args:
@@ -2072,7 +2080,7 @@ class QdrantClient:
         assert snapshot_description is not None, "Create full snapshot API returned None result"
         return snapshot_description
 
-    def delete_full_snapshot(self, snapshot_name: str) -> bool:
+    def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
         """Delete snapshot for a whole storage.
 
         Args:
@@ -2116,7 +2124,7 @@ class QdrantClient:
         assert success is not None, "Recover from snapshot API returned None result"
         return success
 
-    def lock_storage(self, reason: str) -> types.LocksOption:
+    def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         """Lock storage for writing."""
         result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
             rest_models.LocksOption(error_message=reason, write=True)
