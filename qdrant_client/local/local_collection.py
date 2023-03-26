@@ -389,13 +389,13 @@ class LocalCollection:
         ), f"Expected all vectors to be present: {vectors.keys()} != {self.vectors.keys()}"
 
         for vector_name, vector in vectors.items():
-            vectors = self.vectors[vector_name]
-            if vectors.shape[0] <= idx:
-                vectors = np.resize(vectors, (idx * 2 + 1, vectors.shape[1]))
+            named_vectors = self.vectors[vector_name]
+            if named_vectors.shape[0] <= idx:
+                named_vectors = np.resize(named_vectors, (idx * 2 + 1, named_vectors.shape[1]))
 
             vector = np.array(vector)
-            vectors[idx] = vector
-            self.vectors[vector_name] = vectors
+            named_vectors[idx] = vector
+            self.vectors[vector_name] = named_vectors
 
     def _upsert_point(self, point: models.PointStruct) -> None:
         if point.id in self.ids:
