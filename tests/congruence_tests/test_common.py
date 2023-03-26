@@ -1,4 +1,4 @@
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 from qdrant_client import QdrantClient
 from qdrant_client.client_base import QdrantBase
@@ -34,9 +34,9 @@ def initialize_fixture_collection(client: QdrantBase) -> None:
     )
 
 
-def generate_fixtures() -> List[models.Record]:
+def generate_fixtures(num: Optional[int]) -> List[models.Record]:
     return generate_records(
-        num_records=NUM_VECTORS,
+        num_records=num or NUM_VECTORS,
         vector_sizes={
             "text": text_vector_size,
             "image": image_vector_size,
