@@ -15,6 +15,7 @@ from tests.congruence_tests.test_common import (
     init_remote,
     text_vector_size,
 )
+from tests.fixtures.filters import one_random_filter_please
 
 
 class TestSimpleSearcher:
@@ -108,6 +109,17 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def filter_search_text(
+        self, client: QdrantBase, query_filter: models.Filter
+    ) -> List[models.ScoredPoint]:
+        return client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=("text", self.query_text),
+            query_filter=query_filter,
+            with_payload=True,
+            limit=10,
+        )
+
 
 def test_simple_search():
     fixture_records = generate_fixtures()
@@ -128,3 +140,13 @@ def test_simple_search():
     compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
     compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
     compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
+
+    for i in range(100):
+        query_filter = one_random_filter_please()
+        try:
+            compare_client_results(
+                local_client, remote_client, searcher.filter_search_text, query_filter=query_filter
+            )
+        except AssertionError as e:
+            print(f"\nFailed with filter {query_filter}")
+            raise e

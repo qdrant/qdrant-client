@@ -26,10 +26,12 @@ def value_by_key(payload: dict, key: str) -> Optional[List[Any]]:
         k = k_list.pop(0)
 
         if len(k_list) == 0:
-            value = data.get(k)
+            if k not in data:
+                return
+            value = data[k]
             if isinstance(value, list):
                 result.extend(value)
-            elif value is not None:
+            else:
                 result.append(value)
             return
 

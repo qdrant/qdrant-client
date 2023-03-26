@@ -136,7 +136,7 @@ def check_filter(
         if not check_must(payload_fileter.must, payload, point_id):
             return False
     if payload_fileter.must_not is not None:
-        if check_must_not(payload_fileter.must_not, payload, point_id):
+        if not check_must_not(payload_fileter.must_not, payload, point_id):
             return False
     if payload_fileter.should is not None:
         if not check_should(payload_fileter.should, payload, point_id):

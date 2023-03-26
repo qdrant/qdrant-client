@@ -34,7 +34,7 @@ def initialize_fixture_collection(client: QdrantBase) -> None:
     )
 
 
-def generate_fixtures(num: Optional[int]) -> List[models.Record]:
+def generate_fixtures(num: Optional[int] = NUM_VECTORS) -> List[models.Record]:
     return generate_records(
         num_records=num or NUM_VECTORS,
         vector_sizes={
@@ -48,10 +48,13 @@ def generate_fixtures(num: Optional[int]) -> List[models.Record]:
 
 
 def compare_client_results(
-    client1: QdrantBase, client2: QdrantBase, foo: Callable[[QdrantBase], Any]
+    client1: QdrantBase,
+    client2: QdrantBase,
+    foo: Callable[[QdrantBase, Any], Any],
+    **kwargs: Any,
 ) -> None:
-    res1 = foo(client1)
-    res2 = foo(client2)
+    res1 = foo(client1, **kwargs)
+    res2 = foo(client2, **kwargs)
 
     if isinstance(res1, list):
         assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
