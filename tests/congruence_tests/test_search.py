@@ -54,7 +54,7 @@ class TestSimpleSearcher:
             offset=10,
         )
 
-    def simple_search_code_score_threshold(self, client: QdrantBase):
+    def search_score_threshold(self, client: QdrantBase):
         res1 = client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -89,7 +89,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def simple_search_text_select_payload_exclude(self, client: QdrantBase):
+    def search_payload_exclude(self, client: QdrantBase):
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -122,11 +122,7 @@ def test_simple_search():
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
-    compare_client_results(
-        local_client, remote_client, searcher.simple_search_code_score_threshold
-    )
+    compare_client_results(local_client, remote_client, searcher.search_score_threshold)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
     compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
-    compare_client_results(
-        local_client, remote_client, searcher.simple_search_text_select_payload_exclude
-    )
+    compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
