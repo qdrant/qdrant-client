@@ -1,6 +1,7 @@
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client.conversions import common_types as types
+from qdrant_client.http import models
 
 
 class QdrantBase:
@@ -27,11 +28,11 @@ class QdrantBase:
         query_vector: Union[
             types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
         ],
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
+        query_filter: Optional[models.Filter] = None,
+        search_params: Optional[models.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         **kwargs: Any,
@@ -515,7 +516,6 @@ class QdrantBase:
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
-        init_from: Optional[types.InitFrom] = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -526,7 +526,6 @@ class QdrantBase:
                 Configuration of the vector storage. Vector params contains size and distance for the vector storage.
                 If dict is passed, service will create a vector storage for each key in the dict.
                 If single VectorParams is passed, service will create a single anonymous vector storage.
-            init_from: Use data stored in another collection to initialize this collection
 
         Returns:
             Operation result
@@ -537,7 +536,6 @@ class QdrantBase:
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
-        init_from: Optional[types.InitFrom] = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -548,7 +546,6 @@ class QdrantBase:
                 Configuration of the vector storage. Vector params contains size and distance for the vector storage.
                 If dict is passed, service will create a vector storage for each key in the dict.
                 If single VectorParams is passed, service will create a single anonymous vector storage.
-            init_from: Use data stored in another collection to initialize this collection
 
         Returns:
             Operation result

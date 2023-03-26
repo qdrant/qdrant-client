@@ -19,7 +19,7 @@ def value_by_key(payload: dict, key: str) -> Optional[List[Any]]:
     keys = key.split(".")
     result = []
 
-    def _get_value(data, k_list):
+    def _get_value(data: Any, k_list: List[str]) -> None:
         if not k_list:
             return
 
@@ -59,7 +59,7 @@ def value_by_key(payload: dict, key: str) -> Optional[List[Any]]:
     return result if result else None
 
 
-def test_value_by_key():
+def test_value_by_key() -> None:
     payload = {
         "name": "John",
         "counts": [1, 2, 3],

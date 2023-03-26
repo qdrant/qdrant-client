@@ -2,7 +2,7 @@ from enum import Enum
 
 import numpy as np
 
-from qdrant_client import models
+from qdrant_client.http import models
 
 
 class DistanceOrder(str, Enum):
@@ -24,7 +24,7 @@ def distance_to_order(distance: models.Distance) -> DistanceOrder:
     return DistanceOrder.BIGGER_IS_BETTER
 
 
-def cosine_similarity(query: np.ndarray, vectors: np.ndarray):
+def cosine_similarity(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
     """
     Calculate cosine distance between query and vectors
     Args:
@@ -38,7 +38,7 @@ def cosine_similarity(query: np.ndarray, vectors: np.ndarray):
     return np.dot(vectors, query)
 
 
-def dot_product(query: np.ndarray, vectors: np.ndarray):
+def dot_product(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
     """
     Calculate dot product between query and vectors
     Args:
@@ -50,7 +50,7 @@ def dot_product(query: np.ndarray, vectors: np.ndarray):
     return np.dot(vectors, query)
 
 
-def euclidean_distance(query: np.ndarray, vectors: np.ndarray):
+def euclidean_distance(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
     """
     Calculate euclidean distance between query and vectors
     Args:
@@ -62,7 +62,9 @@ def euclidean_distance(query: np.ndarray, vectors: np.ndarray):
     return np.linalg.norm(vectors - query, axis=1)
 
 
-def calculate_distance(query: np.ndarray, vectors: np.ndarray, distance_type: models.Distance):
+def calculate_distance(
+    query: np.ndarray, vectors: np.ndarray, distance_type: models.Distance
+) -> np.ndarray:
     if distance_type == models.Distance.COSINE:
         return cosine_similarity(query, vectors)
     elif distance_type == models.Distance.DOT:
@@ -73,7 +75,7 @@ def calculate_distance(query: np.ndarray, vectors: np.ndarray, distance_type: mo
         raise ValueError(f"Unknown distance type {distance_type}")
 
 
-def test_distances():
+def test_distances() -> None:
     query = np.array([1.0, 2.0, 3.0])
     vectors = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
     assert np.allclose(calculate_distance(query, vectors, models.Distance.COSINE), [1.0, 1.0])

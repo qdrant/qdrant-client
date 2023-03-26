@@ -4,9 +4,9 @@ import shutil
 from itertools import zip_longest
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
-from qdrant_client import models as rest_models
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.http import models as rest_models
 from qdrant_client.local.local_collection import LocalCollection
 
 
@@ -383,7 +383,7 @@ class QdrantLocal(QdrantBase):
                     payload=payload or {},
                 )
                 for idx, (point_id, vector, payload) in enumerate(
-                    zip_longest(ids, vectors, payload)
+                    zip_longest(ids or [], vectors, payload or [])
                 )
             ]
         )

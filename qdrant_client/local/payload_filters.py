@@ -2,7 +2,7 @@ from typing import Any, List, Optional
 
 import numpy as np
 
-from qdrant_client import models
+from qdrant_client.http import models
 from qdrant_client.local.geo import geo_distance
 from qdrant_client.local.payload_value_extractor import value_by_key
 
@@ -81,10 +81,10 @@ def check_condition(
         values = value_by_key(payload, condition.is_empty.key)
         if values is None or len(values) == 0:
             return True
-    if isinstance(condition, models.HasIdCondition):
+    elif isinstance(condition, models.HasIdCondition):
         if point_id in condition.has_id:
             return True
-    if isinstance(condition, models.FieldCondition):
+    elif isinstance(condition, models.FieldCondition):
         values = value_by_key(payload, condition.key)
         if condition.match is not None:
             if values is None:
@@ -104,9 +104,11 @@ def check_condition(
             return any(check_geo_radius(condition.geo_radius, v) for v in values)
         if condition.values_count is not None:
             return check_values_count(condition.values_count, values)
-
-    if isinstance(condition, models.Filter):
+    elif isinstance(condition, models.Filter):
         return check_filter(condition, payload, point_id)
+    else:
+        raise ValueError(f"Unknown condition: {condition}")
+    return False
 
 
 def check_must(

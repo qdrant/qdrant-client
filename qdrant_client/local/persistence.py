@@ -3,7 +3,7 @@ import pickle
 from pathlib import Path
 from typing import Iterable
 
-from qdrant_client import models
+from qdrant_client.http import models
 
 STORAGE_FILE_NAME = "storage.dbm"
 
@@ -19,10 +19,10 @@ class CollectionPersistence:
         self.location = Path(location) / STORAGE_FILE_NAME
         self.storage = dbm.open(str(self.location), "c")
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.storage.close()
 
-    def persist(self, point: models.PointStruct):
+    def persist(self, point: models.PointStruct) -> None:
         """
         Persist a point in the local storage.
         Args:
@@ -32,7 +32,7 @@ class CollectionPersistence:
         value = pickle.dumps(point)
         self.storage[key] = value
 
-    def delete(self, point_id: models.ExtendedPointId):
+    def delete(self, point_id: models.ExtendedPointId) -> None:
         """
         Delete a point from the local storage.
         Args:
@@ -53,7 +53,7 @@ class CollectionPersistence:
             yield pickle.loads(value)
 
 
-def test_persistence():
+def test_persistence() -> None:
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmpdir:

@@ -27,7 +27,7 @@ def geo_distance(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     return km * 1000
 
 
-def test_geo_distance():
+def test_geo_distance() -> None:
     moscow = {"lon": 37.6173, "lat": 55.7558}
     london = {"lon": -0.1278, "lat": 51.5074}
     berlin = {"lon": 13.4050, "lat": 52.5200}

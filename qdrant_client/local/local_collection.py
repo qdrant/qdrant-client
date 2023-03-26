@@ -1,10 +1,10 @@
 from collections import defaultdict
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
-from qdrant_client import models
 from qdrant_client.conversions import common_types as types
+from qdrant_client.http import models
 from qdrant_client.local.distances import (
     DistanceOrder,
     calculate_distance,
@@ -27,19 +27,19 @@ class LocalCollection:
         Args:
             location: path to the collection directory. If None, the collection will be created in memory.
         """
-        self.vectors = {}
-        self.payload: List[Dict[str, any]] = []
-        self.deleted = None
-        self.ids = {}  # Mapping from external id to internal id
-        self.ids_inv = []  # Mapping from internal id to external id
+        self.vectors: Dict[str, np.ndarray] = {}
+        self.payload: List[models.Payload] = []
+        self.deleted = np.zeros(0, dtype=bool)
+        self.ids: Dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id
+        self.ids_inv: List[models.ExtendedPointId] = []  # Mapping from internal id to external id
         self.persistent = location is not None
         self.storage = None
         self.config = config
-        if self.persistent:
+        if location is not None:
             self.storage = CollectionPersistence(location)
         self.load()
 
-    def load(self):
+    def load(self) -> None:
         if self.storage is not None:
             vectors = defaultdict(list)
             for idx, point in enumerate(self.storage.load()):
@@ -161,7 +161,7 @@ class LocalCollection:
         )
         name, vector = self._resolve_vector_name(query_vector)
 
-        result = []
+        result: List[models.ScoredPoint] = []
 
         if name not in self.vectors:
             raise ValueError(f"Vector {name} is not found in the collection")
@@ -213,7 +213,7 @@ class LocalCollection:
         ids: Sequence[types.PointId],
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-    ):
+    ) -> List[models.Record]:
         result = []
 
         for point_id in ids:
@@ -244,7 +244,7 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ):
+    ) -> List[models.ScoredPoint]:
         collection = self if lookup_from_collection is None else lookup_from_collection
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         vector_name = (
@@ -306,7 +306,7 @@ class LocalCollection:
 
         sorted_ids = sorted(self.ids.items(), key=lambda x: x[0])
 
-        result = []
+        result: List[types.Record] = []
 
         payload_mask = calculate_payload_mask(
             payloads=self.payload,
@@ -348,7 +348,7 @@ class LocalCollection:
         mask = payload_mask & ~self.deleted
         return models.CountResult(count=np.count_nonzero(mask))
 
-    def _update_point(self, point: models.PointStruct):
+    def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
         self.payload[idx] = point.payload
 
@@ -366,12 +366,12 @@ class LocalCollection:
 
         self.deleted[idx] = 0
 
-    def _add_point(self, point: models.PointStruct):
+    def _add_point(self, point: models.PointStruct) -> None:
         idx = len(self.ids)
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
         self.payload.append(point.payload)
-        self.deleted.append(0)
+        np.append(self.deleted, 0)
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
@@ -383,18 +383,18 @@ class LocalCollection:
         ), f"Expected all vectors to be present: {vectors.keys()} != {self.vectors.keys()}"
 
         for vector_name, vector in vectors.items():
-            self.vectors[vector_name].append(vector)
+            np.append(self.vectors[vector_name], vector)
 
-    def _upsert_point(self, point: models.PointStruct):
+    def _upsert_point(self, point: models.PointStruct) -> None:
         if point.id in self.ids:
             self._update_point(point)
         else:
             self._add_point(point)
 
-        if self.persistent:
+        if self.storage is not None:
             self.storage.persist(point)
 
-    def upsert(self, points: Union[List[models.PointStruct], models.Batch]):
+    def upsert(self, points: Union[List[models.PointStruct], models.Batch]) -> None:
         if isinstance(points, list):
             for point in points:
                 self._upsert_point(point)
@@ -422,12 +422,12 @@ class LocalCollection:
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
 
-    def _delete_ids(self, ids: List[types.PointId]):
+    def _delete_ids(self, ids: List[types.PointId]) -> None:
         for point_id in ids:
             idx = self.ids[point_id]
             self.deleted[idx] = 1
 
-        if self.persistent:
+        if self.storage is not None:
             for point_id in ids:
                 self.storage.delete(point_id)
 
@@ -463,7 +463,7 @@ class LocalCollection:
         selector: Union[
             models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
         ],
-    ):
+    ) -> None:
         ids = self._selector_to_ids(selector)
         self._delete_ids(ids)
 
@@ -473,7 +473,7 @@ class LocalCollection:
         selector: Union[
             models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
         ],
-    ):
+    ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
@@ -488,7 +488,7 @@ class LocalCollection:
         selector: Union[
             models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
         ],
-    ):
+    ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
@@ -500,7 +500,7 @@ class LocalCollection:
         selector: Union[
             models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
         ],
-    ):
+    ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
@@ -513,7 +513,7 @@ class LocalCollection:
         selector: Union[
             models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
         ],
-    ):
+    ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
