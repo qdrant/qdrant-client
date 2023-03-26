@@ -40,92 +40,16 @@ from qdrant_client.models import (
     VectorParams,
 )
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
+from tests.fixtures.paylaod import (
+    one_random_payload_please,
+    random_payload,
+    random_real_word,
+)
 
 DIM = 100
 NUM_VECTORS = 1_000
 COLLECTION_NAME = "client_test"
 COLLECTION_NAME_ALIAS = "client_test_alias"
-
-random_words = [
-    "cat",
-    "dog",
-    "mouse",
-    "bird",
-    "fish",
-    "horse",
-    "cow",
-    "pig",
-    "sheep",
-    "goat",
-    "chicken",
-    "duck",
-    "rabbit",
-    "frog",
-    "snake",
-    "lizard",
-    "turtle",
-    "bear",
-    "wolf",
-    "fox",
-    "monkey",
-    "ape",
-    "gorilla",
-    "elephant",
-    "rhino",
-    "giraffe",
-    "zebra",
-    "deer",
-    "camel",
-    "lion",
-    "tiger",
-    "leopard",
-    "hyena",
-    "jaguar",
-    "cheetah",
-    "kangaroo",
-    "koala",
-    "panda",
-    "sloth",
-    "hippo",
-    "whale",
-    "dolphin",
-    "shark",
-    "octopus",
-    "squid",
-    "crab",
-    "lobster",
-    "snail",
-    "ant",
-    "bee",
-    "butterfly",
-    "dragonfly",
-    "mosquito",
-    "fly",
-    "grasshopper",
-    "spider",
-    "scorpion",
-    "ladybug",
-]
-
-
-def random_real_word():
-    return random.choice(random_words)
-
-
-def one_random_payload_please(idx):
-    return {
-        "id": idx + 100,
-        "id_str": [str(random.randint(1, 30)).zfill(2) for _ in range(random.randint(0, 5))],
-        "text_data": uuid.uuid4().hex,
-        "rand_number": random.random(),
-        "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
-        "words": f"{random_real_word()} {random_real_word()}",
-    }
-
-
-def random_payload():
-    for i in range(NUM_VECTORS):
-        yield one_random_payload_please(i)
 
 
 def create_random_vectors():
@@ -289,7 +213,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         vectors = [np.random.rand(DIM).tolist() for _ in range(NUM_VECTORS)]
         vectors_2 = vectors[2]
 
-    payload = random_payload()
+    payload = random_payload(NUM_VECTORS)
 
     client = QdrantClient(prefer_grpc=prefer_grpc)
 

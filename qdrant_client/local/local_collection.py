@@ -27,7 +27,10 @@ class LocalCollection:
         Args:
             location: path to the collection directory. If None, the collection will be created in memory.
         """
-        self.vectors: Dict[str, np.ndarray] = {}
+        self.vectors: Dict[str, np.ndarray] = {
+            name: np.zeros((0, params.size), dtype=np.float32)
+            for name, params in config.vectors.items()
+        }
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
         self.ids: Dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id
@@ -113,10 +116,10 @@ class LocalCollection:
             return payload
 
         if isinstance(with_payload, list):
-            return {key: payload.get(key) for key in with_payload}
+            return {key: payload.get(key) for key in with_payload if key in payload}
 
         if isinstance(with_payload, models.PayloadSelectorInclude):
-            return {key: payload.get(key) for key in with_payload.include}
+            return {key: payload.get(key) for key in with_payload.include if key in payload}
 
         if isinstance(with_payload, models.PayloadSelectorExclude):
             return {key: payload.get(key) for key in payload if key not in with_payload.exclude}
@@ -129,7 +132,7 @@ class LocalCollection:
         if not with_vectors:
             return None
 
-        vectors = {name: self.vectors[name][idx] for name in self.vectors}
+        vectors = {name: self.vectors[name][idx].tolist() for name in self.vectors}
 
         if isinstance(with_vectors, list):
             vectors = {name: vectors[name] for name in with_vectors}
@@ -168,7 +171,10 @@ class LocalCollection:
 
         vectors = self.vectors[name]
         params = self.get_vector_params(name)
-        scores = calculate_distance(vector, vectors, params.distance)
+        scores = calculate_distance(vector, vectors[: len(self.payload)], params.distance)
+        # in deleted: 1 - deleted, 0 - not deleted
+        # in payload_mask: 1 - accepted, 0 - rejected
+        # in mask: 1 - ok, 0 - rejected
         mask = payload_mask & ~self.deleted
 
         required_order = distance_to_order(params.distance)
@@ -182,7 +188,7 @@ class LocalCollection:
             if len(result) >= limit + offset:
                 break
 
-            if mask[idx]:
+            if not mask[idx]:
                 continue
 
             score = scores[idx]
@@ -371,7 +377,7 @@ class LocalCollection:
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
         self.payload.append(point.payload)
-        np.append(self.deleted, 0)
+        self.deleted = np.append(self.deleted, 0)
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
@@ -383,7 +389,13 @@ class LocalCollection:
         ), f"Expected all vectors to be present: {vectors.keys()} != {self.vectors.keys()}"
 
         for vector_name, vector in vectors.items():
-            np.append(self.vectors[vector_name], vector)
+            vectors = self.vectors[vector_name]
+            if vectors.shape[0] <= idx:
+                vectors = np.resize(vectors, (idx * 2 + 1, vectors.shape[1]))
+
+            vector = np.array(vector)
+            vectors[idx] = vector
+            self.vectors[vector_name] = vectors
 
     def _upsert_point(self, point: models.PointStruct) -> None:
         if point.id in self.ids:
