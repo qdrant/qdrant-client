@@ -271,14 +271,14 @@ class LocalCollection:
             idx = collection.ids[point_id]
             negative_vectors.append(collection.vectors[vector_name][idx])
 
-        positive_vectors = np.stack(positive_vectors)
-        negative_vectors = np.stack(negative_vectors) if len(negative_vectors) > 0 else None
+        positive_vectors_np = np.stack(positive_vectors)
+        negative_vectors_np = np.stack(negative_vectors) if len(negative_vectors) > 0 else None
 
-        mean_positive_vector = np.mean(positive_vectors, axis=0)
+        mean_positive_vector = np.mean(positive_vectors_np, axis=0)
 
-        if negative_vectors is not None:
+        if negative_vectors_np is not None:
             vector = (
-                mean_positive_vector + mean_positive_vector - np.mean(negative_vectors, axis=0)
+                mean_positive_vector + mean_positive_vector - np.mean(negative_vectors_np, axis=0)
             )
         else:
             vector = mean_positive_vector
