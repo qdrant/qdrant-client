@@ -507,6 +507,16 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         self._delete_ids(ids)
 
+    def _persist_by_id(self, point_id: models.ExtendedPointId) -> None:
+        if self.storage is not None:
+            idx = self.ids[point_id]
+            point = models.PointStruct(
+                id=point_id,
+                payload=self._get_payload(idx, with_payload=True),
+                vector=self._get_vectors(idx, with_vectors=True),
+            )
+            self.storage.persist(point)
+
     def set_payload(
         self,
         payload: models.Payload,
@@ -521,6 +531,7 @@ class LocalCollection:
                 **(self.payload[idx] or {}),
                 **payload,
             }
+            self._persist_by_id(point_id)
 
     def overwrite_payload(
         self,
@@ -533,6 +544,7 @@ class LocalCollection:
         for point_id in ids:
             idx = self.ids[point_id]
             self.payload[idx] = payload
+            self._persist_by_id(point_id)
 
     def delete_payload(
         self,
@@ -547,6 +559,7 @@ class LocalCollection:
             for key in keys:
                 if key in self.payload[idx]:
                     self.payload[idx].pop(key)
+            self._persist_by_id(point_id)
 
     def clear_payload(
         self,
@@ -558,6 +571,7 @@ class LocalCollection:
         for point_id in ids:
             idx = self.ids[point_id]
             self.payload[idx] = {}
+            self._persist_by_id(point_id)
 
     def info(self) -> models.CollectionInfo:
         return models.CollectionInfo(

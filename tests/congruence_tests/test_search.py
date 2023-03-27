@@ -152,3 +152,33 @@ def test_simple_search():
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
+
+
+def test_search_with_persistance():
+    import tempfile
+
+    fixture_records = generate_fixtures()
+    searcher = TestSimpleSearcher()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        local_client = init_local(tmpdir)
+        init_client(local_client, fixture_records)
+
+        del local_client
+
+        local_client_2 = init_local(tmpdir)
+
+        remote_client = init_remote()
+        init_client(remote_client, fixture_records)
+
+        for i in range(100):
+            query_filter = one_random_filter_please()
+            try:
+                compare_client_results(
+                    local_client_2,
+                    remote_client,
+                    searcher.filter_search_text,
+                    query_filter=query_filter,
+                )
+            except AssertionError as e:
+                print(f"\nFailed with filter {query_filter}")
+                raise e

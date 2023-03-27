@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -8,6 +9,8 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
 from qdrant_client.local.local_collection import LocalCollection
+
+META_INFO_FILENAME = "meta.json"
 
 
 class QdrantLocal(QdrantBase):
@@ -32,6 +35,40 @@ class QdrantLocal(QdrantBase):
         self.persistent = location != ":memory:"
         self.collections: Dict[str, LocalCollection] = {}
         self.aliases: Dict[str, str] = {}
+        self._load()
+
+    def _load(self):
+        if not self.persistent:
+            return
+        meta_path = os.path.join(self.location, META_INFO_FILENAME)
+        if not os.path.exists(meta_path):
+            with open(meta_path, "w") as f:
+                f.write(json.dumps({"collections": {}, "aliases": {}}))
+        else:
+            with open(meta_path, "r") as f:
+                meta = json.load(f)
+                for collection_name, config_json in meta["collections"].items():
+                    config = rest_models.CreateCollection(**config_json)
+                    collection_path = self._collection_path(collection_name)
+                    self.collections[collection_name] = LocalCollection(config, collection_path)
+                self.aliases = meta["aliases"]
+
+    def _save(self):
+        if not self.persistent:
+            return
+        meta_path = os.path.join(self.location, META_INFO_FILENAME)
+        with open(meta_path, "w") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "collections": {
+                            collection_name: collection.config.dict()
+                            for collection_name, collection in self.collections.items()
+                        },
+                        "aliases": self.aliases,
+                    }
+                )
+            )
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
         if collection_name in self.collections:
@@ -257,6 +294,7 @@ class QdrantLocal(QdrantBase):
                 self.aliases[new_name] = self.aliases.pop(old_name)
             else:
                 raise ValueError(f"Unknown operation: {operation}")
+        self._save()
         return True
 
     def get_collection_aliases(
@@ -302,7 +340,7 @@ class QdrantLocal(QdrantBase):
 
     def _collection_path(self, collection_name: str) -> Optional[str]:
         if self.persistent:
-            return os.path.join(self.location, collection_name)
+            return os.path.join(self.location, "collection", collection_name)
         else:
             return None
 
@@ -316,7 +354,8 @@ class QdrantLocal(QdrantBase):
         }
         collection_path = self._collection_path(collection_name)
         if collection_path is not None:
-            shutil.rmtree(collection_path)
+            shutil.rmtree(collection_path, ignore_errors=True)
+        self._save()
         return True
 
     def create_collection(
@@ -340,6 +379,7 @@ class QdrantLocal(QdrantBase):
         )
 
         self.collections[collection_name] = collection
+        self._save()
         return True
 
     def recreate_collection(

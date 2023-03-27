@@ -17,10 +17,8 @@ class CollectionPersistence:
         """
 
         self.location = Path(location) / STORAGE_FILE_NAME
+        self.location.mkdir(exist_ok=True, parents=True)
         self.storage = dbm.open(str(self.location), "c")
-
-    def __del__(self) -> None:
-        self.storage.close()
 
     def persist(self, point: models.PointStruct) -> None:
         """
@@ -31,6 +29,8 @@ class CollectionPersistence:
         key = pickle.dumps(point.id)
         value = pickle.dumps(point)
         self.storage[key] = value
+
+        self.storage.sync()
 
     def delete(self, point_id: models.ExtendedPointId) -> None:
         """
@@ -60,6 +60,12 @@ def test_persistence() -> None:
         persistence = CollectionPersistence(tmpdir)
         point = models.PointStruct(id=1, vector=[1.0, 2.0, 3.0], payload={"a": 1})
         persistence.persist(point)
+        for loaded_point in persistence.load():
+            assert loaded_point == point
+            break
+
+        del persistence
+        persistence = CollectionPersistence(tmpdir)
         for loaded_point in persistence.load():
             assert loaded_point == point
             break

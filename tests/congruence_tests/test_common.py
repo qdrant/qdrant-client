@@ -129,8 +129,8 @@ def init_client(
     client.upload_records(collection_name, records)
 
 
-def init_local() -> QdrantBase:
-    client = QdrantLocal(location=":memory:")
+def init_local(storage: str = ":memory:") -> QdrantBase:
+    client = QdrantLocal(location=storage)
     return client
 
 
