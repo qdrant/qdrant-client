@@ -38,7 +38,9 @@ def delete_fixture_collection(client: QdrantBase) -> None:
     client.delete_collection(COLLECTION_NAME)
 
 
-def generate_fixtures(num: Optional[int] = NUM_VECTORS) -> List[models.Record]:
+def generate_fixtures(
+    num: Optional[int] = NUM_VECTORS, random_ids: bool = False
+) -> List[models.Record]:
     return generate_records(
         num_records=num or NUM_VECTORS,
         vector_sizes={
@@ -47,7 +49,7 @@ def generate_fixtures(num: Optional[int] = NUM_VECTORS) -> List[models.Record]:
             "code": code_vector_size,
         },
         with_payload=True,
-        random_ids=False,
+        random_ids=random_ids,
     )
 
 

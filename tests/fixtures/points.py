@@ -35,7 +35,7 @@ def generate_records(
 
         idx = i
         if random_ids:
-            idx = uuid.uuid4().hex
+            idx = str(uuid.uuid4())
 
         records.append(
             models.Record.construct(

@@ -172,7 +172,8 @@ class QdrantLocal(QdrantBase):
         self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        return collection.upsert(points)
+        collection.upsert(points)
+        return self._default_update_result()
 
     def retrieve(
         self,

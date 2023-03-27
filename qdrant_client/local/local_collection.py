@@ -1,3 +1,4 @@
+import uuid
 from collections import defaultdict
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
@@ -299,6 +300,13 @@ class LocalCollection:
             score_threshold=score_threshold,
         )
 
+    @classmethod
+    def _universal_id(cls, point_id: models.ExtendedPointId) -> Tuple[str, int]:
+        if isinstance(point_id, str):
+            return point_id, 0
+        elif isinstance(point_id, int):
+            return "", point_id
+
     def scroll(
         self,
         scroll_filter: Optional[types.Filter] = None,
@@ -310,7 +318,7 @@ class LocalCollection:
         if len(self.ids) == 0:
             return [], None
 
-        sorted_ids = sorted(self.ids.items(), key=lambda x: x[0])
+        sorted_ids = sorted(self.ids.items(), key=lambda x: self._universal_id(x[0]))
 
         result: List[types.Record] = []
 
@@ -323,7 +331,7 @@ class LocalCollection:
         mask = payload_mask & ~self.deleted
 
         for point_id, idx in sorted_ids:
-            if offset is not None and point_id < offset:
+            if offset is not None and self._universal_id(point_id) < self._universal_id(offset):
                 continue
 
             if len(result) >= limit + 1:
@@ -398,6 +406,13 @@ class LocalCollection:
             self.vectors[vector_name] = named_vectors
 
     def _upsert_point(self, point: models.PointStruct) -> None:
+        if isinstance(point.id, str):
+            # try to parse as UUID
+            try:
+                _uuid = uuid.UUID(point.id)
+            except ValueError as e:
+                raise ValueError(f"Point id {point.id} is not a valid UUID") from e
+
         if point.id in self.ids:
             self._update_point(point)
         else:
