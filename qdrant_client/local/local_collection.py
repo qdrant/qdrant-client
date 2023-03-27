@@ -393,8 +393,8 @@ class LocalCollection:
             if named_vectors.shape[0] <= idx:
                 named_vectors = np.resize(named_vectors, (idx * 2 + 1, named_vectors.shape[1]))
 
-            vector = np.array(vector)
-            named_vectors[idx] = vector
+            vector_np = np.array(vector)
+            named_vectors[idx] = vector_np
             self.vectors[vector_name] = named_vectors
 
     def _upsert_point(self, point: models.PointStruct) -> None:
