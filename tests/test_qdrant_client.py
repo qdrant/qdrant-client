@@ -40,7 +40,7 @@ from qdrant_client.models import (
     VectorParams,
 )
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
-from tests.fixtures.paylaod import (
+from tests.fixtures.payload import (
     one_random_payload_please,
     random_payload,
     random_real_word,
