@@ -58,6 +58,25 @@ def generate_fixtures(
     )
 
 
+def compare_collections(
+    client_1,
+    client_2,
+    num_vectors,
+    attrs=("vectors_count", "indexed_vectors_count", "points_count"),
+):
+    collection_1 = client_1.get_collection(COLLECTION_NAME)
+    collection_2 = client_2.get_collection(COLLECTION_NAME)
+
+    assert all(getattr(collection_1, attr) == getattr(collection_2, attr) for attr in attrs)
+
+    # num_vectors * 2 to be sure that we have no excess points uploaded
+    compare_client_results(
+        client_1,
+        client_2,
+        lambda client: client.scroll(COLLECTION_NAME, limit=num_vectors * 2),
+    )
+
+
 def compare_client_results(
     client1: QdrantBase,
     client2: QdrantBase,
@@ -123,7 +142,9 @@ def compare_client_results(
 
 
 def init_client(
-    client: QdrantBase, records: List[models.Record], collection_name: str = COLLECTION_NAME
+    client: QdrantBase,
+    records: List[models.Record],
+    collection_name: str = COLLECTION_NAME,
 ) -> None:
     initialize_fixture_collection(client, collection_name=collection_name)
     client.upload_records(collection_name, records)
