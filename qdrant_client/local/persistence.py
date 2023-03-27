@@ -30,7 +30,8 @@ class CollectionPersistence:
         value = pickle.dumps(point)
         self.storage[key] = value
 
-        self.storage.sync()
+        if hasattr(self.storage, "sync"):
+            self.storage.sync()
 
     def delete(self, point_id: models.ExtendedPointId) -> None:
         """

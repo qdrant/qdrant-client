@@ -2,7 +2,6 @@ import random
 
 import pytest
 
-from qdrant_client.http import models
 from qdrant_client.http.models import PayloadSelectorExclude, PayloadSelectorInclude
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,

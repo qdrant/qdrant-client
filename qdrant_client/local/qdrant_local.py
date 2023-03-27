@@ -37,7 +37,7 @@ class QdrantLocal(QdrantBase):
         self.aliases: Dict[str, str] = {}
         self._load()
 
-    def _load(self):
+    def _load(self) -> None:
         if not self.persistent:
             return
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
@@ -53,7 +53,7 @@ class QdrantLocal(QdrantBase):
                     self.collections[collection_name] = LocalCollection(config, collection_path)
                 self.aliases = meta["aliases"]
 
-    def _save(self):
+    def _save(self) -> None:
         if not self.persistent:
             return
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
