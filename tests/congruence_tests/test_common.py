@@ -1,8 +1,11 @@
 from typing import Any, Callable, List, Optional
 
+import numpy as np
+
 from qdrant_client import QdrantClient
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
+from qdrant_client.http.models import VectorStruct
 from qdrant_client.local.qdrant_local import QdrantLocal
 from tests.fixtures.points import generate_records
 
@@ -61,6 +64,25 @@ def compare_client_results(
     foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ) -> None:
+    def compare_vectors(
+        vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], i: int
+    ) -> None:
+        assert type(vec1) == type(vec2)
+
+        if vec1 is None:
+            return
+
+        if isinstance(vec1, dict):
+            for key, value in vec1.items():
+                assert np.allclose(vec1[key], vec2[key]), (
+                    f"res1[{i}].vectors[{key}] = {value}, "
+                    f"res2[{i}].vectors[{key}] = {res2_item.vector[key]}"
+                )
+        else:
+            assert np.allclose(
+                vec1, vec2
+            ), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
+
     res1 = foo(client1, **kwargs)
     res2 = foo(client2, **kwargs)
 
@@ -82,6 +104,9 @@ def compare_client_results(
                 assert (
                     res1_item.payload == res2_item.payload
                 ), f"res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
+
+                compare_vectors(res1_item.vector, res2_item.vector, i)
+
             elif isinstance(res1_item, models.Record) and isinstance(res2_item, models.Record):
                 assert (
                     res1_item.id == res2_item.id
@@ -89,9 +114,8 @@ def compare_client_results(
                 assert (
                     res1_item.payload == res2_item.payload
                 ), f"res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
-                assert (
-                    res1_item.vector == res2_item.vector
-                ), f"res1[{i}].vectors = {res1_item.vector}, res2[{i}].vectors = {res2_item.vector}"
+
+                compare_vectors(res1_item.vector, res2_item.vector, i)
             else:
                 assert res1[i] == res2[i], f"res1[{i}] = {res1[i]}, res2[{i}] = {res2[i]}"
     else:
