@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Union
+from typing import Dict, List, Union
 
 import numpy as np
 
@@ -8,16 +8,17 @@ from tests.fixtures.paylaod import one_random_payload_please, random_payload
 
 
 def random_vectors(
-    vector_sizes: Union[dict[str, int]],
+    vector_sizes: Union[Dict[str, int], int],
 ) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
         return np.random.random(vector_sizes).round(3).tolist()
-
-    vectors = {}
-    for vector_name, vector_size in vector_sizes.items():
-        vectors[vector_name] = np.random.random(vector_size).round(3).tolist()
-
-    return vectors
+    elif isinstance(vector_sizes, dict):
+        vectors = {}
+        for vector_name, vector_size in vector_sizes.items():
+            vectors[vector_name] = np.random.random(vector_size).round(3).tolist()
+        return vectors
+    else:
+        raise ValueError("vector_sizes must be int or dict")
 
 
 def generate_records(
