@@ -290,7 +290,9 @@ class LocalCollection:
         else:
             vector = mean_positive_vector
 
-        ignore_mentioned_ids = models.HasIdCondition(has_id=list(positive) + (negative or []))
+        ignore_mentioned_ids = models.HasIdCondition(
+            has_id=list(positive) + (list(negative) if negative else [])
+        )
 
         if query_filter is None:
             query_filter = models.Filter(must_not=[ignore_mentioned_ids])
@@ -316,6 +318,7 @@ class LocalCollection:
             return point_id, 0
         elif isinstance(point_id, int):
             return "", point_id
+        raise TypeError(f"Incompatible point id type: {type(point_id)}")
 
     def scroll(
         self,
