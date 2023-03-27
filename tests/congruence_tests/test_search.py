@@ -19,6 +19,8 @@ from tests.fixtures.filters import one_random_filter_please
 
 
 class TestSimpleSearcher:
+    __test__ = False
+
     def __init__(self):
         self.query_text = np.random.random(text_vector_size).tolist()
         self.query_image = np.random.random(image_vector_size).tolist()

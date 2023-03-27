@@ -534,11 +534,12 @@ class LocalCollection:
     def info(self) -> models.CollectionInfo:
         return models.CollectionInfo(
             status=models.CollectionStatus.GREEN,
-            optimizer_status=models.OptimizersStatus.OK,
+            optimizer_status=models.OptimizersStatusOneOf.OK,
             vectors_count=self.count().count * len(self.vectors),
             indexed_vectors_count=0,  # LocalCollection does not do indexing
             points_count=self.count().count,
             segments_count=1,
+            payload_schema={},
             config=models.CollectionConfig(
                 params=models.CollectionParams(
                     vectors=self.config.vectors,
@@ -549,14 +550,14 @@ class LocalCollection:
                 ),
                 hnsw_config=models.HnswConfig(
                     m=16,
-                    ef_construction=100,
+                    ef_construct=100,
                     full_scan_threshold=10000,
                 ),
                 wal_config=models.WalConfig(
                     wal_capacity_mb=32,
                     wal_segments_ahead=0,
                 ),
-                optimizers_config=models.OptimizersConfig(
+                optimizer_config=models.OptimizersConfig(
                     deleted_threshold=0.1,
                     vacuum_min_vector_number=1000,
                     default_segment_number=1,

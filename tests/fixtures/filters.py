@@ -1,7 +1,7 @@
 import random
 
 from qdrant_client.http import models
-from tests.fixtures.paylaod import geo_points, random_real_word
+from tests.fixtures.payload import geo_points, random_real_word
 
 """
 data structure:
