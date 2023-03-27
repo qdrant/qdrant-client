@@ -34,6 +34,10 @@ def initialize_fixture_collection(client: QdrantBase) -> None:
     )
 
 
+def delete_fixture_collection(client: QdrantBase) -> None:
+    client.delete_collection(COLLECTION_NAME)
+
+
 def generate_fixtures(num: Optional[int] = NUM_VECTORS) -> List[models.Record]:
     return generate_records(
         num_records=num or NUM_VECTORS,
