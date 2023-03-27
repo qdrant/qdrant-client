@@ -23,7 +23,7 @@ def random_vectors(
 
 def generate_records(
     num_records: int,
-    vector_sizes: Union[dict[str, int], int],
+    vector_sizes: Union[Dict[str, int], int],
     with_payload: bool = False,
     random_ids: bool = False,
 ) -> List[models.Record]:
