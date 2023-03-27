@@ -17,7 +17,7 @@ class CollectionPersistence:
         """
 
         self.location = Path(location) / STORAGE_FILE_NAME
-        self.location.mkdir(exist_ok=True, parents=True)
+        self.location.parent.mkdir(exist_ok=True, parents=True)
         self.storage = dbm.open(str(self.location), "c")
 
     def persist(self, point: models.PointStruct) -> None:
