@@ -290,6 +290,16 @@ class LocalCollection:
         else:
             vector = mean_positive_vector
 
+        ignore_mentioned_ids = models.HasIdCondition(has_id=list(positive) + (negative or []))
+
+        if query_filter is None:
+            query_filter = models.Filter(must_not=[ignore_mentioned_ids])
+        else:
+            if query_filter.must_not is None:
+                query_filter.must_not = [ignore_mentioned_ids]
+            else:
+                query_filter.must_not.append(ignore_mentioned_ids)
+
         return self.search(
             query_vector=(search_in_vector_name, vector),
             query_filter=query_filter,

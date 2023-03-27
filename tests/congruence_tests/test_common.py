@@ -14,9 +14,11 @@ code_vector_size = 80
 NUM_VECTORS = 1000
 
 
-def initialize_fixture_collection(client: QdrantBase) -> None:
+def initialize_fixture_collection(
+    client: QdrantBase, collection_name: str = COLLECTION_NAME
+) -> None:
     client.recreate_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config={
             "text": models.VectorParams(
                 size=text_vector_size,
@@ -96,9 +98,11 @@ def compare_client_results(
         assert res1 == res2
 
 
-def init_client(client: QdrantBase, records: List[models.Record]) -> None:
-    initialize_fixture_collection(client)
-    client.upload_records(COLLECTION_NAME, records)
+def init_client(
+    client: QdrantBase, records: List[models.Record], collection_name: str = COLLECTION_NAME
+) -> None:
+    initialize_fixture_collection(client, collection_name=collection_name)
+    client.upload_records(collection_name, records)
 
 
 def init_local() -> QdrantBase:
