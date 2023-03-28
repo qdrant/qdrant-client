@@ -154,7 +154,7 @@ def test_simple_search():
             raise e
 
 
-def test_search_with_persistance():
+def test_search_with_persistence():
     import tempfile
 
     fixture_records = generate_fixtures()

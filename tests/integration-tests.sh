@@ -11,7 +11,8 @@ function stop_docker()
 # Ensure current path is project root
 cd "$(dirname "$0")/../"
 
-QDRANT_VERSION=${QDRANT_VERSION:-'v1.1.0'}
+QDRANT_LATEST="v1.1.0"
+QDRANT_VERSION=${QDRANT_VERSION:-"$QDRANT_LATEST"}
 
 QDRANT_HOST='localhost:6333'
 
@@ -28,7 +29,15 @@ until $(curl --output /dev/null --silent --get --fail http://$QDRANT_HOST/collec
   sleep 5
 done
 
-pytest
+# If running backwards compatibility tests, skip local compatibility tests
+# Backwards compatibility tests are enabled by setting QDRANT_VERSION to a version that is not the latest
+
+if [ "$QDRANT_VERSION" != "$QDRANT_LATEST" ]; then
+  pytest --ignore=tests/congruence_tests
+else
+  pytest
+fi
+
 
 echo "Ok, that is enough"
 
