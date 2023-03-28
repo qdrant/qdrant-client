@@ -25,6 +25,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.http import models as rest_models
+from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
@@ -86,8 +87,14 @@ class QdrantClient(QdrantBase):
         prefix: Optional[str] = None,
         timeout: Optional[float] = None,
         host: Optional[str] = None,
+        location: Optional[str] = None,
         **kwargs: Any,
     ):
+        if location:
+            self._local: Optional[QdrantLocal] = QdrantLocal(location)
+            return
+
+        self._local = None
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._https = https if https is not None else api_key is not None
@@ -165,6 +172,15 @@ class QdrantClient(QdrantBase):
         if prefer_grpc:
             self._init_grpc_points_client(self._grpc_headers)
             self._init_grpc_collections_client(self._grpc_headers)
+
+    def __getattribute__(self, item: str) -> Any:
+        if item == "_local":
+            return super().__getattribute__(item)
+        else:
+            if self._local is None:
+                return super().__getattribute__(item)
+            else:
+                return getattr(self._local, item)
 
     def __del__(self) -> None:
         if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:

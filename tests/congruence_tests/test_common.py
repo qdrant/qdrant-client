@@ -163,7 +163,7 @@ def init_client(
 
 
 def init_local(storage: str = ":memory:") -> QdrantBase:
-    client = QdrantLocal(location=storage)
+    client = QdrantClient(location=storage)
     return client
 
 

@@ -12,7 +12,7 @@ from tests.congruence_tests.test_common import (
 
 @pytest.fixture
 def local_client():
-    client: QdrantLocal = init_local()
+    client: QdrantClient = init_local()
     initialize_fixture_collection(client)
     yield client
     delete_fixture_collection(client)
