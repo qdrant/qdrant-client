@@ -87,7 +87,6 @@ qdrant_client.recreate_collection(
     None,
     5,
 )
-print(qdrant_client.qdrant_impl.rest_uri)
 qdrant_client.retrieve("collection", [])
 qdrant_client.scroll("collection")
 qdrant_client.search_batch(
