@@ -19,6 +19,7 @@ import numpy as np
 from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
+from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
@@ -30,7 +31,7 @@ from qdrant_client.uploader.rest_uploader import RestBatchUploader
 from qdrant_client.uploader.uploader import BaseUploader
 
 
-class QdrantClient:
+class QdrantClient(QdrantBase):
     """Entry point to communicate with Qdrant service via REST or gPRC API.
 
     It combines interface classes and endpoint implementation.
@@ -239,6 +240,7 @@ class QdrantClient:
         collection_name: str,
         requests: Sequence[types.SearchRequest],
         consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         """Search for points in multiple collections
 
@@ -308,6 +310,7 @@ class QdrantClient:
         score_threshold: Optional[float] = None,
         append_payload: bool = True,
         consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
 
@@ -479,6 +482,7 @@ class QdrantClient:
         collection_name: str,
         requests: Sequence[types.RecommendRequest],
         consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         """Perform multiple recommend requests in batch mode
 
@@ -550,6 +554,7 @@ class QdrantClient:
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
 
@@ -736,6 +741,7 @@ class QdrantClient:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
 
@@ -850,6 +856,7 @@ class QdrantClient:
         collection_name: str,
         count_filter: Optional[types.Filter] = None,
         exact: bool = True,
+        **kwargs: Any,
     ) -> types.CountResult:
         """Count points in the collection.
 
@@ -881,6 +888,7 @@ class QdrantClient:
         points: types.Points,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Update or insert a new point into the collection.
 
@@ -969,6 +977,7 @@ class QdrantClient:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
     ) -> List[types.Record]:
         """Retrieve stored points by IDs
 
@@ -1151,6 +1160,7 @@ class QdrantClient:
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
 
@@ -1161,11 +1171,11 @@ class QdrantClient:
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points_selector: Selects points based on list of IDs or filter
-                 Example:
+                Example:
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
+
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -1210,6 +1220,7 @@ class QdrantClient:
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Modifies payload of the specified points
 
@@ -1290,6 +1301,7 @@ class QdrantClient:
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Overwrites payload of the specified points
         After this operation is applied, only the specified payload will be present in the point.
@@ -1374,6 +1386,7 @@ class QdrantClient:
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Remove values from point's payload
 
@@ -1436,6 +1449,7 @@ class QdrantClient:
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete all payload for selected points
 
@@ -1492,6 +1506,7 @@ class QdrantClient:
         self,
         change_aliases_operations: Sequence[types.AliasOperations],
         timeout: Optional[int] = None,
+        **kwargs: Any,
     ) -> bool:
         """Operation for performing changes of collection aliases.
 
@@ -1521,7 +1536,9 @@ class QdrantClient:
         assert result is not None, "Update aliases returned None"
         return result
 
-    def get_collection_aliases(self, collection_name: str) -> types.CollectionsAliasesResponse:
+    def get_collection_aliases(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.CollectionsAliasesResponse:
         """Get collection aliases
 
         Args:
@@ -1538,7 +1555,7 @@ class QdrantClient:
         assert result is not None, "Get collection aliases returned None"
         return result
 
-    def get_aliases(self) -> types.CollectionsAliasesResponse:
+    def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
         """Get all aliases
 
         Returns:
@@ -1550,7 +1567,7 @@ class QdrantClient:
         assert result is not None, "Get aliases returned None"
         return result
 
-    def get_collections(self) -> types.CollectionsResponse:
+    def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
         """Get list name of all existing collections
 
         Returns:
@@ -1573,7 +1590,7 @@ class QdrantClient:
         assert result is not None, "Get collections returned None"
         return result
 
-    def get_collection(self, collection_name: str) -> types.CollectionInfo:
+    def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         """Get detailed information about specified existing collection
 
         Args:
@@ -1598,9 +1615,10 @@ class QdrantClient:
     def update_collection(
         self,
         collection_name: str,
-        optimizer_config: Optional[types.OptimizersConfigDiff],
+        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
         timeout: Optional[int] = None,
+        **kwargs: Any,
     ) -> bool:
         """Update parameters of the collection
 
@@ -1631,7 +1649,9 @@ class QdrantClient:
         assert result is not None, "Update collection returned None"
         return result
 
-    def delete_collection(self, collection_name: str, timeout: Optional[int] = None) -> bool:
+    def delete_collection(
+        self, collection_name: str, timeout: Optional[int] = None, **kwargs: Any
+    ) -> bool:
         """Removes collection and all it's data
 
         Args:
@@ -1663,6 +1683,7 @@ class QdrantClient:
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
 
@@ -1749,6 +1770,7 @@ class QdrantClient:
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
 
@@ -1801,7 +1823,6 @@ class QdrantClient:
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
-            init_from=init_from,
             timeout=timeout,
         )
 
@@ -1864,6 +1885,7 @@ class QdrantClient:
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        **kwargs: Any,
     ) -> None:
         """Upload records to the collection
 
@@ -1895,6 +1917,7 @@ class QdrantClient:
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
         This method will perform automatic batching of the data.
@@ -1925,6 +1948,7 @@ class QdrantClient:
         field_type: Optional[types.PayloadSchemaType] = None,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Creates index for a given payload field.
         Indexed fields allow to perform filtered search operations faster.
@@ -1975,6 +1999,7 @@ class QdrantClient:
         field_name: str,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Removes index for a given payload field.
 
@@ -2007,7 +2032,9 @@ class QdrantClient:
         assert result is not None, "Delete field index returned None"
         return result
 
-    def list_snapshots(self, collection_name: str) -> List[types.SnapshotDescription]:
+    def list_snapshots(
+        self, collection_name: str, **kwargs: Any
+    ) -> List[types.SnapshotDescription]:
         """List all snapshots for a given collection.
 
         Args:
@@ -2022,7 +2049,9 @@ class QdrantClient:
         assert snapshots is not None, "List snapshots API returned None result"
         return snapshots
 
-    def create_snapshot(self, collection_name: str) -> Optional[types.SnapshotDescription]:
+    def create_snapshot(
+        self, collection_name: str, **kwargs: Any
+    ) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a given collection.
 
         Args:
@@ -2035,7 +2064,7 @@ class QdrantClient:
             collection_name=collection_name
         ).result
 
-    def delete_snapshot(self, collection_name: str, snapshot_name: str) -> bool:
+    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
         """Delete snapshot for a given collection.
 
         Args:
@@ -2052,7 +2081,7 @@ class QdrantClient:
         assert result is not None, "Delete snapshot API returned None"
         return result
 
-    def list_full_snapshots(self) -> List[types.SnapshotDescription]:
+    def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
         """List all snapshots for a whole storage
 
         Returns:
@@ -2062,7 +2091,7 @@ class QdrantClient:
         assert snapshots is not None, "List full snapshots API returned None result"
         return snapshots
 
-    def create_full_snapshot(self) -> types.SnapshotDescription:
+    def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
         """Create snapshot for a whole storage.
 
         Returns:
@@ -2072,7 +2101,7 @@ class QdrantClient:
         assert snapshot_description is not None, "Create full snapshot API returned None result"
         return snapshot_description
 
-    def delete_full_snapshot(self, snapshot_name: str) -> bool:
+    def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
         """Delete snapshot for a whole storage.
 
         Args:
@@ -2092,6 +2121,7 @@ class QdrantClient:
         collection_name: str,
         location: str,
         priority: Optional[types.SnapshotPriority] = None,
+        **kwargs: Any,
     ) -> bool:
         """Recover collection from snapshot.
 
@@ -2116,7 +2146,7 @@ class QdrantClient:
         assert success is not None, "Recover from snapshot API returned None result"
         return success
 
-    def lock_storage(self, reason: str) -> types.LocksOption:
+    def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         """Lock storage for writing."""
         result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
             rest_models.LocksOption(error_message=reason, write=True)
@@ -2124,7 +2154,7 @@ class QdrantClient:
         assert result is not None, "Lock storage returned None"
         return result
 
-    def unlock_storage(self) -> types.LocksOption:
+    def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
         """Unlock storage for writing."""
         result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
             rest_models.LocksOption(write=False)
@@ -2132,7 +2162,7 @@ class QdrantClient:
         assert result is not None, "Post locks returned None"
         return result
 
-    def get_locks(self) -> types.LocksOption:
+    def get_locks(self, **kwargs: Any) -> types.LocksOption:
         """Get current locks state."""
         result: Optional[types.LocksOption] = self.openapi_client.service_api.get_locks().result
         assert result is not None, "Get locks returned None"
