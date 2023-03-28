@@ -13,6 +13,8 @@ from tests.congruence_tests.test_common import (
 
 
 class TestAliasRetriever:
+    __test__ = False
+
     def __init__(self, collection_name=COLLECTION_NAME):
         self.collection_name = collection_name
 
