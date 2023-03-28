@@ -71,17 +71,17 @@ class QdrantClient(QdrantBase):
         path: Optional[str] = None,
         **kwargs: Any,
     ):
-        self.qdrant_impl: QdrantBase
+        self._client: QdrantBase
 
         if location == ":memory:":
-            self.qdrant_impl = QdrantLocal(location=location)
+            self._client = QdrantLocal(location=location)
         else:
             if path is not None:
-                self.qdrant_impl = QdrantLocal(location=path)
+                self._client = QdrantLocal(location=path)
             else:
                 if location is not None and url is None:
                     url = location
-                self.qdrant_impl = QdrantRemote(
+                self._client = QdrantRemote(
                     url=url,
                     port=port,
                     grpc_port=grpc_port,
@@ -101,10 +101,10 @@ class QdrantClient(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if isinstance(self.qdrant_impl, QdrantRemote):
-            return self.qdrant_impl.grpc_collections
+        if isinstance(self._client, QdrantRemote):
+            return self._client.grpc_collections
 
-        raise NotImplementedError(f"gRPC client is not supported for {type(self.qdrant_impl)}")
+        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
     def grpc_points(self) -> grpc.PointsStub:
@@ -113,10 +113,10 @@ class QdrantClient(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if isinstance(self.qdrant_impl, QdrantRemote):
-            return self.qdrant_impl.grpc_points
+        if isinstance(self._client, QdrantRemote):
+            return self._client.grpc_points
 
-        raise NotImplementedError(f"gRPC client is not supported for {type(self.qdrant_impl)}")
+        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
     def rest(self) -> SyncApis[ApiClient]:
@@ -125,10 +125,10 @@ class QdrantClient(QdrantBase):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
-        if isinstance(self.qdrant_impl, QdrantRemote):
-            return self.qdrant_impl.rest
+        if isinstance(self._client, QdrantRemote):
+            return self._client.rest
 
-        raise NotImplementedError(f"REST client is not supported for {type(self.qdrant_impl)}")
+        raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
 
     @property
     def http(self) -> SyncApis[ApiClient]:
@@ -137,10 +137,10 @@ class QdrantClient(QdrantBase):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
-        if isinstance(self.qdrant_impl, QdrantRemote):
-            return self.qdrant_impl.http
+        if isinstance(self._client, QdrantRemote):
+            return self._client.http
 
-        raise NotImplementedError("REST client is not supported for {type(self.qdrant_impl)}")
+        raise NotImplementedError("REST client is not supported for {type(self._client)}")
 
     def search_batch(
         self,
@@ -165,7 +165,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of search responses
         """
-        return self.qdrant_impl.search_batch(
+        return self._client.search_batch(
             collection_name=collection_name, requests=requests, consistency=consistency, **kwargs
         )
 
@@ -250,7 +250,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of found close points with similarity scores.
         """
-        return self.qdrant_impl.search(
+        return self._client.search(
             collection_name=collection_name,
             query_vector=query_vector,
             query_filter=query_filter,
@@ -288,7 +288,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of recommend responses
         """
-        return self.qdrant_impl.recommend_batch(
+        return self._client.recommend_batch(
             collection_name=collection_name, requests=requests, consistency=consistency, **kwargs
         )
 
@@ -368,7 +368,7 @@ class QdrantClient(QdrantBase):
             List of recommended points with similarity scores.
         """
 
-        return self.qdrant_impl.recommend(
+        return self._client.recommend(
             collection_name=collection_name,
             positive=positive,
             negative=negative,
@@ -429,7 +429,7 @@ class QdrantClient(QdrantBase):
             A pair of (List of points) and (optional offset for the next scroll request).
             If next page offset is `None` - there is no more points in the collection to scroll.
         """
-        return self.qdrant_impl.scroll(
+        return self._client.scroll(
             collection_name=collection_name,
             scroll_filter=scroll_filter,
             limit=limit,
@@ -461,7 +461,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Amount of points in the collection matching the filter.
         """
-        return self.qdrant_impl.count(
+        return self._client.count(
             collection_name=collection_name, count_filter=count_filter, exact=exact, **kwargs
         )
 
@@ -495,7 +495,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.upsert(
+        return self._client.upsert(
             collection_name=collection_name, points=points, wait=wait, ordering=ordering, **kwargs
         )
 
@@ -535,7 +535,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of points
         """
-        return self.qdrant_impl.retrieve(
+        return self._client.retrieve(
             collection_name=collection_name,
             ids=ids,
             with_payload=with_payload,
@@ -575,7 +575,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.delete(
+        return self._client.delete(
             collection_name=collection_name,
             points_selector=points_selector,
             wait=wait,
@@ -631,7 +631,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.set_payload(
+        return self._client.set_payload(
             collection_name=collection_name,
             payload=payload,
             points=points,
@@ -690,7 +690,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.overwrite_payload(
+        return self._client.overwrite_payload(
             collection_name=collection_name,
             payload=payload,
             points=points,
@@ -732,7 +732,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.delete_payload(
+        return self._client.delete_payload(
             collection_name=collection_name,
             keys=keys,
             points=points,
@@ -772,7 +772,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.clear_payload(
+        return self._client.clear_payload(
             collection_name=collection_name,
             points_selector=points_selector,
             wait=wait,
@@ -799,7 +799,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.update_collection_aliases(
+        return self._client.update_collection_aliases(
             change_aliases_operations=change_aliases_operations, timeout=timeout, **kwargs
         )
 
@@ -814,7 +814,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Collection aliases
         """
-        return self.qdrant_impl.get_collection_aliases(collection_name=collection_name, **kwargs)
+        return self._client.get_collection_aliases(collection_name=collection_name, **kwargs)
 
     def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
         """Get all aliases
@@ -822,7 +822,7 @@ class QdrantClient(QdrantBase):
         Returns:
             All aliases of all collections
         """
-        return self.qdrant_impl.get_aliases(**kwargs)
+        return self._client.get_aliases(**kwargs)
 
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
         """Get list name of all existing collections
@@ -830,7 +830,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of the collections
         """
-        return self.qdrant_impl.get_collections(**kwargs)
+        return self._client.get_collections(**kwargs)
 
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         """Get detailed information about specified existing collection
@@ -841,7 +841,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Detailed information about the collection
         """
-        return self.qdrant_impl.get_collection(collection_name=collection_name, **kwargs)
+        return self._client.get_collection(collection_name=collection_name, **kwargs)
 
     def update_collection(
         self,
@@ -864,7 +864,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.update_collection(
+        return self._client.update_collection(
             collection_name=collection_name,
             optimizer_config=optimizer_config,
             collection_params=collection_params,
@@ -886,7 +886,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.delete_collection(
+        return self._client.delete_collection(
             collection_name=collection_name, timeout=timeout, **kwargs
         )
 
@@ -943,7 +943,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
-        return self.qdrant_impl.create_collection(
+        return self._client.create_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,
             shard_number=shard_number,
@@ -1013,7 +1013,7 @@ class QdrantClient(QdrantBase):
             Operation result
         """
 
-        return self.qdrant_impl.recreate_collection(
+        return self._client.recreate_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,
             shard_number=shard_number,
@@ -1053,7 +1053,7 @@ class QdrantClient(QdrantBase):
                 during the upload of a batch
 
         """
-        return self.qdrant_impl.upload_records(
+        return self._client.upload_records(
             collection_name=collection_name,
             records=records,
             batch_size=batch_size,
@@ -1091,7 +1091,7 @@ class QdrantClient(QdrantBase):
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
         """
-        return self.qdrant_impl.upload_collection(
+        return self._client.upload_collection(
             collection_name=collection_name,
             vectors=vectors,
             payload=payload,
@@ -1136,7 +1136,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation Result
         """
-        return self.qdrant_impl.create_payload_index(
+        return self._client.create_payload_index(
             collection_name=collection_name,
             field_name=field_name,
             field_schema=field_schema,
@@ -1174,7 +1174,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation Result
         """
-        return self.qdrant_impl.delete_payload_index(
+        return self._client.delete_payload_index(
             collection_name=collection_name,
             field_name=field_name,
             wait=wait,
@@ -1193,7 +1193,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of snapshots
         """
-        return self.qdrant_impl.list_snapshots(collection_name=collection_name, **kwargs)
+        return self._client.list_snapshots(collection_name=collection_name, **kwargs)
 
     def create_snapshot(
         self, collection_name: str, **kwargs: Any
@@ -1206,7 +1206,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Snapshot description
         """
-        return self.qdrant_impl.create_snapshot(collection_name=collection_name, **kwargs)
+        return self._client.create_snapshot(collection_name=collection_name, **kwargs)
 
     def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
         """Delete snapshot for a given collection.
@@ -1218,7 +1218,7 @@ class QdrantClient(QdrantBase):
         Returns:
             True if snapshot was deleted
         """
-        return self.qdrant_impl.delete_snapshot(
+        return self._client.delete_snapshot(
             collection_name=collection_name, snapshot_name=snapshot_name, **kwargs
         )
 
@@ -1228,7 +1228,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of snapshots
         """
-        return self.qdrant_impl.list_full_snapshots(**kwargs)
+        return self._client.list_full_snapshots(**kwargs)
 
     def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
         """Create snapshot for a whole storage.
@@ -1236,7 +1236,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Snapshot description
         """
-        return self.qdrant_impl.create_full_snapshot(**kwargs)
+        return self._client.create_full_snapshot(**kwargs)
 
     def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
         """Delete snapshot for a whole storage.
@@ -1247,7 +1247,7 @@ class QdrantClient(QdrantBase):
         Returns:
             True if snapshot was deleted
         """
-        return self.qdrant_impl.delete_full_snapshot(snapshot_name=snapshot_name, **kwargs)
+        return self._client.delete_full_snapshot(snapshot_name=snapshot_name, **kwargs)
 
     def recover_snapshot(
         self,
@@ -1272,18 +1272,18 @@ class QdrantClient(QdrantBase):
                 Default: `replica`
 
         """
-        return self.qdrant_impl.recover_snapshot(
+        return self._client.recover_snapshot(
             collection_name=collection_name, location=location, priority=priority, **kwargs
         )
 
     def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         """Lock storage for writing."""
-        return self.qdrant_impl.lock_storage(reason=reason, **kwargs)
+        return self._client.lock_storage(reason=reason, **kwargs)
 
     def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
         """Unlock storage for writing."""
-        return self.qdrant_impl.unlock_storage(**kwargs)
+        return self._client.unlock_storage(**kwargs)
 
     def get_locks(self, **kwargs: Any) -> types.LocksOption:
         """Get current locks state."""
-        return self.qdrant_impl.get_locks(**kwargs)
+        return self._client.get_locks(**kwargs)
