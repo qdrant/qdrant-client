@@ -122,6 +122,18 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def filter_search_text_single(
+        self, client: QdrantBase, query_filter: models.Filter
+    ) -> List[models.ScoredPoint]:
+        return client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=self.query_text,
+            query_filter=query_filter,
+            with_payload=True,
+            with_vectors=True,
+            limit=10,
+        )
+
 
 def test_simple_search():
     fixture_records = generate_fixtures()
@@ -154,6 +166,36 @@ def test_simple_search():
             raise e
 
 
+def test_single_vector():
+    fixture_records = generate_fixtures(num=200, vectors_sizes=text_vector_size)
+
+    searcher = TestSimpleSearcher()
+
+    vectors_config = models.VectorParams(
+        size=text_vector_size,
+        distance=models.Distance.DOT,
+    )
+
+    local_client = init_local()
+    init_client(local_client, fixture_records, vectors_config=vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_records, vectors_config=vectors_config)
+
+    for i in range(100):
+        query_filter = one_random_filter_please()
+        try:
+            compare_client_results(
+                local_client,
+                remote_client,
+                searcher.filter_search_text_single,
+                query_filter=query_filter,
+            )
+        except AssertionError as e:
+            print(f"\nFailed with filter {query_filter}")
+            raise e
+
+
 def test_search_with_persistence():
     import tempfile
 
@@ -163,14 +205,22 @@ def test_search_with_persistence():
         local_client = init_local(tmpdir)
         init_client(local_client, fixture_records)
 
-        del local_client
+        payload_update_filter = one_random_filter_please()
+        local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
+        del local_client
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
         init_client(remote_client, fixture_records)
 
-        for i in range(100):
+        remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+
+        payload_update_filter = one_random_filter_please()
+        local_client_2.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
+        remote_client.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
+
+        for i in range(10):
             query_filter = one_random_filter_please()
             try:
                 compare_client_results(

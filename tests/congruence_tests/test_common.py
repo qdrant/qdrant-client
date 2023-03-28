@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -18,11 +18,12 @@ NUM_VECTORS = 1000
 
 
 def initialize_fixture_collection(
-    client: QdrantBase, collection_name: str = COLLECTION_NAME
+    client: QdrantBase,
+    collection_name: str = COLLECTION_NAME,
+    vectors_config: Optional[Union[Dict[str, models.VectorParams], models.VectorParams]] = None,
 ) -> None:
-    client.recreate_collection(
-        collection_name=collection_name,
-        vectors_config={
+    if vectors_config is None:
+        vectors_config = {
             "text": models.VectorParams(
                 size=text_vector_size,
                 distance=models.Distance.COSINE,
@@ -35,7 +36,11 @@ def initialize_fixture_collection(
                 size=code_vector_size,
                 distance=models.Distance.EUCLID,
             ),
-        },
+        }
+
+    client.recreate_collection(
+        collection_name=collection_name,
+        vectors_config=vectors_config,
     )
 
 
@@ -44,15 +49,19 @@ def delete_fixture_collection(client: QdrantBase) -> None:
 
 
 def generate_fixtures(
-    num: Optional[int] = NUM_VECTORS, random_ids: bool = False
+    num: Optional[int] = NUM_VECTORS,
+    random_ids: bool = False,
+    vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
 ) -> List[models.Record]:
-    return generate_records(
-        num_records=num or NUM_VECTORS,
-        vector_sizes={
+    if vectors_sizes is None:
+        vectors_sizes = {
             "text": text_vector_size,
             "image": image_vector_size,
             "code": code_vector_size,
-        },
+        }
+    return generate_records(
+        num_records=num or NUM_VECTORS,
+        vector_sizes=vectors_sizes,
         with_payload=True,
         random_ids=random_ids,
     )
@@ -145,8 +154,11 @@ def init_client(
     client: QdrantBase,
     records: List[models.Record],
     collection_name: str = COLLECTION_NAME,
+    vectors_config: Optional[Union[Dict[str, models.VectorParams], models.VectorParams]] = None,
 ) -> None:
-    initialize_fixture_collection(client, collection_name=collection_name)
+    initialize_fixture_collection(
+        client, collection_name=collection_name, vectors_config=vectors_config
+    )
     client.upload_records(collection_name, records)
 
 

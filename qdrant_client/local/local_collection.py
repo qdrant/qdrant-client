@@ -28,9 +28,13 @@ class LocalCollection:
         Args:
             location: path to the collection directory. If None, the collection will be created in memory.
         """
+        vectors_config = config.vectors
+        if isinstance(vectors_config, models.VectorParams):
+            vectors_config = {DEFAULT_VECTOR_NAME: vectors_config}
+
         self.vectors: Dict[str, np.ndarray] = {
             name: np.zeros((0, params.size), dtype=np.float32)
-            for name, params in config.vectors.items()
+            for name, params in vectors_config.items()
         }
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
