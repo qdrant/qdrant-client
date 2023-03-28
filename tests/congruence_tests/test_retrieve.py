@@ -1,33 +1,11 @@
 import random
 
-import pytest
-
 from qdrant_client.http.models import PayloadSelectorExclude, PayloadSelectorInclude
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
-    delete_fixture_collection,
     generate_fixtures,
-    init_local,
-    init_remote,
-    initialize_fixture_collection,
 )
-
-
-@pytest.fixture
-def local_client():
-    client = init_local()
-    initialize_fixture_collection(client)
-    yield client
-    delete_fixture_collection(client)
-
-
-@pytest.fixture
-def remote_client():
-    client = init_remote()
-    initialize_fixture_collection(client)
-    yield client
-    delete_fixture_collection(client)
 
 
 def test_retrieve(local_client, remote_client) -> None:

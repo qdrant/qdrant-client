@@ -4,47 +4,12 @@ from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
-    delete_fixture_collection,
+    compare_collections,
     generate_fixtures,
-    init_local,
-    init_remote,
-    initialize_fixture_collection,
 )
 from tests.fixtures.payload import one_random_payload_please
 
 UPLOAD_NUM_VECTORS = 100
-
-
-@pytest.fixture
-def local_client():
-    client = init_local()
-    initialize_fixture_collection(client)
-    yield client
-    delete_fixture_collection(client)
-
-
-@pytest.fixture
-def remote_client():
-    client = init_remote()
-    initialize_fixture_collection(client)
-    yield client
-    delete_fixture_collection(client)
-
-
-def compare_collections(
-    client_1, client_2, attrs=("vectors_count", "indexed_vectors_count", "points_count")
-):
-    collection_1 = client_1.get_collection(COLLECTION_NAME)
-    collection_2 = client_2.get_collection(COLLECTION_NAME)
-
-    assert all(getattr(collection_1, attr) == getattr(collection_2, attr) for attr in attrs)
-
-    # UPLOAD_NUM_VECTORS * 2 to be sure that we have no excess points uploaded
-    compare_client_results(
-        client_1,
-        client_2,
-        lambda client: client.scroll(COLLECTION_NAME, limit=UPLOAD_NUM_VECTORS * 2),
-    )
 
 
 def test_upsert(local_client, remote_client):
@@ -110,7 +75,7 @@ def test_upsert(local_client, remote_client):
     assert local_new_point == remote_new_point
     # endregion
 
-    compare_collections(local_client, remote_client)
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
 def test_upload_collection(local_client, remote_client):
@@ -125,7 +90,7 @@ def test_upload_collection(local_client, remote_client):
     local_client.upload_collection(COLLECTION_NAME, vectors, payload)
     remote_client.upload_collection(COLLECTION_NAME, vectors, payload)
 
-    compare_collections(local_client, remote_client)
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
 def test_upload_records(local_client, remote_client):
@@ -134,7 +99,7 @@ def test_upload_records(local_client, remote_client):
     local_client.upload_records(COLLECTION_NAME, records)
     remote_client.upload_records(COLLECTION_NAME, records)
 
-    compare_collections(local_client, remote_client)
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
 def test_update_payload(local_client, remote_client):
@@ -198,4 +163,4 @@ def test_update_payload(local_client, remote_client):
     assert local_new_point == remote_new_point
     # endregion
 
-    compare_collections(local_client, remote_client)  # sanity check
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)  # sanity check
