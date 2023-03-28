@@ -42,6 +42,7 @@ class QdrantLocal(QdrantBase):
             return
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
         if not os.path.exists(meta_path):
+            os.makedirs(self.location, exist_ok=True)
             with open(meta_path, "w") as f:
                 f.write(json.dumps({"collections": {}, "aliases": {}}))
         else:
