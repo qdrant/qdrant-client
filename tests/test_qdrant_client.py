@@ -12,6 +12,7 @@ import pytest
 from qdrant_client import QdrantClient
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
+from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.models import (
     Batch,
     CreateAlias,
@@ -39,6 +40,7 @@ from qdrant_client.models import (
     TokenizerType,
     VectorParams,
 )
+from qdrant_client.qdrant_remote import QdrantRemote
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
 from tests.fixtures.payload import (
     one_random_payload_please,
@@ -66,25 +68,32 @@ def test_client_init():
     import tempfile
 
     client = QdrantClient(":memory:")
+    assert isinstance(client.qdrant_impl, QdrantLocal)
     assert client.qdrant_impl.location == ":memory:"
 
     with tempfile.TemporaryDirectory() as tmpdir:
         client = QdrantClient(path=tmpdir + "/test.db")
+        assert isinstance(client.qdrant_impl, QdrantLocal)
         assert client.qdrant_impl.location == tmpdir + "/test.db"
 
     client = QdrantClient()
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://localhost:6333"
 
     client = QdrantClient(https=True)
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "https://localhost:6333"
 
     client = QdrantClient(https=True, port=7333)
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "https://localhost:7333"
 
     client = QdrantClient(host="hidden_port_addr.com", prefix="custom")
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://hidden_port_addr.com:6333/custom"
 
     client = QdrantClient(host="hidden_port_addr.com", port=None)
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://hidden_port_addr.com"
 
     client = QdrantClient(
@@ -92,22 +101,28 @@ def test_client_init():
         port=None,
         prefix="custom",
     )
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://hidden_port_addr.com/custom"
 
     client = QdrantClient("http://hidden_port_addr.com", port=None)
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://hidden_port_addr.com"
 
     # url takes precedence over port, which has default value for a backward compatibility
     client = QdrantClient(url="http://localhost:6333", port=7333)
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://localhost:6333"
 
     client = QdrantClient(url="http://localhost:6333", prefix="custom")
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://localhost:6333/custom"
 
     client = QdrantClient("my-domain.com")
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://my-domain.com:6333"
 
     client = QdrantClient("my-domain.com:80")
+    assert isinstance(client.qdrant_impl, QdrantRemote)
     assert client.qdrant_impl.rest_uri == "http://my-domain.com:80"
 
     with pytest.raises(ValueError):
