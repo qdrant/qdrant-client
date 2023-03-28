@@ -71,6 +71,8 @@ class QdrantClient(QdrantBase):
         path: Optional[str] = None,
         **kwargs: Any,
     ):
+        self.qdrant_impl: QdrantBase
+
         if location == ":memory:":
             self.qdrant_impl = QdrantLocal(location=location)
         else:
@@ -99,10 +101,10 @@ class QdrantClient(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if isinstance(self.qdrant_impl, QdrantLocal):
-            raise NotImplementedError("gRPC client is not supported for in-memory Qdrant instance")
+        if isinstance(self.qdrant_impl, QdrantRemote):
+            return self.qdrant_impl.grpc_collections
 
-        return self.qdrant_impl.grpc_collections
+        raise NotImplementedError(f"gRPC client is not supported for {type(self.qdrant_impl)}")
 
     @property
     def grpc_points(self) -> grpc.PointsStub:
@@ -111,10 +113,10 @@ class QdrantClient(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if isinstance(self.qdrant_impl, QdrantLocal):
-            raise NotImplementedError("gRPC client is not supported for in-memory Qdrant instance")
+        if isinstance(self.qdrant_impl, QdrantRemote):
+            return self.qdrant_impl.grpc_points
 
-        return self.qdrant_impl.grpc_points
+        raise NotImplementedError(f"gRPC client is not supported for {type(self.qdrant_impl)}")
 
     @property
     def rest(self) -> SyncApis[ApiClient]:
@@ -123,10 +125,10 @@ class QdrantClient(QdrantBase):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
-        if isinstance(self.qdrant_impl, QdrantLocal):
-            raise NotImplementedError("REST client is not supported for in-memory Qdrant instance")
+        if isinstance(self.qdrant_impl, QdrantRemote):
+            return self.qdrant_impl.rest
 
-        return self.qdrant_impl.rest
+        raise NotImplementedError(f"REST client is not supported for {type(self.qdrant_impl)}")
 
     @property
     def http(self) -> SyncApis[ApiClient]:
@@ -135,10 +137,10 @@ class QdrantClient(QdrantBase):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
-        if isinstance(self.qdrant_impl, QdrantLocal):
-            raise NotImplementedError("REST client is not supported for in-memory Qdrant instance")
+        if isinstance(self.qdrant_impl, QdrantRemote):
+            return self.qdrant_impl.http
 
-        return self.qdrant_impl.http
+        raise NotImplementedError("REST client is not supported for {type(self.qdrant_impl)}")
 
     def search_batch(
         self,
