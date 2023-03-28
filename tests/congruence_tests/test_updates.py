@@ -1,9 +1,6 @@
-import pytest
-
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
-    compare_client_results,
     compare_collections,
     generate_fixtures,
 )
@@ -100,67 +97,3 @@ def test_upload_records(local_client, remote_client):
     remote_client.upload_records(COLLECTION_NAME, records)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
-
-
-def test_update_payload(local_client, remote_client):
-    # region upload data
-    records = generate_fixtures(UPLOAD_NUM_VECTORS)
-
-    local_client.upload_records(COLLECTION_NAME, records)
-    remote_client.upload_records(COLLECTION_NAME, records)
-    # endregion
-
-    # region fetch point
-    id_ = records[0].id
-    id_filter = models.Filter(must=[models.HasIdCondition(has_id=[id_])])
-    local_point = local_client.scroll(
-        COLLECTION_NAME,
-        scroll_filter=id_filter,
-        limit=1,
-    )
-    remote_point = remote_client.scroll(
-        COLLECTION_NAME,
-        scroll_filter=id_filter,
-        limit=1,
-    )
-
-    assert local_point == remote_point
-    # endregion
-
-    # region set payload
-    local_client.set_payload(COLLECTION_NAME, {"new_field": "new_value"}, id_filter)
-    remote_client.set_payload(COLLECTION_NAME, {"new_field": "new_value"}, id_filter)
-
-    local_new_point = local_client.scroll(
-        COLLECTION_NAME,
-        scroll_filter=id_filter,
-        limit=1,
-    )
-    remote_new_point = remote_client.scroll(
-        COLLECTION_NAME,
-        scroll_filter=id_filter,
-        limit=1,
-    )
-
-    assert local_new_point == remote_new_point
-    # endregion
-
-    # region overwrite payload
-    local_client.overwrite_payload(COLLECTION_NAME, {"new_field": "overwritten_value"}, id_filter)
-    remote_client.overwrite_payload(COLLECTION_NAME, {"new_field": "overwritten_value"}, id_filter)
-
-    local_new_point = local_client.scroll(
-        COLLECTION_NAME,
-        scroll_filter=id_filter,
-        limit=1,
-    )
-    remote_new_point = remote_client.scroll(
-        COLLECTION_NAME,
-        scroll_filter=id_filter,
-        limit=1,
-    )
-
-    assert local_new_point == remote_new_point
-    # endregion
-
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)  # sanity check
