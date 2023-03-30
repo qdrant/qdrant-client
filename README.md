@@ -10,7 +10,7 @@
 
 
 <p align=center>
-    <a href="https://badge.fury.io/py/qdrant-client"><img src="https://badge.fury.io/py/qdrant-client.svg" alt="PyPI version" height="18"></a>
+    <a href="https://pypi.org/project/qdrant-client/"><img src="https://badge.fury.io/py/qdrant-client.svg" alt="PyPI version" height="18"></a>
     <a href="https://qdrant.github.io/qdrant/redoc/index.html"><img src="https://img.shields.io/badge/Docs-OpenAPI%203.0-success" alt="OpenAPI Docs"></a>
     <a href="https://github.com/qdrant/qdrant-client/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-success" alt="Apache 2.0 License"></a>
     <a href="https://qdrant.to/discord"><img src="https://img.shields.io/badge/Discord-Qdrant-5865F2.svg?logo=discord" alt="Discord"></a>
