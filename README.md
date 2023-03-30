@@ -63,7 +63,7 @@ client = QdrantClient(path="path/to/db")  # Persists changes to disk
 Local mode is useful for development, prototyping and testing.
 
 - You can use it to run tests in your CI/CD pipeline.
-- Run it in Colab or Jupyter Notebook, no extra dependencies required.
+- Run it in Colab or Jupyter Notebook, no extra dependencies required. See an [example](https://colab.research.google.com/drive/1Bz8RSVHwnNDaNtDwotfPj0w7AYzsdXZ-?usp=sharing)
 - When you need to scale, simply switch to server mode.
 
 ### How it works?
