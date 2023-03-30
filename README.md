@@ -44,7 +44,7 @@ pip install qdrant-client
 
 <p align="center">
   <!--- https://github.com/qdrant/qdrant_client/raw/master -->
-  <img height="180" src="docs/images/try-develop-deploy.png" alt="Qdrant">
+  <img max-height="180" src="docs/images/try-develop-deploy.png" alt="Qdrant">
 </p>
 
 Python client allows you to run same code in local mode without running Qdrant server.
@@ -61,7 +61,7 @@ client = QdrantClient(path="path/to/db")  # Persists changes to disk
 
 Local mode is useful for development, prototyping and testing.
 
-- You can use it to run qdrant in your CI/CD pipeline
+- You can use it to run tests in your CI/CD pipeline
 - Run it in Colab or Jupyter Notebook, no extra dependencies required
 - When you need to scale, simply switch to server mode
 
