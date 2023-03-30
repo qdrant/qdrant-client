@@ -11,7 +11,7 @@
 
 <p align=center>
     <a href="https://qdrant.github.io/qdrant/redoc/index.html"><img src="https://img.shields.io/badge/Docs-OpenAPI%203.0-success" alt="OpenAPI Docs"></a>
-    <a href="https://github.com/qdrant/qdrant_client/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-success" alt="Apache 2.0 License"></a>
+    <a href="https://github.com/qdrant/qdrant-client/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-success" alt="Apache 2.0 License"></a>
     <a href="https://qdrant.to/discord"><img src="https://img.shields.io/badge/Discord-Qdrant-5865F2.svg?logo=discord" alt="Discord"></a>
     <a href="https://qdrant.to/roadmap"><img src="https://img.shields.io/badge/Roadmap-2023-bc1439.svg" alt="Roadmap 2023"></a>
 </p>
@@ -43,7 +43,7 @@ pip install qdrant-client
 ## Local mode
 
 <p align="center">
-  <!--- https://github.com/qdrant/qdrant_client/raw/master -->
+  <!--- https://github.com/qdrant/qdrant-client/raw/master -->
   <img max-height="180" src="docs/images/try-develop-deploy.png" alt="Qdrant">
 </p>
 

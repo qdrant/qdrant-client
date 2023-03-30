@@ -102,12 +102,12 @@ Search for similar vectors with filtering condition
        top=5  # Return 5 closest points
    )
 
-Check out `full example code <https://github.com/qdrant/qdrant_client/blob/master/tests/test_qdrant_client.py>`_
+Check out `full example code <https://github.com/qdrant/qdrant-client/blob/master/tests/test_qdrant_client.py>`_
 
 gRPC
 ====
 
-gRPC support in Qdrant client is under active development. Basic classes could be found `here <https://github.com/qdrant/qdrant_client/blob/master/qdrant_client/grpc/__init__.py>`_.
+gRPC support in Qdrant client is under active development. Basic classes could be found `here <https://github.com/qdrant/qdrant-client/blob/master/qdrant_client/grpc/__init__.py>`_.
 
 To enable (much faster) collection uploading with gRPC, use the following initialization:
 
