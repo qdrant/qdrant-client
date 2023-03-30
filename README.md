@@ -10,6 +10,7 @@
 
 
 <p align=center>
+    <a href="https://badge.fury.io/py/qdrant-client"><img src="https://badge.fury.io/py/qdrant-client.svg" alt="PyPI version" height="18"></a>
     <a href="https://qdrant.github.io/qdrant/redoc/index.html"><img src="https://img.shields.io/badge/Docs-OpenAPI%203.0-success" alt="OpenAPI Docs"></a>
     <a href="https://github.com/qdrant/qdrant-client/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-success" alt="Apache 2.0 License"></a>
     <a href="https://qdrant.to/discord"><img src="https://img.shields.io/badge/Discord-Qdrant-5865F2.svg?logo=discord" alt="Discord"></a>
@@ -61,17 +62,19 @@ client = QdrantClient(path="path/to/db")  # Persists changes to disk
 
 Local mode is useful for development, prototyping and testing.
 
-- You can use it to run tests in your CI/CD pipeline
-- Run it in Colab or Jupyter Notebook, no extra dependencies required
-- When you need to scale, simply switch to server mode
+- You can use it to run tests in your CI/CD pipeline.
+- Run it in Colab or Jupyter Notebook, no extra dependencies required.
+- When you need to scale, simply switch to server mode.
 
 ### How it works?
 
-We just implemented Qdrant API in pure python and extensively covered it with tests, to be sure it works exactly the same as server version.
+We just implemented Qdrant API in pure Python.
+We covered it with tests extensively to be sure it works the same as the server version.
 
-## Examples
+## Connect to Qdrant server
 
-Instance a client
+To connect to Qdrant server, simply specify host and port:
+
 ```python
 from qdrant_client import QdrantClient
 
@@ -79,6 +82,33 @@ client = QdrantClient(host="localhost", port=6333)
 # or
 client = QdrantClient(url="http://localhost:6333")
 ```
+
+You can run Qdrant server locally with docker:
+
+```bash
+docker run -p 6333:6333 qdrant/qdrant:latest
+```
+
+See more launch options in [Qdrant repository](https://github.com/qdrant/qdrant#usage).
+
+
+## Connect to Qdrant cloud
+
+You can register and use [Qdrant Cloud](https://cloud.qdrant.io/) to get a free tier account with 1GB RAM.
+
+Once you have your cluster and API key, you can connect to it like this:
+
+```python
+from qdrant_client import QdrantClient
+
+qdrant_client = QdrantClient(
+    url="https://xxxxxx-xxxxx-xxxxx-xxxx-xxxxxxxxx.us-east.aws.cloud.qdrant.io:6333",
+    api_key="<your-api-key>",
+)
+```
+
+## Examples
+
 
 Create a new collection
 ```python
@@ -124,7 +154,7 @@ hits = client.search(
 Search for similar vectors with filtering condition
 
 ```python
-from qdrant_client.http.models import Filter, FieldCondition, Range
+from qdrant_client.models import Filter, FieldCondition, Range
 
 hits = client.search(
     collection_name="my_collection",
