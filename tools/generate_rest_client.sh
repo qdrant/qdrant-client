@@ -6,7 +6,7 @@ PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
 
 cd $(mktemp -d)
 
-git clone --sparse --filter=blob:none --depth=1 git@github.com:qdrant/qdrant.git
+git clone --sparse --filter=blob:none --depth=1 git@github.com:qdrant/qdrant.git -b fix-openapi-schema-validation
 cd qdrant
 git sparse-checkout add docs/redoc/master
 
