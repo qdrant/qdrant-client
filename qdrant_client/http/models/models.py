@@ -666,6 +666,13 @@ class InlineResponse2009(BaseModel):
     result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
+class InlineResponse202(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Literal[
+        "accepted",
+    ] = Field(None, description="")
+
+
 class IsEmptyCondition(BaseModel):
     """
     Select points with empty payload for a specified field
@@ -786,7 +793,7 @@ class OptimizersConfig(BaseModel):
     )
     default_segment_number: int = Field(
         ...,
-        description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads If `default_segment_number = 0`, will be automatically selected by the number of available CPUs",
+        description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads. If `default_segment_number = 0`, will be automatically selected by the number of available CPUs.",
     )
     max_segment_size: Optional[int] = Field(
         default=None,

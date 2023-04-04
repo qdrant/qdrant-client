@@ -234,6 +234,7 @@ class _CollectionsApi:
     def _build_for_create_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
     ):
         """
         Create new snapshot for a collection
@@ -242,11 +243,16 @@ class _CollectionsApi:
             "collection_name": str(collection_name),
         }
 
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+
         return self.api_client.request(
             type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/snapshots",
             path_params=path_params,
+            params=query_params,
         )
 
     def _build_for_delete_collection(
@@ -306,6 +312,7 @@ class _CollectionsApi:
         self,
         collection_name: str,
         snapshot_name: str,
+        wait: bool = None,
     ):
         """
         Delete snapshot for a collection
@@ -315,11 +322,16 @@ class _CollectionsApi:
             "snapshot_name": str(snapshot_name),
         }
 
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="DELETE",
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
             path_params=path_params,
+            params=query_params,
         )
 
     def _build_for_get_collection(
@@ -599,12 +611,14 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def create_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
     ) -> m.InlineResponse20010:
         """
         Create new snapshot for a collection
         """
         return await self._build_for_create_snapshot(
             collection_name=collection_name,
+            wait=wait,
         )
 
     async def delete_collection(
@@ -641,6 +655,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         snapshot_name: str,
+        wait: bool = None,
     ) -> m.InlineResponse2003:
         """
         Delete snapshot for a collection
@@ -648,6 +663,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         return await self._build_for_delete_snapshot(
             collection_name=collection_name,
             snapshot_name=snapshot_name,
+            wait=wait,
         )
 
     async def get_collection(
@@ -829,12 +845,14 @@ class SyncCollectionsApi(_CollectionsApi):
     def create_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
     ) -> m.InlineResponse20010:
         """
         Create new snapshot for a collection
         """
         return self._build_for_create_snapshot(
             collection_name=collection_name,
+            wait=wait,
         )
 
     def delete_collection(
@@ -871,6 +889,7 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         snapshot_name: str,
+        wait: bool = None,
     ) -> m.InlineResponse2003:
         """
         Delete snapshot for a collection
@@ -878,6 +897,7 @@ class SyncCollectionsApi(_CollectionsApi):
         return self._build_for_delete_snapshot(
             collection_name=collection_name,
             snapshot_name=snapshot_name,
+            wait=wait,
         )
 
     def get_collection(
