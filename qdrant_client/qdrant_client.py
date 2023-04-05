@@ -140,7 +140,7 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.http
 
-        raise NotImplementedError("REST client is not supported for {type(self._client)}")
+        raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
 
     def search_batch(
         self,
