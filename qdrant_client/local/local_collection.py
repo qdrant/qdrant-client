@@ -458,7 +458,7 @@ class LocalCollection:
 
                 self._upsert_point(
                     models.PointStruct(
-                        id=idx,
+                        id=point_id,
                         payload=payload,
                         vector=vector,
                     )
