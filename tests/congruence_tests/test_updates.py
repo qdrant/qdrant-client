@@ -1,3 +1,6 @@
+import uuid
+from collections import defaultdict
+
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -95,5 +98,25 @@ def test_upload_records(local_client, remote_client):
 
     local_client.upload_records(COLLECTION_NAME, records)
     remote_client.upload_records(COLLECTION_NAME, records)
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_upload_uuid_in_batches(local_client, remote_client):
+    records = generate_fixtures(UPLOAD_NUM_VECTORS)
+    vectors = defaultdict(list)
+
+    for record in records:
+        for vector_name, vector in record.vector.items():
+            vectors[vector_name].append(vector)
+
+    batch = models.Batch(
+        ids=[str(uuid.uuid4()) for _ in records],
+        vectors=vectors,
+        payloads=[record.payload for record in records],
+    )
+
+    local_client.upsert(COLLECTION_NAME, batch)
+    remote_client.upsert(COLLECTION_NAME, batch)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
