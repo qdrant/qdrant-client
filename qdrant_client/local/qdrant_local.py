@@ -326,7 +326,7 @@ class QdrantLocal(QdrantBase):
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
         return types.CollectionsResponse(
             collections=[
-                rest_models.CollectionDescription(collection_name=name)
+                rest_models.CollectionDescription(name=name)
                 for name, _ in self.collections.items()
             ]
         )
