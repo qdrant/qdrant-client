@@ -9,6 +9,13 @@ from tests.congruence_tests.test_common import (
 def test_get_collection():
     fixture_records = generate_fixtures()
 
+    remote_client = init_remote()
+
+    remote_collections = remote_client.get_collections()
+
+    for collection in remote_collections.collections:
+        remote_client.delete_collection(collection.name)
+
     local_client = init_local()
     init_client(local_client, fixture_records)
 
