@@ -224,10 +224,10 @@ def test_multiple_vectors(prefer_grpc):
     assert "image" in hits[0].vector
     assert "text" in hits[0].vector
 
-
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("numpy_upload", [False, True])
-def test_qdrant_client_integration(prefer_grpc, numpy_upload):
+@pytest.mark.parametrize("local_mode", [False, True])
+def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     vectors_path = create_random_vectors()
 
     if numpy_upload:
@@ -239,7 +239,10 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
 
     payload = random_payload(NUM_VECTORS)
 
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    if local_mode:
+        client = QdrantClient(location=":memory:", prefer_grpc=prefer_grpc)
+    else:
+        client = QdrantClient(prefer_grpc=prefer_grpc)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -385,13 +388,6 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
         )
 
         assert hits_should == hits_match_any
-
-    client.update_collection(
-        collection_name=COLLECTION_NAME,
-        optimizer_config=OptimizersConfigDiff(max_segment_size=10000),
-    )
-
-    assert client.get_collection(COLLECTION_NAME).config.optimizer_config.max_segment_size == 10000
 
     # Let's now query same vector with filter condition
     hits = client.search(
@@ -660,6 +656,23 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload):
     )
 
     assert next_page is None
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_qdrant_client_integration_update_collection(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    client.update_collection(
+        collection_name=COLLECTION_NAME,
+        optimizer_config=OptimizersConfigDiff(max_segment_size=10000),
+    )
+
+    assert client.get_collection(COLLECTION_NAME).config.optimizer_config.max_segment_size == 10000
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])

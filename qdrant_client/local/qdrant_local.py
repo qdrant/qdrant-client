@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+import numpy as np
 from itertools import zip_longest
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -85,12 +86,12 @@ class QdrantLocal(QdrantBase):
 
         return [
             collection.search(
-                query_vector=request.query_vector,
-                query_filter=request.query_filter,
+                query_vector=request.vector,
+                query_filter=request.filter,
                 limit=request.limit,
                 offset=request.offset,
                 with_payload=request.with_payload,
-                with_vectors=request.with_vectors,
+                with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
             )
             for request in requests
@@ -134,11 +135,11 @@ class QdrantLocal(QdrantBase):
             collection.recommend(
                 positive=request.positive,
                 negative=request.negative,
-                query_filter=request.query_filter,
+                query_filter=request.filter,
                 limit=request.limit,
                 offset=request.offset,
                 with_payload=request.with_payload,
-                with_vectors=request.with_vectors,
+                with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
             )
             for request in requests
@@ -421,11 +422,11 @@ class QdrantLocal(QdrantBase):
             [
                 rest_models.PointStruct(
                     id=point_id or idx,
-                    vector=vector or {},
+                    vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                     payload=payload or {},
                 )
                 for idx, (point_id, vector, payload) in enumerate(
-                    zip_longest(ids or [], vectors, payload or [])
+                    zip_longest(ids or [], iter(vectors), payload or [])
                 )
             ]
         )
