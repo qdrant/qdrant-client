@@ -42,6 +42,7 @@ data structure:
 Possible filters:
 
 - IsEmptyCondition
+- IsNullCondition
 - FieldCondition
     - match
         - value
@@ -58,7 +59,17 @@ Possible filters:
 
 
 def is_empty_condition() -> models.IsEmptyCondition:
-    return models.IsEmptyCondition(is_empty=models.PayloadField(key="maybe"))
+    return models.IsEmptyCondition(
+        is_empty=models.PayloadField(
+            key=random.choice(
+                ["maybe", "nested.array[].nested_empty", "nested.array[].nested_empty2"]
+            )
+        )
+    )
+
+
+def is_null_condition() -> models.IsNullCondition:
+    return models.IsNullCondition(is_null=models.PayloadField(key="maybe_null"))
 
 
 def has_id_condition(num_ids: int = 10, max_id: int = 1000) -> models.HasIdCondition:
@@ -163,6 +174,7 @@ def one_random_condition_please() -> models.Condition:
     return random.choice(
         [
             is_empty_condition,
+            is_null_condition,
             has_id_condition,
             match_value_field_condition,
             match_text_field_condition,

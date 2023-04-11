@@ -2,7 +2,7 @@
 from enum import Enum
 from pathlib import PurePath
 from types import GeneratorType
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
+from typing import IO, TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
 
 from pydantic.json import ENCODERS_BY_TYPE
 from pydantic.main import BaseModel
@@ -234,6 +234,7 @@ class _CollectionsApi:
     def _build_for_create_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
     ):
         """
         Create new snapshot for a collection
@@ -242,11 +243,16 @@ class _CollectionsApi:
             "collection_name": str(collection_name),
         }
 
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+
         return self.api_client.request(
             type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/snapshots",
             path_params=path_params,
+            params=query_params,
         )
 
     def _build_for_delete_collection(
@@ -306,6 +312,7 @@ class _CollectionsApi:
         self,
         collection_name: str,
         snapshot_name: str,
+        wait: bool = None,
     ):
         """
         Delete snapshot for a collection
@@ -315,11 +322,16 @@ class _CollectionsApi:
             "snapshot_name": str(snapshot_name),
         }
 
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="DELETE",
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
             path_params=path_params,
+            params=query_params,
         )
 
     def _build_for_get_collection(
@@ -448,6 +460,41 @@ class _CollectionsApi:
             json=body,
         )
 
+    def _build_for_recover_from_uploaded_snapshot(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        priority: SnapshotPriority = None,
+        snapshot: IO[Any] = None,
+    ):
+        """
+        Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+        if priority is not None:
+            query_params["priority"] = str(priority)
+
+        files: Dict[str, IO[Any]] = {}  # noqa F841
+        data: Dict[str, Any] = {}  # noqa F841
+        if snapshot is not None:
+            files["snapshot"] = snapshot
+
+        return self.api_client.request(
+            type_=m.InlineResponse2003,
+            method="POST",
+            url="/collections/{collection_name}/snapshots/upload",
+            path_params=path_params,
+            params=query_params,
+            data=data,
+            files=files,
+        )
+
     def _build_for_update_aliases(
         self,
         timeout: int = None,
@@ -564,12 +611,14 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def create_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
     ) -> m.InlineResponse20010:
         """
         Create new snapshot for a collection
         """
         return await self._build_for_create_snapshot(
             collection_name=collection_name,
+            wait=wait,
         )
 
     async def delete_collection(
@@ -606,6 +655,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         snapshot_name: str,
+        wait: bool = None,
     ) -> m.InlineResponse2003:
         """
         Delete snapshot for a collection
@@ -613,6 +663,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         return await self._build_for_delete_snapshot(
             collection_name=collection_name,
             snapshot_name=snapshot_name,
+            wait=wait,
         )
 
     async def get_collection(
@@ -690,6 +741,23 @@ class AsyncCollectionsApi(_CollectionsApi):
             collection_name=collection_name,
             wait=wait,
             snapshot_recover=snapshot_recover,
+        )
+
+    async def recover_from_uploaded_snapshot(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        priority: SnapshotPriority = None,
+        snapshot: IO[Any] = None,
+    ) -> m.InlineResponse2003:
+        """
+        Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
+        """
+        return await self._build_for_recover_from_uploaded_snapshot(
+            collection_name=collection_name,
+            wait=wait,
+            priority=priority,
+            snapshot=snapshot,
         )
 
     async def update_aliases(
@@ -777,12 +845,14 @@ class SyncCollectionsApi(_CollectionsApi):
     def create_snapshot(
         self,
         collection_name: str,
+        wait: bool = None,
     ) -> m.InlineResponse20010:
         """
         Create new snapshot for a collection
         """
         return self._build_for_create_snapshot(
             collection_name=collection_name,
+            wait=wait,
         )
 
     def delete_collection(
@@ -819,6 +889,7 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         snapshot_name: str,
+        wait: bool = None,
     ) -> m.InlineResponse2003:
         """
         Delete snapshot for a collection
@@ -826,6 +897,7 @@ class SyncCollectionsApi(_CollectionsApi):
         return self._build_for_delete_snapshot(
             collection_name=collection_name,
             snapshot_name=snapshot_name,
+            wait=wait,
         )
 
     def get_collection(
@@ -903,6 +975,23 @@ class SyncCollectionsApi(_CollectionsApi):
             collection_name=collection_name,
             wait=wait,
             snapshot_recover=snapshot_recover,
+        )
+
+    def recover_from_uploaded_snapshot(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        priority: SnapshotPriority = None,
+        snapshot: IO[Any] = None,
+    ) -> m.InlineResponse2003:
+        """
+        Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
+        """
+        return self._build_for_recover_from_uploaded_snapshot(
+            collection_name=collection_name,
+            wait=wait,
+            priority=priority,
+            snapshot=snapshot,
         )
 
     def update_aliases(

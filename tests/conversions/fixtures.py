@@ -20,6 +20,7 @@ has_id_condition = grpc.HasIdCondition(
 )
 
 is_empty = grpc.IsEmptyCondition(key="my.field")
+is_null = grpc.IsNullCondition(key="my.field")
 
 match_keyword = grpc.Match(keyword="hello")
 match_integer = grpc.Match(integer=42)
@@ -66,6 +67,7 @@ field_condition_values_count = grpc.FieldCondition(key="match_field", values_cou
 
 condition_has_id = grpc.Condition(has_id=has_id_condition)
 condition_is_empty = grpc.Condition(is_empty=is_empty)
+condition_is_null = grpc.Condition(is_null=is_null)
 
 condition_field_match = grpc.Condition(field=field_condition_match)
 condition_range = grpc.Condition(field=field_condition_range)
@@ -77,7 +79,13 @@ condition_keywords = grpc.Condition(field=field_condition_match_keywords)
 condition_integers = grpc.Condition(field=field_condition_match_integers)
 
 filter_ = grpc.Filter(
-    must=[condition_has_id, condition_is_empty, condition_keywords, condition_integers],
+    must=[
+        condition_has_id,
+        condition_is_empty,
+        condition_is_null,
+        condition_keywords,
+        condition_integers,
+    ],
     should=[
         condition_field_match,
     ],
@@ -89,6 +97,26 @@ filter_ = grpc.Filter(
 vector_param = grpc.VectorParams(
     size=100,
     distance=grpc.Distance.Cosine,
+)
+
+vector_param_with_hnsw = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Cosine,
+    hnsw_config=grpc.HnswConfigDiff(
+        ef_construct=1000,
+    ),
+)
+
+scalar_quantization = grpc.ScalarQuantization(
+    type=grpc.QuantizationType.Int8,
+    quantile=0.99,
+    always_ram=True,
+)
+
+vector_param_with_quant = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Cosine,
+    quantization_config=grpc.QuantizationConfig(scalar=scalar_quantization),
 )
 
 single_vector_config = grpc.VectorsConfig(params=vector_param)
@@ -230,12 +258,6 @@ collection_info = grpc.CollectionInfo(
         "float_field": payload_schema_float,
         "geo_field": payload_schema_geo,
     },
-)
-
-scalar_quantization = grpc.ScalarQuantization(
-    type=grpc.QuantizationType.Int8,
-    quantile=0.99,
-    always_ram=True,
 )
 
 quantization_config = grpc.QuantizationConfig(
@@ -456,6 +478,7 @@ fixtures = {
     "GeoRadius": [geo_radius],
     "UpdateResult": [update_result, update_result_completed],
     "IsEmptyCondition": [is_empty],
+    "IsNullCondition": [is_null],
     "DeleteAlias": [delete_alias],
     "PointStruct": [point_struct, point_struct_multivec],
     "CollectionDescription": [collection_description],
@@ -486,7 +509,7 @@ fixtures = {
     "RetrievedPoint": [retrieved_point],
     "CountResult": [count_result],
     "SnapshotDescription": [snapshot_description],
-    "VectorParams": [vector_param],
+    "VectorParams": [vector_param, vector_param_with_hnsw, vector_param_with_quant],
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
     "RecommendPoints": [recommend_points],

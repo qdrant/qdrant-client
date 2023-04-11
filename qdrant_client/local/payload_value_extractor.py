@@ -72,6 +72,8 @@ def test_value_by_key() -> None:
             {"name": "home", "counts": [1, 2, 3]},
             {"name": "work", "counts": [4, 5, 6]},
         ],
+        "nested": [{"empty": []}, {"empty": []}, {"empty": None}],
+        "the_null": None,
     }
     assert value_by_key(payload, "name") == ["John"]
     assert value_by_key(payload, "address.city") == ["New York"]
@@ -86,3 +88,5 @@ def test_value_by_key() -> None:
     assert value_by_key(payload, "address.city[0]") is None
     assert value_by_key(payload, "counts") == [1, 2, 3]
     assert value_by_key(payload, "location[].counts") == [1, 2, 3, 4, 5, 6]
+    assert value_by_key(payload, "nested[].empty") == [None]
+    assert value_by_key(payload, "the_null") == [None]
