@@ -184,7 +184,8 @@ def one_random_payload_please(idx):
     if random.random() < 0.5:
         payload["maybe_null"] = random_real_word()
     else:
-        payload["maybe_null"] = None
+        if random.random() < 0.5:
+            payload["maybe_null"] = None
 
     return payload
 

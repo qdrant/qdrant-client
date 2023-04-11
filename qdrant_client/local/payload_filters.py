@@ -79,6 +79,8 @@ def check_condition(
 ) -> bool:
     if isinstance(condition, models.IsNullCondition):
         values = value_by_key(payload, condition.is_null.key)
+        if values is None:
+            return False
         if any(v is None for v in values):
             return True
     elif isinstance(condition, models.IsEmptyCondition):
