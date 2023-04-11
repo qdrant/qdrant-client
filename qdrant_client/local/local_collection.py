@@ -232,6 +232,9 @@ class LocalCollection:
                 continue
 
             idx = self.ids[point_id]
+            if self.deleted[idx] == 1:
+                continue
+
             result.append(
                 models.Record(
                     id=point_id,
