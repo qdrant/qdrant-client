@@ -88,6 +88,8 @@ class GrpcToRest:
             return cls.convert_has_id_condition(val)
         if name == "is_empty":
             return cls.convert_is_empty_condition(val)
+        if name == "is_null":
+            return cls.convert_is_null_condition(val)
 
         raise ValueError(f"invalid Condition model: {model}")  # pragma: no cover
 
@@ -310,6 +312,10 @@ class GrpcToRest:
     @classmethod
     def convert_is_empty_condition(cls, model: grpc.IsEmptyCondition) -> rest.IsEmptyCondition:
         return rest.IsEmptyCondition(is_empty=rest.PayloadField(key=model.key))
+
+    @classmethod
+    def convert_is_null_condition(cls, model: grpc.IsNullCondition) -> rest.IsNullCondition:
+        return rest.IsNullCondition(is_null=rest.PayloadField(key=model.key))
 
     @classmethod
     def convert_search_params(cls, model: grpc.SearchParams) -> rest.SearchParams:
@@ -572,7 +578,16 @@ class GrpcToRest:
 
     @classmethod
     def convert_vector_params(cls, model: grpc.VectorParams) -> rest.VectorParams:
-        return rest.VectorParams(size=model.size, distance=cls.convert_distance(model.distance))
+        return rest.VectorParams(
+            size=model.size,
+            distance=cls.convert_distance(model.distance),
+            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config)
+            if model.HasField("hnsw_config")
+            else None,
+            quantization_config=cls.convert_quantization_config(model.quantization_config)
+            if model.HasField("quantization_config")
+            else None,
+        )
 
     @classmethod
     def convert_vectors_config(cls, model: grpc.VectorsConfig) -> rest.VectorsConfig:
@@ -895,6 +910,10 @@ class RestToGrpc:
         return grpc.IsEmptyCondition(key=model.is_empty.key)
 
     @classmethod
+    def convert_is_null_condition(cls, model: rest.IsNullCondition) -> grpc.IsNullCondition:
+        return grpc.IsNullCondition(key=model.is_null.key)
+
+    @classmethod
     def convert_search_params(cls, model: rest.SearchParams) -> grpc.SearchParams:
         return grpc.SearchParams(
             hnsw_ef=model.hnsw_ef,
@@ -1162,6 +1181,8 @@ class RestToGrpc:
             return grpc.Condition(field=cls.convert_field_condition(model))
         if isinstance(model, rest.IsEmptyCondition):
             return grpc.Condition(is_empty=cls.convert_is_empty_condition(model))
+        if isinstance(model, rest.IsNullCondition):
+            return grpc.Condition(is_null=cls.convert_is_null_condition(model))
         if isinstance(model, rest.HasIdCondition):
             return grpc.Condition(has_id=cls.convert_has_id_condition(model))
         if isinstance(model, rest.Filter):
@@ -1236,7 +1257,16 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_params(cls, model: rest.VectorParams) -> grpc.VectorParams:
-        return grpc.VectorParams(size=model.size, distance=cls.convert_distance(model.distance))
+        return grpc.VectorParams(
+            size=model.size,
+            distance=cls.convert_distance(model.distance),
+            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config)
+            if model.hnsw_config is not None
+            else None,
+            quantization_config=cls.convert_quantization_config(model.quantization_config)
+            if model.quantization_config is not None
+            else None,
+        )
 
     @classmethod
     def convert_vectors_config(cls, model: rest.VectorsConfig) -> grpc.VectorsConfig:

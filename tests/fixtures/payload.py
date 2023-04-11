@@ -167,6 +167,8 @@ def one_random_payload_please(idx):
             "id": idx + 100,
             "array": [
                 {
+                    "nested_empty": ["hello"] if random.random() < 0.5 else None,
+                    "nested_empty2": ["hello"] if random.random() < 0.5 else [],
                     "word": random_real_word(),
                     "number": random.randint(1, 10),
                 }
@@ -178,6 +180,11 @@ def one_random_payload_please(idx):
 
     if random.random() < 0.5:
         payload["maybe"] = random_real_word()
+
+    if random.random() < 0.5:
+        payload["maybe_null"] = random_real_word()
+    else:
+        payload["maybe_null"] = None
 
     return payload
 

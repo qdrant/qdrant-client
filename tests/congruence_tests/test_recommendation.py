@@ -77,7 +77,7 @@ class TestSimpleRecommendation:
         )
 
 
-def test_simple_search() -> None:
+def test_simple_recommend() -> None:
     fixture_records = generate_fixtures()
 
     secondary_collection_records = generate_fixtures(100)

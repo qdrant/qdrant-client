@@ -96,7 +96,7 @@ class PointsServicer(object):
 
     def Upsert(self, request, context):
         """
-        Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
+        Perform insert + updates on points. If a point with a given ID already exists - it will be overwritten.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

@@ -28,6 +28,7 @@ class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
     features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
     system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
+    startup: datetime = Field(..., description="")
 
 
 class AppFeaturesTelemetry(BaseModel):
@@ -469,7 +470,7 @@ class HnswConfigDiff(BaseModel):
     )
     ef_construct: Optional[int] = Field(
         default=None,
-        description="Number of neighbours to consider during the index building. Larger the value - more accurate the search, more time required to build index.",
+        description="Number of neighbours to consider during the index building. Larger the value - more accurate the search, more time required to build the index.",
     )
     full_scan_threshold: Optional[int] = Field(
         default=None,
@@ -481,7 +482,7 @@ class HnswConfigDiff(BaseModel):
     )
     on_disk: Optional[bool] = Field(
         default=None,
-        description="Store HNSW index on disk. If set to false, index will be stored in RAM. Default: false",
+        description="Store HNSW index on disk. If set to false, the index will be stored in RAM. Default: false",
     )
     payload_m: Optional[int] = Field(
         default=None,
@@ -534,7 +535,7 @@ class InlineResponse200(BaseModel):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["TelemetryData"]] = Field(default=None, description="")
+    result: Optional["TelemetryData"] = Field(default=None, description="")
 
 
 class InlineResponse2001(BaseModel):
@@ -665,12 +666,27 @@ class InlineResponse2009(BaseModel):
     result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
+class InlineResponse202(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Literal[
+        "accepted",
+    ] = Field(None, description="")
+
+
 class IsEmptyCondition(BaseModel):
     """
     Select points with empty payload for a specified field
     """
 
     is_empty: "PayloadField" = Field(..., description="Select points with empty payload for a specified field")
+
+
+class IsNullCondition(BaseModel):
+    """
+    Select points with null payload for a specified field
+    """
+
+    is_null: "PayloadField" = Field(..., description="Select points with null payload for a specified field")
 
 
 class LocalShardInfo(BaseModel):
@@ -760,6 +776,7 @@ class OperationDurationStatistics(BaseModel):
     avg_duration_micros: Optional[float] = Field(default=None, description="")
     min_duration_micros: Optional[float] = Field(default=None, description="")
     max_duration_micros: Optional[float] = Field(default=None, description="")
+    last_responded: Optional[datetime] = Field(default=None, description="")
 
 
 class OptimizerTelemetry(BaseModel):
@@ -777,7 +794,7 @@ class OptimizersConfig(BaseModel):
     )
     default_segment_number: int = Field(
         ...,
-        description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads If `default_segment_number = 0`, will be automatically selected by the number of available CPUs",
+        description="Target amount of segments optimizer will try to keep. Real amount of segments may vary depending on multiple parameters: - Amount of stored points - Current write RPS  It is recommended to select default number of segments as a factor of the number of search threads, so that each segment would be handled evenly by one of the threads. If `default_segment_number = 0`, will be automatically selected by the number of available CPUs.",
     )
     max_segment_size: Optional[int] = Field(
         default=None,
@@ -1100,7 +1117,7 @@ class ScalarQuantizationConfig(BaseModel):
     type: "ScalarType" = Field(..., description="")
     quantile: Optional[float] = Field(
         default=None,
-        description="Quantile for quantization. Expected value range in (0, 1.0]. If not set - use the whole range of values",
+        description="Quantile for quantization. Expected value range in [0.5, 1.0]. If not set - use the whole range of values",
     )
     always_ram: Optional[bool] = Field(
         default=None,
@@ -1368,6 +1385,12 @@ class VectorDataConfig(BaseModel):
 
     size: int = Field(..., description="Size of a vectors used")
     distance: "Distance" = Field(..., description="Config of single vector data storage")
+    hnsw_config: Optional["HnswConfig"] = Field(
+        default=None, description="Vector specific HNSW config that overrides collection config"
+    )
+    quantization_config: Optional["QuantizationConfig"] = Field(
+        default=None, description="Vector specific quantization config that overrides collection config"
+    )
 
 
 class VectorIndexSearchesTelemetry(BaseModel):
@@ -1388,6 +1411,14 @@ class VectorParams(BaseModel):
 
     size: int = Field(..., description="Size of a vectors used")
     distance: "Distance" = Field(..., description="Params of single vector data storage")
+    hnsw_config: Optional["HnswConfigDiff"] = Field(
+        default=None,
+        description="Custom params for HNSW index. If none - values from collection configuration are used.",
+    )
+    quantization_config: Optional["QuantizationConfig"] = Field(
+        default=None,
+        description="Custom params for quantization. If none - values from collection configuration are used.",
+    )
 
 
 class WalConfig(BaseModel):
@@ -1442,6 +1473,7 @@ CollectionTelemetryEnum = Union[
 Condition = Union[
     FieldCondition,
     IsEmptyCondition,
+    IsNullCondition,
     HasIdCondition,
     Filter,
 ]

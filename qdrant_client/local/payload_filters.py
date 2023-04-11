@@ -77,9 +77,13 @@ def check_match(condition: models.Match, value: Any) -> bool:
 def check_condition(
     condition: models.Condition, payload: dict, point_id: models.ExtendedPointId
 ) -> bool:
-    if isinstance(condition, models.IsEmptyCondition):
+    if isinstance(condition, models.IsNullCondition):
+        values = value_by_key(payload, condition.is_null.key)
+        if any(v is None for v in values):
+            return True
+    elif isinstance(condition, models.IsEmptyCondition):
         values = value_by_key(payload, condition.is_empty.key)
-        if values is None or len(values) == 0:
+        if values is None or len(values) == 0 or all(v is None for v in values):
             return True
     elif isinstance(condition, models.HasIdCondition):
         if point_id in condition.has_id:

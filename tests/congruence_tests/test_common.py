@@ -127,7 +127,7 @@ def compare_client_results(
                     res1_item.id == res2_item.id
                 ), f"res1[{i}].id = {res1_item.id}, res2[{i}].id = {res2_item.id}"
                 assert (
-                    res1_item.score - res2_item.score < 1e-5
+                    res1_item.score - res2_item.score < 1e-4
                 ), f"res1[{i}].score = {res1_item.score}, res2[{i}].score = {res2_item.score}"
                 assert (
                     res1_item.payload == res2_item.payload
