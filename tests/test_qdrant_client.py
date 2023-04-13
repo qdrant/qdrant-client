@@ -224,6 +224,7 @@ def test_multiple_vectors(prefer_grpc):
     assert "image" in hits[0].vector
     assert "text" in hits[0].vector
 
+
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("numpy_upload", [False, True])
 @pytest.mark.parametrize("local_mode", [False, True])
@@ -770,6 +771,44 @@ def test_quantization_config(prefer_grpc):
             )
         ),
     )
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_conditional_payload_update(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+    )
+
+    uuid1 = str(uuid.uuid4())
+    uuid2 = str(uuid.uuid4())
+    uuid3 = str(uuid.uuid4())
+    uuid4 = str(uuid.uuid4())
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(id=uuid1, payload={"a": 1}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=uuid2, payload={"a": 2}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=uuid3, payload={"b": 1}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=uuid4, payload={"b": 2}, vector=np.random.rand(DIM).tolist()),
+        ],
+        wait=True,
+    )
+
+    res = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[uuid1, uuid2, uuid4],
+    )
+
+    assert len(res) == 3
+    retrieved_ids = [uuid.UUID(point.id) for point in res]
+
+    assert uuid.UUID(uuid1) in retrieved_ids
+    assert uuid.UUID(uuid2) in retrieved_ids
+    assert uuid.UUID(uuid4) in retrieved_ids
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
