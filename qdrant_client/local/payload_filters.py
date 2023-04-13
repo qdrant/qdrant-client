@@ -68,7 +68,7 @@ def check_match(condition: models.Match, value: Any) -> bool:
     if isinstance(condition, models.MatchValue):
         return value == condition.value
     if isinstance(condition, models.MatchText):
-        return value and condition.text in value
+        return value is not None and condition.text in value
     if isinstance(condition, models.MatchAny):
         return value in condition.any
     raise ValueError(f"Unknown match condition: {condition}")
