@@ -45,7 +45,7 @@ pip install qdrant-client
 
 <p align="center">
   <!--- https://github.com/qdrant/qdrant-client/raw/master -->
-  <img max-height="180" src="docs/images/try-develop-deploy.png" alt="Qdrant">
+  <img max-height="180" src="https://github.com/qdrant/qdrant-client/raw/master/docs/images/try-develop-deploy.png" alt="Qdrant">
 </p>
 
 Python client allows you to run same code in local mode without running Qdrant server.
