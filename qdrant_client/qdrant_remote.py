@@ -66,7 +66,11 @@ class QdrantRemote(QdrantBase):
         elif url:
             parsed_url: Url = parse_url(url)
             self._host, self._port = parsed_url.host, parsed_url.port
-            self._scheme = parsed_url.scheme if parsed_url.scheme else self._scheme
+
+            if parsed_url.scheme:
+                self._https = parsed_url.scheme == "https"
+                self._scheme = parsed_url.scheme
+
             self._port = self._port if self._port else port
 
             if self._prefix and parsed_url.path:
