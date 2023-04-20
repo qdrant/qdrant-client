@@ -1,9 +1,10 @@
 import collections
-from typing import Any, List, Optional
+from typing import Any, Callable, List, Optional, Tuple
 
 import grpc
 
 
+# type: ignore # noqa: F401
 # Source <https://github.com/grpc/grpc/blob/master/examples/python/interceptors/headers/generic_client_interceptor.py>
 class _GenericClientInterceptor(
     grpc.UnaryUnaryClientInterceptor,
@@ -11,31 +12,39 @@ class _GenericClientInterceptor(
     grpc.StreamUnaryClientInterceptor,
     grpc.StreamStreamClientInterceptor,
 ):
-    def __init__(self, interceptor_function):
+    def __init__(self, interceptor_function: Callable):
         self._fn = interceptor_function
 
-    def intercept_unary_unary(self, continuation, client_call_details, request):
+    def intercept_unary_unary(
+        self, continuation: Any, client_call_details: Any, request: Any
+    ) -> Any:
         new_details, new_request_iterator, postprocess = self._fn(
             client_call_details, iter((request,)), False, False
         )
         response = continuation(new_details, next(new_request_iterator))
         return postprocess(response) if postprocess else response
 
-    def intercept_unary_stream(self, continuation, client_call_details, request):
+    def intercept_unary_stream(
+        self, continuation: Any, client_call_details: Any, request: Any
+    ) -> Any:
         new_details, new_request_iterator, postprocess = self._fn(
             client_call_details, iter((request,)), False, True
         )
         response_it = continuation(new_details, next(new_request_iterator))
         return postprocess(response_it) if postprocess else response_it
 
-    def intercept_stream_unary(self, continuation, client_call_details, request_iterator):
+    def intercept_stream_unary(
+        self, continuation: Any, client_call_details: Any, request_iterator: Any
+    ) -> Any:
         new_details, new_request_iterator, postprocess = self._fn(
             client_call_details, request_iterator, True, False
         )
         response = continuation(new_details, new_request_iterator)
         return postprocess(response) if postprocess else response
 
-    def intercept_stream_stream(self, continuation, client_call_details, request_iterator):
+    def intercept_stream_stream(
+        self, continuation: Any, client_call_details: Any, request_iterator: Any
+    ) -> Any:
         new_details, new_request_iterator, postprocess = self._fn(
             client_call_details, request_iterator, True, True
         )
@@ -43,11 +52,12 @@ class _GenericClientInterceptor(
         return postprocess(response_it) if postprocess else response_it
 
 
-def create_generic_client_interceptor(intercept_call):
+def create_generic_client_interceptor(intercept_call: Any) -> _GenericClientInterceptor:
     return _GenericClientInterceptor(intercept_call)
 
 
-# Source <https://github.com/grpc/grpc/blob/master/examples/python/interceptors/headers/header_manipulator_client_interceptor.py>
+# Source:
+# <https://github.com/grpc/grpc/blob/master/examples/python/interceptors/headers/header_manipulator_client_interceptor.py>
 class _ClientCallDetails(
     collections.namedtuple("_ClientCallDetails", ("method", "timeout", "metadata", "credentials")),
     grpc.ClientCallDetails,
@@ -55,10 +65,13 @@ class _ClientCallDetails(
     pass
 
 
-def header_adder_interceptor(new_metadata):
+def header_adder_interceptor(new_metadata: List[Tuple[str, str]]) -> _GenericClientInterceptor:
     def intercept_call(
-        client_call_details, request_iterator, _request_streaming, _response_streaming
-    ):
+        client_call_details: _ClientCallDetails,
+        request_iterator: Any,
+        _request_streaming: Any,
+        _response_streaming: Any,
+    ) -> Tuple[_ClientCallDetails, Any, Any]:
         metadata = []
         if client_call_details.metadata is not None:
             metadata = list(client_call_details.metadata)
@@ -81,7 +94,7 @@ def header_adder_interceptor(new_metadata):
 
 
 def get_channel(
-    host: str, port: int, ssl: bool, metadata: Optional[List[Any]] = None
+    host: str, port: int, ssl: bool, metadata: Optional[List[Tuple[str, str]]] = None
 ) -> grpc.Channel:
     if ssl:
         if metadata:

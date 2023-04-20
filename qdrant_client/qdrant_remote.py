@@ -142,14 +142,16 @@ class QdrantRemote(QdrantBase):
         )
         return scheme, host, port, prefix
 
-    def _init_grpc_points_client(self, metadata: Optional[List[Any]] = None) -> None:
+    def _init_grpc_points_client(self, metadata: Optional[List[Tuple[str, str]]] = None) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
                 host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata
             )
         self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
-    def _init_grpc_collections_client(self, metadata: Optional[List[Any]] = None) -> None:
+    def _init_grpc_collections_client(
+        self, metadata: Optional[List[Tuple[str, str]]] = None
+    ) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
                 host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata
