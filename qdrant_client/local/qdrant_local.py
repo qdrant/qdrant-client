@@ -2,9 +2,10 @@ import json
 import logging
 import os
 import shutil
-import numpy as np
 from itertools import zip_longest
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+
+import numpy as np
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
@@ -412,7 +413,7 @@ class QdrantLocal(QdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: Union[types.NumpyArray, Dict[str, types.NumpyArray], Iterable[List[float]]],
+        vectors: Union[types.NumpyArray, Iterable[rest_models.VectorStruct]],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,

@@ -1,11 +1,19 @@
 import uuid
 from collections import defaultdict
 
+import numpy as np
+
 from qdrant_client.http import models
+from qdrant_client.local.qdrant_local import QdrantLocal
+from qdrant_client.qdrant_remote import QdrantRemote
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
+    delete_fixture_collection,
     generate_fixtures,
+    init_local,
+    init_remote,
+    initialize_fixture_collection,
 )
 from tests.fixtures.payload import one_random_payload_please
 
@@ -79,6 +87,7 @@ def test_upsert(local_client, remote_client):
 
 
 def test_upload_collection(local_client, remote_client):
+    """Test upload collection with Iterable[Dict[str, List[float]]]"""
     records = generate_fixtures(UPLOAD_NUM_VECTORS)
 
     vectors = []
@@ -91,6 +100,85 @@ def test_upload_collection(local_client, remote_client):
     remote_client.upload_collection(COLLECTION_NAME, vectors, payload)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_upload_collection_np_array():
+    """Test upload collection with np.ndarray"""
+    vector_size = 100
+    local_client: QdrantLocal = init_local()
+    initialize_fixture_collection(
+        local_client,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+    )
+
+    remote_client: QdrantRemote = init_remote()
+    initialize_fixture_collection(
+        remote_client,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+    )
+
+    vectors = np.random.randn(UPLOAD_NUM_VECTORS, vector_size)
+
+    local_client.upload_collection(COLLECTION_NAME, vectors)
+    remote_client.upload_collection(COLLECTION_NAME, vectors)
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+    delete_fixture_collection(local_client)
+    delete_fixture_collection(remote_client)
+
+
+def test_upload_collection_iterable_list():
+    """Test upload collection with Iterable[List[float]]"""
+    vector_size = 100
+    local_client: QdrantLocal = init_local()
+    initialize_fixture_collection(
+        local_client,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+    )
+
+    remote_client: QdrantRemote = init_remote()
+    initialize_fixture_collection(
+        remote_client,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+    )
+
+    vectors = np.random.randn(UPLOAD_NUM_VECTORS, vector_size).tolist()
+
+    local_client.upload_collection(COLLECTION_NAME, iter(vectors))
+    remote_client.upload_collection(COLLECTION_NAME, iter(vectors))
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+    delete_fixture_collection(local_client)
+    delete_fixture_collection(remote_client)
+
+
+#  Supposed to fail until behaviour is the same for QdrantLocal and QdrantRemote
+def test_upload_collection_iterable_np_array():
+    """Test upload collection with Iterable[np.ndarray]"""
+    vector_size = 100
+    local_client: QdrantLocal = init_local()
+    initialize_fixture_collection(
+        local_client,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+    )
+
+    remote_client: QdrantRemote = init_remote()
+    initialize_fixture_collection(
+        remote_client,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+    )
+
+    vectors = np.random.randn(UPLOAD_NUM_VECTORS, vector_size)
+
+    local_client.upload_collection(COLLECTION_NAME, iter(vectors))
+    remote_client.upload_collection(COLLECTION_NAME, iter(vectors))
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+    delete_fixture_collection(local_client)
+    delete_fixture_collection(remote_client)
 
 
 def test_upload_records(local_client, remote_client):
