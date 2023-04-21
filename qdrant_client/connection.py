@@ -52,8 +52,59 @@ class _GenericClientInterceptor(
         return postprocess(response_it) if postprocess else response_it
 
 
+class _GenericAsyncClientInterceptor(
+    grpc.aio.UnaryUnaryClientInterceptor,
+    grpc.aio.UnaryStreamClientInterceptor,
+    grpc.aio.StreamUnaryClientInterceptor,
+    grpc.aio.StreamStreamClientInterceptor,
+):
+    def __init__(self, interceptor_function: Callable):
+        self._fn = interceptor_function
+
+    async def intercept_unary_unary(
+        self, continuation: Any, client_call_details: Any, request: Any
+    ) -> Any:
+        new_details, new_request_iterator, postprocess = self._fn(
+            client_call_details, iter((request,)), False, False
+        )
+        next_request = next(new_request_iterator)
+        response = await continuation(new_details, next_request)
+        return postprocess(response) if postprocess else response
+
+    async def intercept_unary_stream(
+        self, continuation: Any, client_call_details: Any, request: Any
+    ) -> Any:
+        new_details, new_request_iterator, postprocess = self._fn(
+            client_call_details, iter((request,)), False, True
+        )
+        response_it = await continuation(new_details, next(new_request_iterator))
+        return postprocess(response_it) if postprocess else response_it
+
+    async def intercept_stream_unary(
+        self, continuation: Any, client_call_details: Any, request_iterator: Any
+    ) -> Any:
+        new_details, new_request_iterator, postprocess = self._fn(
+            client_call_details, request_iterator, True, False
+        )
+        response = await continuation(new_details, new_request_iterator)
+        return postprocess(response) if postprocess else response
+
+    async def intercept_stream_stream(
+        self, continuation: Any, client_call_details: Any, request_iterator: Any
+    ) -> Any:
+        new_details, new_request_iterator, postprocess = self._fn(
+            client_call_details, request_iterator, True, True
+        )
+        response_it = await continuation(new_details, new_request_iterator)
+        return postprocess(response_it) if postprocess else response_it
+
+
 def create_generic_client_interceptor(intercept_call: Any) -> _GenericClientInterceptor:
     return _GenericClientInterceptor(intercept_call)
+
+
+def create_generic_async_client_interceptor(intercept_call: Any) -> _GenericAsyncClientInterceptor:
+    return _GenericAsyncClientInterceptor(intercept_call)
 
 
 # Source:
@@ -61,6 +112,13 @@ def create_generic_client_interceptor(intercept_call: Any) -> _GenericClientInte
 class _ClientCallDetails(
     collections.namedtuple("_ClientCallDetails", ("method", "timeout", "metadata", "credentials")),
     grpc.ClientCallDetails,
+):
+    pass
+
+
+class _ClientAsyncCallDetails(
+    collections.namedtuple("_ClientCallDetails", ("method", "timeout", "metadata", "credentials")),
+    grpc.aio.ClientCallDetails,
 ):
     pass
 
@@ -91,6 +149,31 @@ def header_adder_interceptor(new_metadata: List[Tuple[str, str]]) -> _GenericCli
         return client_call_details, request_iterator, None
 
     return create_generic_client_interceptor(intercept_call)
+
+
+def header_adder_async_interceptor(
+    new_metadata: List[Tuple[str, str]]
+) -> _GenericAsyncClientInterceptor:
+    def intercept_call(
+        client_call_details: grpc.aio.ClientCallDetails,
+        request_iterator: Any,
+        _request_streaming: Any,
+        _response_streaming: Any,
+    ) -> Tuple[_ClientAsyncCallDetails, Any, Any]:
+        metadata = []
+        if client_call_details.metadata is not None:
+            metadata = list(client_call_details.metadata)
+        for header, value in new_metadata:
+            metadata.append(
+                (
+                    header,
+                    value,
+                )
+            )
+        client_call_details = client_call_details._replace(metadata=metadata)
+        return client_call_details, request_iterator, None
+
+    return create_generic_async_client_interceptor(intercept_call)
 
 
 def get_channel(
@@ -126,7 +209,7 @@ def get_channel(
             return grpc.insecure_channel(f"{host}:{port}")
 
 
-async def get_async_channel(
+def get_async_channel(
     host: str, port: int, ssl: bool, metadata: Optional[List[Tuple[str, str]]] = None
 ) -> grpc.aio.Channel:
     if ssl:
@@ -149,11 +232,10 @@ async def get_async_channel(
             creds = grpc.ssl_channel_credentials()
 
         # finally pass in the combined credentials when creating a channel
-        return await grpc.aio.secure_channel(f"{host}:{port}", creds)
+        return grpc.aio.secure_channel(f"{host}:{port}", creds)
     else:
         if metadata:
-            metadata_interceptor = header_adder_interceptor(metadata)
-            channel = await grpc.aio.insecure_channel(f"{host}:{port}", metadata)
-            return grpc.intercept_channel(channel, metadata_interceptor)
+            metadata_interceptor = header_adder_async_interceptor(metadata)
+            return grpc.aio.insecure_channel(f"{host}:{port}", interceptors=[metadata_interceptor])
         else:
             return grpc.aio.insecure_channel(f"{host}:{port}")

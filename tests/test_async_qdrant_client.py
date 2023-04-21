@@ -25,7 +25,7 @@ async def test_async_grpc():
 
     client = QdrantClient(prefer_grpc=True, timeout=3.0)
 
-    grpc_collections = await client.async_grpc_collections
+    grpc_collections = client.async_grpc_collections
 
     res = await grpc_collections.List(grpc.ListCollectionsRequest(), timeout=1.0)
 
@@ -42,7 +42,7 @@ async def test_async_grpc():
         )
     )
 
-    grpc_points = await client.async_grpc_points
+    grpc_points = client.async_grpc_points
 
     upload_features = []
 

@@ -119,26 +119,26 @@ class QdrantClient(QdrantBase):
         raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
-    async def async_grpc_points(self) -> grpc.PointsStub:
+    def async_grpc_points(self) -> grpc.PointsStub:
         """gRPC client for points methods
 
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
         if isinstance(self._client, QdrantRemote):
-            return await self._client.async_grpc_points
+            return self._client.async_grpc_points
 
         raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
-    async def async_grpc_collections(self) -> grpc.CollectionsStub:
+    def async_grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
 
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
         if isinstance(self._client, QdrantRemote):
-            return await self._client.async_grpc_collections
+            return self._client.async_grpc_collections
 
         raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
