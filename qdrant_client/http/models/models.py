@@ -237,7 +237,10 @@ class CountRequest(BaseModel):
     Count Request Counts the number of points which satisfy the given filter. If filter is not provided, the count of all points in the collection will be returned.
     """
 
-    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    filter: Optional["Filter"] = Field(
+        default=None,
+        description="Count Request Counts the number of points which satisfy the given filter. If filter is not provided, the count of all points in the collection will be returned.",
+    )
     exact: Optional[bool] = Field(
         default=True,
         description="If true, count exact number of points. If false, count approximate number of points faster. Approximate count might be unreliable during the indexing process. Default: true",
@@ -291,19 +294,19 @@ class CreateCollection(BaseModel):
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
     )
     hnsw_config: Optional["HnswConfigDiff"] = Field(
-        default=None,
-        description="Custom params for HNSW index. If none - values from service configuration file are used.",
+        default=None, description="Operation for creating new collection and (optionally) specify index params"
     )
     wal_config: Optional["WalConfigDiff"] = Field(
-        default=None, description="Custom params for WAL. If none - values from service configuration file are used."
+        default=None, description="Operation for creating new collection and (optionally) specify index params"
     )
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
-        default=None,
-        description="Custom params for Optimizers.  If none - values from service configuration file are used.",
+        default=None, description="Operation for creating new collection and (optionally) specify index params"
     )
-    init_from: Optional["InitFrom"] = Field(default=None, description="Specify other collection to copy data from.")
+    init_from: Optional["InitFrom"] = Field(
+        default=None, description="Operation for creating new collection and (optionally) specify index params"
+    )
     quantization_config: Optional["QuantizationConfig"] = Field(
-        default=None, description="Quantization parameters. If none - quantization is disabled."
+        default=None, description="Operation for creating new collection and (optionally) specify index params"
     )
 
 
@@ -333,9 +336,7 @@ class DeletePayload(BaseModel):
     points: Optional[List["ExtendedPointId"]] = Field(
         default=None, description="Deletes values from each point in this list"
     )
-    filter: Optional["Filter"] = Field(
-        default=None, description="Deletes values from points that satisfy this filter condition"
-    )
+    filter: Optional["Filter"] = Field(default=None, description="")
 
 
 class Distance(str, Enum):
@@ -364,13 +365,13 @@ class FieldCondition(BaseModel):
     """
 
     key: str = Field(..., description="Payload key")
-    match: Optional["Match"] = Field(default=None, description="Check if point has field with a given value")
-    range: Optional["Range"] = Field(default=None, description="Check if points value lies in a given range")
+    match: Optional["Match"] = Field(default=None, description="All possible payload filtering conditions")
+    range: Optional["Range"] = Field(default=None, description="All possible payload filtering conditions")
     geo_bounding_box: Optional["GeoBoundingBox"] = Field(
-        default=None, description="Check if points geo location lies in a given area"
+        default=None, description="All possible payload filtering conditions"
     )
-    geo_radius: Optional["GeoRadius"] = Field(default=None, description="Check if geo point is within a given radius")
-    values_count: Optional["ValuesCount"] = Field(default=None, description="Check number of values of the field")
+    geo_radius: Optional["GeoRadius"] = Field(default=None, description="All possible payload filtering conditions")
+    values_count: Optional["ValuesCount"] = Field(default=None, description="All possible payload filtering conditions")
 
 
 class Filter(BaseModel):
@@ -804,8 +805,8 @@ class OptimizersConfig(BaseModel):
         default=None,
         description="Maximum size (in KiloBytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file. To enable memmap storage, lower the threshold Note: 1Kb = 1 vector of size 256 If not set, mmap will not be used.",
     )
-    indexing_threshold: int = Field(
-        ...,
+    indexing_threshold: Optional[int] = Field(
+        default=None,
         description="Maximum size (in KiloBytes) of vectors allowed for plain index. Default value based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt; Note: 1Kb = 1 vector of size 256",
     )
     flush_interval_sec: int = Field(..., description="Minimum interval between forced flushes.")
@@ -921,16 +922,14 @@ class PointIdsList(BaseModel):
 
 class PointRequest(BaseModel):
     ids: List["ExtendedPointId"] = Field(..., description="Look for points with ids")
-    with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: All"
-    )
+    with_payload: Optional["WithPayloadInterface"] = Field(default=None, description="")
     with_vector: Optional["WithVector"] = Field(default=None, description="")
 
 
 class PointStruct(BaseModel):
     id: "ExtendedPointId" = Field(..., description="")
     vector: "VectorStruct" = Field(..., description="")
-    payload: Optional["Payload"] = Field(default=None, description="Payload values (optional)")
+    payload: Optional["Payload"] = Field(default=None, description="")
 
 
 class PointsBatch(BaseModel):
@@ -971,7 +970,7 @@ class RaftInfo(BaseModel):
         ..., description="Number of consensus operations pending to be applied on this peer"
     )
     leader: Optional[int] = Field(default=None, description="Leader of the current term")
-    role: Optional["StateRole"] = Field(default=None, description="Role of this peer in the current term")
+    role: Optional["StateRole"] = Field(default=None, description="Summary information about the current raft state")
     is_voter: bool = Field(..., description="Is this peer a voter or a learner")
 
 
@@ -999,18 +998,26 @@ class RecommendRequest(BaseModel):
 
     positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
     negative: Optional[List["ExtendedPointId"]] = Field(default=[], description="Try to avoid vectors like this")
-    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
+    filter: Optional["Filter"] = Field(
+        default=None,
+        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.",
+    )
+    params: Optional["SearchParams"] = Field(
+        default=None,
+        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.",
+    )
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
         default=0,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None,
+        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.",
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None,
+        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.",
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1018,11 +1025,11 @@ class RecommendRequest(BaseModel):
     )
     using: Optional["UsingVector"] = Field(
         default=None,
-        description="Define which vector to use for recommendation, if not specified - try to use default vector",
+        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.",
     )
     lookup_from: Optional["LookupLocation"] = Field(
         default=None,
-        description="The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
+        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.",
     )
 
 
@@ -1036,8 +1043,8 @@ class Record(BaseModel):
     """
 
     id: "ExtendedPointId" = Field(..., description="Point data")
-    payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
-    vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
+    payload: Optional["Payload"] = Field(default=None, description="Point data")
+    vector: Optional["VectorStruct"] = Field(default=None, description="Point data")
 
 
 class RemoteShardInfo(BaseModel):
@@ -1137,8 +1144,8 @@ class ScoredPoint(BaseModel):
     id: "ExtendedPointId" = Field(..., description="Search result")
     version: int = Field(..., description="Point version")
     score: float = Field(..., description="Points vector distance to the query vector")
-    payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
-    vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
+    payload: Optional["Payload"] = Field(default=None, description="Search result")
+    vector: Optional["VectorStruct"] = Field(default=None, description="Search result")
 
 
 class ScrollRequest(BaseModel):
@@ -1146,13 +1153,15 @@ class ScrollRequest(BaseModel):
     Scroll request - paginate over all points which matches given condition
     """
 
-    offset: Optional["ExtendedPointId"] = Field(default=None, description="Start ID to read points from.")
+    offset: Optional["ExtendedPointId"] = Field(
+        default=None, description="Scroll request - paginate over all points which matches given condition"
+    )
     limit: Optional[int] = Field(default=None, description="Page size. Default: 10")
     filter: Optional["Filter"] = Field(
-        default=None, description="Look only for points which satisfies this conditions. If not provided - all points."
+        default=None, description="Scroll request - paginate over all points which matches given condition"
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: All"
+        default=None, description="Scroll request - paginate over all points which matches given condition"
     )
     with_vector: Optional["WithVector"] = Field(
         default=None, description="Scroll request - paginate over all points which matches given condition"
@@ -1165,9 +1174,7 @@ class ScrollResult(BaseModel):
     """
 
     points: List["Record"] = Field(..., description="List of retrieved points")
-    next_page_offset: Optional["ExtendedPointId"] = Field(
-        default=None, description="Offset which should be used to retrieve a next page result"
-    )
+    next_page_offset: Optional["ExtendedPointId"] = Field(default=None, description="Result of the points read request")
 
 
 class SearchParams(BaseModel):
@@ -1183,7 +1190,9 @@ class SearchParams(BaseModel):
         default=False,
         description="Search without approximation. If set to true, search may run long but with exact results.",
     )
-    quantization: Optional["QuantizationSearchParams"] = Field(default=None, description="Quantization params")
+    quantization: Optional["QuantizationSearchParams"] = Field(
+        default=None, description="Additional parameters of the search"
+    )
 
 
 class SearchRequest(BaseModel):
@@ -1195,18 +1204,26 @@ class SearchRequest(BaseModel):
         ...,
         description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
     )
-    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
-    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
+    filter: Optional["Filter"] = Field(
+        default=None,
+        description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
+    )
+    params: Optional["SearchParams"] = Field(
+        default=None,
+        description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
+    )
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
         default=0,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None,
+        description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None,
+        description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1223,9 +1240,7 @@ class SegmentConfig(BaseModel):
     index: "Indexes" = Field(..., description="")
     storage_type: "StorageType" = Field(..., description="")
     payload_storage_type: Optional["PayloadStorageType"] = Field(default=None, description="")
-    quantization_config: Optional["QuantizationConfig"] = Field(
-        default=None, description="Quantization parameters. If none - quantization is disabled."
-    )
+    quantization_config: Optional["QuantizationConfig"] = Field(default=None, description="")
 
 
 class SegmentInfo(BaseModel):
@@ -1261,9 +1276,7 @@ class SetPayload(BaseModel):
     points: Optional[List["ExtendedPointId"]] = Field(
         default=None, description="Assigns payload to each point in this list"
     )
-    filter: Optional["Filter"] = Field(
-        default=None, description="Assigns payload to each point that satisfy this filter condition"
-    )
+    filter: Optional["Filter"] = Field(default=None, description="")
 
 
 class ShardTransferInfo(BaseModel):
@@ -1292,10 +1305,7 @@ class SnapshotRecover(BaseModel):
         ...,
         description="Examples: - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot` - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`",
     )
-    priority: Optional["SnapshotPriority"] = Field(
-        default=None,
-        description="Defines which data should be used as a source of truth if there are other replicas in the cluster. If set to `Snapshot`, the snapshot will be used as a source of truth, and the current state will be overwritten. If set to `Replica`, the current state will be used as a source of truth, and after recovery if will be synchronized with the snapshot.",
-    )
+    priority: Optional["SnapshotPriority"] = Field(default=None, description="")
 
 
 class StateRole(str, Enum):
@@ -1349,11 +1359,10 @@ class UpdateCollection(BaseModel):
     """
 
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
-        default=None,
-        description="Custom params for Optimizers.  If none - values from service configuration file are used. This operation is blocking, it will only proceed ones all current optimizations are complete",
+        default=None, description="Operation for updating parameters of the existing collection"
     )
     params: Optional["CollectionParamsDiff"] = Field(
-        default=None, description="Collection base params.  If none - values from service configuration file are used."
+        default=None, description="Operation for updating parameters of the existing collection"
     )
 
 
@@ -1385,11 +1394,9 @@ class VectorDataConfig(BaseModel):
 
     size: int = Field(..., description="Size of a vectors used")
     distance: "Distance" = Field(..., description="Config of single vector data storage")
-    hnsw_config: Optional["HnswConfig"] = Field(
-        default=None, description="Vector specific HNSW config that overrides collection config"
-    )
+    hnsw_config: Optional["HnswConfig"] = Field(default=None, description="Config of single vector data storage")
     quantization_config: Optional["QuantizationConfig"] = Field(
-        default=None, description="Vector specific quantization config that overrides collection config"
+        default=None, description="Config of single vector data storage"
     )
 
 
@@ -1411,13 +1418,9 @@ class VectorParams(BaseModel):
 
     size: int = Field(..., description="Size of a vectors used")
     distance: "Distance" = Field(..., description="Params of single vector data storage")
-    hnsw_config: Optional["HnswConfigDiff"] = Field(
-        default=None,
-        description="Custom params for HNSW index. If none - values from collection configuration are used.",
-    )
+    hnsw_config: Optional["HnswConfigDiff"] = Field(default=None, description="Params of single vector data storage")
     quantization_config: Optional["QuantizationConfig"] = Field(
-        default=None,
-        description="Custom params for quantization. If none - values from collection configuration are used.",
+        default=None, description="Params of single vector data storage"
     )
 
 
