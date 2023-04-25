@@ -31,6 +31,7 @@ grpcio-tools = "^1.46.0"
 sphinx = "^4.4.0"
 qdrant-sphinx-theme = { git = "https://github.com/qdrant/qdrant_sphinx_theme.git", branch = "master" }
 coverage = "^6.3.3"
+pytest-asyncio = "^0.21.0"
 
 [tool.poetry.group.types.dependencies]
 pyright = "^1.1.293"

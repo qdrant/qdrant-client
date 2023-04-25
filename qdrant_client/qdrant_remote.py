@@ -20,7 +20,7 @@ from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.connection import get_channel
+from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 from qdrant_client.http import ApiClient, SyncApis
@@ -123,9 +123,10 @@ class QdrantRemote(QdrantBase):
         self._grpc_channel = None
         self._grpc_points_client: Optional[grpc.PointsStub] = None
         self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
-        if prefer_grpc:
-            self._init_grpc_points_client(self._grpc_headers)
-            self._init_grpc_collections_client(self._grpc_headers)
+
+        self._aio_grpc_channel = None
+        self._aio_grpc_points_client: Optional[grpc.PointsStub] = None
+        self._aio_grpc_collections_client: Optional[grpc.CollectionsStub] = None
 
     def __del__(self) -> None:
         if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
@@ -142,21 +143,55 @@ class QdrantRemote(QdrantBase):
         )
         return scheme, host, port, prefix
 
-    def _init_grpc_points_client(self, metadata: Optional[List[Tuple[str, str]]] = None) -> None:
+    def _init_grpc_points_client(self) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
-                host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata
+                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
             )
         self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
-    def _init_grpc_collections_client(
-        self, metadata: Optional[List[Tuple[str, str]]] = None
-    ) -> None:
+    def _init_grpc_collections_client(self) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
-                host=self._host, port=self._grpc_port, ssl=self._https, metadata=metadata
+                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
             )
         self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
+
+    def _init_async_grpc_points_client(self) -> None:
+        if self._aio_grpc_channel is None:
+            self._aio_grpc_channel = get_async_channel(
+                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
+            )
+        self._aio_grpc_points_client = grpc.PointsStub(self._aio_grpc_channel)
+
+    def _init_async_grpc_collections_client(self) -> None:
+        if self._aio_grpc_channel is None:
+            self._aio_grpc_channel = get_async_channel(
+                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
+            )
+        self._aio_grpc_collections_client = grpc.CollectionsStub(self._aio_grpc_channel)
+
+    @property
+    def async_grpc_collections(self) -> grpc.CollectionsStub:
+        """gRPC client for collections methods
+
+        Returns:
+            An instance of raw gRPC client, generated from Protobuf
+        """
+        if self._aio_grpc_collections_client is None:
+            self._init_async_grpc_collections_client()
+        return self._aio_grpc_collections_client
+
+    @property
+    def async_grpc_points(self) -> grpc.PointsStub:
+        """gRPC client for points methods
+
+        Returns:
+            An instance of raw gRPC client, generated from Protobuf
+        """
+        if self._aio_grpc_points_client is None:
+            self._init_async_grpc_points_client()
+        return self._aio_grpc_points_client
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
