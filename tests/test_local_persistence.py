@@ -10,7 +10,7 @@ default_collection_name = "example"
 
 
 def ingest_data(
-    vector_size=433, path=None
+    vector_size=1500, path=None
 ):  # vector_size < 433: works, vector_size >= 433: crashes
     lines = [x for x in range(10)]
 
