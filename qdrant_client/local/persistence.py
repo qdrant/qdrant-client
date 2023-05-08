@@ -1,5 +1,6 @@
 import base64
 import dbm
+import logging
 import pickle
 import sqlite3
 from pathlib import Path
@@ -11,7 +12,7 @@ STORAGE_FILE_NAME_OLD = "storage.dbm"
 STORAGE_FILE_NAME = "storage.sqlite"
 
 
-def try_migrate_to_sqlite(location):
+def try_migrate_to_sqlite(location: str) -> None:
     dbm_path = Path(location) / STORAGE_FILE_NAME_OLD
     sql_path = Path(location) / STORAGE_FILE_NAME
 
@@ -21,34 +22,44 @@ def try_migrate_to_sqlite(location):
     if not dbm_path.exists():
         return
 
-    dbm_storage = dbm.open(str(dbm_path), "c")
+    try:
+        dbm_storage = dbm.open(str(dbm_path), "c")
 
-    con = sqlite3.connect(str(sql_path))
-    cur = con.cursor()
+        con = sqlite3.connect(str(sql_path))
+        cur = con.cursor()
 
-    # Create table
-    cur.execute("CREATE TABLE IF NOT EXISTS points (id TEXT PRIMARY KEY, point BLOB)")
+        # Create table
+        cur.execute("CREATE TABLE IF NOT EXISTS points (id TEXT PRIMARY KEY, point BLOB)")
 
-    for key in dbm_storage.keys():
-        value = dbm_storage[key]
-        sqlite_key = base64.b64encode(key).decode("utf-8")
-        # Insert a row of data
-        cur.execute(
-            "INSERT INTO points VALUES (?, ?)",
-            (
-                sqlite_key,
-                sqlite3.Binary(value),
-            ),
+        for key in dbm_storage.keys():
+            value = dbm_storage[key]
+            if isinstance(key, str):
+                key = key.encode("utf-8")
+            key = pickle.loads(key)
+            sqlite_key = CollectionPersistence.encode_key(key)
+            # Insert a row of data
+            cur.execute(
+                "INSERT INTO points VALUES (?, ?)",
+                (
+                    sqlite_key,
+                    sqlite3.Binary(value),
+                ),
+            )
+        con.commit()
+        con.close()
+        dbm_storage.close()
+        dbm_path.unlink()
+    except Exception as e:
+        logging.error("Failed to migrate dbm to sqlite:", e)
+        logging.error(
+            "Please try to use previous version of qdrant-client or re-create collection"
         )
-    con.commit()
-    con.close()
-    dbm_storage.close()
-    dbm_path.unlink()
+        raise e
 
 
 class CollectionPersistence:
     @classmethod
-    def _encode_key(cls, key):
+    def encode_key(cls, key: models.ExtendedPointId) -> str:
         return base64.b64encode(pickle.dumps(key)).decode("utf-8")
 
     def __init__(self, location: str):
@@ -65,7 +76,7 @@ class CollectionPersistence:
         self.storage = sqlite3.connect(str(self.location))
         self._ensure_table()
 
-    def _ensure_table(self):
+    def _ensure_table(self) -> None:
         cursor = self.storage.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS points (id TEXT PRIMARY KEY, point BLOB)")
         self.storage.commit()
@@ -76,7 +87,7 @@ class CollectionPersistence:
         Args:
             point: point to persist
         """
-        key = self._encode_key(point.id)
+        key = self.encode_key(point.id)
         value = pickle.dumps(point)
 
         cursor = self.storage.cursor()
@@ -97,7 +108,7 @@ class CollectionPersistence:
         Args:
             point_id: id of the point to delete
         """
-        key = self._encode_key(point_id)
+        key = self.encode_key(point_id)
         cursor = self.storage.cursor()
         cursor.execute(
             "DELETE FROM points WHERE id = ?",
