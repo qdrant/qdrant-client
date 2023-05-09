@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import shutil
+from io import TextIOWrapper
 from itertools import zip_longest
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -39,7 +40,7 @@ class QdrantLocal(QdrantBase):
         self.collections: Dict[str, LocalCollection] = {}
         self.aliases: Dict[str, str] = {}
         self._lock = None
-        self._flock_file = None
+        self._flock_file: Optional[TextIOWrapper] = None
         self._load()
 
     def _load(self) -> None:
