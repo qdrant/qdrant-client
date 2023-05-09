@@ -10,7 +10,7 @@ default_collection_name = "example"
 
 
 def ingest_data(
-    vector_size=1500, path=None
+    vector_size=1500, path=None, collection_name=default_collection_name,
 ):  # vector_size < 433: works, vector_size >= 433: crashes
     lines = [x for x in range(10)]
 
@@ -18,7 +18,7 @@ def ingest_data(
     client = qdrant_client.QdrantClient(path=path)
 
     client.recreate_collection(
-        default_collection_name,
+        collection_name,
         vectors_config=rest.VectorParams(
             size=vector_size,
             distance=rest.Distance.COSINE,
@@ -26,9 +26,9 @@ def ingest_data(
     )
 
     client.upsert(
-        collection_name=default_collection_name,
+        collection_name=collection_name,
         points=rest.Batch.construct(
-            ids=[random.randint(0, 100) for _ in range(len(lines))],
+            ids=random.sample(range(100), len(lines)),
             vectors=embeddings,
         ),
     )
@@ -36,5 +36,15 @@ def ingest_data(
 
 def test_local_persistence():
     with tempfile.TemporaryDirectory() as tmpdir:
+        client = qdrant_client.QdrantClient(path=tmpdir)
+
         ingest_data(path=tmpdir)
+        assert 10 == client.count(default_collection_name).count
+
         ingest_data(path=tmpdir)
+        assert 10 == client.count(default_collection_name).count
+
+        ingest_data(path=tmpdir)
+        ingest_data(path=tmpdir, collection_name="example_2")
+        assert 10 == client.count(default_collection_name).count
+        assert 10 == client.count("example_2").count
