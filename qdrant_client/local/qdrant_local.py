@@ -2,9 +2,11 @@ import json
 import logging
 import os
 import shutil
-import numpy as np
 from itertools import zip_longest
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+
+import numpy as np
+import portalocker
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
@@ -36,6 +38,8 @@ class QdrantLocal(QdrantBase):
         self.persistent = location != ":memory:"
         self.collections: Dict[str, LocalCollection] = {}
         self.aliases: Dict[str, str] = {}
+        self._lock = None
+        self._flock_file = None
         self._load()
 
     def _load(self) -> None:
@@ -55,6 +59,23 @@ class QdrantLocal(QdrantBase):
                     self.collections[collection_name] = LocalCollection(config, collection_path)
                 self.aliases = meta["aliases"]
 
+        lock_file_path = os.path.join(self.location, ".lock")
+        if not os.path.exists(lock_file_path):
+            os.makedirs(self.location, exist_ok=True)
+            with open(lock_file_path, "w") as f:
+                f.write("tmp lock file")
+        self._flock_file = open(lock_file_path, "r+")
+        try:
+            self._flock = portalocker.lock(
+                self._flock_file,
+                portalocker.LockFlags.EXCLUSIVE | portalocker.LockFlags.NON_BLOCKING,
+            )
+        except portalocker.exceptions.LockException:
+            raise RuntimeError(
+                f"Storage folder {self.location} is already accessed by another instance of Qdrant client."
+                f" If you require concurrent access, use Qdrant server instead."
+            )
+
     def _save(self) -> None:
         if not self.persistent:
             return
@@ -73,7 +94,6 @@ class QdrantLocal(QdrantBase):
             )
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
-        self._load()
         if collection_name in self.collections:
             return self.collections[collection_name]
         if collection_name in self.aliases:
@@ -326,7 +346,6 @@ class QdrantLocal(QdrantBase):
         )
 
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
-        self._load()
         return types.CollectionsResponse(
             collections=[
                 rest_models.CollectionDescription(name=name)
@@ -349,7 +368,6 @@ class QdrantLocal(QdrantBase):
             return None
 
     def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
-        self._load()
         _collection = self.collections.pop(collection_name, None)
         del _collection
         self.aliases = {
@@ -370,7 +388,6 @@ class QdrantLocal(QdrantBase):
         init_from: Optional[types.InitFrom] = None,
         **kwargs: Any,
     ) -> bool:
-        self._load()
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         collection_path = self._collection_path(collection_name)
