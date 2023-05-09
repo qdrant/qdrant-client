@@ -73,6 +73,7 @@ class QdrantLocal(QdrantBase):
             )
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
+        self._load()
         if collection_name in self.collections:
             return self.collections[collection_name]
         if collection_name in self.aliases:
@@ -325,6 +326,7 @@ class QdrantLocal(QdrantBase):
         )
 
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
+        self._load()
         return types.CollectionsResponse(
             collections=[
                 rest_models.CollectionDescription(name=name)
@@ -347,6 +349,7 @@ class QdrantLocal(QdrantBase):
             return None
 
     def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
+        self._load()
         _collection = self.collections.pop(collection_name, None)
         del _collection
         self.aliases = {
@@ -367,6 +370,7 @@ class QdrantLocal(QdrantBase):
         init_from: Optional[types.InitFrom] = None,
         **kwargs: Any,
     ) -> bool:
+        self._load()
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         collection_path = self._collection_path(collection_name)
