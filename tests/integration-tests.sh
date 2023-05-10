@@ -13,11 +13,14 @@ cd "$(dirname "$0")/../"
 
 QDRANT_LATEST="v1.1.1"
 QDRANT_VERSION=${QDRANT_VERSION:-"$QDRANT_LATEST"}
+REST_PORT="6333"
+GRPC_PORT="6334"
 
-QDRANT_HOST='localhost:6333'
+QDRANT_HOST=localhost:${REST_PORT}
 
 docker run -d --rm \
-           --network=host \
+           -p ${REST_PORT}:${REST_PORT} \
+           -p ${GRPC_PORT}:${GRPC_PORT} \
            -e QDRANT__SERVICE__GRPC_PORT="6334" \
            --name qdrant_test qdrant/qdrant:${QDRANT_VERSION}
 
