@@ -312,6 +312,7 @@ class QdrantClient(QdrantBase):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Search for closest vectors grouped by payload field.
@@ -350,6 +351,13 @@ class QdrantClient(QdrantBase):
                 Score of the returned result might be higher or smaller than the threshold depending
                 on the Distance function used.
                 E.g. for cosine similarity only higher scores will be returned.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -366,6 +374,7 @@ class QdrantClient(QdrantBase):
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
+            consistency=consistency,
             **kwargs,
         )
 
@@ -507,6 +516,7 @@ class QdrantClient(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Recommend point groups: search for similar points based on already stored in Qdrant examples
@@ -558,6 +568,14 @@ class QdrantClient(QdrantBase):
             lookup_from:
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
                 If `None` - use current collection will be used.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+
         Returns:
             List of groups with not more than `group_size` hits in each group.
             Each group also contains an id of the group, which is the value of the payload field.
@@ -577,6 +595,7 @@ class QdrantClient(QdrantBase):
             with_vectors=with_vectors,
             using=using,
             lookup_from=lookup_from,
+            consistency=consistency,
             **kwargs,
         )
 
@@ -738,7 +757,7 @@ class QdrantClient(QdrantBase):
     def delete_vectors(
         self,
         collection_name: str,
-        vector: Optional[str],
+        vectors: List[str],
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
@@ -747,7 +766,10 @@ class QdrantClient(QdrantBase):
 
         Args:
             collection_name: Name of the collection to delete vector from
-            vector: Name of the vector to delete. If `None` or empty - delete default vector.
+            vectors:
+                List of names of the vectors to delete.
+                Use `""` to delete the default vector.
+                At least one vector should be specified.
             points_selector: Selects points based on list of IDs or filter
                  Examples
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
@@ -765,8 +787,8 @@ class QdrantClient(QdrantBase):
         """
         return self._client.delete_vectors(
             collection_name=collection_name,
-            vector=vector,
-            points_selector=points_selector,
+            vectors=vectors,
+            points=points_selector,
             wait=wait,
             ordering=ordering,
         )

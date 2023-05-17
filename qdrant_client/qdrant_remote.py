@@ -427,9 +427,102 @@ class QdrantRemote(QdrantBase):
         with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
-        raise NotImplementedError()
+        if self._prefer_grpc:
+            vector_name = None
+
+            if isinstance(query_vector, types.NamedVector):
+                vector = query_vector.vector
+                vector_name = query_vector.name
+
+            elif isinstance(query_vector, tuple):
+                vector_name = query_vector[0]
+                vector = query_vector[1]
+            else:
+                vector = list(query_vector)
+
+            if isinstance(query_filter, rest_models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
+
+            if isinstance(search_params, rest_models.SearchParams):
+                search_params = RestToGrpc.convert_search_params(search_params)
+
+            if isinstance(
+                with_payload,
+                (
+                    bool,
+                    list,
+                    rest_models.PayloadSelectorInclude,
+                    rest_models.PayloadSelectorExclude,
+                ),
+            ):
+                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
+
+            if isinstance(
+                with_vectors,
+                (
+                    bool,
+                    list,
+                ),
+            ):
+                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
+
+            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
+            result: grpc.GroupsResult = self.grpc_points.SearchGroups(
+                grpc.SearchPointGroups(
+                    collection_name=collection_name,
+                    vector=vector,
+                    vector_name=vector_name,
+                    filter=query_filter,
+                    limit=limit,
+                    group_size=group_size,
+                    with_vectors=with_vectors,
+                    with_payload=with_payload,
+                    params=search_params,
+                    score_threshold=score_threshold,
+                    group_by=group_by,
+                    read_consistency=consistency,
+                ),
+                timeout=self._timeout,
+            ).result
+
+            return GrpcToRest.convert_groups_result(result)
+        else:
+            if isinstance(query_vector, tuple):
+                query_vector = rest_models.NamedVector.construct(
+                    name=query_vector[0], vector=query_vector[1]
+                )
+
+            if isinstance(query_filter, grpc.Filter):
+                query_filter = GrpcToRest.convert_filter(model=query_filter)
+
+            if isinstance(search_params, grpc.SearchParams):
+                search_params = GrpcToRest.convert_search_params(search_params)
+
+            if isinstance(with_payload, grpc.WithPayloadSelector):
+                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
+
+            search_groups_request = rest_models.SearchGroupsRequest.construct(
+                vector=query_vector,
+                filter=query_filter,
+                params=search_params,
+                with_payload=with_payload,
+                with_vector=with_vectors,
+                score_threshold=score_threshold,
+                group_by=group_by,
+                group_size=group_size,
+                limit=limit,
+            )
+
+            return self.openapi_client.points_api.search_point_groups(
+                search_groups_request=search_groups_request,
+                collection_name=collection_name,
+                consistency=consistency,
+            ).result
 
     def recommend_batch(
         self,
@@ -626,9 +719,129 @@ class QdrantRemote(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[models.LookupLocation] = None,
+        consistency: Optional[models.ReadConsistencyType] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
-        raise NotImplementedError()
+        if negative is None:
+            negative = []
+
+        if self._prefer_grpc:
+            positive = [
+                RestToGrpc.convert_extended_point_id(point_id)
+                if isinstance(point_id, (str, int))
+                else point_id
+                for point_id in positive
+            ]
+
+            negative = [
+                RestToGrpc.convert_extended_point_id(point_id)
+                if isinstance(point_id, (str, int))
+                else point_id
+                for point_id in negative
+            ]
+
+            if isinstance(query_filter, rest_models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
+
+            if isinstance(search_params, rest_models.SearchParams):
+                search_params = RestToGrpc.convert_search_params(search_params)
+
+            if isinstance(
+                with_payload,
+                (
+                    bool,
+                    list,
+                    rest_models.PayloadSelectorInclude,
+                    rest_models.PayloadSelectorExclude,
+                ),
+            ):
+                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
+
+            if isinstance(
+                with_vectors,
+                (
+                    bool,
+                    list,
+                ),
+            ):
+                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
+
+            if isinstance(lookup_from, rest_models.LookupLocation):
+                lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
+
+            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
+            res: grpc.GroupsResult = self.grpc_points.RecommendGroups(
+                grpc.RecommendPointGroups(
+                    collection_name=collection_name,
+                    positive=positive,
+                    negative=negative,
+                    filter=query_filter,
+                    group_by=group_by,
+                    limit=limit,
+                    group_size=group_size,
+                    with_vectors=with_vectors,
+                    with_payload=with_payload,
+                    params=search_params,
+                    score_threshold=score_threshold,
+                    using=using,
+                    lookup_from=lookup_from,
+                    read_consistency=consistency,
+                ),
+                timeout=self._timeout,
+            ).result
+
+            assert res is not None, "Recommend groups API returned None"
+            return GrpcToRest.convert_groups_result(res)
+        else:
+            positive = [
+                GrpcToRest.convert_point_id(point_id)
+                if isinstance(point_id, grpc.PointId)
+                else point_id
+                for point_id in positive
+            ]
+
+            negative = [
+                GrpcToRest.convert_point_id(point_id)
+                if isinstance(point_id, grpc.PointId)
+                else point_id
+                for point_id in negative
+            ]
+
+            if isinstance(query_filter, grpc.Filter):
+                query_filter = GrpcToRest.convert_filter(model=query_filter)
+
+            if isinstance(search_params, grpc.SearchParams):
+                search_params = GrpcToRest.convert_search_params(search_params)
+
+            if isinstance(with_payload, grpc.WithPayloadSelector):
+                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
+
+            if isinstance(lookup_from, grpc.LookupLocation):
+                lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
+
+            result = self.openapi_client.points_api.recommend_point_groups(
+                collection_name=collection_name,
+                consistency=consistency,
+                recommend_groups_request=rest_models.RecommendGroupsRequest.construct(
+                    positive=positive,
+                    negative=negative,
+                    filter=query_filter,
+                    group_by=group_by,
+                    limit=limit,
+                    group_size=group_size,
+                    params=search_params,
+                    with_payload=with_payload,
+                    with_vector=with_vectors,
+                    score_threshold=score_threshold,
+                    lookup_from=lookup_from,
+                    using=using,
+                ),
+            ).result
+
+            assert result is not None, "Recommend points API returned None"
+            return result
 
     def scroll(
         self,
@@ -805,21 +1018,75 @@ class QdrantRemote(QdrantBase):
     def update_vectors(
         self,
         collection_name: str,
-        vectors: List[(types.PointId, Any)],
+        vectors: List[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
-        raise NotImplementedError()
+        if self._prefer_grpc:
+            vectors = [RestToGrpc.convert_point_vectors(vector) for vector in vectors]
+
+            if isinstance(ordering, rest_models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
+            grpc_result = self.grpc_points.UpdateVectors(
+                grpc.UpdatePointVectors(
+                    collection_name=collection_name,
+                    wait=wait,
+                    vectors=vectors,
+                    ordering=ordering,
+                )
+            ).result
+            assert grpc_result is not None, "Upsert returned None result"
+            return GrpcToRest.convert_update_result(grpc_result)
+        else:
+            return self.openapi_client.points_api.update_vectors(
+                collection_name=collection_name,
+                wait=wait,
+                vector_update_operations=vectors,
+                ordering=ordering,
+            ).result
 
     def delete_vectors(
         self,
         collection_name: str,
-        vector: Optional[str],
-        points_selector: types.PointsSelector,
+        vectors: List[str],
+        points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
-        raise NotImplementedError()
+        if self._prefer_grpc:
+            points = self._try_argument_to_grpc_selector(points)
+
+            if isinstance(ordering, rest_models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
+            grpc_result = self.grpc_points.DeleteVectors(
+                grpc.DeletePointVectors(
+                    collection_name=collection_name,
+                    wait=wait,
+                    vectors=grpc.VectorsSelector(
+                        names=vectors,
+                    ),
+                    points=points,
+                    ordering=ordering,
+                )
+            ).result
+
+            assert grpc_result is not None, "Delete vectors returned None result"
+
+            return GrpcToRest.convert_update_result(grpc_result)
+        else:
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            return self.openapi_client.points_api.delete_vectors(
+                collection_name=collection_name,
+                wait=wait,
+                ordering=ordering,
+                delete_vectors=rest_models.DeleteVectors.construct(
+                    vector=vectors,
+                    points=_points,
+                    filter=_filter,
+                ),
+            ).result
 
     def retrieve(
         self,

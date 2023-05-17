@@ -588,6 +588,7 @@ class GrpcToRest:
             quantization_config=cls.convert_quantization_config(model.quantization_config)
             if model.HasField("quantization_config")
             else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
         )
 
     @classmethod
@@ -774,6 +775,32 @@ class GrpcToRest:
             ignore=model.ignore if model.HasField("ignore") else None,
             rescore=model.rescore if model.HasField("rescore") else None,
         )
+
+    @classmethod
+    def convert_point_vectors(cls, model: grpc.PointVectors) -> rest.PointVectors:
+        return rest.PointVectors(
+            id=cls.convert_point_id(model.id),
+            vectors=cls.convert_vectors(model.vectors),
+        )
+
+    @classmethod
+    def convert_groups_result(cls, model: grpc.GroupsResult) -> rest.GroupsResult:
+        return rest.GroupsResult(
+            groups=[cls.convert_group(group) for group in model.groups],
+        )
+
+    @classmethod
+    def convert_group(cls, model: grpc.PointGroup) -> rest.PointGroup:
+        return rest.PointGroup(
+            id=cls.convert_group_id(model.id),
+            hits=[cls.convert_scored_point(hit) for hit in model.hits],
+        )
+
+    @classmethod
+    def convert_group_id(cls, model: grpc.GroupId) -> rest.GroupId:
+        name = model.WhichOneof("kind")
+        val = getattr(model, name)
+        return val
 
 
 # ----------------------------------------
@@ -1270,6 +1297,7 @@ class RestToGrpc:
             quantization_config=cls.convert_quantization_config(model.quantization_config)
             if model.quantization_config is not None
             else None,
+            on_disk=model.on_disk,
         )
 
     @classmethod
@@ -1497,3 +1525,41 @@ class RestToGrpc:
             ignore=model.ignore,
             rescore=model.rescore,
         )
+
+    @classmethod
+    def convert_point_vectors(cls, model: rest.PointVectors) -> grpc.PointVectors:
+        return grpc.PointVectors(
+            id=cls.convert_extended_point_id(model.id),
+            vectors=cls.convert_vector_struct(model.vector),
+        )
+
+    @classmethod
+    def convert_groups_result(cls, model: rest.GroupsResult) -> grpc.GroupsResult:
+        return grpc.GroupsResult(
+            groups=[cls.convert_point_group(group) for group in model.groups],
+        )
+
+    @classmethod
+    def convert_point_group(cls, model: rest.PointGroup) -> grpc.PointGroup:
+        return grpc.PointGroup(
+            id=cls.convert_group_id(model.id),
+            hits=[cls.convert_scored_point(point) for point in model.hits],
+        )
+
+    @classmethod
+    def convert_group_id(cls, model: rest.GroupId) -> grpc.GroupId:
+        if isinstance(model, str):
+            return grpc.GroupId(
+                string_value=model,
+            )
+        elif isinstance(model, int):
+            if model >= 0:
+                return grpc.GroupId(
+                    unsigned_value=model,
+                )
+            else:
+                return grpc.GroupId(
+                    integer_value=model,
+                )
+        else:
+            raise ValueError(f"invalid GroupId model: {model}")
