@@ -131,7 +131,7 @@ class QdrantBase:
     def update_vectors(
         self,
         collection_name: str,
-        vectors: List[(types.PointId, Any)],
+        vectors: List[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:

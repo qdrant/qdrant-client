@@ -758,6 +758,31 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_product_quantization_config(
+        cls, model: grpc.ProductQuantization
+    ) -> rest.ProductQuantizationConfig:
+        return rest.ProductQuantizationConfig(
+            compression=cls.convert_compression_ratio(model.compression)
+            if model.HasField("compression")
+            else None,
+            always_ram=model.always_ram if model.HasField("always_ram") else None,
+        )
+
+    @classmethod
+    def convert_compression_ratio(cls, model: grpc.CompressionRatio) -> rest.CompressionRatio:
+        if model == grpc.x4:
+            return rest.CompressionRatio.X4
+        if model == grpc.x8:
+            return rest.CompressionRatio.X8
+        if model == grpc.x16:
+            return rest.CompressionRatio.X16
+        if model == grpc.x32:
+            return rest.CompressionRatio.X32
+        if model == grpc.x64:
+            return rest.CompressionRatio.X64
+        raise ValueError(f"invalid CompressionRatio model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_quantization_config(
         cls, model: grpc.QuantizationConfig
     ) -> rest.QuantizationConfig:
@@ -765,6 +790,8 @@ class GrpcToRest:
         val = getattr(model, name)
         if name == "scalar":
             return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
+        if name == "product":
+            return rest.ProductQuantization(product=cls.convert_product_quantization_config(val))
         raise ValueError(f"invalid QuantizationConfig model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1507,12 +1534,40 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_product_quantization_config(
+        cls, model: rest.ProductQuantizationConfig
+    ) -> grpc.ProductQuantization:
+        return grpc.ProductQuantization(
+            compression=cls.convert_compression_ratio(model.compression),
+            always_ram=model.always_ram,
+        )
+
+    @classmethod
+    def convert_compression_ratio(cls, model: rest.CompressionRatio) -> grpc.CompressionRatio:
+        if model == rest.CompressionRatio.X4:
+            return grpc.CompressionRatio.x4
+        elif model == rest.CompressionRatio.X8:
+            return grpc.CompressionRatio.x8
+        elif model == rest.CompressionRatio.X16:
+            return grpc.CompressionRatio.x16
+        elif model == rest.CompressionRatio.X32:
+            return grpc.CompressionRatio.x32
+        elif model == rest.CompressionRatio.X64:
+            return grpc.CompressionRatio.x64
+        else:
+            raise ValueError(f"invalid CompressionRatio model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_quantization_config(
         cls, model: rest.QuantizationConfig
     ) -> grpc.QuantizationConfig:
         if isinstance(model, rest.ScalarQuantization):
             return grpc.QuantizationConfig(
                 scalar=cls.convert_scalar_quantization_config(model.scalar)
+            )
+        if isinstance(model, rest.ProductQuantization):
+            return grpc.QuantizationConfig(
+                product=cls.convert_product_quantization_config(model.product)
             )
         else:
             raise ValueError(f"invalid QuantizationConfig model: {model}")

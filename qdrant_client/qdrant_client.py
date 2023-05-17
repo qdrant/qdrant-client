@@ -723,7 +723,7 @@ class QdrantClient(QdrantBase):
     def update_vectors(
         self,
         collection_name: str,
-        vectors: List[(types.PointId, Any)],
+        vectors: List[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
@@ -732,10 +732,9 @@ class QdrantClient(QdrantBase):
         Args:
             collection_name: Name of the collection to update vectors in
             vectors: List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
-                Example: [
-                    (1, [1, 2, 3]),
-                    (2, {'vector1': [1, 2, 3], 'vector2': [4, 5, 6]})
-                ]
+                Example
+                - `PointVectors(id=1, vector=[1, 2, 3])`
+                - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
             wait: Await for the results to be processed.
             ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
