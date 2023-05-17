@@ -295,6 +295,80 @@ class QdrantClient(QdrantBase):
             **kwargs,
         )
 
+    def search_groups(
+        self,
+        collection_name: str,
+        query_vector: Union[
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+        ],
+        group_by: str,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        """Search for closest vectors grouped by payload field.
+
+        Searches best matches for query vector grouped by the value of payload field.
+        Useful to obtain most relevant results for each category, deduplicate results,
+        finding the best representation vector for the same entity.
+
+        Args:
+            collection_name: Collection to search in
+            query_vector:
+                Search for vectors closest to this.
+                Can be either a vector itself, or a named vector, or a tuple of vector name and vector itself
+            group_by: Name of the payload field to group by.
+                Field must be of type "keyword" or "integer".
+                Nested fields are specified using dot notation, e.g. "nested_field.subfield".
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many groups return
+            group_size: How many results return for each group
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold: Minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
+
+        Returns:
+            List of groups with not more than `group_size` hits in each group.
+            Each group also contains an id of the group, which is the value of the payload field.
+        """
+        return self._client.search_groups(
+            collection_name=collection_name,
+            query_vector=query_vector,
+            group_by=group_by,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            group_size=group_size,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            **kwargs,
+        )
+
     def recommend_batch(
         self,
         collection_name: str,
@@ -415,6 +489,94 @@ class QdrantClient(QdrantBase):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            **kwargs,
+        )
+
+    def recommend_groups(
+        self,
+        collection_name: str,
+        group_by: str,
+        positive: Sequence[types.PointId],
+        negative: Optional[Sequence[types.PointId]] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        score_threshold: Optional[float] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        """Recommend point groups: search for similar points based on already stored in Qdrant examples
+        and groups by payload field.
+
+        Recommend best matches for given stored examples grouped by the value of payload field.
+        Useful to obtain most relevant results for each category, deduplicate results,
+        finding the best representation vector for the same entity.
+
+        Args:
+            collection_name: Collection to search in
+            positive:
+                List of stored point IDs, which should be used as reference for similarity search.
+                If there is only one ID provided - this request is equivalent to the regular search with vector of that point.
+                If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
+                Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
+            negative:
+                List of stored point IDs, which should be dissimilar to the search result.
+                Negative examples is an experimental functionality. Its behaviour may change in the future.
+            group_by: Name of the payload field to group by.
+                Field must be of type "keyword" or "integer".
+                Nested fields are specified using dot notation, e.g. "nested_field.subfield".
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many groups return
+            group_size: How many results return for each group
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
+            using:
+                Name of the vectors to use for recommendations.
+                If `None` - use default vectors.
+            lookup_from:
+                Defines a location (collection and vector field name), used to lookup vectors for recommendations.
+                If `None` - use current collection will be used.
+        Returns:
+            List of groups with not more than `group_size` hits in each group.
+            Each group also contains an id of the group, which is the value of the payload field.
+
+        """
+        return self._client.recommend_groups(
+            collection_name=collection_name,
+            group_by=group_by,
+            positive=positive,
+            negative=negative,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            group_size=group_size,
+            score_threshold=score_threshold,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            using=using,
+            lookup_from=lookup_from,
             **kwargs,
         )
 
@@ -545,7 +707,7 @@ class QdrantClient(QdrantBase):
         vectors: List[(types.PointId, Any)],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
-    ):
+    ) -> types.UpdateResult:
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
 
         Args:
@@ -564,11 +726,47 @@ class QdrantClient(QdrantBase):
                     consistent, but may be unavailable if leader is down
 
         Returns:
-
+            Operation result
         """
         return self._client.update_vectors(
             collection_name=collection_name,
             vectors=vectors,
+            wait=wait,
+            ordering=ordering,
+        )
+
+    def delete_vectors(
+        self,
+        collection_name: str,
+        vector: Optional[str],
+        points_selector: types.PointsSelector,
+        wait: bool = True,
+        ordering: Optional[types.WriteOrdering] = None,
+    ) -> types.UpdateResult:
+        """Delete specified vector from the collection. Does not affect payload.
+
+        Args:
+            collection_name: Name of the collection to delete vector from
+            vector: Name of the vector to delete. If `None` or empty - delete default vector.
+            points_selector: Selects points based on list of IDs or filter
+                 Examples
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            wait: Await for the results to be processed.
+            ordering: Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
+
+        Returns:
+            Operation result
+        """
+        return self._client.delete_vectors(
+            collection_name=collection_name,
+            vector=vector,
+            points_selector=points_selector,
             wait=wait,
             ordering=ordering,
         )
@@ -691,7 +889,7 @@ class QdrantClient(QdrantBase):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector.
-             Example:
+             Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering:
@@ -750,7 +948,7 @@ class QdrantClient(QdrantBase):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector.
-             Example:
+             Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering:
@@ -792,7 +990,7 @@ class QdrantClient(QdrantBase):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             keys: List of payload keys to remove
             points: List of affected points, filter or points selector.
-                Example:
+                Example
                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering:
@@ -832,7 +1030,7 @@ class QdrantClient(QdrantBase):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points_selector: List of affected points, filter or points selector.
-                Example:
+                Example
                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering:
