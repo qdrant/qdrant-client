@@ -146,28 +146,40 @@ class QdrantRemote(QdrantBase):
     def _init_grpc_points_client(self) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
-                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
+                host=self._host,
+                port=self._grpc_port,
+                ssl=self._https,
+                metadata=self._grpc_headers,
             )
         self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
     def _init_grpc_collections_client(self) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
-                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
+                host=self._host,
+                port=self._grpc_port,
+                ssl=self._https,
+                metadata=self._grpc_headers,
             )
         self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
 
     def _init_async_grpc_points_client(self) -> None:
         if self._aio_grpc_channel is None:
             self._aio_grpc_channel = get_async_channel(
-                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
+                host=self._host,
+                port=self._grpc_port,
+                ssl=self._https,
+                metadata=self._grpc_headers,
             )
         self._aio_grpc_points_client = grpc.PointsStub(self._aio_grpc_channel)
 
     def _init_async_grpc_collections_client(self) -> None:
         if self._aio_grpc_channel is None:
             self._aio_grpc_channel = get_async_channel(
-                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
+                host=self._host,
+                port=self._grpc_port,
+                ssl=self._https,
+                metadata=self._grpc_headers,
             )
         self._aio_grpc_collections_client = grpc.CollectionsStub(self._aio_grpc_channel)
 
@@ -297,7 +309,10 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -938,7 +953,10 @@ class QdrantRemote(QdrantBase):
 
             grpc_result = self.grpc_points.Upsert(
                 grpc.UpsertPoints(
-                    collection_name=collection_name, wait=wait, points=points, ordering=ordering
+                    collection_name=collection_name,
+                    wait=wait,
+                    points=points,
+                    ordering=ordering,
                 ),
                 timeout=self._timeout,
             ).result

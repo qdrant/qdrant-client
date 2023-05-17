@@ -110,7 +110,9 @@ class LocalCollection:
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
     def _get_payload(
-        self, idx: int, with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True
+        self,
+        idx: int,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
     ) -> Optional[models.Payload]:
         payload = self.payload[idx]
 
@@ -491,7 +493,10 @@ class LocalCollection:
     def _selector_to_ids(
         self,
         selector: Union[
-            models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
+            models.Filter,
+            List[models.ExtendedPointId],
+            models.FilterSelector,
+            models.PointIdsList,
         ],
     ) -> List[models.ExtendedPointId]:
         if isinstance(selector, list):
@@ -508,7 +513,10 @@ class LocalCollection:
     def delete(
         self,
         selector: Union[
-            models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
+            models.Filter,
+            List[models.ExtendedPointId],
+            models.FilterSelector,
+            models.PointIdsList,
         ],
     ) -> None:
         ids = self._selector_to_ids(selector)
@@ -528,7 +536,10 @@ class LocalCollection:
         self,
         payload: models.Payload,
         selector: Union[
-            models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
+            models.Filter,
+            List[models.ExtendedPointId],
+            models.FilterSelector,
+            models.PointIdsList,
         ],
     ) -> None:
         ids = self._selector_to_ids(selector)
@@ -544,7 +555,10 @@ class LocalCollection:
         self,
         payload: models.Payload,
         selector: Union[
-            models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
+            models.Filter,
+            List[models.ExtendedPointId],
+            models.FilterSelector,
+            models.PointIdsList,
         ],
     ) -> None:
         ids = self._selector_to_ids(selector)
@@ -557,7 +571,10 @@ class LocalCollection:
         self,
         keys: Sequence[str],
         selector: Union[
-            models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
+            models.Filter,
+            List[models.ExtendedPointId],
+            models.FilterSelector,
+            models.PointIdsList,
         ],
     ) -> None:
         ids = self._selector_to_ids(selector)
@@ -571,7 +588,10 @@ class LocalCollection:
     def clear_payload(
         self,
         selector: Union[
-            models.Filter, List[models.ExtendedPointId], models.FilterSelector, models.PointIdsList
+            models.Filter,
+            List[models.ExtendedPointId],
+            models.FilterSelector,
+            models.PointIdsList,
         ],
     ) -> None:
         ids = self._selector_to_ids(selector)

@@ -190,14 +190,20 @@ class QdrantClient(QdrantBase):
             List of search responses
         """
         return self._client.search_batch(
-            collection_name=collection_name, requests=requests, consistency=consistency, **kwargs
+            collection_name=collection_name,
+            requests=requests,
+            consistency=consistency,
+            **kwargs,
         )
 
     def search(
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -313,7 +319,10 @@ class QdrantClient(QdrantBase):
             List of recommend responses
         """
         return self._client.recommend_batch(
-            collection_name=collection_name, requests=requests, consistency=consistency, **kwargs
+            collection_name=collection_name,
+            requests=requests,
+            consistency=consistency,
+            **kwargs,
         )
 
     def recommend(
@@ -486,7 +495,10 @@ class QdrantClient(QdrantBase):
             Amount of points in the collection matching the filter.
         """
         return self._client.count(
-            collection_name=collection_name, count_filter=count_filter, exact=exact, **kwargs
+            collection_name=collection_name,
+            count_filter=count_filter,
+            exact=exact,
+            **kwargs,
         )
 
     def upsert(
@@ -520,7 +532,45 @@ class QdrantClient(QdrantBase):
             Operation result
         """
         return self._client.upsert(
-            collection_name=collection_name, points=points, wait=wait, ordering=ordering, **kwargs
+            collection_name=collection_name,
+            points=points,
+            wait=wait,
+            ordering=ordering,
+            **kwargs,
+        )
+
+    def update_vectors(
+        self,
+        collection_name: str,
+        vectors: List[(types.PointId, Any)],
+        wait: bool = True,
+        ordering: Optional[types.WriteOrdering] = None,
+    ):
+        """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
+
+        Args:
+            collection_name: Name of the collection to update vectors in
+            vectors: List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
+                Example: [
+                    (1, [1, 2, 3]),
+                    (2, {'vector1': [1, 2, 3], 'vector2': [4, 5, 6]})
+                ]
+            wait: Await for the results to be processed.
+            ordering: Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
+
+        Returns:
+
+        """
+        return self._client.update_vectors(
+            collection_name=collection_name,
+            vectors=vectors,
+            wait=wait,
+            ordering=ordering,
         )
 
     def retrieve(
@@ -824,7 +874,9 @@ class QdrantClient(QdrantBase):
             Operation result
         """
         return self._client.update_collection_aliases(
-            change_aliases_operations=change_aliases_operations, timeout=timeout, **kwargs
+            change_aliases_operations=change_aliases_operations,
+            timeout=timeout,
+            **kwargs,
         )
 
     def get_collection_aliases(
@@ -1297,7 +1349,10 @@ class QdrantClient(QdrantBase):
 
         """
         return self._client.recover_snapshot(
-            collection_name=collection_name, location=location, priority=priority, **kwargs
+            collection_name=collection_name,
+            location=location,
+            priority=priority,
+            **kwargs,
         )
 
     def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:

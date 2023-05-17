@@ -273,7 +273,8 @@ class GrpcToRest:
     @classmethod
     def convert_update_result(cls, model: grpc.UpdateResult) -> rest.UpdateResult:
         return rest.UpdateResult(
-            operation_id=model.operation_id, status=cls.convert_update_status(model.status)
+            operation_id=model.operation_id,
+            status=cls.convert_update_status(model.status),
         )
 
     @classmethod
@@ -877,7 +878,8 @@ class RestToGrpc:
     @classmethod
     def convert_update_result(cls, model: rest.UpdateResult) -> grpc.UpdateResult:
         return grpc.UpdateResult(
-            operation_id=model.operation_id, status=cls.convert_update_stats(model.status)
+            operation_id=model.operation_id,
+            status=cls.convert_update_stats(model.status),
         )
 
     @classmethod
@@ -1024,7 +1026,8 @@ class RestToGrpc:
     @classmethod
     def convert_wal_config_diff(cls, model: rest.WalConfigDiff) -> grpc.WalConfigDiff:
         return grpc.WalConfigDiff(
-            wal_capacity_mb=model.wal_capacity_mb, wal_segments_ahead=model.wal_segments_ahead
+            wal_capacity_mb=model.wal_capacity_mb,
+            wal_segments_ahead=model.wal_segments_ahead,
         )
 
     @classmethod
@@ -1053,7 +1056,8 @@ class RestToGrpc:
     @classmethod
     def convert_wal_config(cls, model: rest.WalConfig) -> grpc.WalConfigDiff:
         return grpc.WalConfigDiff(
-            wal_capacity_mb=model.wal_capacity_mb, wal_segments_ahead=model.wal_segments_ahead
+            wal_capacity_mb=model.wal_capacity_mb,
+            wal_segments_ahead=model.wal_segments_ahead,
         )
 
     @classmethod

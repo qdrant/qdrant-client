@@ -59,6 +59,8 @@ RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
 
+GroupsResult: TypeAlias = rest.GroupsResult
+
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7
 _np_numeric = Union[

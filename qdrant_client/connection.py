@@ -103,7 +103,9 @@ def create_generic_client_interceptor(intercept_call: Any) -> _GenericClientInte
     return _GenericClientInterceptor(intercept_call)
 
 
-def create_generic_async_client_interceptor(intercept_call: Any) -> _GenericAsyncClientInterceptor:
+def create_generic_async_client_interceptor(
+    intercept_call: Any,
+) -> _GenericAsyncClientInterceptor:
     return _GenericAsyncClientInterceptor(intercept_call)
 
 
@@ -181,8 +183,8 @@ def get_channel(
 ) -> grpc.Channel:
     # gRPC client options
     options = [
-        ('grpc.max_send_message_length', -1),
-        ('grpc.max_receive_message_length', -1),
+        ("grpc.max_send_message_length", -1),
+        ("grpc.max_receive_message_length", -1),
     ]
 
     if ssl:
@@ -220,8 +222,8 @@ def get_async_channel(
 ) -> grpc.aio.Channel:
     # gRPC client options
     options = [
-        ('grpc.max_send_message_length', -1),
-        ('grpc.max_receive_message_length', -1),
+        ("grpc.max_send_message_length", -1),
+        ("grpc.max_receive_message_length", -1),
     ]
 
     if ssl:
@@ -248,6 +250,8 @@ def get_async_channel(
     else:
         if metadata:
             metadata_interceptor = header_adder_async_interceptor(metadata)
-            return grpc.aio.insecure_channel(f"{host}:{port}", options, interceptors=[metadata_interceptor])
+            return grpc.aio.insecure_channel(
+                f"{host}:{port}", options, interceptors=[metadata_interceptor]
+            )
         else:
             return grpc.aio.insecure_channel(f"{host}:{port}", options)

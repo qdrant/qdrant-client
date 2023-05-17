@@ -102,7 +102,10 @@ class QdrantLocal(QdrantBase):
         raise ValueError(f"Collection {collection_name} not found")
 
     def search_batch(
-        self, collection_name: str, requests: Sequence[types.SearchRequest], **kwargs: Any
+        self,
+        collection_name: str,
+        requests: Sequence[types.SearchRequest],
+        **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         collection = self._get_collection(collection_name)
 
@@ -149,7 +152,10 @@ class QdrantLocal(QdrantBase):
         )
 
     def recommend_batch(
-        self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
+        self,
+        collection_name: str,
+        requests: Sequence[types.RecommendRequest],
+        **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         collection = self._get_collection(collection_name)
 

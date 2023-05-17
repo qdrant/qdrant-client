@@ -29,6 +29,16 @@ class PointsStub(object):
                 request_serializer=points__pb2.GetPoints.SerializeToString,
                 response_deserializer=points__pb2.GetResponse.FromString,
                 )
+        self.UpdateVectors = channel.unary_unary(
+                '/qdrant.Points/UpdateVectors',
+                request_serializer=points__pb2.UpdatePointVectors.SerializeToString,
+                response_deserializer=points__pb2.PointsOperationResponse.FromString,
+                )
+        self.DeleteVectors = channel.unary_unary(
+                '/qdrant.Points/DeleteVectors',
+                request_serializer=points__pb2.DeletePointVectors.SerializeToString,
+                response_deserializer=points__pb2.PointsOperationResponse.FromString,
+                )
         self.SetPayload = channel.unary_unary(
                 '/qdrant.Points/SetPayload',
                 request_serializer=points__pb2.SetPayloadPoints.SerializeToString,
@@ -69,6 +79,11 @@ class PointsStub(object):
                 request_serializer=points__pb2.SearchBatchPoints.SerializeToString,
                 response_deserializer=points__pb2.SearchBatchResponse.FromString,
                 )
+        self.SearchGroups = channel.unary_unary(
+                '/qdrant.Points/SearchGroups',
+                request_serializer=points__pb2.SearchPointGroups.SerializeToString,
+                response_deserializer=points__pb2.SearchGroupsResponse.FromString,
+                )
         self.Scroll = channel.unary_unary(
                 '/qdrant.Points/Scroll',
                 request_serializer=points__pb2.ScrollPoints.SerializeToString,
@@ -83,6 +98,11 @@ class PointsStub(object):
                 '/qdrant.Points/RecommendBatch',
                 request_serializer=points__pb2.RecommendBatchPoints.SerializeToString,
                 response_deserializer=points__pb2.RecommendBatchResponse.FromString,
+                )
+        self.RecommendGroups = channel.unary_unary(
+                '/qdrant.Points/RecommendGroups',
+                request_serializer=points__pb2.RecommendPointGroups.SerializeToString,
+                response_deserializer=points__pb2.RecommendGroupsResponse.FromString,
                 )
         self.Count = channel.unary_unary(
                 '/qdrant.Points/Count',
@@ -113,6 +133,22 @@ class PointsServicer(object):
     def Get(self, request, context):
         """
         Retrieve points
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateVectors(self, request, context):
+        """
+        Update named vectors for point
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteVectors(self, request, context):
+        """
+        Delete named vectors for points
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -182,6 +218,14 @@ class PointsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SearchGroups(self, request, context):
+        """
+        Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given field
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Scroll(self, request, context):
         """
         Iterate over all or filtered points points
@@ -201,6 +245,14 @@ class PointsServicer(object):
     def RecommendBatch(self, request, context):
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RecommendGroups(self, request, context):
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given field
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -231,6 +283,16 @@ def add_PointsServicer_to_server(servicer, server):
                     servicer.Get,
                     request_deserializer=points__pb2.GetPoints.FromString,
                     response_serializer=points__pb2.GetResponse.SerializeToString,
+            ),
+            'UpdateVectors': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateVectors,
+                    request_deserializer=points__pb2.UpdatePointVectors.FromString,
+                    response_serializer=points__pb2.PointsOperationResponse.SerializeToString,
+            ),
+            'DeleteVectors': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteVectors,
+                    request_deserializer=points__pb2.DeletePointVectors.FromString,
+                    response_serializer=points__pb2.PointsOperationResponse.SerializeToString,
             ),
             'SetPayload': grpc.unary_unary_rpc_method_handler(
                     servicer.SetPayload,
@@ -272,6 +334,11 @@ def add_PointsServicer_to_server(servicer, server):
                     request_deserializer=points__pb2.SearchBatchPoints.FromString,
                     response_serializer=points__pb2.SearchBatchResponse.SerializeToString,
             ),
+            'SearchGroups': grpc.unary_unary_rpc_method_handler(
+                    servicer.SearchGroups,
+                    request_deserializer=points__pb2.SearchPointGroups.FromString,
+                    response_serializer=points__pb2.SearchGroupsResponse.SerializeToString,
+            ),
             'Scroll': grpc.unary_unary_rpc_method_handler(
                     servicer.Scroll,
                     request_deserializer=points__pb2.ScrollPoints.FromString,
@@ -286,6 +353,11 @@ def add_PointsServicer_to_server(servicer, server):
                     servicer.RecommendBatch,
                     request_deserializer=points__pb2.RecommendBatchPoints.FromString,
                     response_serializer=points__pb2.RecommendBatchResponse.SerializeToString,
+            ),
+            'RecommendGroups': grpc.unary_unary_rpc_method_handler(
+                    servicer.RecommendGroups,
+                    request_deserializer=points__pb2.RecommendPointGroups.FromString,
+                    response_serializer=points__pb2.RecommendGroupsResponse.SerializeToString,
             ),
             'Count': grpc.unary_unary_rpc_method_handler(
                     servicer.Count,
@@ -350,6 +422,40 @@ class Points(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Points/Get',
             points__pb2.GetPoints.SerializeToString,
             points__pb2.GetResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UpdateVectors(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/UpdateVectors',
+            points__pb2.UpdatePointVectors.SerializeToString,
+            points__pb2.PointsOperationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DeleteVectors(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/DeleteVectors',
+            points__pb2.DeletePointVectors.SerializeToString,
+            points__pb2.PointsOperationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -490,6 +596,23 @@ class Points(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def SearchGroups(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/SearchGroups',
+            points__pb2.SearchPointGroups.SerializeToString,
+            points__pb2.SearchGroupsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def Scroll(request,
             target,
             options=(),
@@ -537,6 +660,23 @@ class Points(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Points/RecommendBatch',
             points__pb2.RecommendBatchPoints.SerializeToString,
             points__pb2.RecommendBatchResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RecommendGroups(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/RecommendGroups',
+            points__pb2.RecommendPointGroups.SerializeToString,
+            points__pb2.RecommendGroupsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
