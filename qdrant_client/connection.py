@@ -179,6 +179,12 @@ def header_adder_async_interceptor(
 def get_channel(
     host: str, port: int, ssl: bool, metadata: Optional[List[Tuple[str, str]]] = None
 ) -> grpc.Channel:
+    # gRPC client options
+    options = [
+        ('grpc.max_send_message_length', -1),
+        ('grpc.max_receive_message_length', -1),
+    ]
+
     if ssl:
         if metadata:
 
@@ -199,19 +205,25 @@ def get_channel(
             creds = grpc.ssl_channel_credentials()
 
         # finally pass in the combined credentials when creating a channel
-        return grpc.secure_channel(f"{host}:{port}", creds)
+        return grpc.secure_channel(f"{host}:{port}", creds, options)
     else:
         if metadata:
             metadata_interceptor = header_adder_interceptor(metadata)
-            channel = grpc.insecure_channel(f"{host}:{port}", metadata)
+            channel = grpc.insecure_channel(f"{host}:{port}", metadata, options)
             return grpc.intercept_channel(channel, metadata_interceptor)
         else:
-            return grpc.insecure_channel(f"{host}:{port}")
+            return grpc.insecure_channel(f"{host}:{port}", options)
 
 
 def get_async_channel(
     host: str, port: int, ssl: bool, metadata: Optional[List[Tuple[str, str]]] = None
 ) -> grpc.aio.Channel:
+    # gRPC client options
+    options = [
+        ('grpc.max_send_message_length', -1),
+        ('grpc.max_receive_message_length', -1),
+    ]
+
     if ssl:
         if metadata:
 
@@ -232,10 +244,10 @@ def get_async_channel(
             creds = grpc.ssl_channel_credentials()
 
         # finally pass in the combined credentials when creating a channel
-        return grpc.aio.secure_channel(f"{host}:{port}", creds)
+        return grpc.aio.secure_channel(f"{host}:{port}", creds, options)
     else:
         if metadata:
             metadata_interceptor = header_adder_async_interceptor(metadata)
-            return grpc.aio.insecure_channel(f"{host}:{port}", interceptors=[metadata_interceptor])
+            return grpc.aio.insecure_channel(f"{host}:{port}", options, interceptors=[metadata_interceptor])
         else:
-            return grpc.aio.insecure_channel(f"{host}:{port}")
+            return grpc.aio.insecure_channel(f"{host}:{port}", options)
