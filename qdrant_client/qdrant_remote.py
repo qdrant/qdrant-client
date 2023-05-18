@@ -1042,7 +1042,7 @@ class QdrantRemote(QdrantBase):
             return self.openapi_client.points_api.update_vectors(
                 collection_name=collection_name,
                 wait=wait,
-                vector_update_operations=vectors,
+                update_vectors=rest_models.UpdateVectors(points=vectors),
                 ordering=ordering,
             ).result
 

@@ -43,34 +43,49 @@ def test_simple_opt_vectors_search():
         points_selector=ids_to_delete,
     )
 
-    print("--------------------")
-
-    res = local_client.retrieve(
-        collection_name=COLLECTION_NAME,
-        ids=[1, 2, 3, 4, 5, 6],
-        with_payload=False,
-        with_vectors=True,
+    compare_client_results(
+        local_client,
+        remote_client,
+        lambda c: sorted(
+            c.retrieve(
+                COLLECTION_NAME,
+                vectors_to_retrieve,
+                with_payload=False,
+                with_vectors=["image", "code"],
+            ),
+            key=lambda x: x.id,
+        ),
     )
 
-    for point in res:
-        print(point.vector.keys())
+    new_vector = np.random.rand(image_vector_size).tolist()
+    update_vectors = [
+        models.PointVectors(
+            id=i,
+            vector={"image": new_vector},
+        )
+        for i in range(6)
+    ]
 
-    print("--------------------")
-
-    res = remote_client.retrieve(
+    local_client.update_vectors(
         collection_name=COLLECTION_NAME,
-        ids=[1, 2, 3, 4, 5, 6],
-        with_payload=False,
-        with_vectors=True,
+        vectors=update_vectors,
     )
 
-    for point in res:
-        print(point.vector.keys())
+    remote_client.update_vectors(
+        collection_name=COLLECTION_NAME,
+        vectors=update_vectors,
+    )
 
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.retrieve(
-            COLLECTION_NAME, vectors_to_retrieve, with_payload=False, with_vectors=True
+        lambda c: sorted(
+            c.retrieve(
+                COLLECTION_NAME,
+                vectors_to_retrieve,
+                with_payload=False,
+                with_vectors=["image", "code"],
+            ),
+            key=lambda x: x.id,
         ),
     )

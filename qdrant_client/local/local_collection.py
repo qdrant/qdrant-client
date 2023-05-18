@@ -162,10 +162,10 @@ class LocalCollection:
         }
 
         if isinstance(with_vectors, list):
-            vectors = {name: vectors.get(name) for name in with_vectors}
+            vectors = {name: vectors[name] for name in with_vectors if name in vectors}
 
         if len(vectors) == 1 and DEFAULT_VECTOR_NAME in vectors:
-            return vectors.get(DEFAULT_VECTOR_NAME)
+            return vectors[DEFAULT_VECTOR_NAME]
 
         return vectors
 
