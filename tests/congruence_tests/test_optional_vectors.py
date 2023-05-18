@@ -1,22 +1,16 @@
-from typing import List
-
 import numpy as np
 
-from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     NUM_VECTORS,
-    code_vector_size,
     compare_client_results,
     generate_fixtures,
     image_vector_size,
     init_client,
     init_local,
     init_remote,
-    text_vector_size,
 )
-from tests.fixtures.filters import one_random_filter_please
 
 
 def test_simple_opt_vectors_search():
