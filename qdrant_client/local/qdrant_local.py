@@ -242,6 +242,27 @@ class QdrantLocal(QdrantBase):
         collection.upsert(points)
         return self._default_update_result()
 
+    def update_vectors(
+        self,
+        collection_name: str,
+        vectors: List[types.PointVectors],
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        collection = self._get_collection(collection_name)
+        collection.update_vectors(vectors)
+        return self._default_update_result()
+
+    def delete_vectors(
+        self,
+        collection_name: str,
+        vectors: List[str],
+        points_selector: types.PointsSelector,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        collection = self._get_collection(collection_name)
+        collection.delete_vectors(vectors, points_selector)
+        return self._default_update_result()
+
     def retrieve(
         self,
         collection_name: str,

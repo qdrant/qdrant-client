@@ -723,7 +723,7 @@ class QdrantClient(QdrantBase):
     def update_vectors(
         self,
         collection_name: str,
-        vectors: List[types.PointVectors],
+        vectors: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
@@ -756,7 +756,7 @@ class QdrantClient(QdrantBase):
     def delete_vectors(
         self,
         collection_name: str,
-        vectors: List[str],
+        vectors: Sequence[str],
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
@@ -854,7 +854,7 @@ class QdrantClient(QdrantBase):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points_selector: Selects points based on list of IDs or filter
-                Example:
+                Examples
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering: Define strategy for ordering of the points. Possible values:

@@ -131,7 +131,7 @@ class QdrantBase:
     def update_vectors(
         self,
         collection_name: str,
-        vectors: List[types.PointVectors],
+        vectors: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
@@ -140,7 +140,7 @@ class QdrantBase:
     def delete_vectors(
         self,
         collection_name: str,
-        vector: Optional[str],
+        vectors: Sequence[str],
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,

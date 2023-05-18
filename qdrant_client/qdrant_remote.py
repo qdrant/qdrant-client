@@ -1018,7 +1018,7 @@ class QdrantRemote(QdrantBase):
     def update_vectors(
         self,
         collection_name: str,
-        vectors: List[types.PointVectors],
+        vectors: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
     ) -> types.UpdateResult:
@@ -1049,7 +1049,7 @@ class QdrantRemote(QdrantBase):
     def delete_vectors(
         self,
         collection_name: str,
-        vectors: List[str],
+        vectors: Sequence[str],
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,

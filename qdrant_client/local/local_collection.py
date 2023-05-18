@@ -38,6 +38,7 @@ class LocalCollection:
         }
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
+        self.deleted_per_vector = {name: np.zeros(0, dtype=bool) for name in self.vectors.keys()}
         self.ids: Dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id
         self.ids_inv: List[models.ExtendedPointId] = []  # Mapping from internal id to external id
         self.persistent = location is not None
@@ -50,6 +51,8 @@ class LocalCollection:
     def load(self) -> None:
         if self.storage is not None:
             vectors = defaultdict(list)
+            deleted_ids = []
+
             for idx, point in enumerate(self.storage.load()):
                 self.ids[point.id] = idx
                 self.ids_inv.append(point.id)
@@ -58,13 +61,26 @@ class LocalCollection:
                 if isinstance(point.vector, list):
                     vector = {DEFAULT_VECTOR_NAME: point.vector}
 
-                for name, vector in vector.items():
-                    vectors[name].append(vector)
+                all_vector_names = list(self.vectors.keys())
+
+                for name in all_vector_names:
+                    v = vector.get(name)
+                    if v is not None:
+                        vectors[name].append(v)
+                    else:
+                        vectors[name].append(
+                            np.ones(self.config.vectors[name].size, dtype=np.float32)
+                        )
+                        deleted_ids.append((idx, name))
 
                 self.payload.append(point.payload)
 
             for name, named_vectors in vectors.items():
                 self.vectors[name] = np.array(named_vectors)
+                self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
+
+            for idx, name in deleted_ids:
+                self.deleted_per_vector[name][idx] = 1
 
             self.deleted = np.zeros(len(self.payload), dtype=bool)
 
@@ -139,13 +155,17 @@ class LocalCollection:
         if not with_vectors:
             return None
 
-        vectors = {name: self.vectors[name][idx].tolist() for name in self.vectors}
+        vectors = {
+            name: self.vectors[name][idx].tolist()
+            for name in self.vectors
+            if not self.deleted_per_vector[name][idx]
+        }
 
         if isinstance(with_vectors, list):
-            vectors = {name: vectors[name] for name in with_vectors}
+            vectors = {name: vectors.get(name) for name in with_vectors}
 
         if len(vectors) == 1 and DEFAULT_VECTOR_NAME in vectors:
-            return vectors[DEFAULT_VECTOR_NAME]
+            return vectors.get(DEFAULT_VECTOR_NAME)
 
         return vectors
 
@@ -182,7 +202,7 @@ class LocalCollection:
         # in deleted: 1 - deleted, 0 - not deleted
         # in payload_mask: 1 - accepted, 0 - rejected
         # in mask: 1 - ok, 0 - rejected
-        mask = payload_mask & ~self.deleted
+        mask = payload_mask & ~self.deleted & ~self.deleted_per_vector[name]
 
         required_order = distance_to_order(params.distance)
 
@@ -209,7 +229,7 @@ class LocalCollection:
                     if score > score_threshold:
                         break
 
-            scored_point = models.ScoredPoint(
+            scored_point = models.ScoredPoint.construct(
                 id=point_id,
                 score=score,
                 version=0,
@@ -393,12 +413,13 @@ class LocalCollection:
         else:
             vectors = point.vector
 
-        assert (
-            vectors.keys() == self.vectors.keys()
-        ), f"Expected all vectors to be present: {vectors.keys()} != {self.vectors.keys()}"
-
-        for vector_name, vector in vectors.items():
-            self.vectors[vector_name][idx] = vector
+        for vector_name, named_vectors in self.vectors.items():
+            vector = vectors.get(vector_name)
+            if vector is not None:
+                self.vectors[vector_name][idx] = vector
+                self.deleted_per_vector[vector_name][idx] = 0
+            else:
+                self.deleted_per_vector[vector_name][idx] = 1
 
         self.deleted[idx] = 0
 
@@ -414,18 +435,25 @@ class LocalCollection:
         else:
             vectors = point.vector
 
-        assert (
-            vectors.keys() == self.vectors.keys()
-        ), f"Expected all vectors to be present: {vectors.keys()} != {self.vectors.keys()}"
-
-        for vector_name, vector in vectors.items():
-            named_vectors = self.vectors[vector_name]
+        for vector_name, named_vectors in self.vectors.items():
+            vector = vectors.get(vector_name)
             if named_vectors.shape[0] <= idx:
                 named_vectors = np.resize(named_vectors, (idx * 2 + 1, named_vectors.shape[1]))
 
-            vector_np = np.array(vector)
-            named_vectors[idx] = vector_np
-            self.vectors[vector_name] = named_vectors
+            if vector is None:
+                # Add fake vector and mark as removed
+                fake_vector = np.ones(named_vectors.shape[1])
+                named_vectors[idx] = fake_vector
+                self.deleted_per_vector[vector_name] = np.append(
+                    self.deleted_per_vector[vector_name], 1
+                )
+            else:
+                vector_np = np.array(vector)
+                named_vectors[idx] = vector_np
+                self.vectors[vector_name] = named_vectors
+                self.deleted_per_vector[vector_name] = np.append(
+                    self.deleted_per_vector[vector_name], 0
+                )
 
     def _upsert_point(self, point: models.PointStruct) -> None:
         if isinstance(point.id, str):
@@ -470,6 +498,39 @@ class LocalCollection:
                 )
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
+
+    def _update_named_vectors(self, idx: int, vectors: Dict[str, List[float]]) -> None:
+        for vector_name, vector in vectors.items():
+            self.vectors[vector_name][idx] = vector
+
+    def update_vectors(self, vectors: List[types.PointVectors]):
+        for vector in vectors:
+            point_id = vector.id
+            idx = self.ids[point_id]
+            vector_struct = vector.vector
+            if isinstance(vector_struct, list):
+                vectors = {DEFAULT_VECTOR_NAME: vector_struct}
+            else:
+                vectors = vector_struct
+            self._update_named_vectors(idx, vectors)
+            self._persist_by_id(point_id)
+
+    def delete_vectors(
+        self,
+        vectors: List[str],
+        selector: Union[
+            models.Filter,
+            List[models.ExtendedPointId],
+            models.FilterSelector,
+            models.PointIdsList,
+        ],
+    ):
+        ids = self._selector_to_ids(selector)
+        for point_id in ids:
+            idx = self.ids[point_id]
+            for vector_name in vectors:
+                self.deleted_per_vector[vector_name][idx] = 1
+            self._persist_by_id(point_id)
 
     def _delete_ids(self, ids: List[types.PointId]) -> None:
         for point_id in ids:

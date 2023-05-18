@@ -1,3 +1,4 @@
+import random
 import uuid
 from typing import Dict, List, Union
 
@@ -26,6 +27,7 @@ def generate_records(
     vector_sizes: Union[Dict[str, int], int],
     with_payload: bool = False,
     random_ids: bool = False,
+    skip_vectors: bool = False,
 ) -> List[models.Record]:
     records = []
     for i in range(num_records):
@@ -37,10 +39,17 @@ def generate_records(
         if random_ids:
             idx = str(uuid.uuid4())
 
+        vectors = random_vectors(vector_sizes)
+
+        if skip_vectors:
+            if random.random() > 0.8:
+                vector_to_skip = random.choice(list(vectors.keys()))
+                vectors.pop(vector_to_skip)
+
         records.append(
             models.Record.construct(
                 id=idx,
-                vector=random_vectors(vector_sizes),
+                vector=vectors,
                 payload=payload,
             )
         )

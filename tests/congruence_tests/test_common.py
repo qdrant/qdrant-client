@@ -52,6 +52,7 @@ def generate_fixtures(
     num: Optional[int] = NUM_VECTORS,
     random_ids: bool = False,
     vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
+    skip_vectors: bool = False,
 ) -> List[models.Record]:
     if vectors_sizes is None:
         vectors_sizes = {
@@ -64,6 +65,7 @@ def generate_fixtures(
         vector_sizes=vectors_sizes,
         with_payload=True,
         random_ids=random_ids,
+        skip_vectors=skip_vectors,
     )
 
 
