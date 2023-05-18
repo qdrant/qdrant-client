@@ -68,9 +68,22 @@ def test_conversion_completeness():
                 logging.warning(f"Error with {fixture}")
                 raise e
 
-            assert MessageToDict(grpc_fixture) == MessageToDict(
-                fixture
-            ), f"{model_class_name} conversion is broken"
+            if MessageToDict(grpc_fixture) != MessageToDict(fixture):
+                assert MessageToDict(grpc_fixture) == MessageToDict(
+                    fixture
+                ), f"{model_class_name} conversion is broken"
+
+
+def test_nested_filter():
+    from qdrant_client.conversions.conversion import GrpcToRest
+    from qdrant_client.http.models import models as rest
+
+    from .fixtures import condition_nested
+
+    rest_condition = GrpcToRest.convert_condition(condition_nested)
+
+    rest_filter = rest.Filter(must=[rest_condition])
+    assert isinstance(rest_filter.must[0], type(rest_condition))
 
 
 def test_vector_batch_conversion():

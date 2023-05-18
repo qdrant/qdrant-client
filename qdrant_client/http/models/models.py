@@ -800,7 +800,7 @@ class NamedVector(BaseModel):
     vector: List[float] = Field(..., description="Vector data")
 
 
-class NestedCondition(BaseModel):
+class Nested(BaseModel):
     """
     Select points with payload for a specified nested field
     """
@@ -809,8 +809,8 @@ class NestedCondition(BaseModel):
     filter: "Filter" = Field(..., description="Select points with payload for a specified nested field")
 
 
-class NestedContainer(BaseModel):
-    nested: "NestedCondition" = Field(..., description="")
+class NestedCondition(BaseModel):
+    nested: "Nested" = Field(..., description="")
 
 
 class OperationDurationStatistics(BaseModel):
@@ -1598,8 +1598,8 @@ Condition = Union[
     IsEmptyCondition,
     IsNullCondition,
     HasIdCondition,
+    NestedCondition,
     Filter,
-    NestedContainer,
 ]
 ConsensusThreadStatus = Union[
     ConsensusThreadStatusOneOf,

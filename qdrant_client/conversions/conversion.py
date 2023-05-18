@@ -90,6 +90,8 @@ class GrpcToRest:
             return cls.convert_is_empty_condition(val)
         if name == "is_null":
             return cls.convert_is_null_condition(val)
+        if name == "nested":
+            return cls.convert_nested_condition(val)
 
         raise ValueError(f"invalid Condition model: {model}")  # pragma: no cover
 
@@ -317,6 +319,15 @@ class GrpcToRest:
     @classmethod
     def convert_is_null_condition(cls, model: grpc.IsNullCondition) -> rest.IsNullCondition:
         return rest.IsNullCondition(is_null=rest.PayloadField(key=model.key))
+
+    @classmethod
+    def convert_nested_condition(cls, model: grpc.NestedCondition) -> rest.NestedCondition:
+        return rest.NestedCondition(
+            nested=rest.Nested(
+                key=model.key,
+                filter=cls.convert_filter(model.filter),
+            )
+        )
 
     @classmethod
     def convert_search_params(cls, model: grpc.SearchParams) -> rest.SearchParams:
@@ -762,9 +773,7 @@ class GrpcToRest:
         cls, model: grpc.ProductQuantization
     ) -> rest.ProductQuantizationConfig:
         return rest.ProductQuantizationConfig(
-            compression=cls.convert_compression_ratio(model.compression)
-            if model.HasField("compression")
-            else None,
+            compression=cls.convert_compression_ratio(model.compression),
             always_ram=model.always_ram if model.HasField("always_ram") else None,
         )
 
@@ -807,7 +816,7 @@ class GrpcToRest:
     def convert_point_vectors(cls, model: grpc.PointVectors) -> rest.PointVectors:
         return rest.PointVectors(
             id=cls.convert_point_id(model.id),
-            vectors=cls.convert_vectors(model.vectors),
+            vector=cls.convert_vectors(model.vectors),
         )
 
     @classmethod
@@ -968,6 +977,13 @@ class RestToGrpc:
     @classmethod
     def convert_is_null_condition(cls, model: rest.IsNullCondition) -> grpc.IsNullCondition:
         return grpc.IsNullCondition(key=model.is_null.key)
+
+    @classmethod
+    def convert_nested_condition(cls, model: rest.NestedCondition) -> grpc.NestedCondition:
+        return grpc.NestedCondition(
+            key=model.nested.key,
+            filter=cls.convert_filter(model.nested.filter),
+        )
 
     @classmethod
     def convert_search_params(cls, model: rest.SearchParams) -> grpc.SearchParams:
@@ -1245,6 +1261,8 @@ class RestToGrpc:
             return grpc.Condition(has_id=cls.convert_has_id_condition(model))
         if isinstance(model, rest.Filter):
             return grpc.Condition(filter=cls.convert_filter(model))
+        if isinstance(model, rest.NestedCondition):
+            return grpc.Condition(nested=cls.convert_nested_condition(model))
 
         raise ValueError(f"invalid Condition model: {model}")  # pragma: no cover
 
