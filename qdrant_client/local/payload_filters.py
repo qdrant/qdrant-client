@@ -74,6 +74,10 @@ def check_match(condition: models.Match, value: Any) -> bool:
     raise ValueError(f"Unknown match condition: {condition}")
 
 
+def check_nested_filter(nested_filter: models.Filter, values: List[Any]) -> bool:
+    return any(check_filter(nested_filter, v, point_id=-1) for v in values)
+
+
 def check_condition(
     condition: models.Condition, payload: dict, point_id: models.ExtendedPointId
 ) -> bool:
@@ -110,6 +114,11 @@ def check_condition(
             return any(check_geo_radius(condition.geo_radius, v) for v in values)
         if condition.values_count is not None:
             return check_values_count(condition.values_count, values)
+    elif isinstance(condition, models.NestedCondition):
+        values = value_by_key(payload, condition.nested.key)
+        if values is None:
+            return False
+        return check_nested_filter(condition.nested.filter, values)
     elif isinstance(condition, models.Filter):
         return check_filter(condition, payload, point_id)
     else:

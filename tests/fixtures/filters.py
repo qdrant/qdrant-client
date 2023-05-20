@@ -77,6 +77,54 @@ def has_id_condition(num_ids: int = 10, max_id: int = 1000) -> models.HasIdCondi
     return models.HasIdCondition(has_id=random_ids)
 
 
+def nested_field_condition_1() -> models.Condition:
+    value = random_real_word()
+    lt = random.randint(1, 10)
+
+    return models.NestedCondition(
+        nested=models.Nested(
+            key="nested.array",
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="word",
+                        match=models.MatchValue(value=value),
+                    ),
+                    models.FieldCondition(
+                        key="number",
+                        range=models.Range(lt=lt),
+                    ),
+                ]
+            ),
+        )
+    )
+
+
+def nested_field_condition_2() -> models.Condition:
+    value = random_real_word()
+    lt = random.randint(1, 10)
+
+    return models.NestedCondition(
+        nested=models.Nested(
+            key="nested.array",
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="word",
+                        match=models.MatchValue(value=value),
+                    )
+                ],
+                must_not=[
+                    models.FieldCondition(
+                        key="number",
+                        range=models.Range(lt=lt),
+                    )
+                ],
+            ),
+        )
+    )
+
+
 def match_value_field_condition() -> models.FieldCondition:
     field = random.choice(["maybe", "nested.array[].word", "id_str"])
 
@@ -184,6 +232,8 @@ def one_random_condition_please() -> models.Condition:
             geo_radius_field_condition,
             values_count_field_condition,
             one_random_filter_please,
+            nested_field_condition_1,
+            nested_field_condition_2,
         ]
     )()
 
