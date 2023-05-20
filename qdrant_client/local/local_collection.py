@@ -245,7 +245,10 @@ class LocalCollection:
     @staticmethod
     def _include_group_by(
         with_payload: Union[bool, Sequence[str], models.PayloadSelector], group_by: str
-    ):
+    ) -> Tuple[
+        Union[bool, Sequence[str], models.PayloadSelector],
+        Union[bool, Sequence[str], models.PayloadSelector],
+    ]:
         origin_with_payload = deepcopy(with_payload)
         if isinstance(with_payload, models.PayloadSelectorInclude):
             if group_by not in with_payload:
@@ -265,7 +268,7 @@ class LocalCollection:
         payload: models.Payload,
         with_payload: Union[bool, Sequence[str], models.PayloadSelector],
         group_by: str,
-    ):
+    ) -> Optional[models.Payload]:
         if isinstance(with_payload, models.PayloadSelectorInclude):
             if group_by not in with_payload.include and payload is not None:
                 payload.pop(group_by, None)
@@ -388,7 +391,16 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ):
+    ) -> Tuple[
+        str,
+        Union[
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+        ],
+        Optional[types.Filter],
+    ]:
         collection = self if lookup_from_collection is None else lookup_from_collection
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         vector_name = (
