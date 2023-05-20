@@ -245,7 +245,7 @@ class QdrantLocal(QdrantBase):
     def update_vectors(
         self,
         collection_name: str,
-        vectors: List[types.PointVectors],
+        vectors: Sequence[types.PointVectors],
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
@@ -255,12 +255,12 @@ class QdrantLocal(QdrantBase):
     def delete_vectors(
         self,
         collection_name: str,
-        vectors: List[str],
-        points_selector: types.PointsSelector,
+        vectors: Sequence[str],
+        points: types.PointsSelector,
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.delete_vectors(vectors, points_selector)
+        collection.delete_vectors(vectors, points)
         return self._default_update_result()
 
     def retrieve(

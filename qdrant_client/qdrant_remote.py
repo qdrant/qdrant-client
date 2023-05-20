@@ -1021,6 +1021,7 @@ class QdrantRemote(QdrantBase):
         vectors: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             vectors = [RestToGrpc.convert_point_vectors(vector) for vector in vectors]
@@ -1053,6 +1054,7 @@ class QdrantRemote(QdrantBase):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points = self._try_argument_to_grpc_selector(points)

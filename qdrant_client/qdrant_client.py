@@ -726,6 +726,7 @@ class QdrantClient(QdrantBase):
         vectors: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
 
@@ -757,9 +758,10 @@ class QdrantClient(QdrantBase):
         self,
         collection_name: str,
         vectors: Sequence[str],
-        points_selector: types.PointsSelector,
+        points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete specified vector from the collection. Does not affect payload.
 
@@ -769,7 +771,7 @@ class QdrantClient(QdrantBase):
                 List of names of the vectors to delete.
                 Use `""` to delete the default vector.
                 At least one vector should be specified.
-            points_selector: Selects points based on list of IDs or filter
+            points: Selects points based on list of IDs or filter
                  Examples
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
@@ -787,7 +789,7 @@ class QdrantClient(QdrantBase):
         return self._client.delete_vectors(
             collection_name=collection_name,
             vectors=vectors,
-            points=points_selector,
+            points=points,
             wait=wait,
             ordering=ordering,
         )

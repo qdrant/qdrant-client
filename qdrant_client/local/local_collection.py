@@ -501,30 +501,30 @@ class LocalCollection:
 
     def _update_named_vectors(self, idx: int, vectors: Dict[str, List[float]]) -> None:
         for vector_name, vector in vectors.items():
-            self.vectors[vector_name][idx] = vector
+            self.vectors[vector_name][idx] = np.array(vector)
 
-    def update_vectors(self, vectors: List[types.PointVectors]):
+    def update_vectors(self, vectors: Sequence[types.PointVectors]) -> None:
         for vector in vectors:
             point_id = vector.id
             idx = self.ids[point_id]
             vector_struct = vector.vector
             if isinstance(vector_struct, list):
-                vectors = {DEFAULT_VECTOR_NAME: vector_struct}
+                fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
             else:
-                vectors = vector_struct
-            self._update_named_vectors(idx, vectors)
+                fixed_vectors = vector_struct
+            self._update_named_vectors(idx, fixed_vectors)
             self._persist_by_id(point_id)
 
     def delete_vectors(
         self,
-        vectors: List[str],
+        vectors: Sequence[str],
         selector: Union[
             models.Filter,
             List[models.ExtendedPointId],
             models.FilterSelector,
             models.PointIdsList,
         ],
-    ):
+    ) -> None:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]

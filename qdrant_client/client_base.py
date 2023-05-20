@@ -132,8 +132,7 @@ class QdrantBase:
         self,
         collection_name: str,
         vectors: Sequence[types.PointVectors],
-        wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -141,9 +140,8 @@ class QdrantBase:
         self,
         collection_name: str,
         vectors: Sequence[str],
-        points_selector: types.PointsSelector,
-        wait: bool = True,
-        ordering: Optional[types.WriteOrdering] = None,
+        points: types.PointsSelector,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
