@@ -151,6 +151,36 @@ class QdrantLocal(QdrantBase):
             score_threshold=score_threshold,
         )
 
+    def search_groups(
+        self,
+        collection_name: str,
+        query_vector: Union[
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+        ],
+        group_by: str,
+        query_filter: Optional[rest_models.Filter] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        with_payload: Union[bool, Sequence[str], rest_models.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        collection = self._get_collection(collection_name)
+        return collection.search_groups(
+            query_vector=query_vector,
+            query_filter=query_filter,
+            limit=limit,
+            group_by=group_by,
+            group_size=group_size,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+        )
+
     def recommend_batch(
         self,
         collection_name: str,
@@ -196,6 +226,41 @@ class QdrantLocal(QdrantBase):
             query_filter=query_filter,
             limit=limit,
             offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            using=using,
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
+            lookup_from_vector_name=lookup_from.vector if lookup_from else None,
+        )
+
+    def recommend_groups(
+        self,
+        collection_name: str,
+        group_by: str,
+        positive: Sequence[types.PointId],
+        negative: Optional[Sequence[types.PointId]] = None,
+        query_filter: Optional[rest_models.Filter] = None,
+        search_params: Optional[rest_models.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        score_threshold: Optional[float] = None,
+        with_payload: Union[bool, Sequence[str], rest_models.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        using: Optional[str] = None,
+        lookup_from: Optional[rest_models.LookupLocation] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        collection = self._get_collection(collection_name)
+        return collection.recommend_groups(
+            positive=positive,
+            negative=negative,
+            group_by=group_by,
+            group_size=group_size,
+            query_filter=query_filter,
+            limit=limit,
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,

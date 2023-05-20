@@ -5,7 +5,7 @@ from typing import Dict, List, Union
 import numpy as np
 
 from qdrant_client.http import models
-from tests.fixtures.payload import one_random_payload_please, random_payload
+from tests.fixtures.payload import one_random_payload_please
 
 
 def random_vectors(

@@ -148,6 +148,36 @@ def compare_client_results(
                 compare_vectors(res1_item.vector, res2_item.vector, i)
             else:
                 assert res1[i] == res2[i], f"res1[{i}] = {res1[i]}, res2[{i}] = {res2[i]}"
+    elif isinstance(res1, models.GroupsResult):
+        groups_1 = sorted(res1.groups, key=lambda x: x.id)
+        groups_2 = sorted(res2.groups, key=lambda x: x.id)
+
+        assert len(groups_1) == len(
+            groups_2
+        ), f"len(groups_1) = {len(groups_1)}, len(groups_2) = {len(groups_2)}"
+        for i in range(len(groups_1)):
+            group_1 = groups_1[i]
+            group_2 = groups_2[i]
+
+            assert (
+                group_1.id == group_2.id
+            ), f"groups_1[{i}].id = {group_1.id}, groups_2[{i}].id = {group_2.id}"
+            for j in range(len(group_1.hits)):
+                point_1 = group_1.hits[j]
+                point_2 = group_2.hits[j]
+
+                assert (
+                    point_1.id == point_2.id
+                ), f"groups_1[{i}].hits[{j}].id = {point_1.id}, groups_2[{i}].hits[{j}].id = {point_2.id}"
+
+                assert (
+                    abs(point_1.score - point_2.score) < 1e-4
+                ), f"groups_1[{i}].hits[{j}].score = {point_1.score}, groups_2[{i}].hits[{j}].score = {point_2.score}"
+                assert (
+                    point_1.payload == point_2.payload
+                ), f"groups_1[{i}].hits[{j}].payload = {point_1.payload}, groups_2[{i}].hits[{j}].payload = {point_2.payload}"
+
+                compare_vectors(point_1.vector, point_2.vector, i)
     else:
         assert res1 == res2
 
