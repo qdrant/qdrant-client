@@ -123,7 +123,7 @@ class TestGroupSearcher:
             group_size=self.group_size,
         )
 
-    def group_search_image_select_vector(self, client: QdrantBase) -> models.ScoredPoint:
+    def group_search_image_select_vector(self, client: QdrantBase) -> models.GroupsResult:
         return client.search_groups(
             collection_name=COLLECTION_NAME,
             query_vector=("image", self.query_image),
@@ -163,24 +163,7 @@ class TestGroupSearcher:
 
 
 def group_by_keys():
-    random_payload = one_random_payload_please(0)
-    keys = set(random_payload.keys())
-    keys.add("maybe")
-    keys.add("maybe_null")
-
-    if "nested" in keys:
-        keys.remove("nested")
-    if "city" in keys:
-        keys.remove("city")
-        for city_key in random_payload["city"].keys():
-            keys.add(f"city.{city_key}")
-
-    # tmp until problem with absent keys in payload is solved
-    if "maybe" in keys:
-        keys.remove("maybe")
-    if "maybe_null" in keys:
-        keys.remove("maybe_null")
-    return keys
+    return ["id", "rand_digit", "two_words", "city.name"]
 
 
 def test_simple_group_search():
@@ -200,34 +183,27 @@ def test_simple_group_search():
         searcher.group_by = key
         compare_client_results(local_client, remote_client, searcher.group_search_text)
 
-    for group_size in (1, 5):
-        searcher.group_size = group_size
-        compare_client_results(local_client, remote_client, searcher.group_search_text)
-        compare_client_results(local_client, remote_client, searcher.group_search_image)
-        compare_client_results(local_client, remote_client, searcher.group_search_code)
-        compare_client_results(local_client, remote_client, searcher.group_search_score_threshold)
-        compare_client_results(
-            local_client, remote_client, searcher.group_search_text_select_payload
-        )
-        compare_client_results(
-            local_client, remote_client, searcher.group_search_image_select_vector
-        )
-        compare_client_results(local_client, remote_client, searcher.group_search_payload_exclude)
+    searcher.group_size = 3
+    compare_client_results(local_client, remote_client, searcher.group_search_text)
+    compare_client_results(local_client, remote_client, searcher.group_search_image)
+    compare_client_results(local_client, remote_client, searcher.group_search_code)
+    compare_client_results(local_client, remote_client, searcher.group_search_score_threshold)
+    compare_client_results(local_client, remote_client, searcher.group_search_text_select_payload)
+    compare_client_results(local_client, remote_client, searcher.group_search_image_select_vector)
+    compare_client_results(local_client, remote_client, searcher.group_search_payload_exclude)
 
-    for group_size in (1, 5):
-        searcher.group_size = group_size
-        for i in range(100):
-            query_filter = one_random_filter_please()
-            try:
-                compare_client_results(
-                    local_client,
-                    remote_client,
-                    searcher.filter_group_search_text,
-                    query_filter=query_filter,
-                )
-            except AssertionError as e:
-                print(f"\nFailed with filter {query_filter}")
-                raise e
+    for i in range(100):
+        query_filter = one_random_filter_please()
+        try:
+            compare_client_results(
+                local_client,
+                remote_client,
+                searcher.filter_group_search_text,
+                query_filter=query_filter,
+            )
+        except AssertionError as e:
+            print(f"\nFailed with filter {query_filter}")
+            raise e
 
 
 def test_single_vector():

@@ -1,5 +1,5 @@
 import uuid
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
 from copy import deepcopy
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
@@ -13,6 +13,7 @@ from qdrant_client.local.distances import (
     distance_to_order,
 )
 from qdrant_client.local.payload_filters import calculate_payload_mask
+from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 
 DEFAULT_VECTOR_NAME = ""
@@ -126,13 +127,10 @@ class LocalCollection:
 
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
-    def _get_payload(
-        self,
-        idx: int,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-    ) -> Optional[models.Payload]:
-        payload = self.payload[idx]
-
+    @classmethod
+    def _process_payload(
+        cls, payload: dict, with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True
+    ):
         if not with_payload:
             return None
 
@@ -149,6 +147,14 @@ class LocalCollection:
             return {key: payload.get(key) for key in payload if key not in with_payload.exclude}
 
         return payload
+
+    def _get_payload(
+        self,
+        idx: int,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+    ) -> Optional[models.Payload]:
+        payload = self.payload[idx]
+        return self._process_payload(payload, with_payload)
 
     def _get_vectors(
         self, idx: int, with_vectors: Union[bool, Sequence[str]] = False
@@ -242,46 +248,6 @@ class LocalCollection:
 
         return result[offset:]
 
-    @staticmethod
-    def _include_group_by(
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector], group_by: str
-    ) -> Tuple[
-        Union[bool, Sequence[str], models.PayloadSelector],
-        Union[bool, Sequence[str], models.PayloadSelector],
-    ]:
-        origin_with_payload = deepcopy(with_payload)
-        if isinstance(with_payload, models.PayloadSelectorInclude):
-            if group_by not in with_payload:
-                with_payload.include.append(group_by)
-        elif isinstance(with_payload, List):
-            if group_by not in with_payload:
-                with_payload.append(group_by)
-        elif isinstance(with_payload, models.PayloadSelectorExclude):
-            if group_by in with_payload.exclude:
-                with_payload.exclude.remove(group_by)
-        elif not with_payload:
-            with_payload = models.PayloadSelectorInclude(include=[group_by])
-        return origin_with_payload, with_payload
-
-    @staticmethod
-    def _exclude_group_by(
-        payload: models.Payload,
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector],
-        group_by: str,
-    ) -> Optional[models.Payload]:
-        if isinstance(with_payload, models.PayloadSelectorInclude):
-            if group_by not in with_payload.include and payload is not None:
-                payload.pop(group_by, None)
-        elif isinstance(with_payload, List):
-            if group_by not in with_payload and payload is not None:
-                payload.pop(group_by, None)
-        elif isinstance(with_payload, models.PayloadSelectorExclude) and payload is not None:
-            if group_by in with_payload.exclude:
-                payload.pop(group_by, None)
-        elif not with_payload:
-            payload = None
-        return payload
-
     def search_groups(
         self,
         query_vector: Union[
@@ -298,64 +264,39 @@ class LocalCollection:
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
     ) -> models.GroupsResult:
-        origin_with_payload, with_payload = self._include_group_by(with_payload, group_by)
-
         points = self.search(
             query_vector=query_vector,
             query_filter=query_filter,
             limit=len(self.ids_inv),
-            with_payload=with_payload,
+            with_payload=True,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
         )
 
-        groups: Dict[Union[str, int], models.PointGroup] = {}
-        group_sizes: Dict[Union[str, int], int] = {}
+        groups = OrderedDict()
 
         for point in points:
-            groups_found = len(groups) == limit
-
-            if groups_found and all(size == group_size for size in group_sizes.values()):
-                break
-
             if not isinstance(point.payload, dict):
                 continue
 
-            group_by_value = point.payload.get(group_by)
-            if not isinstance(group_by_value, list):
-                group_by_value = [group_by_value]
-
-            if len(group_by_value) > 0 and not isinstance(group_by_value[0], (str, int)):
+            group_values = value_by_key(point.payload, group_by)
+            if group_values is None:
                 continue
 
-            point.payload = self._exclude_group_by(point.payload, origin_with_payload, group_by)
+            group_values = list(set(v for v in group_values if isinstance(v, (str, int))))
 
-            seen_values = (
-                set()
-            )  # if element is repeated in array, we should add it to the group only once
-            for value in group_by_value:
-                if value in seen_values:
+            point.payload = self._process_payload(point.payload, with_payload)
+
+            for group_value in group_values:
+                if group_value not in groups:
+                    groups[group_value] = models.PointGroup(id=group_value, hits=[])
+
+                if len(groups[group_value].hits) >= group_size:
                     continue
-                seen_values.add(value)
 
-                groups_found = len(groups) == limit
+                groups[group_value].hits.append(point)
 
-                if value in group_sizes:
-                    if group_sizes[value] == group_size:  # group is already full
-                        continue
-                    group_sizes[value] += 1
-                else:
-                    if groups_found:
-                        continue
-                    group_sizes[value] = 1
-
-                group = groups.get(value)
-
-                if group is None:
-                    groups[value] = models.PointGroup(id=value, hits=[point])
-                else:
-                    group.hits.append(point)
-        return models.GroupsResult(groups=list(groups.values()))
+        return models.GroupsResult(groups=list(groups.values())[:limit])
 
     def retrieve(
         self,
@@ -391,16 +332,7 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ) -> Tuple[
-        str,
-        Union[
-            types.NumpyArray,
-            Sequence[float],
-            Tuple[str, List[float]],
-            types.NamedVector,
-        ],
-        Optional[types.Filter],
-    ]:
+    ) -> Tuple[str, List[float], Optional[types.Filter]]:
         collection = self if lookup_from_collection is None else lookup_from_collection
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         vector_name = (
@@ -450,7 +382,9 @@ class LocalCollection:
                 query_filter.must_not = [ignore_mentioned_ids]
             else:
                 query_filter.must_not.append(ignore_mentioned_ids)
-        return search_in_vector_name, vector, query_filter
+
+        res_vector: List[float] = vector.tolist()  # type: ignore
+        return search_in_vector_name, res_vector, query_filter
 
     def recommend(
         self,

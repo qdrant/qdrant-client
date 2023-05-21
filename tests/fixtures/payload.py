@@ -177,6 +177,7 @@ def one_random_payload_please(idx):
                 for _ in range(random.randint(0, 5))
             ],
         },
+        "two_words": [random_real_word(), random_real_word()],
         "city": random_city(),
     }
 

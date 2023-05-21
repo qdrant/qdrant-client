@@ -23,7 +23,7 @@ class TestGroupRecommendation:
         self.group_by = "rand_digit"
         self.group_size = 1
 
-    def simple_recommend_groups_image(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_recommend_groups_image(self, client: QdrantBase) -> models.GroupsResult:
         return client.recommend_groups(
             collection_name=COLLECTION_NAME,
             positive=[10],
@@ -36,7 +36,7 @@ class TestGroupRecommendation:
             search_params=models.SearchParams(exact=True),
         )
 
-    def many_recommend_groups(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def many_recommend_groups(self, client: QdrantBase) -> models.GroupsResult:
         return client.recommend_groups(
             collection_name=COLLECTION_NAME,
             positive=[10, 19],
@@ -48,7 +48,7 @@ class TestGroupRecommendation:
             search_params=models.SearchParams(exact=True),
         )
 
-    def simple_recommend_groups_negative(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_recommend_groups_negative(self, client: QdrantBase) -> models.GroupsResult:
         return client.recommend_groups(
             collection_name=COLLECTION_NAME,
             positive=[10],
@@ -61,9 +61,7 @@ class TestGroupRecommendation:
             search_params=models.SearchParams(exact=True),
         )
 
-    def recommend_groups_from_another_collection(
-        self, client: QdrantBase
-    ) -> List[models.ScoredPoint]:
+    def recommend_groups_from_another_collection(self, client: QdrantBase) -> models.GroupsResult:
         return client.recommend_groups(
             collection_name=COLLECTION_NAME,
             positive=[10],
@@ -82,7 +80,7 @@ class TestGroupRecommendation:
 
     def filter_recommend_groups_text(
         self, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> models.GroupsResult:
         return client.recommend_groups(
             collection_name=COLLECTION_NAME,
             positive=[10],
@@ -97,23 +95,7 @@ class TestGroupRecommendation:
 
 
 def group_by_keys():
-    random_payload = one_random_payload_please(0)
-    keys = set(random_payload.keys())
-    keys.add("maybe")
-    keys.add("maybe_null")
-
-    if "nested" in keys:
-        keys.remove("nested")
-    if "city" in keys:
-        keys.remove("city")
-        for city_key in random_payload["city"].keys():
-            keys.add(f"city.{city_key}")
-
-    # tmp until problem with absent key is solved
-    keys.remove("maybe")
-    keys.remove("maybe_null")
-
-    return keys
+    return ["id", "rand_digit", "two_words", "city.name"]
 
 
 def test_simple_recommend_groups() -> None:

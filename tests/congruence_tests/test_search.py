@@ -163,9 +163,6 @@ def test_simple_search():
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
-            import ipdb
-
-            ipdb.set_trace()
             raise e
 
 
