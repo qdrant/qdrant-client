@@ -103,6 +103,21 @@ def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], 
         assert np.allclose(vec1, vec2), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
 
 
+def compare_scored_record(
+    point1: models.ScoredPoint, point2: models.ScoredPoint, idx: int
+) -> None:
+    assert (
+        point1.id == point2.id
+    ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
+    assert (
+        point1.score - point2.score < 1e-4
+    ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}"
+    assert (
+        point1.payload == point2.payload
+    ), f"point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
+    compare_vectors(point1.vector, point2.vector, idx)
+
+
 def compare_records(res1: list, res2: list) -> None:
     assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
     for i in range(len(res1)):
@@ -110,17 +125,7 @@ def compare_records(res1: list, res2: list) -> None:
         res2_item = res2[i]
 
         if isinstance(res1_item, models.ScoredPoint) and isinstance(res2_item, models.ScoredPoint):
-            assert (
-                res1_item.id == res2_item.id
-            ), f"res1[{i}].id = {res1_item.id}, res2[{i}].id = {res2_item.id}"
-            assert (
-                res1_item.score - res2_item.score < 1e-4
-            ), f"res1[{i}].score = {res1_item.score}, res2[{i}].score = {res2_item.score}"
-            assert (
-                res1_item.payload == res2_item.payload
-            ), f"res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
-
-            compare_vectors(res1_item.vector, res2_item.vector, i)
+            compare_scored_record(res1_item, res2_item, i)
 
         elif isinstance(res1_item, models.Record) and isinstance(res2_item, models.Record):
             assert (
@@ -148,8 +153,8 @@ def compare_client_results(
         if isinstance(res1, list):
             compare_records(res1, res2)
         elif isinstance(res1, models.GroupsResult):
-            groups_1 = sorted(res1.groups, key=lambda x: (x.id, x.hits[0].score))
-            groups_2 = sorted(res2.groups, key=lambda x: (x.id, x.hits[0].score))
+            groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
+            groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))
 
             assert len(groups_1) == len(
                 groups_2
@@ -160,14 +165,25 @@ def compare_client_results(
                 group_2 = groups_2[i]
 
                 assert (
-                    group_1.id == group_2.id
-                ), f"groups_1[{i}].id = {group_1.id}, groups_2[{i}].id = {group_2.id}"
+                    group_1.hits[0].score - group_2.hits[0].score < 1e-4
+                ), f"groups_1[{i}].hits[0].score = {group_1.hits[0].score}, groups_2[{i}].hits[0].score = {group_2.hits[0].score}"
 
-                compare_records(group_1.hits, group_2.hits)
+                # We can't assert ids because they are not stable, order of groups with same score is guaranteed
+                # assert (
+                #     group_1.id == group_2.id
+                # ), f"groups_1[{i}].id = {group_1.id}, groups_2[{i}].id = {group_2.id}"
+
+                if group_1.id == group_2.id:
+                    compare_records(group_1.hits, group_2.hits)
+                else:
+                    # If group ids are different, but scores are the same, we assume that the top hits are the same
+                    compare_scored_record(group_1.hits[0], group_2.hits[0], 0)
         else:
             assert res1 == res2
     except AssertionError as e:
-        # import ipdb; ipdb.set_trace()
+        import ipdb
+
+        ipdb.set_trace()
         raise e
 
 

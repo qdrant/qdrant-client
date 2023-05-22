@@ -159,6 +159,16 @@ def match_any_field_condition() -> models.FieldCondition:
     )
 
 
+def match_except_field_condition() -> models.FieldCondition:
+    field = "two_words"
+    except_vals = [str(random.randint(1, 30)).zfill(2) for _ in range(10)]
+
+    return models.FieldCondition(
+        key=field,
+        match=models.MatchExcept(**{"except": except_vals}),
+    )
+
+
 def range_field_condition() -> models.FieldCondition:
     field = "rand_number"
     lt = random.random()
@@ -227,6 +237,7 @@ def one_random_condition_please() -> models.Condition:
             match_value_field_condition,
             match_text_field_condition,
             match_any_field_condition,
+            match_except_field_condition,
             range_field_condition,
             geo_bounding_box_field_condition,
             geo_radius_field_condition,

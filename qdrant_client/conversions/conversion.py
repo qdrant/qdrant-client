@@ -440,6 +440,10 @@ class GrpcToRest:
             return rest.MatchAny(any=list(val.strings))
         if name == "integers":
             return rest.MatchAny(any=list(val.integers))
+        if name == "except_keywords":
+            return rest.MatchExcept(**{"except": list(val.strings)})
+        if name == "except_integers":
+            return rest.MatchExcept(**{"except": list(val.integers)})
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1209,12 +1213,20 @@ class RestToGrpc:
             return grpc.Match(text=model.text)
         if isinstance(model, rest.MatchAny):
             if len(model.any) == 0:
-                return grpc.Match(keywords=[])
+                return grpc.Match(keywords=grpc.RepeatedStrings(strings=[]))
             if isinstance(model.any[0], str):
                 return grpc.Match(keywords=grpc.RepeatedStrings(strings=model.any))
             if isinstance(model.any[0], int):
                 return grpc.Match(integers=grpc.RepeatedIntegers(integers=model.any))
             raise ValueError(f"invalid MatchAny model: {model}")  # pragma: no cover
+        if isinstance(model, rest.MatchExcept):
+            if len(model.except_) == 0:
+                return grpc.Match(except_keywords=grpc.RepeatedStrings(strings=[]))
+            if isinstance(model.except_[0], str):
+                return grpc.Match(except_keywords=grpc.RepeatedStrings(strings=model.except_))
+            if isinstance(model.except_[0], int):
+                return grpc.Match(except_integers=grpc.RepeatedIntegers(integers=model.except_))
+            raise ValueError(f"invalid MatchExcept model: {model}")  # pragma: no cover
 
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 

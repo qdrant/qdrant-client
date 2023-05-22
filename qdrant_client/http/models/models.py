@@ -756,6 +756,16 @@ class MatchAny(BaseModel):
     any: "AnyVariants" = Field(..., description="Exact match on any of the given values")
 
 
+class MatchExcept(BaseModel):
+    """
+    Should have at least one value not matching the any given values
+    """
+
+    except_: "AnyVariants" = Field(
+        ..., description="Should have at least one value not matching the any given values", alias="except"
+    )
+
+
 class MatchText(BaseModel):
     """
     Full-text match of the strings.
@@ -1384,7 +1394,7 @@ class SetPayload(BaseModel):
 
 class ShardTransferInfo(BaseModel):
     shard_id: int = Field(..., description="")
-    _from: int = Field(..., description="")
+    from_: int = Field(..., description="", alias="from")
     to: int = Field(..., description="")
     sync: bool = Field(
         ...,
@@ -1622,6 +1632,7 @@ Match = Union[
     MatchValue,
     MatchText,
     MatchAny,
+    MatchExcept,
 ]
 NamedVectorStruct = Union[
     NamedVector,

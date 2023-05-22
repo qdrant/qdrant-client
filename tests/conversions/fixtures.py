@@ -29,11 +29,22 @@ match_text = grpc.Match(text="hello")
 match_keywords = grpc.Match(keywords=grpc.RepeatedStrings(strings=["hello", "world"]))
 match_integers = grpc.Match(integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
 
+match_except_keywords = grpc.Match(
+    except_keywords=grpc.RepeatedStrings(strings=["hello", "world"])
+)
+match_except_integers = grpc.Match(except_integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
+
 field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
 
 field_condition_match_keywords = grpc.FieldCondition(key="match_field", match=match_keywords)
-
 field_condition_match_integers = grpc.FieldCondition(key="match_field", match=match_integers)
+
+field_condition_match_except_keywords = grpc.FieldCondition(
+    key="match_field", match=match_except_keywords
+)
+field_condition_match_except_integers = grpc.FieldCondition(
+    key="match_field", match=match_except_integers
+)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -78,6 +89,9 @@ condition_values_count = grpc.Condition(field=field_condition_values_count)
 condition_keywords = grpc.Condition(field=field_condition_match_keywords)
 condition_integers = grpc.Condition(field=field_condition_match_integers)
 
+condition_except_keywords = grpc.Condition(field=field_condition_match_except_keywords)
+condition_except_integers = grpc.Condition(field=field_condition_match_except_integers)
+
 nested = grpc.NestedCondition(
     key="a.b.c", filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)])
 )
@@ -93,6 +107,8 @@ filter_ = grpc.Filter(
         condition_is_null,
         condition_keywords,
         condition_integers,
+        condition_except_keywords,
+        condition_except_integers,
     ],
     should=[
         condition_field_match,
