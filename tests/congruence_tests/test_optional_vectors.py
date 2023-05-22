@@ -29,12 +29,12 @@ def test_simple_opt_vectors_search():
     local_client.delete_vectors(
         collection_name=COLLECTION_NAME,
         vectors=["image"],
-        points_selector=ids_to_delete,
+        points=ids_to_delete,
     )
     remote_client.delete_vectors(
         collection_name=COLLECTION_NAME,
         vectors=["image"],
-        points_selector=ids_to_delete,
+        points=ids_to_delete,
     )
 
     compare_client_results(

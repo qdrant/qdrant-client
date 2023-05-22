@@ -1,5 +1,6 @@
 import uuid
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
+from copy import deepcopy
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -12,6 +13,7 @@ from qdrant_client.local.distances import (
     distance_to_order,
 )
 from qdrant_client.local.payload_filters import calculate_payload_mask
+from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 
 DEFAULT_VECTOR_NAME = ""
@@ -125,13 +127,10 @@ class LocalCollection:
 
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
-    def _get_payload(
-        self,
-        idx: int,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-    ) -> Optional[models.Payload]:
-        payload = self.payload[idx]
-
+    @classmethod
+    def _process_payload(
+        cls, payload: dict, with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True
+    ) -> Optional[dict]:
         if not with_payload:
             return None
 
@@ -148,6 +147,14 @@ class LocalCollection:
             return {key: payload.get(key) for key in payload if key not in with_payload.exclude}
 
         return payload
+
+    def _get_payload(
+        self,
+        idx: int,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+    ) -> Optional[models.Payload]:
+        payload = self.payload[idx]
+        return self._process_payload(payload, with_payload)
 
     def _get_vectors(
         self, idx: int, with_vectors: Union[bool, Sequence[str]] = False
@@ -186,7 +193,7 @@ class LocalCollection:
     ) -> List[models.ScoredPoint]:
         payload_mask = calculate_payload_mask(
             payloads=self.payload,
-            payload_fileter=query_filter,
+            payload_filter=query_filter,
             ids_inv=self.ids_inv,
         )
         name, vector = self._resolve_vector_name(query_vector)
@@ -241,6 +248,56 @@ class LocalCollection:
 
         return result[offset:]
 
+    def search_groups(
+        self,
+        query_vector: Union[
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+        ],
+        group_by: str,
+        query_filter: Optional[models.Filter] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+    ) -> models.GroupsResult:
+        points = self.search(
+            query_vector=query_vector,
+            query_filter=query_filter,
+            limit=len(self.ids_inv),
+            with_payload=True,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+        )
+
+        groups = OrderedDict()
+
+        for point in points:
+            if not isinstance(point.payload, dict):
+                continue
+
+            group_values = value_by_key(point.payload, group_by)
+            if group_values is None:
+                continue
+
+            group_values = list(set(v for v in group_values if isinstance(v, (str, int))))
+
+            point.payload = self._process_payload(point.payload, with_payload)
+
+            for group_value in group_values:
+                if group_value not in groups:
+                    groups[group_value] = models.PointGroup(id=group_value, hits=[])
+
+                if len(groups[group_value].hits) >= group_size:
+                    continue
+
+                groups[group_value].hits.append(point)
+
+        return models.GroupsResult(groups=list(groups.values())[:limit])
+
     def retrieve(
         self,
         ids: Sequence[types.PointId],
@@ -267,20 +324,15 @@ class LocalCollection:
 
         return result
 
-    def recommend(
+    def _recommend(
         self,
         positive: Sequence[types.PointId],
         negative: Optional[Sequence[types.PointId]] = None,
         query_filter: Optional[types.Filter] = None,
-        limit: int = 10,
-        offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
-        score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ) -> List[models.ScoredPoint]:
+    ) -> Tuple[str, List[float], Optional[types.Filter]]:
         collection = self if lookup_from_collection is None else lookup_from_collection
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         vector_name = (
@@ -331,11 +383,71 @@ class LocalCollection:
             else:
                 query_filter.must_not.append(ignore_mentioned_ids)
 
+        res_vector: List[float] = vector.tolist()  # type: ignore
+        return search_in_vector_name, res_vector, query_filter
+
+    def recommend(
+        self,
+        positive: Sequence[types.PointId],
+        negative: Optional[Sequence[types.PointId]] = None,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from_collection: Optional["LocalCollection"] = None,
+        lookup_from_vector_name: Optional[str] = None,
+    ) -> List[models.ScoredPoint]:
+        search_in_vector_name, vector, query_filter = self._recommend(
+            positive,
+            negative,
+            query_filter,
+            using,
+            lookup_from_collection,
+            lookup_from_vector_name,
+        )
+
         return self.search(
             query_vector=(search_in_vector_name, vector),
             query_filter=query_filter,
             limit=limit,
             offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+        )
+
+    def recommend_groups(
+        self,
+        group_by: str,
+        positive: Sequence[types.PointId],
+        negative: Optional[Sequence[types.PointId]] = None,
+        query_filter: Optional[models.Filter] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        score_threshold: Optional[float] = None,
+        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        using: Optional[str] = None,
+        lookup_from_collection: Optional["LocalCollection"] = None,
+        lookup_from_vector_name: Optional[str] = None,
+    ) -> types.GroupsResult:
+        search_in_vector_name, vector, query_filter = self._recommend(
+            positive,
+            negative,
+            query_filter,
+            using,
+            lookup_from_collection,
+            lookup_from_vector_name,
+        )
+        return self.search_groups(
+            query_vector=(search_in_vector_name, vector),
+            query_filter=query_filter,
+            group_by=group_by,
+            group_size=group_size,
+            limit=limit,
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
@@ -366,7 +478,7 @@ class LocalCollection:
 
         payload_mask = calculate_payload_mask(
             payloads=self.payload,
-            payload_fileter=scroll_filter,
+            payload_filter=scroll_filter,
             ids_inv=self.ids_inv,
         )
 
@@ -398,7 +510,7 @@ class LocalCollection:
     def count(self, count_filter: Optional[types.Filter] = None) -> models.CountResult:
         payload_mask = calculate_payload_mask(
             payloads=self.payload,
-            payload_fileter=count_filter,
+            payload_filter=count_filter,
             ids_inv=self.ids_inv,
         )
         mask = payload_mask & ~self.deleted
@@ -544,7 +656,7 @@ class LocalCollection:
     def _filter_to_ids(self, delete_filter: types.Filter) -> List[models.ExtendedPointId]:
         mask = calculate_payload_mask(
             payloads=self.payload,
-            payload_fileter=delete_filter,
+            payload_filter=delete_filter,
             ids_inv=self.ids_inv,
         )
         mask = mask & ~self.deleted
