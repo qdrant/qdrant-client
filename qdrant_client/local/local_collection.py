@@ -130,7 +130,7 @@ class LocalCollection:
     @classmethod
     def _process_payload(
         cls, payload: dict, with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True
-    ):
+    ) -> Optional[dict]:
         if not with_payload:
             return None
 
