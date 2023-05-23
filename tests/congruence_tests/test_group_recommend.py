@@ -95,7 +95,7 @@ class TestGroupRecommendation:
 
 
 def group_by_keys():
-    return ["id", "rand_digit", "two_words", "city.name"]
+    return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
 
 
 def test_simple_recommend_groups() -> None:
