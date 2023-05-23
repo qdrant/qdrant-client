@@ -151,4 +151,38 @@ qdrant_client.search(
     np.array([123]),  # type: ignore
     with_payload=["str", "another one", "and another one"],
 )
-qdrant_client.upload_collection("collection", [])
+qdrant_client.upload_collection("collection", [[123]])
+qdrant_client.update_vectors("collection", [rest_models.PointVectors(id=1, vector=[123])], False)
+qdrant_client.delete_vectors("collection", [], [123, 32, 44])
+qdrant_client.search_groups(
+    "collection",
+    [123],
+    "rand_field",
+    rest_models.Filter(
+        must=[rest_models.FieldCondition(key="field", match=rest_models.MatchValue(value="123"))]
+    ),
+    rest_models.SearchParams(hnsw_ef=182),
+    2,
+    3,
+    True,
+    True,
+    0.2,
+)
+qdrant_client.recommend_groups(
+    "collection",
+    "rand_field",
+    [14],
+    [],
+    rest_models.Filter(
+        must=[rest_models.FieldCondition(key="field", match=rest_models.MatchValue(value="123"))]
+    ),
+    rest_models.SearchParams(hnsw_ef=182),
+    2,
+    3,
+    3.0,
+    True,
+    True,
+    "using",
+    rest_models.LookupLocation(collection="start"),
+    None,
+)
