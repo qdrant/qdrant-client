@@ -71,7 +71,13 @@ def check_match(condition: models.Match, value: Any) -> bool:
         return value is not None and condition.text in value
     if isinstance(condition, models.MatchAny):
         return value in condition.any
+    if isinstance(condition, models.MatchExcept):
+        return value not in condition.except_
     raise ValueError(f"Unknown match condition: {condition}")
+
+
+def check_nested_filter(nested_filter: models.Filter, values: List[Any]) -> bool:
+    return any(check_filter(nested_filter, v, point_id=-1) for v in values)
 
 
 def check_condition(
@@ -110,6 +116,11 @@ def check_condition(
             return any(check_geo_radius(condition.geo_radius, v) for v in values)
         if condition.values_count is not None:
             return check_values_count(condition.values_count, values)
+    elif isinstance(condition, models.NestedCondition):
+        values = value_by_key(payload, condition.nested.key)
+        if values is None:
+            return False
+        return check_nested_filter(condition.nested.filter, values)
     elif isinstance(condition, models.Filter):
         return check_filter(condition, payload, point_id)
     else:
@@ -136,30 +147,30 @@ def check_should(
 
 
 def check_filter(
-    payload_fileter: models.Filter, payload: dict, point_id: models.ExtendedPointId
+    payload_filter: models.Filter, payload: dict, point_id: models.ExtendedPointId
 ) -> bool:
-    if payload_fileter.must is not None:
-        if not check_must(payload_fileter.must, payload, point_id):
+    if payload_filter.must is not None:
+        if not check_must(payload_filter.must, payload, point_id):
             return False
-    if payload_fileter.must_not is not None:
-        if not check_must_not(payload_fileter.must_not, payload, point_id):
+    if payload_filter.must_not is not None:
+        if not check_must_not(payload_filter.must_not, payload, point_id):
             return False
-    if payload_fileter.should is not None:
-        if not check_should(payload_fileter.should, payload, point_id):
+    if payload_filter.should is not None:
+        if not check_should(payload_filter.should, payload, point_id):
             return False
     return True
 
 
 def calculate_payload_mask(
     payloads: List[dict],
-    payload_fileter: Optional[models.Filter],
+    payload_filter: Optional[models.Filter],
     ids_inv: List[models.ExtendedPointId],
 ) -> np.ndarray:
-    if payload_fileter is None:
+    if payload_filter is None:
         return np.ones(len(payloads), dtype=bool)
 
     mask = np.zeros(len(payloads), dtype=bool)
     for i, payload in enumerate(payloads):
-        if check_filter(payload_fileter, payload, ids_inv[i]):
+        if check_filter(payload_filter, payload, ids_inv[i]):
             mask[i] = True
     return mask

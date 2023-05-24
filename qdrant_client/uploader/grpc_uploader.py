@@ -11,7 +11,10 @@ from qdrant_client.uploader.uploader import BaseUploader
 
 
 def upload_batch_grpc(
-    points_client: PointsStub, collection_name: str, batch: Union[Batch, Tuple], max_retries: int
+    points_client: PointsStub,
+    collection_name: str,
+    batch: Union[Batch, Tuple],
+    max_retries: int,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
     if payload_batch is None:
@@ -43,7 +46,12 @@ def upload_batch_grpc(
 
 class GrpcBatchUploader(BaseUploader):
     def __init__(
-        self, host: str, port: int, collection_name: str, max_retries: int, **kwargs: Any
+        self,
+        host: str,
+        port: int,
+        collection_name: str,
+        max_retries: int,
+        **kwargs: Any,
     ):
         self.collection_name = collection_name
         self._host = host

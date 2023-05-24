@@ -160,11 +160,13 @@ def one_random_payload_please(idx):
         "id": idx + 100,
         "id_str": [str(random.randint(1, 30)).zfill(2) for _ in range(random.randint(0, 5))],
         "text_data": uuid.uuid4().hex,
+        "rand_digit": random.randint(0, 9),
         "rand_number": round(random.random(), 5),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
         "words": f"{random_real_word()} {random_real_word()}",
         "nested": {
             "id": idx + 100,
+            "rand_digit": random.randint(0, 9),
             "array": [
                 {
                     "nested_empty": ["hello"] if random.random() < 0.5 else None,
@@ -175,6 +177,7 @@ def one_random_payload_please(idx):
                 for _ in range(random.randint(0, 5))
             ],
         },
+        "two_words": [random_real_word(), random_real_word()],
         "city": random_city(),
     }
 

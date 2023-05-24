@@ -8,7 +8,10 @@ from qdrant_client.uploader.uploader import BaseUploader
 
 
 def upload_batch(
-    openapi_client: SyncApis, collection_name: str, batch: Union[Tuple, Batch], max_retries: int
+    openapi_client: SyncApis,
+    collection_name: str,
+    batch: Union[Tuple, Batch],
+    max_retries: int,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
@@ -34,7 +37,8 @@ def upload_batch(
     for attempt in range(max_retries):
         try:
             openapi_client.points_api.upsert_points(
-                collection_name=collection_name, point_insert_operations=PointsList(points=points)
+                collection_name=collection_name,
+                point_insert_operations=PointsList(points=points),
             )
             return True
         except Exception as e:

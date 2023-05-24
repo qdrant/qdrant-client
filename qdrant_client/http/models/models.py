@@ -206,6 +206,14 @@ class CollectionsTelemetry(BaseModel):
     collections: Optional[List["CollectionTelemetryEnum"]] = Field(default=None, description="")
 
 
+class CompressionRatio(str, Enum):
+    X4 = "x4"
+    X8 = "x8"
+    X16 = "x16"
+    X32 = "x32"
+    X64 = "x64"
+
+
 class ConsensusConfigTelemetry(BaseModel):
     max_message_queue_size: int = Field(..., description="")
     tick_period_ms: int = Field(..., description="")
@@ -338,6 +346,16 @@ class DeletePayload(BaseModel):
     )
 
 
+class DeleteVectors(BaseModel):
+    points: Optional[List["ExtendedPointId"]] = Field(
+        default=None, description="Deletes values from each point in this list"
+    )
+    filter: Optional["Filter"] = Field(
+        default=None, description="Deletes values from points that satisfy this filter condition"
+    )
+    vector: List[str] = Field(..., description="Vector names")
+
+
 class Distance(str, Enum):
     COSINE = "Cosine"
     EUCLID = "Euclid"
@@ -421,6 +439,10 @@ class GeoRadius(BaseModel):
     radius: float = Field(..., description="Radius of the area in meters")
 
 
+class GroupsResult(BaseModel):
+    groups: List["PointGroup"] = Field(..., description="")
+
+
 class GrpcTelemetry(BaseModel):
     responses: Dict[str, "OperationDurationStatistics"] = Field(..., description="")
 
@@ -474,7 +496,7 @@ class HnswConfigDiff(BaseModel):
     )
     full_scan_threshold: Optional[int] = Field(
         default=None,
-        description="Minimal size (in KiloBytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
+        description="Minimal size (in kilobytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
     )
     max_indexing_threads: Optional[int] = Field(
         default=None,
@@ -595,6 +617,14 @@ class InlineResponse20015(BaseModel):
 
 
 class InlineResponse20016(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
+    result: Optional["GroupsResult"] = Field(default=None, description="")
+
+
+class InlineResponse20017(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
@@ -726,6 +756,16 @@ class MatchAny(BaseModel):
     any: "AnyVariants" = Field(..., description="Exact match on any of the given values")
 
 
+class MatchExcept(BaseModel):
+    """
+    Should have at least one value not matching the any given values
+    """
+
+    except_: "AnyVariants" = Field(
+        ..., description="Should have at least one value not matching the any given values", alias="except"
+    )
+
+
 class MatchText(BaseModel):
     """
     Full-text match of the strings.
@@ -770,6 +810,19 @@ class NamedVector(BaseModel):
     vector: List[float] = Field(..., description="Vector data")
 
 
+class Nested(BaseModel):
+    """
+    Select points with payload for a specified nested field
+    """
+
+    key: str = Field(..., description="Select points with payload for a specified nested field")
+    filter: "Filter" = Field(..., description="Select points with payload for a specified nested field")
+
+
+class NestedCondition(BaseModel):
+    nested: "Nested" = Field(..., description="")
+
+
 class OperationDurationStatistics(BaseModel):
     count: int = Field(..., description="")
     fail_count: Optional[int] = Field(default=None, description="")
@@ -798,15 +851,15 @@ class OptimizersConfig(BaseModel):
     )
     max_segment_size: Optional[int] = Field(
         default=None,
-        description="Do not create segments larger this size (in KiloBytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256 If not set, will be automatically selected considering the number of available CPUs.",
+        description="Do not create segments larger this size (in kilobytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexing speed is more important - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256 If not set, will be automatically selected considering the number of available CPUs.",
     )
     memmap_threshold: Optional[int] = Field(
         default=None,
-        description="Maximum size (in KiloBytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file. To enable memmap storage, lower the threshold Note: 1Kb = 1 vector of size 256 If not set, mmap will not be used.",
+        description="Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`. Internally it will use the largest threshold possible.  Note: 1Kb = 1 vector of size 256",
     )
-    indexing_threshold: int = Field(
-        ...,
-        description="Maximum size (in KiloBytes) of vectors allowed for plain index. Default value based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt; Note: 1Kb = 1 vector of size 256",
+    indexing_threshold: Optional[int] = Field(
+        default=None,
+        description="Maximum size (in kilobytes) of vectors allowed for plain index, exceeding this threshold will enable vector indexing  Default value is 20,000, based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt;.  To disable vector indexing, set to `0`.  Note: 1kB = 1 vector of size 256.",
     )
     flush_interval_sec: int = Field(..., description="Minimum interval between forced flushes.")
     max_optimization_threads: int = Field(..., description="Maximum available threads for optimization workers")
@@ -826,15 +879,15 @@ class OptimizersConfigDiff(BaseModel):
     )
     max_segment_size: Optional[int] = Field(
         default=None,
-        description="Do not create segments larger this size (in KiloBytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256",
+        description="Do not create segments larger this size (in kilobytes). Large segments might require disproportionately long indexation times, therefore it makes sense to limit the size of segments.  If indexation speed have more priority for your - make this parameter lower. If search speed is more important - make this parameter higher. Note: 1Kb = 1 vector of size 256",
     )
     memmap_threshold: Optional[int] = Field(
         default=None,
-        description="Maximum size (in KiloBytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file. To enable memmap storage, lower the threshold Note: 1Kb = 1 vector of size 256",
+        description="Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`.  Note: 1Kb = 1 vector of size 256",
     )
     indexing_threshold: Optional[int] = Field(
         default=None,
-        description="Maximum size (in KiloBytes) of vectors allowed for plain index. Default value based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt; Note: 1Kb = 1 vector of size 256",
+        description="Maximum size (in kilobytes) of vectors allowed for plain index, exceeding this threshold will enable vector indexing  Default value is 20,000, based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt;.  To disable vector indexing, set to `0`.  Note: 1kB = 1 vector of size 256.",
     )
     flush_interval_sec: Optional[int] = Field(default=None, description="Minimum interval between forced flushes.")
     max_optimization_threads: Optional[int] = Field(
@@ -903,6 +956,12 @@ class PayloadSelectorInclude(BaseModel):
 
 class PayloadStorageTypeOneOf(BaseModel):
     type: Literal[
+        "in_memory",
+    ] = Field(..., description="")
+
+
+class PayloadStorageTypeOneOf1(BaseModel):
+    type: Literal[
         "on_disk",
     ] = Field(..., description="")
 
@@ -913,6 +972,11 @@ class PeerInfo(BaseModel):
     """
 
     uri: str = Field(..., description="Information of a peer in the cluster")
+
+
+class PointGroup(BaseModel):
+    hits: List["ScoredPoint"] = Field(..., description="Scored points that have the same value of the group_by key")
+    id: "GroupId" = Field(..., description="")
 
 
 class PointIdsList(BaseModel):
@@ -933,12 +997,26 @@ class PointStruct(BaseModel):
     payload: Optional["Payload"] = Field(default=None, description="Payload values (optional)")
 
 
+class PointVectors(BaseModel):
+    id: "ExtendedPointId" = Field(..., description="")
+    vector: "VectorStruct" = Field(..., description="")
+
+
 class PointsBatch(BaseModel):
     batch: "Batch" = Field(..., description="")
 
 
 class PointsList(BaseModel):
     points: List["PointStruct"] = Field(..., description="")
+
+
+class ProductQuantization(BaseModel):
+    product: "ProductQuantizationConfig" = Field(..., description="")
+
+
+class ProductQuantizationConfig(BaseModel):
+    compression: "CompressionRatio" = Field(..., description="")
+    always_ram: Optional[bool] = Field(default=None, description="")
 
 
 class QuantizationSearchParams(BaseModel):
@@ -990,6 +1068,37 @@ class ReadConsistencyType(str, Enum):
     MAJORITY = "majority"
     QUORUM = "quorum"
     ALL = "all"
+
+
+class RecommendGroupsRequest(BaseModel):
+    positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
+    negative: Optional[List["ExtendedPointId"]] = Field(default=[], description="Try to avoid vectors like this")
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        default=None, description="Select which payload to return with the response. Default: None"
+    )
+    with_vector: Optional["WithVector"] = Field(
+        default=None, description="Whether to return the point vector with the result?"
+    )
+    score_threshold: Optional[float] = Field(
+        default=None,
+        description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
+    )
+    using: Optional["UsingVector"] = Field(
+        default=None,
+        description="Define which vector to use for recommendation, if not specified - try to use default vector",
+    )
+    lookup_from: Optional["LookupLocation"] = Field(
+        default=None,
+        description="The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
+    )
+    group_by: str = Field(
+        ...,
+        description="Payload field to group by, must be a string or number field. If the field contains more than 1 value, all values will be used for grouping. One point can be in multiple groups.",
+    )
+    group_size: int = Field(..., description="Maximum amount of points to return per group")
+    limit: int = Field(..., description="Maximum amount of groups to return")
 
 
 class RecommendRequest(BaseModel):
@@ -1170,6 +1279,28 @@ class ScrollResult(BaseModel):
     )
 
 
+class SearchGroupsRequest(BaseModel):
+    vector: "NamedVectorStruct" = Field(..., description="")
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        default=None, description="Select which payload to return with the response. Default: None"
+    )
+    with_vector: Optional["WithVector"] = Field(
+        default=None, description="Whether to return the point vector with the result?"
+    )
+    score_threshold: Optional[float] = Field(
+        default=None,
+        description="Define a minimal score threshold for the result. If defined, less similar results will not be returned. Score of the returned result might be higher or smaller than the threshold depending on the Distance function used. E.g. for cosine similarity only higher scores will be returned.",
+    )
+    group_by: str = Field(
+        ...,
+        description="Payload field to group by, must be a string or number field. If the field contains more than 1 value, all values will be used for grouping. One point can be in multiple groups.",
+    )
+    group_size: int = Field(..., description="Maximum amount of points to return per group")
+    limit: int = Field(..., description="Maximum amount of groups to return")
+
+
 class SearchParams(BaseModel):
     """
     Additional parameters of the search
@@ -1220,12 +1351,7 @@ class SearchRequestBatch(BaseModel):
 
 class SegmentConfig(BaseModel):
     vector_data: Dict[str, "VectorDataConfig"] = Field(..., description="")
-    index: "Indexes" = Field(..., description="")
-    storage_type: "StorageType" = Field(..., description="")
-    payload_storage_type: Optional["PayloadStorageType"] = Field(default=None, description="")
-    quantization_config: Optional["QuantizationConfig"] = Field(
-        default=None, description="Quantization parameters. If none - quantization is disabled."
-    )
+    payload_storage_type: "PayloadStorageType" = Field(..., description="")
 
 
 class SegmentInfo(BaseModel):
@@ -1268,7 +1394,7 @@ class SetPayload(BaseModel):
 
 class ShardTransferInfo(BaseModel):
     shard_id: int = Field(..., description="")
-    _from: int = Field(..., description="")
+    from_: int = Field(..., description="", alias="from")
     to: int = Field(..., description="")
     sync: bool = Field(
         ...,
@@ -1303,18 +1429,6 @@ class StateRole(str, Enum):
     CANDIDATE = "Candidate"
     LEADER = "Leader"
     PRECANDIDATE = "PreCandidate"
-
-
-class StorageTypeOneOf(BaseModel):
-    type: Literal[
-        "in_memory",
-    ] = Field(..., description="")
-
-
-class StorageTypeOneOf1(BaseModel):
-    type: Literal[
-        "mmap",
-    ] = Field(..., description="")
 
 
 class TelemetryData(BaseModel):
@@ -1367,6 +1481,10 @@ class UpdateStatus(str, Enum):
     COMPLETED = "completed"
 
 
+class UpdateVectors(BaseModel):
+    points: List["PointVectors"] = Field(..., description="Points with named vectors")
+
+
 class ValuesCount(BaseModel):
     """
     Values count filter request
@@ -1383,11 +1501,10 @@ class VectorDataConfig(BaseModel):
     Config of single vector data storage
     """
 
-    size: int = Field(..., description="Size of a vectors used")
+    size: int = Field(..., description="Size/dimensionality of the vectors used")
     distance: "Distance" = Field(..., description="Config of single vector data storage")
-    hnsw_config: Optional["HnswConfig"] = Field(
-        default=None, description="Vector specific HNSW config that overrides collection config"
-    )
+    storage_type: "VectorStorageType" = Field(..., description="Config of single vector data storage")
+    index: "Indexes" = Field(..., description="Config of single vector data storage")
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Vector specific quantization config that overrides collection config"
     )
@@ -1419,6 +1536,22 @@ class VectorParams(BaseModel):
         default=None,
         description="Custom params for quantization. If none - values from collection configuration are used.",
     )
+    on_disk: Optional[bool] = Field(
+        default=None,
+        description="If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
+    )
+
+
+class VectorStorageTypeOneOf(str, Enum):
+    MEMORY = "Memory"
+
+
+class VectorStorageTypeOneOf1(str, Enum):
+    MMAP = "Mmap"
+
+
+class VectorStorageTypeOneOf2(str, Enum):
+    CHUNKEDMMAP = "ChunkedMmap"
 
 
 class WalConfig(BaseModel):
@@ -1475,6 +1608,7 @@ Condition = Union[
     IsEmptyCondition,
     IsNullCondition,
     HasIdCondition,
+    NestedCondition,
     Filter,
 ]
 ConsensusThreadStatus = Union[
@@ -1486,6 +1620,10 @@ ExtendedPointId = Union[
     StrictInt,
     StrictStr,
 ]
+GroupId = Union[
+    StrictInt,
+    StrictStr,
+]
 Indexes = Union[
     IndexesOneOf,
     IndexesOneOf1,
@@ -1494,6 +1632,7 @@ Match = Union[
     MatchValue,
     MatchText,
     MatchAny,
+    MatchExcept,
 ]
 NamedVectorStruct = Union[
     NamedVector,
@@ -1511,8 +1650,8 @@ PayloadSelector = Union[
     PayloadSelectorExclude,
 ]
 PayloadStorageType = Union[
-    StorageTypeOneOf,
     PayloadStorageTypeOneOf,
+    PayloadStorageTypeOneOf1,
 ]
 PointInsertOperations = Union[
     PointsBatch,
@@ -1524,14 +1663,11 @@ PointsSelector = Union[
 ]
 QuantizationConfig = Union[
     ScalarQuantization,
+    ProductQuantization,
 ]
 ReadConsistency = Union[
     ReadConsistencyType,
     StrictInt,
-]
-StorageType = Union[
-    StorageTypeOneOf,
-    StorageTypeOneOf1,
 ]
 UsingVector = Union[
     StrictStr,
@@ -1540,6 +1676,11 @@ ValueVariants = Union[
     StrictBool,
     StrictInt,
     StrictStr,
+]
+VectorStorageType = Union[
+    VectorStorageTypeOneOf,
+    VectorStorageTypeOneOf1,
+    VectorStorageTypeOneOf2,
 ]
 VectorStruct = Union[
     List[StrictFloat],

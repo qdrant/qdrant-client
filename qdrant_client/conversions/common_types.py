@@ -47,6 +47,8 @@ CollectionInfo: TypeAlias = rest.CollectionInfo
 CountResult: TypeAlias = rest.CountResult
 SnapshotDescription: TypeAlias = rest.SnapshotDescription
 NamedVector: TypeAlias = rest.NamedVector
+PointVectors: TypeAlias = rest.PointVectors
+VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
 LocksOption: TypeAlias = rest.LocksOption
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
@@ -58,6 +60,8 @@ RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
+
+GroupsResult: TypeAlias = rest.GroupsResult
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7

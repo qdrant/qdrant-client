@@ -90,6 +90,8 @@ class GrpcToRest:
             return cls.convert_is_empty_condition(val)
         if name == "is_null":
             return cls.convert_is_null_condition(val)
+        if name == "nested":
+            return cls.convert_nested_condition(val)
 
         raise ValueError(f"invalid Condition model: {model}")  # pragma: no cover
 
@@ -273,7 +275,8 @@ class GrpcToRest:
     @classmethod
     def convert_update_result(cls, model: grpc.UpdateResult) -> rest.UpdateResult:
         return rest.UpdateResult(
-            operation_id=model.operation_id, status=cls.convert_update_status(model.status)
+            operation_id=model.operation_id,
+            status=cls.convert_update_status(model.status),
         )
 
     @classmethod
@@ -316,6 +319,15 @@ class GrpcToRest:
     @classmethod
     def convert_is_null_condition(cls, model: grpc.IsNullCondition) -> rest.IsNullCondition:
         return rest.IsNullCondition(is_null=rest.PayloadField(key=model.key))
+
+    @classmethod
+    def convert_nested_condition(cls, model: grpc.NestedCondition) -> rest.NestedCondition:
+        return rest.NestedCondition(
+            nested=rest.Nested(
+                key=model.key,
+                filter=cls.convert_filter(model.filter),
+            )
+        )
 
     @classmethod
     def convert_search_params(cls, model: grpc.SearchParams) -> rest.SearchParams:
@@ -428,6 +440,10 @@ class GrpcToRest:
             return rest.MatchAny(any=list(val.strings))
         if name == "integers":
             return rest.MatchAny(any=list(val.integers))
+        if name == "except_keywords":
+            return rest.MatchExcept(**{"except": list(val.strings)})
+        if name == "except_integers":
+            return rest.MatchExcept(**{"except": list(val.integers)})
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -587,6 +603,7 @@ class GrpcToRest:
             quantization_config=cls.convert_quantization_config(model.quantization_config)
             if model.HasField("quantization_config")
             else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
         )
 
     @classmethod
@@ -756,6 +773,29 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_product_quantization_config(
+        cls, model: grpc.ProductQuantization
+    ) -> rest.ProductQuantizationConfig:
+        return rest.ProductQuantizationConfig(
+            compression=cls.convert_compression_ratio(model.compression),
+            always_ram=model.always_ram if model.HasField("always_ram") else None,
+        )
+
+    @classmethod
+    def convert_compression_ratio(cls, model: grpc.CompressionRatio) -> rest.CompressionRatio:
+        if model == grpc.x4:
+            return rest.CompressionRatio.X4
+        if model == grpc.x8:
+            return rest.CompressionRatio.X8
+        if model == grpc.x16:
+            return rest.CompressionRatio.X16
+        if model == grpc.x32:
+            return rest.CompressionRatio.X32
+        if model == grpc.x64:
+            return rest.CompressionRatio.X64
+        raise ValueError(f"invalid CompressionRatio model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_quantization_config(
         cls, model: grpc.QuantizationConfig
     ) -> rest.QuantizationConfig:
@@ -763,6 +803,8 @@ class GrpcToRest:
         val = getattr(model, name)
         if name == "scalar":
             return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
+        if name == "product":
+            return rest.ProductQuantization(product=cls.convert_product_quantization_config(val))
         raise ValueError(f"invalid QuantizationConfig model: {model}")  # pragma: no cover
 
     @classmethod
@@ -773,6 +815,32 @@ class GrpcToRest:
             ignore=model.ignore if model.HasField("ignore") else None,
             rescore=model.rescore if model.HasField("rescore") else None,
         )
+
+    @classmethod
+    def convert_point_vectors(cls, model: grpc.PointVectors) -> rest.PointVectors:
+        return rest.PointVectors(
+            id=cls.convert_point_id(model.id),
+            vector=cls.convert_vectors(model.vectors),
+        )
+
+    @classmethod
+    def convert_groups_result(cls, model: grpc.GroupsResult) -> rest.GroupsResult:
+        return rest.GroupsResult(
+            groups=[cls.convert_group(group) for group in model.groups],
+        )
+
+    @classmethod
+    def convert_group(cls, model: grpc.PointGroup) -> rest.PointGroup:
+        return rest.PointGroup(
+            id=cls.convert_group_id(model.id),
+            hits=[cls.convert_scored_point(hit) for hit in model.hits],
+        )
+
+    @classmethod
+    def convert_group_id(cls, model: grpc.GroupId) -> rest.GroupId:
+        name = model.WhichOneof("kind")
+        val = getattr(model, name)
+        return val
 
 
 # ----------------------------------------
@@ -877,7 +945,8 @@ class RestToGrpc:
     @classmethod
     def convert_update_result(cls, model: rest.UpdateResult) -> grpc.UpdateResult:
         return grpc.UpdateResult(
-            operation_id=model.operation_id, status=cls.convert_update_stats(model.status)
+            operation_id=model.operation_id,
+            status=cls.convert_update_stats(model.status),
         )
 
     @classmethod
@@ -912,6 +981,13 @@ class RestToGrpc:
     @classmethod
     def convert_is_null_condition(cls, model: rest.IsNullCondition) -> grpc.IsNullCondition:
         return grpc.IsNullCondition(key=model.is_null.key)
+
+    @classmethod
+    def convert_nested_condition(cls, model: rest.NestedCondition) -> grpc.NestedCondition:
+        return grpc.NestedCondition(
+            key=model.nested.key,
+            filter=cls.convert_filter(model.nested.filter),
+        )
 
     @classmethod
     def convert_search_params(cls, model: rest.SearchParams) -> grpc.SearchParams:
@@ -1024,7 +1100,8 @@ class RestToGrpc:
     @classmethod
     def convert_wal_config_diff(cls, model: rest.WalConfigDiff) -> grpc.WalConfigDiff:
         return grpc.WalConfigDiff(
-            wal_capacity_mb=model.wal_capacity_mb, wal_segments_ahead=model.wal_segments_ahead
+            wal_capacity_mb=model.wal_capacity_mb,
+            wal_segments_ahead=model.wal_segments_ahead,
         )
 
     @classmethod
@@ -1053,7 +1130,8 @@ class RestToGrpc:
     @classmethod
     def convert_wal_config(cls, model: rest.WalConfig) -> grpc.WalConfigDiff:
         return grpc.WalConfigDiff(
-            wal_capacity_mb=model.wal_capacity_mb, wal_segments_ahead=model.wal_segments_ahead
+            wal_capacity_mb=model.wal_capacity_mb,
+            wal_segments_ahead=model.wal_segments_ahead,
         )
 
     @classmethod
@@ -1135,12 +1213,20 @@ class RestToGrpc:
             return grpc.Match(text=model.text)
         if isinstance(model, rest.MatchAny):
             if len(model.any) == 0:
-                return grpc.Match(keywords=[])
+                return grpc.Match(keywords=grpc.RepeatedStrings(strings=[]))
             if isinstance(model.any[0], str):
                 return grpc.Match(keywords=grpc.RepeatedStrings(strings=model.any))
             if isinstance(model.any[0], int):
                 return grpc.Match(integers=grpc.RepeatedIntegers(integers=model.any))
             raise ValueError(f"invalid MatchAny model: {model}")  # pragma: no cover
+        if isinstance(model, rest.MatchExcept):
+            if len(model.except_) == 0:
+                return grpc.Match(except_keywords=grpc.RepeatedStrings(strings=[]))
+            if isinstance(model.except_[0], str):
+                return grpc.Match(except_keywords=grpc.RepeatedStrings(strings=model.except_))
+            if isinstance(model.except_[0], int):
+                return grpc.Match(except_integers=grpc.RepeatedIntegers(integers=model.except_))
+            raise ValueError(f"invalid MatchExcept model: {model}")  # pragma: no cover
 
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
@@ -1187,6 +1273,8 @@ class RestToGrpc:
             return grpc.Condition(has_id=cls.convert_has_id_condition(model))
         if isinstance(model, rest.Filter):
             return grpc.Condition(filter=cls.convert_filter(model))
+        if isinstance(model, rest.NestedCondition):
+            return grpc.Condition(nested=cls.convert_nested_condition(model))
 
         raise ValueError(f"invalid Condition model: {model}")  # pragma: no cover
 
@@ -1266,6 +1354,7 @@ class RestToGrpc:
             quantization_config=cls.convert_quantization_config(model.quantization_config)
             if model.quantization_config is not None
             else None,
+            on_disk=model.on_disk,
         )
 
     @classmethod
@@ -1475,12 +1564,40 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_product_quantization_config(
+        cls, model: rest.ProductQuantizationConfig
+    ) -> grpc.ProductQuantization:
+        return grpc.ProductQuantization(
+            compression=cls.convert_compression_ratio(model.compression),
+            always_ram=model.always_ram,
+        )
+
+    @classmethod
+    def convert_compression_ratio(cls, model: rest.CompressionRatio) -> grpc.CompressionRatio:
+        if model == rest.CompressionRatio.X4:
+            return grpc.CompressionRatio.x4
+        elif model == rest.CompressionRatio.X8:
+            return grpc.CompressionRatio.x8
+        elif model == rest.CompressionRatio.X16:
+            return grpc.CompressionRatio.x16
+        elif model == rest.CompressionRatio.X32:
+            return grpc.CompressionRatio.x32
+        elif model == rest.CompressionRatio.X64:
+            return grpc.CompressionRatio.x64
+        else:
+            raise ValueError(f"invalid CompressionRatio model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_quantization_config(
         cls, model: rest.QuantizationConfig
     ) -> grpc.QuantizationConfig:
         if isinstance(model, rest.ScalarQuantization):
             return grpc.QuantizationConfig(
                 scalar=cls.convert_scalar_quantization_config(model.scalar)
+            )
+        if isinstance(model, rest.ProductQuantization):
+            return grpc.QuantizationConfig(
+                product=cls.convert_product_quantization_config(model.product)
             )
         else:
             raise ValueError(f"invalid QuantizationConfig model: {model}")
@@ -1493,3 +1610,41 @@ class RestToGrpc:
             ignore=model.ignore,
             rescore=model.rescore,
         )
+
+    @classmethod
+    def convert_point_vectors(cls, model: rest.PointVectors) -> grpc.PointVectors:
+        return grpc.PointVectors(
+            id=cls.convert_extended_point_id(model.id),
+            vectors=cls.convert_vector_struct(model.vector),
+        )
+
+    @classmethod
+    def convert_groups_result(cls, model: rest.GroupsResult) -> grpc.GroupsResult:
+        return grpc.GroupsResult(
+            groups=[cls.convert_point_group(group) for group in model.groups],
+        )
+
+    @classmethod
+    def convert_point_group(cls, model: rest.PointGroup) -> grpc.PointGroup:
+        return grpc.PointGroup(
+            id=cls.convert_group_id(model.id),
+            hits=[cls.convert_scored_point(point) for point in model.hits],
+        )
+
+    @classmethod
+    def convert_group_id(cls, model: rest.GroupId) -> grpc.GroupId:
+        if isinstance(model, str):
+            return grpc.GroupId(
+                string_value=model,
+            )
+        elif isinstance(model, int):
+            if model >= 0:
+                return grpc.GroupId(
+                    unsigned_value=model,
+                )
+            else:
+                return grpc.GroupId(
+                    integer_value=model,
+                )
+        else:
+            raise ValueError(f"invalid GroupId model: {model}")

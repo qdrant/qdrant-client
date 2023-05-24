@@ -200,7 +200,7 @@ class _PointsApi:
         body = jsonable_encoder(count_request)
 
         return self.api_client.request(
-            type_=m.InlineResponse20016,
+            type_=m.InlineResponse20017,
             method="POST",
             url="/collections/{collection_name}/points/count",
             path_params=path_params,
@@ -264,6 +264,37 @@ class _PointsApi:
             type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/delete",
+            path_params=path_params,
+            params=query_params,
+            json=body,
+        )
+
+    def _build_for_delete_vectors(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        delete_vectors: m.DeleteVectors = None,
+    ):
+        """
+        Delete named vectors from the given points.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
+
+        body = jsonable_encoder(delete_vectors)
+
+        return self.api_client.request(
+            type_=m.InlineResponse2006,
+            method="POST",
+            url="/collections/{collection_name}/points/vectors/delete",
             path_params=path_params,
             params=query_params,
             json=body,
@@ -382,6 +413,34 @@ class _PointsApi:
             json=body,
         )
 
+    def _build_for_recommend_point_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        recommend_groups_request: m.RecommendGroupsRequest = None,
+    ):
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given payload field.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
+        body = jsonable_encoder(recommend_groups_request)
+
+        return self.api_client.request(
+            type_=m.InlineResponse20016,
+            method="POST",
+            url="/collections/{collection_name}/points/recommend/groups",
+            path_params=path_params,
+            params=query_params,
+            json=body,
+        )
+
     def _build_for_recommend_points(
         self,
         collection_name: str,
@@ -466,6 +525,34 @@ class _PointsApi:
             json=body,
         )
 
+    def _build_for_search_point_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        search_groups_request: m.SearchGroupsRequest = None,
+    ):
+        """
+        Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given payload field
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+
+        body = jsonable_encoder(search_groups_request)
+
+        return self.api_client.request(
+            type_=m.InlineResponse20016,
+            method="POST",
+            url="/collections/{collection_name}/points/search/groups",
+            path_params=path_params,
+            params=query_params,
+            json=body,
+        )
+
     def _build_for_search_points(
         self,
         collection_name: str,
@@ -525,6 +612,37 @@ class _PointsApi:
             json=body,
         )
 
+    def _build_for_update_vectors(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        update_vectors: m.UpdateVectors = None,
+    ):
+        """
+        Update specified named vectors on points, keep unspecified vectors intact.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+        if ordering is not None:
+            query_params["ordering"] = str(ordering)
+
+        body = jsonable_encoder(update_vectors)
+
+        return self.api_client.request(
+            type_=m.InlineResponse2006,
+            method="PUT",
+            url="/collections/{collection_name}/points/vectors",
+            path_params=path_params,
+            params=query_params,
+            json=body,
+        )
+
     def _build_for_upsert_points(
         self,
         collection_name: str,
@@ -579,7 +697,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20017:
         """
         Count points which matches given filtering condition
         """
@@ -620,6 +738,23 @@ class AsyncPointsApi(_PointsApi):
             wait=wait,
             ordering=ordering,
             points_selector=points_selector,
+        )
+
+    async def delete_vectors(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        delete_vectors: m.DeleteVectors = None,
+    ) -> m.InlineResponse2006:
+        """
+        Delete named vectors from the given points.
+        """
+        return await self._build_for_delete_vectors(
+            collection_name=collection_name,
+            wait=wait,
+            ordering=ordering,
+            delete_vectors=delete_vectors,
         )
 
     async def get_point(
@@ -684,6 +819,21 @@ class AsyncPointsApi(_PointsApi):
             recommend_request_batch=recommend_request_batch,
         )
 
+    async def recommend_point_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        recommend_groups_request: m.RecommendGroupsRequest = None,
+    ) -> m.InlineResponse20016:
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given payload field.
+        """
+        return await self._build_for_recommend_point_groups(
+            collection_name=collection_name,
+            consistency=consistency,
+            recommend_groups_request=recommend_groups_request,
+        )
+
     async def recommend_points(
         self,
         collection_name: str,
@@ -729,6 +879,21 @@ class AsyncPointsApi(_PointsApi):
             search_request_batch=search_request_batch,
         )
 
+    async def search_point_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        search_groups_request: m.SearchGroupsRequest = None,
+    ) -> m.InlineResponse20016:
+        """
+        Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given payload field
+        """
+        return await self._build_for_search_point_groups(
+            collection_name=collection_name,
+            consistency=consistency,
+            search_groups_request=search_groups_request,
+        )
+
     async def search_points(
         self,
         collection_name: str,
@@ -759,6 +924,23 @@ class AsyncPointsApi(_PointsApi):
             wait=wait,
             ordering=ordering,
             set_payload=set_payload,
+        )
+
+    async def update_vectors(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        update_vectors: m.UpdateVectors = None,
+    ) -> m.InlineResponse2006:
+        """
+        Update specified named vectors on points, keep unspecified vectors intact.
+        """
+        return await self._build_for_update_vectors(
+            collection_name=collection_name,
+            wait=wait,
+            ordering=ordering,
+            update_vectors=update_vectors,
         )
 
     async def upsert_points(
@@ -801,7 +983,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20017:
         """
         Count points which matches given filtering condition
         """
@@ -842,6 +1024,23 @@ class SyncPointsApi(_PointsApi):
             wait=wait,
             ordering=ordering,
             points_selector=points_selector,
+        )
+
+    def delete_vectors(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        delete_vectors: m.DeleteVectors = None,
+    ) -> m.InlineResponse2006:
+        """
+        Delete named vectors from the given points.
+        """
+        return self._build_for_delete_vectors(
+            collection_name=collection_name,
+            wait=wait,
+            ordering=ordering,
+            delete_vectors=delete_vectors,
         )
 
     def get_point(
@@ -906,6 +1105,21 @@ class SyncPointsApi(_PointsApi):
             recommend_request_batch=recommend_request_batch,
         )
 
+    def recommend_point_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        recommend_groups_request: m.RecommendGroupsRequest = None,
+    ) -> m.InlineResponse20016:
+        """
+        Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given payload field.
+        """
+        return self._build_for_recommend_point_groups(
+            collection_name=collection_name,
+            consistency=consistency,
+            recommend_groups_request=recommend_groups_request,
+        )
+
     def recommend_points(
         self,
         collection_name: str,
@@ -951,6 +1165,21 @@ class SyncPointsApi(_PointsApi):
             search_request_batch=search_request_batch,
         )
 
+    def search_point_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        search_groups_request: m.SearchGroupsRequest = None,
+    ) -> m.InlineResponse20016:
+        """
+        Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given payload field
+        """
+        return self._build_for_search_point_groups(
+            collection_name=collection_name,
+            consistency=consistency,
+            search_groups_request=search_groups_request,
+        )
+
     def search_points(
         self,
         collection_name: str,
@@ -981,6 +1210,23 @@ class SyncPointsApi(_PointsApi):
             wait=wait,
             ordering=ordering,
             set_payload=set_payload,
+        )
+
+    def update_vectors(
+        self,
+        collection_name: str,
+        wait: bool = None,
+        ordering: WriteOrdering = None,
+        update_vectors: m.UpdateVectors = None,
+    ) -> m.InlineResponse2006:
+        """
+        Update specified named vectors on points, keep unspecified vectors intact.
+        """
+        return self._build_for_update_vectors(
+            collection_name=collection_name,
+            wait=wait,
+            ordering=ordering,
+            update_vectors=update_vectors,
         )
 
     def upsert_points(

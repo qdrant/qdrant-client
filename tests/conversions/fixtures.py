@@ -29,11 +29,22 @@ match_text = grpc.Match(text="hello")
 match_keywords = grpc.Match(keywords=grpc.RepeatedStrings(strings=["hello", "world"]))
 match_integers = grpc.Match(integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
 
+match_except_keywords = grpc.Match(
+    except_keywords=grpc.RepeatedStrings(strings=["hello", "world"])
+)
+match_except_integers = grpc.Match(except_integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
+
 field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
 
 field_condition_match_keywords = grpc.FieldCondition(key="match_field", match=match_keywords)
-
 field_condition_match_integers = grpc.FieldCondition(key="match_field", match=match_integers)
+
+field_condition_match_except_keywords = grpc.FieldCondition(
+    key="match_field", match=match_except_keywords
+)
+field_condition_match_except_integers = grpc.FieldCondition(
+    key="match_field", match=match_except_integers
+)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -78,6 +89,17 @@ condition_values_count = grpc.Condition(field=field_condition_values_count)
 condition_keywords = grpc.Condition(field=field_condition_match_keywords)
 condition_integers = grpc.Condition(field=field_condition_match_integers)
 
+condition_except_keywords = grpc.Condition(field=field_condition_match_except_keywords)
+condition_except_integers = grpc.Condition(field=field_condition_match_except_integers)
+
+nested = grpc.NestedCondition(
+    key="a.b.c", filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)])
+)
+
+condition_nested = grpc.Condition(nested=nested)
+
+filter_nested = grpc.Filter(must=[condition_nested])
+
 filter_ = grpc.Filter(
     must=[
         condition_has_id,
@@ -85,9 +107,12 @@ filter_ = grpc.Filter(
         condition_is_null,
         condition_keywords,
         condition_integers,
+        condition_except_keywords,
+        condition_except_integers,
     ],
     should=[
         condition_field_match,
+        condition_nested,
     ],
     must_not=[
         grpc.Condition(filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)]))
@@ -105,7 +130,19 @@ vector_param_with_hnsw = grpc.VectorParams(
     hnsw_config=grpc.HnswConfigDiff(
         ef_construct=1000,
     ),
+    on_disk=True,
 )
+
+product_quantizations = [
+    grpc.QuantizationConfig(product=grpc.ProductQuantization(compression=ratio, always_ram=False))
+    for ratio in [
+        grpc.CompressionRatio.x4,
+        grpc.CompressionRatio.x8,
+        grpc.CompressionRatio.x16,
+        grpc.CompressionRatio.x32,
+        grpc.CompressionRatio.x64,
+    ]
+]
 
 scalar_quantization = grpc.ScalarQuantization(
     type=grpc.QuantizationType.Int8,
@@ -292,16 +329,18 @@ point_struct = grpc.PointStruct(
     payload=payload_to_grpc({"my_payload": payload_value}),
 )
 
+multi_vectors = grpc.Vectors(
+    vectors=grpc.NamedVectors(
+        vectors={
+            "image": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
+            "text": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
+        }
+    )
+)
+
 point_struct_multivec = grpc.PointStruct(
     id=point_id_1,
-    vectors=grpc.Vectors(
-        vectors=grpc.NamedVectors(
-            vectors={
-                "image": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
-                "text": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
-            }
-        )
-    ),
+    vectors=multi_vectors,
     payload=payload_to_grpc({"my_payload": payload_value}),
 )
 
@@ -454,6 +493,36 @@ ordering_2 = grpc.WriteOrdering(
     type=grpc.WriteOrderingType.Strong,
 )
 
+point_vector_1 = grpc.PointVectors(
+    id=point_id_1,
+    vectors=single_vector,
+)
+
+point_vector_2 = grpc.PointVectors(
+    id=point_id_2,
+    vectors=multi_vectors,
+)
+
+group_id_1 = grpc.GroupId(unsigned_value=123)
+group_id_2 = grpc.GroupId(integer_value=-456)
+group_id_3 = grpc.GroupId(string_value="abc")
+
+groups = [
+    grpc.PointGroup(id=group_id_1, hits=[scored_point]),
+    grpc.PointGroup(id=group_id_2, hits=[scored_point]),
+    grpc.PointGroup(
+        id=group_id_3,
+        hits=[
+            scored_point,
+            scored_point,
+            scored_point,
+        ],
+    ),
+]
+
+group_result = grpc.GroupsResult(groups=groups)
+
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -464,7 +533,7 @@ fixtures = {
     "HasIdCondition": [has_id_condition],
     "RenameAlias": [rename_alias],
     "ValuesCount": [values_count],
-    "Filter": [filter_],
+    "Filter": [filter_nested, filter_],
     "OptimizersConfigDiff": [optimizer_config, optimizer_config_half],
     "CollectionInfo": [collection_info, collection_info_ok],
     "CreateCollection": [create_collection],
@@ -527,8 +596,11 @@ fixtures = {
         read_consistency_2,
     ],
     "WriteOrdering": [ordering_0, ordering_1, ordering_2],
-    "QuantizationConfig": [quantization_config],
+    "QuantizationConfig": [quantization_config] + product_quantizations,
     "QuantizationSearchParams": [quantization_search_params],
+    "PointVectors": [point_vector_1, point_vector_2],
+    "GroupId": [group_id_1, group_id_2, group_id_3],
+    "GroupsResult": [group_result],
 }
 
 
