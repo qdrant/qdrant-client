@@ -131,7 +131,10 @@ class QdrantRemote(QdrantBase):
 
     def __del__(self) -> None:
         if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
-            self._grpc_channel.close()
+            try:
+                self._grpc_channel.close()
+            except AttributeError:
+                logging.warning("Connection was interrupted on server side")
 
     @staticmethod
     def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
