@@ -162,3 +162,22 @@ def test_vector_batch_conversion():
             )
         ),
     ]
+
+
+def test_grpc_payload_scheme_conversion():
+    from qdrant_client.conversions.conversion import (
+        grpc_field_type_to_payload_schema,
+        grpc_payload_schema_to_field_type,
+    )
+    from qdrant_client.grpc import PayloadSchemaType
+
+    for payload_schema in (
+        PayloadSchemaType.Keyword,
+        PayloadSchemaType.Integer,
+        PayloadSchemaType.Float,
+        PayloadSchemaType.Geo,
+        PayloadSchemaType.Text,
+    ):
+        assert payload_schema == grpc_field_type_to_payload_schema(
+            grpc_payload_schema_to_field_type(payload_schema)
+        )

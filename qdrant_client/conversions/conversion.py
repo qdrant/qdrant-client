@@ -285,26 +285,9 @@ class GrpcToRest:
     ) -> rest.PayloadSchemaParams:
         if model.HasField("text_index_params"):
             text_index_params = model.text_index_params
-            return rest.TextIndexParams(
-                type=rest.PayloadSchemaType.TEXT,
-                tokenizer=cls.convert_tokenizer(text_index_params.tokenizer),
-                lowercase=text_index_params.lowercase,
-                min_token_len=text_index_params.min_token_len,
-                max_token_len=text_index_params.max_token_len,
-            )
+            return cls.convert_text_index_params(text_index_params)
 
         raise ValueError(f"invalid PayloadIndexParams model: {model}")
-
-    @classmethod
-    def convert_tokenizer(cls, model: grpc.TokenizerType) -> rest.TokenizerType:
-        if model == grpc.TokenizerType.Prefix:
-            return rest.TokenizerType.PREFIX
-        if model == grpc.TokenizerType.Whitespace:
-            return rest.TokenizerType.WHITESPACE
-        if model == grpc.TokenizerType.Word:
-            return rest.TokenizerType.WORD
-
-        raise ValueError(f"invalid Tokenizer model: {model}")
 
     @classmethod
     def convert_payload_schema_type(cls, model: grpc.PayloadSchemaType) -> rest.PayloadSchemaType:
@@ -1006,27 +989,9 @@ class RestToGrpc:
         cls, model: rest.PayloadSchemaParams
     ) -> grpc.PayloadIndexParams:
         if isinstance(model, rest.TextIndexParams):
-            return grpc.PayloadIndexParams(
-                text_index_params=grpc.TextIndexParams(
-                    tokenizer=cls.convert_tokenizer(model.tokenizer),
-                    lowercase=model.lowercase,
-                    min_token_len=model.min_token_len,
-                    max_token_len=model.max_token_len,
-                )
-            )
+            return grpc.PayloadIndexParams(text_index_params=cls.convert_text_index_params(model))
 
         raise ValueError(f"invalid PayloadSchemaParams model: {model}")  # pragma: no cover
-
-    @classmethod
-    def convert_tokenizer(cls, model: rest.TokenizerType) -> grpc.TokenizerType:
-        if model == rest.TokenizerType.PREFIX:
-            return grpc.TokenizerType.Prefix
-        if model == rest.TokenizerType.WHITESPACE:
-            return grpc.TokenizerType.Whitespace
-        if model == rest.TokenizerType.WORD:
-            return grpc.TokenizerType.Word
-
-        raise ValueError(f"invalid TokenizerType model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_payload_schema_type(cls, model: rest.PayloadSchemaType) -> grpc.PayloadSchemaType:
