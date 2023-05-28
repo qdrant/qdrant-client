@@ -23,7 +23,7 @@ WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
 QuantizationConfig = Union[rest.QuantizationConfig, grpc.QuantizationConfig]
 PointId = Union[int, str, grpc.PointId]
 PayloadSchemaType = Union[
-    rest.PayloadSchemaType, rest.PayloadSchemaParams, int
+    rest.PayloadSchemaType, rest.PayloadSchemaParams, int, grpc.PayloadIndexParams
 ]  # type(grpc.PayloadSchemaType) == int
 Points = Union[rest.Batch, List[Union[rest.PointStruct, grpc.PointStruct]]]
 PointsSelector = Union[

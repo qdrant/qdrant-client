@@ -22,7 +22,11 @@ from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
-from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+from qdrant_client.conversions.conversion import (
+    GrpcToRest,
+    RestToGrpc,
+    grpc_payload_schema_to_field_type,
+)
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.http import models
 from qdrant_client.http import models as rest_models
@@ -974,8 +978,7 @@ class QdrantRemote(QdrantBase):
                 ),
                 timeout=self._timeout,
             ).result
-            count_result = GrpcToRest.convert_count_result(response)
-            return count_result
+            return GrpcToRest.convert_count_result(response)
 
         if isinstance(count_filter, grpc.Filter):
             count_filter = GrpcToRest.convert_filter(model=count_filter)
@@ -1606,6 +1609,7 @@ class QdrantRemote(QdrantBase):
 
             if isinstance(collection_params, rest_models.CollectionParamsDiff):
                 collection_params = RestToGrpc.convert_collection_params_diff(collection_params)
+
             return self.grpc_collections.Update(
                 grpc.UpdateCollection(
                     collection_name=collection_name,
@@ -1865,11 +1869,22 @@ class QdrantRemote(QdrantBase):
             if isinstance(field_schema, rest_models.PayloadSchemaType):
                 field_schema = RestToGrpc.convert_payload_schema_type(field_schema)
 
+            if isinstance(field_schema, int):
+                # There are no means to distinguish grpc.PayloadSchemaType and grpc.FieldType,
+                # as both of them are just ints
+                # method signature assumes that grpc.PayloadSchemaType is passed,
+                # otherwise the value will be corrupted
+                field_schema = grpc_payload_schema_to_field_type(field_schema)
+
             if isinstance(field_schema, rest_models.TextIndexParams):
                 field_index_params = grpc.PayloadIndexParams(
                     text_index_params=RestToGrpc.convert_text_index_params(field_schema)
                 )
-                field_schema = grpc.PayloadSchemaType.Text
+                field_schema = grpc.FieldType.FieldTypeText
+
+            if isinstance(field_schema, grpc.PayloadIndexParams):
+                field_index_params = field_schema
+                field_schema = grpc.FieldType.FieldTypeText
 
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
@@ -1886,8 +1901,8 @@ class QdrantRemote(QdrantBase):
         if isinstance(field_schema, int):  # type(grpc.PayloadSchemaType) == int
             field_schema = GrpcToRest.convert_payload_schema_type(field_schema)
 
-        if isinstance(field_schema, grpc.TextIndexParams):
-            field_schema = GrpcToRest.convert_text_index_params(field_schema)
+        if isinstance(field_schema, grpc.PayloadIndexParams):
+            field_schema = GrpcToRest.convert_payload_schema_params(field_schema)
 
         result: Optional[
             types.UpdateResult
