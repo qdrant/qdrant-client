@@ -149,42 +149,36 @@ def compare_client_results(
     res1 = foo(client1, **kwargs)
     res2 = foo(client2, **kwargs)
 
-    try:
-        if isinstance(res1, list):
-            compare_records(res1, res2)
-        elif isinstance(res1, models.GroupsResult):
-            groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
-            groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))
+    if isinstance(res1, list):
+        compare_records(res1, res2)
+    elif isinstance(res1, models.GroupsResult):
+        groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
+        groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))
 
-            assert len(groups_1) == len(
-                groups_2
-            ), f"len(groups_1) = {len(groups_1)}, len(groups_2) = {len(groups_2)}"
+        assert len(groups_1) == len(
+            groups_2
+        ), f"len(groups_1) = {len(groups_1)}, len(groups_2) = {len(groups_2)}"
 
-            for i in range(len(groups_1)):
-                group_1 = groups_1[i]
-                group_2 = groups_2[i]
+        for i in range(len(groups_1)):
+            group_1 = groups_1[i]
+            group_2 = groups_2[i]
 
-                assert (
-                    group_1.hits[0].score - group_2.hits[0].score < 1e-4
-                ), f"groups_1[{i}].hits[0].score = {group_1.hits[0].score}, groups_2[{i}].hits[0].score = {group_2.hits[0].score}"
+            assert (
+                group_1.hits[0].score - group_2.hits[0].score < 1e-4
+            ), f"groups_1[{i}].hits[0].score = {group_1.hits[0].score}, groups_2[{i}].hits[0].score = {group_2.hits[0].score}"
 
-                # We can't assert ids because they are not stable, order of groups with same score is guaranteed
-                # assert (
-                #     group_1.id == group_2.id
-                # ), f"groups_1[{i}].id = {group_1.id}, groups_2[{i}].id = {group_2.id}"
+            # We can't assert ids because they are not stable, order of groups with same score is guaranteed
+            # assert (
+            #     group_1.id == group_2.id
+            # ), f"groups_1[{i}].id = {group_1.id}, groups_2[{i}].id = {group_2.id}"
 
-                if group_1.id == group_2.id:
-                    compare_records(group_1.hits, group_2.hits)
-                else:
-                    # If group ids are different, but scores are the same, we assume that the top hits are the same
-                    compare_scored_record(group_1.hits[0], group_2.hits[0], 0)
-        else:
-            assert res1 == res2
-    except AssertionError as e:
-        import ipdb
-
-        ipdb.set_trace()
-        raise e
+            if group_1.id == group_2.id:
+                compare_records(group_1.hits, group_2.hits)
+            else:
+                # If group ids are different, but scores are the same, we assume that the top hits are the same
+                compare_scored_record(group_1.hits[0], group_2.hits[0], 0)
+    else:
+        assert res1 == res2
 
 
 def init_client(
