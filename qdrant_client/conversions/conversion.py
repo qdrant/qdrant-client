@@ -532,6 +532,13 @@ class GrpcToRest:
         raise ValueError(f"invalid AliasOperations model: {model}")  # pragma: no cover
 
     @classmethod
+    def convert_alias_description(cls, model: grpc.AliasDescription) -> rest.AliasDescription:
+        return rest.AliasDescription(
+            alias_name=model.alias_name,
+            collection_name=model.collection_name,
+        )
+
+    @classmethod
     def convert_points_selector(cls, model: grpc.PointsSelector) -> rest.PointsSelector:
         name = model.WhichOneof("points_selector_one_of")
         val = getattr(model, name)
@@ -939,6 +946,8 @@ class RestToGrpc:
             return grpc.PayloadSchemaType.Float
         if model == rest.PayloadSchemaType.GEO:
             return grpc.PayloadSchemaType.Geo
+        if model == rest.PayloadSchemaType.TEXT:
+            return grpc.PayloadSchemaType.Text
 
         raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
 
@@ -1240,6 +1249,13 @@ class RestToGrpc:
             return grpc.AliasOperations(rename_alias=cls.convert_rename_alias(model.rename_alias))
 
         raise ValueError(f"invalid AliasOperations model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_alias_description(cls, model: rest.AliasDescription) -> grpc.AliasDescription:
+        return grpc.AliasDescription(
+            alias_name=model.alias_name,
+            collection_name=model.collection_name,
+        )
 
     @classmethod
     def convert_extended_point_id(cls, model: rest.ExtendedPointId) -> grpc.PointId:
