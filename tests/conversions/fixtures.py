@@ -264,10 +264,10 @@ collection_status_green = grpc.CollectionStatus.Green
 optimizer_status = grpc.OptimizerStatus(ok=True)
 optimizer_status_error = grpc.OptimizerStatus(ok=False, error="Error!")
 
-payload_schema_keyword = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Keyword)
-payload_schema_integer = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Integer)
-payload_schema_float = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Float)
-payload_schema_geo = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Geo)
+payload_schema_keyword = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Keyword, points=0)
+payload_schema_integer = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Integer, points=0)
+payload_schema_float = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Float, points=0)
+payload_schema_geo = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Geo, points=0)
 
 collection_info_ok = grpc.CollectionInfo(
     status=collection_status_green,

@@ -1667,7 +1667,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            if isinstance(vectors_config, rest_models.VectorParams):
+            if isinstance(vectors_config, (rest_models.VectorParams, dict)):
                 vectors_config = RestToGrpc.convert_vectors_config(vectors_config)
 
             if isinstance(hnsw_config, rest_models.HnswConfigDiff):
