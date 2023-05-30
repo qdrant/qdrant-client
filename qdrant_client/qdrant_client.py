@@ -52,6 +52,7 @@ class QdrantClient(QdrantBase):
             Default: 5.0 seconds for REST and unlimited for gRPC
         host: Host name of Qdrant service. If url and host are None, set to 'localhost'.
             Default: `None`
+        path: Persistence path for QdrantLocal. Default: `None`
         **kwargs: Additional arguments passed directly into REST client initialization
 
     """

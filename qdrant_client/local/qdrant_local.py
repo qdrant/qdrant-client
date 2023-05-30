@@ -1,14 +1,13 @@
+import itertools
 import json
 import logging
 import os
 import shutil
 from io import TextIOWrapper
-from itertools import zip_longest
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import portalocker
-
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
@@ -537,12 +536,14 @@ class QdrantLocal(QdrantBase):
         collection.upsert(
             [
                 rest_models.PointStruct(
-                    id=point_id or idx,
+                    id=point_id,
                     vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                     payload=payload or {},
                 )
-                for idx, (point_id, vector, payload) in enumerate(
-                    zip_longest(ids or [], iter(vectors), payload or [])
+                for (point_id, vector, payload) in zip(
+                    ids or itertools.count(),
+                    iter(vectors),
+                    payload or itertools.cycle([{}]),
                 )
             ]
         )

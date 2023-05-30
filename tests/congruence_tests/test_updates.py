@@ -1,5 +1,8 @@
+import itertools
 import uuid
 from collections import defaultdict
+
+import pytest
 
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
@@ -89,6 +92,22 @@ def test_upload_collection(local_client, remote_client):
 
     local_client.upload_collection(COLLECTION_NAME, vectors, payload)
     remote_client.upload_collection(COLLECTION_NAME, vectors, payload)
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+@pytest.mark.timeout(15)  # normally takes less than a second
+def test_upload_collection_generators(local_client, remote_client):
+    records = generate_fixtures(UPLOAD_NUM_VECTORS)
+    vectors = []
+    payload = []
+    for record in records:
+        vectors.append(record.vector)
+        payload.append(record.payload)
+
+    payload = itertools.cycle(payload)
+    local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
+    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
