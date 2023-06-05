@@ -17,6 +17,7 @@ For fixes:
   * `source venv/bin/activate` - enter venv
   * `pip install poetry` - install package manager
   * `poetry install` - install all dependencies
+* [ ] (MacOS) make sure to have `gnu-sed` installed and aliased to `sed`: `brew install gnu-sed`.
 * [ ] Generate REST code: `bash -x tools/generate_rest_client.sh` - will automatically fetch openapi from `qdrant:master`. 
 * [ ] Generate gRPC code: `bash -x tools/generate_grpc_client.sh` - will automatically fetch proto from `qdrant:master`. 
 
