@@ -8,6 +8,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import portalocker
+
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
@@ -527,7 +528,7 @@ class QdrantLocal(QdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: Union[types.NumpyArray, Dict[str, types.NumpyArray], Iterable[List[float]]],
+        vectors: Union[types.NumpyArray, Iterable[types.VectorStruct]],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,

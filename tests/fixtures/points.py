@@ -29,6 +29,9 @@ def generate_records(
     random_ids: bool = False,
     skip_vectors: bool = False,
 ) -> List[models.Record]:
+    if skip_vectors and isinstance(vector_sizes, int):
+        raise ValueError("skip_vectors is not supported for single vector")
+
     records = []
     for i in range(num_records):
         payload = None
