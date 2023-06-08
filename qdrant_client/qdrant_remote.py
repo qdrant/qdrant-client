@@ -1522,13 +1522,14 @@ class QdrantRemote(QdrantBase):
     def update_collection(
         self,
         collection_name: str,
-        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
+        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
         timeout: Optional[int] = None,
+        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
         **kwargs: Any,
     ) -> bool:
-        if isinstance(optimizer_config, grpc.OptimizersConfigDiff):
-            optimizer_config = GrpcToRest.convert_optimizers_config_diff(optimizer_config)
+        if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
+            optimizers_config = GrpcToRest.convert_optimizers_config_diff(optimizers_config)
 
         if isinstance(collection_params, grpc.CollectionParamsDiff):
             collection_params = GrpcToRest.convert_collection_params_diff(collection_params)
@@ -1536,7 +1537,7 @@ class QdrantRemote(QdrantBase):
         result: Optional[bool] = self.http.collections_api.update_collection(
             collection_name,
             update_collection=rest_models.UpdateCollection(
-                optimizers_config=optimizer_config, params=collection_params
+                optimizers_config=optimizers_config, params=collection_params
             ),
             timeout=timeout,
         ).result

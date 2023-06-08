@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client import grpc as grpc
@@ -1187,29 +1188,42 @@ class QdrantClient(QdrantBase):
     def update_collection(
         self,
         collection_name: str,
-        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
+        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
         timeout: Optional[int] = None,
+        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
         **kwargs: Any,
     ) -> bool:
         """Update parameters of the collection
 
         Args:
             collection_name: Name of the collection
-            optimizer_config: Override for optimizer configuration
+            optimizers_config: Override for optimizer configuration
             collection_params: Override for collection parameters
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
-
+            optimizer_config: Same as optimizers_config. Deprecated
         Returns:
             Operation result
         """
+        if optimizers_config is not None and optimizer_config is not None:
+            raise ValueError(
+                "Only one of optimizers_config and optimizer_config should be specified"
+            )
+        if optimizer_config is not None:
+            optimizers_config = optimizer_config
+            warnings.warn(
+                "optimizer_config is deprecated and will be removed since 1.4.0, "
+                "use optimizers_config instead",
+                DeprecationWarning,
+            )
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.update_collection(
             collection_name=collection_name,
-            optimizer_config=optimizer_config,
+            optimizers_config=optimizers_config,
             collection_params=collection_params,
             timeout=timeout,
             **kwargs,

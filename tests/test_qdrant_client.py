@@ -670,7 +670,7 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
     client.update_collection(
         collection_name=COLLECTION_NAME,
-        optimizer_config=OptimizersConfigDiff(max_segment_size=10000),
+        optimizers_config=OptimizersConfigDiff(max_segment_size=10000),
     )
 
     assert client.get_collection(COLLECTION_NAME).config.optimizer_config.max_segment_size == 10000
