@@ -281,6 +281,9 @@ class QdrantClient(QdrantBase):
         Returns:
             List of found close points with similarity scores.
         """
+        with_vector = kwargs.pop("with_vector", None)
+        assert with_vector is None, "Unknown argument `with_vector`. Did you mean `with_vectors`?"
+
         return self._client.search(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -364,6 +367,9 @@ class QdrantClient(QdrantBase):
             List of groups with not more than `group_size` hits in each group.
             Each group also contains an id of the group, which is the value of the payload field.
         """
+        with_vector = kwargs.pop("with_vector", None)
+        assert with_vector is None, "Unknown argument `with_vector`. Did you mean `with_vectors`?"
+
         return self._client.search_groups(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -484,6 +490,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of recommended points with similarity scores.
         """
+        with_vector = kwargs.pop("with_vector", None)
+        assert with_vector is None, "Unknown argument `with_vector`. Did you mean `with_vectors`?"
 
         return self._client.recommend(
             collection_name=collection_name,
@@ -582,6 +590,9 @@ class QdrantClient(QdrantBase):
             Each group also contains an id of the group, which is the value of the payload field.
 
         """
+        with_vector = kwargs.pop("with_vector", None)
+        assert with_vector is None, "Unknown argument `with_vector`. Did you mean `with_vectors`?"
+
         return self._client.recommend_groups(
             collection_name=collection_name,
             group_by=group_by,
@@ -644,6 +655,9 @@ class QdrantClient(QdrantBase):
             A pair of (List of points) and (optional offset for the next scroll request).
             If next page offset is `None` - there is no more points in the collection to scroll.
         """
+        with_vector = kwargs.pop("with_vector", None)
+        assert with_vector is None, "Unknown argument `with_vector`. Did you mean `with_vectors`?"
+
         return self._client.scroll(
             collection_name=collection_name,
             scroll_filter=scroll_filter,
@@ -831,6 +845,9 @@ class QdrantClient(QdrantBase):
         Returns:
             List of points
         """
+        with_vector = kwargs.pop("with_vector", None)
+        assert with_vector is None, "Unknown argument `with_vector`. Did you mean `with_vectors`?"
+
         return self._client.retrieve(
             collection_name=collection_name,
             ids=ids,
