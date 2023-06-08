@@ -159,6 +159,8 @@ def test_upload_collection_float_list():
     remote_client.upload_collection(COLLECTION_NAME, vectors)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
 
 
 def test_upload_collection_named_float_list_vectors(local_client, remote_client):
@@ -186,6 +188,8 @@ def test_upload_collection_np_array_2d():
     remote_client.upload_collection(COLLECTION_NAME, vectors)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
 
 
 def test_upload_collection_list_np_arrays():
@@ -203,3 +207,5 @@ def test_upload_collection_list_np_arrays():
     remote_client.upload_collection(COLLECTION_NAME, vectors)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
