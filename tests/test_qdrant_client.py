@@ -936,6 +936,23 @@ def test_locks():
     )
 
 
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_empty_vector(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config={},
+    )
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(id=123, payload={"test": "value"}, vector={}),
+        ],
+    )
+
+
 def test_legacy_imports():
     try:
         from qdrant_openapi_client.api.points_api import SyncPointsApi
