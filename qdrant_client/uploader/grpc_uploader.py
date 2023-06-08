@@ -15,7 +15,7 @@ def upload_batch_grpc(
     collection_name: str,
     batch: Union[Batch, Tuple],
     max_retries: int,
-) -> bool:
+) -> None:
     ids_batch, vectors_batch, payload_batch = batch
     if payload_batch is None:
         payload_batch = (None for _ in count())
@@ -32,16 +32,11 @@ def upload_batch_grpc(
     for attempt in range(max_retries):
         try:
             points_client.Upsert(grpc.UpsertPoints(collection_name=collection_name, points=points))
-            return True
-        except Exception as e:  # pylint: disable=broad-except
-            if attempt == (max_retries - 1):
-                logging.exception(e)
-                return False
-        else:
-            logging.warn(f"Batch upload failed {attempt + 1} times. Retrying...")
-            continue
+        except Exception as e:
+            logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
 
-    return False  # suppress mypy complaints
+            if attempt == max_retries - 1:
+                raise e
 
 
 class GrpcBatchUploader(BaseUploader):
