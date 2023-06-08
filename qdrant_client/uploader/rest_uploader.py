@@ -12,7 +12,7 @@ def upload_batch(
     collection_name: str,
     batch: Union[Tuple, Batch],
     max_retries: int,
-) -> None:
+) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
     if payload_batch is not None:
@@ -40,6 +40,7 @@ def upload_batch(
 
             if attempt == max_retries - 1:
                 raise e
+    return True
 
 
 class RestBatchUploader(BaseUploader):

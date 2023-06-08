@@ -15,7 +15,7 @@ def upload_batch_grpc(
     collection_name: str,
     batch: Union[Batch, Tuple],
     max_retries: int,
-) -> None:
+) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
     if payload_batch is None:
         payload_batch = (None for _ in count())
@@ -37,6 +37,7 @@ def upload_batch_grpc(
 
             if attempt == max_retries - 1:
                 raise e
+    return True
 
 
 class GrpcBatchUploader(BaseUploader):
