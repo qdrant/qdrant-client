@@ -22,7 +22,11 @@ from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
-from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+from qdrant_client.conversions.conversion import (
+    GrpcToRest,
+    RestToGrpc,
+    grpc_payload_schema_to_field_type,
+)
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.http import models
 from qdrant_client.http import models as rest_models
@@ -124,10 +128,12 @@ class QdrantRemote(QdrantBase):
         self._grpc_channel = None
         self._grpc_points_client: Optional[grpc.PointsStub] = None
         self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
+        self._grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
 
         self._aio_grpc_channel = None
         self._aio_grpc_points_client: Optional[grpc.PointsStub] = None
         self._aio_grpc_collections_client: Optional[grpc.CollectionsStub] = None
+        self._aio_grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
 
     def __del__(self) -> None:
         if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
@@ -147,7 +153,7 @@ class QdrantRemote(QdrantBase):
         )
         return scheme, host, port, prefix
 
-    def _init_grpc_points_client(self) -> None:
+    def _init_grpc_channel(self) -> None:
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
                 host=self._host,
@@ -155,37 +161,39 @@ class QdrantRemote(QdrantBase):
                 ssl=self._https,
                 metadata=self._grpc_headers,
             )
+
+    def _init_async_grpc_channel(self) -> None:
+        if self._aio_grpc_channel is None:
+            self._aio_grpc_channel = get_async_channel(
+                host=self._host,
+                port=self._grpc_port,
+                ssl=self._https,
+                metadata=self._grpc_headers,
+            )
+
+    def _init_grpc_points_client(self) -> None:
+        self._init_grpc_channel()
         self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
     def _init_grpc_collections_client(self) -> None:
-        if self._grpc_channel is None:
-            self._grpc_channel = get_channel(
-                host=self._host,
-                port=self._grpc_port,
-                ssl=self._https,
-                metadata=self._grpc_headers,
-            )
+        self._init_grpc_channel()
         self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
 
+    def _init_grpc_snapshots_client(self) -> None:
+        self._init_grpc_channel()
+        self._grpc_snapshots_client = grpc.SnapshotsStub(self._grpc_channel)
+
     def _init_async_grpc_points_client(self) -> None:
-        if self._aio_grpc_channel is None:
-            self._aio_grpc_channel = get_async_channel(
-                host=self._host,
-                port=self._grpc_port,
-                ssl=self._https,
-                metadata=self._grpc_headers,
-            )
+        self._init_async_grpc_channel()
         self._aio_grpc_points_client = grpc.PointsStub(self._aio_grpc_channel)
 
     def _init_async_grpc_collections_client(self) -> None:
-        if self._aio_grpc_channel is None:
-            self._aio_grpc_channel = get_async_channel(
-                host=self._host,
-                port=self._grpc_port,
-                ssl=self._https,
-                metadata=self._grpc_headers,
-            )
+        self._init_async_grpc_channel()
         self._aio_grpc_collections_client = grpc.CollectionsStub(self._aio_grpc_channel)
+
+    def _init_async_grpc_snapshots_client(self) -> None:
+        self._init_async_grpc_channel()
+        self._aio_grpc_snapshots_client = grpc.SnapshotsStub(self._aio_grpc_channel)
 
     @property
     def async_grpc_collections(self) -> grpc.CollectionsStub:
@@ -210,6 +218,17 @@ class QdrantRemote(QdrantBase):
         return self._aio_grpc_points_client
 
     @property
+    def async_grpc_snapshots(self) -> grpc.SnapshotsStub:
+        """gRPC client for snapshots methods
+
+        Returns:
+            An instance of raw gRPC client, generated from Protobuf
+        """
+        if self._aio_grpc_snapshots_client is None:
+            self._init_async_grpc_snapshots_client()
+        return self._aio_grpc_snapshots_client
+
+    @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
 
@@ -230,6 +249,17 @@ class QdrantRemote(QdrantBase):
         if self._grpc_points_client is None:
             self._init_grpc_points_client()
         return self._grpc_points_client
+
+    @property
+    def grpc_snapshots(self) -> grpc.SnapshotsStub:
+        """gRPC client for snapshots methods
+
+        Returns:
+            An instance of raw gRPC client, generated from Protobuf
+        """
+        if self._grpc_snapshots_client is None:
+            self._init_grpc_snapshots_client()
+        return self._grpc_snapshots_client
 
     @property
     def rest(self) -> SyncApis[ApiClient]:
@@ -939,6 +969,17 @@ class QdrantRemote(QdrantBase):
         exact: bool = True,
         **kwargs: Any,
     ) -> types.CountResult:
+        if self._prefer_grpc:
+            if isinstance(count_filter, rest_models.Filter):
+                count_filter = RestToGrpc.convert_filter(model=count_filter)
+            response = self.grpc_points.Count(
+                grpc.CountPoints(
+                    collection_name=collection_name, filter=count_filter, exact=exact
+                ),
+                timeout=self._timeout,
+            ).result
+            return GrpcToRest.convert_count_result(response)
+
         if isinstance(count_filter, grpc.Filter):
             count_filter = GrpcToRest.convert_filter(model=count_filter)
 
@@ -1454,6 +1495,21 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:
+        if self._prefer_grpc:
+            change_aliases_operation = [
+                RestToGrpc.convert_alias_operations(operation)
+                if not isinstance(operation, grpc.AliasOperations)
+                else operation
+                for operation in change_aliases_operations
+            ]
+            return self.grpc_collections.UpdateAliases(
+                grpc.ChangeAliases(
+                    timeout=timeout,
+                    actions=change_aliases_operation,
+                ),
+                timeout=self._timeout,
+            ).result
+
         change_aliases_operation = [
             GrpcToRest.convert_alias_operations(operation)
             if isinstance(operation, grpc.AliasOperations)
@@ -1472,6 +1528,17 @@ class QdrantRemote(QdrantBase):
     def get_collection_aliases(
         self, collection_name: str, **kwargs: Any
     ) -> types.CollectionsAliasesResponse:
+        if self._prefer_grpc:
+            response = self.grpc_collections.ListCollectionAliases(
+                grpc.ListCollectionAliasesRequest(collection_name=collection_name),
+                timeout=self._timeout,
+            ).aliases
+            return types.CollectionsAliasesResponse(
+                aliases=[
+                    GrpcToRest.convert_alias_description(description) for description in response
+                ]
+            )
+
         result: Optional[
             types.CollectionsAliasesResponse
         ] = self.http.collections_api.get_collection_aliases(
@@ -1481,6 +1548,15 @@ class QdrantRemote(QdrantBase):
         return result
 
     def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
+        if self._prefer_grpc:
+            response = self.grpc_collections.ListAliases(
+                grpc.ListAliasesRequest(), timeout=self._timeout
+            ).aliases
+            return types.CollectionsAliasesResponse(
+                aliases=[
+                    GrpcToRest.convert_alias_description(description) for description in response
+                ]
+            )
         result: Optional[
             types.CollectionsAliasesResponse
         ] = self.http.collections_api.get_collections_aliases().result
@@ -1525,9 +1601,24 @@ class QdrantRemote(QdrantBase):
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
         timeout: Optional[int] = None,
-        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
         **kwargs: Any,
     ) -> bool:
+        if self._prefer_grpc:
+            if isinstance(optimizers_config, rest_models.OptimizersConfigDiff):
+                optimizers_config = RestToGrpc.convert_optimizers_config_diff(optimizers_config)
+
+            if isinstance(collection_params, rest_models.CollectionParamsDiff):
+                collection_params = RestToGrpc.convert_collection_params_diff(collection_params)
+
+            return self.grpc_collections.Update(
+                grpc.UpdateCollection(
+                    collection_name=collection_name,
+                    optimizers_config=optimizers_config,
+                    params=collection_params,
+                ),
+                timeout=self._timeout,
+            ).result
+
         if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
             optimizers_config = GrpcToRest.convert_optimizers_config_diff(optimizers_config)
 
@@ -1547,6 +1638,12 @@ class QdrantRemote(QdrantBase):
     def delete_collection(
         self, collection_name: str, timeout: Optional[int] = None, **kwargs: Any
     ) -> bool:
+        if self._prefer_grpc:
+            return self.grpc_collections.Delete(
+                grpc.DeleteCollection(collection_name=collection_name),
+                timeout=self._timeout,
+            ).result
+
         result: Optional[bool] = self.http.collections_api.delete_collection(
             collection_name, timeout=timeout
         ).result
@@ -1569,6 +1666,41 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:
+        if self._prefer_grpc:
+            if isinstance(vectors_config, (rest_models.VectorParams, dict)):
+                vectors_config = RestToGrpc.convert_vectors_config(vectors_config)
+
+            if isinstance(hnsw_config, rest_models.HnswConfigDiff):
+                hnsw_config = RestToGrpc.convert_hnsw_config_diff(hnsw_config)
+
+            if isinstance(optimizers_config, rest_models.OptimizersConfigDiff):
+                optimizers_config = RestToGrpc.convert_optimizers_config_diff(optimizers_config)
+
+            if isinstance(wal_config, rest_models.WalConfigDiff):
+                wal_config = RestToGrpc.convert_wal_config_diff(wal_config)
+
+            if isinstance(
+                quantization_config,
+                (rest_models.ScalarQuantization, rest_models.ProductQuantization),
+            ):
+                quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
+
+            create_collection = grpc.CreateCollection(
+                collection_name=collection_name,
+                hnsw_config=hnsw_config,
+                wal_config=wal_config,
+                optimizers_config=optimizers_config,
+                shard_number=shard_number,
+                on_disk_payload=on_disk_payload,
+                timeout=timeout,
+                vectors_config=vectors_config,
+                replication_factor=replication_factor,
+                write_consistency_factor=write_consistency_factor,
+                init_from_collection=init_from,
+                quantization_config=quantization_config,
+            )
+            return self.grpc_collections.Create(create_collection).result
+
         if isinstance(hnsw_config, grpc.HnswConfigDiff):
             hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
 
@@ -1732,8 +1864,45 @@ class QdrantRemote(QdrantBase):
             warnings.warn("field_type is deprecated, use field_schema instead", DeprecationWarning)
             field_schema = field_type
 
+        if self._prefer_grpc:
+            field_index_params = None
+            if isinstance(field_schema, rest_models.PayloadSchemaType):
+                field_schema = RestToGrpc.convert_payload_schema_type(field_schema)
+
+            if isinstance(field_schema, int):
+                # There are no means to distinguish grpc.PayloadSchemaType and grpc.FieldType,
+                # as both of them are just ints
+                # method signature assumes that grpc.PayloadSchemaType is passed,
+                # otherwise the value will be corrupted
+                field_schema = grpc_payload_schema_to_field_type(field_schema)
+
+            if isinstance(field_schema, rest_models.TextIndexParams):
+                field_index_params = grpc.PayloadIndexParams(
+                    text_index_params=RestToGrpc.convert_text_index_params(field_schema)
+                )
+                field_schema = grpc.FieldType.FieldTypeText
+
+            if isinstance(field_schema, grpc.PayloadIndexParams):
+                field_index_params = field_schema
+                field_schema = grpc.FieldType.FieldTypeText
+
+            request = grpc.CreateFieldIndexCollection(
+                collection_name=collection_name,
+                field_name=field_name,
+                field_type=field_schema,
+                field_index_params=field_index_params,
+                wait=wait,
+                ordering=ordering,
+            )
+            return GrpcToRest.convert_update_result(
+                self.grpc_points.CreateFieldIndex(request).result
+            )
+
         if isinstance(field_schema, int):  # type(grpc.PayloadSchemaType) == int
             field_schema = GrpcToRest.convert_payload_schema_type(field_schema)
+
+        if isinstance(field_schema, grpc.PayloadIndexParams):
+            field_schema = GrpcToRest.convert_payload_schema_params(field_schema)
 
         result: Optional[
             types.UpdateResult
@@ -1756,6 +1925,17 @@ class QdrantRemote(QdrantBase):
         ordering: Optional[types.WriteOrdering] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
+        if self._prefer_grpc:
+            request = grpc.DeleteFieldIndexCollection(
+                collection_name=collection_name,
+                field_name=field_name,
+                wait=wait,
+                ordering=ordering,
+            )
+            return GrpcToRest.convert_update_result(
+                self.grpc_points.DeleteFieldIndex(request).result
+            )
+
         result: Optional[
             types.UpdateResult
         ] = self.openapi_client.collections_api.delete_field_index(
@@ -1770,6 +1950,12 @@ class QdrantRemote(QdrantBase):
     def list_snapshots(
         self, collection_name: str, **kwargs: Any
     ) -> List[types.SnapshotDescription]:
+        if self._prefer_grpc:
+            snapshots = self.grpc_snapshots.List(
+                grpc.ListSnapshotsRequest(collection_name=collection_name)
+            ).snapshot_descriptions
+            return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
+
         snapshots = self.openapi_client.collections_api.list_snapshots(
             collection_name=collection_name
         ).result
@@ -1779,11 +1965,25 @@ class QdrantRemote(QdrantBase):
     def create_snapshot(
         self, collection_name: str, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
+        if self._prefer_grpc:
+            snapshot = self.grpc_snapshots.Create(
+                grpc.CreateSnapshotRequest(collection_name=collection_name)
+            ).snapshot_description
+            return GrpcToRest.convert_snapshot_description(snapshot)
+
         return self.openapi_client.collections_api.create_snapshot(
             collection_name=collection_name
         ).result
 
     def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
+        if self._prefer_grpc:
+            self.grpc_snapshots.Delete(
+                grpc.DeleteSnapshotRequest(
+                    collection_name=collection_name, snapshot_name=snapshot_name
+                )
+            )
+            return True
+
         result: Optional[bool] = self.openapi_client.collections_api.delete_snapshot(
             collection_name=collection_name,
             snapshot_name=snapshot_name,
@@ -1792,16 +1992,33 @@ class QdrantRemote(QdrantBase):
         return result
 
     def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
+        if self._prefer_grpc:
+            snapshots = self.grpc_snapshots.ListFull(
+                grpc.ListFullSnapshotsRequest()
+            ).snapshot_descriptions
+            return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
+
         snapshots = self.openapi_client.snapshots_api.list_full_snapshots().result
         assert snapshots is not None, "List full snapshots API returned None result"
         return snapshots
 
     def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
+        if self._prefer_grpc:
+            snapshot_description = self.grpc_snapshots.CreateFull(
+                grpc.CreateFullSnapshotRequest()
+            ).snapshot_description
+            return GrpcToRest.convert_snapshot_description(snapshot_description)
+
         snapshot_description = self.openapi_client.snapshots_api.create_full_snapshot().result
         assert snapshot_description is not None, "Create full snapshot API returned None result"
         return snapshot_description
 
     def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
+        if self._prefer_grpc:
+            self.grpc_snapshots.DeleteFull(
+                grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name)
+            )
+            return True
         result: Optional[bool] = self.openapi_client.snapshots_api.delete_full_snapshot(
             snapshot_name=snapshot_name,
         ).result

@@ -74,6 +74,36 @@ def grpc_to_payload(grpc: Dict[str, Value]) -> Dict[str, Any]:
     return dict((key, value_to_json(val)) for key, val in grpc.items())
 
 
+def grpc_payload_schema_to_field_type(model: grpc.PayloadSchemaType) -> grpc.FieldType:
+    if model == grpc.PayloadSchemaType.Keyword:
+        return grpc.FieldType.FieldTypeKeyword
+    if model == grpc.PayloadSchemaType.Integer:
+        return grpc.FieldType.FieldTypeInteger
+    if model == grpc.PayloadSchemaType.Float:
+        return grpc.FieldType.FieldTypeFloat
+    if model == grpc.PayloadSchemaType.Geo:
+        return grpc.FieldType.FieldTypeGeo
+    if model == grpc.PayloadSchemaType.Text:
+        return grpc.FieldType.FieldTypeText
+
+    raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
+
+
+def grpc_field_type_to_payload_schema(model: grpc.FieldType) -> grpc.PayloadSchemaType:
+    if model == grpc.FieldType.FieldTypeKeyword:
+        return grpc.PayloadSchemaType.Keyword
+    if model == grpc.FieldType.FieldTypeInteger:
+        return grpc.PayloadSchemaType.Integer
+    if model == grpc.FieldType.FieldTypeFloat:
+        return grpc.PayloadSchemaType.Float
+    if model == grpc.FieldType.FieldTypeGeo:
+        return grpc.PayloadSchemaType.Geo
+    if model == grpc.FieldType.FieldTypeText:
+        return grpc.PayloadSchemaType.Text
+
+    raise ValueError(f"invalid FieldType model: {model}")  # pragma: no cover
+
+
 class GrpcToRest:
     @classmethod
     def convert_condition(cls, model: grpc.Condition) -> rest.Condition:
@@ -243,8 +273,21 @@ class GrpcToRest:
     def convert_payload_schema_info(cls, model: grpc.PayloadSchemaInfo) -> rest.PayloadIndexInfo:
         return rest.PayloadIndexInfo(
             data_type=cls.convert_payload_schema_type(model.data_type),
+            params=cls.convert_payload_schema_params(model.params)
+            if model.HasField("params")
+            else None,
             points=model.points,
         )
+
+    @classmethod
+    def convert_payload_schema_params(
+        cls, model: grpc.PayloadIndexParams
+    ) -> rest.PayloadSchemaParams:
+        if model.HasField("text_index_params"):
+            text_index_params = model.text_index_params
+            return cls.convert_text_index_params(text_index_params)
+
+        raise ValueError(f"invalid PayloadIndexParams model: {model}")
 
     @classmethod
     def convert_payload_schema_type(cls, model: grpc.PayloadSchemaType) -> rest.PayloadSchemaType:
@@ -530,6 +573,13 @@ class GrpcToRest:
             return rest.DeleteAliasOperation(delete_alias=cls.convert_delete_alias(val))
 
         raise ValueError(f"invalid AliasOperations model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_alias_description(cls, model: grpc.AliasDescription) -> rest.AliasDescription:
+        return rest.AliasDescription(
+            alias_name=model.alias_name,
+            collection_name=model.collection_name,
+        )
 
     @classmethod
     def convert_points_selector(cls, model: grpc.PointsSelector) -> rest.PointsSelector:
@@ -927,7 +977,21 @@ class RestToGrpc:
 
     @classmethod
     def convert_payload_index_info(cls, model: rest.PayloadIndexInfo) -> grpc.PayloadSchemaInfo:
-        return grpc.PayloadSchemaInfo(data_type=cls.convert_payload_schema_type(model.data_type))
+        params = model.params
+        return grpc.PayloadSchemaInfo(
+            data_type=cls.convert_payload_schema_type(model.data_type),
+            params=cls.convert_payload_schema_params(params) if params is not None else None,
+            points=model.points,
+        )
+
+    @classmethod
+    def convert_payload_schema_params(
+        cls, model: rest.PayloadSchemaParams
+    ) -> grpc.PayloadIndexParams:
+        if isinstance(model, rest.TextIndexParams):
+            return grpc.PayloadIndexParams(text_index_params=cls.convert_text_index_params(model))
+
+        raise ValueError(f"invalid PayloadSchemaParams model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_payload_schema_type(cls, model: rest.PayloadSchemaType) -> grpc.PayloadSchemaType:
@@ -939,6 +1003,8 @@ class RestToGrpc:
             return grpc.PayloadSchemaType.Float
         if model == rest.PayloadSchemaType.GEO:
             return grpc.PayloadSchemaType.Geo
+        if model == rest.PayloadSchemaType.TEXT:
+            return grpc.PayloadSchemaType.Text
 
         raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
 
@@ -1240,6 +1306,13 @@ class RestToGrpc:
             return grpc.AliasOperations(rename_alias=cls.convert_rename_alias(model.rename_alias))
 
         raise ValueError(f"invalid AliasOperations model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_alias_description(cls, model: rest.AliasDescription) -> grpc.AliasDescription:
+        return grpc.AliasDescription(
+            alias_name=model.alias_name,
+            collection_name=model.collection_name,
+        )
 
     @classmethod
     def convert_extended_point_id(cls, model: rest.ExtendedPointId) -> grpc.PointId:
