@@ -131,6 +131,14 @@ def test_client_init():
     with pytest.raises(ValueError):
         QdrantClient(url="http://localhost:6333/origin", prefix="custom")
 
+    client = QdrantClient("127.0.0.1:6333")
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client.rest_uri == "http://127.0.0.1:6333"
+
+    client = QdrantClient("localhost:6333")
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client.rest_uri == "http://localhost:6333"
+
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_record_upload(prefer_grpc):

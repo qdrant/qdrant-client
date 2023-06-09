@@ -69,6 +69,11 @@ class QdrantRemote(QdrantBase):
             )
 
         elif url:
+            if url.startswith("localhost"):
+                # Handle for a special case when url is localhost:port
+                # Which is not parsed correctly by urllib
+                url = f"//{url}"
+
             parsed_url: Url = parse_url(url)
             self._host, self._port = parsed_url.host, parsed_url.port
 
