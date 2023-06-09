@@ -20,7 +20,6 @@ class TestSimpleScroller:
 
         records, next_page = client.scroll(
             collection_name=COLLECTION_NAME,
-            scroll_id=None,
             limit=10,
             with_payload=True,
         )
@@ -29,7 +28,6 @@ class TestSimpleScroller:
         while next_page:
             records, next_page = client.scroll(
                 collection_name=COLLECTION_NAME,
-                scroll_id=next_page,
                 limit=20,
                 offset=next_page,
                 with_payload=True,
