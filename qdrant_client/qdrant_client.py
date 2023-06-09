@@ -1191,7 +1191,6 @@ class QdrantClient(QdrantBase):
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
         timeout: Optional[int] = None,
-        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
         **kwargs: Any,
     ) -> bool:
         """Update parameters of the collection
@@ -1203,21 +1202,16 @@ class QdrantClient(QdrantBase):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
-            optimizer_config: Same as optimizers_config. Deprecated
         Returns:
             Operation result
         """
-        if optimizers_config is not None and optimizer_config is not None:
+        if "optimizer_config" in kwargs and optimizers_config is not None:
             raise ValueError(
-                "Only one of optimizers_config and optimizer_config should be specified"
+                "Only one of optimizer_config and optimizers_config should be specified"
             )
-        if optimizer_config is not None:
-            optimizers_config = optimizer_config
-            warnings.warn(
-                "optimizer_config is deprecated and will be removed since 1.4.0, "
-                "use optimizers_config instead",
-                DeprecationWarning,
-            )
+
+        if "optimizer_config" in kwargs:
+            optimizers_config = kwargs.pop("optimizer_config")
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
