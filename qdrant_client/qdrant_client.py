@@ -190,6 +190,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of search responses
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.search_batch(
             collection_name=collection_name,
             requests=requests,
@@ -281,6 +283,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of found close points with similarity scores.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.search(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -364,6 +368,8 @@ class QdrantClient(QdrantBase):
             List of groups with not more than `group_size` hits in each group.
             Each group also contains an id of the group, which is the value of the payload field.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.search_groups(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -402,6 +408,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of recommend responses
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.recommend_batch(
             collection_name=collection_name,
             requests=requests,
@@ -484,6 +492,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of recommended points with similarity scores.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.recommend(
             collection_name=collection_name,
@@ -582,6 +591,8 @@ class QdrantClient(QdrantBase):
             Each group also contains an id of the group, which is the value of the payload field.
 
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.recommend_groups(
             collection_name=collection_name,
             group_by=group_by,
@@ -644,6 +655,8 @@ class QdrantClient(QdrantBase):
             A pair of (List of points) and (optional offset for the next scroll request).
             If next page offset is `None` - there is no more points in the collection to scroll.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.scroll(
             collection_name=collection_name,
             scroll_filter=scroll_filter,
@@ -676,6 +689,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Amount of points in the collection matching the filter.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.count(
             collection_name=collection_name,
             count_filter=count_filter,
@@ -713,6 +728,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.upsert(
             collection_name=collection_name,
             points=points,
@@ -748,6 +765,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.update_vectors(
             collection_name=collection_name,
             vectors=vectors,
@@ -787,6 +806,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_vectors(
             collection_name=collection_name,
             vectors=vectors,
@@ -831,6 +852,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of points
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.retrieve(
             collection_name=collection_name,
             ids=ids,
@@ -871,6 +894,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete(
             collection_name=collection_name,
             points_selector=points_selector,
@@ -927,6 +952,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.set_payload(
             collection_name=collection_name,
             payload=payload,
@@ -986,6 +1013,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.overwrite_payload(
             collection_name=collection_name,
             payload=payload,
@@ -1028,6 +1057,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_payload(
             collection_name=collection_name,
             keys=keys,
@@ -1068,6 +1099,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.clear_payload(
             collection_name=collection_name,
             points_selector=points_selector,
@@ -1095,6 +1128,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.update_collection_aliases(
             change_aliases_operations=change_aliases_operations,
             timeout=timeout,
@@ -1112,6 +1147,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Collection aliases
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_collection_aliases(collection_name=collection_name, **kwargs)
 
     def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
@@ -1120,6 +1157,8 @@ class QdrantClient(QdrantBase):
         Returns:
             All aliases of all collections
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_aliases(**kwargs)
 
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
@@ -1128,6 +1167,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of the collections
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_collections(**kwargs)
 
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
@@ -1139,6 +1180,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Detailed information about the collection
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_collection(collection_name=collection_name, **kwargs)
 
     def update_collection(
@@ -1162,6 +1205,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.update_collection(
             collection_name=collection_name,
             optimizer_config=optimizer_config,
@@ -1184,6 +1229,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_collection(
             collection_name=collection_name, timeout=timeout, **kwargs
         )
@@ -1241,6 +1288,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.create_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,
@@ -1310,6 +1359,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.recreate_collection(
             collection_name=collection_name,
@@ -1351,6 +1401,8 @@ class QdrantClient(QdrantBase):
                 during the upload of a batch
 
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.upload_records(
             collection_name=collection_name,
             records=records,
@@ -1389,6 +1441,8 @@ class QdrantClient(QdrantBase):
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.upload_collection(
             collection_name=collection_name,
             vectors=vectors,
@@ -1434,6 +1488,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation Result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.create_payload_index(
             collection_name=collection_name,
             field_name=field_name,
@@ -1472,6 +1528,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation Result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_payload_index(
             collection_name=collection_name,
             field_name=field_name,
@@ -1491,6 +1549,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of snapshots
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.list_snapshots(collection_name=collection_name, **kwargs)
 
     def create_snapshot(
@@ -1504,6 +1564,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Snapshot description
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.create_snapshot(collection_name=collection_name, **kwargs)
 
     def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
@@ -1516,6 +1578,8 @@ class QdrantClient(QdrantBase):
         Returns:
             True if snapshot was deleted
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_snapshot(
             collection_name=collection_name, snapshot_name=snapshot_name, **kwargs
         )
@@ -1526,6 +1590,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of snapshots
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.list_full_snapshots(**kwargs)
 
     def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
@@ -1534,6 +1600,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Snapshot description
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.create_full_snapshot(**kwargs)
 
     def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
@@ -1545,6 +1613,8 @@ class QdrantClient(QdrantBase):
         Returns:
             True if snapshot was deleted
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_full_snapshot(snapshot_name=snapshot_name, **kwargs)
 
     def recover_snapshot(
@@ -1570,6 +1640,8 @@ class QdrantClient(QdrantBase):
                 Default: `replica`
 
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.recover_snapshot(
             collection_name=collection_name,
             location=location,
@@ -1579,12 +1651,18 @@ class QdrantClient(QdrantBase):
 
     def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         """Lock storage for writing."""
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.lock_storage(reason=reason, **kwargs)
 
     def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
         """Unlock storage for writing."""
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.unlock_storage(**kwargs)
 
     def get_locks(self, **kwargs: Any) -> types.LocksOption:
         """Get current locks state."""
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_locks(**kwargs)
