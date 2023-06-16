@@ -15,11 +15,6 @@ def upload_batch(
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
-    # Make sure we do not send too many ids in case there is an iterable over vectors,
-    # and we do not know how many ids are required in advance
-    if len(ids_batch) > len(vectors_batch):
-        ids_batch = ids_batch[: len(vectors_batch)]
-
     if payload_batch is not None:
         payload_batch = list(payload_batch)
     else:
@@ -40,16 +35,12 @@ def upload_batch(
                 collection_name=collection_name,
                 point_insert_operations=PointsList(points=points),
             )
-            return True
         except Exception as e:
-            if attempt == (max_retries - 1):  # pylint: disable=broad-except
-                logging.exception(e)
-                return False
-        else:
-            logging.warn(f"Batch upload failed {attempt + 1} times. Retrying...")
-            continue
+            logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
 
-    return False  # suppress mypy complaints
+            if attempt == max_retries - 1:
+                raise e
+    return True
 
 
 class RestBatchUploader(BaseUploader):
