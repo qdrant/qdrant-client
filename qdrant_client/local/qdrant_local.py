@@ -528,12 +528,26 @@ class QdrantLocal(QdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: Union[types.NumpyArray, Iterable[types.VectorStruct]],
+        vectors: Union[
+            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+        ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,
     ) -> None:
         collection = self._get_collection(collection_name)
+        if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
+            assert (
+                len(set([arr.shape[0] for arr in vectors.values()])) == 1
+            ), "Each named vector should have the same number of vectors"
+
+            num_vectors = next(iter(vectors.values())).shape[0]
+            # convert Dict[str, np.ndarray] to List[Dict[str, List[float]]]
+            vectors = [
+                {name: vectors[name][i].tolist() for name in vectors.keys()}
+                for i in range(num_vectors)
+            ]
+
         collection.upsert(
             [
                 rest_models.PointStruct(

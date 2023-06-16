@@ -209,3 +209,19 @@ def test_upload_collection_list_np_arrays():
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
+
+
+def test_upload_collection_dict_np_arrays(local_client, remote_client):
+    records = generate_fixtures(UPLOAD_NUM_VECTORS)
+    intermediate_vectors: Dict[str, List[float]] = defaultdict(list)
+    vectors: Dict[str, np.ndarray] = {}
+    for record in records:
+        for key, vector in record.vector.items():
+            intermediate_vectors[key].append(record.vector[key])
+
+    for key in intermediate_vectors:
+        vectors[key] = np.array(intermediate_vectors[key])
+
+    local_client.upload_collection(COLLECTION_NAME, vectors)
+    remote_client.upload_collection(COLLECTION_NAME, vectors)
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
