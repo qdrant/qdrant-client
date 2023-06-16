@@ -535,6 +535,9 @@ class QdrantRemote(QdrantBase):
                     name=query_vector[0], vector=query_vector[1]
                 )
 
+            if isinstance(query_vector, np.ndarray):
+                query_vector = query_vector.tolist()
+
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
 
