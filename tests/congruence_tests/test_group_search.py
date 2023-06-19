@@ -1,11 +1,15 @@
+from typing import List, Sequence, Tuple, Union
+
 import numpy as np
 
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.conversions import common_types as types
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     code_vector_size,
     compare_client_results,
+    delete_fixture_collection,
     generate_fixtures,
     image_vector_size,
     init_client,
@@ -14,7 +18,6 @@ from tests.congruence_tests.test_common import (
     text_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
-from tests.fixtures.payload import one_random_payload_please
 
 
 class TestGroupSearcher:
@@ -27,6 +30,25 @@ class TestGroupSearcher:
         self.group_by = "rand_digit"
         self.group_size = 1
         self.limit = 10
+
+    def group_search(
+        self,
+        client: QdrantBase,
+        query_vector: Union[
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+        ],
+    ) -> models.GroupsResult:
+        return client.search_groups(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_vector,
+            with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
+            group_by=self.group_by,
+            limit=self.limit,
+            group_size=self.group_size,
+        )
 
     def group_search_text(self, client: QdrantBase) -> models.GroupsResult:
         return client.search_groups(
@@ -164,6 +186,58 @@ class TestGroupSearcher:
 
 def group_by_keys():
     return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
+
+
+def test_group_search_types():
+    fixture_records = generate_fixtures(vectors_sizes=50)
+    vectors_config = models.VectorParams(size=50, distance=models.Distance.EUCLID)
+
+    searcher = TestGroupSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_records, vectors_config=vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_records, vectors_config=vectors_config)
+
+    query_vector_np = np.random.random(text_vector_size)
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.group_search,
+        query_vector=query_vector_np,
+    )
+
+    query_vector_list = query_vector_np.tolist()
+    compare_client_results(
+        local_client, remote_client, searcher.group_search, query_vector=query_vector_list
+    )
+
+    delete_fixture_collection(local_client)
+    delete_fixture_collection(remote_client)
+
+    fixture_records = generate_fixtures()
+    init_client(local_client, fixture_records)
+    init_client(remote_client, fixture_records)
+
+    query_vector_tuple = ("text", query_vector_list)
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.group_search,
+        query_vector=query_vector_tuple,
+    )
+
+    query_named_vector = types.NamedVector(name="text", vector=query_vector_list)
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.group_search,
+        query_vector=query_named_vector,
+    )
+
+    delete_fixture_collection(local_client)
+    delete_fixture_collection(remote_client)
 
 
 def test_simple_group_search():
