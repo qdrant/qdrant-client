@@ -75,7 +75,7 @@ class LocalCollection:
                         )
                         deleted_ids.append((idx, name))
 
-                self.payload.append(point.payload)
+                self.payload.append(point.payload or {})
 
             for name, named_vectors in vectors.items():
                 self.vectors[name] = np.array(named_vectors)
@@ -518,7 +518,7 @@ class LocalCollection:
 
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
-        self.payload[idx] = point.payload
+        self.payload[idx] = point.payload or {}
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
@@ -539,7 +539,7 @@ class LocalCollection:
         idx = len(self.ids)
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
-        self.payload.append(point.payload)
+        self.payload.append(point.payload or {})
         self.deleted = np.append(self.deleted, 0)
 
         if isinstance(point.vector, list):
@@ -737,7 +737,7 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
-            self.payload[idx] = payload
+            self.payload[idx] = payload or {}
             self._persist_by_id(point_id)
 
     def delete_payload(
