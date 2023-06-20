@@ -465,8 +465,8 @@ class QdrantRemote(QdrantBase):
         with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
-        consistency: Optional[types.ReadConsistency] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         if self._prefer_grpc:
@@ -769,8 +769,8 @@ class QdrantRemote(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[models.LookupLocation] = None,
-        consistency: Optional[models.ReadConsistencyType] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        consistency: Optional[models.ReadConsistencyType] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         if negative is None:

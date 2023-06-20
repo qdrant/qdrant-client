@@ -262,7 +262,6 @@ class QdrantLocal(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:

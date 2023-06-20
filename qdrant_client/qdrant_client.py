@@ -318,8 +318,8 @@ class QdrantClient(QdrantBase):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
-        consistency: Optional[types.ReadConsistency] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Search for closest vectors grouped by payload field.
@@ -358,6 +358,11 @@ class QdrantClient(QdrantBase):
                 Score of the returned result might be higher or smaller than the threshold depending
                 on the Distance function used.
                 E.g. for cosine similarity only higher scores will be returned.
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result.
                 Values:
@@ -365,11 +370,6 @@ class QdrantClient(QdrantBase):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
-            with_lookup:
-                Look for points in another collection using the group ids.
-                If specified, each group will contain a record from the specified collection
-                with the same id as the group id. In addition, the parameter allows to specify
-                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -534,8 +534,8 @@ class QdrantClient(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Recommend point groups: search for similar points based on already stored in Qdrant examples
@@ -587,6 +587,11 @@ class QdrantClient(QdrantBase):
             lookup_from:
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
                 If `None` - use current collection will be used.
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result.
                 Values:
@@ -594,11 +599,6 @@ class QdrantClient(QdrantBase):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
-            with_lookup:
-                Look for points in another collection using the group ids.
-                If specified, each group will contain a record from the specified collection
-                with the same id as the group id. In addition, the parameter allows to specify
-                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
