@@ -60,6 +60,7 @@ RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
+WithLookupInterface: TypeAlias = rest.WithLookupInterface
 
 GroupsResult: TypeAlias = rest.GroupsResult
 

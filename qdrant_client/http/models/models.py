@@ -35,6 +35,7 @@ class AppFeaturesTelemetry(BaseModel):
     debug: bool = Field(..., description="")
     web_feature: bool = Field(..., description="")
     service_debug_feature: bool = Field(..., description="")
+    recovery_mode: bool = Field(..., description="")
 
 
 class Batch(BaseModel):
@@ -977,6 +978,7 @@ class PeerInfo(BaseModel):
 class PointGroup(BaseModel):
     hits: List["ScoredPoint"] = Field(..., description="Scored points that have the same value of the group_by key")
     id: "GroupId" = Field(..., description="")
+    lookup: Optional["Record"] = Field(default=None, description="Record that has been looked up using the group id")
 
 
 class PointIdsList(BaseModel):
@@ -1030,6 +1032,10 @@ class QuantizationSearchParams(BaseModel):
     rescore: Optional[bool] = Field(
         default=False,
         description="If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. Default is false.",
+    )
+    oversampling: Optional[float] = Field(
+        default=None,
+        description="Oversampling factor for quantization. Default is 1.0.  Defines how many extra vectors should be pre-selected using quantized index, and then re-scored using original vectors.  For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be pre-selected using quantized index, and then top-100 will be returned after re-scoring.",
     )
 
 
@@ -1099,6 +1105,9 @@ class RecommendGroupsRequest(BaseModel):
     )
     group_size: int = Field(..., description="Maximum amount of points to return per group")
     limit: int = Field(..., description="Maximum amount of groups to return")
+    with_lookup: Optional["WithLookupInterface"] = Field(
+        default=None, description="Look for points in another collection using the group ids"
+    )
 
 
 class RecommendRequest(BaseModel):
@@ -1299,6 +1308,9 @@ class SearchGroupsRequest(BaseModel):
     )
     group_size: int = Field(..., description="Maximum amount of points to return per group")
     limit: int = Field(..., description="Maximum amount of groups to return")
+    with_lookup: Optional["WithLookupInterface"] = Field(
+        default=None, description="Look for points in another collection using the group ids"
+    )
 
 
 class SearchParams(BaseModel):
@@ -1570,6 +1582,16 @@ class WebApiTelemetry(BaseModel):
     responses: Dict[str, Dict[str, "OperationDurationStatistics"]] = Field(..., description="")
 
 
+class WithLookup(BaseModel):
+    collection: str = Field(..., description="Name of the collection to use for points lookup")
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        default=None, description="Options for specifying which payload to include (or not)"
+    )
+    with_vectors: Optional["WithVector"] = Field(
+        default=None, description="Options for specifying which vectors to include (or not)"
+    )
+
+
 class WriteOrdering(str, Enum):
     WEAK = "weak"
     MEDIUM = "medium"
@@ -1689,6 +1711,10 @@ VectorStruct = Union[
 VectorsConfig = Union[
     VectorParams,
     Dict[StrictStr, VectorParams],
+]
+WithLookupInterface = Union[
+    WithLookup,
+    StrictStr,
 ]
 WithVector = Union[
     List[StrictStr],

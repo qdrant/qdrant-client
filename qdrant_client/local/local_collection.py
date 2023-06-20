@@ -263,6 +263,8 @@ class LocalCollection:
         with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        with_lookup_collection: Optional["LocalCollection"] = None,
     ) -> models.GroupsResult:
         points = self.search(
             query_vector=query_vector,
@@ -296,7 +298,25 @@ class LocalCollection:
 
                 groups[group_value].hits.append(point)
 
-        return models.GroupsResult(groups=list(groups.values())[:limit])
+        groups_result: List[models.PointGroup] = list(groups.values())[:limit]
+
+        if isinstance(with_lookup, str):
+            with_lookup = models.WithLookup(
+                collection=with_lookup,
+                with_payload=None,
+                with_vectors=None,
+            )
+
+        if with_lookup is not None and with_lookup_collection is not None:
+            for group in groups_result:
+                lookup = with_lookup_collection.retrieve(
+                    ids=[group.id],
+                    with_payload=with_lookup.with_payload,
+                    with_vectors=with_lookup.with_vectors,
+                )
+                group.lookup = next(iter(lookup), None)
+
+        return models.GroupsResult(groups=groups_result)
 
     def retrieve(
         self,
@@ -433,6 +453,8 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        with_lookup_collection: Optional["LocalCollection"] = None,
     ) -> types.GroupsResult:
         search_in_vector_name, vector, query_filter = self._recommend(
             positive,
@@ -451,6 +473,8 @@ class LocalCollection:
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
+            with_lookup=with_lookup,
+            with_lookup_collection=with_lookup_collection,
         )
 
     @classmethod

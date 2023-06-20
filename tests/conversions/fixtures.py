@@ -243,6 +243,7 @@ create_alias = grpc.CreateAlias(collection_name="col1", alias_name="col2")
 quantization_search_params = grpc.QuantizationSearchParams(
     ignore=False,
     rescore=True,
+    oversampling=10,
 )
 
 search_params = grpc.SearchParams(
@@ -569,6 +570,12 @@ groups = [
 
 group_result = grpc.GroupsResult(groups=groups)
 
+with_lookup = grpc.WithLookup(
+    collection="lalala",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+    with_payload=with_payload_include,
+)
+
 
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
@@ -649,6 +656,7 @@ fixtures = {
     "PointVectors": [point_vector_1, point_vector_2],
     "GroupId": [group_id_1, group_id_2, group_id_3],
     "GroupsResult": [group_result],
+    "WithLookup": [with_lookup],
 }
 
 

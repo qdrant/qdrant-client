@@ -319,6 +319,7 @@ class QdrantClient(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Search for closest vectors grouped by payload field.
@@ -364,6 +365,11 @@ class QdrantClient(QdrantBase):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -383,6 +389,7 @@ class QdrantClient(QdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             consistency=consistency,
+            with_lookup=with_lookup,
             **kwargs,
         )
 
@@ -528,6 +535,7 @@ class QdrantClient(QdrantBase):
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Recommend point groups: search for similar points based on already stored in Qdrant examples
@@ -586,6 +594,11 @@ class QdrantClient(QdrantBase):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -609,6 +622,7 @@ class QdrantClient(QdrantBase):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            with_lookup=with_lookup,
             **kwargs,
         )
 

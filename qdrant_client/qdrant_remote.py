@@ -466,10 +466,17 @@ class QdrantRemote(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         if self._prefer_grpc:
             vector_name = None
+
+            if isinstance(with_lookup, rest_models.WithLookup):
+                with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
+
+            if isinstance(with_lookup, str):
+                with_lookup = grpc.WithLookup(lookup=with_lookup)
 
             if isinstance(query_vector, types.NamedVector):
                 vector = query_vector.vector
@@ -524,12 +531,16 @@ class QdrantRemote(QdrantBase):
                     score_threshold=score_threshold,
                     group_by=group_by,
                     read_consistency=consistency,
+                    with_lookup=with_lookup,
                 ),
                 timeout=self._timeout,
             ).result
 
             return GrpcToRest.convert_groups_result(result)
         else:
+            if isinstance(with_lookup, grpc.WithLookup):
+                with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
+
             if isinstance(query_vector, tuple):
                 query_vector = rest_models.NamedVector.construct(
                     name=query_vector[0], vector=query_vector[1]
@@ -554,6 +565,7 @@ class QdrantRemote(QdrantBase):
                 group_by=group_by,
                 group_size=group_size,
                 limit=limit,
+                with_lookup=with_lookup,
             )
 
             return self.openapi_client.points_api.search_point_groups(
@@ -758,12 +770,19 @@ class QdrantRemote(QdrantBase):
         using: Optional[str] = None,
         lookup_from: Optional[models.LookupLocation] = None,
         consistency: Optional[models.ReadConsistencyType] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         if negative is None:
             negative = []
 
         if self._prefer_grpc:
+            if isinstance(with_lookup, rest_models.WithLookup):
+                with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
+
+            if isinstance(with_lookup, str):
+                with_lookup = grpc.WithLookup(lookup_index=with_lookup)
+
             positive = [
                 RestToGrpc.convert_extended_point_id(point_id)
                 if isinstance(point_id, (str, int))
@@ -826,6 +845,7 @@ class QdrantRemote(QdrantBase):
                     using=using,
                     lookup_from=lookup_from,
                     read_consistency=consistency,
+                    with_lookup=with_lookup,
                 ),
                 timeout=self._timeout,
             ).result
@@ -833,6 +853,9 @@ class QdrantRemote(QdrantBase):
             assert res is not None, "Recommend groups API returned None"
             return GrpcToRest.convert_groups_result(res)
         else:
+            if isinstance(with_lookup, grpc.WithLookup):
+                with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
+
             positive = [
                 GrpcToRest.convert_point_id(point_id)
                 if isinstance(point_id, grpc.PointId)
@@ -875,6 +898,7 @@ class QdrantRemote(QdrantBase):
                     score_threshold=score_threshold,
                     lookup_from=lookup_from,
                     using=using,
+                    with_lookup=with_lookup,
                 ),
             ).result
 
