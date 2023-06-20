@@ -50,6 +50,7 @@ class QdrantBase:
         with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         raise NotImplementedError()
@@ -95,6 +96,7 @@ class QdrantBase:
         with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[models.LookupLocation] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         raise NotImplementedError()

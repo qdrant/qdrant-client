@@ -16,6 +16,8 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.payload import one_random_payload_please
 
+LOOKUP_COLLECTION_NAME = "lookup_collection"
+
 
 class TestGroupSearcher:
     __test__ = False
@@ -56,6 +58,32 @@ class TestGroupSearcher:
             group_by=self.group_by,
             limit=self.limit,
             group_size=self.group_size,
+        )
+
+    def group_search_image_with_lookup(self, client: QdrantBase) -> models.GroupsResult:
+        return client.search_groups(
+            collection_name=COLLECTION_NAME,
+            query_vector=("image", self.query_image),
+            with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
+            group_by=self.group_by,
+            limit=self.limit,
+            group_size=self.group_size,
+            with_lookup=LOOKUP_COLLECTION_NAME,
+        )
+
+    def group_search_image_with_lookup_2(self, client: QdrantBase) -> models.GroupsResult:
+        return client.search_groups(
+            collection_name=COLLECTION_NAME,
+            query_vector=("image", self.query_image),
+            with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
+            group_by=self.group_by,
+            limit=self.limit,
+            group_size=self.group_size,
+            with_lookup=models.WithLookup(
+                collection=LOOKUP_COLLECTION_NAME,
+                with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
+                with_vectors=["image"],
+            ),
         )
 
     def group_search_code(self, client: QdrantBase) -> models.GroupsResult:
@@ -169,13 +197,19 @@ def group_by_keys():
 def test_simple_group_search():
     fixture_records = generate_fixtures()
 
+    lookup_records = generate_fixtures(
+        num=7, random_ids=False  # Less that group ids to test the empty lookups
+    )
+
     searcher = TestGroupSearcher()
 
     local_client = init_local()
     init_client(local_client, fixture_records)
+    init_client(local_client, lookup_records, collection_name=LOOKUP_COLLECTION_NAME)
 
     remote_client = init_remote()
     init_client(remote_client, fixture_records)
+    init_client(remote_client, lookup_records, collection_name=LOOKUP_COLLECTION_NAME)
 
     searcher.group_size = 1
     searcher.limit = 2
@@ -187,6 +221,8 @@ def test_simple_group_search():
     compare_client_results(local_client, remote_client, searcher.group_search_text)
     compare_client_results(local_client, remote_client, searcher.group_search_image)
     compare_client_results(local_client, remote_client, searcher.group_search_code)
+    compare_client_results(local_client, remote_client, searcher.group_search_image_with_lookup)
+    compare_client_results(local_client, remote_client, searcher.group_search_image_with_lookup_2)
     compare_client_results(local_client, remote_client, searcher.group_search_score_threshold)
     compare_client_results(local_client, remote_client, searcher.group_search_text_select_payload)
     compare_client_results(local_client, remote_client, searcher.group_search_image_select_vector)
