@@ -8,6 +8,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import portalocker
+
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
@@ -167,9 +168,17 @@ class QdrantLocal(QdrantBase):
         with_payload: Union[bool, Sequence[str], rest_models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
+        with_lookup_collection = None
+        if with_lookup is not None:
+            if isinstance(with_lookup, str):
+                with_lookup_collection = self._get_collection(with_lookup)
+            else:
+                with_lookup_collection = self._get_collection(with_lookup.collection)
+
         return collection.search_groups(
             query_vector=query_vector,
             query_filter=query_filter,
@@ -179,6 +188,8 @@ class QdrantLocal(QdrantBase):
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
+            with_lookup=with_lookup,
+            with_lookup_collection=with_lookup_collection,
         )
 
     def recommend_batch(
@@ -251,10 +262,17 @@ class QdrantLocal(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
+        with_lookup_collection = None
+        if with_lookup is not None:
+            if isinstance(with_lookup, str):
+                with_lookup_collection = self._get_collection(with_lookup)
+            else:
+                with_lookup_collection = self._get_collection(with_lookup.collection)
+
         return collection.recommend_groups(
             positive=positive,
             negative=negative,
@@ -270,6 +288,8 @@ class QdrantLocal(QdrantBase):
             if lookup_from
             else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
+            with_lookup=with_lookup,
+            with_lookup_collection=with_lookup_collection,
         )
 
     def scroll(

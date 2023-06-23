@@ -318,6 +318,7 @@ class QdrantClient(QdrantBase):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
@@ -357,6 +358,11 @@ class QdrantClient(QdrantBase):
                 Score of the returned result might be higher or smaller than the threshold depending
                 on the Distance function used.
                 E.g. for cosine similarity only higher scores will be returned.
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result.
                 Values:
@@ -383,6 +389,7 @@ class QdrantClient(QdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             consistency=consistency,
+            with_lookup=with_lookup,
             **kwargs,
         )
 
@@ -527,6 +534,7 @@ class QdrantClient(QdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
@@ -579,6 +587,11 @@ class QdrantClient(QdrantBase):
             lookup_from:
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
                 If `None` - use current collection will be used.
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result.
                 Values:
@@ -609,6 +622,7 @@ class QdrantClient(QdrantBase):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            with_lookup=with_lookup,
             **kwargs,
         )
 

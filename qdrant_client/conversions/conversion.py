@@ -864,6 +864,7 @@ class GrpcToRest:
         return rest.QuantizationSearchParams(
             ignore=model.ignore if model.HasField("ignore") else None,
             rescore=model.rescore if model.HasField("rescore") else None,
+            oversampling=model.oversampling if model.HasField("oversampling") else None,
         )
 
     @classmethod
@@ -876,14 +877,15 @@ class GrpcToRest:
     @classmethod
     def convert_groups_result(cls, model: grpc.GroupsResult) -> rest.GroupsResult:
         return rest.GroupsResult(
-            groups=[cls.convert_group(group) for group in model.groups],
+            groups=[cls.convert_point_group(group) for group in model.groups],
         )
 
     @classmethod
-    def convert_group(cls, model: grpc.PointGroup) -> rest.PointGroup:
+    def convert_point_group(cls, model: grpc.PointGroup) -> rest.PointGroup:
         return rest.PointGroup(
             id=cls.convert_group_id(model.id),
             hits=[cls.convert_scored_point(hit) for hit in model.hits],
+            lookup=cls.convert_record(model.lookup) if model.HasField("lookup") else None,
         )
 
     @classmethod
@@ -891,6 +893,18 @@ class GrpcToRest:
         name = model.WhichOneof("kind")
         val = getattr(model, name)
         return val
+
+    @classmethod
+    def convert_with_lookup(cls, model: grpc.WithLookup) -> rest.WithLookup:
+        return rest.WithLookup(
+            collection=model.collection,
+            with_payload=cls.convert_with_payload_selector(model.with_payload)
+            if model.HasField("with_payload")
+            else None,
+            with_vectors=cls.convert_with_vectors_selector(model.with_vectors)
+            if model.HasField("with_vectors")
+            else None,
+        )
 
 
 # ----------------------------------------
@@ -1682,6 +1696,7 @@ class RestToGrpc:
         return grpc.QuantizationSearchParams(
             ignore=model.ignore,
             rescore=model.rescore,
+            oversampling=model.oversampling,
         )
 
     @classmethod
@@ -1702,6 +1717,7 @@ class RestToGrpc:
         return grpc.PointGroup(
             id=cls.convert_group_id(model.id),
             hits=[cls.convert_scored_point(point) for point in model.hits],
+            lookup=cls.convert_record(model.lookup) if model.lookup is not None else None,
         )
 
     @classmethod
@@ -1721,3 +1737,15 @@ class RestToGrpc:
                 )
         else:
             raise ValueError(f"invalid GroupId model: {model}")
+
+    @classmethod
+    def convert_with_lookup(cls, model: rest.WithLookup) -> grpc.WithLookup:
+        return grpc.WithLookup(
+            collection=model.collection,
+            with_vectors=cls.convert_with_vectors(model.with_vectors)
+            if model.with_vectors is not None
+            else None,
+            with_payload=cls.convert_with_payload_interface(model.with_payload)
+            if model.with_payload is not None
+            else None,
+        )
