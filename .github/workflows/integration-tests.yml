@@ -11,8 +11,6 @@ env:
 jobs:
   test:
 
-    runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         python-version:
@@ -26,7 +24,9 @@ jobs:
           - windows-latest
           - macos-latest
 
-    name: Python ${{ matrix.python-version }} test
+    runs-on: ${{ matrix.os }}
+
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }} test
 
     steps:
       - uses: actions/checkout@v2
