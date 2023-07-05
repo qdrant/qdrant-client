@@ -10,7 +10,7 @@ from qdrant_client.http.models import (
     ScalarType,
 )
 
-qdrant_client = QdrantClient()
+qdrant_client = QdrantClient(timeout=30)
 qdrant_client.clear_payload("collection", [123])
 qdrant_client.count("collection", rest_models.Filter())
 qdrant_client.create_full_snapshot()

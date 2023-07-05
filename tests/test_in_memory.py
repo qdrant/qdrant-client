@@ -45,7 +45,7 @@ def test_in_memory_key_filter_returns_results(qdrant: QdrantClient):
         query_filter = models.Filter(
             must=[models.FieldCondition(key="city", match=models.MatchValue(value="London"))]
         ),
-        limit = 3,
+        limit=3,
     )
 
     assert search_result is not None

@@ -199,5 +199,5 @@ def init_local(storage: str = ":memory:") -> QdrantBase:
 
 
 def init_remote() -> QdrantBase:
-    client = QdrantClient(host="localhost", port=6333)
+    client = QdrantClient(host="localhost", port=6333, timeout=30)
     return client
