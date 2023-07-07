@@ -17,7 +17,8 @@ QDRANT_VERSION=${QDRANT_VERSION:-"$QDRANT_LATEST"}
 QDRANT_HOST='localhost:6333'
 
 docker run -d --rm \
-           --network=host \
+           -p "6333:6333" \
+           -p "6334:6334" \
            -e QDRANT__SERVICE__GRPC_PORT="6334" \
            --name qdrant_test qdrant/qdrant:${QDRANT_VERSION}
 
