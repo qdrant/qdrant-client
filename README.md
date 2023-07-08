@@ -26,7 +26,7 @@ Library contains type definitions for all Qdrant API and allows to make both Syn
 Client allows calls for all [Qdrant API methods](https://qdrant.github.io/qdrant/redoc/index.html) directly.
 It also provides some additional helper methods for frequently required operations, e.g. initial collection uploading.
 
-See [QuickStart](https://qdrant.tech/documentation/quick_start/#create-collection) for more details!
+See [QuickStart](https://qdrant.tech/documentation/quick-start/#create-collection) for more details!
 
 ## Installation
 

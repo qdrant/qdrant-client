@@ -54,6 +54,16 @@ class CollectionsStub(object):
                 request_serializer=collections__pb2.ListAliasesRequest.SerializeToString,
                 response_deserializer=collections__pb2.ListAliasesResponse.FromString,
                 )
+        self.CollectionClusterInfo = channel.unary_unary(
+                '/qdrant.Collections/CollectionClusterInfo',
+                request_serializer=collections__pb2.CollectionClusterInfoRequest.SerializeToString,
+                response_deserializer=collections__pb2.CollectionClusterInfoResponse.FromString,
+                )
+        self.UpdateCollectionClusterSetup = channel.unary_unary(
+                '/qdrant.Collections/UpdateCollectionClusterSetup',
+                request_serializer=collections__pb2.UpdateCollectionClusterSetupRequest.SerializeToString,
+                response_deserializer=collections__pb2.UpdateCollectionClusterSetupResponse.FromString,
+                )
 
 
 class CollectionsServicer(object):
@@ -123,6 +133,22 @@ class CollectionsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CollectionClusterInfo(self, request, context):
+        """
+        Get cluster information for a collection
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateCollectionClusterSetup(self, request, context):
+        """
+        Update cluster setup for a collection
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CollectionsServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -165,6 +191,16 @@ def add_CollectionsServicer_to_server(servicer, server):
                     servicer.ListAliases,
                     request_deserializer=collections__pb2.ListAliasesRequest.FromString,
                     response_serializer=collections__pb2.ListAliasesResponse.SerializeToString,
+            ),
+            'CollectionClusterInfo': grpc.unary_unary_rpc_method_handler(
+                    servicer.CollectionClusterInfo,
+                    request_deserializer=collections__pb2.CollectionClusterInfoRequest.FromString,
+                    response_serializer=collections__pb2.CollectionClusterInfoResponse.SerializeToString,
+            ),
+            'UpdateCollectionClusterSetup': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateCollectionClusterSetup,
+                    request_deserializer=collections__pb2.UpdateCollectionClusterSetupRequest.FromString,
+                    response_serializer=collections__pb2.UpdateCollectionClusterSetupResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -309,5 +345,39 @@ class Collections(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/ListAliases',
             collections__pb2.ListAliasesRequest.SerializeToString,
             collections__pb2.ListAliasesResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CollectionClusterInfo(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/CollectionClusterInfo',
+            collections__pb2.CollectionClusterInfoRequest.SerializeToString,
+            collections__pb2.CollectionClusterInfoResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UpdateCollectionClusterSetup(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/UpdateCollectionClusterSetup',
+            collections__pb2.UpdateCollectionClusterSetupRequest.SerializeToString,
+            collections__pb2.UpdateCollectionClusterSetupResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -166,6 +166,37 @@ def test_simple_search():
             raise e
 
 
+def test_simple_opt_vectors_search():
+    fixture_records = generate_fixtures(skip_vectors=True)
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_records)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_records)
+
+    compare_client_results(local_client, remote_client, searcher.simple_search_text)
+    compare_client_results(local_client, remote_client, searcher.simple_search_image)
+    compare_client_results(local_client, remote_client, searcher.simple_search_code)
+    compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
+    compare_client_results(local_client, remote_client, searcher.search_score_threshold)
+    compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
+    compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
+    compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
+
+    for i in range(100):
+        query_filter = one_random_filter_please()
+        try:
+            compare_client_results(
+                local_client, remote_client, searcher.filter_search_text, query_filter=query_filter
+            )
+        except AssertionError as e:
+            print(f"\nFailed with filter {query_filter}")
+            raise e
+
+
 def test_single_vector():
     fixture_records = generate_fixtures(num=200, vectors_sizes=text_vector_size)
 
@@ -210,6 +241,49 @@ def test_search_with_persistence():
 
         del local_client
         local_client_2 = init_local(tmpdir)
+
+        remote_client = init_remote()
+        init_client(remote_client, fixture_records)
+
+        remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+
+        payload_update_filter = one_random_filter_please()
+        local_client_2.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
+        remote_client.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
+
+        for i in range(10):
+            query_filter = one_random_filter_please()
+            try:
+                compare_client_results(
+                    local_client_2,
+                    remote_client,
+                    searcher.filter_search_text,
+                    query_filter=query_filter,
+                )
+            except AssertionError as e:
+                print(f"\nFailed with filter {query_filter}")
+                raise e
+
+
+def test_search_with_persistence_and_skipped_vectors():
+    import tempfile
+
+    fixture_records = generate_fixtures(skip_vectors=True)
+    searcher = TestSimpleSearcher()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        local_client = init_local(tmpdir)
+        init_client(local_client, fixture_records)
+
+        payload_update_filter = one_random_filter_please()
+        local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+
+        count_before_load = local_client.count(COLLECTION_NAME)
+        del local_client
+        local_client_2 = init_local(tmpdir)
+
+        count_after_load = local_client_2.count(COLLECTION_NAME)
+
+        assert count_after_load == count_before_load
 
         remote_client = init_remote()
         init_client(remote_client, fixture_records)

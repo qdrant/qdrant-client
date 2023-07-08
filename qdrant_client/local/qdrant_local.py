@@ -1,9 +1,9 @@
+import itertools
 import json
 import logging
 import os
 import shutil
 from io import TextIOWrapper
-from itertools import zip_longest
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -102,7 +102,10 @@ class QdrantLocal(QdrantBase):
         raise ValueError(f"Collection {collection_name} not found")
 
     def search_batch(
-        self, collection_name: str, requests: Sequence[types.SearchRequest], **kwargs: Any
+        self,
+        collection_name: str,
+        requests: Sequence[types.SearchRequest],
+        **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         collection = self._get_collection(collection_name)
 
@@ -148,8 +151,52 @@ class QdrantLocal(QdrantBase):
             score_threshold=score_threshold,
         )
 
+    def search_groups(
+        self,
+        collection_name: str,
+        query_vector: Union[
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+        ],
+        group_by: str,
+        query_filter: Optional[rest_models.Filter] = None,
+        search_params: Optional[rest_models.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        with_payload: Union[bool, Sequence[str], rest_models.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        collection = self._get_collection(collection_name)
+        with_lookup_collection = None
+        if with_lookup is not None:
+            if isinstance(with_lookup, str):
+                with_lookup_collection = self._get_collection(with_lookup)
+            else:
+                with_lookup_collection = self._get_collection(with_lookup.collection)
+
+        return collection.search_groups(
+            query_vector=query_vector,
+            query_filter=query_filter,
+            limit=limit,
+            group_by=group_by,
+            group_size=group_size,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            with_lookup=with_lookup,
+            with_lookup_collection=with_lookup_collection,
+        )
+
     def recommend_batch(
-        self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
+        self,
+        collection_name: str,
+        requests: Sequence[types.RecommendRequest],
+        **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         collection = self._get_collection(collection_name)
 
@@ -200,6 +247,51 @@ class QdrantLocal(QdrantBase):
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
         )
 
+    def recommend_groups(
+        self,
+        collection_name: str,
+        group_by: str,
+        positive: Sequence[types.PointId],
+        negative: Optional[Sequence[types.PointId]] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        score_threshold: Optional[float] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        collection = self._get_collection(collection_name)
+        with_lookup_collection = None
+        if with_lookup is not None:
+            if isinstance(with_lookup, str):
+                with_lookup_collection = self._get_collection(with_lookup)
+            else:
+                with_lookup_collection = self._get_collection(with_lookup.collection)
+
+        return collection.recommend_groups(
+            positive=positive,
+            negative=negative,
+            group_by=group_by,
+            group_size=group_size,
+            query_filter=query_filter,
+            limit=limit,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            using=using,
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
+            lookup_from_vector_name=lookup_from.vector if lookup_from else None,
+            with_lookup=with_lookup,
+            with_lookup_collection=with_lookup_collection,
+        )
+
     def scroll(
         self,
         collection_name: str,
@@ -234,6 +326,27 @@ class QdrantLocal(QdrantBase):
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
         collection.upsert(points)
+        return self._default_update_result()
+
+    def update_vectors(
+        self,
+        collection_name: str,
+        vectors: Sequence[types.PointVectors],
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        collection = self._get_collection(collection_name)
+        collection.update_vectors(vectors)
+        return self._default_update_result()
+
+    def delete_vectors(
+        self,
+        collection_name: str,
+        vectors: Sequence[str],
+        points: types.PointsSelector,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        collection = self._get_collection(collection_name)
+        collection.delete_vectors(vectors, points)
         return self._default_update_result()
 
     def retrieve(
@@ -434,21 +547,37 @@ class QdrantLocal(QdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: Union[types.NumpyArray, Dict[str, types.NumpyArray], Iterable[List[float]]],
+        vectors: Union[
+            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+        ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,
     ) -> None:
         collection = self._get_collection(collection_name)
+        if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
+            assert (
+                len(set([arr.shape[0] for arr in vectors.values()])) == 1
+            ), "Each named vector should have the same number of vectors"
+
+            num_vectors = next(iter(vectors.values())).shape[0]
+            # convert Dict[str, np.ndarray] to List[Dict[str, List[float]]]
+            vectors = [
+                {name: vectors[name][i].tolist() for name in vectors.keys()}
+                for i in range(num_vectors)
+            ]
+
         collection.upsert(
             [
                 rest_models.PointStruct(
-                    id=point_id or idx,
+                    id=point_id,
                     vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                     payload=payload or {},
                 )
-                for idx, (point_id, vector, payload) in enumerate(
-                    zip_longest(ids or [], iter(vectors), payload or [])
+                for (point_id, vector, payload) in zip(
+                    ids or itertools.count(),
+                    iter(vectors),
+                    payload or itertools.cycle([{}]),
                 )
             ]
         )

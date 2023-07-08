@@ -86,7 +86,9 @@ def test_distances() -> None:
     vectors = np.array([[1.0, 2.0, 3.0], [0.0, 1.0, 0.0]])
 
     assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.COSINE), [0.75592895, 0.0], atol=0.0001
+        calculate_distance(query, vectors, models.Distance.COSINE),
+        [0.75592895, 0.0],
+        atol=0.0001,
     )
     assert np.allclose(
         calculate_distance(query, vectors, models.Distance.DOT), [4.0, 0.0], atol=0.0001

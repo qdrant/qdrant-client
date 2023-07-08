@@ -23,7 +23,7 @@ WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
 QuantizationConfig = Union[rest.QuantizationConfig, grpc.QuantizationConfig]
 PointId = Union[int, str, grpc.PointId]
 PayloadSchemaType = Union[
-    rest.PayloadSchemaType, rest.PayloadSchemaParams, int
+    rest.PayloadSchemaType, rest.PayloadSchemaParams, int, grpc.PayloadIndexParams
 ]  # type(grpc.PayloadSchemaType) == int
 Points = Union[rest.Batch, List[Union[rest.PointStruct, grpc.PointStruct]]]
 PointsSelector = Union[
@@ -47,6 +47,8 @@ CollectionInfo: TypeAlias = rest.CollectionInfo
 CountResult: TypeAlias = rest.CountResult
 SnapshotDescription: TypeAlias = rest.SnapshotDescription
 NamedVector: TypeAlias = rest.NamedVector
+PointVectors: TypeAlias = rest.PointVectors
+VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
 LocksOption: TypeAlias = rest.LocksOption
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
@@ -58,6 +60,9 @@ RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
+WithLookupInterface: TypeAlias = rest.WithLookupInterface
+
+GroupsResult: TypeAlias = rest.GroupsResult
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7

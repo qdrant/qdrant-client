@@ -11,8 +11,6 @@ env:
 jobs:
   test:
 
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
         python-version:
@@ -23,10 +21,11 @@ jobs:
           - '3.11.x'
         os:
           - ubuntu-latest
-          - windows-latest
           - macos-latest
 
-    name: Python ${{ matrix.python-version }} test
+    runs-on: ${{ matrix.os }}
+
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }} test
 
     steps:
       - uses: actions/checkout@v2
@@ -39,13 +38,22 @@ jobs:
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi
+      - name: Setup docker (missing on MacOS)
+        if: runner.os == 'macos'
+        run: |
+          brew install docker
+          colima start
+
+          # For testcontainers to find the Colima socket
+          # https://github.com/abiosoft/colima/blob/main/docs/FAQ.md#cannot-connect-to-the-docker-daemon-at-unixvarrundockersock-is-the-docker-daemon-running
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Run integration tests
         run: |
           ./tests/integration-tests.sh
         shell: bash
       - name: Backward compatibility integration tests
         run: |
-          QDRANT_VERSION='v1.0.3' ./tests/integration-tests.sh
+          QDRANT_VERSION='v1.2.2' ./tests/integration-tests.sh
         shell: bash
       - name: Check conversion coverage
         run: |

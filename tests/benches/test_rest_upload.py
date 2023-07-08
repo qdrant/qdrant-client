@@ -16,14 +16,14 @@ def get_data(num_vectors: int):
 
 
 def prepare_collection_rest():
-    client = QdrantClient()
+    client = QdrantClient(timeout=30)
     client.recreate_collection(
         COLLECTION_NAME, vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE)
     )
 
 
 def upload_data(data):
-    client = QdrantClient()
+    client = QdrantClient(timeout=30)
     client.upload_collection(
         collection_name=COLLECTION_NAME,
         vectors=data,

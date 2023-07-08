@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 from . import collections_pb2 as collections__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19\x63ollections_service.proto\x12\x06qdrant\x1a\x11\x63ollections.proto2\xfe\x04\n\x0b\x43ollections\x12L\n\x03Get\x12 .qdrant.GetCollectionInfoRequest\x1a!.qdrant.GetCollectionInfoResponse\"\x00\x12I\n\x04List\x12\x1e.qdrant.ListCollectionsRequest\x1a\x1f.qdrant.ListCollectionsResponse\"\x00\x12I\n\x06\x43reate\x12\x18.qdrant.CreateCollection\x1a#.qdrant.CollectionOperationResponse\"\x00\x12I\n\x06Update\x12\x18.qdrant.UpdateCollection\x1a#.qdrant.CollectionOperationResponse\"\x00\x12I\n\x06\x44\x65lete\x12\x18.qdrant.DeleteCollection\x1a#.qdrant.CollectionOperationResponse\"\x00\x12M\n\rUpdateAliases\x12\x15.qdrant.ChangeAliases\x1a#.qdrant.CollectionOperationResponse\"\x00\x12\\\n\x15ListCollectionAliases\x12$.qdrant.ListCollectionAliasesRequest\x1a\x1b.qdrant.ListAliasesResponse\"\x00\x12H\n\x0bListAliases\x12\x1a.qdrant.ListAliasesRequest\x1a\x1b.qdrant.ListAliasesResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x19\x63ollections_service.proto\x12\x06qdrant\x1a\x11\x63ollections.proto2\xe3\x06\n\x0b\x43ollections\x12L\n\x03Get\x12 .qdrant.GetCollectionInfoRequest\x1a!.qdrant.GetCollectionInfoResponse\"\x00\x12I\n\x04List\x12\x1e.qdrant.ListCollectionsRequest\x1a\x1f.qdrant.ListCollectionsResponse\"\x00\x12I\n\x06\x43reate\x12\x18.qdrant.CreateCollection\x1a#.qdrant.CollectionOperationResponse\"\x00\x12I\n\x06Update\x12\x18.qdrant.UpdateCollection\x1a#.qdrant.CollectionOperationResponse\"\x00\x12I\n\x06\x44\x65lete\x12\x18.qdrant.DeleteCollection\x1a#.qdrant.CollectionOperationResponse\"\x00\x12M\n\rUpdateAliases\x12\x15.qdrant.ChangeAliases\x1a#.qdrant.CollectionOperationResponse\"\x00\x12\\\n\x15ListCollectionAliases\x12$.qdrant.ListCollectionAliasesRequest\x1a\x1b.qdrant.ListAliasesResponse\"\x00\x12H\n\x0bListAliases\x12\x1a.qdrant.ListAliasesRequest\x1a\x1b.qdrant.ListAliasesResponse\"\x00\x12\x66\n\x15\x43ollectionClusterInfo\x12$.qdrant.CollectionClusterInfoRequest\x1a%.qdrant.CollectionClusterInfoResponse\"\x00\x12{\n\x1cUpdateCollectionClusterSetup\x12+.qdrant.UpdateCollectionClusterSetupRequest\x1a,.qdrant.UpdateCollectionClusterSetupResponse\"\x00\x62\x06proto3')
 
 
 
@@ -24,5 +24,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
   _COLLECTIONS._serialized_start=57
-  _COLLECTIONS._serialized_end=695
+  _COLLECTIONS._serialized_end=924
 # @@protoc_insertion_point(module_scope)

@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client import grpc as grpc
@@ -52,6 +53,7 @@ class QdrantClient(QdrantBase):
             Default: 5.0 seconds for REST and unlimited for gRPC
         host: Host name of Qdrant service. If url and host are None, set to 'localhost'.
             Default: `None`
+        path: Persistence path for QdrantLocal. Default: `None`
         **kwargs: Additional arguments passed directly into REST client initialization
 
     """
@@ -189,15 +191,23 @@ class QdrantClient(QdrantBase):
         Returns:
             List of search responses
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.search_batch(
-            collection_name=collection_name, requests=requests, consistency=consistency, **kwargs
+            collection_name=collection_name,
+            requests=requests,
+            consistency=consistency,
+            **kwargs,
         )
 
     def search(
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -274,6 +284,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of found close points with similarity scores.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.search(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -286,6 +298,98 @@ class QdrantClient(QdrantBase):
             score_threshold=score_threshold,
             append_payload=append_payload,
             consistency=consistency,
+            **kwargs,
+        )
+
+    def search_groups(
+        self,
+        collection_name: str,
+        query_vector: Union[
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+        ],
+        group_by: str,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        """Search for closest vectors grouped by payload field.
+
+        Searches best matches for query vector grouped by the value of payload field.
+        Useful to obtain most relevant results for each category, deduplicate results,
+        finding the best representation vector for the same entity.
+
+        Args:
+            collection_name: Collection to search in
+            query_vector:
+                Search for vectors closest to this.
+                Can be either a vector itself, or a named vector, or a tuple of vector name and vector itself
+            group_by: Name of the payload field to group by.
+                Field must be of type "keyword" or "integer".
+                Nested fields are specified using dot notation, e.g. "nested_field.subfield".
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many groups return
+            group_size: How many results return for each group
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold: Minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+
+        Returns:
+            List of groups with not more than `group_size` hits in each group.
+            Each group also contains an id of the group, which is the value of the payload field.
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.search_groups(
+            collection_name=collection_name,
+            query_vector=query_vector,
+            group_by=group_by,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            group_size=group_size,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            consistency=consistency,
+            with_lookup=with_lookup,
             **kwargs,
         )
 
@@ -312,8 +416,13 @@ class QdrantClient(QdrantBase):
         Returns:
             List of recommend responses
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.recommend_batch(
-            collection_name=collection_name, requests=requests, consistency=consistency, **kwargs
+            collection_name=collection_name,
+            requests=requests,
+            consistency=consistency,
+            **kwargs,
         )
 
     def recommend(
@@ -391,6 +500,7 @@ class QdrantClient(QdrantBase):
         Returns:
             List of recommended points with similarity scores.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.recommend(
             collection_name=collection_name,
@@ -406,6 +516,113 @@ class QdrantClient(QdrantBase):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            **kwargs,
+        )
+
+    def recommend_groups(
+        self,
+        collection_name: str,
+        group_by: str,
+        positive: Sequence[types.PointId],
+        negative: Optional[Sequence[types.PointId]] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 1,
+        score_threshold: Optional[float] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        """Recommend point groups: search for similar points based on already stored in Qdrant examples
+        and groups by payload field.
+
+        Recommend best matches for given stored examples grouped by the value of payload field.
+        Useful to obtain most relevant results for each category, deduplicate results,
+        finding the best representation vector for the same entity.
+
+        Args:
+            collection_name: Collection to search in
+            positive:
+                List of stored point IDs, which should be used as reference for similarity search.
+                If there is only one ID provided - this request is equivalent to the regular search with vector of that point.
+                If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
+                Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
+            negative:
+                List of stored point IDs, which should be dissimilar to the search result.
+                Negative examples is an experimental functionality. Its behaviour may change in the future.
+            group_by: Name of the payload field to group by.
+                Field must be of type "keyword" or "integer".
+                Nested fields are specified using dot notation, e.g. "nested_field.subfield".
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many groups return
+            group_size: How many results return for each group
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
+            using:
+                Name of the vectors to use for recommendations.
+                If `None` - use default vectors.
+            lookup_from:
+                Defines a location (collection and vector field name), used to lookup vectors for recommendations.
+                If `None` - use current collection will be used.
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result.
+                Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+
+        Returns:
+            List of groups with not more than `group_size` hits in each group.
+            Each group also contains an id of the group, which is the value of the payload field.
+
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.recommend_groups(
+            collection_name=collection_name,
+            group_by=group_by,
+            positive=positive,
+            negative=negative,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            group_size=group_size,
+            score_threshold=score_threshold,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            using=using,
+            lookup_from=lookup_from,
+            consistency=consistency,
+            with_lookup=with_lookup,
             **kwargs,
         )
 
@@ -453,6 +670,8 @@ class QdrantClient(QdrantBase):
             A pair of (List of points) and (optional offset for the next scroll request).
             If next page offset is `None` - there is no more points in the collection to scroll.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.scroll(
             collection_name=collection_name,
             scroll_filter=scroll_filter,
@@ -485,8 +704,13 @@ class QdrantClient(QdrantBase):
         Returns:
             Amount of points in the collection matching the filter.
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.count(
-            collection_name=collection_name, count_filter=count_filter, exact=exact, **kwargs
+            collection_name=collection_name,
+            count_filter=count_filter,
+            exact=exact,
+            **kwargs,
         )
 
     def upsert(
@@ -519,8 +743,92 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.upsert(
-            collection_name=collection_name, points=points, wait=wait, ordering=ordering, **kwargs
+            collection_name=collection_name,
+            points=points,
+            wait=wait,
+            ordering=ordering,
+            **kwargs,
+        )
+
+    def update_vectors(
+        self,
+        collection_name: str,
+        vectors: Sequence[types.PointVectors],
+        wait: bool = True,
+        ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
+
+        Args:
+            collection_name: Name of the collection to update vectors in
+            vectors: List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
+                Example
+                - `PointVectors(id=1, vector=[1, 2, 3])`
+                - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
+            wait: Await for the results to be processed.
+            ordering: Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
+
+        Returns:
+            Operation result
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.update_vectors(
+            collection_name=collection_name,
+            vectors=vectors,
+            wait=wait,
+            ordering=ordering,
+        )
+
+    def delete_vectors(
+        self,
+        collection_name: str,
+        vectors: Sequence[str],
+        points: types.PointsSelector,
+        wait: bool = True,
+        ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
+    ) -> types.UpdateResult:
+        """Delete specified vector from the collection. Does not affect payload.
+
+        Args:
+            collection_name: Name of the collection to delete vector from
+            vectors:
+                List of names of the vectors to delete.
+                Use `""` to delete the default vector.
+                At least one vector should be specified.
+            points: Selects points based on list of IDs or filter
+                 Examples
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            wait: Await for the results to be processed.
+            ordering: Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
+
+        Returns:
+            Operation result
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.delete_vectors(
+            collection_name=collection_name,
+            vectors=vectors,
+            points=points,
+            wait=wait,
+            ordering=ordering,
         )
 
     def retrieve(
@@ -559,6 +867,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of points
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.retrieve(
             collection_name=collection_name,
             ids=ids,
@@ -585,7 +895,7 @@ class QdrantClient(QdrantBase):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points_selector: Selects points based on list of IDs or filter
-                Example:
+                Examples
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering: Define strategy for ordering of the points. Possible values:
@@ -599,6 +909,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete(
             collection_name=collection_name,
             points_selector=points_selector,
@@ -641,7 +953,7 @@ class QdrantClient(QdrantBase):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector.
-             Example:
+             Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering:
@@ -655,6 +967,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.set_payload(
             collection_name=collection_name,
             payload=payload,
@@ -700,7 +1014,7 @@ class QdrantClient(QdrantBase):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector.
-             Example:
+             Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering:
@@ -714,6 +1028,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.overwrite_payload(
             collection_name=collection_name,
             payload=payload,
@@ -742,7 +1058,7 @@ class QdrantClient(QdrantBase):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             keys: List of payload keys to remove
             points: List of affected points, filter or points selector.
-                Example:
+                Example
                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering:
@@ -756,6 +1072,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_payload(
             collection_name=collection_name,
             keys=keys,
@@ -782,7 +1100,7 @@ class QdrantClient(QdrantBase):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points_selector: List of affected points, filter or points selector.
-                Example:
+                Example
                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering:
@@ -796,6 +1114,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.clear_payload(
             collection_name=collection_name,
             points_selector=points_selector,
@@ -823,8 +1143,12 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.update_collection_aliases(
-            change_aliases_operations=change_aliases_operations, timeout=timeout, **kwargs
+            change_aliases_operations=change_aliases_operations,
+            timeout=timeout,
+            **kwargs,
         )
 
     def get_collection_aliases(
@@ -838,6 +1162,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Collection aliases
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_collection_aliases(collection_name=collection_name, **kwargs)
 
     def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
@@ -846,6 +1172,8 @@ class QdrantClient(QdrantBase):
         Returns:
             All aliases of all collections
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_aliases(**kwargs)
 
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
@@ -854,6 +1182,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of the collections
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_collections(**kwargs)
 
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
@@ -865,12 +1195,14 @@ class QdrantClient(QdrantBase):
         Returns:
             Detailed information about the collection
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_collection(collection_name=collection_name, **kwargs)
 
     def update_collection(
         self,
         collection_name: str,
-        optimizer_config: Optional[types.OptimizersConfigDiff] = None,
+        optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
@@ -879,18 +1211,27 @@ class QdrantClient(QdrantBase):
 
         Args:
             collection_name: Name of the collection
-            optimizer_config: Override for optimizer configuration
+            optimizers_config: Override for optimizer configuration
             collection_params: Override for collection parameters
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
-
         Returns:
             Operation result
         """
+        if "optimizer_config" in kwargs and optimizers_config is not None:
+            raise ValueError(
+                "Only one of optimizer_config and optimizers_config should be specified"
+            )
+
+        if "optimizer_config" in kwargs:
+            optimizers_config = kwargs.pop("optimizer_config")
+
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.update_collection(
             collection_name=collection_name,
-            optimizer_config=optimizer_config,
+            optimizers_config=optimizers_config,
             collection_params=collection_params,
             timeout=timeout,
             **kwargs,
@@ -910,6 +1251,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_collection(
             collection_name=collection_name, timeout=timeout, **kwargs
         )
@@ -967,6 +1310,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.create_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,
@@ -1036,6 +1381,7 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.recreate_collection(
             collection_name=collection_name,
@@ -1077,6 +1423,8 @@ class QdrantClient(QdrantBase):
                 during the upload of a batch
 
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.upload_records(
             collection_name=collection_name,
             records=records,
@@ -1090,7 +1438,9 @@ class QdrantClient(QdrantBase):
     def upload_collection(
         self,
         collection_name: str,
-        vectors: Union[types.NumpyArray, Dict[str, types.NumpyArray], Iterable[List[float]]],
+        vectors: Union[
+            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+        ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         batch_size: int = 64,
@@ -1115,6 +1465,8 @@ class QdrantClient(QdrantBase):
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.upload_collection(
             collection_name=collection_name,
             vectors=vectors,
@@ -1160,6 +1512,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation Result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.create_payload_index(
             collection_name=collection_name,
             field_name=field_name,
@@ -1198,6 +1552,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Operation Result
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_payload_index(
             collection_name=collection_name,
             field_name=field_name,
@@ -1217,6 +1573,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of snapshots
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.list_snapshots(collection_name=collection_name, **kwargs)
 
     def create_snapshot(
@@ -1230,6 +1588,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Snapshot description
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.create_snapshot(collection_name=collection_name, **kwargs)
 
     def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
@@ -1242,6 +1602,8 @@ class QdrantClient(QdrantBase):
         Returns:
             True if snapshot was deleted
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_snapshot(
             collection_name=collection_name, snapshot_name=snapshot_name, **kwargs
         )
@@ -1252,6 +1614,8 @@ class QdrantClient(QdrantBase):
         Returns:
             List of snapshots
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.list_full_snapshots(**kwargs)
 
     def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
@@ -1260,6 +1624,8 @@ class QdrantClient(QdrantBase):
         Returns:
             Snapshot description
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.create_full_snapshot(**kwargs)
 
     def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
@@ -1271,6 +1637,8 @@ class QdrantClient(QdrantBase):
         Returns:
             True if snapshot was deleted
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.delete_full_snapshot(snapshot_name=snapshot_name, **kwargs)
 
     def recover_snapshot(
@@ -1296,18 +1664,29 @@ class QdrantClient(QdrantBase):
                 Default: `replica`
 
         """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.recover_snapshot(
-            collection_name=collection_name, location=location, priority=priority, **kwargs
+            collection_name=collection_name,
+            location=location,
+            priority=priority,
+            **kwargs,
         )
 
     def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         """Lock storage for writing."""
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.lock_storage(reason=reason, **kwargs)
 
     def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
         """Unlock storage for writing."""
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.unlock_storage(**kwargs)
 
     def get_locks(self, **kwargs: Any) -> types.LocksOption:
         """Get current locks state."""
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
         return self._client.get_locks(**kwargs)

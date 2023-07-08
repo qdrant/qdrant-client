@@ -11,7 +11,10 @@ from qdrant_client.uploader.uploader import BaseUploader
 
 
 def upload_batch_grpc(
-    points_client: PointsStub, collection_name: str, batch: Union[Batch, Tuple], max_retries: int
+    points_client: PointsStub,
+    collection_name: str,
+    batch: Union[Batch, Tuple],
+    max_retries: int,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
     if payload_batch is None:
@@ -29,21 +32,22 @@ def upload_batch_grpc(
     for attempt in range(max_retries):
         try:
             points_client.Upsert(grpc.UpsertPoints(collection_name=collection_name, points=points))
-            return True
-        except Exception as e:  # pylint: disable=broad-except
-            if attempt == (max_retries - 1):
-                logging.exception(e)
-                return False
-        else:
-            logging.warn(f"Batch upload failed {attempt + 1} times. Retrying...")
-            continue
+        except Exception as e:
+            logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
 
-    return False  # suppress mypy complaints
+            if attempt == max_retries - 1:
+                raise e
+    return True
 
 
 class GrpcBatchUploader(BaseUploader):
     def __init__(
-        self, host: str, port: int, collection_name: str, max_retries: int, **kwargs: Any
+        self,
+        host: str,
+        port: int,
+        collection_name: str,
+        max_retries: int,
+        **kwargs: Any,
     ):
         self.collection_name = collection_name
         self._host = host

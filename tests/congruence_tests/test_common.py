@@ -52,6 +52,7 @@ def generate_fixtures(
     num: Optional[int] = NUM_VECTORS,
     random_ids: bool = False,
     vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
+    skip_vectors: bool = False,
 ) -> List[models.Record]:
     if vectors_sizes is None:
         vectors_sizes = {
@@ -64,6 +65,7 @@ def generate_fixtures(
         vector_sizes=vectors_sizes,
         with_payload=True,
         random_ids=random_ids,
+        skip_vectors=skip_vectors,
     )
 
 
@@ -86,66 +88,95 @@ def compare_collections(
     )
 
 
+def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], i: int) -> None:
+    assert type(vec1) == type(vec2)
+
+    if vec1 is None:
+        return
+
+    if isinstance(vec1, dict):
+        for key, value in vec1.items():
+            assert np.allclose(vec1[key], vec2[key]), (
+                f"res1[{i}].vectors[{key}] = {value}, " f"res2[{i}].vectors[{key}] = {vec2[key]}"
+            )
+    else:
+        assert np.allclose(vec1, vec2), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
+
+
+def compare_scored_record(
+    point1: models.ScoredPoint, point2: models.ScoredPoint, idx: int
+) -> None:
+    assert (
+        point1.id == point2.id
+    ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
+    assert (
+        point1.score - point2.score < 1e-4
+    ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}"
+    assert (
+        point1.payload == point2.payload
+    ), f"point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
+    compare_vectors(point1.vector, point2.vector, idx)
+
+
+def compare_records(res1: list, res2: list) -> None:
+    assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
+    for i in range(len(res1)):
+        res1_item = res1[i]
+        res2_item = res2[i]
+
+        if isinstance(res1_item, models.ScoredPoint) and isinstance(res2_item, models.ScoredPoint):
+            compare_scored_record(res1_item, res2_item, i)
+
+        elif isinstance(res1_item, models.Record) and isinstance(res2_item, models.Record):
+            assert (
+                res1_item.id == res2_item.id
+            ), f"res1[{i}].id = {res1_item.id}, res2[{i}].id = {res2_item.id}"
+            assert (
+                res1_item.payload == res2_item.payload
+            ), f"res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
+
+            compare_vectors(res1_item.vector, res2_item.vector, i)
+        else:
+            assert res1[i] == res2[i], f"res1[{i}] = {res1[i]}, res2[{i}] = {res2[i]}"
+
+
 def compare_client_results(
     client1: QdrantBase,
     client2: QdrantBase,
     foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ) -> None:
-    def compare_vectors(
-        vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], i: int
-    ) -> None:
-        assert type(vec1) == type(vec2)
-
-        if vec1 is None:
-            return
-
-        if isinstance(vec1, dict):
-            for key, value in vec1.items():
-                assert np.allclose(vec1[key], vec2[key]), (
-                    f"res1[{i}].vectors[{key}] = {value}, "
-                    f"res2[{i}].vectors[{key}] = {res2_item.vector[key]}"
-                )
-        else:
-            assert np.allclose(
-                vec1, vec2
-            ), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
-
     res1 = foo(client1, **kwargs)
     res2 = foo(client2, **kwargs)
 
     if isinstance(res1, list):
-        assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
-        for i in range(len(res1)):
-            res1_item = res1[i]
-            res2_item = res2[i]
+        compare_records(res1, res2)
+    elif isinstance(res1, models.GroupsResult):
+        groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
+        groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))
 
-            if isinstance(res1_item, models.ScoredPoint) and isinstance(
-                res2_item, models.ScoredPoint
-            ):
-                assert (
-                    res1_item.id == res2_item.id
-                ), f"res1[{i}].id = {res1_item.id}, res2[{i}].id = {res2_item.id}"
-                assert (
-                    res1_item.score - res2_item.score < 1e-4
-                ), f"res1[{i}].score = {res1_item.score}, res2[{i}].score = {res2_item.score}"
-                assert (
-                    res1_item.payload == res2_item.payload
-                ), f"res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
+        assert len(groups_1) == len(
+            groups_2
+        ), f"len(groups_1) = {len(groups_1)}, len(groups_2) = {len(groups_2)}"
 
-                compare_vectors(res1_item.vector, res2_item.vector, i)
+        for i in range(len(groups_1)):
+            group_1 = groups_1[i]
+            group_2 = groups_2[i]
 
-            elif isinstance(res1_item, models.Record) and isinstance(res2_item, models.Record):
-                assert (
-                    res1_item.id == res2_item.id
-                ), f"res1[{i}].id = {res1_item.id}, res2[{i}].id = {res2_item.id}"
-                assert (
-                    res1_item.payload == res2_item.payload
-                ), f"res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
+            assert (
+                group_1.hits[0].score - group_2.hits[0].score < 1e-4
+            ), f"groups_1[{i}].hits[0].score = {group_1.hits[0].score}, groups_2[{i}].hits[0].score = {group_2.hits[0].score}"
 
-                compare_vectors(res1_item.vector, res2_item.vector, i)
+            # We can't assert ids because they are not stable, order of groups with same score is guaranteed
+            # assert (
+            #     group_1.id == group_2.id
+            # ), f"groups_1[{i}].id = {group_1.id}, groups_2[{i}].id = {group_2.id}"
+
+            if group_1.id == group_2.id:
+                compare_records(group_1.hits, group_2.hits)
             else:
-                assert res1[i] == res2[i], f"res1[{i}] = {res1[i]}, res2[{i}] = {res2[i]}"
+                # If group ids are different, but scores are the same, we assume that the top hits are the same
+                compare_scored_record(group_1.hits[0], group_2.hits[0], 0)
     else:
         assert res1 == res2
 
@@ -168,5 +199,5 @@ def init_local(storage: str = ":memory:") -> QdrantBase:
 
 
 def init_remote() -> QdrantBase:
-    client = QdrantClient(host="localhost", port=6333)
+    client = QdrantClient(host="localhost", port=6333, timeout=30)
     return client

@@ -68,9 +68,22 @@ def test_conversion_completeness():
                 logging.warning(f"Error with {fixture}")
                 raise e
 
-            assert MessageToDict(grpc_fixture) == MessageToDict(
-                fixture
-            ), f"{model_class_name} conversion is broken"
+            if MessageToDict(grpc_fixture) != MessageToDict(fixture):
+                assert MessageToDict(grpc_fixture) == MessageToDict(
+                    fixture
+                ), f"{model_class_name} conversion is broken"
+
+
+def test_nested_filter():
+    from qdrant_client.conversions.conversion import GrpcToRest
+    from qdrant_client.http.models import models as rest
+
+    from .fixtures import condition_nested
+
+    rest_condition = GrpcToRest.convert_condition(condition_nested)
+
+    rest_filter = rest.Filter(must=[rest_condition])
+    assert isinstance(rest_filter.must[0], type(rest_condition))
 
 
 def test_vector_batch_conversion():
@@ -149,3 +162,22 @@ def test_vector_batch_conversion():
             )
         ),
     ]
+
+
+def test_grpc_payload_scheme_conversion():
+    from qdrant_client.conversions.conversion import (
+        grpc_field_type_to_payload_schema,
+        grpc_payload_schema_to_field_type,
+    )
+    from qdrant_client.grpc import PayloadSchemaType
+
+    for payload_schema in (
+        PayloadSchemaType.Keyword,
+        PayloadSchemaType.Integer,
+        PayloadSchemaType.Float,
+        PayloadSchemaType.Geo,
+        PayloadSchemaType.Text,
+    ):
+        assert payload_schema == grpc_field_type_to_payload_schema(
+            grpc_payload_schema_to_field_type(payload_schema)
+        )
