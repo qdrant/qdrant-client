@@ -13,13 +13,15 @@ cd "$(dirname "$0")/../"
 
 QDRANT_LATEST="v1.3.0"
 QDRANT_VERSION=${QDRANT_VERSION:-"$QDRANT_LATEST"}
+REST_PORT="6333"
+GRPC_PORT="6334"
 
-QDRANT_HOST='localhost:6333'
+QDRANT_HOST=localhost:${REST_PORT}
 
 docker run -d --rm \
-           -p "6333:6333" \
-           -p "6334:6334" \
-           -e QDRANT__SERVICE__GRPC_PORT="6334" \
+           -p ${REST_PORT}:${REST_PORT} \
+           -p ${GRPC_PORT}:${GRPC_PORT} \
+           -e QDRANT__SERVICE__GRPC_PORT=${GRPC_PORT} \
            --name qdrant_test qdrant/qdrant:${QDRANT_VERSION}
 
 trap stop_docker SIGINT
