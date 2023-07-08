@@ -2,10 +2,11 @@ import itertools
 import math
 from abc import ABC
 from itertools import count, islice
-from typing import Dict, Generator, Iterable, List, Optional, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 import numpy as np
 
+from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.http.models import ExtendedPointId
 from qdrant_client.parallel_processor import Worker
@@ -37,7 +38,9 @@ class BaseUploader(Worker, ABC):
     @classmethod
     def iterate_batches(
         cls,
-        vectors: Union[np.ndarray, Dict[str, np.ndarray], Iterable[List[float]]],
+        vectors: Union[
+            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+        ],
         payload: Optional[Iterable[dict]],
         ids: Optional[Iterable[ExtendedPointId]],
         batch_size: int,
@@ -52,39 +55,33 @@ class BaseUploader(Worker, ABC):
             payload_batches = iter_batch(payload, batch_size)
 
         if isinstance(vectors, np.ndarray):
-            vector_batches = _get_vector_batches_from_numpy(vectors, batch_size)
-        elif isinstance(vectors, dict):
-            vector_batches = _get_named_vector_batches_from_numpy(vectors, batch_size)
+            vector_batches: Iterable[Any] = cls._vector_batches_from_numpy(vectors, batch_size)
+        elif isinstance(vectors, dict) and any(
+            isinstance(value, np.ndarray) for value in vectors.values()
+        ):
+            vector_batches = cls._vector_batches_from_numpy_named_vectors(vectors, batch_size)
         else:
             vector_batches = iter_batch(vectors, batch_size)
 
         yield from zip(ids_batches, vector_batches, payload_batches)
 
+    @staticmethod
+    def _vector_batches_from_numpy(vectors: types.NumpyArray, batch_size: int) -> Iterable[float]:
+        for i in range(0, vectors.shape[0], batch_size):
+            yield vectors[i : i + batch_size].tolist()
 
-def _get_vector_batches_from_numpy(
-    vectors: np.ndarray, batch_size: int
-) -> Union[Generator, Iterable]:
-    num_vectors = vectors.shape[0]
-    num_batches = int(math.ceil(num_vectors / batch_size))
-    vector_batches: Union[Generator, Iterable] = (
-        vectors[i * batch_size : (i + 1) * batch_size].tolist() for i in range(num_batches)
-    )
+    @staticmethod
+    def _vector_batches_from_numpy_named_vectors(
+        vectors: Dict[str, types.NumpyArray], batch_size: int
+    ) -> Iterable[Dict[str, List[float]]]:
+        assert (
+            len(set([arr.shape[0] for arr in vectors.values()])) == 1
+        ), "Each named vector should have the same number of vectors"
 
-    return vector_batches
-
-
-def _get_named_vector_batches_from_numpy(
-    vectors: Dict[str, np.ndarray], batch_size: int
-) -> Union[Generator, Iterable]:
-    all_num_vectors = set([v.shape[0] for k, v in vectors.items()])
-    assert (
-        len(all_num_vectors) == 1
-    ), f"Dict of named vectors should have the same number of vectors, but got {all_num_vectors}"
-    num_vectors = list(all_num_vectors)[0]
-    num_batches = int(math.ceil(num_vectors / batch_size))
-    vector_names = vectors.keys()
-    vector_batches: Union[Generator, Iterable] = (
-        {name: vectors[name][i].tolist() for name in vector_names} for i in range(num_vectors)
-    )
-
-    return iter_batch(vector_batches, batch_size)
+        num_vectors = next(iter(vectors.values())).shape[0]
+        # Convert Dict[str, np.ndarray] to Generator(Dict[str, List[float]])
+        vector_batches = (
+            {name: vectors[name][i].tolist() for name in vectors.keys()}
+            for i in range(num_vectors)
+        )
+        yield from iter_batch(vector_batches, batch_size)

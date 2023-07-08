@@ -258,7 +258,9 @@ class QdrantBase:
     def upload_collection(
         self,
         collection_name: str,
-        vectors: Union[types.NumpyArray, Dict[str, types.NumpyArray], Iterable[List[float]]],
+        vectors: Union[
+            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+        ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,

@@ -2,6 +2,8 @@ import logging
 from itertools import count
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
 
+import numpy as np
+
 from qdrant_client.http import SyncApis
 from qdrant_client.http.models import Batch, PointsList, PointStruct
 from qdrant_client.uploader.uploader import BaseUploader
@@ -23,7 +25,7 @@ def upload_batch(
     points = [
         PointStruct(
             id=idx,
-            vector=vector,
+            vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
             payload=payload,
         )
         for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)

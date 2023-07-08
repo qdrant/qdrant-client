@@ -1,7 +1,9 @@
 import itertools
 import uuid
 from collections import defaultdict
+from typing import Dict, List
 
+import numpy as np
 import pytest
 
 from qdrant_client.http import models
@@ -9,6 +11,8 @@ from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
     generate_fixtures,
+    init_local,
+    init_remote,
 )
 from tests.fixtures.payload import one_random_payload_please
 
@@ -138,4 +142,86 @@ def test_upload_uuid_in_batches(local_client, remote_client):
     local_client.upsert(COLLECTION_NAME, batch)
     remote_client.upsert(COLLECTION_NAME, batch)
 
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_upload_collection_float_list():
+    vectors_dim = 50
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim).tolist()
+    vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
+    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_collection(COLLECTION_NAME, vectors)
+    remote_client.upload_collection(COLLECTION_NAME, vectors)
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+
+
+def test_upload_collection_named_float_list_vectors(local_client, remote_client):
+    records = generate_fixtures(UPLOAD_NUM_VECTORS)
+    vectors: List[Dict[str, float]] = []
+    for record in records:
+        vectors.append(record.vector)
+
+    local_client.upload_collection(COLLECTION_NAME, vectors)
+    remote_client.upload_collection(COLLECTION_NAME, vectors)
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_upload_collection_np_array_2d():
+    vectors_dim = 50
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim)
+    vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
+    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_collection(COLLECTION_NAME, vectors)
+    remote_client.upload_collection(COLLECTION_NAME, vectors)
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+
+
+def test_upload_collection_list_np_arrays():
+    vectors_dim = 50
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim).tolist()
+    vectors = [np.array(vector) for vector in vectors]
+    vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
+    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_collection(COLLECTION_NAME, vectors)
+    remote_client.upload_collection(COLLECTION_NAME, vectors)
+
+    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+
+
+def test_upload_collection_dict_np_arrays(local_client, remote_client):
+    records = generate_fixtures(UPLOAD_NUM_VECTORS)
+    intermediate_vectors: Dict[str, List[float]] = defaultdict(list)
+    vectors: Dict[str, np.ndarray] = {}
+    for record in records:
+        for key, vector in record.vector.items():
+            intermediate_vectors[key].append(record.vector[key])
+
+    for key in intermediate_vectors:
+        vectors[key] = np.array(intermediate_vectors[key])
+
+    local_client.upload_collection(COLLECTION_NAME, vectors)
+    remote_client.upload_collection(COLLECTION_NAME, vectors)
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
