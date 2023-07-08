@@ -1796,6 +1796,7 @@ class QdrantRemote(QdrantBase):
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
+            init_from=init_from,
             timeout=timeout,
         )
 
