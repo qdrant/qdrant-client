@@ -2,6 +2,54 @@ from qdrant_client.http.models import models
 from qdrant_client.local.payload_filters import check_filter
 
 
+def test_geo_polygon_filter():
+    payload = {
+        "locations": [
+            {
+                "lon": 110.0,
+                "lat": 110.0,
+            },
+            {
+                "lon": 90.0,
+                "lat": 90.0,
+            },
+        ]
+    }
+
+    query = models.Filter(
+        **{
+            "must": [
+                {
+                    "key": "locations",
+                    "geo_polygon": {
+                        "points": [
+                            {
+                                "lon": 0.0,
+                                "lat": 100.0,
+                            },
+                            {
+                                "lon": 100.0,
+                                "lat": 100.0,
+                            },
+                            {
+                                "lon": 100.0,
+                                "lat": 0.0,
+                            },
+                            {
+                                "lon": 0.0,
+                                "lat": 0.0,
+                            },
+                        ],
+                    },
+                }
+            ]
+        }
+    )
+
+    res = check_filter(query, payload, 0)
+    assert res is True
+
+
 def test_nested_payload_filters():
     payload = {
         "country": {

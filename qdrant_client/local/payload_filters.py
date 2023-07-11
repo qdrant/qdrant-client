@@ -1,6 +1,7 @@
 from typing import Any, List, Optional
 
 import numpy as np
+from shapely import LinearRing, Point, Polygon
 
 from qdrant_client.http import models
 from qdrant_client.local.geo import geo_distance
@@ -46,6 +47,17 @@ def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> boo
             condition.top_left.lat >= lat >= condition.bottom_right.lat
             and condition.top_left.lon <= lon <= condition.bottom_right.lon
         )
+
+    return False
+
+
+def check_geo_polygon(condition: models.GeoPolygon, values: Any) -> bool:
+    if isinstance(values, dict) and "lat" in values and "lon" in values:
+        lat = values["lat"]
+        lon = values["lon"]
+
+        polygon = Polygon(LinearRing([(point.lon, point.lat) for point in condition.points]))
+        return polygon.intersects(Point(lat, lon))
 
     return False
 
@@ -114,6 +126,10 @@ def check_condition(
             if values is None:
                 return False
             return any(check_geo_radius(condition.geo_radius, v) for v in values)
+        if condition.geo_polygon is not None:
+            if values is None:
+                return False
+            return any(check_geo_polygon(condition.geo_polygon, v) for v in values)
         if condition.values_count is not None:
             return check_values_count(condition.values_count, values)
     elif isinstance(condition, models.NestedCondition):
