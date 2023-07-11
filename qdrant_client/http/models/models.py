@@ -389,6 +389,7 @@ class FieldCondition(BaseModel):
         default=None, description="Check if points geo location lies in a given area"
     )
     geo_radius: Optional["GeoRadius"] = Field(default=None, description="Check if geo point is within a given radius")
+    geo_polygon: Optional["GeoPolygon"] = Field(default=None, description="Check if geo point is within a given polygon")
     values_count: Optional["ValuesCount"] = Field(default=None, description="Check number of values of the field")
 
 
@@ -438,6 +439,13 @@ class GeoRadius(BaseModel):
         description="Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
     )
     radius: float = Field(..., description="Radius of the area in meters")
+
+
+class GeoPolygon(BaseModel):
+    """
+    Geo filter request  Matches coordinates inside the polygon, defined by the given coordinates in order
+    """
+    points: List["GeoPoint"] = Field(..., description="Geo filter request  Matches coordinates inside the polygon, defined by the given coordinates in order")
 
 
 class GroupsResult(BaseModel):

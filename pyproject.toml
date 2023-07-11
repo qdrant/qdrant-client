@@ -25,6 +25,7 @@ grpcio = { version = ">=1.41.0", allow-prereleases = true }
 grpcio-tools = ">=1.41.0"
 urllib3 = "^1.26.14"
 portalocker = "^2.7.0"
+shapely = "^2.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1"
