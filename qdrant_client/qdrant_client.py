@@ -73,6 +73,19 @@ class QdrantClient(QdrantBase):
         path: Optional[str] = None,
         **kwargs: Any,
     ):
+        # Check if fastvector is installed
+        try:
+            from fastvector.qdrant_mixin import QdrantClientMixin
+
+            print("Found fastvector, adding mixin methods to QdrantClient")
+            # If it is, add the mixin methods to this instance
+            for name, method in QdrantClientMixin.__dict__.items():
+                if callable(method):
+                    setattr(self, name, method.__get__(self, self.__class__))
+        except ImportError:
+            # If it's not, do nothing
+            pass
+
         self._client: QdrantBase
 
         if location == ":memory:":
@@ -106,7 +119,9 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.grpc_collections
 
-        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
+        raise NotImplementedError(
+            f"gRPC client is not supported for {type(self._client)}"
+        )
 
     @property
     def grpc_points(self) -> grpc.PointsStub:
@@ -118,7 +133,9 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.grpc_points
 
-        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
+        raise NotImplementedError(
+            f"gRPC client is not supported for {type(self._client)}"
+        )
 
     @property
     def async_grpc_points(self) -> grpc.PointsStub:
@@ -130,7 +147,9 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.async_grpc_points
 
-        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
+        raise NotImplementedError(
+            f"gRPC client is not supported for {type(self._client)}"
+        )
 
     @property
     def async_grpc_collections(self) -> grpc.CollectionsStub:
@@ -142,7 +161,9 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.async_grpc_collections
 
-        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
+        raise NotImplementedError(
+            f"gRPC client is not supported for {type(self._client)}"
+        )
 
     @property
     def rest(self) -> SyncApis[ApiClient]:
@@ -154,7 +175,9 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.rest
 
-        raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
+        raise NotImplementedError(
+            f"REST client is not supported for {type(self._client)}"
+        )
 
     @property
     def http(self) -> SyncApis[ApiClient]:
@@ -166,7 +189,9 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.http
 
-        raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
+        raise NotImplementedError(
+            f"REST client is not supported for {type(self._client)}"
+        )
 
     def search_batch(
         self,
@@ -1164,7 +1189,9 @@ class QdrantClient(QdrantBase):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.get_collection_aliases(collection_name=collection_name, **kwargs)
+        return self._client.get_collection_aliases(
+            collection_name=collection_name, **kwargs
+        )
 
     def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
         """Get all aliases
@@ -1186,7 +1213,9 @@ class QdrantClient(QdrantBase):
 
         return self._client.get_collections(**kwargs)
 
-    def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
+    def get_collection(
+        self, collection_name: str, **kwargs: Any
+    ) -> types.CollectionInfo:
         """Get detailed information about specified existing collection
 
         Args:
@@ -1592,7 +1621,9 @@ class QdrantClient(QdrantBase):
 
         return self._client.create_snapshot(collection_name=collection_name, **kwargs)
 
-    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
+    def delete_snapshot(
+        self, collection_name: str, snapshot_name: str, **kwargs: Any
+    ) -> bool:
         """Delete snapshot for a given collection.
 
         Args:
