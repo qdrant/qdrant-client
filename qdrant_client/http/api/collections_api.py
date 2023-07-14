@@ -18,7 +18,7 @@ def jsonable_encoder(
     skip_defaults: bool = None,
     exclude_unset: bool = False,
 ):
-    if hasattr(obj, "dict"):
+    if hasattr(obj, "dict") or hasattr(obj, "model_dump"):
         return to_dict(
             obj,
             include=include,
