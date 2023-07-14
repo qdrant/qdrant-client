@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
 
+from qdrant_client._pydantic_compat import construct
+
 try:
     from google.protobuf.pyext._message import MessageMapContainer  # type: ignore
 except ImportError:
@@ -404,7 +406,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_scored_point(cls, model: grpc.ScoredPoint) -> rest.ScoredPoint:
-        return rest.ScoredPoint.construct(
+        return construct(
+            rest.ScoredPoint,
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
             score=model.score,

@@ -1,6 +1,7 @@
 # flake8: noqa E501
 from typing import TYPE_CHECKING, Any, Dict, Set, Union
 
+from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
@@ -18,7 +19,8 @@ def jsonable_encoder(
     exclude_unset: bool = False,
 ):
     if hasattr(obj, "dict"):
-        return obj.dict(
+        return to_dict(
+            obj,
             include=include,
             exclude=exclude,
             by_alias=by_alias,

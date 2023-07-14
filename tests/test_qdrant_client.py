@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from qdrant_client import QdrantClient
+from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.local.qdrant_local import QdrantLocal
@@ -263,11 +264,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     # Print all existing collections
     for collection in collections:
-        print(collection.dict())
+        print(to_dict(collection))
 
     # Retrieve detailed information about newly created collection
     test_collection = client.get_collection(COLLECTION_NAME)
-    pprint(test_collection.dict())
+    pprint(to_dict(test_collection))
 
     # Upload data to a new collection
     client.upload_collection(
@@ -325,11 +326,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     index_create_result = client.create_payload_index(
         COLLECTION_NAME, field_name="rand_number", field_schema=PayloadSchemaType.FLOAT
     )
-    pprint(index_create_result.dict())
+    pprint(to_dict(index_create_result))
 
     # Let's now check details about our new collection
     test_collection = client.get_collection(COLLECTION_NAME_ALIAS)
-    pprint(test_collection.dict())
+    pprint(to_dict(test_collection))
 
     # Now we can actually search in the collection
     # Let's create some random vector
@@ -884,12 +885,14 @@ def test_conditional_payload_update(prefer_grpc):
 
 
 def test_has_id_condition():
-    query = Filter(
-        must=[
-            HasIdCondition(has_id=[42, 43]),
-            FieldCondition(key="field_name", match=MatchValue(value="field_value_42")),
-        ]
-    ).dict()
+    query = to_dict(
+        Filter(
+            must=[
+                HasIdCondition(has_id=[42, 43]),
+                FieldCondition(key="field_name", match=MatchValue(value="field_value_42")),
+            ]
+        )
+    )
 
     assert query["must"][0]["has_id"] == [42, 43]
 

@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
+from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 from qdrant_client.local.distances import (
@@ -236,7 +237,8 @@ class LocalCollection:
                     if score > score_threshold:
                         break
 
-            scored_point = models.ScoredPoint.construct(
+            scored_point = construct(
+                models.ScoredPoint,
                 id=point_id,
                 score=score,
                 version=0,
