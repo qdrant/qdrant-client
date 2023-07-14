@@ -554,6 +554,9 @@ class LocalCollection:
         for vector_name, named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
+                params = self.get_vector_params(vector_name)
+                if params.distance == models.Distance.COSINE:
+                    vector = np.array(vector) / np.linalg.norm(vector)
                 self.vectors[vector_name][idx] = vector
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
@@ -587,6 +590,9 @@ class LocalCollection:
                 )
             else:
                 vector_np = np.array(vector)
+                params = self.get_vector_params(vector_name)
+                if params.distance == models.Distance.COSINE:
+                    vector_np = vector_np / np.linalg.norm(vector_np)
                 named_vectors[idx] = vector_np
                 self.vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
