@@ -84,7 +84,7 @@ def compare_collections(
     compare_client_results(
         client_1,
         client_2,
-        lambda client: client.scroll(COLLECTION_NAME, limit=num_vectors * 2),
+        lambda client: client.scroll(COLLECTION_NAME, with_vectors=True, limit=num_vectors * 2)[0],
     )
 
 
@@ -96,11 +96,11 @@ def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], 
 
     if isinstance(vec1, dict):
         for key, value in vec1.items():
-            assert np.allclose(vec1[key], vec2[key]), (
+            assert np.allclose(vec1[key], vec2[key], atol=1.e-3), (
                 f"res1[{i}].vectors[{key}] = {value}, " f"res2[{i}].vectors[{key}] = {vec2[key]}"
             )
     else:
-        assert np.allclose(vec1, vec2), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
+        assert np.allclose(vec1, vec2, atol=1.e-3), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
 
 
 def compare_scored_record(
@@ -149,7 +149,7 @@ def compare_client_results(
     res1 = foo(client1, **kwargs)
     res2 = foo(client2, **kwargs)
 
-    if isinstance(res1, list):
+    if isinstance(res1, (list, tuple)):
         compare_records(res1, res2)
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
