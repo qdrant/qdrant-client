@@ -15,7 +15,7 @@ def update_forward_refs(model_class: Type[BaseModel], *args: Any, **kwargs: Any)
         model_class.update_forward_refs(*args, **kwargs)
 
 
-def construct(model_class: type[Model], *args: Any, **kwargs: Any) -> Model:
+def construct(model_class: Type[Model], *args: Any, **kwargs: Any) -> Model:
     if PYDANTIC_V2:
         return model_class.model_construct(*args, **kwargs)
     else:
