@@ -1,9 +1,11 @@
+import typing
 from typing import Any, Dict, Type
 
 from pydantic import BaseModel
-from pydantic.version import VERSION as pydantic_version
+from pydantic.version import VERSION as PYDANTIC_VERSION
 
-PYDANTIC_V2 = pydantic_version.startswith("2.")
+PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
+Model = typing.TypeVar("Model", bound="BaseModel")
 
 
 def update_forward_refs(model_class: Type[BaseModel], *args: Any, **kwargs: Any) -> None:
@@ -13,7 +15,7 @@ def update_forward_refs(model_class: Type[BaseModel], *args: Any, **kwargs: Any)
         model_class.update_forward_refs(*args, **kwargs)
 
 
-def construct(model_class: Type[BaseModel], *args: Any, **kwargs: Any) -> BaseModel:
+def construct(model_class: type[Model], *args: Any, **kwargs: Any) -> Model:
     if PYDANTIC_V2:
         return model_class.model_construct(*args, **kwargs)
     else:
