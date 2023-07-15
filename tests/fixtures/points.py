@@ -4,6 +4,7 @@ from typing import Dict, List, Union
 
 import numpy as np
 
+from qdrant_client._pydantic_compat import construct
 from qdrant_client.http import models
 from tests.fixtures.payload import one_random_payload_please
 
@@ -50,7 +51,8 @@ def generate_records(
                 vectors.pop(vector_to_skip)
 
         records.append(
-            models.Record.construct(
+            construct(
+                models.Record,
                 id=idx,
                 vector=vectors,
                 payload=payload,

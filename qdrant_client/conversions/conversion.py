@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
 
+from qdrant_client._pydantic_compat import construct
+
 try:
     from google.protobuf.pyext._message import MessageMapContainer  # type: ignore
 except ImportError:
@@ -175,7 +177,7 @@ class GrpcToRest:
     @classmethod
     def convert_collection_config(cls, model: grpc.CollectionConfig) -> rest.CollectionConfig:
         return rest.CollectionConfig(
-            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config),
+            hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
             optimizer_config=cls.convert_optimizer_config(model.optimizer_config),
             params=cls.convert_collection_params(model.params),
             wal_config=cls.convert_wal_config(model.wal_config),
@@ -394,9 +396,9 @@ class GrpcToRest:
             else None,
             shard_number=model.shard_number,
             collection_name=model.collection_name,
-            hnsw_config=cls.convert_hnsw_config(model.hnsw_config),
-            wal_config=cls.convert_wal_config(model.wal_config),
-            optimizers_config=cls.convert_optimizer_config(model.optimizers_config),
+            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config),
+            wal_config=cls.convert_wal_config_diff(model.wal_config),
+            optimizers_config=cls.convert_optimizers_config_diff(model.optimizers_config),
             quantization_config=cls.convert_quantization_config(model.quantization_config)
             if model.HasField("quantization_config")
             else None,
@@ -404,7 +406,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_scored_point(cls, model: grpc.ScoredPoint) -> rest.ScoredPoint:
-        return rest.ScoredPoint.construct(
+        return construct(
+            rest.ScoredPoint,
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
             score=model.score,

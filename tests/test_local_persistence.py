@@ -5,6 +5,7 @@ import numpy as np
 
 import qdrant_client
 import qdrant_client.http.models as rest
+from qdrant_client._pydantic_compat import construct
 
 default_collection_name = "example"
 
@@ -29,7 +30,8 @@ def ingest_data(
 
     client.upsert(
         collection_name=collection_name,
-        points=rest.Batch.construct(
+        points=construct(
+            rest.Batch,
             ids=random.sample(range(100), len(lines)),
             vectors=embeddings,
         ),

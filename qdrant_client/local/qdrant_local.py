@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 import numpy as np
 import portalocker
 
+from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
@@ -86,7 +87,7 @@ class QdrantLocal(QdrantBase):
                 json.dumps(
                     {
                         "collections": {
-                            collection_name: collection.config.dict()
+                            collection_name: to_dict(collection.config)
                             for collection_name, collection in self.collections.items()
                         },
                         "aliases": self.aliases,

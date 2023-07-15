@@ -19,6 +19,7 @@ import numpy as np
 from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
+from qdrant_client._pydantic_compat import construct
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
@@ -542,8 +543,8 @@ class QdrantRemote(QdrantBase):
                 with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
 
             if isinstance(query_vector, tuple):
-                query_vector = rest_models.NamedVector.construct(
-                    name=query_vector[0], vector=query_vector[1]
+                query_vector = construct(
+                    rest_models.NamedVector, name=query_vector[0], vector=query_vector[1]
                 )
 
             if isinstance(query_vector, np.ndarray):
@@ -558,7 +559,8 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
-            search_groups_request = rest_models.SearchGroupsRequest.construct(
+            search_groups_request = construct(
+                rest_models.SearchGroupsRequest,
                 vector=query_vector,
                 filter=query_filter,
                 params=search_params,
@@ -888,7 +890,8 @@ class QdrantRemote(QdrantBase):
             result = self.openapi_client.points_api.recommend_point_groups(
                 collection_name=collection_name,
                 consistency=consistency,
-                recommend_groups_request=rest_models.RecommendGroupsRequest.construct(
+                recommend_groups_request=construct(
+                    rest_models.RecommendGroupsRequest,
                     positive=positive,
                     negative=negative,
                     filter=query_filter,
@@ -1159,7 +1162,8 @@ class QdrantRemote(QdrantBase):
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
-                delete_vectors=rest_models.DeleteVectors.construct(
+                delete_vectors=construct(
+                    rest_models.DeleteVectors,
                     vector=vectors,
                     points=_points,
                     filter=_filter,
@@ -1250,7 +1254,7 @@ class QdrantRemote(QdrantBase):
             points_selector = RestToGrpc.convert_points_selector(points)
         elif isinstance(points, rest_models.Filter):
             points_selector = RestToGrpc.convert_points_selector(
-                rest_models.FilterSelector.construct(filter=points)
+                construct(rest_models.FilterSelector, filter=points)
             )
         elif isinstance(points, grpc.Filter):
             points_selector = grpc.PointsSelector(filter=points)
@@ -1267,16 +1271,16 @@ class QdrantRemote(QdrantBase):
                 GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
                 for idx in points
             ]
-            points_selector = rest_models.PointIdsList.construct(points=_points)
+            points_selector = construct(rest_models.PointIdsList, points=_points)
         elif isinstance(points, grpc.PointsSelector):
             points_selector = GrpcToRest.convert_points_selector(points)
         elif isinstance(points, (rest_models.PointIdsList, rest_models.FilterSelector)):
             points_selector = points
         elif isinstance(points, rest_models.Filter):
-            points_selector = rest_models.FilterSelector.construct(filter=points)
+            points_selector = construct(rest_models.FilterSelector, filter=points)
         elif isinstance(points, grpc.Filter):
-            points_selector = rest_models.FilterSelector.construct(
-                filter=GrpcToRest.convert_filter(points)
+            points_selector = construct(
+                rest_models.FilterSelector, filter=GrpcToRest.convert_filter(points)
             )
         else:
             raise ValueError(f"Unsupported points selector type: {type(points)}")

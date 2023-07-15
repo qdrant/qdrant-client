@@ -1320,7 +1320,7 @@ class SearchParams(BaseModel):
 
     hnsw_ef: Optional[int] = Field(
         default=None,
-        description="Params relevant to HNSW index /// Size of the beam in a beam-search. Larger the value - more accurate the result, more time required for search.",
+        description="Params relevant to HNSW index Size of the beam in a beam-search. Larger the value - more accurate the result, more time required for search.",
     )
     exact: Optional[bool] = Field(
         default=False,
