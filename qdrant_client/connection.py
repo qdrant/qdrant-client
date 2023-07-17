@@ -211,7 +211,7 @@ def get_channel(
     else:
         if metadata:
             metadata_interceptor = header_adder_interceptor(metadata)
-            channel = grpc.insecure_channel(f"{host}:{port}", metadata, options)
+            channel = grpc.insecure_channel(f"{host}:{port}", options)
             return grpc.intercept_channel(channel, metadata_interceptor)
         else:
             return grpc.insecure_channel(f"{host}:{port}", options)
