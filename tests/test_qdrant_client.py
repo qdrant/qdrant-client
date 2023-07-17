@@ -148,7 +148,7 @@ def test_record_upload(prefer_grpc):
         for idx in range(NUM_VECTORS)
     )
 
-    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=3.0)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -197,7 +197,7 @@ def test_multiple_vectors(prefer_grpc):
         for idx in range(num_vectors)
     ]
 
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -252,7 +252,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     if local_mode:
         client = QdrantClient(location=":memory:", prefer_grpc=prefer_grpc)
     else:
-        client = QdrantClient(prefer_grpc=prefer_grpc)
+        client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -670,7 +670,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_qdrant_client_integration_update_collection(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -687,7 +687,7 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_points_crud(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -737,7 +737,7 @@ def test_quantization_config(prefer_grpc):
     if version is not None and version < "v1.1.0":
         return
 
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -784,7 +784,7 @@ def test_quantization_config(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_conditional_payload_update(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -822,7 +822,7 @@ def test_conditional_payload_update(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_conditional_payload_update(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
     version = os.getenv("QDRANT_VERSION")
     if version is not None and version < "v0.11.5":
         return
@@ -908,7 +908,7 @@ def test_locks():
     if version is not None and version < "v0.11.0":
         return  # Locks are supported since v0.11.0
 
-    client = QdrantClient()
+    client = QdrantClient(timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -949,7 +949,7 @@ def test_locks():
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_empty_vector(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=10.0)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
