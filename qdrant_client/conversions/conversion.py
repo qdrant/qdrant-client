@@ -395,7 +395,6 @@ class GrpcToRest:
             if model.HasField("vectors_config")
             else None,
             shard_number=model.shard_number,
-            collection_name=model.collection_name,
             hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config),
             wal_config=cls.convert_wal_config_diff(model.wal_config),
             optimizers_config=cls.convert_optimizers_config_diff(model.optimizers_config),

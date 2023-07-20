@@ -867,7 +867,7 @@ def test_conditional_payload_update(prefer_grpc):
     client.overwrite_payload(
         collection_name=COLLECTION_NAME,
         payload={"c": 2},
-        points=Filter(must=[FieldCondition(key="b", range=Range(le=10))]),
+        points=Filter(must=[FieldCondition(key="b", range=Range(lt=10))]),
     )
 
     points = client.retrieve(
