@@ -54,9 +54,8 @@ NUM_VECTORS = 1_000
 COLLECTION_NAME = "client_test"
 COLLECTION_NAME_ALIAS = "client_test_alias"
 
-COLLECTION_TIMEOUT = 10
-if os.getenv("RUNNER_OS", "Linux") == "macos":
-    COLLECTION_TIMEOUT = 60
+
+COLLECTION_TIMEOUT = 60
 
 
 def create_random_vectors():
