@@ -1,7 +1,7 @@
 # flake8: noqa E501
 from typing import IO, TYPE_CHECKING, Any, Dict, Set, Union
 
-from qdrant_client._pydantic_compat import to_dict
+from qdrant_client._pydantic_compat import to_json
 from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
@@ -18,8 +18,8 @@ def jsonable_encoder(
     skip_defaults: bool = None,
     exclude_unset: bool = False,
 ):
-    if hasattr(obj, "dict") or hasattr(obj, "model_dump"):
-        return to_dict(
+    if hasattr(obj, "json") or hasattr(obj, "model_dump_json"):
+        return to_json(
             obj,
             include=include,
             exclude=exclude,
@@ -215,15 +215,17 @@ class _SnapshotsApi:
         if wait is not None:
             query_params["wait"] = str(wait).lower()
 
+        headers = {}
         body = jsonable_encoder(snapshot_recover)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="PUT",
             url="/collections/{collection_name}/snapshots/recover",
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_recover_from_uploaded_snapshot(

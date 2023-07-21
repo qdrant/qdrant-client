@@ -1,7 +1,7 @@
 # flake8: noqa E501
 from typing import IO, TYPE_CHECKING, Any, Dict, Set, Union
 
-from qdrant_client._pydantic_compat import to_dict
+from qdrant_client._pydantic_compat import to_json
 from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
@@ -18,8 +18,8 @@ def jsonable_encoder(
     skip_defaults: bool = None,
     exclude_unset: bool = False,
 ):
-    if hasattr(obj, "dict") or hasattr(obj, "model_dump"):
-        return to_dict(
+    if hasattr(obj, "json") or hasattr(obj, "model_dump_json"):
+        return to_json(
             obj,
             include=include,
             exclude=exclude,
@@ -73,15 +73,17 @@ class _CollectionsApi:
         if timeout is not None:
             query_params["timeout"] = str(timeout)
 
+        headers = {}
         body = jsonable_encoder(create_collection)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="PUT",
             url="/collections/{collection_name}",
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_create_field_index(
@@ -104,15 +106,17 @@ class _CollectionsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(create_field_index)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/index",
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_create_snapshot(
@@ -333,15 +337,17 @@ class _CollectionsApi:
         if wait is not None:
             query_params["wait"] = str(wait).lower()
 
+        headers = {}
         body = jsonable_encoder(snapshot_recover)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="PUT",
             url="/collections/{collection_name}/snapshots/recover",
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_recover_from_uploaded_snapshot(
@@ -388,10 +394,12 @@ class _CollectionsApi:
         if timeout is not None:
             query_params["timeout"] = str(timeout)
 
+        headers = {}
         body = jsonable_encoder(change_aliases_operation)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003, method="POST", url="/collections/aliases", params=query_params, json=body
+            type_=m.InlineResponse2003, method="POST", url="/collections/aliases", params=query_params, data=body
         )
 
     def _build_for_update_collection(
@@ -411,15 +419,17 @@ class _CollectionsApi:
         if timeout is not None:
             query_params["timeout"] = str(timeout)
 
+        headers = {}
         body = jsonable_encoder(update_collection)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="PATCH",
             url="/collections/{collection_name}",
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_update_collection_cluster(
@@ -436,15 +446,17 @@ class _CollectionsApi:
         if timeout is not None:
             query_params["timeout"] = str(timeout)
 
+        headers = {}
         body = jsonable_encoder(cluster_operations)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="POST",
             url="/collections/{collection_name}/cluster",
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
 
