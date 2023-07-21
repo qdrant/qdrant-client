@@ -7,6 +7,7 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 from qdrant_client.http.models import VectorStruct
 from qdrant_client.local.qdrant_local import QdrantLocal
+from tests.congruence_tests.settings import TIMEOUT
 from tests.fixtures.points import generate_records
 
 COLLECTION_NAME = "test_collection"
@@ -39,8 +40,7 @@ def initialize_fixture_collection(
         }
 
     client.recreate_collection(
-        collection_name=collection_name,
-        vectors_config=vectors_config,
+        collection_name=collection_name, vectors_config=vectors_config, timeout=TIMEOUT
     )
 
 

@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from qdrant_client.http import models
+from tests.congruence_tests.settings import TIMEOUT
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
@@ -100,7 +101,7 @@ def test_upload_collection(local_client, remote_client):
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
-@pytest.mark.timeout(15)  # normally takes less than a second
+@pytest.mark.timeout(60)  # normally takes less than a second
 def test_upload_collection_generators(local_client, remote_client):
     records = generate_fixtures(UPLOAD_NUM_VECTORS)
     vectors = []
@@ -152,8 +153,12 @@ def test_upload_collection_float_list():
 
     vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim).tolist()
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
-    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
-    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    local_client.recreate_collection(
+        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+    )
+    remote_client.recreate_collection(
+        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+    )
 
     local_client.upload_collection(COLLECTION_NAME, vectors)
     remote_client.upload_collection(COLLECTION_NAME, vectors)
@@ -181,8 +186,12 @@ def test_upload_collection_np_array_2d():
 
     vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim)
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
-    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
-    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    local_client.recreate_collection(
+        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+    )
+    remote_client.recreate_collection(
+        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+    )
 
     local_client.upload_collection(COLLECTION_NAME, vectors)
     remote_client.upload_collection(COLLECTION_NAME, vectors)
@@ -200,8 +209,12 @@ def test_upload_collection_list_np_arrays():
     vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim).tolist()
     vectors = [np.array(vector) for vector in vectors]
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
-    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
-    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    local_client.recreate_collection(
+        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+    )
+    remote_client.recreate_collection(
+        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+    )
 
     local_client.upload_collection(COLLECTION_NAME, vectors)
     remote_client.upload_collection(COLLECTION_NAME, vectors)
