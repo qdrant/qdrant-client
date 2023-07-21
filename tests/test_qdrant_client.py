@@ -54,6 +54,10 @@ NUM_VECTORS = 1_000
 COLLECTION_NAME = "client_test"
 COLLECTION_NAME_ALIAS = "client_test_alias"
 
+COLLECTION_TIMEOUT = 10
+if os.getenv("RUNNER_OS", "Linux") == "macos":
+    COLLECTION_TIMEOUT = 60
+
 
 def create_random_vectors():
     vectors_path = os.path.join(mkdtemp(), "vectors.npy")
@@ -153,6 +157,7 @@ def test_record_upload(prefer_grpc):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=COLLECTION_TIMEOUT,
     )
 
     client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=2)
@@ -205,6 +210,7 @@ def test_multiple_vectors(prefer_grpc):
             "image": VectorParams(size=DIM, distance=Distance.DOT),
             "text": VectorParams(size=DIM * 2, distance=Distance.COSINE),
         },
+        timeout=COLLECTION_TIMEOUT,
     )
 
     client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=1)
@@ -257,6 +263,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=COLLECTION_TIMEOUT,
     )
 
     # Call Qdrant API to retrieve list of existing collections
@@ -675,6 +682,7 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=COLLECTION_TIMEOUT,
     )
 
     client.update_collection(
@@ -692,6 +700,7 @@ def test_points_crud(prefer_grpc):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=COLLECTION_TIMEOUT,
     )
 
     # Create a single point
@@ -749,6 +758,7 @@ def test_quantization_config(prefer_grpc):
                 always_ram=True,
             ),
         ),
+        timeout=COLLECTION_TIMEOUT,
     )
 
     client.upsert(
@@ -789,6 +799,7 @@ def test_conditional_payload_update(prefer_grpc):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=COLLECTION_TIMEOUT,
     )
 
     uuid1 = str(uuid.uuid4())
@@ -830,6 +841,7 @@ def test_conditional_payload_update(prefer_grpc):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=COLLECTION_TIMEOUT,
     )
 
     client.upsert(
@@ -913,6 +925,7 @@ def test_locks():
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=COLLECTION_TIMEOUT,
     )
 
     client.lock_storage(reason="testing reason")
@@ -954,6 +967,7 @@ def test_empty_vector(prefer_grpc):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config={},
+        timeout=COLLECTION_TIMEOUT,
     )
 
     client.upsert(
