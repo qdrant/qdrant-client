@@ -1,4 +1,3 @@
-import warnings
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client import grpc as grpc
