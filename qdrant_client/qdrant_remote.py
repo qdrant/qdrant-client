@@ -142,11 +142,31 @@ class QdrantRemote(QdrantBase):
         self._aio_grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
 
     def __del__(self) -> None:
+        self.close()
+
+    def close(self) -> None:
         if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
             try:
                 self._grpc_channel.close()
             except AttributeError:
-                logging.warning("Connection was interrupted on server side")
+                logging.warning(
+                    "Unable to close grpc_channel. Connection was interrupted on the server side"
+                )
+
+        if hasattr(self, "_aio_grpc_channel") and self._aio_grpc_channel is not None:
+            try:
+                await self._grpc_channel.close()
+            except AttributeError:
+                logging.warning(
+                    "Unable to close aio_grpc_channel. Connection was interrupted on the server side"
+                )
+
+        try:
+            self.openapi_client.close()
+        except Exception:
+            logging.warning(
+                "Unable to close http connection. Connection was interrupted on the server side"
+            )
 
     @staticmethod
     def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:

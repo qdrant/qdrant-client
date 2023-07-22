@@ -25,6 +25,9 @@ class AsyncApis(Generic[AsyncClientT]):
         self.service_api = AsyncServiceApi(self.client)
         self.snapshots_api = AsyncSnapshotsApi(self.client)
 
+    async def aclose(self) -> None:
+        await self.client.aclose()
+
 
 class SyncApis(Generic[ClientT]):
     def __init__(self, host: str = None, **kwargs: Any):
@@ -35,6 +38,9 @@ class SyncApis(Generic[ClientT]):
         self.points_api = SyncPointsApi(self.client)
         self.service_api = SyncServiceApi(self.client)
         self.snapshots_api = SyncSnapshotsApi(self.client)
+
+    def close(self) -> None:
+        self.client.close()
 
 
 T = TypeVar("T")
@@ -96,6 +102,9 @@ class ApiClient:
         except Exception as e:
             raise ResponseHandlingException(e)
         return response
+
+    def close(self) -> None:
+        self._client.close()
 
     def add_middleware(self, middleware: MiddlewareT) -> None:
         current_middleware = self.middleware
@@ -165,6 +174,9 @@ class AsyncApiClient:
         except Exception as e:
             raise ResponseHandlingException(e)
         return response
+
+    async def aclose(self) -> None:
+        await self._async_client.aclose()
 
     def add_middleware(self, middleware: AsyncMiddlewareT) -> None:
         current_middleware = self.middleware
