@@ -193,11 +193,11 @@ def init_client(
     client.upload_records(collection_name, records)
 
 
-def init_local(storage: str = ":memory:") -> QdrantBase:
+def init_local(storage: str = ":memory:") -> QdrantLocal:
     client = QdrantLocal(location=storage)
     return client
 
 
-def init_remote() -> QdrantBase:
+def init_remote() -> QdrantClient:
     client = QdrantClient(host="localhost", port=6333, timeout=30)
     return client
