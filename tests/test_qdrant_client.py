@@ -1027,26 +1027,62 @@ def test_serialization():
 def test_client_close():
     import tempfile
 
-    client_http = QdrantClient()
+    from qdrant_client.http import exceptions as qdrant_exceptions
+
+    # region http
+    client_http = QdrantClient(timeout=TIMEOUT)
     client_http.recreate_collection(
         "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
     )
     client_http.close()
+    with pytest.raises(qdrant_exceptions.ResponseHandlingException):
+        client_http.recreate_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+    # endregion
 
-    client_grpc = QdrantClient(prefer_grpc=True)
+    # region grpc
+    client_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
     client_grpc.recreate_collection(
         "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
     )
     client_grpc.close()
+    with pytest.raises(ValueError):
+        client_grpc.get_collection("test")
+    with pytest.raises(
+        RuntimeError
+    ):  # prevent reinitializing grpc connection, since http connection is closed
+        client_grpc._client._init_grpc_channel()
 
-    client_aio_grpc = QdrantClient(prefer_grpc=True)
+    client_grpc_do_nothing = QdrantClient(
+        prefer_grpc=True, timeout=TIMEOUT
+    )  # do not establish a connection
+    client_grpc_do_nothing.close()
+    with pytest.raises(
+        RuntimeError
+    ):  # prevent initializing grpc connection, since http connection is closed
+        _ = client_grpc_do_nothing.get_collection("test")
+
+    client_aio_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
     _ = client_aio_grpc.async_grpc_collections
     client_aio_grpc.close()
 
-    client_aio_grpc = QdrantClient(prefer_grpc=True)
+    client_aio_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
     _ = client_aio_grpc.async_grpc_collections
     client_aio_grpc.close(grace=2.0)
+    with pytest.raises(RuntimeError):
+        client_aio_grpc._client._init_async_grpc_channel()  # prevent reinitializing grpc connection, since
+        # http connection is closed
 
+    client_aio_grpc_do_nothing = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
+    client_aio_grpc_do_nothing.close()
+    with pytest.raises(
+        RuntimeError
+    ):  # prevent initializing grpc connection, since http connection is closed
+        _ = client_aio_grpc_do_nothing.async_grpc_collections
+    # endregion grpc
+
+    # region local
     local_client_in_mem = QdrantClient(":memory:")
     local_client_in_mem.recreate_collection(
         "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
@@ -1067,6 +1103,7 @@ def test_client_close():
             "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
         )
         local_client_persist_2.close()
+    # endregion local
 
 
 if __name__ == "__main__":

@@ -42,10 +42,13 @@ class QdrantLocal(QdrantBase):
         self.aliases: Dict[str, str] = {}
         self._flock_file: Optional[TextIOWrapper] = None
         self._load()
-        self.closed = False
+        self._closed: bool = False
+
+    def closed(self) -> bool:
+        return self._closed
 
     def close(self, **kwargs: Any) -> None:
-        self.closed = True
+        self._closed = True
         for collection in self.collections.values():
             collection.close()
         if self._flock_file is not None:
