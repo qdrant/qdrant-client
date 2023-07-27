@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import warnings
 from multiprocessing import get_all_start_methods
@@ -141,10 +142,7 @@ class QdrantRemote(QdrantBase):
         self._aio_grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._aio_grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
 
-    def __del__(self) -> None:
-        self.close()
-
-    def close(self) -> None:
+    def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
             try:
                 self._grpc_channel.close()
@@ -155,11 +153,14 @@ class QdrantRemote(QdrantBase):
 
         if hasattr(self, "_aio_grpc_channel") and self._aio_grpc_channel is not None:
             try:
-                await self._grpc_channel.close()
+                loop = asyncio.get_running_loop()
+                loop.create_task(self._aio_grpc_channel.close(grace=grpc_grace))
             except AttributeError:
                 logging.warning(
                     "Unable to close aio_grpc_channel. Connection was interrupted on the server side"
                 )
+            except RuntimeError:
+                pass
 
         try:
             self.openapi_client.close()

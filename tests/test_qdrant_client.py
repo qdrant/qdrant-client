@@ -1024,6 +1024,51 @@ def test_serialization():
     print(grpc_to_payload(res.payload))
 
 
+def test_client_close():
+    import tempfile
+
+    client_http = QdrantClient()
+    client_http.recreate_collection(
+        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+    )
+    client_http.close()
+
+    client_grpc = QdrantClient(prefer_grpc=True)
+    client_grpc.recreate_collection(
+        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+    )
+    client_grpc.close()
+
+    client_aio_grpc = QdrantClient(prefer_grpc=True)
+    _ = client_aio_grpc.async_grpc_collections
+    client_aio_grpc.close()
+
+    client_aio_grpc = QdrantClient(prefer_grpc=True)
+    _ = client_aio_grpc.async_grpc_collections
+    client_aio_grpc.close(grace=2.0)
+
+    local_client_in_mem = QdrantClient(":memory:")
+    local_client_in_mem.recreate_collection(
+        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+    )
+    local_client_in_mem.close()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = tmpdir + "/test.db"
+
+        local_client_persist_1 = QdrantClient(path=path)
+        local_client_persist_1.recreate_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+        local_client_persist_1.close()
+
+        local_client_persist_2 = QdrantClient(path=path)
+        local_client_persist_2.recreate_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+        local_client_persist_2.close()
+
+
 if __name__ == "__main__":
     test_qdrant_client_integration()
     test_points_crud()

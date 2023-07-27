@@ -95,6 +95,16 @@ class QdrantClient(QdrantBase):
                     **kwargs,
                 )
 
+    def __del__(self) -> None:
+        self.close()
+
+    def close(self, **kwargs: Any) -> None:
+        """
+        Closes the connection to Qdrant
+        """
+        if hasattr(self, "_client"):
+            self._client.close(**kwargs)
+
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods

@@ -1,6 +1,5 @@
 import uuid
 from collections import OrderedDict, defaultdict
-from copy import deepcopy
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -50,6 +49,10 @@ class LocalCollection:
         if location is not None:
             self.storage = CollectionPersistence(location)
         self.load()
+
+    def close(self) -> None:
+        if self.storage is not None:
+            self.storage.close()
 
     def load(self) -> None:
         if self.storage is not None:

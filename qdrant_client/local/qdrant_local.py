@@ -40,9 +40,16 @@ class QdrantLocal(QdrantBase):
         self.persistent = location != ":memory:"
         self.collections: Dict[str, LocalCollection] = {}
         self.aliases: Dict[str, str] = {}
-        self._lock = None
         self._flock_file: Optional[TextIOWrapper] = None
         self._load()
+        self.closed = False
+
+    def close(self, **kwargs: Any) -> None:
+        self.closed = True
+        for collection in self.collections.values():
+            collection.close()
+        if self._flock_file is not None:
+            portalocker.unlock(self._flock_file)
 
     def _load(self) -> None:
         if not self.persistent:
@@ -68,7 +75,7 @@ class QdrantLocal(QdrantBase):
                 f.write("tmp lock file")
         self._flock_file = open(lock_file_path, "r+")
         try:
-            self._flock = portalocker.lock(
+            portalocker.lock(
                 self._flock_file,
                 portalocker.LockFlags.EXCLUSIVE | portalocker.LockFlags.NON_BLOCKING,
             )

@@ -76,6 +76,9 @@ class CollectionPersistence:
         self.storage = sqlite3.connect(str(self.location))
         self._ensure_table()
 
+    def close(self) -> None:
+        self.storage.close()
+
     def _ensure_table(self) -> None:
         cursor = self.storage.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS points (id TEXT PRIMARY KEY, point BLOB)")
