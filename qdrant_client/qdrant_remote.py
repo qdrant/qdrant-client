@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import warnings
 from multiprocessing import get_all_start_methods
@@ -141,12 +142,40 @@ class QdrantRemote(QdrantBase):
         self._aio_grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._aio_grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
 
-    def __del__(self) -> None:
+        self._closed: bool = False
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
+    def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
             try:
                 self._grpc_channel.close()
             except AttributeError:
-                logging.warning("Connection was interrupted on server side")
+                logging.warning(
+                    "Unable to close grpc_channel. Connection was interrupted on the server side"
+                )
+
+        if hasattr(self, "_aio_grpc_channel") and self._aio_grpc_channel is not None:
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self._aio_grpc_channel.close(grace=grpc_grace))
+            except AttributeError:
+                logging.warning(
+                    "Unable to close aio_grpc_channel. Connection was interrupted on the server side"
+                )
+            except RuntimeError:
+                pass
+
+        try:
+            self.openapi_client.close()
+        except Exception:
+            logging.warning(
+                "Unable to close http connection. Connection was interrupted on the server side"
+            )
+
+        self._closed = True
 
     @staticmethod
     def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
@@ -160,6 +189,9 @@ class QdrantRemote(QdrantBase):
         return scheme, host, port, prefix
 
     def _init_grpc_channel(self) -> None:
+        if self._closed:
+            raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
+
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
                 host=self._host,
@@ -169,6 +201,9 @@ class QdrantRemote(QdrantBase):
             )
 
     def _init_async_grpc_channel(self) -> None:
+        if self._closed:
+            raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
+
         if self._aio_grpc_channel is None:
             self._aio_grpc_channel = get_async_channel(
                 host=self._host,
