@@ -17,6 +17,8 @@ from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 
 DEFAULT_VECTOR_NAME = ""
+EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
+# https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
 
 
 class LocalCollection:
@@ -559,7 +561,11 @@ class LocalCollection:
             if vector is not None:
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
-                    vector = np.array(vector) / np.linalg.norm(vector)
+                    vector = (
+                        (np.array(vector) / norm)
+                        if (norm := np.linalg.norm(vector)) > EPSILON
+                        else vector
+                    )
                 self.vectors[vector_name][idx] = vector
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
@@ -595,7 +601,11 @@ class LocalCollection:
                 vector_np = np.array(vector)
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
-                    vector_np = vector_np / np.linalg.norm(vector_np)
+                    vector_np = (
+                        (vector_np / norm)
+                        if (norm := np.linalg.norm(vector_np)) > EPSILON
+                        else vector_np
+                    )
                 named_vectors[idx] = vector_np
                 self.vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
