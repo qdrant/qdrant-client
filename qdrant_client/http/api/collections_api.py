@@ -49,10 +49,12 @@ class _CollectionsApi:
             "collection_name": str(collection_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/cluster",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
@@ -81,6 +83,7 @@ class _CollectionsApi:
             type_=m.InlineResponse2003,
             method="PUT",
             url="/collections/{collection_name}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=body,
@@ -114,6 +117,7 @@ class _CollectionsApi:
             type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/index",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=body,
@@ -135,10 +139,12 @@ class _CollectionsApi:
         if wait is not None:
             query_params["wait"] = str(wait).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/snapshots",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -159,10 +165,12 @@ class _CollectionsApi:
         if timeout is not None:
             query_params["timeout"] = str(timeout)
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="DELETE",
             url="/collections/{collection_name}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -188,10 +196,12 @@ class _CollectionsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="DELETE",
             url="/collections/{collection_name}/index/{field_name}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -214,10 +224,12 @@ class _CollectionsApi:
         if wait is not None:
             query_params["wait"] = str(wait).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="DELETE",
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -233,10 +245,12 @@ class _CollectionsApi:
             "collection_name": str(collection_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2005,
             method="GET",
             url="/collections/{collection_name}",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
@@ -251,10 +265,12 @@ class _CollectionsApi:
             "collection_name": str(collection_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2008,
             method="GET",
             url="/collections/{collection_name}/aliases",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
@@ -264,10 +280,12 @@ class _CollectionsApi:
         """
         Get list name of all existing collections
         """
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2004,
             method="GET",
             url="/collections",
+            headers=headers if headers else None,
         )
 
     def _build_for_get_collections_aliases(
@@ -276,10 +294,12 @@ class _CollectionsApi:
         """
         Get list of all existing collections aliases
         """
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2008,
             method="GET",
             url="/aliases",
+            headers=headers if headers else None,
         )
 
     def _build_for_get_snapshot(
@@ -295,10 +315,12 @@ class _CollectionsApi:
             "snapshot_name": str(snapshot_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=file,
             method="GET",
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
@@ -313,10 +335,12 @@ class _CollectionsApi:
             "collection_name": str(collection_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2009,
             method="GET",
             url="/collections/{collection_name}/snapshots",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
@@ -345,6 +369,7 @@ class _CollectionsApi:
             type_=m.InlineResponse2003,
             method="PUT",
             url="/collections/{collection_name}/snapshots/recover",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=body,
@@ -370,6 +395,7 @@ class _CollectionsApi:
         if priority is not None:
             query_params["priority"] = str(priority)
 
+        headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
         data: Dict[str, Any] = {}  # noqa F841
         if snapshot is not None:
@@ -379,6 +405,7 @@ class _CollectionsApi:
             type_=m.InlineResponse2003,
             method="POST",
             url="/collections/{collection_name}/snapshots/upload",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=data,
@@ -399,7 +426,12 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003, method="POST", url="/collections/aliases", params=query_params, data=body
+            type_=m.InlineResponse2003,
+            method="POST",
+            url="/collections/aliases",
+            headers=headers if headers else None,
+            params=query_params,
+            data=body,
         )
 
     def _build_for_update_collection(
@@ -427,6 +459,7 @@ class _CollectionsApi:
             type_=m.InlineResponse2003,
             method="PATCH",
             url="/collections/{collection_name}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=body,
@@ -454,6 +487,7 @@ class _CollectionsApi:
             type_=m.InlineResponse2003,
             method="POST",
             url="/collections/{collection_name}/cluster",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=body,

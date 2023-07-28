@@ -44,10 +44,12 @@ class _ServiceApi:
         """
         Get lock options. If write is locked, all write operations and collection creation are forbidden
         """
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2001,
             method="GET",
             url="/locks",
+            headers=headers if headers else None,
         )
 
     def _build_for_metrics(
@@ -61,10 +63,12 @@ class _ServiceApi:
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=str,
             method="GET",
             url="/metrics",
+            headers=headers if headers else None,
             params=query_params,
         )
 
@@ -79,7 +83,9 @@ class _ServiceApi:
         body = jsonable_encoder(locks_option)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
-        return self.api_client.request(type_=m.InlineResponse2001, method="POST", url="/locks", data=body)
+        return self.api_client.request(
+            type_=m.InlineResponse2001, method="POST", url="/locks", headers=headers if headers else None, data=body
+        )
 
     def _build_for_telemetry(
         self,
@@ -92,10 +98,12 @@ class _ServiceApi:
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse200,
             method="GET",
             url="/telemetry",
+            headers=headers if headers else None,
             params=query_params,
         )
 
