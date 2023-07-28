@@ -135,7 +135,9 @@ class LocalCollection:
 
     @classmethod
     def _process_payload(
-        cls, payload: dict, with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True
+        cls,
+        payload: dict,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
     ) -> Optional[dict]:
         if not with_payload:
             return None
@@ -561,11 +563,8 @@ class LocalCollection:
             if vector is not None:
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
-                    vector = (
-                        (np.array(vector) / norm)
-                        if (norm := np.linalg.norm(vector)) > EPSILON
-                        else vector
-                    )
+                    norm = np.linalg.norm(vector)
+                    vector = np.array(vector) / norm if norm > EPSILON else vector
                 self.vectors[vector_name][idx] = vector
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
@@ -601,11 +600,8 @@ class LocalCollection:
                 vector_np = np.array(vector)
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
-                    vector_np = (
-                        (vector_np / norm)
-                        if (norm := np.linalg.norm(vector_np)) > EPSILON
-                        else vector_np
-                    )
+                    norm = np.linalg.norm(vector_np)
+                    vector_np = vector_np / norm if norm > EPSILON else vector_np
                 named_vectors[idx] = vector_np
                 self.vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
