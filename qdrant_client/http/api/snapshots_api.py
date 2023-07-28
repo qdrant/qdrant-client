@@ -49,10 +49,12 @@ class _SnapshotsApi:
         if wait is not None:
             query_params["wait"] = str(wait).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse20010,
             method="POST",
             url="/snapshots",
+            headers=headers if headers else None,
             params=query_params,
         )
 
@@ -72,10 +74,12 @@ class _SnapshotsApi:
         if wait is not None:
             query_params["wait"] = str(wait).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/snapshots",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -96,10 +100,12 @@ class _SnapshotsApi:
         if wait is not None:
             query_params["wait"] = str(wait).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="DELETE",
             url="/snapshots/{snapshot_name}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -122,10 +128,12 @@ class _SnapshotsApi:
         if wait is not None:
             query_params["wait"] = str(wait).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="DELETE",
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -141,10 +149,12 @@ class _SnapshotsApi:
             "snapshot_name": str(snapshot_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=file,
             method="GET",
             url="/snapshots/{snapshot_name}",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
@@ -161,10 +171,12 @@ class _SnapshotsApi:
             "snapshot_name": str(snapshot_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=file,
             method="GET",
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
@@ -174,10 +186,12 @@ class _SnapshotsApi:
         """
         Get list of snapshots of the whole storage
         """
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2009,
             method="GET",
             url="/snapshots",
+            headers=headers if headers else None,
         )
 
     def _build_for_list_snapshots(
@@ -191,10 +205,12 @@ class _SnapshotsApi:
             "collection_name": str(collection_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2009,
             method="GET",
             url="/collections/{collection_name}/snapshots",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
@@ -223,6 +239,7 @@ class _SnapshotsApi:
             type_=m.InlineResponse2003,
             method="PUT",
             url="/collections/{collection_name}/snapshots/recover",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=body,
@@ -248,6 +265,7 @@ class _SnapshotsApi:
         if priority is not None:
             query_params["priority"] = str(priority)
 
+        headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
         data: Dict[str, Any] = {}  # noqa F841
         if snapshot is not None:
@@ -257,6 +275,7 @@ class _SnapshotsApi:
             type_=m.InlineResponse2003,
             method="POST",
             url="/collections/{collection_name}/snapshots/upload",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=data,

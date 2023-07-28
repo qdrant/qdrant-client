@@ -44,10 +44,12 @@ class _ClusterApi:
         """
         Get information about the current state and composition of the cluster
         """
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2002,
             method="GET",
             url="/cluster",
+            headers=headers if headers else None,
         )
 
     def _build_for_collection_cluster_info(
@@ -61,20 +63,24 @@ class _ClusterApi:
             "collection_name": str(collection_name),
         }
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/cluster",
+            headers=headers if headers else None,
             path_params=path_params,
         )
 
     def _build_for_recover_current_peer(
         self,
     ):
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="POST",
             url="/cluster/recover",
+            headers=headers if headers else None,
         )
 
     def _build_for_remove_peer(
@@ -93,10 +99,12 @@ class _ClusterApi:
         if force is not None:
             query_params["force"] = str(force).lower()
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse2003,
             method="DELETE",
             url="/cluster/peer/{peer_id}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -123,6 +131,7 @@ class _ClusterApi:
             type_=m.InlineResponse2003,
             method="POST",
             url="/collections/{collection_name}/cluster",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
             data=body,
