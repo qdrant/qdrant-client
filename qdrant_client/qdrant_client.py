@@ -1213,6 +1213,9 @@ class QdrantClient(QdrantBase):
         collection_name: str,
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
+        vectors_config: Optional[types.VectorsConfigDiff] = None,
+        hnsw_config: Optional[types.HnswConfigDiff] = None,
+        quantization_config: Optional[types.QuantizationConfigDiff] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:
@@ -1222,6 +1225,9 @@ class QdrantClient(QdrantBase):
             collection_name: Name of the collection
             optimizers_config: Override for optimizer configuration
             collection_params: Override for collection parameters
+            vectors_config: Override for vector-specific configuration
+            hnsw_config: Override for HNSW index params
+            quantization_config: Override for quantization params
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
@@ -1242,6 +1248,9 @@ class QdrantClient(QdrantBase):
             collection_name=collection_name,
             optimizers_config=optimizers_config,
             collection_params=collection_params,
+            vectors_config=vectors_config,
+            hnsw_config=hnsw_config,
+            quantization_config=quantization_config,
             timeout=timeout,
             **kwargs,
         )

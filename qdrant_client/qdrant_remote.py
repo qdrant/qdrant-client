@@ -1671,6 +1671,9 @@ class QdrantRemote(QdrantBase):
         collection_name: str,
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         collection_params: Optional[types.CollectionParamsDiff] = None,
+        vectors_config: Optional[types.VectorsConfigDiff] = None,
+        hnsw_config: Optional[types.HnswConfigDiff] = None,
+        quantization_config: Optional[types.QuantizationConfigDiff] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:
@@ -1681,11 +1684,25 @@ class QdrantRemote(QdrantBase):
             if isinstance(collection_params, rest_models.CollectionParamsDiff):
                 collection_params = RestToGrpc.convert_collection_params_diff(collection_params)
 
+            if isinstance(vectors_config, dict):
+                vectors_config = RestToGrpc.convert_vectors_config_diff(vectors_config)
+
+            if isinstance(hnsw_config, rest_models.HnswConfigDiff):
+                hnsw_config = RestToGrpc.convert_hnsw_config_diff(hnsw_config)
+
+            if isinstance(quantization_config, rest_models.QuantizationConfigDiff):
+                quantization_config = RestToGrpc.convert_quantization_config_diff(
+                    quantization_config
+                )
+
             return self.grpc_collections.Update(
                 grpc.UpdateCollection(
                     collection_name=collection_name,
                     optimizers_config=optimizers_config,
                     params=collection_params,
+                    vectors_config=vectors_config,
+                    hnsw_config=hnsw_config,
+                    quantization_config=quantization_config,
                 ),
                 timeout=self._timeout,
             ).result
@@ -1696,10 +1713,23 @@ class QdrantRemote(QdrantBase):
         if isinstance(collection_params, grpc.CollectionParamsDiff):
             collection_params = GrpcToRest.convert_collection_params_diff(collection_params)
 
+        if isinstance(vectors_config, grpc.VectorsConfigDiff):
+            vectors_config = GrpcToRest.convert_vectors_config_diff(vectors_config)
+
+        if isinstance(hnsw_config, grpc.HnswConfigDiff):
+            hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
+
+        if isinstance(quantization_config, grpc.QuantizationConfigDiff):
+            quantization_config = GrpcToRest.convert_quantization_config_diff(quantization_config)
+
         result: Optional[bool] = self.http.collections_api.update_collection(
             collection_name,
             update_collection=rest_models.UpdateCollection(
-                optimizers_config=optimizers_config, params=collection_params
+                optimizers_config=optimizers_config,
+                params=collection_params,
+                vectors=vectors_config,
+                hnsw_config=hnsw_config,
+                quantization_config=quantization_config,
             ),
             timeout=timeout,
         ).result
