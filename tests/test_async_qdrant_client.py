@@ -74,3 +74,5 @@ async def test_async_grpc():
 
     for result in results:
         assert len(result.result) == 10
+
+    client.close()

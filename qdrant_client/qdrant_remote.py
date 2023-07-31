@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import warnings
 from multiprocessing import get_all_start_methods
@@ -19,6 +20,7 @@ import numpy as np
 from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
+from qdrant_client._pydantic_compat import construct
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
@@ -140,12 +142,40 @@ class QdrantRemote(QdrantBase):
         self._aio_grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._aio_grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
 
-    def __del__(self) -> None:
+        self._closed: bool = False
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
+    def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
             try:
                 self._grpc_channel.close()
             except AttributeError:
-                logging.warning("Connection was interrupted on server side")
+                logging.warning(
+                    "Unable to close grpc_channel. Connection was interrupted on the server side"
+                )
+
+        if hasattr(self, "_aio_grpc_channel") and self._aio_grpc_channel is not None:
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(self._aio_grpc_channel.close(grace=grpc_grace))
+            except AttributeError:
+                logging.warning(
+                    "Unable to close aio_grpc_channel. Connection was interrupted on the server side"
+                )
+            except RuntimeError:
+                pass
+
+        try:
+            self.openapi_client.close()
+        except Exception:
+            logging.warning(
+                "Unable to close http connection. Connection was interrupted on the server side"
+            )
+
+        self._closed = True
 
     @staticmethod
     def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
@@ -159,6 +189,9 @@ class QdrantRemote(QdrantBase):
         return scheme, host, port, prefix
 
     def _init_grpc_channel(self) -> None:
+        if self._closed:
+            raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
+
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
                 host=self._host,
@@ -168,6 +201,9 @@ class QdrantRemote(QdrantBase):
             )
 
     def _init_async_grpc_channel(self) -> None:
+        if self._closed:
+            raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
+
         if self._aio_grpc_channel is None:
             self._aio_grpc_channel = get_async_channel(
                 host=self._host,
@@ -542,8 +578,8 @@ class QdrantRemote(QdrantBase):
                 with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
 
             if isinstance(query_vector, tuple):
-                query_vector = rest_models.NamedVector.construct(
-                    name=query_vector[0], vector=query_vector[1]
+                query_vector = construct(
+                    rest_models.NamedVector, name=query_vector[0], vector=query_vector[1]
                 )
 
             if isinstance(query_vector, np.ndarray):
@@ -558,7 +594,8 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
-            search_groups_request = rest_models.SearchGroupsRequest.construct(
+            search_groups_request = construct(
+                rest_models.SearchGroupsRequest,
                 vector=query_vector,
                 filter=query_filter,
                 params=search_params,
@@ -888,7 +925,8 @@ class QdrantRemote(QdrantBase):
             result = self.openapi_client.points_api.recommend_point_groups(
                 collection_name=collection_name,
                 consistency=consistency,
-                recommend_groups_request=rest_models.RecommendGroupsRequest.construct(
+                recommend_groups_request=construct(
+                    rest_models.RecommendGroupsRequest,
                     positive=positive,
                     negative=negative,
                     filter=query_filter,
@@ -1159,7 +1197,8 @@ class QdrantRemote(QdrantBase):
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
-                delete_vectors=rest_models.DeleteVectors.construct(
+                delete_vectors=construct(
+                    rest_models.DeleteVectors,
                     vector=vectors,
                     points=_points,
                     filter=_filter,
@@ -1250,7 +1289,7 @@ class QdrantRemote(QdrantBase):
             points_selector = RestToGrpc.convert_points_selector(points)
         elif isinstance(points, rest_models.Filter):
             points_selector = RestToGrpc.convert_points_selector(
-                rest_models.FilterSelector.construct(filter=points)
+                construct(rest_models.FilterSelector, filter=points)
             )
         elif isinstance(points, grpc.Filter):
             points_selector = grpc.PointsSelector(filter=points)
@@ -1267,16 +1306,16 @@ class QdrantRemote(QdrantBase):
                 GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
                 for idx in points
             ]
-            points_selector = rest_models.PointIdsList.construct(points=_points)
+            points_selector = construct(rest_models.PointIdsList, points=_points)
         elif isinstance(points, grpc.PointsSelector):
             points_selector = GrpcToRest.convert_points_selector(points)
         elif isinstance(points, (rest_models.PointIdsList, rest_models.FilterSelector)):
             points_selector = points
         elif isinstance(points, rest_models.Filter):
-            points_selector = rest_models.FilterSelector.construct(filter=points)
+            points_selector = construct(rest_models.FilterSelector, filter=points)
         elif isinstance(points, grpc.Filter):
-            points_selector = rest_models.FilterSelector.construct(
-                filter=GrpcToRest.convert_filter(points)
+            points_selector = construct(
+                rest_models.FilterSelector, filter=GrpcToRest.convert_filter(points)
             )
         else:
             raise ValueError(f"Unsupported points selector type: {type(points)}")
@@ -1796,6 +1835,7 @@ class QdrantRemote(QdrantBase):
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
+            init_from=init_from,
             timeout=timeout,
         )
 

@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 
 from qdrant_client import QdrantClient
+from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.local.qdrant_local import QdrantLocal
@@ -52,6 +53,9 @@ DIM = 100
 NUM_VECTORS = 1_000
 COLLECTION_NAME = "client_test"
 COLLECTION_NAME_ALIAS = "client_test_alias"
+
+
+TIMEOUT = 60
 
 
 def create_random_vectors():
@@ -147,11 +151,12 @@ def test_record_upload(prefer_grpc):
         for idx in range(NUM_VECTORS)
     )
 
-    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=3.0)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
     )
 
     client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=2)
@@ -196,7 +201,7 @@ def test_multiple_vectors(prefer_grpc):
         for idx in range(num_vectors)
     ]
 
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -204,6 +209,7 @@ def test_multiple_vectors(prefer_grpc):
             "image": VectorParams(size=DIM, distance=Distance.DOT),
             "text": VectorParams(size=DIM * 2, distance=Distance.COSINE),
         },
+        timeout=TIMEOUT,
     )
 
     client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=1)
@@ -251,11 +257,12 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     if local_mode:
         client = QdrantClient(location=":memory:", prefer_grpc=prefer_grpc)
     else:
-        client = QdrantClient(prefer_grpc=prefer_grpc)
+        client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
     )
 
     # Call Qdrant API to retrieve list of existing collections
@@ -263,11 +270,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     # Print all existing collections
     for collection in collections:
-        print(collection.dict())
+        print(to_dict(collection))
 
     # Retrieve detailed information about newly created collection
     test_collection = client.get_collection(COLLECTION_NAME)
-    pprint(test_collection.dict())
+    pprint(to_dict(test_collection))
 
     # Upload data to a new collection
     client.upload_collection(
@@ -325,11 +332,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     index_create_result = client.create_payload_index(
         COLLECTION_NAME, field_name="rand_number", field_schema=PayloadSchemaType.FLOAT
     )
-    pprint(index_create_result.dict())
+    pprint(to_dict(index_create_result))
 
     # Let's now check details about our new collection
     test_collection = client.get_collection(COLLECTION_NAME_ALIAS)
-    pprint(test_collection.dict())
+    pprint(to_dict(test_collection))
 
     # Now we can actually search in the collection
     # Let's create some random vector
@@ -669,11 +676,12 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_qdrant_client_integration_update_collection(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
     )
 
     client.update_collection(
@@ -686,11 +694,12 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_points_crud(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
     )
 
     # Create a single point
@@ -736,7 +745,7 @@ def test_quantization_config(prefer_grpc):
     if version is not None and version < "v1.1.0":
         return
 
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -748,6 +757,7 @@ def test_quantization_config(prefer_grpc):
                 always_ram=True,
             ),
         ),
+        timeout=TIMEOUT,
     )
 
     client.upsert(
@@ -783,11 +793,12 @@ def test_quantization_config(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_conditional_payload_update(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
     )
 
     uuid1 = str(uuid.uuid4())
@@ -821,7 +832,7 @@ def test_conditional_payload_update(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_conditional_payload_update(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     version = os.getenv("QDRANT_VERSION")
     if version is not None and version < "v0.11.5":
         return
@@ -829,6 +840,7 @@ def test_conditional_payload_update(prefer_grpc):
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
     )
 
     client.upsert(
@@ -866,7 +878,7 @@ def test_conditional_payload_update(prefer_grpc):
     client.overwrite_payload(
         collection_name=COLLECTION_NAME,
         payload={"c": 2},
-        points=Filter(must=[FieldCondition(key="b", range=Range(le=10))]),
+        points=Filter(must=[FieldCondition(key="b", range=Range(lt=10))]),
     )
 
     points = client.retrieve(
@@ -884,12 +896,14 @@ def test_conditional_payload_update(prefer_grpc):
 
 
 def test_has_id_condition():
-    query = Filter(
-        must=[
-            HasIdCondition(has_id=[42, 43]),
-            FieldCondition(key="field_name", match=MatchValue(value="field_value_42")),
-        ]
-    ).dict()
+    query = to_dict(
+        Filter(
+            must=[
+                HasIdCondition(has_id=[42, 43]),
+                FieldCondition(key="field_name", match=MatchValue(value="field_value_42")),
+            ]
+        )
+    )
 
     assert query["must"][0]["has_id"] == [42, 43]
 
@@ -905,11 +919,12 @@ def test_locks():
     if version is not None and version < "v0.11.0":
         return  # Locks are supported since v0.11.0
 
-    client = QdrantClient()
+    client = QdrantClient(timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
     )
 
     client.lock_storage(reason="testing reason")
@@ -946,11 +961,12 @@ def test_locks():
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_empty_vector(prefer_grpc):
-    client = QdrantClient(prefer_grpc=prefer_grpc)
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
         vectors_config={},
+        timeout=TIMEOUT,
     )
 
     client.upsert(
@@ -1006,6 +1022,88 @@ def test_serialization():
     res.ParseFromString(data)
     print(res.payload)
     print(grpc_to_payload(res.payload))
+
+
+def test_client_close():
+    import tempfile
+
+    from qdrant_client.http import exceptions as qdrant_exceptions
+
+    # region http
+    client_http = QdrantClient(timeout=TIMEOUT)
+    client_http.recreate_collection(
+        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+    )
+    client_http.close()
+    with pytest.raises(qdrant_exceptions.ResponseHandlingException):
+        client_http.recreate_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+    # endregion
+
+    # region grpc
+    client_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
+    client_grpc.recreate_collection(
+        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+    )
+    client_grpc.close()
+    with pytest.raises(ValueError):
+        client_grpc.get_collection("test")
+    with pytest.raises(
+        RuntimeError
+    ):  # prevent reinitializing grpc connection, since http connection is closed
+        client_grpc._client._init_grpc_channel()
+
+    client_grpc_do_nothing = QdrantClient(
+        prefer_grpc=True, timeout=TIMEOUT
+    )  # do not establish a connection
+    client_grpc_do_nothing.close()
+    with pytest.raises(
+        RuntimeError
+    ):  # prevent initializing grpc connection, since http connection is closed
+        _ = client_grpc_do_nothing.get_collection("test")
+
+    client_aio_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
+    _ = client_aio_grpc.async_grpc_collections
+    client_aio_grpc.close()
+
+    client_aio_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
+    _ = client_aio_grpc.async_grpc_collections
+    client_aio_grpc.close(grace=2.0)
+    with pytest.raises(RuntimeError):
+        client_aio_grpc._client._init_async_grpc_channel()  # prevent reinitializing grpc connection, since
+        # http connection is closed
+
+    client_aio_grpc_do_nothing = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
+    client_aio_grpc_do_nothing.close()
+    with pytest.raises(
+        RuntimeError
+    ):  # prevent initializing grpc connection, since http connection is closed
+        _ = client_aio_grpc_do_nothing.async_grpc_collections
+    # endregion grpc
+
+    # region local
+    local_client_in_mem = QdrantClient(":memory:")
+    local_client_in_mem.recreate_collection(
+        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+    )
+    local_client_in_mem.close()
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = tmpdir + "/test.db"
+
+        local_client_persist_1 = QdrantClient(path=path)
+        local_client_persist_1.recreate_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+        local_client_persist_1.close()
+
+        local_client_persist_2 = QdrantClient(path=path)
+        local_client_persist_2.recreate_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+        local_client_persist_2.close()
+    # endregion local
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
 import uuid
 from collections import OrderedDict, defaultdict
-from copy import deepcopy
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 
+from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 from qdrant_client.local.distances import (
@@ -17,6 +17,8 @@ from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 
 DEFAULT_VECTOR_NAME = ""
+EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
+# https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
 
 
 class LocalCollection:
@@ -49,6 +51,10 @@ class LocalCollection:
         if location is not None:
             self.storage = CollectionPersistence(location)
         self.load()
+
+    def close(self) -> None:
+        if self.storage is not None:
+            self.storage.close()
 
     def load(self) -> None:
         if self.storage is not None:
@@ -129,7 +135,9 @@ class LocalCollection:
 
     @classmethod
     def _process_payload(
-        cls, payload: dict, with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True
+        cls,
+        payload: dict,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
     ) -> Optional[dict]:
         if not with_payload:
             return None
@@ -236,7 +244,8 @@ class LocalCollection:
                     if score > score_threshold:
                         break
 
-            scored_point = models.ScoredPoint.construct(
+            scored_point = construct(
+                models.ScoredPoint,
                 id=point_id,
                 score=score,
                 version=0,
@@ -552,6 +561,10 @@ class LocalCollection:
         for vector_name, named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
+                params = self.get_vector_params(vector_name)
+                if params.distance == models.Distance.COSINE:
+                    norm = np.linalg.norm(vector)
+                    vector = np.array(vector) / norm if norm > EPSILON else vector
                 self.vectors[vector_name][idx] = vector
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
@@ -585,6 +598,10 @@ class LocalCollection:
                 )
             else:
                 vector_np = np.array(vector)
+                params = self.get_vector_params(vector_name)
+                if params.distance == models.Distance.COSINE:
+                    norm = np.linalg.norm(vector_np)
+                    vector_np = vector_np / norm if norm > EPSILON else vector_np
                 named_vectors[idx] = vector_np
                 self.vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(

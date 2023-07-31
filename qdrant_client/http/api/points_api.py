@@ -1,30 +1,13 @@
 # flake8: noqa E501
-from enum import Enum
-from pathlib import PurePath
-from types import GeneratorType
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Set, Union
 
-from pydantic.json import ENCODERS_BY_TYPE
-from pydantic.main import BaseModel
+from qdrant_client._pydantic_compat import to_json
 from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
 SetIntStr = Set[Union[int, str]]
 DictIntStrAny = Dict[Union[int, str], Any]
 file = None
-
-
-def generate_encoders_by_class_tuples(type_encoder_map: Dict[Any, Callable]) -> Dict[Callable, Tuple]:
-    encoders_by_classes: Dict[Callable, List] = {}
-    for type_, encoder in type_encoder_map.items():
-        encoders_by_classes.setdefault(encoder, []).append(type_)
-    encoders_by_class_tuples: Dict[Callable, Tuple] = {}
-    for encoder, classes in encoders_by_classes.items():
-        encoders_by_class_tuples[encoder] = tuple(classes)
-    return encoders_by_class_tuples
-
-
-encoders_by_class_tuples = generate_encoders_by_class_tuples(ENCODERS_BY_TYPE)
 
 
 def jsonable_encoder(
@@ -34,116 +17,17 @@ def jsonable_encoder(
     by_alias: bool = True,
     skip_defaults: bool = None,
     exclude_unset: bool = False,
-    include_none: bool = True,
-    custom_encoder=None,
-    sqlalchemy_safe: bool = True,
-) -> Any:
-    if exclude is None:
-        exclude = set()
-    if custom_encoder is None:
-        custom_encoder = {}
-    if include is not None and not isinstance(include, set):
-        include = set(include)
-    if exclude is not None and not isinstance(exclude, set):
-        exclude = set(exclude)
-    if isinstance(obj, BaseModel):
-        encoder = getattr(obj.Config, "json_encoders", {})
-        if custom_encoder:
-            encoder.update(custom_encoder)
-        obj_dict = obj.dict(
+):
+    if hasattr(obj, "json") or hasattr(obj, "model_dump_json"):
+        return to_json(
+            obj,
             include=include,
             exclude=exclude,
             by_alias=by_alias,
             exclude_unset=bool(exclude_unset or skip_defaults),
         )
 
-        return jsonable_encoder(
-            obj_dict,
-            include_none=include_none,
-            custom_encoder=encoder,
-            sqlalchemy_safe=sqlalchemy_safe,
-        )
-    if isinstance(obj, Enum):
-        return obj.value
-    if isinstance(obj, PurePath):
-        return str(obj)
-    if isinstance(obj, (str, int, float, type(None))):
-        return obj
-    if isinstance(obj, dict):
-        encoded_dict = {}
-        for key, value in obj.items():
-            if (
-                (not sqlalchemy_safe or (not isinstance(key, str)) or (not key.startswith("_sa")))
-                and (value is not None or include_none)
-                and ((include and key in include) or key not in exclude)
-            ):
-                encoded_key = jsonable_encoder(
-                    key,
-                    by_alias=by_alias,
-                    exclude_unset=exclude_unset,
-                    include_none=include_none,
-                    custom_encoder=custom_encoder,
-                    sqlalchemy_safe=sqlalchemy_safe,
-                )
-                encoded_value = jsonable_encoder(
-                    value,
-                    by_alias=by_alias,
-                    exclude_unset=exclude_unset,
-                    include_none=include_none,
-                    custom_encoder=custom_encoder,
-                    sqlalchemy_safe=sqlalchemy_safe,
-                )
-                encoded_dict[encoded_key] = encoded_value
-        return encoded_dict
-    if isinstance(obj, (list, set, frozenset, GeneratorType, tuple)):
-        encoded_list = []
-        for item in obj:
-            encoded_list.append(
-                jsonable_encoder(
-                    item,
-                    include=include,
-                    exclude=exclude,
-                    by_alias=by_alias,
-                    exclude_unset=exclude_unset,
-                    include_none=include_none,
-                    custom_encoder=custom_encoder,
-                    sqlalchemy_safe=sqlalchemy_safe,
-                )
-            )
-        return encoded_list
-
-    if custom_encoder:
-        if type(obj) in custom_encoder:
-            return custom_encoder[type(obj)](obj)
-        else:
-            for encoder_type, encoder in custom_encoder.items():
-                if isinstance(obj, encoder_type):
-                    return encoder(obj)
-
-    if type(obj) in ENCODERS_BY_TYPE:
-        return ENCODERS_BY_TYPE[type(obj)](obj)
-    for encoder, classes_tuple in encoders_by_class_tuples.items():
-        if isinstance(obj, classes_tuple):
-            return encoder(obj)
-
-    errors: List[Exception] = []
-    try:
-        data = dict(obj)
-    except Exception as e:
-        errors.append(e)
-        try:
-            data = vars(obj)
-        except Exception as e:
-            errors.append(e)
-            raise ValueError(errors)
-    return jsonable_encoder(
-        data,
-        by_alias=by_alias,
-        exclude_unset=exclude_unset,
-        include_none=include_none,
-        custom_encoder=custom_encoder,
-        sqlalchemy_safe=sqlalchemy_safe,
-    )
+    return obj
 
 
 if TYPE_CHECKING:
@@ -174,15 +58,18 @@ class _PointsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(points_selector)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload/clear",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_count_points(
@@ -197,14 +84,17 @@ class _PointsApi:
             "collection_name": str(collection_name),
         }
 
+        headers = {}
         body = jsonable_encoder(count_request)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20017,
             method="POST",
             url="/collections/{collection_name}/points/count",
+            headers=headers if headers else None,
             path_params=path_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_delete_payload(
@@ -227,15 +117,18 @@ class _PointsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(delete_payload)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload/delete",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_delete_points(
@@ -258,15 +151,18 @@ class _PointsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(points_selector)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/delete",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_delete_vectors(
@@ -289,15 +185,18 @@ class _PointsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(delete_vectors)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/vectors/delete",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_get_point(
@@ -318,10 +217,12 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         return self.api_client.request(
             type_=m.InlineResponse20011,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
         )
@@ -343,15 +244,18 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         body = jsonable_encoder(point_request)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20012,
             method="POST",
             url="/collections/{collection_name}/points",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_overwrite_payload(
@@ -374,15 +278,18 @@ class _PointsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(set_payload)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points/payload",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_recommend_batch_points(
@@ -402,15 +309,18 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         body = jsonable_encoder(recommend_request_batch)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20015,
             method="POST",
             url="/collections/{collection_name}/points/recommend/batch",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_recommend_point_groups(
@@ -430,15 +340,18 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         body = jsonable_encoder(recommend_groups_request)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20016,
             method="POST",
             url="/collections/{collection_name}/points/recommend/groups",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_recommend_points(
@@ -458,15 +371,18 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         body = jsonable_encoder(recommend_request)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points/recommend",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_scroll_points(
@@ -486,15 +402,18 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         body = jsonable_encoder(scroll_request)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20013,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_search_batch_points(
@@ -514,15 +433,18 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         body = jsonable_encoder(search_request_batch)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20015,
             method="POST",
             url="/collections/{collection_name}/points/search/batch",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_search_point_groups(
@@ -542,15 +464,18 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         body = jsonable_encoder(search_groups_request)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20016,
             method="POST",
             url="/collections/{collection_name}/points/search/groups",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_search_points(
@@ -570,15 +495,18 @@ class _PointsApi:
         if consistency is not None:
             query_params["consistency"] = str(consistency)
 
+        headers = {}
         body = jsonable_encoder(search_request)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points/search",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_set_payload(
@@ -601,15 +529,18 @@ class _PointsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(set_payload)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_update_vectors(
@@ -632,15 +563,18 @@ class _PointsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(update_vectors)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points/vectors",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
     def _build_for_upsert_points(
@@ -663,15 +597,18 @@ class _PointsApi:
         if ordering is not None:
             query_params["ordering"] = str(ordering)
 
+        headers = {}
         body = jsonable_encoder(point_insert_operations)
-
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
         return self.api_client.request(
             type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points",
+            headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            json=body,
+            data=body,
         )
 
 

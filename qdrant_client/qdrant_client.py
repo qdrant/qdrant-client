@@ -1,4 +1,3 @@
-import warnings
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client import grpc as grpc
@@ -107,6 +106,16 @@ class QdrantClient(QdrantBase):
                     host=host,
                     **kwargs,
                 )
+
+    def __del__(self) -> None:
+        self.close()
+
+    def close(self, **kwargs: Any) -> None:
+        """
+        Closes the connection to Qdrant
+        """
+        if hasattr(self, "_client"):
+            self._client.close(**kwargs)
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:

@@ -4,9 +4,11 @@ import numpy as np
 
 from qdrant_client import QdrantClient
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 from qdrant_client.http.models import VectorStruct
 from qdrant_client.local.qdrant_local import QdrantLocal
+from tests.congruence_tests.settings import TIMEOUT
 from tests.fixtures.points import generate_records
 
 COLLECTION_NAME = "test_collection"
@@ -39,8 +41,7 @@ def initialize_fixture_collection(
         }
 
     client.recreate_collection(
-        collection_name=collection_name,
-        vectors_config=vectors_config,
+        collection_name=collection_name, vectors_config=vectors_config, timeout=TIMEOUT
     )
 
 
@@ -84,7 +85,7 @@ def compare_collections(
     compare_client_results(
         client_1,
         client_2,
-        lambda client: client.scroll(COLLECTION_NAME, limit=num_vectors * 2),
+        lambda client: client.scroll(COLLECTION_NAME, with_vectors=True, limit=num_vectors * 2),
     )
 
 
@@ -96,11 +97,13 @@ def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], 
 
     if isinstance(vec1, dict):
         for key, value in vec1.items():
-            assert np.allclose(vec1[key], vec2[key]), (
+            assert np.allclose(vec1[key], vec2[key], atol=1.0e-3), (
                 f"res1[{i}].vectors[{key}] = {value}, " f"res2[{i}].vectors[{key}] = {vec2[key]}"
             )
     else:
-        assert np.allclose(vec1, vec2), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
+        assert np.allclose(
+            vec1, vec2, atol=1.0e-3
+        ), f"res1[{i}].vectors = {vec1}, res2[{i}].vectors = {vec2}"
 
 
 def compare_scored_record(
@@ -149,6 +152,13 @@ def compare_client_results(
     res1 = foo(client1, **kwargs)
     res2 = foo(client2, **kwargs)
 
+    # compare scroll results
+    if isinstance(res1, tuple) and len(res1) == 2:
+        if isinstance(res1[0], list) and (res1[1] is None or isinstance(res1[1], types.PointId)):
+            res1, offset1 = res1
+            res2, offset2 = res2
+            assert offset1 == offset2, f"offset1 = {offset1}, offset2 = {offset2}"
+
     if isinstance(res1, list):
         compare_records(res1, res2)
     elif isinstance(res1, models.GroupsResult):
@@ -193,11 +203,11 @@ def init_client(
     client.upload_records(collection_name, records)
 
 
-def init_local(storage: str = ":memory:") -> QdrantBase:
+def init_local(storage: str = ":memory:") -> QdrantLocal:
     client = QdrantLocal(location=storage)
     return client
 
 
-def init_remote() -> QdrantBase:
+def init_remote() -> QdrantClient:
     client = QdrantClient(host="localhost", port=6333, timeout=30)
     return client
