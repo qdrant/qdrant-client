@@ -75,9 +75,8 @@ class QdrantClient(QdrantBase):
     ):
         # Check if fastvector is installed
         try:
-            from fastvector.qdrant_mixin import QdrantClientMixin
+            from fastembed.qdrant_mixin import QdrantClientMixin
 
-            print("Found fastvector, adding mixin methods to QdrantClient")
             # If it is, add the mixin methods to this instance
             for name, method in QdrantClientMixin.__dict__.items():
                 if callable(method):
@@ -1720,4 +1719,5 @@ class QdrantClient(QdrantBase):
         """Get current locks state."""
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
+        return self._client.get_locks(**kwargs)
         return self._client.get_locks(**kwargs)
