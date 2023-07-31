@@ -40,6 +40,7 @@ pip install qdrant-client
 - Local mode - use same API without running server
 - REST and gRPC support
 - Minimal dependencies
+- Extensive Test Coverage
 
 ## Local mode
 
@@ -66,10 +67,36 @@ Local mode is useful for development, prototyping and testing.
 - Run it in Colab or Jupyter Notebook, no extra dependencies required. See an [example](https://colab.research.google.com/drive/1Bz8RSVHwnNDaNtDwotfPj0w7AYzsdXZ-?usp=sharing)
 - When you need to scale, simply switch to server mode.
 
-### How it works?
+## Fast Embeddings + Simpler API
 
-We just implemented Qdrant API in pure Python.
-We covered it with tests extensively to be sure it works the same as the server version.
+```
+pip install fastembed qdrant-client
+```
+
+FastEmbed is a library for creating fast vector embeddings on CPU. It is based on ONNX Runtime and allows to run inference on CPU with GPU-like performance.
+
+Qdrant Client can use FastEmbed to create embeddings and upload them to Qdrant. This allows to simplify API and make it more intuitive.
+
+```python
+from qdrant_client import QdrantClient
+
+# Initialize the client
+client = QdrantClient(":memory:")  # or QdrantClient(path="path/to/db")
+
+# Prepare your documents, metadata, and IDs
+docs = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
+metadatas = [
+    {"source": "Langchain-docs"},
+    {"source": "Linkedin-docs"},
+]
+ids = [42, 2]
+
+# Use the new add method
+client.add(collection_name="demo_collection", docs={"documents": docs, "metadatas": metadatas, "ids": ids})
+
+search_result = client.query(collection_name="demo_collection", query_texts=["This is a query document"])
+print(search_result)
+```
 
 ## Connect to Qdrant server
 
