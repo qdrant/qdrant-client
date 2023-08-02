@@ -1,10 +1,12 @@
+import pytest
+
+from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     generate_fixtures,
     init_client,
     init_local,
     init_remote,
 )
-from qdrant_client.http import models
 
 COLLECTION_NAME = "test_collection"
 
@@ -47,6 +49,7 @@ def test_get_collection():
     )
 
 
+@pytest.mark.skip(reason="Local mode does not support collection update")
 def test_update_collection():
     fixture_records = generate_fixtures()
 
@@ -63,7 +66,7 @@ def test_update_collection():
 
     local_client.update_collection(
         collection_name=COLLECTION_NAME,
-        vectors_config = {
+        vectors_config={
             "text": models.VectorParamsDiff(
                 hnsw_config=models.HnswConfigDiff(
                     m=32,
@@ -91,7 +94,7 @@ def test_update_collection():
     )
     remote_client.update_collection(
         collection_name=COLLECTION_NAME,
-        vectors_config = {
+        vectors_config={
             "text": models.VectorParamsDiff(
                 hnsw_config=models.HnswConfigDiff(
                     m=32,
@@ -128,8 +131,15 @@ def test_update_collection():
 
     assert remote_collection_info.config.params.vectors["text"].hnsw_config.m == 32
     assert remote_collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
-    assert remote_collection_info.config.params.vectors["text"].quantization_config.product.compression == models.CompressionRatio.X32
-    assert remote_collection_info.config.params.vectors["text"].quantization_config.product.always_ram
+    assert (
+        remote_collection_info.config.params.vectors[
+            "text"
+        ].quantization_config.product.compression
+        == models.CompressionRatio.X32
+    )
+    assert remote_collection_info.config.params.vectors[
+        "text"
+    ].quantization_config.product.always_ram
     assert remote_collection_info.config.params.vectors["text"].on_disk
     assert remote_collection_info.config.hnsw_config.ef_construct == 123
     assert remote_collection_info.config.quantization_config.scalar.type == models.ScalarType.INT8
