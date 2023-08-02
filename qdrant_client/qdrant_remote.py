@@ -13,7 +13,6 @@ from typing import (
     Tuple,
     Type,
     Union,
-    get_args,
 )
 
 import httpx
@@ -1691,7 +1690,15 @@ class QdrantRemote(QdrantBase):
             if isinstance(hnsw_config, rest_models.HnswConfigDiff):
                 hnsw_config = RestToGrpc.convert_hnsw_config_diff(hnsw_config)
 
-            if isinstance(quantization_config, get_args(rest_models.QuantizationConfigDiff)):
+            # if isinstance(quantization_config, get_args(rest_models.QuantizationConfigDiff)): <-- deprecate python 3.7
+            if isinstance(
+                quantization_config,
+                (
+                    rest_models.ScalarQuantization,
+                    rest_models.ProductQuantization,
+                    rest_models.Disabled,
+                ),
+            ):
                 quantization_config = RestToGrpc.convert_quantization_config_diff(
                     quantization_config
                 )
