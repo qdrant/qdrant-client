@@ -131,7 +131,7 @@ class QdrantClient(QdrantBase):
         try:
             from fastembed.qdrant_mixin import QdrantAPIExtensions, QueryResponse
 
-            from qdrant_client.models import SearchParams
+            from qdrant_client.http.models import SearchParams
             search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False)
             
             return QdrantAPIExtensions.search_docs(client=self, collection_name=collection_name, 
