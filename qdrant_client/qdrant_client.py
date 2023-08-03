@@ -5,7 +5,7 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
-from qdrant_client.models import SearchParams
+from qdrant_client.models import SearchParams  # mypy: ignore
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
@@ -108,20 +108,15 @@ class QdrantClient(QdrantBase):
         **kwargs: Any,
     ) -> None:
         # check if we have fastembed installed
-                # Check if fastvector is installed
         try:
-            from fastembed.qdrant_mixin import QdrantClientMixin
-
-            # If it is, add the mixin methods to this instance
-            for name, method in QdrantClientMixin.__dict__.items():
-                if callable(method):
-                    setattr(self, name, method.__get__(self, self.__class__))
-
-            self.upsert_docs(collection_name, docs, batch_size=batch_size, wait=wait, **kwargs)
+            from fastembed.qdrant_mixin import QdrantAPIExtensions
+            QdrantAPIExtensions.upsert_docs(self, collection_name, docs, 
+                                          batch_size=batch_size, 
+                                          wait=wait, **kwargs)
         except ImportError:
             # If it's not, ask the user to install it
             raise ImportError(
-                "fastembed is not installed. Please install it to enable fast vector indexing."
+                "fastembed is not installed. Please install it to enable fast vector indexing with pip install fastembed."
             )
         
     def query(
@@ -133,23 +128,21 @@ class QdrantClient(QdrantBase):
         query_filter: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ):
+        # check if we have fastembed installed
         try:
-            from fastembed.qdrant_mixin import QdrantClientMixin
-
-            # If it is, add the mixin methods to this instance
-            for name, method in QdrantClientMixin.__dict__.items():
-                if callable(method):
-                    setattr(self, name, method.__get__(self, self.__class__))
-            
-            
+            from fastembed.qdrant_mixin import QdrantAPIExtensions
             search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False)
             
-            self.search_docs(collection_name, docs, batch_size=batch_size, wait=wait, query_filter = query_filter, search_params = search_params, **kwargs)
+            return QdrantAPIExtensions.search_docs(client=self, collection_name=collection_name, 
+                                            query_texts=query_texts, n_results=n_results,
+                                            batch_size=batch_size, 
+                                            query_filter = query_filter,
+                                            search_params = search_params, **kwargs)
 
         except ImportError:
             # If it's not, ask the user to install it
             raise ImportError(
-                "fastembed is not installed. Please install it to enable fast vector indexing."
+                "fastembed is not installed. Please install it to enable fast vector indexing with pip install fastembed."
             )
 
 
