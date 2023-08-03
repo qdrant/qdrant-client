@@ -5,6 +5,7 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
+from qdrant_client.models import SearchParams
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
@@ -72,18 +73,6 @@ class QdrantClient(QdrantBase):
         path: Optional[str] = None,
         **kwargs: Any,
     ):
-        # Check if fastvector is installed
-        try:
-            from fastembed.qdrant_mixin import QdrantClientMixin
-
-            # If it is, add the mixin methods to this instance
-            for name, method in QdrantClientMixin.__dict__.items():
-                if callable(method):
-                    setattr(self, name, method.__get__(self, self.__class__))
-        except ImportError:
-            # If it's not, do nothing
-            pass
-
         self._client: QdrantBase
 
         if location == ":memory:":
@@ -109,6 +98,60 @@ class QdrantClient(QdrantBase):
 
     def __del__(self) -> None:
         self.close()
+
+    def add(
+        self,
+        collection_name: str,
+        docs: Dict[str, List[Any]],
+        batch_size: int = 512,
+        wait: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        # check if we have fastembed installed
+                # Check if fastvector is installed
+        try:
+            from fastembed.qdrant_mixin import QdrantClientMixin
+
+            # If it is, add the mixin methods to this instance
+            for name, method in QdrantClientMixin.__dict__.items():
+                if callable(method):
+                    setattr(self, name, method.__get__(self, self.__class__))
+
+            self.upsert_docs(collection_name, docs, batch_size=batch_size, wait=wait, **kwargs)
+        except ImportError:
+            # If it's not, ask the user to install it
+            raise ImportError(
+                "fastembed is not installed. Please install it to enable fast vector indexing."
+            )
+        
+    def query(
+        self,
+        collection_name: str,
+        query_texts: List[str],
+        n_results: int = 2,
+        batch_size: int = 512,
+        query_filter: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ):
+        try:
+            from fastembed.qdrant_mixin import QdrantClientMixin
+
+            # If it is, add the mixin methods to this instance
+            for name, method in QdrantClientMixin.__dict__.items():
+                if callable(method):
+                    setattr(self, name, method.__get__(self, self.__class__))
+            
+            
+            search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False)
+            
+            self.search_docs(collection_name, docs, batch_size=batch_size, wait=wait, query_filter = query_filter, search_params = search_params, **kwargs)
+
+        except ImportError:
+            # If it's not, ask the user to install it
+            raise ImportError(
+                "fastembed is not installed. Please install it to enable fast vector indexing."
+            )
+
 
     def close(self, **kwargs: Any) -> None:
         """
@@ -1728,5 +1771,6 @@ class QdrantClient(QdrantBase):
         """Get current locks state."""
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
+        return self._client.get_locks(**kwargs)
         return self._client.get_locks(**kwargs)
         return self._client.get_locks(**kwargs)

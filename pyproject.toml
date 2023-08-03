@@ -47,3 +47,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pyright]
 typeCheckingMode = "strict"
+
+[tool.pytest.ini_options]
+markers = [
+    "fastembed: marks tests that require the fastembed package (deselect with '-m \"not fastembed\"')",
+    "no_fastembed: marks tests that do not require the fastembed package (deselect with '-m \"not no_fastembed\"')"
+]
