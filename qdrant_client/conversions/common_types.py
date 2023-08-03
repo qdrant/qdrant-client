@@ -17,6 +17,8 @@ SearchParams = Union[rest.SearchParams, grpc.SearchParams]
 PayloadSelector = Union[rest.PayloadSelector, grpc.WithPayloadSelector]
 Distance = Union[rest.Distance, int]  # type(grpc.Distance) == int
 HnswConfigDiff = Union[rest.HnswConfigDiff, grpc.HnswConfigDiff]
+VectorsConfigDiff = Union[rest.VectorsConfigDiff, grpc.VectorsConfigDiff]
+QuantizationConfigDiff = Union[rest.QuantizationConfigDiff, grpc.QuantizationConfigDiff]
 OptimizersConfigDiff = Union[rest.OptimizersConfigDiff, grpc.OptimizersConfigDiff]
 CollectionParamsDiff = Union[rest.CollectionParamsDiff, grpc.CollectionParamsDiff]
 WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]

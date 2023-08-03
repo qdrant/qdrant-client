@@ -273,6 +273,7 @@ payload_schema_integer = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType
 payload_schema_float = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Float, points=0)
 payload_schema_geo = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Geo, points=0)
 payload_schema_text = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Text, points=0)
+payload_schema_bool = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Bool, points=0)
 
 text_index_params_1 = grpc.TextIndexParams(
     tokenizer=grpc.TokenizerType.Prefix,
@@ -292,6 +293,9 @@ text_index_params_3 = grpc.TextIndexParams(
     lowercase=True,
     min_token_len=2,
 )
+
+text_index_params_4 = grpc.TextIndexParams(tokenizer=grpc.TokenizerType.Multilingual)
+
 payload_schema_text_prefix = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
     params=grpc.PayloadIndexParams(text_index_params=text_index_params_1),
@@ -305,6 +309,12 @@ payload_schema_text_whitespace = grpc.PayloadSchemaInfo(
 payload_schema_text_word = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
     params=grpc.PayloadIndexParams(text_index_params=text_index_params_3),
+    points=0,
+)
+
+payload_schema_text_multilingual = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Text,
+    params=grpc.PayloadIndexParams(text_index_params=text_index_params_4),
     points=0,
 )
 
@@ -323,6 +333,8 @@ collection_info_ok = grpc.CollectionInfo(
         "text_field_prefix": payload_schema_text_prefix,
         "text_field_whitespace": payload_schema_text_whitespace,
         "text_field_word": payload_schema_text_word,
+        "text_field_multilingual": payload_schema_text_multilingual,
+        "bool_field": payload_schema_bool,
     },
 )
 
@@ -341,6 +353,8 @@ collection_info = grpc.CollectionInfo(
         "text_field_prefix": payload_schema_text_prefix,
         "text_field_whitespace": payload_schema_text_whitespace,
         "text_field_word": payload_schema_text_word,
+        "text_field_multilingual": payload_schema_text_multilingual,
+        "bool_field": payload_schema_bool,
     },
 )
 
@@ -359,6 +373,8 @@ collection_info_red = grpc.CollectionInfo(
         "text_field_prefix": payload_schema_text_prefix,
         "text_field_whitespace": payload_schema_text_whitespace,
         "text_field_word": payload_schema_text_word,
+        "text_field_multilingual": payload_schema_text_multilingual,
+        "bool_field": payload_schema_bool,
     },
 )
 quantization_config = grpc.QuantizationConfig(
@@ -410,8 +426,60 @@ point_struct_multivec = grpc.PointStruct(
 
 collection_description = grpc.CollectionDescription(name="my_col")
 
+quantization_config_diff_disabled = grpc.QuantizationConfigDiff(disabled=grpc.Disabled())
+
+quantization_config_diff_scalar = grpc.QuantizationConfigDiff(scalar=scalar_quantization)
+
+quantization_config_diff_product = grpc.QuantizationConfigDiff(
+    product=product_quantizations[0].product
+)
+
 update_collection = grpc.UpdateCollection(
-    collection_name="my_col3", optimizers_config=optimizer_config
+    collection_name="my_col3",
+    optimizers_config=optimizer_config,
+    hnsw_config=hnsw_config,
+    quantization_config=quantization_config_diff_disabled,
+)
+
+collections_params_diff = grpc.CollectionParamsDiff(
+    replication_factor=2,
+    write_consistency_factor=2,
+    on_disk_payload=True,
+)
+
+vector_params_diff = grpc.VectorParamsDiff(
+    hnsw_config=hnsw_config,
+    quantization_config=quantization_config_diff_product,
+    on_disk=True,
+)
+
+vector_config_diff_map = grpc.VectorsConfigDiff(
+    params_map=grpc.VectorParamsDiffMap(
+        map={
+            "image": vector_params_diff,
+        }
+    )
+)
+
+vector_config_diff = grpc.VectorsConfigDiff(
+    params=vector_params_diff,
+)
+
+update_collection_2 = grpc.UpdateCollection(
+    collection_name="my_col3",
+    optimizers_config=optimizer_config,
+    hnsw_config=hnsw_config,
+    quantization_config=quantization_config_diff_scalar,
+    vectors_config=vector_config_diff,
+)
+
+update_collection_3 = grpc.UpdateCollection(
+    collection_name="my_col3",
+    optimizers_config=optimizer_config,
+    hnsw_config=hnsw_config,
+    quantization_config=quantization_config_diff_product,
+    params=collections_params_diff,
+    vectors_config=vector_config_diff_map,
 )
 
 points_ids_list = grpc.PointsIdsList(ids=[point_id, point_id_2, point_id_2])
@@ -499,11 +567,6 @@ recommend_points = grpc.RecommendPoints(
     with_vectors=grpc.WithVectorsSelector(enable=True),
 )
 
-collections_params_diff = grpc.CollectionParamsDiff(
-    replication_factor=2,
-    write_consistency_factor=2,
-)
-
 lookup_location_1 = grpc.LookupLocation(
     collection_name="collection-123",
 )
@@ -576,7 +639,6 @@ with_lookup = grpc.WithLookup(
     with_payload=with_payload_include,
 )
 
-
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -609,7 +671,7 @@ fixtures = {
     "WalConfigDiff": [wal_config],
     "HnswConfigDiff": [hnsw_config, hnsw_config_2],
     "Range": [range_],
-    "UpdateCollection": [update_collection],
+    "UpdateCollection": [update_collection, update_collection_2, update_collection_3],
     "Condition": [
         condition_field_match,
         condition_range,

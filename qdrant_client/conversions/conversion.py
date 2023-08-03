@@ -83,6 +83,8 @@ def grpc_payload_schema_to_field_type(model: grpc.PayloadSchemaType) -> grpc.Fie
         return grpc.FieldType.FieldTypeInteger
     if model == grpc.PayloadSchemaType.Float:
         return grpc.FieldType.FieldTypeFloat
+    if model == grpc.PayloadSchemaType.Bool:
+        return grpc.FieldType.FieldTypeBool
     if model == grpc.PayloadSchemaType.Geo:
         return grpc.FieldType.FieldTypeGeo
     if model == grpc.PayloadSchemaType.Text:
@@ -98,6 +100,8 @@ def grpc_field_type_to_payload_schema(model: grpc.FieldType) -> grpc.PayloadSche
         return grpc.PayloadSchemaType.Integer
     if model == grpc.FieldType.FieldTypeFloat:
         return grpc.PayloadSchemaType.Float
+    if model == grpc.FieldType.FieldTypeBool:
+        return grpc.PayloadSchemaType.Bool
     if model == grpc.FieldType.FieldTypeGeo:
         return grpc.PayloadSchemaType.Geo
     if model == grpc.FieldType.FieldTypeText:
@@ -301,6 +305,8 @@ class GrpcToRest:
             return rest.PayloadSchemaType.INTEGER
         elif model == grpc.PayloadSchemaType.Keyword:
             return rest.PayloadSchemaType.KEYWORD
+        elif model == grpc.PayloadSchemaType.Bool:
+            return rest.PayloadSchemaType.BOOL
         elif model == grpc.PayloadSchemaType.Text:
             return rest.PayloadSchemaType.TEXT
         else:
@@ -550,9 +556,21 @@ class GrpcToRest:
     @classmethod
     def convert_update_collection(cls, model: grpc.UpdateCollection) -> rest.UpdateCollection:
         return rest.UpdateCollection(
+            vectors=cls.convert_vectors_config_diff(model.vectors_config)
+            if model.HasField("vectors_config")
+            else None,
             optimizers_config=cls.convert_optimizers_config_diff(model.optimizers_config)
             if model.HasField("optimizers_config")
-            else None
+            else None,
+            params=cls.convert_collection_params_diff(model.params)
+            if model.HasField("params")
+            else None,
+            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config)
+            if model.HasField("hnsw_config")
+            else None,
+            quantization_config=cls.convert_quantization_config_diff(model.quantization_config)
+            if model.HasField("quantization_config")
+            else None,
         )
 
     @classmethod
@@ -750,6 +768,8 @@ class GrpcToRest:
             return rest.TokenizerType.WHITESPACE
         if model == grpc.Word:
             return rest.TokenizerType.WORD
+        if model == grpc.Multilingual:
+            return rest.TokenizerType.MULTILINGUAL
         raise ValueError(f"invalid TokenizerType model: {model}")  # pragma: no cover
 
     @classmethod
@@ -773,6 +793,7 @@ class GrpcToRest:
             write_consistency_factor=model.write_consistency_factor
             if model.HasField("write_consistency_factor")
             else None,
+            on_disk_payload=model.on_disk_payload if model.HasField("on_disk_payload") else None,
         )
 
     @classmethod
@@ -908,6 +929,46 @@ class GrpcToRest:
             else None,
         )
 
+    @classmethod
+    def convert_quantization_config_diff(
+        cls, model: grpc.QuantizationConfigDiff
+    ) -> rest.QuantizationConfigDiff:
+        name = model.WhichOneof("quantization")
+        val = getattr(model, name)
+        if name == "scalar":
+            return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
+        if name == "product":
+            return rest.ProductQuantization(product=cls.convert_product_quantization_config(val))
+        if name == "disabled":
+            return rest.Disabled.DISABLED
+        raise ValueError(f"invalid QuantizationConfigDiff model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vector_params_diff(cls, model: grpc.VectorParamsDiff) -> rest.VectorParamsDiff:
+        return rest.VectorParamsDiff(
+            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config)
+            if model.HasField("hnsw_config")
+            else None,
+            quantization_config=cls.convert_quantization_config_diff(model.quantization_config)
+            if model.HasField("quantization_config")
+            else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
+        )
+
+    @classmethod
+    def convert_vectors_config_diff(cls, model: grpc.VectorsConfigDiff) -> rest.VectorsConfigDiff:
+        name = model.WhichOneof("config")
+        val = getattr(model, name)
+
+        if name == "params":
+            return {"": cls.convert_vector_params_diff(val)}
+        if name == "params_map":
+            return dict(
+                (key, cls.convert_vector_params_diff(vec_params))
+                for key, vec_params in val.map.items()
+            )
+        raise ValueError(f"invalid VectorsConfigDiff model: {model}")  # pragma: no cover
+
 
 # ----------------------------------------
 #
@@ -1017,6 +1078,8 @@ class RestToGrpc:
             return grpc.PayloadSchemaType.Integer
         if model == rest.PayloadSchemaType.FLOAT:
             return grpc.PayloadSchemaType.Float
+        if model == rest.PayloadSchemaType.BOOL:
+            return grpc.PayloadSchemaType.Bool
         if model == rest.PayloadSchemaType.GEO:
             return grpc.PayloadSchemaType.Geo
         if model == rest.PayloadSchemaType.TEXT:
@@ -1275,6 +1338,18 @@ class RestToGrpc:
             collection_name=collection_name,
             optimizers_config=cls.convert_optimizers_config_diff(model.optimizers_config)
             if model.optimizers_config is not None
+            else None,
+            vectors_config=cls.convert_vectors_config_diff(model.vectors)
+            if model.vectors is not None
+            else None,
+            params=cls.convert_collection_params_diff(model.params)
+            if model.params is not None
+            else None,
+            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config)
+            if model.hnsw_config is not None
+            else None,
+            quantization_config=cls.convert_quantization_config_diff(model.quantization_config)
+            if model.quantization_config is not None
             else None,
         )
 
@@ -1575,6 +1650,8 @@ class RestToGrpc:
             return grpc.TokenizerType.Whitespace
         elif model == rest.TokenizerType.PREFIX:
             return grpc.TokenizerType.Prefix
+        elif model == rest.TokenizerType.MULTILINGUAL:
+            return grpc.TokenizerType.Multilingual
         else:
             raise ValueError(f"invalid TokenizerType model: {model}")
 
@@ -1596,6 +1673,7 @@ class RestToGrpc:
         return grpc.CollectionParamsDiff(
             replication_factor=model.replication_factor,
             write_consistency_factor=model.write_consistency_factor,
+            on_disk_payload=model.on_disk_payload,
         )
 
     @classmethod
@@ -1751,3 +1829,49 @@ class RestToGrpc:
             if model.with_payload is not None
             else None,
         )
+
+    @classmethod
+    def convert_quantization_config_diff(
+        cls, model: rest.QuantizationConfigDiff
+    ) -> grpc.QuantizationConfigDiff:
+        if isinstance(model, rest.ScalarQuantization):
+            return grpc.QuantizationConfigDiff(
+                scalar=cls.convert_scalar_quantization_config(model.scalar)
+            )
+        if isinstance(model, rest.ProductQuantization):
+            return grpc.QuantizationConfigDiff(
+                product=cls.convert_product_quantization_config(model.product)
+            )
+        if model == rest.Disabled.DISABLED:
+            return grpc.QuantizationConfigDiff(
+                disabled=grpc.Disabled(),
+            )
+        else:
+            raise ValueError(f"invalid QuantizationConfigDiff model: {model}")
+
+    @classmethod
+    def convert_vector_params_diff(cls, model: rest.VectorParamsDiff) -> grpc.VectorParamsDiff:
+        return grpc.VectorParamsDiff(
+            hnsw_config=cls.convert_hnsw_config_diff(model.hnsw_config)
+            if model.hnsw_config is not None
+            else None,
+            quantization_config=cls.convert_quantization_config_diff(model.quantization_config)
+            if model.quantization_config is not None
+            else None,
+            on_disk=model.on_disk,
+        )
+
+    @classmethod
+    def convert_vectors_config_diff(cls, model: rest.VectorsConfigDiff) -> grpc.VectorsConfigDiff:
+        if isinstance(model, dict) and len(model) == 1 and "" in model:
+            return grpc.VectorsConfigDiff(params=cls.convert_vector_params_diff(model[""]))
+        elif isinstance(model, dict):
+            return grpc.VectorsConfigDiff(
+                params_map=grpc.VectorParamsDiffMap(
+                    map=dict(
+                        (key, cls.convert_vector_params_diff(val)) for key, val in model.items()
+                    )
+                )
+            )
+        else:
+            raise ValueError(f"invalid VectorsConfigDiff model: {model}")  # pragma: no cover
