@@ -16,12 +16,14 @@ from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.models import (
     Batch,
+    CompressionRatio,
     CreateAlias,
     CreateAliasOperation,
     Distance,
     FieldCondition,
     Filter,
     HasIdCondition,
+    HnswConfigDiff,
     MatchAny,
     MatchText,
     MatchValue,
@@ -29,17 +31,23 @@ from qdrant_client.models import (
     PayloadSchemaType,
     PointIdsList,
     PointStruct,
+    ProductQuantization,
+    ProductQuantizationConfig,
     QuantizationSearchParams,
     Range,
     RecommendRequest,
     ScalarQuantization,
+    ScalarQuantization,
     ScalarQuantizationConfig,
+    ScalarQuantizationConfig,
+    ScalarType,
     ScalarType,
     SearchParams,
     SearchRequest,
     TextIndexParams,
     TokenizerType,
     VectorParams,
+    VectorParamsDiff,
 )
 from qdrant_client.qdrant_remote import QdrantRemote
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
@@ -680,16 +688,54 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        vectors_config={
+            "text": VectorParams(size=DIM, distance=Distance.DOT),
+        },
         timeout=TIMEOUT,
     )
 
     client.update_collection(
         collection_name=COLLECTION_NAME,
+        vectors_config={
+            "text": VectorParamsDiff(
+                hnsw_config=HnswConfigDiff(
+                    m=32,
+                    ef_construct=123,
+                ),
+                quantization_config=ProductQuantization(
+                    product=ProductQuantizationConfig(
+                        compression=CompressionRatio.X32,
+                        always_ram=True,
+                    ),
+                ),
+                on_disk=True,
+            ),
+        },
+        hnsw_config=HnswConfigDiff(
+            ef_construct=123,
+        ),
+        quantization_config=ScalarQuantization(
+            scalar=ScalarQuantizationConfig(
+                type=ScalarType.INT8,
+                quantile=0.8,
+                always_ram=False,
+            ),
+        ),
         optimizers_config=OptimizersConfigDiff(max_segment_size=10000),
     )
 
-    assert client.get_collection(COLLECTION_NAME).config.optimizer_config.max_segment_size == 10000
+    collection_info = client.get_collection(COLLECTION_NAME)
+
+    assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
+    assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
+    assert collection_info.config.params.vectors["text"].quantization_config.product.compression == CompressionRatio.X32
+    assert collection_info.config.params.vectors["text"].quantization_config.product.always_ram
+    assert collection_info.config.params.vectors["text"].on_disk
+    assert collection_info.config.hnsw_config.ef_construct == 123
+    assert collection_info.config.quantization_config.scalar.type == ScalarType.INT8
+    assert 0.7999 < collection_info.config.quantization_config.scalar.quantile < 0.8001
+    assert not collection_info.config.quantization_config.scalar.always_ram
+    assert collection_info.config.optimizer_config.max_segment_size == 10000
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
