@@ -726,15 +726,19 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
     collection_info = client.get_collection(COLLECTION_NAME)
 
-    assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
-    assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
-    assert collection_info.config.params.vectors["text"].quantization_config.product.compression == CompressionRatio.X32
-    assert collection_info.config.params.vectors["text"].quantization_config.product.always_ram
-    assert collection_info.config.params.vectors["text"].on_disk
-    assert collection_info.config.hnsw_config.ef_construct == 123
-    assert collection_info.config.quantization_config.scalar.type == ScalarType.INT8
-    assert 0.7999 < collection_info.config.quantization_config.scalar.quantile < 0.8001
-    assert not collection_info.config.quantization_config.scalar.always_ram
+    # Many collection update parameters are available since v1.4.0
+    version = os.getenv("QDRANT_VERSION")
+    if version is not None and version >= "v1.4.0":
+        assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
+        assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
+        assert collection_info.config.params.vectors["text"].quantization_config.product.compression == CompressionRatio.X32
+        assert collection_info.config.params.vectors["text"].quantization_config.product.always_ram
+        assert collection_info.config.params.vectors["text"].on_disk
+        assert collection_info.config.hnsw_config.ef_construct == 123
+        assert collection_info.config.quantization_config.scalar.type == ScalarType.INT8
+        assert 0.7999 < collection_info.config.quantization_config.scalar.quantile < 0.8001
+        assert not collection_info.config.quantization_config.scalar.always_ram
+
     assert collection_info.config.optimizer_config.max_segment_size == 10000
 
 
