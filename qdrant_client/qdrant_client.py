@@ -5,7 +5,6 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
-from qdrant_client.models import SearchParams  # mypy: ignore
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
@@ -127,10 +126,12 @@ class QdrantClient(QdrantBase):
         batch_size: int = 512,
         query_filter: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
-    ):
+    ) -> List[Dict[str, Any]]:
         # check if we have fastembed installed
         try:
-            from fastembed.qdrant_mixin import QdrantAPIExtensions
+            from fastembed.qdrant_mixin import QdrantAPIExtensions, QueryResponse
+
+            from qdrant_client.models import SearchParams
             search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False)
             
             return QdrantAPIExtensions.search_docs(client=self, collection_name=collection_name, 
