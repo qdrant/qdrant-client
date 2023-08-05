@@ -1,3 +1,5 @@
+from typing import List
+
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
@@ -31,7 +33,7 @@ def migrate(source_client: QdrantClient, dest_client: QdrantClient, batch_size: 
 
 
 def _compare_collections(
-    source_collection_names: list[str],
+    source_collection_names: List[str],
     source_client: QdrantClient,
     dest_client: QdrantClient,
 ) -> bool:
