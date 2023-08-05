@@ -67,6 +67,28 @@ def test_multiple_vectors_collection(
     )
 
 
+def test_multiple_collections(source_client: QdrantClient, dest_client: QdrantClient) -> None:
+    collection_names = ["collection_1", "collection_2", "collection_3"]
+    vector_params = models.VectorParams(size=10, distance=models.Distance.COSINE)
+    for collection_name in collection_names:
+        source_client.recreate_collection(collection_name, vectors_config=vector_params)
+        dest_client.recreate_collection(collection_name, vectors_config=vector_params)
+        source_client.upload_collection(
+            collection_name,
+            vectors=np.random.randn(VECTOR_NUMBER, vector_params.size),
+        )
+
+    migrate(source_client, dest_client)
+
+    for collection_name in collection_names:
+        source_vector_number = source_client.get_collection(collection_name).vectors_count
+        dest_vector_number = dest_client.get_collection(collection_name).vectors_count
+
+        assert (
+            source_vector_number == dest_vector_number == VECTOR_NUMBER
+        ), f"Migration failed. Source vectors count {source_vector_number}, dest vectors count {dest_vector_number}, expected {VECTOR_NUMBER}"
+
+
 def test_different_distances(source_client: QdrantClient, dest_client: QdrantClient) -> None:
     collection_name = "single_vector_collection"
     cosine_params = models.VectorParams(size=10, distance=models.Distance.COSINE)
