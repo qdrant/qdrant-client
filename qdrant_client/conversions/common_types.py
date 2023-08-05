@@ -1,6 +1,7 @@
 import sys
 
 import numpy as np
+import numpy.typing as npt
 
 if sys.version_info >= (3, 10):
     from typing import Any, TypeAlias
@@ -66,8 +67,7 @@ WithLookupInterface: TypeAlias = rest.WithLookupInterface
 
 GroupsResult: TypeAlias = rest.GroupsResult
 
-# we can't use `nptyping` package due to numpy/python-version incompatibilities
-# thus we need to define precise type annotations while we support python3.7
+# handle pyright complaints about partially unknown types
 _np_numeric = Union[
     np.bool_,  # pylance can't handle np.bool8 alias
     np.int8,
@@ -86,14 +86,4 @@ _np_numeric = Union[
     np.longdouble,  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
 
-
-if sys.version_info >= (3, 8):
-    # typing is included into numpy since 1.20
-    # NDArray is included since 1.21
-    # pyproject.toml is configured to install numpy>=1.21 in case of python>=3.8
-    # thus we don't need an additional check for numpy version
-    import numpy.typing as npt
-
-    NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
-else:
-    NumpyArray: TypeAlias = np.ndarray
+NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
