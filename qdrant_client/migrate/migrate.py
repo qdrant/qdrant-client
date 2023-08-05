@@ -61,6 +61,10 @@ def _compare_collections(
             ), "Distance should be equal"
 
         elif isinstance(source_vector_params, dict):
+            assert len(source_vector_params) == len(
+                dest_vector_params
+            ), "Mismatched vector params: number of named vectors is not equal"
+
             for key, source_vector_param in source_vector_params.items():
                 dest_vector_param = dest_vector_params[key]
                 assert (
@@ -70,7 +74,7 @@ def _compare_collections(
                     source_vector_param.distance == dest_vector_param.distance
                 ), f"Distance is not the same for {key} in {collection_name}"
 
-        return True
+    return True
 
 
 def _migrate_collection(
@@ -102,49 +106,3 @@ def _migrate_collection(
     assert (
         source_client_vectors_count == dest_client_vectors_count
     ), f"Migration failed, vectors count are not equal: source vector count {source_client_vectors_count}, dest vector count {dest_client_vectors_count}"
-
-
-if __name__ == "__main__":
-    import numpy as np
-
-    VECTOR_NUMBER = 1000
-
-    local_client = QdrantClient(":memory:")
-    remote_client = QdrantClient()
-
-    single_vector_collection_kwargs = {
-        "collection_name": "single_vector_collection",
-        "vectors_config": models.VectorParams(size=10, distance=models.Distance.COSINE),
-    }
-    multiple_vectors_collection_kwargs = {
-        "collection_name": "multiple_vectors_collection",
-        "vectors_config": {
-            "text": models.VectorParams(size=10, distance=models.Distance.EUCLID),
-            "image": models.VectorParams(size=11, distance=models.Distance.COSINE),
-        },
-    }
-    local_client.recreate_collection(**single_vector_collection_kwargs)
-    local_client.recreate_collection(**multiple_vectors_collection_kwargs)
-    remote_client.recreate_collection(**single_vector_collection_kwargs)
-    remote_client.recreate_collection(**multiple_vectors_collection_kwargs)
-
-    local_client.upload_collection(
-        single_vector_collection_kwargs["collection_name"],
-        vectors=np.random.randn(
-            VECTOR_NUMBER, single_vector_collection_kwargs["vectors_config"].size
-        ),
-    )
-    local_client.upload_collection(
-        multiple_vectors_collection_kwargs["collection_name"],
-        vectors={
-            "text": np.random.randn(
-                VECTOR_NUMBER,
-                multiple_vectors_collection_kwargs["vectors_config"]["text"].size,
-            ),
-            "image": np.random.randn(
-                VECTOR_NUMBER,
-                multiple_vectors_collection_kwargs["vectors_config"]["image"].size,
-            ),
-        },
-    )
-    migrate(local_client, remote_client)
