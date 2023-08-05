@@ -209,8 +209,8 @@ More examples can be found [here](./tests/test_async_qdrant_client.py).
 
 ### Development
 
+Run `poetry install --with dev` to install development dependencies.
+
 This project uses git hooks to run code formatters.
 
-Install `pre-commit` with `pip3 install pre-commit` and set up hooks with `pre-commit install`.
-
-> pre-commit requires python>=3.8
+Set up hooks with `pre-commit install`.
