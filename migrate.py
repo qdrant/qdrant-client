@@ -3,6 +3,13 @@ from qdrant_client.http import models
 
 
 def migrate(source_client: QdrantClient, dest_client: QdrantClient, batch_size: int = 100) -> None:
+    """Migrate all collections from source client to destination client
+
+    Args:
+        source_client (QdrantClient): Source client
+        dest_client (QdrantClient): Destination client
+        batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
+    """
     source_collections = source_client.get_collections().collections
     dest_collections = dest_client.get_collections().collections
 
@@ -14,17 +21,30 @@ def migrate(source_client: QdrantClient, dest_client: QdrantClient, batch_size: 
         not missing_collections
     ), f"Destination client should have all collections from source client. Missing collections: {missing_collections}"
 
-    compare_collections(list(source_collection_names), source_client, dest_client)
+    _compare_collections(list(source_collection_names), source_client, dest_client)
 
+    print(f"Number of collections to migrate: {len(source_collection_names)}", end="\n\n")
     for collection_name in source_collection_names:
-        migrate_collection(collection_name, source_client, dest_client, batch_size)
+        print(f"Start migrating collection `{collection_name}`")
+        _migrate_collection(collection_name, source_client, dest_client, batch_size)
+        print(f"Finish migrating collection `{collection_name}`", end="\n\n")
 
 
-def compare_collections(
+def _compare_collections(
     source_collection_names: list[str],
     source_client: QdrantClient,
     dest_client: QdrantClient,
 ) -> bool:
+    """Compare collections from source client and destination client
+
+    Args:
+        source_collection_names (list[str]): List of collection names
+        source_client (QdrantClient): Source client
+        dest_client (QdrantClient): Destination client
+
+    Returns:
+        bool: True if collections have the same vector and distance params
+    """
     for collection_name in source_collection_names:
         source_collection = source_client.get_collection(collection_name)
         source_vector_params = source_collection.config.params.vectors
@@ -53,12 +73,20 @@ def compare_collections(
         return True
 
 
-def migrate_collection(
+def _migrate_collection(
     collection_name: str,
     source_client: QdrantClient,
     dest_client: QdrantClient,
     batch_size: int = 100,
 ) -> None:
+    """Migrate collection from source client to destination client
+
+    Args:
+        collection_name (str): Collection name
+        source_client (QdrantClient): Source client
+        dest_client (QdrantClient): Destination client
+        batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
+    """
     records, next_offset = source_client.scroll(
         collection_name, limit=batch_size, with_vectors=True
     )
