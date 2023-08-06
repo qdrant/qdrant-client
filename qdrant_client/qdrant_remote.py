@@ -1783,7 +1783,7 @@ class QdrantRemote(QdrantBase):
 
             if isinstance(
                 quantization_config,
-                (rest_models.ScalarQuantization, rest_models.ProductQuantization),
+                get_args(rest_models.QuantizationConfig),
             ):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
 
