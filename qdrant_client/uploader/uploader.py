@@ -1,5 +1,4 @@
 import itertools
-import math
 from abc import ABC
 from itertools import count, islice
 from typing import Any, Dict, Generator, Iterable, List, Optional, Union
