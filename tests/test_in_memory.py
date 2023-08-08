@@ -17,8 +17,11 @@ def test_in_memory_key_filter_returns_results(qdrant: QdrantClient):
         collection_name="test_collection",
         wait=True,
         points=[
-            models.PointStruct(id=1, vector=[0.05, 0.61, 0.76, 0.74],
-                        payload={"city": "Berlin"}),
+            models.PointStruct(
+                id=1,
+                vector=[0.05, 0.61, 0.76, 0.74],
+                payload={"city": "Berlin"}
+            ),
             models.PointStruct(
                 id=2,
                 vector=[0.19, 0.81, 0.75, 0.11],
@@ -39,6 +42,9 @@ def test_in_memory_key_filter_returns_results(qdrant: QdrantClient):
         ],
     )
 
+    assert operation_info.operation_id == 0
+    assert operation_info.status == models.UpdateStatus.COMPLETED
+
     search_result = qdrant.search(
         collection_name = "test_collection",
         query_vector = [0.2, 0.1, 0.9, 0.7],
@@ -48,4 +54,4 @@ def test_in_memory_key_filter_returns_results(qdrant: QdrantClient):
         limit=3,
     )
 
-    assert search_result is not None
+    assert [r.id for r in search_result] == [4, 2]

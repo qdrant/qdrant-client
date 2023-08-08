@@ -1,7 +1,9 @@
 import random
 import tempfile
+import pytest
 
 import numpy as np
+from typing import Optional
 
 import qdrant_client
 import qdrant_client.http.models as rest
@@ -11,9 +13,9 @@ default_collection_name = "example"
 
 
 def ingest_data(
-    vector_size=1500,
-    path=None,
-    collection_name=default_collection_name,
+    vector_size: int = 1500,
+    path: Optional[str] = None,
+    collection_name: str = default_collection_name,
 ):  # vector_size < 433: works, vector_size >= 433: crashes
     lines = [x for x in range(10)]
 
@@ -40,30 +42,28 @@ def ingest_data(
 
 def test_prevent_parallel_access():
     with tempfile.TemporaryDirectory() as tmpdir:
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        _client = qdrant_client.QdrantClient(path=tmpdir)
 
-        try:
-            client2 = qdrant_client.QdrantClient(path=tmpdir)
-            assert False
-        except Exception as e:
-            error_message = str(e)
-            assert "already accessed by another instance" in error_message
+        with pytest.raises(Exception) as e:
+            _client2 = qdrant_client.QdrantClient(path=tmpdir)
+
+        assert "already accessed by another instance" in str(e)
 
 
 def test_local_persistence():
     with tempfile.TemporaryDirectory() as tmpdir:
         ingest_data(path=tmpdir)
         client = qdrant_client.QdrantClient(path=tmpdir)
-        assert 10 == client.count(default_collection_name).count
+        assert client.count(default_collection_name).count == 10
         del client
 
         ingest_data(path=tmpdir)
         client = qdrant_client.QdrantClient(path=tmpdir)
-        assert 10 == client.count(default_collection_name).count
+        assert client.count(default_collection_name).count == 10
         del client
 
         ingest_data(path=tmpdir)
         ingest_data(path=tmpdir, collection_name="example_2")
         client = qdrant_client.QdrantClient(path=tmpdir)
-        assert 10 == client.count(default_collection_name).count
-        assert 10 == client.count("example_2").count
+        assert client.count(default_collection_name).count == 10
+        assert client.count("example_2").count == 10
