@@ -6,6 +6,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
+from qdrant_client.migrate import migrate
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
@@ -1732,3 +1733,6 @@ class QdrantClient(QdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.get_locks(**kwargs)
+
+    def migrate(self, dest_client: QdrantBase, batch_size: int = 100) -> None:
+        migrate(self, dest_client, batch_size=batch_size)

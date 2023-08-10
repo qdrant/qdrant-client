@@ -3,7 +3,6 @@ import pytest
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from qdrant_client.migrate import migrate
 
 VECTOR_NUMBER = 1000
 
@@ -37,7 +36,7 @@ def test_single_vector_collection(source_client: QdrantClient, dest_client: Qdra
         ),
     )
 
-    migrate(source_client, dest_client)
+    source_client.migrate(dest_client)
 
 
 def test_multiple_vectors_collection(
@@ -65,6 +64,7 @@ def test_multiple_vectors_collection(
             ),
         },
     )
+    source_client.migrate(dest_client)
 
 
 def test_multiple_collections(source_client: QdrantClient, dest_client: QdrantClient) -> None:
@@ -78,7 +78,7 @@ def test_multiple_collections(source_client: QdrantClient, dest_client: QdrantCl
             vectors=np.random.randn(VECTOR_NUMBER, vector_params.size),
         )
 
-    migrate(source_client, dest_client)
+    source_client.migrate(dest_client)
 
     for collection_name in collection_names:
         source_vector_number = source_client.get_collection(collection_name).vectors_count
@@ -98,7 +98,7 @@ def test_different_distances(source_client: QdrantClient, dest_client: QdrantCli
     dest_client.recreate_collection(collection_name, vectors_config=euclid_params)
 
     with pytest.raises(AssertionError):
-        migrate(source_client, dest_client)
+        source_client.migrate(dest_client)
 
 
 def test_different_vector_sizes(source_client: QdrantClient, dest_client: QdrantClient) -> None:
@@ -110,7 +110,7 @@ def test_different_vector_sizes(source_client: QdrantClient, dest_client: Qdrant
     dest_client.recreate_collection(collection_name, vectors_config=big_vector_params)
 
     with pytest.raises(AssertionError):
-        migrate(source_client, dest_client)
+        source_client.migrate(dest_client)
 
 
 def test_single_vs_multiple_vectors(
@@ -127,4 +127,4 @@ def test_single_vs_multiple_vectors(
     dest_client.recreate_collection(collection_name, vectors_config=multiple_vectors_params)
 
     with pytest.raises(AssertionError):
-        migrate(source_client, dest_client)
+        source_client.migrate(dest_client)

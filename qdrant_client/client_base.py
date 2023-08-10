@@ -1,4 +1,10 @@
+import sys
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+
+if sys.version_info <= (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
@@ -326,3 +332,6 @@ class QdrantBase:
 
     def close(self, **kwargs: Any) -> None:
         pass
+
+    def migrate(self, dest_client: Self, batch_size: int = 100) -> None:
+        raise NotImplementedError()

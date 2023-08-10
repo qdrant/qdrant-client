@@ -1,15 +1,15 @@
 from typing import List
 
-from qdrant_client import QdrantClient
+from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 
 
-def migrate(source_client: QdrantClient, dest_client: QdrantClient, batch_size: int = 100) -> None:
+def migrate(source_client: QdrantBase, dest_client: QdrantBase, batch_size: int = 100) -> None:
     """Migrate all collections from source client to destination client
 
     Args:
-        source_client (QdrantClient): Source client
-        dest_client (QdrantClient): Destination client
+        source_client (QdrantBase): Source client
+        dest_client (QdrantBase): Destination client
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     source_collections = source_client.get_collections().collections
@@ -34,15 +34,15 @@ def migrate(source_client: QdrantClient, dest_client: QdrantClient, batch_size: 
 
 def _compare_collections(
     source_collection_names: List[str],
-    source_client: QdrantClient,
-    dest_client: QdrantClient,
+    source_client: QdrantBase,
+    dest_client: QdrantBase,
 ) -> bool:
     """Compare collections from source client and destination client
 
     Args:
         source_collection_names (list[str]): List of collection names
-        source_client (QdrantClient): Source client
-        dest_client (QdrantClient): Destination client
+        source_client (QdrantBase): Source client
+        dest_client (QdrantBase): Destination client
 
     Returns:
         bool: True if collections have the same vector and distance params
@@ -81,16 +81,16 @@ def _compare_collections(
 
 def _migrate_collection(
     collection_name: str,
-    source_client: QdrantClient,
-    dest_client: QdrantClient,
+    source_client: QdrantBase,
+    dest_client: QdrantBase,
     batch_size: int = 100,
 ) -> None:
     """Migrate collection from source client to destination client
 
     Args:
         collection_name (str): Collection name
-        source_client (QdrantClient): Source client
-        dest_client (QdrantClient): Destination client
+        source_client (QdrantBase): Source client
+        dest_client (QdrantBase): Destination client
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     records, next_offset = source_client.scroll(
