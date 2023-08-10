@@ -214,3 +214,6 @@ This project uses git hooks to run code formatters.
 Install `pre-commit` with `pip3 install pre-commit` and set up hooks with `pre-commit install`.
 
 > pre-commit requires python>=3.8
+
+
+Install dev and types dependencies with `poetry install --with dev,types`
