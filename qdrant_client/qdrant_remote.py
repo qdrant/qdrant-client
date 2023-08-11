@@ -50,6 +50,7 @@ class QdrantRemote(QdrantBase):
         prefix: Optional[str] = None,
         timeout: Optional[float] = None,
         host: Optional[str] = None,
+        grpc_host: Optional[str] = None,
         **kwargs: Any,
     ):
         self._prefer_grpc = prefer_grpc
@@ -63,6 +64,14 @@ class QdrantRemote(QdrantBase):
 
         if url is not None and host is not None:
             raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
+
+        if grpc_host is not None and (
+            grpc_host.startswith("http://") or grpc_host.startswith("https://")
+        ):
+            raise ValueError(
+                f"`grpc_host` param is not expected to contain protocol (http:// or https://). "
+                f"Try to use `url` parameter instead."
+            )
 
         if host is not None and (host.startswith("http://") or host.startswith("https://")):
             raise ValueError(
@@ -96,6 +105,7 @@ class QdrantRemote(QdrantBase):
         else:
             self._host = host or "localhost"
             self._port = port
+            self._grpc_host = grpc_host or self._host
 
         self._timeout = timeout
         self._api_key = api_key
@@ -194,7 +204,7 @@ class QdrantRemote(QdrantBase):
 
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
-                host=self._host,
+                host=self._grpc_host,
                 port=self._grpc_port,
                 ssl=self._https,
                 metadata=self._grpc_headers,
@@ -206,7 +216,7 @@ class QdrantRemote(QdrantBase):
 
         if self._aio_grpc_channel is None:
             self._aio_grpc_channel = get_async_channel(
-                host=self._host,
+                host=self._grpc_host,
                 port=self._grpc_port,
                 ssl=self._https,
                 metadata=self._grpc_headers,
