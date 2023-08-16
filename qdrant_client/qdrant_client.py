@@ -98,6 +98,17 @@ class QdrantClient(QdrantBase):
     def __del__(self) -> None:
         self.close()
 
+    def batch_iterable(self, iterable: List[Any], batch_size: int) -> Generator[List[Any], None, None]:
+        """A generator that yields batches of items from an iterable."""
+        batch = []
+        for item in iterable:
+            batch.append(item)
+            if len(batch) >= batch_size:
+                yield batch
+                batch = []
+        if batch:
+            yield batch
+
     def add(
         self,
         collection_name: str,
@@ -106,18 +117,54 @@ class QdrantClient(QdrantBase):
         wait: bool = True,
         **kwargs: Any,
     ) -> None:
+        """
+        Args:
+            client (QdrantClient): _description_
+            collection_name (str): _description_
+            docs (Dict[str, List[Any]]): _description_
+            batch_size (int, optional): _description_. Defaults to 512.
+            wait (bool, optional): _description_. Defaults to True.
+            embedding_model (Embedding, optional): Defaults to DefaultEmbedding() with all-MiniLM-L6-v2.
+        
+        Raises:
+            ImportError: If fastembed is not installed.
+
+        """
+
         # check if we have fastembed installed
         try:
-            from fastembed.qdrant_mixin import QdrantAPIExtensions
-            QdrantAPIExtensions.upsert_docs(self, collection_name, docs, 
-                                          batch_size=batch_size, 
-                                          wait=wait, **kwargs)
+            from fastembed import FlagEmbedding as Embedding
         except ImportError:
             # If it's not, ask the user to install it
             raise ImportError(
                 "fastembed is not installed. Please install it to enable fast vector indexing with pip install fastembed."
             )
-        
+
+        # Iterate over documents and metadatas in batches
+        for batch_docs, batch_metadatas in zip(
+            self.batch_iterable(docs["documents"], batch_size),
+            self.batch_iterable(docs["metadatas"], batch_size),
+        ):
+            # Tokenize, embed, and index each document
+            embeddings = embedding_model.encode(batch_docs)
+
+            # Create a PointStruct for each document
+            points = [
+                PointStruct(id=uuid.uuid4().hex, vector=embedding.tolist(), payload={**metadata, "text": doc})
+                for doc, embedding, metadata in zip(batch_docs, embeddings, batch_metadatas)
+            ]
+
+            # Check if collection exists
+            if collection_name not in self.get_collections():
+                self.create_collection(
+                    collection_name=collection_name,
+                    vectors_config=VectorParams(size=len(embeddings[0]), distance=Distance.COSINE),
+                )
+            # Call the existing upsert method with the new PointStruct
+            self.upsert(collection_name=collection_name, points=points, wait=wait, **kwargs)
+
+
+
     def query(
         self,
         collection_name: str,
