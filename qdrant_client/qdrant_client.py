@@ -1,10 +1,31 @@
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+import uuid
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
+
+# PointStruct, VectorParams for usage in add
+from qdrant_client.models import (
+    Distance,
+    PointStruct,
+    QueryResponse,
+    SearchParams,
+    VectorParams,
+)
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
@@ -174,24 +195,67 @@ class QdrantClient(QdrantBase):
         query_filter: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> List[Dict[str, Any]]:
+        """
+        Search for documents in a collection.
+
+        Args:
+            client (QdrantClient): _description_
+            collection_name (str): _description_
+            query_texts (List[str]): _description_
+            n_results (int, optional): _description_. Defaults to 2.
+            query_filter (Optional[Dict[str, Any]], optional): _description_. Defaults to None.
+            search_params (SearchParams, optional): _description_. Defaults to SearchParams(hnsw_ef=128, exact=False).
+            embedding_model (Embedding, optional): _description_. Defaults to SentenceTransformersEmbedding().
+            batch_size (int, optional): _description_. Defaults to 512.
+
+        Returns:
+            List[]: _description_
+        """
         # check if we have fastembed installed
         try:
-            from fastembed.qdrant_mixin import QdrantAPIExtensions, QueryResponse
-
-            from qdrant_client.http.models import SearchParams
-            search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False)
-            
-            return QdrantAPIExtensions.search_docs(client=self, collection_name=collection_name, 
-                                            query_texts=query_texts, n_results=n_results,
-                                            batch_size=batch_size, 
-                                            query_filter = query_filter,
-                                            search_params = search_params, **kwargs)
-
+            from fastembed import FlagEmbedding as Embedding
         except ImportError:
             # If it's not, ask the user to install it
             raise ImportError(
                 "fastembed is not installed. Please install it to enable fast vector indexing with pip install fastembed."
             )
+        query_responses = []
+
+        # Perform the search for each batch of query texts
+        for query_texts_batch in self.batch_iterable(query_texts, batch_size):
+            query_vectors = embedding_model.encode(query_texts_batch)
+
+            for _, query_vector in zip(query_texts_batch, query_vectors):
+                search_result = self.search(
+                    collection_name=collection_name,
+                    query_filter=query_filter,
+                    search_params=search_params,
+                    query_vector=query_vector.tolist(),
+                    limit=n_results,
+                    with_payload=True,
+                    **kwargs,
+                )
+
+                ids, embeddings, metadatas, distances = [], [], [], []
+                for scored_point in search_result:
+                    ids.append(scored_point.id)
+                    if scored_point.vector:
+                        embeddings.append(scored_point.vector)
+                    metadatas.append(scored_point.payload)
+                    distances.append(scored_point.score)
+
+                query_responses.append(
+                    QueryResponse(
+                        ids=ids,
+                        embeddings=embeddings,
+                        metadatas=metadatas,
+                        distances=distances,
+                    ).dict()
+                )
+
+        return query_responses
+
+
 
 
     def close(self, **kwargs: Any) -> None:
@@ -1812,6 +1876,4 @@ class QdrantClient(QdrantBase):
         """Get current locks state."""
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.get_locks(**kwargs)
-        return self._client.get_locks(**kwargs)
         return self._client.get_locks(**kwargs)
