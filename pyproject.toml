@@ -40,6 +40,11 @@ pyright = "^1.1.293"
 mypy = "^1.0.0"
 types-protobuf = "^4.21.0.5"
 
+[tool.poetry.group.fastembed]
+optional = true
+
+[tool.poetry.group.fastembed.dependencies]
+fastembed = ">=0.0.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
