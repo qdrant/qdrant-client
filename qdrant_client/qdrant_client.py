@@ -16,6 +16,13 @@ from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
+from qdrant_client.http.models import (
+    Distance,  # type: ignore
+    PointStruct,  # type: ignore
+    QueryResponse,  # type: ignore
+    SearchParams,  # type: ignore
+    VectorParams,  # type: ignore
+)
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.qdrant_remote import QdrantRemote
 
@@ -145,26 +152,31 @@ class QdrantClient(QdrantBase):
 
         # check if we have fastembed installed
         try:
-            from fastembed import FlagEmbedding as Embedding
+            from fastembed.embedding import DefaultEmbedding as Embedding  # noqa: F401
         except ImportError:
             # If it's not, ask the user to install it
             raise ImportError(
                 "fastembed is not installed. Please install it to enable fast vector indexing with pip install fastembed."
             )
-
+        embedding_model = Embedding()
         # Iterate over documents and metadatas in batches
         for batch_docs, batch_metadatas in zip(
             self.batch_iterable(docs["documents"], batch_size),
             self.batch_iterable(docs["metadatas"], batch_size),
         ):
             # Tokenize, embed, and index each document
-            embeddings = embedding_model.encode(batch_docs)
+            embeddings = list(embedding_model.encode(batch_docs)) # noqa: F821
+            embeddings = embeddings[0] # TODO: why is this necessary? Shouldn't embeddings be a list of lists?
 
-            # Create a PointStruct for each document
-            points = [
-                PointStruct(id=uuid.uuid4().hex, vector=embedding.tolist(), payload={**metadata, "text": doc})
-                for doc, embedding, metadata in zip(batch_docs, embeddings, batch_metadatas)
-            ]
+            points = []
+            for doc, embedding, metadata in zip(batch_docs, embeddings, batch_metadatas):
+                points.append(
+                    PointStruct(id=uuid.uuid4().hex, vector=embedding, payload={**metadata, "text": doc})
+                )
+            # points = [
+            #     PointStruct(id=uuid.uuid4().hex, vector=embedding.tolist(), payload={**metadata, "text": doc})
+            #     for doc, embedding, metadata in zip(batch_docs, embeddings, batch_metadatas)
+            # ]
 
             # Check if collection exists
             if collection_name not in self.get_collections():
@@ -183,6 +195,7 @@ class QdrantClient(QdrantBase):
         query_texts: List[str],
         n_results: int = 2,
         batch_size: int = 512,
+        search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False),
         query_filter: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> List[Dict[str, Any]]:
@@ -247,9 +260,6 @@ class QdrantClient(QdrantBase):
             )
 
         return query_responses
-
-
-
 
     def close(self, **kwargs: Any) -> None:
         """
