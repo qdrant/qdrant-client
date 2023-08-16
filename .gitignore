@@ -7,3 +7,4 @@ htmlcov
 *.iml
 dist
 *.tar.gz
+local_cache/*/*
