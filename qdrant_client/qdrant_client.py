@@ -204,45 +204,47 @@ class QdrantClient(QdrantBase):
         """
         # check if we have fastembed installed
         try:
-            from fastembed import FlagEmbedding as Embedding
+            from fastembed.embedding import DefaultEmbedding as Embedding  # noqa: F401
         except ImportError:
             # If it's not, ask the user to install it
             raise ImportError(
                 "fastembed is not installed. Please install it to enable fast vector indexing with pip install fastembed."
             )
+
+        # TODO: Init and load only once per client connection
+        embedding_model = Embedding()
         query_responses = []
 
-        # Perform the search for each batch of query texts
-        for query_texts_batch in self.batch_iterable(query_texts, batch_size):
-            query_vectors = embedding_model.encode(query_texts_batch)
+        query_vectors = embedding_model.encode(query_texts)  # noqa: F821
 
-            for _, query_vector in zip(query_texts_batch, query_vectors):
-                search_result = self.search(
-                    collection_name=collection_name,
-                    query_filter=query_filter,
-                    search_params=search_params,
-                    query_vector=query_vector.tolist(),
-                    limit=n_results,
-                    with_payload=True,
-                    **kwargs,
-                )
+        for _, qv in zip(query_texts, query_vectors):
+            query_vector = qv[0] # TODO: why is this necessary? Rewrite encode() to return a list of lists
+            search_result = self.search(
+                collection_name=collection_name,
+                query_filter=query_filter,
+                search_params=search_params,
+                query_vector=query_vector.tolist(),
+                limit=n_results,
+                with_payload=True,
+                **kwargs,
+            )
 
-                ids, embeddings, metadatas, distances = [], [], [], []
-                for scored_point in search_result:
-                    ids.append(scored_point.id)
-                    if scored_point.vector:
-                        embeddings.append(scored_point.vector)
-                    metadatas.append(scored_point.payload)
-                    distances.append(scored_point.score)
+            ids, embeddings, metadatas, distances = [], [], [], []
+            for scored_point in search_result:
+                ids.append(scored_point.id)
+                if scored_point.vector:
+                    embeddings.append(scored_point.vector)
+                metadatas.append(scored_point.payload)
+                distances.append(scored_point.score)
 
-                query_responses.append(
-                    QueryResponse(
-                        ids=ids,
-                        embeddings=embeddings,
-                        metadatas=metadatas,
-                        distances=distances,
-                    ).dict()
-                )
+            query_responses.append(
+                QueryResponse(
+                    ids=ids,
+                    embeddings=embeddings,
+                    metadatas=metadatas,
+                    distances=distances,
+                ).dict()
+            )
 
         return query_responses
 
