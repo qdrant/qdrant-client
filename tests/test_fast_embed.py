@@ -14,15 +14,25 @@ def test_add_without_query(local_client: QdrantClient = QdrantClient(":memory:")
         "metadatas": [{"source": "Langchain-docs"}, {"source": "LlamaIndex-docs"}],
         "ids": [42, 2]
     }):
-             
+    if not local_client._is_fastembed_installed:
+        pytest.skip("FastEmbed is not installed, skipping test")         
     local_client.add(collection_name=collection_name, docs=docs)
     assert local_client.count(collection_name).count == 2
     
-def test_no_install(local_client: QdrantClient, 
-             collection_name: str, 
-             docs: Dict[str, List[Union[str, int, Any]]]):
-    with pytest.raises(ImportError):
-        local_client.add(collection_name, docs)
+def test_no_install(local_client: QdrantClient = QdrantClient(":memory:"), 
+             collection_name: str = "demo_collection", 
+             docs: Dict[str, List[Union[str, int, Any]]] = {
+                "documents": ["Qdrant has Langchain integrations",
+                              "Qdrant also has Llama Index integrations"],
+                              "metadatas": [{"source": "Langchain-docs"}, {"source": "LlamaIndex-docs"}],
+                              "ids": [42, 2]
+                              }):
+    # When FastEmbed is not installed, the add method should raise an ImportError
+    if local_client._is_fastembed_installed:
+        pytest.skip("FastEmbed is installed, skipping test")
+    else:
+        with pytest.raises(ImportError):
+            local_client.add(collection_name, docs)
 
 def test_query(local_client: QdrantClient = QdrantClient(":memory:"), 
              collection_name: str= "demo_collection", 
@@ -32,6 +42,8 @@ def test_query(local_client: QdrantClient = QdrantClient(":memory:"),
         "metadatas": [{"source": "Langchain-docs"}, {"source": "LlamaIndex-docs"}],
         "ids": [42, 2]
     }):
+    if not local_client._is_fastembed_installed:
+        pytest.skip("FastEmbed is not installed, skipping test")
     local_client.add(collection_name=collection_name, docs=docs)
     assert local_client.count(collection_name).count == 2
     # Query the added documents
