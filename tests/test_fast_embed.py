@@ -33,14 +33,12 @@ def test_query(local_client: QdrantClient = QdrantClient(":memory:"),
         "ids": [42, 2]
     }):
     local_client.add(collection_name=collection_name, docs=docs)
+    assert local_client.count(collection_name).count == 2
     # Query the added documents
+
     search_result = local_client.query(collection_name=collection_name, 
                                  query_texts=["This is a query document"])
     assert len(search_result) > 0
-    query_texts = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
-    results = local_client.query(collection_name, query_texts)
-    assert len(results) > 0
-
     # TODO: Add assertions to verify that the query returned the expected results
 
 if __name__ == "__main__":
