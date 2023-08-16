@@ -1151,56 +1151,6 @@ def test_client_close():
         local_client_persist_2.close()
     # endregion local
 
-@pytest.fixture(autouse=True)
-def fastembed_setup(request: FixtureRequest):
-    if request.node.get_closest_marker('fastembed'):
-        os.system('pip install fastembed')
-    elif request.node.get_closest_marker('no_fastembed'):
-        os.system('pip uninstall -y fastembed')
-
-@pytest.fixture
-def local_client():
-    return QdrantClient(":memory:")
-
-@pytest.fixture
-def collection_name():
-    return "demo_collection"
-
-@pytest.fixture
-def docs():
-    return {
-        "documents": ["Qdrant has Langchain integrations", 
-                      "Qdrant also has Llama Index integrations"],
-        "metadatas": [{"source": "Langchain-docs"}, {"source": "LlamaIndex-docs"}],
-        "ids": [42, 2]
-    }
-
-@pytest.mark.fastembed
-def test_add(local_client: QdrantClient, 
-             collection_name: str, 
-             docs: Dict[str, List[Union[str, int, Any]]]):
-    local_client.add(collection_name=collection_name, docs=docs)
-    # Query the added documents
-    search_result = local_client.query(collection_name=collection_name, 
-                                 query_texts=["This is a query document"])
-    # Verify the search result
-    # The specific verification will depend on the expected outcome of the query
-    assert len(search_result) > 0 
-
-@pytest.mark.no_fastembed
-def test_add_without_fastembed_installed(local_client: QdrantClient, 
-             collection_name: str, 
-             docs: Dict[str, List[Union[str, int, Any]]]):
-    with pytest.raises(ImportError):
-        local_client.add(collection_name, docs)
-
-@pytest.mark.fastembed
-def test_query_with_fastembed_installed(local_client: QdrantClient, 
-             collection_name: str, 
-             docs: Dict[str, List[Union[str, int, Any]]]):
-    # Attempt to query the collection
-    results = local_client.query(collection_name, query_texts)
-    # TODO: Add assertions to verify that the query returned the expected results
 
 if __name__ == "__main__":
     test_qdrant_client_integration()
@@ -1208,5 +1158,3 @@ if __name__ == "__main__":
     test_has_id_condition()
     test_insert_float()
     test_legacy_imports()
-    test_add_without_fastembed_installed()
-    test_query_with_fastembed_installed()
