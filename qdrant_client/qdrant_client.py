@@ -113,6 +113,14 @@ class QdrantClient(QdrantBase):
                     host=host,
                     **kwargs,
                 )
+        self._is_fastembed_installed: Optional[bool] = None
+        # if fastembed is installed, set to true else False
+        if self._is_fastembed_installed is None:
+            try:
+                from fastembed.embedding import DefaultEmbedding  # noqa: F401
+                self._is_fastembed_installed = True
+            except ImportError:
+                self._is_fastembed_installed = False
 
     def __del__(self) -> None:
         self.close()
