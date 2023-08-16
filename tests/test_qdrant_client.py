@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Union
 
 import numpy as np
 import pytest
+from pytest import FixtureRequest
 
 from qdrant_client import QdrantClient
 from qdrant_client._pydantic_compat import to_dict
@@ -1106,7 +1107,7 @@ def test_client_close():
     # endregion local
 
 @pytest.fixture(autouse=True)
-def fastembed_setup(request):
+def fastembed_setup(request: FixtureRequest):
     if request.node.get_closest_marker('fastembed'):
         os.system('pip install fastembed')
     elif request.node.get_closest_marker('no_fastembed'):
