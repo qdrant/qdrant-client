@@ -1,14 +1,12 @@
 import os
-import random
 import uuid
 from pprint import pprint
 from tempfile import mkdtemp
 from time import sleep
-from typing import Any, Dict, List, Union
+from typing import List
 
 import numpy as np
 import pytest
-from pytest import FixtureRequest
 
 from qdrant_client import QdrantClient
 from qdrant_client._pydantic_compat import to_dict
@@ -38,10 +36,7 @@ from qdrant_client.models import (
     Range,
     RecommendRequest,
     ScalarQuantization,
-    ScalarQuantization,
     ScalarQuantizationConfig,
-    ScalarQuantizationConfig,
-    ScalarType,
     ScalarType,
     SearchParams,
     SearchRequest,
