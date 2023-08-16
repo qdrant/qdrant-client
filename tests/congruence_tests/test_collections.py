@@ -1,9 +1,14 @@
+import pytest
+
+from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     generate_fixtures,
     init_client,
     init_local,
     init_remote,
 )
+
+COLLECTION_NAME = "test_collection"
 
 
 def test_get_collection():

@@ -11,7 +11,8 @@ except ImportError:
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
-Payload = Dict[Any, Any]
+Payload = Dict[str, Any]
+VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 
 class AbortTransferOperation(BaseModel, extra="forbid"):
@@ -176,6 +177,10 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
     replication_factor: Optional[int] = Field(default=None, description="Number of replicas for each shard")
     write_consistency_factor: Optional[int] = Field(
         default=None, description="Minimal number successful responses from replicas to consider operation successful"
+    )
+    on_disk_payload: Optional[bool] = Field(
+        default=None,
+        description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
     )
 
 
@@ -360,6 +365,10 @@ class DeleteVectors(BaseModel, extra="forbid"):
         default=None, description="Deletes values from points that satisfy this filter condition"
     )
     vector: List[str] = Field(..., description="Vector names")
+
+
+class Disabled(str, Enum):
+    DISABLED = "Disabled"
 
 
 class Distance(str, Enum):
@@ -950,6 +959,7 @@ class PayloadSchemaType(str, Enum):
     FLOAT = "float"
     GEO = "geo"
     TEXT = "text"
+    BOOL = "bool"
 
 
 class PayloadSelectorExclude(BaseModel, extra="forbid"):
@@ -1472,6 +1482,7 @@ class TokenizerType(str, Enum):
     PREFIX = "prefix"
     WHITESPACE = "whitespace"
     WORD = "word"
+    MULTILINGUAL = "multilingual"
 
 
 class UpdateCollection(BaseModel, extra="forbid"):
@@ -1479,12 +1490,22 @@ class UpdateCollection(BaseModel, extra="forbid"):
     Operation for updating parameters of the existing collection
     """
 
+    vectors: Optional["VectorsConfigDiff"] = Field(
+        default=None,
+        description="Vector data parameters to update. It is possible to provide one config for single vector mode and list of configs for multiple vectors mode.",
+    )
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         default=None,
-        description="Custom params for Optimizers.  If none - values from service configuration file are used. This operation is blocking, it will only proceed ones all current optimizations are complete",
+        description="Custom params for Optimizers.  If none - it is left unchanged. This operation is blocking, it will only proceed once all current optimizations are complete",
     )
     params: Optional["CollectionParamsDiff"] = Field(
-        default=None, description="Collection base params.  If none - values from service configuration file are used."
+        default=None, description="Collection base params. If none - it is left unchanged."
+    )
+    hnsw_config: Optional["HnswConfigDiff"] = Field(
+        default=None, description="HNSW parameters to update for the collection index. If none - it is left unchanged."
+    )
+    quantization_config: Optional["QuantizationConfigDiff"] = Field(
+        default=None, description="Quantization parameters to update. If none - it is left unchanged."
     )
 
 
@@ -1556,6 +1577,18 @@ class VectorParams(BaseModel, extra="forbid"):
     on_disk: Optional[bool] = Field(
         default=None,
         description="If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
+    )
+
+
+class VectorParamsDiff(BaseModel, extra="forbid"):
+    hnsw_config: Optional["HnswConfigDiff"] = Field(
+        default=None, description="Update params for HNSW index. If empty object - it will be unset."
+    )
+    quantization_config: Optional["QuantizationConfigDiff"] = Field(
+        default=None, description="Update params for quantization. If none - it is left unchanged."
+    )
+    on_disk: Optional[bool] = Field(
+        default=None, description="If true, vectors are served from disk, improving RAM usage at the cost of latency"
     )
 
 
@@ -1691,6 +1724,11 @@ PointsSelector = Union[
 QuantizationConfig = Union[
     ScalarQuantization,
     ProductQuantization,
+]
+QuantizationConfigDiff = Union[
+    ScalarQuantization,
+    ProductQuantization,
+    Disabled,
 ]
 ReadConsistency = Union[
     ReadConsistencyType,
