@@ -17,15 +17,6 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
-
-# PointStruct, VectorParams for usage in add
-from qdrant_client.models import (
-    Distance,
-    PointStruct,
-    QueryResponse,
-    SearchParams,
-    VectorParams,
-)
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
