@@ -12,6 +12,8 @@ from typing import (
     Union,
 )
 
+from pydantic import BaseModel
+
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
@@ -19,12 +21,18 @@ from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.http.models import (
     Distance,  # type: ignore
     PointStruct,  # type: ignore
-    QueryResponse,  # type: ignore
     SearchParams,  # type: ignore
     VectorParams,  # type: ignore
 )
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.qdrant_remote import QdrantRemote
+
+
+class QueryResponse(BaseModel, extra="forbid"):
+    ids: List[str]
+    embeddings: Optional[List[List[float]]]
+    metadatas: List[Dict[str, Any]]
+    distances: List[float]
 
 
 class QdrantClient(QdrantBase):

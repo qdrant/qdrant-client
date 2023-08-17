@@ -23,11 +23,6 @@ class AliasDescription(BaseModel, extra="forbid"):
     alias_name: str = Field(..., description="")
     collection_name: str = Field(..., description="")
 
-class QueryResponse(BaseModel, extra="forbid"):
-    ids: List[str]
-    embeddings: Optional[List[List[float]]]
-    metadatas: List[Dict[str, Any]]
-    distances: List[float]
 
 class AppBuildTelemetry(BaseModel, extra="forbid"):
     name: str = Field(..., description="")
