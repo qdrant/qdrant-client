@@ -1,9 +1,10 @@
 import sys
 
 import numpy as np
+import numpy.typing as npt
 
 if sys.version_info >= (3, 10):
-    from typing import Any, TypeAlias
+    from typing import TypeAlias
 else:
     from typing_extensions import TypeAlias
 
@@ -86,14 +87,4 @@ _np_numeric = Union[
     np.longdouble,  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
 
-
-if sys.version_info >= (3, 8):
-    # typing is included into numpy since 1.20
-    # NDArray is included since 1.21
-    # pyproject.toml is configured to install numpy>=1.21 in case of python>=3.8
-    # thus we don't need an additional check for numpy version
-    import numpy.typing as npt
-
-    NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
-else:
-    NumpyArray: TypeAlias = np.ndarray
+NumpyArray: TypeAlias = npt.NDArray[_np_numeric]

@@ -1891,6 +1891,7 @@ class QdrantRemote(QdrantBase):
         max_retries: int,
         parallel: int = 1,
         method: Optional[str] = None,
+        wait: bool = False,
     ) -> None:
         if method is not None:
             if method in get_all_start_methods():
@@ -1910,12 +1911,14 @@ class QdrantRemote(QdrantBase):
                 "max_retries": max_retries,
                 "ssl": self._https,
                 "metadata": self._grpc_headers,
+                "wait": wait,
             }
         else:
             updater_kwargs = {
                 "collection_name": collection_name,
                 "uri": self.rest_uri,
                 "max_retries": max_retries,
+                "wait": wait,
                 **self._rest_args,
             }
 
@@ -1955,6 +1958,7 @@ class QdrantRemote(QdrantBase):
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        wait: bool = False,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(

@@ -1,39 +1,15 @@
-import uuid
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
-
-from pydantic import BaseModel
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
-from qdrant_client.http.models import Distance  # type: ignore
-from qdrant_client.http.models import PointStruct  # type: ignore
-from qdrant_client.http.models import SearchParams  # type: ignore
-from qdrant_client.http.models import VectorParams  # type: ignore
 from qdrant_client.local.qdrant_local import QdrantLocal
+from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
-class QueryResponse(BaseModel, extra="forbid"): # type: ignore
-    ids: List[str]
-    embeddings: Optional[List[List[float]]]
-    metadatas: List[Dict[str, Any]]
-    distances: List[float]
-
-
-class QdrantClient(QdrantBase):
+class QdrantClient(QdrantFastembedMixin):
     """Entry point to communicate with Qdrant service via REST or gPRC API.
 
     It combines interface classes and endpoint implementation.
@@ -124,156 +100,13 @@ class QdrantClient(QdrantBase):
         if self._is_fastembed_installed is None:
             try:
                 from fastembed.embedding import DefaultEmbedding  # noqa: F401
+
                 self._is_fastembed_installed = True
             except ImportError:
                 self._is_fastembed_installed = False
 
     def __del__(self) -> None:
         self.close()
-
-    def batch_iterable(self, iterable: List[Any], batch_size: int) -> Generator[List[Any], None, None]:
-        """A generator that yields batches of items from an iterable."""
-        batch = []
-        for item in iterable:
-            batch.append(item)
-            if len(batch) >= batch_size:
-                yield batch
-                batch = []
-        if batch:
-            yield batch
-
-    def add(
-        self,
-        collection_name: str,
-        docs: Dict[str, List[Any]],
-        batch_size: int = 512,
-        wait: bool = True,
-        **kwargs: Any,
-    ) -> None:
-        """
-        Args:
-            client (QdrantClient): _description_
-            collection_name (str): _description_
-            docs (Dict[str, List[Any]]): _description_
-            batch_size (int, optional): _description_. Defaults to 512.
-            wait (bool, optional): _description_. Defaults to True.
-            embedding_model (Embedding, optional): Defaults to DefaultEmbedding() with all-MiniLM-L6-v2.
-        
-        Raises:
-            ImportError: If fastembed is not installed.
-
-        """
-
-        # check if we have fastembed installed
-        try:
-            from fastembed.embedding import DefaultEmbedding as Embedding  # noqa: F401
-        except ImportError:
-            # If it's not, ask the user to install it
-            raise ImportError(
-                "fastembed is not installed. Please install it to enable fast vector indexing with pip install fastembed."
-            )
-        embedding_model = Embedding()
-        # Iterate over documents and metadatas in batches
-        for batch_docs, batch_metadatas in zip(
-            self.batch_iterable(docs["documents"], batch_size),
-            self.batch_iterable(docs["metadatas"], batch_size),
-        ):
-            # Tokenize, embed, and index each document
-            embeddings = list(embedding_model.encode(batch_docs)) # noqa: F821
-            embeddings = embeddings[0] # TODO: why is this necessary? Shouldn't embeddings be a list of lists?
-
-            points = []
-            for doc, embedding, metadata in zip(batch_docs, embeddings, batch_metadatas):
-                points.append(
-                    PointStruct(id=uuid.uuid4().hex, vector=embedding, payload={**metadata, "text": doc})
-                )
-            # points = [
-            #     PointStruct(id=uuid.uuid4().hex, vector=embedding.tolist(), payload={**metadata, "text": doc})
-            #     for doc, embedding, metadata in zip(batch_docs, embeddings, batch_metadatas)
-            # ]
-
-            # Check if collection exists
-            if collection_name not in self.get_collections():
-                self.create_collection(
-                    collection_name=collection_name,
-                    vectors_config=VectorParams(size=len(embeddings[0]), distance=Distance.COSINE),
-                )
-            # Call the existing upsert method with the new PointStruct
-            self.upsert(collection_name=collection_name, points=points, wait=wait, **kwargs)
-
-
-
-    def query(
-        self,
-        collection_name: str,
-        query_texts: List[str],
-        n_results: int = 2,
-        batch_size: int = 512,
-        search_params: SearchParams = SearchParams(hnsw_ef=128, exact=False),
-        query_filter: Optional[Dict[str, Any]] = None,
-        **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
-        """
-        Search for documents in a collection.
-
-        Args:
-            client (QdrantClient): _description_
-            collection_name (str): _description_
-            query_texts (List[str]): _description_
-            n_results (int, optional): _description_. Defaults to 2.
-            query_filter (Optional[Dict[str, Any]], optional): _description_. Defaults to None.
-            search_params (SearchParams, optional): _description_. Defaults to SearchParams(hnsw_ef=128, exact=False).
-            embedding_model (Embedding, optional): _description_. Defaults to SentenceTransformersEmbedding().
-            batch_size (int, optional): _description_. Defaults to 512.
-
-        Returns:
-            List[]: _description_
-        """
-        # check if we have fastembed installed
-        try:
-            from fastembed.embedding import DefaultEmbedding as Embedding  # noqa: F401
-        except ImportError:
-            # If it's not, ask the user to install it
-            raise ImportError(
-                "fastembed is not installed. Please install it to enable fast vector indexing with pip install fastembed."
-            )
-
-        # TODO: Init and load only once per client connection
-        embedding_model = Embedding()
-        query_responses = []
-
-        query_vectors = embedding_model.encode(query_texts)  # noqa: F821
-
-        for _, qv in zip(query_texts, query_vectors):
-            query_vector = qv[0] # TODO: why is this necessary? Rewrite encode() to return a list of lists
-            search_result = self.search(
-                collection_name=collection_name,
-                query_filter=query_filter,
-                search_params=search_params,
-                query_vector=query_vector.tolist(),
-                limit=n_results,
-                with_payload=True,
-                **kwargs,
-            )
-
-            ids, embeddings, metadatas, distances = [], [], [], []
-            for scored_point in search_result:
-                ids.append(scored_point.id)
-                if scored_point.vector:
-                    embeddings.append(scored_point.vector)
-                metadatas.append(scored_point.payload)
-                distances.append(scored_point.score)
-
-            query_responses.append(
-                QueryResponse(
-                    ids=ids,
-                    embeddings=embeddings,
-                    metadatas=metadatas,
-                    distances=distances,
-                ).dict()
-            )
-
-        return query_responses
 
     def close(self, **kwargs: Any) -> None:
         """
@@ -292,9 +125,7 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.grpc_collections
 
-        raise NotImplementedError(
-            f"gRPC client is not supported for {type(self._client)}"
-        )
+        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
     def grpc_points(self) -> grpc.PointsStub:
@@ -306,9 +137,7 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.grpc_points
 
-        raise NotImplementedError(
-            f"gRPC client is not supported for {type(self._client)}"
-        )
+        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
     def async_grpc_points(self) -> grpc.PointsStub:
@@ -320,9 +149,7 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.async_grpc_points
 
-        raise NotImplementedError(
-            f"gRPC client is not supported for {type(self._client)}"
-        )
+        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
     def async_grpc_collections(self) -> grpc.CollectionsStub:
@@ -334,9 +161,7 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.async_grpc_collections
 
-        raise NotImplementedError(
-            f"gRPC client is not supported for {type(self._client)}"
-        )
+        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
     def rest(self) -> SyncApis[ApiClient]:
@@ -348,9 +173,7 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.rest
 
-        raise NotImplementedError(
-            f"REST client is not supported for {type(self._client)}"
-        )
+        raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
 
     @property
     def http(self) -> SyncApis[ApiClient]:
@@ -362,9 +185,7 @@ class QdrantClient(QdrantBase):
         if isinstance(self._client, QdrantRemote):
             return self._client.http
 
-        raise NotImplementedError(
-            f"REST client is not supported for {type(self._client)}"
-        )
+        raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
 
     def search_batch(
         self,
@@ -1362,9 +1183,7 @@ class QdrantClient(QdrantBase):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.get_collection_aliases(
-            collection_name=collection_name, **kwargs
-        )
+        return self._client.get_collection_aliases(collection_name=collection_name, **kwargs)
 
     def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
         """Get all aliases
@@ -1386,9 +1205,7 @@ class QdrantClient(QdrantBase):
 
         return self._client.get_collections(**kwargs)
 
-    def get_collection(
-        self, collection_name: str, **kwargs: Any
-    ) -> types.CollectionInfo:
+    def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         """Get detailed information about specified existing collection
 
         Args:
@@ -1658,6 +1475,7 @@ class QdrantClient(QdrantBase):
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        wait: bool = False,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -1675,6 +1493,11 @@ class QdrantClient(QdrantBase):
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
+            wait:
+                Await for the results to be applied on the server side.
+                If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
+                If `false`, each update request will return immediately after the confirmation of receiving.
+                Default: `false`
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
@@ -1687,6 +1510,7 @@ class QdrantClient(QdrantBase):
             parallel=parallel,
             method=method,
             max_retries=max_retries,
+            wait=wait,
             **kwargs,
         )
 
@@ -1803,9 +1627,7 @@ class QdrantClient(QdrantBase):
 
         return self._client.create_snapshot(collection_name=collection_name, **kwargs)
 
-    def delete_snapshot(
-        self, collection_name: str, snapshot_name: str, **kwargs: Any
-    ) -> bool:
+    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
         """Delete snapshot for a given collection.
 
         Args:
