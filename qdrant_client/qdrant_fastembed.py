@@ -1,9 +1,9 @@
 import uuid
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
-from qdrant_client import models
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.http import models
 from qdrant_client.uploader.uploader import iter_batch
 
 try:
@@ -11,7 +11,7 @@ try:
 except ImportError:
     pass
 
-SUPPORTED_EMBEDDING_MODELS = {
+SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
     "BAAI/bge-base-en": (768, models.Distance.COSINE),
     "sentence-transformers/all-MiniLM-L6-v2": (384, models.Distance.COSINE),
     "BAAI/bge-small-en": (384, models.Distance.COSINE),
@@ -21,10 +21,10 @@ SUPPORTED_EMBEDDING_MODELS = {
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
-    embedding_models = {}
+    embedding_models: Dict[str, "DefaultEmbedding"] = {}
 
     @staticmethod
-    def _import_fastembed():
+    def _import_fastembed() -> None:
         try:
             from fastembed.embedding import DefaultEmbedding
         except ImportError:
@@ -122,7 +122,7 @@ class QdrantFastembedMixin(QdrantBase):
         )
 
         if metadata is None:
-            metadata = ({} for _ in range(len(documents)))
+            metadata = [{} for _ in range(len(documents))]
         else:
             assert len(metadata) == len(
                 documents
@@ -225,8 +225,9 @@ class QdrantFastembedMixin(QdrantBase):
             List[types.ScoredPoint]: List of scored points.
 
         """
-        embedding_model = self._get_or_init_model(model_name=embedding_model)
-        query_vector = list(embedding_model.encode([query_text]))[0][0]
+        embedding_model_inst = self._get_or_init_model(model_name=embedding_model)
+        embeddings = list(embedding_model_inst.encode(documents=[query_text]))
+        query_vector = embeddings[0][0]
 
         return self.search(
             collection_name=collection_name,
@@ -261,8 +262,8 @@ class QdrantFastembedMixin(QdrantBase):
 
 
         """
-        embedding_model = self._get_or_init_model(model_name=embedding_model)
-        query_vectors = embedding_model.encode(query_texts)
+        embedding_model_inst = self._get_or_init_model(model_name=embedding_model)
+        query_vectors = embedding_model_inst.encode(documents=query_texts)
 
         requests = []
         for vector in query_vectors:
