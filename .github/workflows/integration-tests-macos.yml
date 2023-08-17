@@ -1,0 +1,60 @@
+name: Integration tests
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+
+    strategy:
+      matrix:
+        python-version:
+          - '3.7.x'
+          - '3.8.x'
+          - '3.9.x'
+          - '3.10.x'
+          - '3.11.x'
+        os:
+          - macos-latest
+
+    runs-on: ${{ matrix.os }}
+
+    name: Python ${{ matrix.python-version }} on ${{ matrix.os }} test
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install poetry
+          poetry config virtualenvs.create false
+          poetry install --no-interaction --no-ansi
+      - name: Setup docker (missing on MacOS)
+        run: |
+          brew install docker
+          colima start
+
+          # For testcontainers to find the Colima socket
+          # https://github.com/abiosoft/colima/blob/main/docs/FAQ.md#cannot-connect-to-the-docker-daemon-at-unixvarrundockersock-is-the-docker-daemon-running
+          sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
+      - name: Run integration tests
+        run: |
+          ./tests/integration-tests.sh
+        shell: bash
+      - name: Backward compatibility integration tests
+        run: |
+          export RUNNER_OS=${{ runner.os }}
+          QDRANT_VERSION='v1.3.2' ./tests/integration-tests.sh
+        shell: bash
+      - name: Check conversion coverage
+        run: |
+          export RUNNER_OS=${{ runner.os }}
+          ./tests/coverage-test.sh
+        shell: bash
