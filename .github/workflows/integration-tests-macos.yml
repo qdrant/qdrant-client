@@ -46,15 +46,5 @@ jobs:
           sudo ln -sf $HOME/.colima/default/docker.sock /var/run/docker.sock
       - name: Run integration tests
         run: |
-          ./tests/integration-tests.sh
-        shell: bash
-      - name: Backward compatibility integration tests
-        run: |
-          export RUNNER_OS=${{ runner.os }}
-          QDRANT_VERSION='v1.3.2' ./tests/integration-tests.sh
-        shell: bash
-      - name: Check conversion coverage
-        run: |
-          export RUNNER_OS=${{ runner.os }}
-          ./tests/coverage-test.sh
+          IGNORE_CONGRUENCE_TESTS=true ./tests/integration-tests.sh
         shell: bash

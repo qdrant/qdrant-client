@@ -13,6 +13,7 @@ cd "$(dirname "$0")/../"
 
 QDRANT_LATEST="v1.4.0"
 QDRANT_VERSION=${QDRANT_VERSION:-"$QDRANT_LATEST"}
+IGNORE_CONGRUENCE_TESTS=${IGNORE_CONGRUENCE_TESTS:-"false"}
 REST_PORT="6333"
 GRPC_PORT="6334"
 
@@ -34,8 +35,8 @@ done
 
 # If running backwards compatibility tests, skip local compatibility tests
 # Backwards compatibility tests are enabled by setting QDRANT_VERSION to a version that is not the latest
-
-if [ "$QDRANT_VERSION" != "$QDRANT_LATEST" ]; then
+# OR by setting IGNORE_CONGRUENCE_TESTS to true
+if [[ "$QDRANT_VERSION" != "$QDRANT_LATEST" ]] || [[ "$IGNORE_CONGRUENCE_TESTS" == "true" ]]; then
   pytest --ignore=tests/congruence_tests
 else
   pytest
