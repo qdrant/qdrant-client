@@ -73,6 +73,7 @@ class QdrantClient(QdrantFastembedMixin):
         path: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__(**kwargs)
         self._client: QdrantBase
 
         if location == ":memory:":
@@ -1435,6 +1436,7 @@ class QdrantClient(QdrantFastembedMixin):
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        wait: bool = False,
         **kwargs: Any,
     ) -> None:
         """Upload records to the collection
@@ -1449,6 +1451,11 @@ class QdrantClient(QdrantFastembedMixin):
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
+            wait:
+                Await for the results to be applied on the server side.
+                If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
+                If `false`, each update request will return immediately after the confirmation of receiving.
+                Default: `false`
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"

@@ -579,7 +579,9 @@ class QdrantRemote(QdrantBase):
 
             if isinstance(query_vector, tuple):
                 query_vector = construct(
-                    rest_models.NamedVector, name=query_vector[0], vector=query_vector[1]
+                    rest_models.NamedVector,
+                    name=query_vector[0],
+                    vector=query_vector[1],
                 )
 
             if isinstance(query_vector, np.ndarray):
@@ -1939,12 +1941,20 @@ class QdrantRemote(QdrantBase):
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        wait: bool = False,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_records_batches(
             records=records, batch_size=batch_size
         )
-        self._upload_collection(batches_iterator, collection_name, max_retries, parallel, method)
+        self._upload_collection(
+            batches_iterator=batches_iterator,
+            collection_name=collection_name,
+            max_retries=max_retries,
+            parallel=parallel,
+            method=method,
+            wait=wait,
+        )
 
     def upload_collection(
         self,
