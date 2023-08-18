@@ -1734,5 +1734,17 @@ class QdrantClient(QdrantFastembedMixin):
 
         return self._client.get_locks(**kwargs)
 
-    def migrate(self, dest_client: QdrantBase, batch_size: int = 100) -> None:
-        migrate(self, dest_client, batch_size=batch_size)
+    def migrate(
+        self,
+        dest_client: QdrantBase,
+        collection_names: Optional[List[str]] = None,
+        batch_size: int = 100,
+        raise_on_collision: bool = True,
+    ) -> None:
+        migrate(
+            self,
+            dest_client,
+            collection_names=collection_names,
+            batch_size=batch_size,
+            raise_on_collision=raise_on_collision,
+        )

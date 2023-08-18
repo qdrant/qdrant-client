@@ -1,88 +1,194 @@
-from typing import List
+from enum import Enum
+from typing import Dict, List, Optional
 
+from qdrant_client import models
+from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.http import models
 
 
-def migrate(source_client: QdrantBase, dest_client: QdrantBase, batch_size: int = 100) -> None:
-    """Migrate all collections from source client to destination client
+class MigrationCollisionAction(str, Enum):
+    """Action on collection configuration collision"""
+
+    RAISE = "Raise"
+    RECREATE = "Recreate"
+    SKIP = "Skip"
+
+
+def migrate(
+    source_client: QdrantBase,
+    dest_client: QdrantBase,
+    collection_names: Optional[List[str]],
+    on_collision_action: MigrationCollisionAction = MigrationCollisionAction.RAISE,
+    batch_size: int = 100,
+):
+    """
+    Migrate collections from source client to destination client
 
     Args:
         source_client (QdrantBase): Source client
         dest_client (QdrantBase): Destination client
+        collection_names (list[str], optional): List of collection names to migrate.
+            If None - migrate all source client collections. Defaults to None.
+        on_collision_action (MigrationCollisionAction): Action on collection configuration collision. Defaults to
+            MigrationCollisionAction.RAISE.
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
-    source_collections = source_client.get_collections().collections
-    dest_collections = dest_client.get_collections().collections
+    collection_names = select_source_collections(source_client, collection_names)
+    existing_dest_collections = get_existing_dest_collections(dest_client, collection_names)
+    absent_dest_collections = set(collection_names) - set(existing_dest_collections)
 
-    source_collection_names = {collection.name for collection in source_collections}
-    dest_collection_names = {collection.name for collection in dest_collections}
+    collisions = find_collisions(source_client, dest_client, existing_dest_collections)
+    if collisions and on_collision_action == MigrationCollisionAction.RAISE:
+        raise ValueError(f"Collision detected: {collisions}")
+    elif collisions and on_collision_action == MigrationCollisionAction.SKIP:
+        collisions = []
 
-    missing_collections = source_collection_names - dest_collection_names
-    assert (
-        not missing_collections
-    ), f"Destination client should have all collections from source client. Missing collections: {missing_collections}"
+    for collection_name in absent_dest_collections:
+        recreate_collection(source_client, dest_client, collection_name)
+        migrate_collection(source_client, dest_client, collection_name, batch_size)
 
-    _compare_collections(list(source_collection_names), source_client, dest_client)
-
-    print(f"Number of collections to migrate: {len(source_collection_names)}", end="\n\n")
-    for collection_name in source_collection_names:
-        print(f"Start migrating collection `{collection_name}`")
-        _migrate_collection(collection_name, source_client, dest_client, batch_size)
-        print(f"Finish migrating collection `{collection_name}`", end="\n\n")
+    for collection_name in collisions:
+        recreate_collection(source_client, dest_client, collection_name)
+        migrate_collection(source_client, dest_client, collection_name, batch_size)
 
 
-def _compare_collections(
-    source_collection_names: List[str],
+def recreate_collection(
     source_client: QdrantBase,
     dest_client: QdrantBase,
+    collection_name: str,
+) -> None:
+    src_collection_info = source_client.get_collection(collection_name)
+    src_config = src_collection_info.config
+    src_payload_schema = src_collection_info.payload_schema
+
+    dest_client.recreate_collection(
+        collection_name,
+        vectors_config=src_config.params.vectors,
+        shard_number=src_config.params.shard_number,
+        replication_factor=src_config.params.replication_factor,
+        write_consistency_factor=src_config.params.write_consistency_factor,
+        on_disk_payload=src_config.params.on_disk_payload,
+        hnsw_config=models.HnswConfigDiff(**to_dict(src_config.hnsw_config)),
+        optimizers_config=models.OptimizersConfigDiff(**to_dict(src_config.optimizer_config)),
+        wal_config=models.WalConfigDiff(**to_dict(src_config.wal_config)),
+        quantization_config=src_config.quantization_config,
+    )
+
+    recreate_payload_schema(dest_client, collection_name, src_payload_schema)
+
+
+def recreate_payload_schema(
+    dest_client: QdrantBase,
+    collection_name: str,
+    payload_schema: Dict[str, models.PayloadIndexInfo],
+) -> None:
+    for field_name, field_info in payload_schema.items():
+        dest_client.create_payload_index(
+            collection_name,
+            field_name=field_name,
+            field_schema=field_info.type if field_info.params is None else field_info.params,
+        )
+
+
+def select_source_collections(source_client: QdrantBase, collection_names: List[str]) -> List[str]:
+    source_collections = source_client.get_collections().collections
+    source_collection_names = {collection.name for collection in source_collections}
+
+    if collection_names:
+        assert all(
+            collection_name in source_collection_names for collection_name in collection_names
+        ), f"Source client does not have collections: {set(collection_names) - source_collection_names}"
+    else:
+        collection_names = source_collection_names
+    return collection_names
+
+
+def get_existing_dest_collections(
+    dest_client: QdrantBase, collection_names: List[str]
+) -> List[str]:
+    dest_collections = dest_client.get_collections().collections
+    dest_collection_names = {collection.name for collection in dest_collections}
+    existing_dest_collections = dest_collection_names & set(collection_names)
+    return list(existing_dest_collections)
+
+
+def find_collisions(
+    source_client: QdrantBase, dest_client: QdrantBase, collection_names: List[str]
+) -> List[str]:
+    collision_collection_names = []
+    for collection_name in collection_names:
+        src_collection_info = source_client.get_collection(collection_name)
+        dest_collection_info = dest_client.get_collection(collection_name)
+        collision = check_collision(src_collection_info, dest_collection_info)
+        if collision:
+            collision_collection_names.append(collection_name)
+
+    return collection_names
+
+
+def check_collision(
+    src_collection_info: models.CollectionInfo,
+    dest_collection_info: models.CollectionInfo,
 ) -> bool:
-    """Compare collections from source client and destination client
+    """Check if collection configurations collide
 
     Args:
-        source_collection_names (list[str]): List of collection names
-        source_client (QdrantBase): Source client
-        dest_client (QdrantBase): Destination client
+        src_collection_info (models.CollectionInfo): Source collection info
+        dest_collection_info (models.CollectionInfo): Destination collection info
 
     Returns:
-        bool: True if collections have the same vector and distance params
+        bool: True if collection configurations collide, False otherwise
     """
-    for collection_name in source_collection_names:
-        source_collection = source_client.get_collection(collection_name)
-        source_vector_params = source_collection.config.params.vectors
-        dest_collection = dest_client.get_collection(collection_name)
-        dest_vector_params = dest_collection.config.params.vectors
 
-        if isinstance(source_vector_params, models.VectorParams):
-            assert isinstance(dest_vector_params, models.VectorParams), "Mismatched vector params"
-            assert (
-                source_vector_params.size == dest_vector_params.size
-            ), "Vector size should be equal"
-            assert (
-                source_vector_params.distance == dest_vector_params.distance
-            ), "Distance should be equal"
+    def check_vector_params_collision(
+        src_vector_params: models.VectorParams, dest_vector_params: models.VectorParams
+    ) -> bool:
+        """Check if vector params collide
 
-        elif isinstance(source_vector_params, dict):
-            assert len(source_vector_params) == len(
-                dest_vector_params
-            ), "Mismatched vector params: number of named vectors is not equal"
+        Args:
+            src_vector_params (models.VectorParams): Source vector params
+            dest_vector_params (models.VectorParams): Destination vector params
 
-            for key, source_vector_param in source_vector_params.items():
-                dest_vector_param = dest_vector_params[key]
-                assert (
-                    source_vector_param.size == dest_vector_param.size
-                ), f"Vector size is not equal for {key} in {collection_name}"
-                assert (
-                    source_vector_param.distance == dest_vector_param.distance
-                ), f"Distance is not the same for {key} in {collection_name}"
+        Returns:
+            bool: True if vector params collide, False otherwise
+        """
+        if src_vector_params.size != dest_vector_params.size:
+            return True
 
-    return True
+        if src_vector_params.distance != dest_vector_params.distance:
+            return True
+
+        return False
+
+    source_vector_params = src_collection_info.config.params.vectors
+    destination_vector_params = dest_collection_info.config.params.vectors
+
+    if isinstance(source_vector_params, models.VectorParams):
+        if not isinstance(destination_vector_params, models.VectorParams):
+            return True
+
+        return check_vector_params_collision(source_vector_params, destination_vector_params)
+
+    if isinstance(source_vector_params, dict):
+        if not isinstance(destination_vector_params, dict):
+            return True
+
+        for key in source_vector_params:
+            if key not in destination_vector_params:
+                return True
+
+            if check_vector_params_collision(
+                source_vector_params[key], destination_vector_params[key]
+            ):
+                return True
+
+    return False
 
 
-def _migrate_collection(
-    collection_name: str,
+def migrate_collection(
     source_client: QdrantBase,
     dest_client: QdrantBase,
+    collection_name: str,
     batch_size: int = 100,
 ) -> None:
     """Migrate collection from source client to destination client
