@@ -20,7 +20,7 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
 }
 
 
-class QueryResponse(BaseModel, extra="forbid"):
+class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
     id: Union[str, int]
     embedding: Optional[List[float]]
     metadata: Dict[str, Any]
@@ -212,7 +212,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         assert (
             embeddings_size == vector_params.size
-        ), f"Embedding size mismatch: {embeddings_size} != {collection_info.config.params.vectors.size}"
+        ), f"Embedding size mismatch: {embeddings_size} != {vector_params.size}"
 
         assert (
             distance == vector_params.distance
