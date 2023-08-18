@@ -5,10 +5,11 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
+from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
-class QdrantClient(QdrantBase):
+class QdrantClient(QdrantFastembedMixin):
     """Entry point to communicate with Qdrant service via REST or gPRC API.
 
     It combines interface classes and endpoint implementation.
@@ -72,6 +73,7 @@ class QdrantClient(QdrantBase):
         path: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__(**kwargs)
         self._client: QdrantBase
 
         if location == ":memory:":
@@ -94,6 +96,15 @@ class QdrantClient(QdrantBase):
                     host=host,
                     **kwargs,
                 )
+        self._is_fastembed_installed: Optional[bool] = None
+        # if fastembed is installed, set to true else False
+        if self._is_fastembed_installed is None:
+            try:
+                from fastembed.embedding import DefaultEmbedding  # noqa: F401
+
+                self._is_fastembed_installed = True
+            except ImportError:
+                self._is_fastembed_installed = False
 
     def __del__(self) -> None:
         self.close()
@@ -1425,6 +1436,7 @@ class QdrantClient(QdrantBase):
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        wait: bool = False,
         **kwargs: Any,
     ) -> None:
         """Upload records to the collection
@@ -1439,6 +1451,11 @@ class QdrantClient(QdrantBase):
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
+            wait:
+                Await for the results to be applied on the server side.
+                If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
+                If `false`, each update request will return immediately after the confirmation of receiving.
+                Default: `false`
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
@@ -1465,6 +1482,7 @@ class QdrantClient(QdrantBase):
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        wait: bool = False,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -1482,6 +1500,11 @@ class QdrantClient(QdrantBase):
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
+            wait:
+                Await for the results to be applied on the server side.
+                If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
+                If `false`, each update request will return immediately after the confirmation of receiving.
+                Default: `false`
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
@@ -1494,6 +1517,7 @@ class QdrantClient(QdrantBase):
             parallel=parallel,
             method=method,
             max_retries=max_retries,
+            wait=wait,
             **kwargs,
         )
 

@@ -14,6 +14,7 @@ def upload_batch(
     collection_name: str,
     batch: Union[Tuple, Batch],
     max_retries: int,
+    wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
@@ -36,6 +37,7 @@ def upload_batch(
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
                 point_insert_operations=PointsList(points=points),
+                wait=wait,
             )
         except Exception as e:
             logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
@@ -46,10 +48,13 @@ def upload_batch(
 
 
 class RestBatchUploader(BaseUploader):
-    def __init__(self, uri: str, collection_name: str, max_retries: int, **kwargs: Any):
+    def __init__(
+        self, uri: str, collection_name: str, max_retries: int, wait: bool = False, **kwargs: Any
+    ):
         self.collection_name = collection_name
         self.openapi_client: SyncApis = SyncApis(host=uri, **kwargs)
         self.max_retries = max_retries
+        self._wait = wait
 
     @classmethod
     def start(
@@ -65,4 +70,6 @@ class RestBatchUploader(BaseUploader):
 
     def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         for batch in items:
-            yield upload_batch(self.openapi_client, self.collection_name, batch, self.max_retries)
+            yield upload_batch(
+                self.openapi_client, self.collection_name, batch, self.max_retries, self._wait
+            )

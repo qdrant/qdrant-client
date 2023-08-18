@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, get_args
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -1468,13 +1468,7 @@ class RestToGrpc:
             return grpc.WithPayloadSelector(enable=model)
         elif isinstance(model, list):
             return grpc.WithPayloadSelector(include=grpc.PayloadIncludeSelector(fields=model))
-        elif isinstance(
-            model,
-            (
-                rest.PayloadSelectorInclude,
-                rest.PayloadSelectorExclude,
-            ),
-        ):
+        elif isinstance(model, get_args(rest.PayloadSelector)):
             return cls.convert_payload_selector(model)
 
         raise ValueError(f"invalid WithPayloadInterface model: {model}")  # pragma: no cover

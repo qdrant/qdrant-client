@@ -15,6 +15,7 @@ def upload_batch_grpc(
     collection_name: str,
     batch: Union[Batch, Tuple],
     max_retries: int,
+    wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
     if payload_batch is None:
@@ -31,7 +32,9 @@ def upload_batch_grpc(
 
     for attempt in range(max_retries):
         try:
-            points_client.Upsert(grpc.UpsertPoints(collection_name=collection_name, points=points))
+            points_client.Upsert(
+                grpc.UpsertPoints(collection_name=collection_name, points=points, wait=wait)
+            )
         except Exception as e:
             logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
 
@@ -47,6 +50,7 @@ class GrpcBatchUploader(BaseUploader):
         port: int,
         collection_name: str,
         max_retries: int,
+        wait: bool = False,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
@@ -54,6 +58,7 @@ class GrpcBatchUploader(BaseUploader):
         self._port = port
         self.max_retries = max_retries
         self._kwargs = kwargs
+        self._wait = wait
 
     @classmethod
     def start(
@@ -79,7 +84,9 @@ class GrpcBatchUploader(BaseUploader):
         channel = get_channel(host=self._host, port=self._port, **self._kwargs)
         points_client = PointsStub(channel)
         for batch in items:
-            yield upload_batch_grpc(points_client, self.collection_name, batch, self.max_retries)
+            yield upload_batch_grpc(
+                points_client, self.collection_name, batch, self.max_retries, self._wait
+            )
 
     def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         yield from self.process_upload(items)

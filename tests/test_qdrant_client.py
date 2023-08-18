@@ -1,5 +1,4 @@
 import os
-import random
 import uuid
 from pprint import pprint
 from tempfile import mkdtemp
@@ -37,10 +36,7 @@ from qdrant_client.models import (
     Range,
     RecommendRequest,
     ScalarQuantization,
-    ScalarQuantization,
     ScalarQuantizationConfig,
-    ScalarQuantizationConfig,
-    ScalarType,
     ScalarType,
     SearchParams,
     SearchRequest,
