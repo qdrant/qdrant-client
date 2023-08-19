@@ -332,6 +332,6 @@ class QdrantBase:
         dest_client: "QdrantBase",
         collection_names: Optional[List[str]] = None,
         batch_size: int = 100,
-        raise_on_collision: bool = True,
+        recreate_on_collision: bool = False,
     ) -> None:
         raise NotImplementedError()
