@@ -389,7 +389,7 @@ def test_recreate_collection(remote_client: QdrantClient):
         field_name="description",
         field_schema=models.TextIndexParams(
             type=models.TextIndexType.TEXT,
-            tokenizer=models.TokenizerType.MULTILINGUAL,
+            tokenizer=models.TokenizerType.PREFIX,
             min_token_len=3,
             max_token_len=5,
             lowercase=False,
