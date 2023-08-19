@@ -1,8 +1,8 @@
 from typing import Dict, List, Optional
 
-from qdrant_client import models
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.http import models
 
 
 def migrate(
@@ -11,7 +11,7 @@ def migrate(
     collection_names: Optional[List[str]] = None,
     recreate_on_collision: bool = False,
     batch_size: int = 100,
-):
+) -> None:
     """
     Migrate collections from source client to destination client
 
@@ -44,12 +44,12 @@ def _select_source_collections(
     source_client: QdrantBase, collection_names: Optional[List[str]] = None
 ) -> List[str]:
     source_collections = source_client.get_collections().collections
-    source_collection_names = {collection.name for collection in source_collections}
+    source_collection_names = [collection.name for collection in source_collections]
 
-    if collection_names:
+    if collection_names is not None:
         assert all(
             collection_name in source_collection_names for collection_name in collection_names
-        ), f"Source client does not have collections: {set(collection_names) - source_collection_names}"
+        ), f"Source client does not have collections: {set(collection_names) - set(source_collection_names)}"
     else:
         collection_names = source_collection_names
     return collection_names
