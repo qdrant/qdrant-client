@@ -8,10 +8,16 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-from typing import List, Union
+from typing import List, Tuple, Union, get_args
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
+
+
+def get_args_subscribed(tp: type) -> Tuple:
+    """Get type arguments with all substitutions performed. Supports subscripted generics having __origin__"""
+    return tuple(arg if not hasattr(arg, "__origin__") else arg.__origin__ for arg in get_args(tp))
+
 
 Filter = Union[rest.Filter, grpc.Filter]
 SearchParams = Union[rest.SearchParams, grpc.SearchParams]

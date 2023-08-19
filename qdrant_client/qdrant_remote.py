@@ -25,6 +25,7 @@ from qdrant_client._pydantic_compat import construct
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import (
     GrpcToRest,
     RestToGrpc,
@@ -336,7 +337,7 @@ class QdrantRemote(QdrantBase):
                 for r in requests
             ]
 
-            if isinstance(consistency, (models.ReadConsistencyType, int)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistencyType)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             grpc_res: grpc.SearchBatchResponse = self.grpc_points.SearchBatch(
@@ -412,13 +413,13 @@ class QdrantRemote(QdrantBase):
             if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
-            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(with_vectors, (list, bool)):
+            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             res: grpc.SearchResponse = self.grpc_points.Search(
@@ -517,13 +518,13 @@ class QdrantRemote(QdrantBase):
             if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
-            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(with_vectors, (list, bool)):
+            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             result: grpc.GroupsResult = self.grpc_points.SearchGroups(
@@ -604,7 +605,7 @@ class QdrantRemote(QdrantBase):
                 for r in requests
             ]
 
-            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             grpc_res: grpc.SearchBatchResponse = self.grpc_points.RecommendBatch(
@@ -658,14 +659,14 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             positive = [
                 RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, (int, str))
+                if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
                 else point_id
                 for point_id in positive
             ]
 
             negative = [
                 RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, (int, str))
+                if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
                 else point_id
                 for point_id in negative
             ]
@@ -676,16 +677,16 @@ class QdrantRemote(QdrantBase):
             if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
-            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(with_vectors, (list, bool)):
+            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             if isinstance(lookup_from, rest_models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
-            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             res: grpc.SearchResponse = self.grpc_points.Recommend(
@@ -786,14 +787,14 @@ class QdrantRemote(QdrantBase):
 
             positive = [
                 RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, (int, str))
+                if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
                 else point_id
                 for point_id in positive
             ]
 
             negative = [
                 RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, (int, str))
+                if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
                 else point_id
                 for point_id in negative
             ]
@@ -804,16 +805,16 @@ class QdrantRemote(QdrantBase):
             if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
-            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(with_vectors, (list, bool)):
+            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             if isinstance(lookup_from, rest_models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
-            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             res: grpc.GroupsResult = self.grpc_points.RecommendGroups(
@@ -905,19 +906,19 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         if self._prefer_grpc:
-            if isinstance(offset, (int, str)):
+            if isinstance(offset, get_args_subscribed(models.ExtendedPointId)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
 
             if isinstance(scroll_filter, rest_models.Filter):
                 scroll_filter = RestToGrpc.convert_filter(model=scroll_filter)
 
-            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(with_vectors, (list, bool)):
+            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             res: grpc.ScrollResponse = self.grpc_points.Scroll(
@@ -1148,17 +1149,19 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> List[types.Record]:
         if self._prefer_grpc:
-            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
             ids = [
-                RestToGrpc.convert_extended_point_id(idx) if isinstance(idx, (int, str)) else idx
+                RestToGrpc.convert_extended_point_id(idx)
+                if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
+                else idx
                 for idx in ids
             ]
 
             with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(consistency, (models.ReadConsistencyType, int)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             result = self.grpc_points.Get(
@@ -1202,7 +1205,7 @@ class QdrantRemote(QdrantBase):
                 points=grpc.PointsIdsList(
                     ids=[
                         RestToGrpc.convert_extended_point_id(idx)
-                        if isinstance(idx, (int, str))
+                        if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
                         else idx
                         for idx in points
                     ]
