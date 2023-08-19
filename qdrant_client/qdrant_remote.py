@@ -13,6 +13,7 @@ from typing import (
     Tuple,
     Type,
     Union,
+    get_args,
 )
 
 import httpx
@@ -335,7 +336,7 @@ class QdrantRemote(QdrantBase):
                 for r in requests
             ]
 
-            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+            if isinstance(consistency, (models.ReadConsistencyType, int)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             grpc_res: grpc.SearchBatchResponse = self.grpc_points.SearchBatch(
@@ -411,24 +412,10 @@ class QdrantRemote(QdrantBase):
             if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
-            if isinstance(
-                with_payload,
-                (
-                    bool,
-                    list,
-                    rest_models.PayloadSelectorInclude,
-                    rest_models.PayloadSelectorExclude,
-                ),
-            ):
+            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(
-                with_vectors,
-                (
-                    bool,
-                    list,
-                ),
-            ):
+            if isinstance(with_vectors, (list, bool)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
@@ -530,24 +517,10 @@ class QdrantRemote(QdrantBase):
             if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
-            if isinstance(
-                with_payload,
-                (
-                    bool,
-                    list,
-                    rest_models.PayloadSelectorInclude,
-                    rest_models.PayloadSelectorExclude,
-                ),
-            ):
+            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(
-                with_vectors,
-                (
-                    bool,
-                    list,
-                ),
-            ):
+            if isinstance(with_vectors, (list, bool)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
@@ -685,14 +658,14 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             positive = [
                 RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, (str, int))
+                if isinstance(point_id, (int, str))
                 else point_id
                 for point_id in positive
             ]
 
             negative = [
                 RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, (str, int))
+                if isinstance(point_id, (int, str))
                 else point_id
                 for point_id in negative
             ]
@@ -703,24 +676,10 @@ class QdrantRemote(QdrantBase):
             if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
-            if isinstance(
-                with_payload,
-                (
-                    bool,
-                    list,
-                    rest_models.PayloadSelectorInclude,
-                    rest_models.PayloadSelectorExclude,
-                ),
-            ):
+            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(
-                with_vectors,
-                (
-                    bool,
-                    list,
-                ),
-            ):
+            if isinstance(with_vectors, (list, bool)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             if isinstance(lookup_from, rest_models.LookupLocation):
@@ -827,14 +786,14 @@ class QdrantRemote(QdrantBase):
 
             positive = [
                 RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, (str, int))
+                if isinstance(point_id, (int, str))
                 else point_id
                 for point_id in positive
             ]
 
             negative = [
                 RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, (str, int))
+                if isinstance(point_id, (int, str))
                 else point_id
                 for point_id in negative
             ]
@@ -845,24 +804,10 @@ class QdrantRemote(QdrantBase):
             if isinstance(search_params, rest_models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
-            if isinstance(
-                with_payload,
-                (
-                    bool,
-                    list,
-                    rest_models.PayloadSelectorInclude,
-                    rest_models.PayloadSelectorExclude,
-                ),
-            ):
+            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(
-                with_vectors,
-                (
-                    bool,
-                    list,
-                ),
-            ):
+            if isinstance(with_vectors, (list, bool)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             if isinstance(lookup_from, rest_models.LookupLocation):
@@ -966,24 +911,10 @@ class QdrantRemote(QdrantBase):
             if isinstance(scroll_filter, rest_models.Filter):
                 scroll_filter = RestToGrpc.convert_filter(model=scroll_filter)
 
-            if isinstance(
-                with_payload,
-                (
-                    bool,
-                    list,
-                    rest_models.PayloadSelectorInclude,
-                    rest_models.PayloadSelectorExclude,
-                ),
-            ):
+            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
-            if isinstance(
-                with_vectors,
-                (
-                    bool,
-                    list,
-                ),
-            ):
+            if isinstance(with_vectors, (list, bool)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
             if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
@@ -1217,15 +1148,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> List[types.Record]:
         if self._prefer_grpc:
-            if isinstance(
-                with_payload,
-                (
-                    bool,
-                    list,
-                    rest_models.PayloadSelectorInclude,
-                    rest_models.PayloadSelectorExclude,
-                ),
-            ):
+            if isinstance(with_payload, (bool, list, *get_args(rest_models.PayloadSelector))):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
             ids = [
@@ -1235,7 +1158,7 @@ class QdrantRemote(QdrantBase):
 
             with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(consistency, (rest_models.ReadConsistencyType, int)):
+            if isinstance(consistency, (models.ReadConsistencyType, int)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             result = self.grpc_points.Get(
@@ -1287,7 +1210,7 @@ class QdrantRemote(QdrantBase):
             )
         elif isinstance(points, grpc.PointsSelector):
             points_selector = points
-        elif isinstance(points, (rest_models.PointIdsList, rest_models.FilterSelector)):
+        elif isinstance(points, get_args(models.PointsSelector)):
             points_selector = RestToGrpc.convert_points_selector(points)
         elif isinstance(points, rest_models.Filter):
             points_selector = RestToGrpc.convert_points_selector(
@@ -1311,7 +1234,7 @@ class QdrantRemote(QdrantBase):
             points_selector = construct(rest_models.PointIdsList, points=_points)
         elif isinstance(points, grpc.PointsSelector):
             points_selector = GrpcToRest.convert_points_selector(points)
-        elif isinstance(points, (rest_models.PointIdsList, rest_models.FilterSelector)):
+        elif isinstance(points, get_args(models.PointsSelector)):
             points_selector = points
         elif isinstance(points, rest_models.Filter):
             points_selector = construct(rest_models.FilterSelector, filter=points)
@@ -1692,15 +1615,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(hnsw_config, rest_models.HnswConfigDiff):
                 hnsw_config = RestToGrpc.convert_hnsw_config_diff(hnsw_config)
 
-            # if isinstance(quantization_config, get_args(rest_models.QuantizationConfigDiff)): <-- deprecate python 3.7
-            if isinstance(
-                quantization_config,
-                (
-                    rest_models.ScalarQuantization,
-                    rest_models.ProductQuantization,
-                    rest_models.Disabled,
-                ),
-            ):
+            if isinstance(quantization_config, get_args(rest_models.QuantizationConfigDiff)):
                 quantization_config = RestToGrpc.convert_quantization_config_diff(
                     quantization_config
                 )
@@ -1792,7 +1707,7 @@ class QdrantRemote(QdrantBase):
 
             if isinstance(
                 quantization_config,
-                (rest_models.ScalarQuantization, rest_models.ProductQuantization),
+                get_args(rest_models.QuantizationConfig),
             ):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
 
