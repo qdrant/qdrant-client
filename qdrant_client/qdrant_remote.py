@@ -31,9 +31,7 @@ from qdrant_client.conversions.conversion import (
     RestToGrpc,
     grpc_payload_schema_to_field_type,
 )
-from qdrant_client.http import ApiClient, SyncApis
-from qdrant_client.http import models
-from qdrant_client.http import models as rest_models
+from qdrant_client.http import ApiClient, SyncApis, models
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
@@ -332,7 +330,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             requests = [
                 RestToGrpc.convert_search_request(r, collection_name)
-                if isinstance(r, rest_models.SearchRequest)
+                if isinstance(r, models.SearchRequest)
                 else r
                 for r in requests
             ]
@@ -357,12 +355,10 @@ class QdrantRemote(QdrantBase):
                 GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r
                 for r in requests
             ]
-            http_res: List[
-                List[rest_models.ScoredPoint]
-            ] = self.http.points_api.search_batch_points(
+            http_res: List[List[models.ScoredPoint]] = self.http.points_api.search_batch_points(
                 collection_name=collection_name,
                 consistency=consistency,
-                search_request_batch=rest_models.SearchRequestBatch(searches=requests),
+                search_request_batch=models.SearchRequestBatch(searches=requests),
             ).result
             return http_res
 
@@ -407,10 +403,10 @@ class QdrantRemote(QdrantBase):
             else:
                 vector = list(query_vector)
 
-            if isinstance(query_filter, rest_models.Filter):
+            if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
-            if isinstance(search_params, rest_models.SearchParams):
+            if isinstance(search_params, models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
@@ -457,7 +453,7 @@ class QdrantRemote(QdrantBase):
             search_result = self.http.points_api.search_points(
                 collection_name=collection_name,
                 consistency=consistency,
-                search_request=rest_models.SearchRequest(
+                search_request=models.SearchRequest(
                     vector=query_vector,
                     filter=query_filter,
                     limit=limit,
@@ -496,7 +492,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             vector_name = None
 
-            if isinstance(with_lookup, rest_models.WithLookup):
+            if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
 
             if isinstance(with_lookup, str):
@@ -512,10 +508,10 @@ class QdrantRemote(QdrantBase):
             else:
                 vector = list(query_vector)
 
-            if isinstance(query_filter, rest_models.Filter):
+            if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
-            if isinstance(search_params, rest_models.SearchParams):
+            if isinstance(search_params, models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
@@ -553,7 +549,7 @@ class QdrantRemote(QdrantBase):
 
             if isinstance(query_vector, tuple):
                 query_vector = construct(
-                    rest_models.NamedVector,
+                    models.NamedVector,
                     name=query_vector[0],
                     vector=query_vector[1],
                 )
@@ -571,7 +567,7 @@ class QdrantRemote(QdrantBase):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
             search_groups_request = construct(
-                rest_models.SearchGroupsRequest,
+                models.SearchGroupsRequest,
                 vector=query_vector,
                 filter=query_filter,
                 params=search_params,
@@ -600,7 +596,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             requests = [
                 RestToGrpc.convert_recommend_request(r, collection_name)
-                if isinstance(r, rest_models.RecommendRequest)
+                if isinstance(r, models.RecommendRequest)
                 else r
                 for r in requests
             ]
@@ -627,12 +623,10 @@ class QdrantRemote(QdrantBase):
                 else r
                 for r in requests
             ]
-            http_res: List[
-                List[rest_models.ScoredPoint]
-            ] = self.http.points_api.recommend_batch_points(
+            http_res: List[List[models.ScoredPoint]] = self.http.points_api.recommend_batch_points(
                 collection_name=collection_name,
                 consistency=consistency,
-                recommend_request_batch=rest_models.RecommendRequestBatch(searches=requests),
+                recommend_request_batch=models.RecommendRequestBatch(searches=requests),
             ).result
             return http_res
 
@@ -671,10 +665,10 @@ class QdrantRemote(QdrantBase):
                 for point_id in negative
             ]
 
-            if isinstance(query_filter, rest_models.Filter):
+            if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
-            if isinstance(search_params, rest_models.SearchParams):
+            if isinstance(search_params, models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
@@ -683,7 +677,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(lookup_from, rest_models.LookupLocation):
+            if isinstance(lookup_from, models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
@@ -739,7 +733,7 @@ class QdrantRemote(QdrantBase):
             result = self.openapi_client.points_api.recommend_points(
                 collection_name=collection_name,
                 consistency=consistency,
-                recommend_request=rest_models.RecommendRequest(
+                recommend_request=models.RecommendRequest(
                     filter=query_filter,
                     negative=negative,
                     params=search_params,
@@ -779,7 +773,7 @@ class QdrantRemote(QdrantBase):
             negative = []
 
         if self._prefer_grpc:
-            if isinstance(with_lookup, rest_models.WithLookup):
+            if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
 
             if isinstance(with_lookup, str):
@@ -799,10 +793,10 @@ class QdrantRemote(QdrantBase):
                 for point_id in negative
             ]
 
-            if isinstance(query_filter, rest_models.Filter):
+            if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
-            if isinstance(search_params, rest_models.SearchParams):
+            if isinstance(search_params, models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
 
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
@@ -811,7 +805,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(lookup_from, rest_models.LookupLocation):
+            if isinstance(lookup_from, models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
@@ -874,7 +868,7 @@ class QdrantRemote(QdrantBase):
                 collection_name=collection_name,
                 consistency=consistency,
                 recommend_groups_request=construct(
-                    rest_models.RecommendGroupsRequest,
+                    models.RecommendGroupsRequest,
                     positive=positive,
                     negative=negative,
                     filter=query_filter,
@@ -909,7 +903,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(offset, get_args_subscribed(models.ExtendedPointId)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
 
-            if isinstance(scroll_filter, rest_models.Filter):
+            if isinstance(scroll_filter, models.Filter):
                 scroll_filter = RestToGrpc.convert_filter(model=scroll_filter)
 
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
@@ -950,11 +944,11 @@ class QdrantRemote(QdrantBase):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
             scroll_result: Optional[
-                rest_models.ScrollResult
+                models.ScrollResult
             ] = self.openapi_client.points_api.scroll_points(
                 collection_name=collection_name,
                 consistency=consistency,
-                scroll_request=rest_models.ScrollRequest(
+                scroll_request=models.ScrollRequest(
                     filter=scroll_filter,
                     limit=limit,
                     offset=offset,
@@ -974,7 +968,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.CountResult:
         if self._prefer_grpc:
-            if isinstance(count_filter, rest_models.Filter):
+            if isinstance(count_filter, models.Filter):
                 count_filter = RestToGrpc.convert_filter(model=count_filter)
             response = self.grpc_points.Count(
                 grpc.CountPoints(
@@ -989,7 +983,7 @@ class QdrantRemote(QdrantBase):
 
         count_result = self.openapi_client.points_api.count_points(
             collection_name=collection_name,
-            count_request=rest_models.CountRequest(filter=count_filter, exact=exact),
+            count_request=models.CountRequest(filter=count_filter, exact=exact),
         ).result
         assert count_result is not None, "Count points returned None result"
         return count_result
@@ -1003,7 +997,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            if isinstance(points, rest_models.Batch):
+            if isinstance(points, models.Batch):
                 vectors_batch: List[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(
                     points.vectors, len(points.ids)
                 )
@@ -1020,12 +1014,12 @@ class QdrantRemote(QdrantBase):
             if isinstance(points, list):
                 points = [
                     RestToGrpc.convert_point_struct(point)
-                    if isinstance(point, rest_models.PointStruct)
+                    if isinstance(point, models.PointStruct)
                     else point
                     for point in points
                 ]
 
-            if isinstance(ordering, rest_models.WriteOrdering):
+            if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
             grpc_result = self.grpc_points.Upsert(
@@ -1049,10 +1043,10 @@ class QdrantRemote(QdrantBase):
                     for point in points
                 ]
 
-                points = rest_models.PointsList(points=points)
+                points = models.PointsList(points=points)
 
-            if isinstance(points, rest_models.Batch):
-                points = rest_models.PointsBatch(batch=points)
+            if isinstance(points, models.Batch):
+                points = models.PointsBatch(batch=points)
 
             http_result = self.openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
@@ -1074,7 +1068,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             vectors = [RestToGrpc.convert_point_vectors(vector) for vector in vectors]
 
-            if isinstance(ordering, rest_models.WriteOrdering):
+            if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
             grpc_result = self.grpc_points.UpdateVectors(
@@ -1091,7 +1085,7 @@ class QdrantRemote(QdrantBase):
             return self.openapi_client.points_api.update_vectors(
                 collection_name=collection_name,
                 wait=wait,
-                update_vectors=rest_models.UpdateVectors(points=vectors),
+                update_vectors=models.UpdateVectors(points=vectors),
                 ordering=ordering,
             ).result
 
@@ -1107,7 +1101,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             points = self._try_argument_to_grpc_selector(points)
 
-            if isinstance(ordering, rest_models.WriteOrdering):
+            if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
             grpc_result = self.grpc_points.DeleteVectors(
@@ -1132,7 +1126,7 @@ class QdrantRemote(QdrantBase):
                 wait=wait,
                 ordering=ordering,
                 delete_vectors=construct(
-                    rest_models.DeleteVectors,
+                    models.DeleteVectors,
                     vector=vectors,
                     points=_points,
                     filter=_filter,
@@ -1191,7 +1185,7 @@ class QdrantRemote(QdrantBase):
             http_result = self.openapi_client.points_api.get_points(
                 collection_name=collection_name,
                 consistency=consistency,
-                point_request=rest_models.PointRequest(
+                point_request=models.PointRequest(
                     ids=ids, with_payload=with_payload, with_vector=with_vectors
                 ),
             ).result
@@ -1215,9 +1209,9 @@ class QdrantRemote(QdrantBase):
             points_selector = points
         elif isinstance(points, get_args(models.PointsSelector)):
             points_selector = RestToGrpc.convert_points_selector(points)
-        elif isinstance(points, rest_models.Filter):
+        elif isinstance(points, models.Filter):
             points_selector = RestToGrpc.convert_points_selector(
-                construct(rest_models.FilterSelector, filter=points)
+                construct(models.FilterSelector, filter=points)
             )
         elif isinstance(points, grpc.Filter):
             points_selector = grpc.PointsSelector(filter=points)
@@ -1226,24 +1220,22 @@ class QdrantRemote(QdrantBase):
         return points_selector
 
     @classmethod
-    def _try_argument_to_rest_selector(
-        cls, points: types.PointsSelector
-    ) -> rest_models.PointsSelector:
+    def _try_argument_to_rest_selector(cls, points: types.PointsSelector) -> models.PointsSelector:
         if isinstance(points, list):
             _points = [
                 GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
                 for idx in points
             ]
-            points_selector = construct(rest_models.PointIdsList, points=_points)
+            points_selector = construct(models.PointIdsList, points=_points)
         elif isinstance(points, grpc.PointsSelector):
             points_selector = GrpcToRest.convert_points_selector(points)
         elif isinstance(points, get_args(models.PointsSelector)):
             points_selector = points
-        elif isinstance(points, rest_models.Filter):
-            points_selector = construct(rest_models.FilterSelector, filter=points)
+        elif isinstance(points, models.Filter):
+            points_selector = construct(models.FilterSelector, filter=points)
         elif isinstance(points, grpc.Filter):
             points_selector = construct(
-                rest_models.FilterSelector, filter=GrpcToRest.convert_filter(points)
+                models.FilterSelector, filter=GrpcToRest.convert_filter(points)
             )
         else:
             raise ValueError(f"Unsupported points selector type: {type(points)}")
@@ -1263,7 +1255,7 @@ class QdrantRemote(QdrantBase):
     @classmethod
     def _try_argument_to_rest_points_and_filter(
         cls, points: types.PointsSelector
-    ) -> Tuple[Optional[List[rest_models.ExtendedPointId]], Optional[rest_models.Filter]]:
+    ) -> Tuple[Optional[List[models.ExtendedPointId]], Optional[models.Filter]]:
         _points = None
         _filter = None
         if isinstance(points, list):
@@ -1273,15 +1265,15 @@ class QdrantRemote(QdrantBase):
             ]
         elif isinstance(points, grpc.PointsSelector):
             selector = GrpcToRest.convert_points_selector(points)
-            if isinstance(selector, rest_models.PointIdsList):
+            if isinstance(selector, models.PointIdsList):
                 _points = selector.points
-            elif isinstance(selector, rest_models.FilterSelector):
+            elif isinstance(selector, models.FilterSelector):
                 _filter = selector.filter
-        elif isinstance(points, rest_models.PointIdsList):
+        elif isinstance(points, models.PointIdsList):
             _points = points.points
-        elif isinstance(points, rest_models.FilterSelector):
+        elif isinstance(points, models.FilterSelector):
             _filter = points.filter
-        elif isinstance(points, rest_models.Filter):
+        elif isinstance(points, models.Filter):
             _filter = points
         elif isinstance(points, grpc.Filter):
             _filter = GrpcToRest.convert_filter(points)
@@ -1301,7 +1293,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points_selector)
 
-            if isinstance(ordering, rest_models.WriteOrdering):
+            if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
             return GrpcToRest.convert_update_result(
@@ -1338,7 +1330,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
 
-            if isinstance(ordering, rest_models.WriteOrdering):
+            if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
             return GrpcToRest.convert_update_result(
@@ -1359,7 +1351,7 @@ class QdrantRemote(QdrantBase):
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
-                set_payload=rest_models.SetPayload(
+                set_payload=models.SetPayload(
                     payload=payload,
                     points=_points,
                     filter=_filter,
@@ -1380,7 +1372,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
 
-            if isinstance(ordering, rest_models.WriteOrdering):
+            if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
             return GrpcToRest.convert_update_result(
@@ -1403,7 +1395,7 @@ class QdrantRemote(QdrantBase):
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
-                set_payload=rest_models.SetPayload(
+                set_payload=models.SetPayload(
                     payload=payload,
                     points=_points,
                     filter=_filter,
@@ -1423,7 +1415,7 @@ class QdrantRemote(QdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
-            if isinstance(ordering, rest_models.WriteOrdering):
+            if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
             return GrpcToRest.convert_update_result(
                 self.grpc_points.DeletePayload(
@@ -1443,7 +1435,7 @@ class QdrantRemote(QdrantBase):
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
-                delete_payload=rest_models.DeletePayload(
+                delete_payload=models.DeletePayload(
                     keys=keys,
                     points=_points,
                     filter=_filter,
@@ -1463,7 +1455,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points_selector)
 
-            if isinstance(ordering, rest_models.WriteOrdering):
+            if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
             return GrpcToRest.convert_update_result(
@@ -1517,7 +1509,7 @@ class QdrantRemote(QdrantBase):
         ]
         result: Optional[bool] = self.http.collections_api.update_aliases(
             timeout=timeout,
-            change_aliases_operation=rest_models.ChangeAliasesOperation(
+            change_aliases_operation=models.ChangeAliasesOperation(
                 actions=change_aliases_operation
             ),
         ).result
@@ -1606,19 +1598,19 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            if isinstance(optimizers_config, rest_models.OptimizersConfigDiff):
+            if isinstance(optimizers_config, models.OptimizersConfigDiff):
                 optimizers_config = RestToGrpc.convert_optimizers_config_diff(optimizers_config)
 
-            if isinstance(collection_params, rest_models.CollectionParamsDiff):
+            if isinstance(collection_params, models.CollectionParamsDiff):
                 collection_params = RestToGrpc.convert_collection_params_diff(collection_params)
 
             if isinstance(vectors_config, dict):
                 vectors_config = RestToGrpc.convert_vectors_config_diff(vectors_config)
 
-            if isinstance(hnsw_config, rest_models.HnswConfigDiff):
+            if isinstance(hnsw_config, models.HnswConfigDiff):
                 hnsw_config = RestToGrpc.convert_hnsw_config_diff(hnsw_config)
 
-            if isinstance(quantization_config, get_args(rest_models.QuantizationConfigDiff)):
+            if isinstance(quantization_config, get_args(models.QuantizationConfigDiff)):
                 quantization_config = RestToGrpc.convert_quantization_config_diff(
                     quantization_config
                 )
@@ -1652,7 +1644,7 @@ class QdrantRemote(QdrantBase):
 
         result: Optional[bool] = self.http.collections_api.update_collection(
             collection_name,
-            update_collection=rest_models.UpdateCollection(
+            update_collection=models.UpdateCollection(
                 optimizers_config=optimizers_config,
                 params=collection_params,
                 vectors=vectors_config,
@@ -1696,21 +1688,21 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            if isinstance(vectors_config, (rest_models.VectorParams, dict)):
+            if isinstance(vectors_config, (models.VectorParams, dict)):
                 vectors_config = RestToGrpc.convert_vectors_config(vectors_config)
 
-            if isinstance(hnsw_config, rest_models.HnswConfigDiff):
+            if isinstance(hnsw_config, models.HnswConfigDiff):
                 hnsw_config = RestToGrpc.convert_hnsw_config_diff(hnsw_config)
 
-            if isinstance(optimizers_config, rest_models.OptimizersConfigDiff):
+            if isinstance(optimizers_config, models.OptimizersConfigDiff):
                 optimizers_config = RestToGrpc.convert_optimizers_config_diff(optimizers_config)
 
-            if isinstance(wal_config, rest_models.WalConfigDiff):
+            if isinstance(wal_config, models.WalConfigDiff):
                 wal_config = RestToGrpc.convert_wal_config_diff(wal_config)
 
             if isinstance(
                 quantization_config,
-                get_args(rest_models.QuantizationConfig),
+                get_args(models.QuantizationConfig),
             ):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
 
@@ -1742,7 +1734,7 @@ class QdrantRemote(QdrantBase):
         if isinstance(quantization_config, grpc.QuantizationConfig):
             quantization_config = GrpcToRest.convert_quantization_config(quantization_config)
 
-        create_collection_request = rest_models.CreateCollection(
+        create_collection_request = models.CreateCollection(
             vectors=vectors_config,
             shard_number=shard_number,
             replication_factor=replication_factor,
@@ -1910,7 +1902,7 @@ class QdrantRemote(QdrantBase):
 
         if self._prefer_grpc:
             field_index_params = None
-            if isinstance(field_schema, rest_models.PayloadSchemaType):
+            if isinstance(field_schema, models.PayloadSchemaType):
                 field_schema = RestToGrpc.convert_payload_schema_type(field_schema)
 
             if isinstance(field_schema, int):
@@ -1920,7 +1912,7 @@ class QdrantRemote(QdrantBase):
                 # otherwise the value will be corrupted
                 field_schema = grpc_payload_schema_to_field_type(field_schema)
 
-            if isinstance(field_schema, rest_models.TextIndexParams):
+            if isinstance(field_schema, models.TextIndexParams):
                 field_index_params = grpc.PayloadIndexParams(
                     text_index_params=RestToGrpc.convert_text_index_params(field_schema)
                 )
@@ -1952,7 +1944,7 @@ class QdrantRemote(QdrantBase):
             types.UpdateResult
         ] = self.openapi_client.collections_api.create_field_index(
             collection_name=collection_name,
-            create_field_index=rest_models.CreateFieldIndex(
+            create_field_index=models.CreateFieldIndex(
                 field_name=field_name, field_schema=field_schema
             ),
             wait=wait,
@@ -2078,21 +2070,21 @@ class QdrantRemote(QdrantBase):
     ) -> bool:
         success = self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
-            snapshot_recover=rest_models.SnapshotRecover(location=location, priority=priority),
+            snapshot_recover=models.SnapshotRecover(location=location, priority=priority),
         ).result
         assert success is not None, "Recover from snapshot API returned None result"
         return success
 
     def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
-            rest_models.LocksOption(error_message=reason, write=True)
+            models.LocksOption(error_message=reason, write=True)
         ).result
         assert result is not None, "Lock storage returned None"
         return result
 
     def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
         result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
-            rest_models.LocksOption(write=False)
+            models.LocksOption(write=False)
         ).result
         assert result is not None, "Post locks returned None"
         return result
