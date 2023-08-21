@@ -150,6 +150,10 @@ scalar_quantization = grpc.ScalarQuantization(
     always_ram=True,
 )
 
+binary_quantization = grpc.BinaryQuantization(
+    always_ram=True,
+)
+
 vector_param_with_quant = grpc.VectorParams(
     size=100,
     distance=grpc.Distance.Cosine,
@@ -252,6 +256,7 @@ search_params = grpc.SearchParams(
 
 search_params_2 = grpc.SearchParams(
     exact=True,
+    indexed_only=True,
 )
 
 search_params_3 = grpc.SearchParams(
@@ -379,6 +384,10 @@ collection_info_red = grpc.CollectionInfo(
 )
 quantization_config = grpc.QuantizationConfig(
     scalar=scalar_quantization,
+)
+
+binary_quantization_config = grpc.QuantizationConfig(
+    binary=binary_quantization,
 )
 
 create_collection = grpc.CreateCollection(
@@ -713,7 +722,8 @@ fixtures = {
         read_consistency_2,
     ],
     "WriteOrdering": [ordering_0, ordering_1, ordering_2],
-    "QuantizationConfig": [quantization_config] + product_quantizations,
+    "QuantizationConfig": [quantization_config, binary_quantization_config]
+    + product_quantizations,
     "QuantizationSearchParams": [quantization_search_params],
     "PointVectors": [point_vector_1, point_vector_2],
     "GroupId": [group_id_1, group_id_2, group_id_3],
