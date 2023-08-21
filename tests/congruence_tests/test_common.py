@@ -75,9 +75,10 @@ def compare_collections(
     client_2,
     num_vectors,
     attrs=("vectors_count", "indexed_vectors_count", "points_count"),
+    collection_name: str = COLLECTION_NAME,
 ):
-    collection_1 = client_1.get_collection(COLLECTION_NAME)
-    collection_2 = client_2.get_collection(COLLECTION_NAME)
+    collection_1 = client_1.get_collection(collection_name)
+    collection_2 = client_2.get_collection(collection_name)
 
     assert all(getattr(collection_1, attr) == getattr(collection_2, attr) for attr in attrs)
 
@@ -85,7 +86,7 @@ def compare_collections(
     compare_client_results(
         client_1,
         client_2,
-        lambda client: client.scroll(COLLECTION_NAME, with_vectors=True, limit=num_vectors * 2),
+        lambda client: client.scroll(collection_name, with_vectors=True, limit=num_vectors * 2),
     )
 
 

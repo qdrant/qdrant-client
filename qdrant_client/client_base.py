@@ -326,3 +326,12 @@ class QdrantBase:
 
     def close(self, **kwargs: Any) -> None:
         pass
+
+    def migrate(
+        self,
+        dest_client: "QdrantBase",
+        collection_names: Optional[List[str]] = None,
+        batch_size: int = 100,
+        recreate_on_collision: bool = False,
+    ) -> None:
+        raise NotImplementedError()

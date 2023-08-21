@@ -6,6 +6,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
+from qdrant_client.migrate import migrate
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
@@ -471,7 +472,8 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name: Collection to search in
             positive:
                 List of stored point IDs, which should be used as reference for similarity search.
-                If there is only one ID provided - this request is equivalent to the regular search with vector of that point.
+                If there is only one ID provided - this request is equivalent to the regular search with vector of that
+                point.
                 If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
                 Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
             negative:
@@ -569,7 +571,8 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name: Collection to search in
             positive:
                 List of stored point IDs, which should be used as reference for similarity search.
-                If there is only one ID provided - this request is equivalent to the regular search with vector of that point.
+                If there is only one ID provided - this request is equivalent to the regular search with vector of that
+                point.
                 If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
                 Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
             negative:
@@ -1732,3 +1735,27 @@ class QdrantClient(QdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.get_locks(**kwargs)
+
+    def migrate(
+        self,
+        dest_client: QdrantBase,
+        collection_names: Optional[List[str]] = None,
+        batch_size: int = 100,
+        recreate_on_collision: bool = False,
+    ) -> None:
+        """Migrate data from one Qdrant instance to another.
+
+        Args:
+            dest_client: Destination Qdrant instance either in local or remote mode
+            collection_names: List of collection names to migrate. If None - migrate all collections
+            batch_size: Batch size to be in scroll and upsert operations during migration
+            recreate_on_collision: If True - recreate collection on destination if it already exists, otherwise
+                raise ValueError exception
+        """
+        migrate(
+            self,
+            dest_client,
+            collection_names=collection_names,
+            batch_size=batch_size,
+            recreate_on_collision=recreate_on_collision,
+        )
