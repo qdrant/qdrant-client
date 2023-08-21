@@ -115,7 +115,7 @@ class QdrantRemote(QdrantBase):
             if self._scheme == "http":
                 warnings.warn("Api key is used with unsecure connection.")
 
-            http2 = True
+            # http2 = True
 
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
