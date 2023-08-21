@@ -388,6 +388,7 @@ class GrpcToRest:
             quantization=cls.convert_quantization_search_params(model.quantization)
             if model.HasField("quantization")
             else None,
+            indexed_only=model.indexed_only if model.HasField("indexed_only") else None,
         )
 
     @classmethod
@@ -855,6 +856,14 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_binary_quantization_config(
+        cls, model: grpc.BinaryQuantization
+    ) -> rest.BinaryQuantizationConfig:
+        return rest.BinaryQuantizationConfig(
+            always_ram=model.always_ram if model.HasField("always_ram") else None,
+        )
+
+    @classmethod
     def convert_compression_ratio(cls, model: grpc.CompressionRatio) -> rest.CompressionRatio:
         if model == grpc.x4:
             return rest.CompressionRatio.X4
@@ -878,6 +887,8 @@ class GrpcToRest:
             return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
         if name == "product":
             return rest.ProductQuantization(product=cls.convert_product_quantization_config(val))
+        if name == "binary":
+            return rest.BinaryQuantization(binary=cls.convert_binary_quantization_config(val))
         raise ValueError(f"invalid QuantizationConfig model: {model}")  # pragma: no cover
 
     @classmethod
@@ -939,6 +950,8 @@ class GrpcToRest:
             return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
         if name == "product":
             return rest.ProductQuantization(product=cls.convert_product_quantization_config(val))
+        if name == "binary":
+            return rest.BinaryQuantization(binary=cls.convert_binary_quantization_config(val))
         if name == "disabled":
             return rest.Disabled.DISABLED
         raise ValueError(f"invalid QuantizationConfigDiff model: {model}")  # pragma: no cover
@@ -1142,6 +1155,7 @@ class RestToGrpc:
             quantization=cls.convert_quantization_search_params(model.quantization)
             if model.quantization is not None
             else None,
+            indexed_only=model.indexed_only,
         )
 
     @classmethod
@@ -1734,6 +1748,14 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_binary_quantization_config(
+        cls, model: rest.BinaryQuantizationConfig
+    ) -> grpc.BinaryQuantization:
+        return grpc.BinaryQuantization(
+            always_ram=model.always_ram,
+        )
+
+    @classmethod
     def convert_compression_ratio(cls, model: rest.CompressionRatio) -> grpc.CompressionRatio:
         if model == rest.CompressionRatio.X4:
             return grpc.CompressionRatio.x4
@@ -1759,6 +1781,10 @@ class RestToGrpc:
         if isinstance(model, rest.ProductQuantization):
             return grpc.QuantizationConfig(
                 product=cls.convert_product_quantization_config(model.product)
+            )
+        if isinstance(model, rest.BinaryQuantization):
+            return grpc.QuantizationConfig(
+                binary=cls.convert_binary_quantization_config(model.binary)
             )
         else:
             raise ValueError(f"invalid QuantizationConfig model: {model}")
@@ -1835,6 +1861,10 @@ class RestToGrpc:
         if isinstance(model, rest.ProductQuantization):
             return grpc.QuantizationConfigDiff(
                 product=cls.convert_product_quantization_config(model.product)
+            )
+        if isinstance(model, rest.BinaryQuantization):
+            return grpc.QuantizationConfigDiff(
+                binary=cls.convert_binary_quantization_config(model.binary)
             )
         if model == rest.Disabled.DISABLED:
             return grpc.QuantizationConfigDiff(
