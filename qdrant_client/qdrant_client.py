@@ -1473,22 +1473,24 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
-    def upload_collection(
-        self,
-        collection_name: str,
-        vectors: Union[
-            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
-        ],
-        payload: Optional[Iterable[Dict[Any, Any]]] = None,
-        ids: Optional[Iterable[types.PointId]] = None,
-        batch_size: int = 64,
-        parallel: int = 1,
-        method: Optional[str] = None,
-        max_retries: int = 3,
-        wait: bool = False,
-        **kwargs: Any,
-    ) -> None:
-        """Upload vectors and payload to the collection.
+import time
+
+def upload_collection_with_backoff(
+    self,
+    collection_name: str,
+    vectors: Union[
+        Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+    ],
+    payload: Optional[Iterable[Dict[Any, Any]]] = None,
+    ids: Optional[Iterable[types.PointId]] = None,
+    batch_size: int = 64,
+    parallel: int = 1,
+    method: Optional[str] = None,
+    max_retries: int = 3,
+    wait: bool = False,
+    **kwargs: Any,
+) -> None:
+            """Upload vectors and payload to the collection.
         This method will perform automatic batching of the data.
         If you need to perform a single update, use `upsert` method.
         Note: use `upload_records` method if you want to upload multiple vectors with single payload.
@@ -1509,20 +1511,34 @@ class QdrantClient(QdrantFastembedMixin):
                 If `false`, each update request will return immediately after the confirmation of receiving.
                 Default: `false`
         """
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+    assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.upload_collection(
-            collection_name=collection_name,
-            vectors=vectors,
-            payload=payload,
-            ids=ids,
-            batch_size=batch_size,
-            parallel=parallel,
-            method=method,
-            max_retries=max_retries,
-            wait=wait,
-            **kwargs,
-        )
+    retries = 0
+    while retries <= max_retries:
+        try:
+            self._client.upload_collection(
+                collection_name=collection_name,
+                vectors=vectors,
+                payload=payload,
+                ids=ids,
+                batch_size=batch_size,
+                parallel=parallel,
+                method=method,
+                max_retries=1,  # Set this to 1 for immediate retry on failure
+                wait=wait,
+                **kwargs,
+            )
+            break  # Success, so break out of the retry loop
+        except Exception as e:
+            print(f"Upload failed. Retrying in {2 ** retries} seconds...")
+            time.sleep(2 ** retries)
+            retries += 1
+
+    if retries > max_retries:
+        print("Upload failed after maximum retries.")
+
+# You would call this modified method like this:
+# instance.upload_collection_with_backoff(...)
 
     def create_payload_index(
         self,
