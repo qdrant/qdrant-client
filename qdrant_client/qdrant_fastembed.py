@@ -196,7 +196,8 @@ class QdrantFastembedMixin(QdrantBase):
         embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
 
         vector_field_name = self._get_vector_field_name()
-
+        
+        # Check if collection by same name exists, if not, create it
         try:
             collection_info = self.get_collection(collection_name=collection_name)
         except Exception:
@@ -208,6 +209,8 @@ class QdrantFastembedMixin(QdrantBase):
             )
             collection_info = self.get_collection(collection_name=collection_name)
 
+
+        # Check if collection has compatible vector params
         assert isinstance(
             collection_info.config.params.vectors, dict
         ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
