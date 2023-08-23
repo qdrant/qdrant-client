@@ -112,7 +112,7 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _get_vector_field_name(self) -> str:
         model_name = self.embedding_model_name.split("/")[-1].lower()
-        return f"text-{model_name}"
+        return f"fast-{model_name}"
 
     def _scored_points_to_query_responses(
         self,
