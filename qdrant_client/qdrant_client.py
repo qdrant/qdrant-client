@@ -179,7 +179,7 @@ class QdrantClient(QdrantBase):
             self.batch_iterable(docs["metadatas"], batch_size),
         ):
             # Tokenize, embed, and index each document
-            embeddings = list(embedding_model.encode(batch_docs)) # noqa: F821
+            embeddings = list(embedding_model.embed(batch_docs)) # noqa: F821
             embeddings = embeddings[0] # TODO: why is this necessary? Shouldn't embeddings be a list of lists?
 
             points = []
@@ -242,10 +242,10 @@ class QdrantClient(QdrantBase):
         embedding_model = Embedding()
         query_responses = []
 
-        query_vectors = embedding_model.encode(query_texts)  # noqa: F821
+        query_vectors = embedding_model.embed(query_texts)  # noqa: F821
 
         for _, qv in zip(query_texts, query_vectors):
-            query_vector = qv[0] # TODO: why is this necessary? Rewrite encode() to return a list of lists
+            query_vector = qv[0] # TODO: why is this necessary? Rewrite embed() to return a list of lists
             search_result = self.search(
                 collection_name=collection_name,
                 query_filter=query_filter,
