@@ -95,13 +95,20 @@ class QdrantFastembedMixin(QdrantBase):
         documents: List[str],
         embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
         batch_size: int = 32,
+        embed_type: str = "default",
     ) -> Iterable[List[float]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
         for batch_docs in iter_batch(documents, batch_size):
-            vectors_batches = embedding_model.embed(batch_docs, batch_size=batch_size)
-            for vector_batch in vectors_batches:
-                for vector in vector_batch.tolist():
-                    yield vector
+            if embed_type == "passage":
+                vectors_batches = embedding_model.passage_embed(batch_docs, batch_size=batch_size)
+            elif embed_type == "query":
+                vectors_batches = embedding_model.query_embed(batch_docs, batch_size=batch_size)
+            elif embed_type == "default":
+                vectors_batches = embedding_model.embed(batch_docs, batch_size=batch_size)
+            else:
+                raise ValueError(f"Unknown embed type: {embed_type}")
+            for vector in vectors_batches:
+                yield vector
 
     def _get_vector_field_name(self) -> str:
         model_name = self.embedding_model_name.split("/")[-1].lower()
@@ -171,6 +178,7 @@ class QdrantFastembedMixin(QdrantBase):
             documents=documents,
             embedding_model_name=self.embedding_model_name,
             batch_size=batch_size,
+            embed_type="passage",
         )
 
         if metadata is None:
