@@ -29,7 +29,7 @@ class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
 
 
 class QdrantFastembedMixin(QdrantBase):
-    DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
 
     embedding_models: Dict[str, "DefaultEmbedding"] = {}
 
