@@ -1,16 +1,23 @@
 import sys
 
 import numpy as np
+import numpy.typing as npt
 
 if sys.version_info >= (3, 10):
-    from typing import Any, TypeAlias
+    from typing import TypeAlias
 else:
     from typing_extensions import TypeAlias
 
-from typing import List, Union
+from typing import List, Tuple, Union, get_args
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
+
+
+def get_args_subscribed(tp: type) -> Tuple:
+    """Get type arguments with all substitutions performed. Supports subscripted generics having __origin__"""
+    return tuple(arg if not hasattr(arg, "__origin__") else arg.__origin__ for arg in get_args(tp))
+
 
 Filter = Union[rest.Filter, grpc.Filter]
 SearchParams = Union[rest.SearchParams, grpc.SearchParams]
@@ -86,14 +93,4 @@ _np_numeric = Union[
     np.longdouble,  # np.float96 and np.float128 are platform dependant aliases for longdouble
 ]
 
-
-if sys.version_info >= (3, 8):
-    # typing is included into numpy since 1.20
-    # NDArray is included since 1.21
-    # pyproject.toml is configured to install numpy>=1.21 in case of python>=3.8
-    # thus we don't need an additional check for numpy version
-    import numpy.typing as npt
-
-    NumpyArray: TypeAlias = npt.NDArray[_np_numeric]
-else:
-    NumpyArray: TypeAlias = np.ndarray
+NumpyArray: TypeAlias = npt.NDArray[_np_numeric]

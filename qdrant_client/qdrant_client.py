@@ -23,6 +23,8 @@ from qdrant_client.http.models import PointStruct  # type: ignore
 from qdrant_client.http.models import SearchParams  # type: ignore
 from qdrant_client.http.models import VectorParams  # type: ignore
 from qdrant_client.local.qdrant_local import QdrantLocal
+from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
+from qdrant_client.migrate import migrate
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
@@ -33,7 +35,7 @@ class QueryResponse(BaseModel, extra="forbid"): # type: ignore
     distances: List[float]
 
 
-class QdrantClient(QdrantBase):
+class QdrantClient(QdrantFastembedMixin):
     """Entry point to communicate with Qdrant service via REST or gPRC API.
 
     It combines interface classes and endpoint implementation.
@@ -97,6 +99,7 @@ class QdrantClient(QdrantBase):
         path: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__(**kwargs)
         self._client: QdrantBase
 
         if location == ":memory:":
@@ -119,14 +122,6 @@ class QdrantClient(QdrantBase):
                     host=host,
                     **kwargs,
                 )
-        self._is_fastembed_installed: Optional[bool] = None
-        # if fastembed is installed, set to true else False
-        if self._is_fastembed_installed is None:
-            try:
-                from fastembed.embedding import DefaultEmbedding  # noqa: F401
-                self._is_fastembed_installed = True
-            except ImportError:
-                self._is_fastembed_installed = False
 
     def __del__(self) -> None:
         self.close()
@@ -649,7 +644,8 @@ class QdrantClient(QdrantBase):
             collection_name: Collection to search in
             positive:
                 List of stored point IDs, which should be used as reference for similarity search.
-                If there is only one ID provided - this request is equivalent to the regular search with vector of that point.
+                If there is only one ID provided - this request is equivalent to the regular search with vector of that
+                point.
                 If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
                 Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
             negative:
@@ -747,7 +743,8 @@ class QdrantClient(QdrantBase):
             collection_name: Collection to search in
             positive:
                 List of stored point IDs, which should be used as reference for similarity search.
-                If there is only one ID provided - this request is equivalent to the regular search with vector of that point.
+                If there is only one ID provided - this request is equivalent to the regular search with vector of that
+                point.
                 If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
                 Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
             negative:
@@ -1618,6 +1615,7 @@ class QdrantClient(QdrantBase):
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        wait: bool = False,
         **kwargs: Any,
     ) -> None:
         """Upload records to the collection
@@ -1632,6 +1630,11 @@ class QdrantClient(QdrantBase):
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
+            wait:
+                Await for the results to be applied on the server side.
+                If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
+                If `false`, each update request will return immediately after the confirmation of receiving.
+                Default: `false`
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
@@ -1658,6 +1661,7 @@ class QdrantClient(QdrantBase):
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
+        wait: bool = False,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -1675,6 +1679,11 @@ class QdrantClient(QdrantBase):
             method: Start method for parallel processes, Default: forkserver
             max_retries: maximum number of retries in case of a failure
                 during the upload of a batch
+            wait:
+                Await for the results to be applied on the server side.
+                If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
+                If `false`, each update request will return immediately after the confirmation of receiving.
+                Default: `false`
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
@@ -1687,6 +1696,7 @@ class QdrantClient(QdrantBase):
             parallel=parallel,
             method=method,
             max_retries=max_retries,
+            wait=wait,
             **kwargs,
         )
 
@@ -1903,3 +1913,27 @@ class QdrantClient(QdrantBase):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.get_locks(**kwargs)
+
+    def migrate(
+        self,
+        dest_client: QdrantBase,
+        collection_names: Optional[List[str]] = None,
+        batch_size: int = 100,
+        recreate_on_collision: bool = False,
+    ) -> None:
+        """Migrate data from one Qdrant instance to another.
+
+        Args:
+            dest_client: Destination Qdrant instance either in local or remote mode
+            collection_names: List of collection names to migrate. If None - migrate all collections
+            batch_size: Batch size to be in scroll and upsert operations during migration
+            recreate_on_collision: If True - recreate collection on destination if it already exists, otherwise
+                raise ValueError exception
+        """
+        migrate(
+            self,
+            dest_client,
+            collection_names=collection_names,
+            batch_size=batch_size,
+            recreate_on_collision=recreate_on_collision,
+        )
