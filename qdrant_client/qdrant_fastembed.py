@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
@@ -29,7 +29,7 @@ class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
 
 
 class QdrantFastembedMixin(QdrantBase):
-    DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
 
     embedding_models: Dict[str, "DefaultEmbedding"] = {}
 
@@ -95,17 +95,24 @@ class QdrantFastembedMixin(QdrantBase):
         documents: List[str],
         embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
         batch_size: int = 32,
+        embed_type: str = "default",
     ) -> Iterable[List[float]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
         for batch_docs in iter_batch(documents, batch_size):
-            vectors_batches = embedding_model.encode(batch_docs, batch_size=batch_size)
-            for vector_batch in vectors_batches:
-                for vector in vector_batch.tolist():
-                    yield vector
+            if embed_type == "passage":
+                vectors_batches = embedding_model.passage_embed(batch_docs, batch_size=batch_size)
+            elif embed_type == "query":
+                vectors_batches = embedding_model.query_embed(batch_docs, batch_size=batch_size)
+            elif embed_type == "default":
+                vectors_batches = embedding_model.embed(batch_docs, batch_size=batch_size)
+            else:
+                raise ValueError(f"Unknown embed type: {embed_type}")
+            for vector in vectors_batches:
+                yield vector
 
     def _get_vector_field_name(self) -> str:
         model_name = self.embedding_model_name.split("/")[-1].lower()
-        return f"text-{model_name}"
+        return f"fast-{model_name}"
 
     def _scored_points_to_query_responses(
         self,
@@ -141,22 +148,22 @@ class QdrantFastembedMixin(QdrantBase):
         Adds text documents into qdrant collection.
         If collection does not exist, it will be created with default parameters.
         Metadata in combination with documents will be added as payload.
-        Documents will be encoded using the specified embedding model.
+        Documents will be embedded using the specified embedding model.
 
-        If you want to use your own encoded vectors, use `upsert` method instead.
+        If you want to use your own vectors, use `upsert` method instead.
 
         Args:
             collection_name (str):
                 Name of the collection to add documents to.
             documents (List[str]):
-                List of documents to encode and add to the collection.
+                List of documents to embed and add to the collection.
             metadata (List[Dict[str, Any]], optional):
                 List of metadata dicts. Defaults to None.
             ids (List[models.ExtendedPointId], optional):
                 List of ids to assign to documents.
                 If not specified, UUIDs will be generated. Defaults to None.
             batch_size (int, optional):
-                How many documents to encode and upload in single request. Defaults to 32.
+                How many documents to embed and upload in single request. Defaults to 32.
 
         Raises:
             ImportError: If fastembed is not installed.
@@ -171,6 +178,7 @@ class QdrantFastembedMixin(QdrantBase):
             documents=documents,
             embedding_model_name=self.embedding_model_name,
             batch_size=batch_size,
+            embed_type="passage",
         )
 
         if metadata is None:
@@ -188,7 +196,8 @@ class QdrantFastembedMixin(QdrantBase):
         embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
 
         vector_field_name = self._get_vector_field_name()
-
+        
+        # Check if collection by same name exists, if not, create it
         try:
             collection_info = self.get_collection(collection_name=collection_name)
         except Exception:
@@ -200,6 +209,8 @@ class QdrantFastembedMixin(QdrantBase):
             )
             collection_info = self.get_collection(collection_name=collection_name)
 
+
+        # Check if collection has compatible vector params
         assert isinstance(
             collection_info.config.params.vectors, dict
         ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
@@ -242,13 +253,13 @@ class QdrantFastembedMixin(QdrantBase):
     ) -> List[QueryResponse]:
         """
         Search for documents in a collection.
-        This method automatically encodes the query text using the specified embedding model.
-        If you want to use your own encoded query vector, use `search` method instead.
+        This method automatically embeds the query text using the specified embedding model.
+        If you want to use your own query vector, use `search` method instead.
 
         Args:
             collection_name: Collection to search in
             query_text:
-                Text to search for. This text will be encoded using the specified embedding model.
+                Text to search for. This text will be embedded using the specified embedding model.
                 And then used as a query vector.
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
@@ -261,8 +272,8 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        embeddings = list(embedding_model_inst.encode(documents=[query_text]))
-        query_vector = embeddings[0][0]
+        embeddings = list(embedding_model_inst.query_embed(query=query_text))
+        query_vector = embeddings[0]
 
         return self._scored_points_to_query_responses(
             self.search(
@@ -287,12 +298,12 @@ class QdrantFastembedMixin(QdrantBase):
     ) -> List[List[QueryResponse]]:
         """
         Search for documents in a collection with batched query.
-        This method automatically encodes the query text using the specified embedding model.
+        This method automatically embeds the query text using the specified embedding model.
 
         Args:
             collection_name: Collection to search in
             query_texts:
-                A list of texts to search for. Each text will be encoded using the specified embedding model.
+                A list of texts to search for. Each text will be embedded using the specified embedding model.
                 And then used as a query vector for a separate search requests.
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
@@ -306,7 +317,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        query_vectors = embedding_model_inst.encode(documents=query_texts)
+        query_vectors = [embedding_model_inst.query_embed(query=[query_text])[0] for query_text in query_texts]
 
         requests = []
         for vector in query_vectors:
