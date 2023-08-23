@@ -1,12 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
-
-try:
-    from typing import Literal
-except ImportError:
-    # Python 3.7 backport
-    from typing_extensions import Literal
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
@@ -43,6 +37,14 @@ class Batch(BaseModel, extra="forbid"):
     ids: List["ExtendedPointId"] = Field(..., description="")
     vectors: "BatchVectorStruct" = Field(..., description="")
     payloads: Optional[List["Payload"]] = Field(default=None, description="")
+
+
+class BinaryQuantization(BaseModel, extra="forbid"):
+    binary: "BinaryQuantizationConfig" = Field(..., description="")
+
+
+class BinaryQuantizationConfig(BaseModel, extra="forbid"):
+    always_ram: Optional[bool] = Field(default=None, description="")
 
 
 class ChangeAliasesOperation(BaseModel, extra="forbid"):
@@ -607,7 +609,7 @@ class InlineResponse20013(BaseModel, extra="forbid"):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ScrollResult"] = Field(default=None, description="")
+    result: Optional[List["UpdateResult"]] = Field(default=None, description="")
 
 
 class InlineResponse20014(BaseModel, extra="forbid"):
@@ -615,7 +617,7 @@ class InlineResponse20014(BaseModel, extra="forbid"):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
+    result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
 class InlineResponse20015(BaseModel, extra="forbid"):
@@ -623,7 +625,7 @@ class InlineResponse20015(BaseModel, extra="forbid"):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
+    result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
 
 
 class InlineResponse20016(BaseModel, extra="forbid"):
@@ -631,10 +633,18 @@ class InlineResponse20016(BaseModel, extra="forbid"):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["GroupsResult"] = Field(default=None, description="")
+    result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
 
 
 class InlineResponse20017(BaseModel, extra="forbid"):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Literal[
+        "ok",
+    ] = Field(None, description="")
+    result: Optional["GroupsResult"] = Field(default=None, description="")
+
+
+class InlineResponse20018(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Literal[
         "ok",
@@ -1337,6 +1347,10 @@ class SearchParams(BaseModel, extra="forbid"):
         description="Search without approximation. If set to true, search may run long but with exact results.",
     )
     quantization: Optional["QuantizationSearchParams"] = Field(default=None, description="Quantization params")
+    indexed_only: Optional[bool] = Field(
+        default=False,
+        description="If enabled, the engine will only perform search among indexed or small segments. Using this option prevents slow searches in case of delayed index, but does not guarantee that all uploaded vectors will be included in search results",
+    )
 
 
 class SearchRequest(BaseModel, extra="forbid"):
@@ -1384,11 +1398,13 @@ class SegmentInfo(BaseModel, extra="forbid"):
     segment_type: "SegmentType" = Field(..., description="Aggregated information about segment")
     num_vectors: int = Field(..., description="Aggregated information about segment")
     num_points: int = Field(..., description="Aggregated information about segment")
+    num_indexed_vectors: int = Field(..., description="Aggregated information about segment")
     num_deleted_vectors: int = Field(..., description="Aggregated information about segment")
     ram_usage_bytes: int = Field(..., description="Aggregated information about segment")
     disk_usage_bytes: int = Field(..., description="Aggregated information about segment")
     is_appendable: bool = Field(..., description="Aggregated information about segment")
     index_schema: Dict[str, "PayloadIndexInfo"] = Field(..., description="Aggregated information about segment")
+    vector_data: Dict[str, "VectorDataInfo"] = Field(..., description="Aggregated information about segment")
 
 
 class SegmentTelemetry(BaseModel, extra="forbid"):
@@ -1504,6 +1520,38 @@ class UpdateCollection(BaseModel, extra="forbid"):
     )
 
 
+class UpdateOperationOneOf(BaseModel, extra="forbid"):
+    upsert: "PointInsertOperations" = Field(..., description="")
+
+
+class UpdateOperationOneOf1(BaseModel, extra="forbid"):
+    delete: "PointsSelector" = Field(..., description="")
+
+
+class UpdateOperationOneOf2(BaseModel, extra="forbid"):
+    set_payload: "SetPayload" = Field(..., description="")
+
+
+class UpdateOperationOneOf3(BaseModel, extra="forbid"):
+    overwrite_payload: "SetPayload" = Field(..., description="")
+
+
+class UpdateOperationOneOf4(BaseModel, extra="forbid"):
+    delete_payload: "DeletePayload" = Field(..., description="")
+
+
+class UpdateOperationOneOf5(BaseModel, extra="forbid"):
+    clear_payload: "PointsSelector" = Field(..., description="")
+
+
+class UpdateOperationOneOf6(BaseModel, extra="forbid"):
+    update_vectors: "UpdateVectors" = Field(..., description="")
+
+
+class UpdateOperationOneOf7(BaseModel, extra="forbid"):
+    delete_vectors: "DeleteVectors" = Field(..., description="")
+
+
 class UpdateResult(BaseModel, extra="forbid"):
     operation_id: int = Field(..., description="Sequential number of the operation")
     status: "UpdateStatus" = Field(..., description="")
@@ -1541,6 +1589,12 @@ class VectorDataConfig(BaseModel, extra="forbid"):
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Vector specific quantization config that overrides collection config"
     )
+
+
+class VectorDataInfo(BaseModel, extra="forbid"):
+    num_vectors: int = Field(..., description="")
+    num_indexed_vectors: int = Field(..., description="")
+    num_deleted_vectors: int = Field(..., description="")
 
 
 class VectorIndexSearchesTelemetry(BaseModel, extra="forbid"):
@@ -1719,15 +1773,27 @@ PointsSelector = Union[
 QuantizationConfig = Union[
     ScalarQuantization,
     ProductQuantization,
+    BinaryQuantization,
 ]
 QuantizationConfigDiff = Union[
     ScalarQuantization,
     ProductQuantization,
+    BinaryQuantization,
     Disabled,
 ]
 ReadConsistency = Union[
     ReadConsistencyType,
     StrictInt,
+]
+UpdateOperation = Union[
+    UpdateOperationOneOf,
+    UpdateOperationOneOf1,
+    UpdateOperationOneOf2,
+    UpdateOperationOneOf3,
+    UpdateOperationOneOf4,
+    UpdateOperationOneOf5,
+    UpdateOperationOneOf6,
+    UpdateOperationOneOf7,
 ]
 UsingVector = Union[
     StrictStr,
