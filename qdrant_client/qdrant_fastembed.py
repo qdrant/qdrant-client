@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
@@ -95,17 +95,24 @@ class QdrantFastembedMixin(QdrantBase):
         documents: List[str],
         embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
         batch_size: int = 32,
+        embed_type: str = "default",
     ) -> Iterable[List[float]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
         for batch_docs in iter_batch(documents, batch_size):
-            vectors_batches = embedding_model.embed(batch_docs, batch_size=batch_size)
-            for vector_batch in vectors_batches:
-                for vector in vector_batch.tolist():
-                    yield vector
+            if embed_type == "passage":
+                vectors_batches = embedding_model.passage_embed(batch_docs, batch_size=batch_size)
+            elif embed_type == "query":
+                vectors_batches = embedding_model.query_embed(batch_docs, batch_size=batch_size)
+            elif embed_type == "default":
+                vectors_batches = embedding_model.embed(batch_docs, batch_size=batch_size)
+            else:
+                raise ValueError(f"Unknown embed type: {embed_type}")
+            for vector in vectors_batches:
+                yield vector
 
     def _get_vector_field_name(self) -> str:
         model_name = self.embedding_model_name.split("/")[-1].lower()
-        return f"text-{model_name}"
+        return f"fast-{model_name}"
 
     def _scored_points_to_query_responses(
         self,
@@ -171,6 +178,7 @@ class QdrantFastembedMixin(QdrantBase):
             documents=documents,
             embedding_model_name=self.embedding_model_name,
             batch_size=batch_size,
+            embed_type="passage",
         )
 
         if metadata is None:
@@ -188,7 +196,8 @@ class QdrantFastembedMixin(QdrantBase):
         embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
 
         vector_field_name = self._get_vector_field_name()
-
+        
+        # Check if collection by same name exists, if not, create it
         try:
             collection_info = self.get_collection(collection_name=collection_name)
         except Exception:
@@ -200,6 +209,8 @@ class QdrantFastembedMixin(QdrantBase):
             )
             collection_info = self.get_collection(collection_name=collection_name)
 
+
+        # Check if collection has compatible vector params
         assert isinstance(
             collection_info.config.params.vectors, dict
         ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
@@ -261,8 +272,8 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        embeddings = list(embedding_model_inst.embed(documents=[query_text]))
-        query_vector = embeddings[0][0]
+        embeddings = list(embedding_model_inst.query_embed(query=query_text))
+        query_vector = embeddings[0]
 
         return self._scored_points_to_query_responses(
             self.search(
@@ -306,7 +317,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        query_vectors = embedding_model_inst.embed(documents=query_texts)
+        query_vectors = [embedding_model_inst.query_embed(query=[query_text])[0] for query_text in query_texts]
 
         requests = []
         for vector in query_vectors:
