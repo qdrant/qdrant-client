@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
 
