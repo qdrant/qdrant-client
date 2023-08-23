@@ -272,7 +272,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        embeddings = list(embedding_model_inst.embed(documents=[query_text]))
+        embeddings = list(embedding_model_inst.query_embed(query=query_text))
         query_vector = embeddings[0]
 
         return self._scored_points_to_query_responses(
@@ -317,7 +317,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        query_vectors = embedding_model_inst.embed(documents=query_texts)
+        query_vectors = [embedding_model_inst.query_embed(query=[query_text])[0] for query_text in query_texts]
 
         requests = []
         for vector in query_vectors:
