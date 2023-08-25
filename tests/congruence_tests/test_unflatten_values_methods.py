@@ -148,6 +148,7 @@ def test_values_count_query(payloads, filter_params, payload_key):
         ([{"nested": [{"empty": []}]}], "nested[].empty"),
         # Empty lists and Nones
         ([{"nested": [{"empty": []}, {"empty": None}]}], "nested[].empty"),
+        ([{}], "city"),
     ],
 )
 def test_is_empty(payloads: List[Dict[str, Any]], payload_key: str) -> None:
@@ -202,6 +203,7 @@ def test_is_empty(payloads: List[Dict[str, Any]], payload_key: str) -> None:
             ],
             "not_exist",
         ),
+        ([{}], "city"),
     ],
 )
 def test_is_null(payloads, payload_key):
