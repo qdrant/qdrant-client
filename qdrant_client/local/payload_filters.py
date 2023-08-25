@@ -114,8 +114,7 @@ def check_condition(
         if (
             values is None
             or len(values) == 0
-            or all(v is None for v in values)
-            or all(isinstance(v, list) and len(v) == 0 for v in values)
+            or all((v is None or (isinstance(v, list) and len(v) == 0)) for v in values)
         ):
             return True
     elif isinstance(condition, models.HasIdCondition):

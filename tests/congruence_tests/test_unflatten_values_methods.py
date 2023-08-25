@@ -144,8 +144,10 @@ def test_values_count_query(payloads, filter_params, payload_key):
         ),
         # List of Nones
         ([{"nones": [None, None]}], "nones"),
-        # Emtpy list
+        # Empty list
         ([{"nested": [{"empty": []}]}], "nested[].empty"),
+        # Empty lists and Nones
+        ([{"nested": [{"empty": []}, {"empty": None}]}], "nested[].empty"),
     ],
 )
 def test_is_empty(payloads: List[Dict[str, Any]], payload_key: str) -> None:
