@@ -58,6 +58,10 @@ class ChangeAliasesOperation(BaseModel, extra="forbid"):
     )
 
 
+class ClearPayloadOperation(BaseModel, extra="forbid"):
+    clear_payload: "PointsSelector" = Field(..., description="")
+
+
 class ClusterConfigTelemetry(BaseModel, extra="forbid"):
     grpc_timeout_ms: int = Field(..., description="")
     p2p: "P2pConfigTelemetry" = Field(..., description="")
@@ -344,6 +348,10 @@ class DeleteAliasOperation(BaseModel, extra="forbid"):
     delete_alias: "DeleteAlias" = Field(..., description="Delete alias if exists")
 
 
+class DeleteOperation(BaseModel, extra="forbid"):
+    delete: "PointsSelector" = Field(..., description="")
+
+
 class DeletePayload(BaseModel, extra="forbid"):
     keys: List[str] = Field(..., description="List of payload keys to remove from payload")
     points: Optional[List["ExtendedPointId"]] = Field(
@@ -354,6 +362,10 @@ class DeletePayload(BaseModel, extra="forbid"):
     )
 
 
+class DeletePayloadOperation(BaseModel, extra="forbid"):
+    delete_payload: "DeletePayload" = Field(..., description="")
+
+
 class DeleteVectors(BaseModel, extra="forbid"):
     points: Optional[List["ExtendedPointId"]] = Field(
         default=None, description="Deletes values from each point in this list"
@@ -362,6 +374,10 @@ class DeleteVectors(BaseModel, extra="forbid"):
         default=None, description="Deletes values from points that satisfy this filter condition"
     )
     vector: List[str] = Field(..., description="Vector names")
+
+
+class DeleteVectorsOperation(BaseModel, extra="forbid"):
+    delete_vectors: "DeleteVectors" = Field(..., description="")
 
 
 class Disabled(str, Enum):
@@ -400,6 +416,9 @@ class FieldCondition(BaseModel, extra="forbid"):
         default=None, description="Check if points geo location lies in a given area"
     )
     geo_radius: Optional["GeoRadius"] = Field(default=None, description="Check if geo point is within a given radius")
+    geo_polygon: Optional["GeoPolygon"] = Field(
+        default=None, description="Check if geo point is within a given polygon"
+    )
     values_count: Optional["ValuesCount"] = Field(default=None, description="Check number of values of the field")
 
 
@@ -430,6 +449,14 @@ class GeoBoundingBox(BaseModel, extra="forbid"):
     )
 
 
+class GeoLineString(BaseModel, extra="forbid"):
+    """
+    Ordered sequence of GeoPoints representing the line
+    """
+
+    points: List["GeoPoint"] = Field(..., description="Ordered sequence of GeoPoints representing the line")
+
+
 class GeoPoint(BaseModel, extra="forbid"):
     """
     Geo point payload schema
@@ -437,6 +464,21 @@ class GeoPoint(BaseModel, extra="forbid"):
 
     lon: float = Field(..., description="Geo point payload schema")
     lat: float = Field(..., description="Geo point payload schema")
+
+
+class GeoPolygon(BaseModel, extra="forbid"):
+    """
+    Geo filter request  Matches coordinates inside the polygon, defined by exterior and interiors.
+    """
+
+    exterior: "GeoLineString" = Field(
+        ...,
+        description="Geo filter request  Matches coordinates inside the polygon, defined by exterior and interiors.",
+    )
+    interiors: List["GeoLineString"] = Field(
+        ...,
+        description="Geo filter request  Matches coordinates inside the polygon, defined by exterior and interiors.",
+    )
 
 
 class GeoRadius(BaseModel, extra="forbid"):
@@ -925,6 +967,10 @@ class OptimizersStatusOneOf1(BaseModel, extra="forbid"):
     """
 
     error: str = Field(..., description="Something wrong happened with optimizers")
+
+
+class OverwritePayloadOperation(BaseModel, extra="forbid"):
+    overwrite_payload: "SetPayload" = Field(..., description="")
 
 
 class P2pConfigTelemetry(BaseModel, extra="forbid"):
@@ -1430,6 +1476,10 @@ class SetPayload(BaseModel, extra="forbid"):
     )
 
 
+class SetPayloadOperation(BaseModel, extra="forbid"):
+    set_payload: "SetPayload" = Field(..., description="")
+
+
 class ShardTransferInfo(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
     from_: int = Field(..., description="", alias="from")
@@ -1520,38 +1570,6 @@ class UpdateCollection(BaseModel, extra="forbid"):
     )
 
 
-class UpdateOperationOneOf(BaseModel, extra="forbid"):
-    upsert: "PointInsertOperations" = Field(..., description="")
-
-
-class UpdateOperationOneOf1(BaseModel, extra="forbid"):
-    delete: "PointsSelector" = Field(..., description="")
-
-
-class UpdateOperationOneOf2(BaseModel, extra="forbid"):
-    set_payload: "SetPayload" = Field(..., description="")
-
-
-class UpdateOperationOneOf3(BaseModel, extra="forbid"):
-    overwrite_payload: "SetPayload" = Field(..., description="")
-
-
-class UpdateOperationOneOf4(BaseModel, extra="forbid"):
-    delete_payload: "DeletePayload" = Field(..., description="")
-
-
-class UpdateOperationOneOf5(BaseModel, extra="forbid"):
-    clear_payload: "PointsSelector" = Field(..., description="")
-
-
-class UpdateOperationOneOf6(BaseModel, extra="forbid"):
-    update_vectors: "UpdateVectors" = Field(..., description="")
-
-
-class UpdateOperationOneOf7(BaseModel, extra="forbid"):
-    delete_vectors: "DeleteVectors" = Field(..., description="")
-
-
 class UpdateResult(BaseModel, extra="forbid"):
     operation_id: int = Field(..., description="Sequential number of the operation")
     status: "UpdateStatus" = Field(..., description="")
@@ -1564,6 +1582,14 @@ class UpdateStatus(str, Enum):
 
 class UpdateVectors(BaseModel, extra="forbid"):
     points: List["PointVectors"] = Field(..., description="Points with named vectors")
+
+
+class UpdateVectorsOperation(BaseModel, extra="forbid"):
+    update_vectors: "UpdateVectors" = Field(..., description="")
+
+
+class UpsertOperation(BaseModel, extra="forbid"):
+    upsert: "PointInsertOperations" = Field(..., description="")
 
 
 class ValuesCount(BaseModel, extra="forbid"):
@@ -1786,14 +1812,14 @@ ReadConsistency = Union[
     StrictInt,
 ]
 UpdateOperation = Union[
-    UpdateOperationOneOf,
-    UpdateOperationOneOf1,
-    UpdateOperationOneOf2,
-    UpdateOperationOneOf3,
-    UpdateOperationOneOf4,
-    UpdateOperationOneOf5,
-    UpdateOperationOneOf6,
-    UpdateOperationOneOf7,
+    UpsertOperation,
+    DeleteOperation,
+    SetPayloadOperation,
+    OverwritePayloadOperation,
+    DeletePayloadOperation,
+    ClearPayloadOperation,
+    UpdateVectorsOperation,
+    DeleteVectorsOperation,
 ]
 UsingVector = Union[
     StrictStr,
