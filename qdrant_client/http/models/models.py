@@ -475,8 +475,8 @@ class GeoPolygon(BaseModel, extra="forbid"):
         ...,
         description="Geo filter request  Matches coordinates inside the polygon, defined by exterior and interiors.",
     )
-    interiors: List["GeoLineString"] = Field(
-        ...,
+    interiors: Optional[List["GeoLineString"]] = Field(
+        default=None,
         description="Geo filter request  Matches coordinates inside the polygon, defined by exterior and interiors.",
     )
 
