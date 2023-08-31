@@ -92,7 +92,7 @@ metadatas = [
 ids = [42, 2]
 
 # Use the new add method
-client.add(collection_name="demo_collection", docs={"documents": docs, "metadatas": metadatas, "ids": ids})
+client.add(collection_name="demo_collection", documents={"documents": docs, "metadatas": metadatas, "ids": ids})
 
 search_result = client.query(collection_name="demo_collection", query_texts=["This is a query document"])
 print(search_result)
