@@ -1075,7 +1075,7 @@ class QdrantRemote(QdrantBase):
                 grpc.UpdatePointVectors(
                     collection_name=collection_name,
                     wait=wait,
-                    vectors=vectors,
+                    points=vectors,
                     ordering=ordering,
                 )
             ).result
@@ -1111,7 +1111,7 @@ class QdrantRemote(QdrantBase):
                     vectors=grpc.VectorsSelector(
                         names=vectors,
                     ),
-                    points=points,
+                    points_selector=points,
                     ordering=ordering,
                 )
             ).result
