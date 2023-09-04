@@ -7,15 +7,35 @@ from qdrant_client.local.geo import geo_distance
 from qdrant_client.local.payload_value_extractor import value_by_key
 
 
+def get_value_counts(values: List[Any]) -> List[int]:
+    counts = []
+
+    if all(value is None for value in values):
+        counts.append(0)
+    else:
+        for value in values:
+            if value is None:
+                counts.append(0)
+            elif hasattr(value, "__len__") and not isinstance(value, str):
+                counts.append(len(value))
+            else:
+                counts.append(1)
+    return counts
+
+
 def check_values_count(condition: models.ValuesCount, values: Optional[List[Any]]) -> bool:
-    count = len(values) if values is not None else 0
-    if condition.lt is not None and count >= condition.lt:
+    if values is None:
         return False
-    if condition.lte is not None and count > condition.lte:
+
+    counts = get_value_counts(values)
+
+    if condition.lt is not None and all(count >= condition.lt for count in counts):
         return False
-    if condition.gt is not None and count <= condition.gt:
+    if condition.lte is not None and all(count > condition.lte for count in counts):
         return False
-    if condition.gte is not None and count < condition.gte:
+    if condition.gt is not None and all(count <= condition.gt for count in counts):
+        return False
+    if condition.gte is not None and all(count < condition.gte for count in counts):
         return False
     return True
 
@@ -84,14 +104,18 @@ def check_condition(
     condition: models.Condition, payload: dict, point_id: models.ExtendedPointId
 ) -> bool:
     if isinstance(condition, models.IsNullCondition):
-        values = value_by_key(payload, condition.is_null.key)
+        values = value_by_key(payload, condition.is_null.key, flat=False)
         if values is None:
             return False
         if any(v is None for v in values):
             return True
     elif isinstance(condition, models.IsEmptyCondition):
-        values = value_by_key(payload, condition.is_empty.key)
-        if values is None or len(values) == 0 or all(v is None for v in values):
+        values = value_by_key(payload, condition.is_empty.key, flat=False)
+        if (
+            values is None
+            or len(values) == 0
+            or all((v is None or (isinstance(v, list) and len(v) == 0)) for v in values)
+        ):
             return True
     elif isinstance(condition, models.HasIdCondition):
         if point_id in condition.has_id:
@@ -115,6 +139,7 @@ def check_condition(
                 return False
             return any(check_geo_radius(condition.geo_radius, v) for v in values)
         if condition.values_count is not None:
+            values = value_by_key(payload, condition.key, flat=False)
             return check_values_count(condition.values_count, values)
     elif isinstance(condition, models.NestedCondition):
         values = value_by_key(payload, condition.nested.key)
