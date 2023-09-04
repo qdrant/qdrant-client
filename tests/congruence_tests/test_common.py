@@ -80,7 +80,11 @@ def compare_collections(
     collection_1 = client_1.get_collection(collection_name)
     collection_2 = client_2.get_collection(collection_name)
 
-    assert all(getattr(collection_1, attr) == getattr(collection_2, attr) for attr in attrs)
+    for attr in attrs:
+        assert getattr(collection_1, attr) == getattr(collection_2, attr), (
+            f"client_1.{attr} = {getattr(collection_1, attr)}, "
+            f"client_2.{attr} = {getattr(collection_2, attr)}"
+        )
 
     # num_vectors * 2 to be sure that we have no excess points uploaded
     compare_client_results(

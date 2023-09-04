@@ -13,10 +13,29 @@ from typing import List, Tuple, Union, get_args
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
 
+typing_remap = {
+    rest.StrictStr: str,
+    rest.StrictInt: int,
+    rest.StrictFloat: float,
+    rest.StrictBool: bool,
+}
+
+
+def remap_type(tp: type) -> type:
+    """Remap type to a type that can be used in type annotations
+
+    Pydantic uses custom types for strict types, so we need to remap them to standard types
+    so that they can be used in type annotations and isinstance checks
+    """
+    return typing_remap.get(tp, tp)
+
 
 def get_args_subscribed(tp: type) -> Tuple:
     """Get type arguments with all substitutions performed. Supports subscripted generics having __origin__"""
-    return tuple(arg if not hasattr(arg, "__origin__") else arg.__origin__ for arg in get_args(tp))
+    return tuple(
+        remap_type(arg if not hasattr(arg, "__origin__") else arg.__origin__)
+        for arg in get_args(tp)
+    )
 
 
 Filter = Union[rest.Filter, grpc.Filter]

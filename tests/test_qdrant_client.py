@@ -10,7 +10,7 @@ import pytest
 
 from qdrant_client import QdrantClient
 from qdrant_client._pydantic_compat import to_dict
-from qdrant_client.conversions.common_types import Record
+from qdrant_client.conversions.common_types import PointVectors, Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.models import (
@@ -727,7 +727,10 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
     if version is not None and version >= "v1.4.0":
         assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
         assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
-        assert collection_info.config.params.vectors["text"].quantization_config.product.compression == CompressionRatio.X32
+        assert (
+            collection_info.config.params.vectors["text"].quantization_config.product.compression
+            == CompressionRatio.X32
+        )
         assert collection_info.config.params.vectors["text"].quantization_config.product.always_ram
         assert collection_info.config.params.vectors["text"].on_disk
         assert collection_info.config.hnsw_config.ef_construct == 123
@@ -835,6 +838,65 @@ def test_quantization_config(prefer_grpc):
             )
         ),
     )
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_vector_update(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    uuid1 = str(uuid.uuid4())
+    uuid2 = str(uuid.uuid4())
+    uuid3 = str(uuid.uuid4())
+    uuid4 = str(uuid.uuid4())
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(id=uuid1, payload={"a": 1}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=uuid2, payload={"a": 2}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=uuid3, payload={"b": 1}, vector=np.random.rand(DIM).tolist()),
+            PointStruct(id=uuid4, payload={"b": 2}, vector=np.random.rand(DIM).tolist()),
+        ],
+        wait=True,
+    )
+
+    client.update_vectors(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointVectors(
+                id=uuid2,
+                vector=[1.0] * DIM,
+            )
+        ],
+    )
+
+    result = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[uuid2],
+        with_vectors=True,
+    )[0]
+
+    assert result.vector == [1] * DIM
+
+    client.delete_vectors(
+        collection_name=COLLECTION_NAME,
+        vectors=[""],
+        points=Filter(must=[FieldCondition(key="b", range=Range(gte=1))]),
+    )
+
+    result = client.retrieve(
+        collection_name=COLLECTION_NAME,
+        ids=[uuid4],
+        with_vectors=True,
+    )[0]
+
+    assert result.vector == {}
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])

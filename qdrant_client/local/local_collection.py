@@ -656,11 +656,11 @@ class LocalCollection:
         for vector_name, vector in vectors.items():
             self.vectors[vector_name][idx] = np.array(vector)
 
-    def update_vectors(self, vectors: Sequence[types.PointVectors]) -> None:
-        for vector in vectors:
-            point_id = vector.id
+    def update_vectors(self, points: Sequence[types.PointVectors]) -> None:
+        for point in points:
+            point_id = point.id
             idx = self.ids[point_id]
-            vector_struct = vector.vector
+            vector_struct = point.vector
             if isinstance(vector_struct, list):
                 fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
             else:
