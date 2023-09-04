@@ -868,7 +868,7 @@ def test_vector_update(prefer_grpc):
 
     client.update_vectors(
         collection_name=COLLECTION_NAME,
-        vectors=[
+        points=[
             PointVectors(
                 id=uuid2,
                 vector=[1.0] * DIM,
