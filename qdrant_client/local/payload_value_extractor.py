@@ -1,11 +1,12 @@
 from typing import Any, List, Optional
 
 
-def value_by_key(payload: dict, key: str) -> Optional[List[Any]]:
+def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[Any]]:
     """
     Get value from payload by key.
     Args:
         payload: arbitrary json-like object
+        flat: If True, extend list of values. If False, append
         key:
             Key or path to value in payload.
             Examples:
@@ -13,8 +14,9 @@ def value_by_key(payload: dict, key: str) -> Optional[List[Any]]:
                 - "address.city"
                 - "location[].name"
                 - "location[0].name"
+
     Returns:
-        List of values or None if key not found
+        List of values or None if key not found.
     """
     keys = key.split(".")
     result = []
@@ -24,12 +26,12 @@ def value_by_key(payload: dict, key: str) -> Optional[List[Any]]:
             return
 
         k = k_list.pop(0)
-
         if len(k_list) == 0:
             if k not in data:
                 return
+
             value = data[k]
-            if isinstance(value, list):
+            if isinstance(value, list) and flat:
                 result.extend(value)
             else:
                 result.append(value)
@@ -75,6 +77,7 @@ def test_value_by_key() -> None:
         "nested": [{"empty": []}, {"empty": []}, {"empty": None}],
         "the_null": None,
     }
+    # region flat=True
     assert value_by_key(payload, "name") == ["John"]
     assert value_by_key(payload, "address.city") == ["New York"]
     assert value_by_key(payload, "location[].name") == ["home", "work"]
@@ -90,3 +93,25 @@ def test_value_by_key() -> None:
     assert value_by_key(payload, "location[].counts") == [1, 2, 3, 4, 5, 6]
     assert value_by_key(payload, "nested[].empty") == [None]
     assert value_by_key(payload, "the_null") == [None]
+    # endregion
+
+    # region flat=False
+    assert value_by_key(payload, "name", flat=False) == ["John"]
+    assert value_by_key(payload, "address.city", flat=False) == ["New York"]
+    assert value_by_key(payload, "location[].name", flat=False) == ["home", "work"]
+    assert value_by_key(payload, "location[0].name", flat=False) == ["home"]
+    assert value_by_key(payload, "location[1].name", flat=False) == ["work"]
+    assert value_by_key(payload, "location[2].name", flat=False) is None
+    assert value_by_key(payload, "location[].name[0]", flat=False) is None
+    assert value_by_key(payload, "location[0]", flat=False) is None
+    assert value_by_key(payload, "not_exits", flat=False) is None
+    assert value_by_key(payload, "address", flat=False) == [{"city": "New York"}]
+    assert value_by_key(payload, "address.city[0]", flat=False) is None
+    assert value_by_key(payload, "counts", flat=False) == [[1, 2, 3]]
+    assert value_by_key(payload, "location[].counts", flat=False) == [
+        [1, 2, 3],
+        [4, 5, 6],
+    ]
+    assert value_by_key(payload, "nested[].empty", flat=False) == [[], [], None]
+    assert value_by_key(payload, "the_null", flat=False) == [None]
+    # endregion

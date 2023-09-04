@@ -43,5 +43,5 @@ def test_simple_search():
                 local_client, remote_client, filter_count, count_filter=count_filter
             )
         except AssertionError as e:
-            print(f"\nFailed with filter {query_filter}")
+            print(f"\nFailed with filter {count_filter}")
             raise e
