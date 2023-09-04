@@ -62,12 +62,12 @@ def test_simple_opt_vectors_search():
 
     local_client.update_vectors(
         collection_name=COLLECTION_NAME,
-        vectors=update_vectors,
+        points=update_vectors,
     )
 
     remote_client.update_vectors(
         collection_name=COLLECTION_NAME,
-        vectors=update_vectors,
+        points=update_vectors,
     )
 
     compare_client_results(

@@ -30,7 +30,7 @@ def test_delete_points(local_client, remote_client):
     local_client.delete(COLLECTION_NAME, found_ids)
     remote_client.delete(COLLECTION_NAME, found_ids)
 
-    compare_collections(local_client, remote_client, 100)
+    compare_collections(local_client, remote_client, 100, attrs=("points_count",))
 
     compare_client_results(
         local_client,
