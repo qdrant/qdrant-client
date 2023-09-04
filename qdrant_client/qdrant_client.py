@@ -5,8 +5,8 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
-from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
 from qdrant_client.migrate import migrate
+from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
 from qdrant_client.qdrant_remote import QdrantRemote
 
 
@@ -779,7 +779,7 @@ class QdrantClient(QdrantFastembedMixin):
     def update_vectors(
         self,
         collection_name: str,
-        vectors: Sequence[types.PointVectors],
+        points: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         **kwargs: Any,
@@ -788,7 +788,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         Args:
             collection_name: Name of the collection to update vectors in
-            vectors: List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
+            points: List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
                 Example
                 - `PointVectors(id=1, vector=[1, 2, 3])`
                 - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
@@ -807,7 +807,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         return self._client.update_vectors(
             collection_name=collection_name,
-            vectors=vectors,
+            points=points,
             wait=wait,
             ordering=ordering,
         )

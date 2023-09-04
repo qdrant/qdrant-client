@@ -133,7 +133,7 @@ class QdrantBase:
     def update_vectors(
         self,
         collection_name: str,
-        vectors: Sequence[types.PointVectors],
+        points: Sequence[types.PointVectors],
         **kwargs: Any,
     ) -> types.UpdateResult:
         raise NotImplementedError()

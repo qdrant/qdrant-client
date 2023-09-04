@@ -1060,13 +1060,13 @@ class QdrantRemote(QdrantBase):
     def update_vectors(
         self,
         collection_name: str,
-        vectors: Sequence[types.PointVectors],
+        points: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            vectors = [RestToGrpc.convert_point_vectors(vector) for vector in vectors]
+            points = [RestToGrpc.convert_point_vectors(point) for point in points]
 
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1075,7 +1075,7 @@ class QdrantRemote(QdrantBase):
                 grpc.UpdatePointVectors(
                     collection_name=collection_name,
                     wait=wait,
-                    points=vectors,
+                    points=points,
                     ordering=ordering,
                 )
             ).result
@@ -1085,7 +1085,7 @@ class QdrantRemote(QdrantBase):
             return self.openapi_client.points_api.update_vectors(
                 collection_name=collection_name,
                 wait=wait,
-                update_vectors=models.UpdateVectors(points=vectors),
+                update_vectors=models.UpdateVectors(points=points),
                 ordering=ordering,
             ).result
 
