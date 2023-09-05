@@ -814,6 +814,45 @@ class LocalCollection:
             self.payload[idx] = {}
             self._persist_by_id(point_id)
 
+    def batch_update_points(
+        self,
+        update_operations: Sequence[types.UpdateOperation],
+    ) -> None:
+        for update_op in update_operations:
+            if isinstance(update_op, models.UpsertOperation):
+                if isinstance(update_op.upsert, models.PointsBatch):
+                    self.upsert(update_op.upsert.batch)
+                elif isinstance(update_op.upsert, models.PointsList):
+                    self.upsert(update_op.upsert.points)
+                else:
+                    raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
+            elif isinstance(update_op, models.DeleteOperation):
+                self.delete(update_op.delete)
+            elif isinstance(update_op, models.SetPayloadOperation):
+                points_selector = update_op.set_payload.points or update_op.set_payload.filter
+                self.set_payload(update_op.set_payload.payload, points_selector)
+            elif isinstance(update_op, models.OverwritePayloadOperation):
+                points_selector = (
+                    update_op.overwrite_payload.points or update_op.overwrite_payload.filter
+                )
+                self.overwrite_payload(update_op.overwrite_payload.payload, points_selector)
+            elif isinstance(update_op, models.DeletePayloadOperation):
+                points_selector = (
+                    update_op.delete_payload.points or update_op.delete_payload.filter
+                )
+                self.delete_payload(update_op.delete_payload.keys, points_selector)
+            elif isinstance(update_op, models.ClearPayloadOperation):
+                self.clear_payload(update_op.clear_payload)
+            elif isinstance(update_op, models.UpdateVectorsOperation):
+                self.update_vectors(update_op.update_vectors.points)
+            elif isinstance(update_op, models.DeleteVectorsOperation):
+                points_selector = (
+                    update_op.delete_vectors.points or update_op.delete_vectors.filter
+                )
+                self.delete_vectors(update_op.delete_vectors.vector, points_selector)
+            else:
+                raise ValueError(f"Unsupported update operation: {type(update_op)}")
+
     def info(self) -> models.CollectionInfo:
         return models.CollectionInfo(
             status=models.CollectionStatus.GREEN,

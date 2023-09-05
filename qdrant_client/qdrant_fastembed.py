@@ -196,7 +196,7 @@ class QdrantFastembedMixin(QdrantBase):
         embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
 
         vector_field_name = self._get_vector_field_name()
-        
+
         # Check if collection by same name exists, if not, create it
         try:
             collection_info = self.get_collection(collection_name=collection_name)
@@ -208,7 +208,6 @@ class QdrantFastembedMixin(QdrantBase):
                 },
             )
             collection_info = self.get_collection(collection_name=collection_name)
-
 
         # Check if collection has compatible vector params
         assert isinstance(
@@ -317,7 +316,9 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        query_vectors = [embedding_model_inst.query_embed(query=[query_text])[0] for query_text in query_texts]
+        query_vectors = [
+            embedding_model_inst.query_embed(query=[query_text])[0] for query_text in query_texts
+        ]
 
         requests = []
         for vector in query_vectors:

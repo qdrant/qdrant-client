@@ -648,6 +648,84 @@ with_lookup = grpc.WithLookup(
     with_payload=with_payload_include,
 )
 
+upsert_operation = grpc.PointsUpdateOperation(
+    upsert=grpc.PointsUpdateOperation.PointStructList(
+        points=[point_struct],
+    ),
+)
+
+delete_operation_1 = grpc.PointsUpdateOperation(
+    delete=points_selector_list,
+)
+
+delete_operation_2 = grpc.PointsUpdateOperation(
+    delete=points_selector_filter,
+)
+
+set_payload_operation_1 = grpc.PointsUpdateOperation(
+    set_payload=grpc.PointsUpdateOperation.SetPayload(
+        payload=payload_to_grpc({"my_payload": payload_value}),
+        points_selector=points_selector_list,
+    ),
+)
+
+set_payload_operation_2 = grpc.PointsUpdateOperation(
+    set_payload=grpc.PointsUpdateOperation.SetPayload(
+        payload=payload_to_grpc({"my_payload": payload_value}),
+        points_selector=points_selector_filter,
+    ),
+)
+
+overwrite_payload_operation_1 = grpc.PointsUpdateOperation(
+    overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
+        payload=payload_to_grpc({"my_payload": payload_value}),
+        points_selector=points_selector_list,
+    ),
+)
+
+overwrite_payload_operation_2 = grpc.PointsUpdateOperation(
+    overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
+        payload=payload_to_grpc({"my_payload": payload_value}),
+        points_selector=points_selector_filter,
+    ),
+)
+
+delete_payload_operation_1 = grpc.PointsUpdateOperation(
+    delete_payload=grpc.PointsUpdateOperation.DeletePayload(
+        keys=["my_payload", "my_payload2"],
+        points_selector=points_selector_list,
+    ),
+)
+
+delete_payload_operation_2 = grpc.PointsUpdateOperation(
+    delete_payload=grpc.PointsUpdateOperation.DeletePayload(
+        keys=["my_payload", "my_payload2"],
+        points_selector=points_selector_filter,
+    ),
+)
+
+clear_payload_operation_1 = grpc.PointsUpdateOperation(
+    clear_payload=points_selector_list,
+)
+
+clear_payload_operation_2 = grpc.PointsUpdateOperation(
+    clear_payload=points_selector_filter,
+)
+
+update_vectors_operation = grpc.PointsUpdateOperation(
+    update_vectors=grpc.PointsUpdateOperation.UpdateVectors(
+        points=[point_vector_1, point_vector_2]
+    ),
+)
+
+delete_vectors_operation = grpc.PointsUpdateOperation(
+    delete_vectors=grpc.PointsUpdateOperation.DeleteVectors(
+        points_selector=points_selector_list,
+        vectors=grpc.VectorsSelector(names=["image", "text"]),
+    ),
+)
+
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -729,6 +807,21 @@ fixtures = {
     "GroupId": [group_id_1, group_id_2, group_id_3],
     "GroupsResult": [group_result],
     "WithLookup": [with_lookup],
+    "PointsUpdateOperation": [
+        upsert_operation,
+        delete_operation_1,
+        delete_operation_2,
+        set_payload_operation_1,
+        set_payload_operation_2,
+        overwrite_payload_operation_1,
+        overwrite_payload_operation_2,
+        delete_payload_operation_1,
+        delete_payload_operation_2,
+        clear_payload_operation_1,
+        clear_payload_operation_2,
+        update_vectors_operation,
+        delete_vectors_operation,
+    ],
 }
 
 

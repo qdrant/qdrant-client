@@ -425,6 +425,16 @@ class QdrantLocal(QdrantBase):
         collection.clear_payload(selector=points_selector)
         return self._default_update_result()
 
+    def batch_update_points(
+        self,
+        collection_name: str,
+        update_operations: Sequence[types.UpdateOperation],
+        **kwargs: Any,
+    ) -> List[types.UpdateResult]:
+        collection = self._get_collection(collection_name)
+        collection.batch_update_points(update_operations)
+        return [self._default_update_result()] * len(update_operations)
+
     def update_collection_aliases(
         self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
@@ -647,6 +657,38 @@ class QdrantLocal(QdrantBase):
     def recover_snapshot(self, collection_name: str, location: str, **kwargs: Any) -> bool:
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
+        )
+
+    def list_shard_snapshots(
+        self, collection_name: str, shard_id: int, **kwargs: Any
+    ) -> List[types.SnapshotDescription]:
+        raise NotImplementedError(
+            "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need snapshots."
+        )
+
+    def create_shard_snapshot(
+        self, collection_name: str, shard_id: int, **kwargs: Any
+    ) -> Optional[types.SnapshotDescription]:
+        raise NotImplementedError(
+            "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need snapshots."
+        )
+
+    def delete_shard_snapshot(
+        self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
+    ) -> bool:
+        raise NotImplementedError(
+            "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need snapshots."
+        )
+
+    def recover_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        location: str,
+        **kwargs: Any,
+    ) -> bool:
+        raise NotImplementedError(
+            "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need snapshots."
         )
 
     def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:

@@ -58,6 +58,10 @@ class ChangeAliasesOperation(BaseModel, extra="forbid"):
     )
 
 
+class ClearPayloadOperation(BaseModel, extra="forbid"):
+    clear_payload: "PointsSelector" = Field(..., description="")
+
+
 class ClusterConfigTelemetry(BaseModel, extra="forbid"):
     grpc_timeout_ms: int = Field(..., description="")
     p2p: "P2pConfigTelemetry" = Field(..., description="")
@@ -344,6 +348,10 @@ class DeleteAliasOperation(BaseModel, extra="forbid"):
     delete_alias: "DeleteAlias" = Field(..., description="Delete alias if exists")
 
 
+class DeleteOperation(BaseModel, extra="forbid"):
+    delete: "PointsSelector" = Field(..., description="")
+
+
 class DeletePayload(BaseModel, extra="forbid"):
     keys: List[str] = Field(..., description="List of payload keys to remove from payload")
     points: Optional[List["ExtendedPointId"]] = Field(
@@ -354,6 +362,10 @@ class DeletePayload(BaseModel, extra="forbid"):
     )
 
 
+class DeletePayloadOperation(BaseModel, extra="forbid"):
+    delete_payload: "DeletePayload" = Field(..., description="")
+
+
 class DeleteVectors(BaseModel, extra="forbid"):
     points: Optional[List["ExtendedPointId"]] = Field(
         default=None, description="Deletes values from each point in this list"
@@ -362,6 +374,10 @@ class DeleteVectors(BaseModel, extra="forbid"):
         default=None, description="Deletes values from points that satisfy this filter condition"
     )
     vector: List[str] = Field(..., description="Vector names")
+
+
+class DeleteVectorsOperation(BaseModel, extra="forbid"):
+    delete_vectors: "DeleteVectors" = Field(..., description="")
 
 
 class Disabled(str, Enum):
@@ -855,6 +871,7 @@ class OperationDurationStatistics(BaseModel, extra="forbid"):
 class OptimizerTelemetry(BaseModel, extra="forbid"):
     status: "OptimizersStatus" = Field(..., description="")
     optimizations: "OperationDurationStatistics" = Field(..., description="")
+    log: List["TrackerTelemetry"] = Field(..., description="")
 
 
 class OptimizersConfig(BaseModel, extra="forbid"):
@@ -925,6 +942,10 @@ class OptimizersStatusOneOf1(BaseModel, extra="forbid"):
     """
 
     error: str = Field(..., description="Something wrong happened with optimizers")
+
+
+class OverwritePayloadOperation(BaseModel, extra="forbid"):
+    overwrite_payload: "SetPayload" = Field(..., description="")
 
 
 class P2pConfigTelemetry(BaseModel, extra="forbid"):
@@ -1430,6 +1451,15 @@ class SetPayload(BaseModel, extra="forbid"):
     )
 
 
+class SetPayloadOperation(BaseModel, extra="forbid"):
+    set_payload: "SetPayload" = Field(..., description="")
+
+
+class ShardSnapshotRecover(BaseModel, extra="forbid"):
+    location: "ShardSnapshotLocation" = Field(..., description="")
+    priority: Optional["SnapshotPriority"] = Field(default=None, description="")
+
+
 class ShardTransferInfo(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
     from_: int = Field(..., description="", alias="from")
@@ -1447,6 +1477,7 @@ class SnapshotDescription(BaseModel, extra="forbid"):
 
 
 class SnapshotPriority(str, Enum):
+    NO_SYNC = "no_sync"
     SNAPSHOT = "snapshot"
     REPLICA = "replica"
 
@@ -1496,6 +1527,31 @@ class TokenizerType(str, Enum):
     MULTILINGUAL = "multilingual"
 
 
+class TrackerStatusOneOf(str, Enum):
+    OPTIMIZING = "optimizing"
+    DONE = "done"
+
+
+class TrackerStatusOneOf1(BaseModel, extra="forbid"):
+    cancelled: str = Field(..., description="")
+
+
+class TrackerStatusOneOf2(BaseModel, extra="forbid"):
+    error: str = Field(..., description="")
+
+
+class TrackerTelemetry(BaseModel, extra="forbid"):
+    """
+    Tracker object used in telemetry
+    """
+
+    name: str = Field(..., description="Name of the optimizer")
+    segment_ids: List[int] = Field(..., description="Segment IDs being optimized")
+    status: "TrackerStatus" = Field(..., description="Tracker object used in telemetry")
+    start_at: datetime = Field(..., description="Start time of the optimizer")
+    end_at: Optional[datetime] = Field(default=None, description="End time of the optimizer")
+
+
 class UpdateCollection(BaseModel, extra="forbid"):
     """
     Operation for updating parameters of the existing collection
@@ -1520,36 +1576,8 @@ class UpdateCollection(BaseModel, extra="forbid"):
     )
 
 
-class UpdateOperationOneOf(BaseModel, extra="forbid"):
-    upsert: "PointInsertOperations" = Field(..., description="")
-
-
-class UpdateOperationOneOf1(BaseModel, extra="forbid"):
-    delete: "PointsSelector" = Field(..., description="")
-
-
-class UpdateOperationOneOf2(BaseModel, extra="forbid"):
-    set_payload: "SetPayload" = Field(..., description="")
-
-
-class UpdateOperationOneOf3(BaseModel, extra="forbid"):
-    overwrite_payload: "SetPayload" = Field(..., description="")
-
-
-class UpdateOperationOneOf4(BaseModel, extra="forbid"):
-    delete_payload: "DeletePayload" = Field(..., description="")
-
-
-class UpdateOperationOneOf5(BaseModel, extra="forbid"):
-    clear_payload: "PointsSelector" = Field(..., description="")
-
-
-class UpdateOperationOneOf6(BaseModel, extra="forbid"):
-    update_vectors: "UpdateVectors" = Field(..., description="")
-
-
-class UpdateOperationOneOf7(BaseModel, extra="forbid"):
-    delete_vectors: "DeleteVectors" = Field(..., description="")
+class UpdateOperations(BaseModel, extra="forbid"):
+    operations: List["UpdateOperation"] = Field(..., description="")
 
 
 class UpdateResult(BaseModel, extra="forbid"):
@@ -1564,6 +1592,14 @@ class UpdateStatus(str, Enum):
 
 class UpdateVectors(BaseModel, extra="forbid"):
     points: List["PointVectors"] = Field(..., description="Points with named vectors")
+
+
+class UpdateVectorsOperation(BaseModel, extra="forbid"):
+    update_vectors: "UpdateVectors" = Field(..., description="")
+
+
+class UpsertOperation(BaseModel, extra="forbid"):
+    upsert: "PointInsertOperations" = Field(..., description="")
 
 
 class ValuesCount(BaseModel, extra="forbid"):
@@ -1785,15 +1821,23 @@ ReadConsistency = Union[
     ReadConsistencyType,
     StrictInt,
 ]
+ShardSnapshotLocation = Union[
+    StrictStr,
+]
+TrackerStatus = Union[
+    TrackerStatusOneOf,
+    TrackerStatusOneOf1,
+    TrackerStatusOneOf2,
+]
 UpdateOperation = Union[
-    UpdateOperationOneOf,
-    UpdateOperationOneOf1,
-    UpdateOperationOneOf2,
-    UpdateOperationOneOf3,
-    UpdateOperationOneOf4,
-    UpdateOperationOneOf5,
-    UpdateOperationOneOf6,
-    UpdateOperationOneOf7,
+    UpsertOperation,
+    DeleteOperation,
+    SetPayloadOperation,
+    OverwritePayloadOperation,
+    DeletePayloadOperation,
+    ClearPayloadOperation,
+    UpdateVectorsOperation,
+    DeleteVectorsOperation,
 ]
 UsingVector = Union[
     StrictStr,

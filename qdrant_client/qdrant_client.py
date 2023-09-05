@@ -1147,6 +1147,44 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    def batch_update_points(
+        self,
+        collection_name: str,
+        update_operations: Sequence[types.UpdateOperation],
+        wait: bool = True,
+        ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
+    ) -> List[types.UpdateResult]:
+        """Batch update points in the collection.
+
+        Args:
+            collection_name: Name of the collection
+            update_operations: List of update operations
+            wait: Await for the results to be processed.
+                - If `true`, result will be returned only when all changes are applied
+                - If `false`, result will be returned immediately after the confirmation of receiving.
+            ordering:
+                Define strategy for ordering of the points. Possible values:
+                - 'weak' - write operations may be reordered, works faster, default
+                - 'medium' - write operations go through dynamically selected leader,
+                    may be inconsistent for a short period of time in case of leader change
+                - 'strong' - Write operations go through the permanent leader,
+                    consistent, but may be unavailable if leader is down
+            **kwargs:
+
+        Returns:
+            Operation results
+        """
+
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        return self._client.batch_update_points(
+            collection_name=collection_name,
+            update_operations=update_operations,
+            wait=wait,
+            ordering=ordering,
+            **kwargs,
+        )
+
     def update_collection_aliases(
         self,
         change_aliases_operations: Sequence[types.AliasOperations],
@@ -1691,6 +1729,7 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         location: str,
         priority: Optional[types.SnapshotPriority] = None,
+        wait: bool = True,
         **kwargs: Any,
     ) -> bool:
         """Recover collection from snapshot.
@@ -1704,9 +1743,11 @@ class QdrantClient(QdrantFastembedMixin):
                     - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
             priority:
                 Defines source of truth for snapshot recovery
+                    - `no_sync` means - do not sync shard with other shards
                     - `snapshot` means - prefer snapshot data over the current state
                     - `replica` means - prefer existing data over the snapshot
                 Default: `replica`
+            wait: Await for the results to be processed.
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
@@ -1715,6 +1756,113 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             location=location,
             priority=priority,
+            wait=wait,
+            **kwargs,
+        )
+
+    def list_shard_snapshots(
+        self, collection_name: str, shard_id: int, **kwargs: Any
+    ) -> List[types.SnapshotDescription]:
+        """List all snapshots of a given shard
+
+        Args:
+            collection_name: Name of the collection
+            shard_id: Index of the shard
+
+        Returns:
+            List of snapshots
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.list_shard_snapshots(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            **kwargs,
+        )
+
+    def create_shard_snapshot(
+        self, collection_name: str, shard_id: int, **kwargs: Any
+    ) -> Optional[types.SnapshotDescription]:
+        """Create snapshot for a given shard.
+
+        Args:
+            collection_name: Name of the collection
+            shard_id: Index of the shard
+
+        Returns:
+            Snapshot description
+
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.create_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            **kwargs,
+        )
+
+    def delete_shard_snapshot(
+        self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
+    ) -> bool:
+        """Delete snapshot for a given shard.
+
+        Args:
+            collection_name: Name of the collection
+            shard_id: Index of the shard
+            snapshot_name: Snapshot id
+
+        Returns:
+            True if snapshot was deleted
+        """
+
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.delete_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            snapshot_name=snapshot_name,
+            **kwargs,
+        )
+
+    def recover_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        location: str,
+        priority: Optional[types.SnapshotPriority] = None,
+        wait: bool = True,
+        **kwargs: Any,
+    ) -> bool:
+        """Recover shard from snapshot.
+
+        Args:
+            collection_name: Name of the collection
+            shard_id: Index of the shard
+            location:
+                URL of the snapshot.
+                Example:
+                    - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
+                    - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
+            priority:
+                Defines source of truth for snapshot recovery
+                    - `no_sync` means - do not sync shard with other shards
+                    - `snapshot` means - prefer snapshot data over the current state
+                    - `replica` means - prefer existing data over the snapshot
+                Default: `replica`
+            wait: Await for the results to be processed.
+
+        Returns:
+            True if snapshot was deleted
+        """
+
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.recover_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            location=location,
+            priority=priority,
+            wait=wait,
             **kwargs,
         )
 

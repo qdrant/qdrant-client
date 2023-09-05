@@ -49,7 +49,12 @@ def upload_batch(
 
 class RestBatchUploader(BaseUploader):
     def __init__(
-        self, uri: str, collection_name: str, max_retries: int, wait: bool = False, **kwargs: Any
+        self,
+        uri: str,
+        collection_name: str,
+        max_retries: int,
+        wait: bool = False,
+        **kwargs: Any,
     ):
         self.collection_name = collection_name
         self.openapi_client: SyncApis = SyncApis(host=uri, **kwargs)
@@ -71,5 +76,9 @@ class RestBatchUploader(BaseUploader):
     def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         for batch in items:
             yield upload_batch(
-                self.openapi_client, self.collection_name, batch, self.max_retries, self._wait
+                self.openapi_client,
+                self.collection_name,
+                batch,
+                self.max_retries,
+                self._wait,
             )
