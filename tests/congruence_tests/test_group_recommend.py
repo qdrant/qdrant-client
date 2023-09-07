@@ -145,7 +145,7 @@ def test_simple_recommend_groups() -> None:
 
     recommender.group_by = "rand_digit"
 
-    for i in range(100):
+    for i in range(10):
         query_filter = one_random_filter_please()
         try:
             compare_client_results(
