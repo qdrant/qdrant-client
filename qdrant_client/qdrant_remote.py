@@ -1480,6 +1480,44 @@ class QdrantRemote(QdrantBase):
             assert result is not None, "Clear payload returned None"
             return result
 
+    def batch_update_points(
+        self,
+        collection_name: str,
+        update_operations: Sequence[types.UpdateOperation],
+        wait: bool = True,
+        ordering: Optional[types.WriteOrdering] = None,
+        **kwargs: Any,
+    ) -> List[types.UpdateResult]:
+        if self._prefer_grpc:
+            update_operations = [
+                RestToGrpc.convert_update_operation(operation) for operation in update_operations
+            ]
+
+            if isinstance(ordering, models.WriteOrdering):
+                ordering = RestToGrpc.convert_write_ordering(ordering)
+
+            return [
+                GrpcToRest.convert_update_result(result)
+                for result in self.grpc_points.UpdateBatch(
+                    grpc.UpdateBatchPoints(
+                        collection_name=collection_name,
+                        wait=wait,
+                        operations=update_operations,
+                        ordering=ordering,
+                    ),
+                    timeout=self._timeout,
+                ).result
+            ]
+        else:
+            result: Optional[types.UpdateResult] = self.openapi_client.points_api.batch_update(
+                collection_name=collection_name,
+                wait=wait,
+                ordering=ordering,
+                update_operations=models.UpdateOperations(operations=update_operations),
+            ).result
+            assert result is not None, "Batch update points returned None"
+            return result
+
     def update_collection_aliases(
         self,
         change_aliases_operations: Sequence[types.AliasOperations],
@@ -2066,11 +2104,63 @@ class QdrantRemote(QdrantBase):
         collection_name: str,
         location: str,
         priority: Optional[types.SnapshotPriority] = None,
+        wait: bool = True,
         **kwargs: Any,
     ) -> bool:
         success = self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
+            wait=wait,
             snapshot_recover=models.SnapshotRecover(location=location, priority=priority),
+        ).result
+        assert success is not None, "Recover from snapshot API returned None result"
+        return success
+
+    def list_shard_snapshots(
+        self, collection_name: str, shard_id: int, **kwargs: Any
+    ) -> List[types.SnapshotDescription]:
+        snapshots = self.openapi_client.snapshots_api.list_shard_snapshots(
+            collection_name=collection_name,
+            shard_id=shard_id,
+        ).result
+        assert snapshots is not None, "List snapshots API returned None result"
+        return snapshots
+
+    def create_shard_snapshot(
+        self, collection_name: str, shard_id: int, **kwargs: Any
+    ) -> Optional[types.SnapshotDescription]:
+        return self.openapi_client.snapshots_api.create_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+        ).result
+
+    def delete_shard_snapshot(
+        self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
+    ) -> bool:
+        result: Optional[bool] = self.openapi_client.snapshots_api.delete_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            snapshot_name=snapshot_name,
+        ).result
+        assert result is not None, "Delete snapshot API returned None"
+        return result
+
+    def recover_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        location: str,
+        priority: Optional[types.SnapshotPriority] = None,
+        wait: bool = True,
+        **kwargs: Any,
+    ) -> bool:
+        success = self.openapi_client.snapshots_api.recover_shard_from_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            wait=wait,
+            shard_snapshot_recover=models.ShardSnapshotRecover(
+                location=location,
+                priority=priority,
+            ),
         ).result
         assert success is not None, "Recover from snapshot API returned None result"
         return success

@@ -200,6 +200,14 @@ class QdrantBase:
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
+    def batch_update_points(
+        self,
+        collection_name: str,
+        update_operations: Sequence[types.UpdateOperation],
+        **kwargs: Any,
+    ) -> List[types.UpdateResult]:
+        raise NotImplementedError()
+
     def update_collection_aliases(
         self,
         change_aliases_operations: Sequence[types.AliasOperations],
@@ -310,6 +318,30 @@ class QdrantBase:
     def recover_snapshot(
         self,
         collection_name: str,
+        location: str,
+        **kwargs: Any,
+    ) -> bool:
+        raise NotImplementedError()
+
+    def list_shard_snapshots(
+        self, collection_name: str, shard_id: int, **kwargs: Any
+    ) -> List[types.SnapshotDescription]:
+        raise NotImplementedError()
+
+    def create_shard_snapshot(
+        self, collection_name: str, shard_id: int, **kwargs: Any
+    ) -> Optional[types.SnapshotDescription]:
+        raise NotImplementedError()
+
+    def delete_shard_snapshot(
+        self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
+    ) -> bool:
+        raise NotImplementedError()
+
+    def recover_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
         location: str,
         **kwargs: Any,
     ) -> bool:

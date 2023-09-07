@@ -52,6 +52,34 @@ class _ServiceApi:
             headers=headers if headers else None,
         )
 
+    def _build_for_healthz(
+        self,
+    ):
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        headers = {}
+        return self.api_client.request(
+            type_=str,
+            method="GET",
+            url="/healthz",
+            headers=headers if headers else None,
+        )
+
+    def _build_for_livez(
+        self,
+    ):
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        headers = {}
+        return self.api_client.request(
+            type_=str,
+            method="GET",
+            url="/livez",
+            headers=headers if headers else None,
+        )
+
     def _build_for_metrics(
         self,
         anonymize: bool = None,
@@ -87,6 +115,20 @@ class _ServiceApi:
             type_=m.InlineResponse2001, method="POST", url="/locks", headers=headers if headers else None, data=body
         )
 
+    def _build_for_readyz(
+        self,
+    ):
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        headers = {}
+        return self.api_client.request(
+            type_=str,
+            method="GET",
+            url="/readyz",
+            headers=headers if headers else None,
+        )
+
     def _build_for_telemetry(
         self,
         anonymize: bool = None,
@@ -117,6 +159,22 @@ class AsyncServiceApi(_ServiceApi):
         """
         return await self._build_for_get_locks()
 
+    async def healthz(
+        self,
+    ) -> str:
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        return await self._build_for_healthz()
+
+    async def livez(
+        self,
+    ) -> str:
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        return await self._build_for_livez()
+
     async def metrics(
         self,
         anonymize: bool = None,
@@ -139,6 +197,14 @@ class AsyncServiceApi(_ServiceApi):
             locks_option=locks_option,
         )
 
+    async def readyz(
+        self,
+    ) -> str:
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        return await self._build_for_readyz()
+
     async def telemetry(
         self,
         anonymize: bool = None,
@@ -159,6 +225,22 @@ class SyncServiceApi(_ServiceApi):
         Get lock options. If write is locked, all write operations and collection creation are forbidden
         """
         return self._build_for_get_locks()
+
+    def healthz(
+        self,
+    ) -> str:
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        return self._build_for_healthz()
+
+    def livez(
+        self,
+    ) -> str:
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        return self._build_for_livez()
 
     def metrics(
         self,
@@ -181,6 +263,14 @@ class SyncServiceApi(_ServiceApi):
         return self._build_for_post_locks(
             locks_option=locks_option,
         )
+
+    def readyz(
+        self,
+    ) -> str:
+        """
+        An endpoint for health checking used in Kubernetes.
+        """
+        return self._build_for_readyz()
 
     def telemetry(
         self,

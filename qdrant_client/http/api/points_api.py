@@ -1,5 +1,5 @@
 # flake8: noqa E501
-from typing import TYPE_CHECKING, Any, Dict, List, Set, Union
+from typing import TYPE_CHECKING, Any, Dict, Set, Union
 
 from qdrant_client._pydantic_compat import to_json
 from qdrant_client.http.models import *
@@ -43,8 +43,11 @@ class _PointsApi:
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-        update_operation: List[m.UpdateOperation] = None,
+        update_operations: m.UpdateOperations = None,
     ):
+        """
+        Apply a series of update operations for points, vectors and payloads
+        """
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -56,7 +59,7 @@ class _PointsApi:
             query_params["ordering"] = str(ordering)
 
         headers = {}
-        body = jsonable_encoder(update_operation)
+        body = jsonable_encoder(update_operations)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
@@ -649,13 +652,16 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-        update_operation: List[m.UpdateOperation] = None,
+        update_operations: m.UpdateOperations = None,
     ) -> m.InlineResponse20013:
+        """
+        Apply a series of update operations for points, vectors and payloads
+        """
         return await self._build_for_batch_update(
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
-            update_operation=update_operation,
+            update_operations=update_operations,
         )
 
     async def clear_payload(
@@ -949,13 +955,16 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-        update_operation: List[m.UpdateOperation] = None,
+        update_operations: m.UpdateOperations = None,
     ) -> m.InlineResponse20013:
+        """
+        Apply a series of update operations for points, vectors and payloads
+        """
         return self._build_for_batch_update(
             collection_name=collection_name,
             wait=wait,
             ordering=ordering,
-            update_operation=update_operation,
+            update_operations=update_operations,
         )
 
     def clear_payload(
