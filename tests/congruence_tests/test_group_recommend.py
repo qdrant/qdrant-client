@@ -101,7 +101,7 @@ def group_by_keys():
 def test_simple_recommend_groups() -> None:
     fixture_records = generate_fixtures()
 
-    secondary_collection_records = generate_fixtures(100)
+    secondary_collection_records = generate_fixtures(1000)
 
     recommender = TestGroupRecommendation()
 
@@ -113,39 +113,41 @@ def test_simple_recommend_groups() -> None:
     init_client(remote_client, fixture_records)
     init_client(remote_client, secondary_collection_records, secondary_collection_name)
 
-    for group_size in (3, 5):
-        recommender.group_size = group_size
-        compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_image
-        )
-        compare_client_results(local_client, remote_client, recommender.many_recommend_groups)
-        compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_negative
-        )
-        compare_client_results(
-            local_client,
-            remote_client,
-            recommender.recommend_groups_from_another_collection,
-        )
+    for _ in range(10):
+        for group_size in (3, 5):
+            recommender.group_size = group_size
+            compare_client_results(
+                local_client, remote_client, recommender.simple_recommend_groups_image
+            )
+            compare_client_results(local_client, remote_client, recommender.many_recommend_groups)
+            compare_client_results(
+                local_client, remote_client, recommender.simple_recommend_groups_negative
+            )
+            compare_client_results(
+                local_client,
+                remote_client,
+                recommender.recommend_groups_from_another_collection,
+            )
 
-    for key in group_by_keys():
-        recommender.group_by = key
-        compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_image
-        )
-        compare_client_results(local_client, remote_client, recommender.many_recommend_groups)
-        compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_negative
-        )
-        compare_client_results(
-            local_client,
-            remote_client,
-            recommender.recommend_groups_from_another_collection,
-        )
+    for _ in range(10):
+        for key in group_by_keys():
+            recommender.group_by = key
+            compare_client_results(
+                local_client, remote_client, recommender.simple_recommend_groups_image
+            )
+            compare_client_results(local_client, remote_client, recommender.many_recommend_groups)
+            compare_client_results(
+                local_client, remote_client, recommender.simple_recommend_groups_negative
+            )
+            compare_client_results(
+                local_client,
+                remote_client,
+                recommender.recommend_groups_from_another_collection,
+            )
 
     recommender.group_by = "rand_digit"
 
-    for i in range(10):
+    for i in range(1000):
         query_filter = one_random_filter_please()
         try:
             compare_client_results(
