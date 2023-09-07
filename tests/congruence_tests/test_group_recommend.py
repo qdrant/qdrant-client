@@ -113,7 +113,7 @@ def test_simple_recommend_groups() -> None:
     init_client(remote_client, fixture_records)
     init_client(remote_client, secondary_collection_records, secondary_collection_name)
 
-    for _ in range(10):
+    for _ in range(100):
         for group_size in (3, 5):
             recommender.group_size = group_size
             compare_client_results(
@@ -129,7 +129,7 @@ def test_simple_recommend_groups() -> None:
                 recommender.recommend_groups_from_another_collection,
             )
 
-    for _ in range(10):
+    for _ in range(100):
         for key in group_by_keys():
             recommender.group_by = key
             compare_client_results(
