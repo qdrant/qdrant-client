@@ -8,7 +8,7 @@ from typing import List
 import numpy as np
 import pytest
 
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import PointVectors, Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
@@ -320,7 +320,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
 
     version = os.getenv("QDRANT_VERSION")
-    if version is not None and version >= "v1.0.0":
+    if version is not None and (version >= "v1.0.0" or version == "dev"):
         collection_aliases = client.get_collection_aliases(COLLECTION_NAME)
 
         assert collection_aliases.aliases[0].collection_name == COLLECTION_NAME
@@ -677,6 +677,59 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     assert next_page is None
 
+    if version is not None and (version >= "v1.5.0" or version == "dev"):
+        client.batch_update_points(
+            collection_name=COLLECTION_NAME,
+            update_operations=[
+                models.UpsertOperation(
+                    upsert=models.PointsList(
+                        points=[
+                            models.PointStruct(
+                                id=1,
+                                payload={"new_key": 123},
+                                vector=vectors_2,
+                            ),
+                            models.PointStruct(
+                                id=2,
+                                payload={"new_key": 321},
+                                vector=vectors_2,
+                            ),
+                        ]
+                    )
+                ),
+                models.DeleteOperation(delete=models.PointIdsList(points=[2])),
+                models.SetPayloadOperation(
+                    set_payload=models.SetPayload(payload={"new_key2": 321}, points=[1])
+                ),
+                models.OverwritePayloadOperation(
+                    overwrite_payload=models.SetPayload(
+                        payload={
+                            "new_key3": 321,
+                            "new_key4": 321,
+                        },
+                        points=[1],
+                    )
+                ),
+                models.DeletePayloadOperation(
+                    delete_payload=models.DeletePayload(keys=["new_key3"], points=[1])
+                ),
+                models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[1])),
+                models.UpdateVectorsOperation(
+                    update_vectors=models.UpdateVectors(
+                        points=[
+                            models.PointVectors(
+                                id=1,
+                                vector=vectors_2,
+                            )
+                        ]
+                    )
+                ),
+                models.DeleteVectorsOperation(
+                    delete_vectors=models.DeleteVectors(points=[1], vector=[""])
+                ),
+            ],
+        )
+
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_qdrant_client_integration_update_collection(prefer_grpc):
@@ -724,7 +777,7 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
     # Many collection update parameters are available since v1.4.0
     version = os.getenv("QDRANT_VERSION")
-    if version is not None and version >= "v1.4.0":
+    if version is not None and (version >= "v1.4.0" or version == "dev"):
         assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
         assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
         assert (

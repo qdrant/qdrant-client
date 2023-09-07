@@ -982,6 +982,112 @@ class GrpcToRest:
             )
         raise ValueError(f"invalid VectorsConfigDiff model: {model}")  # pragma: no cover
 
+    @classmethod
+    def convert_points_update_operation(
+        cls, model: grpc.PointsUpdateOperation
+    ) -> rest.UpdateOperation:
+        name = model.WhichOneof("operation")
+        val = getattr(model, name)
+
+        if name == "upsert":
+            return rest.UpsertOperation(
+                upsert=rest.PointsList(
+                    points=[cls.convert_point_struct(point) for point in val.points]
+                )
+            )
+        elif name == "delete":
+            return rest.DeleteOperation(delete=cls.convert_points_selector(val))
+        elif name == "set_payload":
+            points_selector = cls.convert_points_selector(val.points_selector)
+            points = None
+            filter_ = None
+            if isinstance(points_selector, rest.PointIdsList):
+                points = points_selector.points
+            elif isinstance(points_selector, rest.FilterSelector):
+                filter_ = points_selector.filter
+            else:
+                raise ValueError(
+                    f"invalid PointsSelector model: {points_selector}"
+                )  # pragma: no cover
+
+            return rest.SetPayloadOperation(
+                set_payload=rest.SetPayload(
+                    payload=cls.convert_payload(val.payload),
+                    points=points,
+                    filter=filter_,
+                )
+            )
+        elif name == "overwrite_payload":
+            points_selector = cls.convert_points_selector(val.points_selector)
+            points = None
+            filter_ = None
+            if isinstance(points_selector, rest.PointIdsList):
+                points = points_selector.points
+            elif isinstance(points_selector, rest.FilterSelector):
+                filter_ = points_selector.filter
+            else:
+                raise ValueError(
+                    f"invalid PointsSelector model: {points_selector}"
+                )  # pragma: no cover
+
+            return rest.OverwritePayloadOperation(
+                overwrite_payload=rest.SetPayload(
+                    payload=cls.convert_payload(val.payload),
+                    points=points,
+                    filter=filter_,
+                )
+            )
+        elif name == "delete_payload":
+            points_selector = cls.convert_points_selector(val.points_selector)
+            points = None
+            filter_ = None
+            if isinstance(points_selector, rest.PointIdsList):
+                points = points_selector.points
+            elif isinstance(points_selector, rest.FilterSelector):
+                filter_ = points_selector.filter
+            else:
+                raise ValueError(
+                    f"invalid PointsSelector model: {points_selector}"
+                )  # pragma: no cover
+
+            return rest.DeletePayloadOperation(
+                delete_payload=rest.DeletePayload(
+                    keys=[key for key in val.keys],
+                    points=points,
+                    filter=filter_,
+                )
+            )
+        elif name == "clear_payload":
+            return rest.ClearPayloadOperation(clear_payload=cls.convert_points_selector(val))
+        elif name == "update_vectors":
+            return rest.UpdateVectorsOperation(
+                update_vectors=rest.UpdateVectors(
+                    points=[cls.convert_point_vectors(point) for point in val.points]
+                )
+            )
+        elif name == "delete_vectors":
+            points_selector = cls.convert_points_selector(val.points_selector)
+            points = None
+            filter_ = None
+            if isinstance(points_selector, rest.PointIdsList):
+                points = points_selector.points
+            elif isinstance(points_selector, rest.FilterSelector):
+                filter_ = points_selector.filter
+            else:
+                raise ValueError(
+                    f"invalid PointsSelector model: {points_selector}"
+                )  # pragma: no cover
+
+            return rest.DeleteVectorsOperation(
+                delete_vectors=rest.DeleteVectors(
+                    vector=[name for name in val.vectors.names],
+                    points=points,
+                    filter=filter_,
+                )
+            )
+        else:
+            raise ValueError(f"invalid UpdateOperation model: {model}")  # pragma: no cover
+
 
 # ----------------------------------------
 #
@@ -1899,3 +2005,121 @@ class RestToGrpc:
             )
         else:
             raise ValueError(f"invalid VectorsConfigDiff model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_point_insert_operation(
+        cls, model: rest.PointInsertOperations
+    ) -> List[grpc.PointStruct]:
+        if isinstance(model, rest.PointsBatch):
+            vectors_batch: List[grpc.Vectors] = cls.convert_batch_vector_struct(
+                model.batch.vectors, len(model.batch.ids)
+            )
+            return [
+                grpc.PointStruct(
+                    id=RestToGrpc.convert_extended_point_id(model.batch.ids[idx]),
+                    vectors=vectors_batch[idx],
+                    payload=RestToGrpc.convert_payload(model.batch.payloads[idx])
+                    if model.batch.payloads is not None
+                    else None,
+                )
+                for idx in range(len(model.batch.ids))
+            ]
+        elif isinstance(model, rest.PointsList):
+            return [cls.convert_point_struct(point) for point in model.points]
+        else:
+            raise ValueError(f"invalid PointInsertOperations model: {model}")
+
+    @classmethod
+    def convert_update_operation(cls, model: rest.UpdateOperation) -> grpc.PointsUpdateOperation:
+        return cls.convert_points_update_operation(model)
+
+    @classmethod
+    def convert_points_update_operation(
+        cls, model: rest.UpdateOperation
+    ) -> grpc.PointsUpdateOperation:
+        points_selector: rest.PointsSelector
+
+        if isinstance(model, rest.UpsertOperation):
+            return grpc.PointsUpdateOperation(
+                upsert=grpc.PointsUpdateOperation.PointStructList(
+                    points=cls.convert_point_insert_operation(model.upsert)
+                )
+            )
+        elif isinstance(model, rest.DeleteOperation):
+            return grpc.PointsUpdateOperation(delete=cls.convert_points_selector(model.delete))
+        elif isinstance(model, rest.SetPayloadOperation):
+            if model.set_payload.points:
+                points_selector = rest.PointIdsList(points=model.set_payload.points)
+            elif model.set_payload.filter:
+                points_selector = rest.FilterSelector(filter=model.set_payload.filter)
+            else:
+                raise ValueError(f"invalid SetPayloadOperation model: {model}")  # pragma: no cover
+
+            return grpc.PointsUpdateOperation(
+                set_payload=grpc.PointsUpdateOperation.SetPayload(
+                    payload=cls.convert_payload(model.set_payload.payload),
+                    points_selector=cls.convert_points_selector(points_selector),
+                )
+            )
+        elif isinstance(model, rest.OverwritePayloadOperation):
+            if model.overwrite_payload.points:
+                points_selector = rest.PointIdsList(points=model.overwrite_payload.points)
+            elif model.overwrite_payload.filter:
+                points_selector = rest.FilterSelector(filter=model.overwrite_payload.filter)
+            else:
+                raise ValueError(
+                    f"invalid OverwritePayloadOperation model: {model}"
+                )  # pragma: no cover
+
+            return grpc.PointsUpdateOperation(
+                overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
+                    payload=cls.convert_payload(model.overwrite_payload.payload),
+                    points_selector=cls.convert_points_selector(points_selector),
+                )
+            )
+        elif isinstance(model, rest.DeletePayloadOperation):
+            if model.delete_payload.points:
+                points_selector = rest.PointIdsList(points=model.delete_payload.points)
+            elif model.delete_payload.filter:
+                points_selector = rest.FilterSelector(filter=model.delete_payload.filter)
+            else:
+                raise ValueError(
+                    f"invalid DeletePayloadOperation model: {model}"
+                )  # pragma: no cover
+
+            return grpc.PointsUpdateOperation(
+                delete_payload=grpc.PointsUpdateOperation.DeletePayload(
+                    keys=model.delete_payload.keys,
+                    points_selector=cls.convert_points_selector(points_selector),
+                )
+            )
+        elif isinstance(model, rest.ClearPayloadOperation):
+            return grpc.PointsUpdateOperation(
+                clear_payload=cls.convert_points_selector(model.clear_payload)
+            )
+        elif isinstance(model, rest.UpdateVectorsOperation):
+            return grpc.PointsUpdateOperation(
+                update_vectors=grpc.PointsUpdateOperation.UpdateVectors(
+                    points=[
+                        cls.convert_point_vectors(point) for point in model.update_vectors.points
+                    ]
+                )
+            )
+        elif isinstance(model, rest.DeleteVectorsOperation):
+            if model.delete_vectors.points:
+                points_selector = rest.PointIdsList(points=model.delete_vectors.points)
+            elif model.delete_vectors.filter:
+                points_selector = rest.FilterSelector(filter=model.delete_vectors.filter)
+            else:
+                raise ValueError(
+                    f"invalid DeletePayloadOperation model: {model}"
+                )  # pragma: no cover
+
+            return grpc.PointsUpdateOperation(
+                delete_vectors=grpc.PointsUpdateOperation.DeleteVectors(
+                    points_selector=cls.convert_points_selector(points_selector),
+                    vectors=grpc.VectorsSelector(names=model.delete_vectors.vector),
+                )
+            )
+        else:
+            raise ValueError(f"invalid UpdateOperation model: {model}")

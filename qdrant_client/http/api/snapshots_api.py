@@ -58,6 +58,34 @@ class _SnapshotsApi:
             params=query_params,
         )
 
+    def _build_for_create_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+    ):
+        """
+        Create new snapshot of a shard for a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "shard_id": str(shard_id),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+
+        headers = {}
+        return self.api_client.request(
+            type_=m.InlineResponse20010,
+            method="POST",
+            url="/collections/{collection_name}/shards/{shard_id}/snapshots",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+        )
+
     def _build_for_create_snapshot(
         self,
         collection_name: str,
@@ -105,6 +133,36 @@ class _SnapshotsApi:
             type_=m.InlineResponse2003,
             method="DELETE",
             url="/snapshots/{snapshot_name}",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+        )
+
+    def _build_for_delete_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+        wait: bool = None,
+    ):
+        """
+        Delete snapshot of a shard for a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "shard_id": str(shard_id),
+            "snapshot_name": str(snapshot_name),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+
+        headers = {}
+        return self.api_client.request(
+            type_=m.InlineResponse2003,
+            method="DELETE",
+            url="/collections/{collection_name}/shards/{shard_id}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
@@ -158,6 +216,30 @@ class _SnapshotsApi:
             path_params=path_params,
         )
 
+    def _build_for_get_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+    ):
+        """
+        Download specified snapshot of a shard from a collection as a file
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "shard_id": str(shard_id),
+            "snapshot_name": str(snapshot_name),
+        }
+
+        headers = {}
+        return self.api_client.request(
+            type_=file,
+            method="GET",
+            url="/collections/{collection_name}/shards/{shard_id}/snapshots/{snapshot_name}",
+            headers=headers if headers else None,
+            path_params=path_params,
+        )
+
     def _build_for_get_snapshot(
         self,
         collection_name: str,
@@ -192,6 +274,28 @@ class _SnapshotsApi:
             method="GET",
             url="/snapshots",
             headers=headers if headers else None,
+        )
+
+    def _build_for_list_shard_snapshots(
+        self,
+        collection_name: str,
+        shard_id: int,
+    ):
+        """
+        Get list of snapshots for a shard of a collection
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "shard_id": str(shard_id),
+        }
+
+        headers = {}
+        return self.api_client.request(
+            type_=m.InlineResponse2009,
+            method="GET",
+            url="/collections/{collection_name}/shards/{shard_id}/snapshots",
+            headers=headers if headers else None,
+            path_params=path_params,
         )
 
     def _build_for_list_snapshots(
@@ -282,6 +386,78 @@ class _SnapshotsApi:
             files=files,
         )
 
+    def _build_for_recover_shard_from_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+        shard_snapshot_recover: m.ShardSnapshotRecover = None,
+    ):
+        """
+        Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "shard_id": str(shard_id),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+
+        headers = {}
+        body = jsonable_encoder(shard_snapshot_recover)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse2003,
+            method="PUT",
+            url="/collections/{collection_name}/shards/{shard_id}/snapshots/recover",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            data=body,
+        )
+
+    def _build_for_recover_shard_from_uploaded_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+        priority: SnapshotPriority = None,
+        snapshot: IO[Any] = None,
+    ):
+        """
+        Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+            "shard_id": str(shard_id),
+        }
+
+        query_params = {}
+        if wait is not None:
+            query_params["wait"] = str(wait).lower()
+        if priority is not None:
+            query_params["priority"] = str(priority)
+
+        headers = {}
+        files: Dict[str, IO[Any]] = {}  # noqa F841
+        data: Dict[str, Any] = {}  # noqa F841
+        if snapshot is not None:
+            files["snapshot"] = snapshot
+
+        return self.api_client.request(
+            type_=m.InlineResponse2003,
+            method="POST",
+            url="/collections/{collection_name}/shards/{shard_id}/snapshots/upload",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            data=data,
+            files=files,
+        )
+
 
 class AsyncSnapshotsApi(_SnapshotsApi):
     async def create_full_snapshot(
@@ -292,6 +468,21 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         Create new snapshot of the whole storage
         """
         return await self._build_for_create_full_snapshot(
+            wait=wait,
+        )
+
+    async def create_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+    ) -> m.InlineResponse20010:
+        """
+        Create new snapshot of a shard for a collection
+        """
+        return await self._build_for_create_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
             wait=wait,
         )
 
@@ -317,6 +508,23 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         Delete snapshot of the whole storage
         """
         return await self._build_for_delete_full_snapshot(
+            snapshot_name=snapshot_name,
+            wait=wait,
+        )
+
+    async def delete_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+        wait: bool = None,
+    ) -> m.InlineResponse2003:
+        """
+        Delete snapshot of a shard for a collection
+        """
+        return await self._build_for_delete_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
             snapshot_name=snapshot_name,
             wait=wait,
         )
@@ -347,6 +555,21 @@ class AsyncSnapshotsApi(_SnapshotsApi):
             snapshot_name=snapshot_name,
         )
 
+    async def get_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+    ) -> file:
+        """
+        Download specified snapshot of a shard from a collection as a file
+        """
+        return await self._build_for_get_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            snapshot_name=snapshot_name,
+        )
+
     async def get_snapshot(
         self,
         collection_name: str,
@@ -367,6 +590,19 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         Get list of snapshots of the whole storage
         """
         return await self._build_for_list_full_snapshots()
+
+    async def list_shard_snapshots(
+        self,
+        collection_name: str,
+        shard_id: int,
+    ) -> m.InlineResponse2009:
+        """
+        Get list of snapshots for a shard of a collection
+        """
+        return await self._build_for_list_shard_snapshots(
+            collection_name=collection_name,
+            shard_id=shard_id,
+        )
 
     async def list_snapshots(
         self,
@@ -411,6 +647,42 @@ class AsyncSnapshotsApi(_SnapshotsApi):
             snapshot=snapshot,
         )
 
+    async def recover_shard_from_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+        shard_snapshot_recover: m.ShardSnapshotRecover = None,
+    ) -> m.InlineResponse2003:
+        """
+        Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
+        """
+        return await self._build_for_recover_shard_from_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            wait=wait,
+            shard_snapshot_recover=shard_snapshot_recover,
+        )
+
+    async def recover_shard_from_uploaded_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+        priority: SnapshotPriority = None,
+        snapshot: IO[Any] = None,
+    ) -> m.InlineResponse2003:
+        """
+        Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
+        """
+        return await self._build_for_recover_shard_from_uploaded_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            wait=wait,
+            priority=priority,
+            snapshot=snapshot,
+        )
+
 
 class SyncSnapshotsApi(_SnapshotsApi):
     def create_full_snapshot(
@@ -421,6 +693,21 @@ class SyncSnapshotsApi(_SnapshotsApi):
         Create new snapshot of the whole storage
         """
         return self._build_for_create_full_snapshot(
+            wait=wait,
+        )
+
+    def create_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+    ) -> m.InlineResponse20010:
+        """
+        Create new snapshot of a shard for a collection
+        """
+        return self._build_for_create_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
             wait=wait,
         )
 
@@ -446,6 +733,23 @@ class SyncSnapshotsApi(_SnapshotsApi):
         Delete snapshot of the whole storage
         """
         return self._build_for_delete_full_snapshot(
+            snapshot_name=snapshot_name,
+            wait=wait,
+        )
+
+    def delete_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+        wait: bool = None,
+    ) -> m.InlineResponse2003:
+        """
+        Delete snapshot of a shard for a collection
+        """
+        return self._build_for_delete_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
             snapshot_name=snapshot_name,
             wait=wait,
         )
@@ -476,6 +780,21 @@ class SyncSnapshotsApi(_SnapshotsApi):
             snapshot_name=snapshot_name,
         )
 
+    def get_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+    ) -> file:
+        """
+        Download specified snapshot of a shard from a collection as a file
+        """
+        return self._build_for_get_shard_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            snapshot_name=snapshot_name,
+        )
+
     def get_snapshot(
         self,
         collection_name: str,
@@ -496,6 +815,19 @@ class SyncSnapshotsApi(_SnapshotsApi):
         Get list of snapshots of the whole storage
         """
         return self._build_for_list_full_snapshots()
+
+    def list_shard_snapshots(
+        self,
+        collection_name: str,
+        shard_id: int,
+    ) -> m.InlineResponse2009:
+        """
+        Get list of snapshots for a shard of a collection
+        """
+        return self._build_for_list_shard_snapshots(
+            collection_name=collection_name,
+            shard_id=shard_id,
+        )
 
     def list_snapshots(
         self,
@@ -535,6 +867,42 @@ class SyncSnapshotsApi(_SnapshotsApi):
         """
         return self._build_for_recover_from_uploaded_snapshot(
             collection_name=collection_name,
+            wait=wait,
+            priority=priority,
+            snapshot=snapshot,
+        )
+
+    def recover_shard_from_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+        shard_snapshot_recover: m.ShardSnapshotRecover = None,
+    ) -> m.InlineResponse2003:
+        """
+        Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
+        """
+        return self._build_for_recover_shard_from_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
+            wait=wait,
+            shard_snapshot_recover=shard_snapshot_recover,
+        )
+
+    def recover_shard_from_uploaded_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        wait: bool = None,
+        priority: SnapshotPriority = None,
+        snapshot: IO[Any] = None,
+    ) -> m.InlineResponse2003:
+        """
+        Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
+        """
+        return self._build_for_recover_shard_from_uploaded_snapshot(
+            collection_name=collection_name,
+            shard_id=shard_id,
             wait=wait,
             priority=priority,
             snapshot=snapshot,
