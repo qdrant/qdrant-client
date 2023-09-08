@@ -39,7 +39,7 @@ done
 if [[ "$QDRANT_VERSION" != "$QDRANT_LATEST" ]] || [[ "$IGNORE_CONGRUENCE_TESTS" == "true" ]]; then
   pytest --ignore=tests/congruence_tests
 else
-  pytest
+  pytest -vv -l
 fi
 
 
