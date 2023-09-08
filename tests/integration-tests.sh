@@ -42,7 +42,6 @@ else
   pytest -vv -l
 fi
 
-
 echo "Ok, that is enough"
 
 stop_docker
