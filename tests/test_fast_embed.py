@@ -8,18 +8,18 @@ from qdrant_client import QdrantClient
 def test_add_without_query(
     local_client: QdrantClient = QdrantClient(":memory:"),
     collection_name: str = "demo_collection",
-    docs: List[str] = [
-                "Qdrant has Langchain integrations",
-                "Qdrant also has Llama Index integrations",
-            ],
+    docs: List[str] = None,
 ):
+    if docs is None:
+        docs = [
+            "Qdrant has Langchain integrations",
+            "Qdrant also has Llama Index integrations",
+        ]
+
     if not local_client._is_fastembed_installed:
         pytest.skip("FastEmbed is not installed, skipping test")
 
-    local_client.add(
-        collection_name=collection_name,
-        documents=docs
-    )
+    local_client.add(collection_name=collection_name, documents=docs)
     assert local_client.count(collection_name).count == 2
 
 

@@ -44,7 +44,10 @@ types-protobuf = "^4.21.0.5"
 optional = true
 
 [tool.poetry.group.fastembed.dependencies]
-fastembed = "0.0.2"
+fastembed = "0.0.4"
+
+[tool.poetry.extras]
+fastembed = ["fastembed"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
