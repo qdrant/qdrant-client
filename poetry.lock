@@ -170,7 +170,7 @@ files = [
 name = "coloredlogs"
 version = "15.0.1"
 description = "Colored terminal output for Python's logging module"
-optional = false
+optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 files = [
     {file = "coloredlogs-15.0.1-py2.py3-none-any.whl", hash = "sha256:612ee75c546f53e92e70049c9dbfcc18c935a2b9a53b66085ce9ef6a6e5c0934"},
@@ -274,7 +274,7 @@ test = ["pytest (>=6)"]
 name = "fastembed"
 version = "0.0.4"
 description = "Fast, State of the Art Quantized Embedding Models"
-optional = false
+optional = true
 python-versions = ">=3.8.0,<3.12"
 files = [
     {file = "fastembed-0.0.4-py3-none-any.whl", hash = "sha256:3ea83bf164f4e2875e53b2795ce79986d99f8ecbc62bfb26d82592fbe87e0858"},
@@ -292,7 +292,7 @@ tqdm = ">=4.65.0,<5.0.0"
 name = "flatbuffers"
 version = "23.5.26"
 description = "The FlatBuffers serialization format for Python"
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "flatbuffers-23.5.26-py2.py3-none-any.whl", hash = "sha256:c0ff356da363087b915fde4b8b45bdda73432fc17cddb3c8157472eab1422ad1"},
@@ -501,7 +501,7 @@ socks = ["socksio (==1.*)"]
 name = "humanfriendly"
 version = "10.0"
 description = "Human friendly output for text interfaces using Python"
-optional = false
+optional = true
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 files = [
     {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
@@ -654,7 +654,7 @@ files = [
 name = "mpmath"
 version = "1.3.0"
 description = "Python library for arbitrary-precision floating-point arithmetic"
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "mpmath-1.3.0-py3-none-any.whl", hash = "sha256:a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c"},
@@ -779,7 +779,7 @@ files = [
 name = "onnxruntime"
 version = "1.15.1"
 description = "ONNX Runtime is a runtime accelerator for Machine Learning models"
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "onnxruntime-1.15.1-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:baad59e6a763237fa39545325d29c16f98b8a45d2dfc524c67631e2e3ba44d16"},
@@ -820,7 +820,7 @@ sympy = "*"
 name = "onnxruntime-silicon"
 version = "1.15.0"
 description = "ONNX Runtime is a runtime accelerator for Machine Learning models"
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "onnxruntime_silicon-1.15.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:2ed1fbbe320c8f409d7e72d15c92688da4f947e32e3365893669a2d706666a83"},
@@ -1059,7 +1059,7 @@ plugins = ["importlib-metadata"]
 name = "pyreadline3"
 version = "3.4.1"
 description = "A python implementation of GNU readline."
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "pyreadline3-3.4.1-py3-none-any.whl", hash = "sha256:b0efb6516fd4fb07b45949053826a62fa4cb353db5be2bbb4a7aa1fdd1e345fb"},
@@ -1377,7 +1377,7 @@ test = ["pytest"]
 name = "sympy"
 version = "1.12"
 description = "Computer algebra system (CAS) in Python"
-optional = false
+optional = true
 python-versions = ">=3.8"
 files = [
     {file = "sympy-1.12-py3-none-any.whl", hash = "sha256:c3588cd4295d0c0f603d0f2ae780587e64e2efeedb3521e46b9bb1d08d184fa5"},
@@ -1391,7 +1391,7 @@ mpmath = ">=0.19"
 name = "tokenizers"
 version = "0.13.3"
 description = "Fast and Customizable Tokenizers"
-optional = false
+optional = true
 python-versions = "*"
 files = [
     {file = "tokenizers-0.13.3-cp310-cp310-macosx_10_11_x86_64.whl", hash = "sha256:f3835c5be51de8c0a092058a4d4380cb9244fb34681fd0a295fbf0a52a5fdf33"},
@@ -1456,7 +1456,7 @@ files = [
 name = "tqdm"
 version = "4.66.1"
 description = "Fast, Extensible Progress Meter"
-optional = false
+optional = true
 python-versions = ">=3.7"
 files = [
     {file = "tqdm-4.66.1-py3-none-any.whl", hash = "sha256:d302b3c5b53d47bce91fea46679d9c3c6508cf6332229aa1e7d8653723793386"},
@@ -1526,9 +1526,9 @@ docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.link
 testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy (>=0.9.1)", "pytest-ruff"]
 
 [extras]
-fastembed = []
+fastembed = ["fastembed"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<3.12"
-content-hash = "df11ee79decf911bbd4db529fe08ab5c914c74ae92d0d335bcb2c54fa11f716b"
+content-hash = "a082769e610f3f5269b9fff70b67cf42f1cd5d84de6209effc432f12b1b6a232"
