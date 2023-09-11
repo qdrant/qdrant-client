@@ -25,6 +25,7 @@ grpcio = { version = ">=1.41.0", allow-prereleases = true }
 grpcio-tools = ">=1.41.0"
 urllib3 = "^1.26.14"
 portalocker = "^2.7.0"
+fastembed = { version = "0.0.4", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1"
@@ -40,11 +41,8 @@ pyright = "^1.1.293"
 mypy = "^1.0.0"
 types-protobuf = "^4.21.0.5"
 
-[tool.poetry.group.fastembed]
-optional = true
-
-[tool.poetry.group.fastembed.dependencies]
-fastembed = "0.0.2"
+[tool.poetry.extras]
+fastembed = ["fastembed"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
