@@ -11,7 +11,7 @@ from qdrant_client.uploader.uploader import iter_batch
 try:
     from fastembed.embedding import DefaultEmbedding
 except ImportError:
-    pass
+    DefaultEmbedding = None
 
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
     "BAAI/bge-base-en": (768, models.Distance.COSINE),
@@ -102,13 +102,15 @@ class QdrantFastembedMixin(QdrantBase):
             if embed_type == "passage":
                 vectors_batches = embedding_model.passage_embed(batch_docs, batch_size=batch_size)
             elif embed_type == "query":
-                vectors_batches = embedding_model.query_embed(batch_docs, batch_size=batch_size)
+                vectors_batches = (
+                    list(embedding_model.query_embed(query=query))[0] for query in batch_docs
+                )
             elif embed_type == "default":
                 vectors_batches = embedding_model.embed(batch_docs, batch_size=batch_size)
             else:
                 raise ValueError(f"Unknown embed type: {embed_type}")
             for vector in vectors_batches:
-                yield vector
+                yield vector.tolist()
 
     def _get_vector_field_name(self) -> str:
         model_name = self.embedding_model_name.split("/")[-1].lower()
@@ -317,7 +319,8 @@ class QdrantFastembedMixin(QdrantBase):
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
         query_vectors = [
-            embedding_model_inst.query_embed(query=[query_text])[0] for query_text in query_texts
+            list(embedding_model_inst.query_embed(query=query_text))[0]
+            for query_text in query_texts
         ]
 
         requests = []
