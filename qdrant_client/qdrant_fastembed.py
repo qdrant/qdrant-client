@@ -280,7 +280,7 @@ class QdrantFastembedMixin(QdrantBase):
             self.search(
                 collection_name=collection_name,
                 query_vector=models.NamedVector(
-                    name=self._get_vector_field_name(), vector=query_vector
+                    name=self._get_vector_field_name(), vector=query_vector.tolist()
                 ),
                 query_filter=query_filter,
                 limit=limit,
@@ -322,11 +322,12 @@ class QdrantFastembedMixin(QdrantBase):
             list(embedding_model_inst.query_embed(query=query_text))[0]
             for query_text in query_texts
         ]
-
         requests = []
         for vector in query_vectors:
             request = models.SearchRequest(
-                vector=models.NamedVector(name=self._get_vector_field_name(), vector=vector),
+                vector=models.NamedVector(
+                    name=self._get_vector_field_name(), vector=vector.tolist()
+                ),
                 filter=query_filter,
                 limit=limit,
                 with_payload=True,
