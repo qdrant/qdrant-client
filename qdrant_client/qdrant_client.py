@@ -74,7 +74,12 @@ class QdrantClient(QdrantFastembedMixin):
         path: Optional[str] = None,
         **kwargs: Any,
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            **kwargs
+        )  # If we want to pass any kwargs to the parent class or ignore unexpected kwargs,
+        # we will need to pop them from **kwargs. Otherwise, they might be passed to QdrantRemote as httpx kwargs.
+        # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
+
         self._client: QdrantBase
 
         if location == ":memory:":
