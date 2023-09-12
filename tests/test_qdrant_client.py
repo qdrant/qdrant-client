@@ -147,6 +147,9 @@ def test_client_init():
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333"
 
+    client = QdrantClient(":memory:", not_exist_param="test")
+    assert isinstance(client._client, QdrantLocal)
+
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_record_upload(prefer_grpc):
