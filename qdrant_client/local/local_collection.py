@@ -1,4 +1,3 @@
-import uuid
 from collections import OrderedDict, defaultdict
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
@@ -609,13 +608,6 @@ class LocalCollection:
                 )
 
     def _upsert_point(self, point: models.PointStruct) -> None:
-        if isinstance(point.id, str):
-            # try to parse as UUID
-            try:
-                _uuid = uuid.UUID(point.id)
-            except ValueError as e:
-                raise ValueError(f"Point id {point.id} is not a valid UUID") from e
-
         if point.id in self.ids:
             self._update_point(point)
         else:
