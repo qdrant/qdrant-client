@@ -5,6 +5,9 @@ from qdrant_client.http import models
 
 
 class AsyncQdrantBase:
+    def __init__(self, **kwargs: Any):
+        pass
+
     async def search_batch(
         self,
         collection_name: str,
