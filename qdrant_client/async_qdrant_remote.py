@@ -1837,7 +1837,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             return RestBatchUploader
 
-    async def _upload_collection(
+    def _upload_collection(
         self,
         batches_iterator: Iterable,
         collection_name: str,

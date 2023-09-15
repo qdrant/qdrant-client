@@ -1462,7 +1462,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             **kwargs,
         )
 
-    async def upload_collection(
+    def upload_collection(
         self,
         collection_name: str,
         vectors: Union[

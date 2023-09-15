@@ -255,7 +255,7 @@ class AsyncQdrantBase:
     ) -> bool:
         raise NotImplementedError()
 
-    async def upload_records(
+    def upload_records(
         self,
         collection_name: str,
         records: Iterable[types.Record],
@@ -263,7 +263,7 @@ class AsyncQdrantBase:
     ) -> None:
         raise NotImplementedError()
 
-    async def upload_collection(
+    def upload_collection(
         self,
         collection_name: str,
         vectors: Union[
@@ -361,7 +361,7 @@ class AsyncQdrantBase:
     async def close(self, **kwargs: Any) -> None:
         pass
 
-    async def migrate(
+    def migrate(
         self,
         dest_client: "AsyncQdrantBase",
         collection_names: Optional[List[str]] = None,

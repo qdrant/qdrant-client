@@ -235,7 +235,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             for idx, payload, vector in zip(ids, payloads, embeddings)
         )
 
-        await self.upload_records(
+        self.upload_records(
             collection_name=collection_name,
             records=records,
             wait=True,
