@@ -1509,7 +1509,9 @@ class QdrantRemote(QdrantBase):
                 ).result
             ]
         else:
-            result: Optional[types.UpdateResult] = self.openapi_client.points_api.batch_update(
+            result: Optional[
+                List[types.UpdateResult]
+            ] = self.openapi_client.points_api.batch_update(
                 collection_name=collection_name,
                 wait=wait,
                 ordering=ordering,
