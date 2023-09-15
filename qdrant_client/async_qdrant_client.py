@@ -7,7 +7,6 @@ from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import AsyncApis
 from qdrant_client.http.api_client import AsyncApiClient
-from qdrant_client.migrate import migrate
 
 
 class AsyncQdrantClient(AsyncQdrantFastembedMixin):
