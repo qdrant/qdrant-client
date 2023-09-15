@@ -1500,7 +1500,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return await self._client.upload_collection(
+        return self._client.upload_collection(
             collection_name=collection_name,
             vectors=vectors,
             payload=payload,
