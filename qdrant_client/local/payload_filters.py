@@ -196,6 +196,6 @@ def calculate_payload_mask(
 
     mask = np.zeros(len(payloads), dtype=bool)
     for i, payload in enumerate(payloads):
-        if check_filter(payload_filter, payload, ids_inv[i]):
+        if check_filter(payload_filter, ['metadata'], ids_inv[i]):
             mask[i] = True
     return mask
