@@ -176,6 +176,7 @@ collection_params_2 = grpc.CollectionParams(
     vectors_config=multiple_vector_config,
     replication_factor=2,
     write_consistency_factor=1,
+    read_fan_out_factor=2,
 )
 
 hnsw_config = grpc.HnswConfigDiff(
@@ -562,6 +563,8 @@ search_points_all_vectors = grpc.SearchPoints(
     with_vectors=grpc.WithVectorsSelector(enable=True),
 )
 
+reco_strategy = grpc.RecommendStrategy.BestScore
+
 recommend_points = grpc.RecommendPoints(
     collection_name="collection-123",
     positive=[point_id_1, point_id_2],
@@ -574,6 +577,14 @@ recommend_points = grpc.RecommendPoints(
     offset=10,
     using="abc",
     with_vectors=grpc.WithVectorsSelector(enable=True),
+    strategy=reco_strategy,
+    positive_vectors=[
+        grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
+        grpc.Vector(data=[2.0, 2.0, -1.0, -0.2]),
+    ],
+    negative_vectors=[
+        grpc.Vector(data=[3.0, 2.0, -1.0, -0.2]),
+    ],
 )
 
 lookup_location_1 = grpc.LookupLocation(

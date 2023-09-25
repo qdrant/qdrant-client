@@ -168,6 +168,10 @@ class CollectionParams(BaseModel, extra="forbid"):
         default=1,
         description="Defines how many replicas should apply the operation for us to consider it successful. Increasing this number will make the collection more resilient to inconsistencies, but will also make it fail if not enough replicas are available. Does not have any performance impact.",
     )
+    read_fan_out_factor: Optional[int] = Field(
+        default=None,
+        description="Defines how many additional replicas should be processing read request at the same time. Default value is Auto, which means that fan-out will be determined automatically based on the busyness of the local replica. Having more than 0 might be useful to smooth latency spikes of individual nodes.",
+    )
     on_disk_payload: Optional[bool] = Field(
         default=False,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
@@ -179,6 +183,7 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
     write_consistency_factor: Optional[int] = Field(
         default=None, description="Minimal number successful responses from replicas to consider operation successful"
     )
+    read_fan_out_factor: Optional[int] = Field(default=None, description="")
     on_disk_payload: Optional[bool] = Field(
         default=None,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
@@ -1071,8 +1076,8 @@ class QuantizationSearchParams(BaseModel, extra="forbid"):
         default=False, description="If true, quantized vectors are ignored. Default is false."
     )
     rescore: Optional[bool] = Field(
-        default=False,
-        description="If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. Default is false.",
+        default=None,
+        description="If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. If not set, qdrant decides automatically apply rescoring or not.",
     )
     oversampling: Optional[float] = Field(
         default=None,
@@ -1118,8 +1123,9 @@ class ReadConsistencyType(str, Enum):
 
 
 class RecommendGroupsRequest(BaseModel, extra="forbid"):
-    positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
-    negative: Optional[List["ExtendedPointId"]] = Field(default=[], description="Try to avoid vectors like this")
+    positive: Optional[List["RecommendExample"]] = Field(default=[], description="Look for vectors closest to those")
+    negative: Optional[List["RecommendExample"]] = Field(default=[], description="Try to avoid vectors like this")
+    strategy: Optional["RecommendStrategy"] = Field(default=None, description="")
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     with_payload: Optional["WithPayloadInterface"] = Field(
@@ -1153,11 +1159,15 @@ class RecommendGroupsRequest(BaseModel, extra="forbid"):
 
 class RecommendRequest(BaseModel, extra="forbid"):
     """
-    Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.
+    Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to the `strategy` chosen.
     """
 
-    positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
-    negative: Optional[List["ExtendedPointId"]] = Field(default=[], description="Try to avoid vectors like this")
+    positive: Optional[List["RecommendExample"]] = Field(default=[], description="Look for vectors closest to those")
+    negative: Optional[List["RecommendExample"]] = Field(default=[], description="Try to avoid vectors like this")
+    strategy: Optional["RecommendStrategy"] = Field(
+        default=None,
+        description="Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to the `strategy` chosen.",
+    )
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
@@ -1187,6 +1197,11 @@ class RecommendRequest(BaseModel, extra="forbid"):
 
 class RecommendRequestBatch(BaseModel, extra="forbid"):
     searches: List["RecommendRequest"] = Field(..., description="")
+
+
+class RecommendStrategy(str, Enum):
+    AVERAGE_VECTOR = "average_vector"
+    BEST_SCORE = "best_score"
 
 
 class Record(BaseModel, extra="forbid"):
@@ -1871,6 +1886,10 @@ WithVector = Union[
 PayloadFieldSchema = Union[
     PayloadSchemaType,
     PayloadSchemaParams,
+]
+RecommendExample = Union[
+    ExtendedPointId,
+    List[StrictFloat],
 ]
 WithPayloadInterface = Union[
     PayloadSelector,

@@ -230,8 +230,8 @@ class QdrantLocal(QdrantBase):
     def recommend(
         self,
         collection_name: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -241,6 +241,7 @@ class QdrantLocal(QdrantBase):
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         collection = self._get_collection(collection_name)
@@ -258,14 +259,15 @@ class QdrantLocal(QdrantBase):
             if lookup_from
             else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
+            strategy=strategy,
         )
 
     def recommend_groups(
         self,
         collection_name: str,
         group_by: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -276,6 +278,7 @@ class QdrantLocal(QdrantBase):
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
@@ -303,6 +306,7 @@ class QdrantLocal(QdrantBase):
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
+            strategy=strategy,
         )
 
     def scroll(

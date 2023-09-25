@@ -417,8 +417,8 @@ class LocalCollection:
 
     def recommend(
         self,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
@@ -428,6 +428,7 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
     ) -> List[models.ScoredPoint]:
         search_in_vector_name, vector, query_filter = self._recommend(
             positive,
@@ -451,8 +452,8 @@ class LocalCollection:
     def recommend_groups(
         self,
         group_by: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         group_size: int = 1,
@@ -464,6 +465,7 @@ class LocalCollection:
         lookup_from_vector_name: Optional[str] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
         with_lookup_collection: Optional["LocalCollection"] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
     ) -> types.GroupsResult:
         search_in_vector_name, vector, query_filter = self._recommend(
             positive,

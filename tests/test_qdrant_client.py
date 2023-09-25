@@ -624,9 +624,17 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     for point in got_points:
         assert not point.payload
 
+    positive = [1, 2, query_vector.tolist()]
+    negative = []
+
+    if version is not None and version < "v1.6.0":
+        positive = [1, 2]
+        negative = []
+
     recommended_points = client.recommend(
         collection_name=COLLECTION_NAME,
-        positive=[1, 2],
+        positive=positive,
+        negative=negative,
         query_filter=Filter(
             must=[  # These conditions are required for recommend results
                 FieldCondition(

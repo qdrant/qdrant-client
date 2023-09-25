@@ -233,7 +233,7 @@ class PointsServicer(object):
 
     def Scroll(self, request, context):
         """
-        Iterate over all or filtered points points
+        Iterate over all or filtered points
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
