@@ -3,12 +3,18 @@ from collections import OrderedDict, defaultdict
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from pydantic import StrictFloat
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
+from qdrant_client.grpc.points_pb2 import BestScore, RecommendStrategy
 from qdrant_client.http import models
+from qdrant_client.http.models.models import ExtendedPointId
 from qdrant_client.local.distances import (
     DistanceOrder,
+    QueryVector,
+    RecoQuery,
+    calculate_best_scores,
     calculate_distance,
     distance_to_order,
 )
@@ -93,17 +99,21 @@ class LocalCollection:
             self.deleted = np.zeros(len(self.payload), dtype=bool)
 
     @classmethod
-    def _resolve_vector_name(
+    def _resolve_query_vector_name(
         cls,
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            RecoQuery,
+            Tuple[str, RecoQuery]
         ],
-    ) -> Tuple[str, types.NumpyArray]:
+    ) -> Tuple[str, QueryVector]:
         if isinstance(query_vector, tuple):
             name, vector = query_vector
+            if isinstance(vector, RecoQuery):
+                return name, vector
         elif isinstance(query_vector, types.NamedVector):
             name = query_vector.name
             vector = query_vector.vector
@@ -113,6 +123,10 @@ class LocalCollection:
         elif isinstance(query_vector, list):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
+        elif isinstance(query_vector, RecoQuery):
+            name = DEFAULT_VECTOR_NAME
+            vector = query_vector
+            return name, vector
         else:
             raise ValueError(f"Unsupported vector type {type(query_vector)}")
 
@@ -189,8 +203,9 @@ class LocalCollection:
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
-            Tuple[str, List[float]],
             types.NamedVector,
+            RecoQuery,
+            Tuple[str, Union[RecoQuery, types.NumpyArray, List[float]]]   
         ],
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
@@ -204,7 +219,7 @@ class LocalCollection:
             payload_filter=query_filter,
             ids_inv=self.ids_inv,
         )
-        name, vector = self._resolve_vector_name(query_vector)
+        name, query_vector = self._resolve_query_vector_name(query_vector)
 
         result: List[models.ScoredPoint] = []
 
@@ -213,7 +228,11 @@ class LocalCollection:
 
         vectors = self.vectors[name]
         params = self.get_vector_params(name)
-        scores = calculate_distance(vector, vectors[: len(self.payload)], params.distance)
+        if isinstance(query_vector, np.ndarray):
+            scores = calculate_distance(query_vector, vectors[: len(self.payload)], params.distance)
+        else:
+            scores = calculate_best_scores(query_vector, vectors[: len(self.payload)], params.distance) 
+        
         # in deleted: 1 - deleted, 0 - not deleted
         # in payload_mask: 1 - accepted, 0 - rejected
         # in mask: 1 - ok, 0 - rejected
@@ -353,41 +372,79 @@ class LocalCollection:
 
         return result
 
-    def _recommend(
+    def _preprocess_recommend(
         self,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Sequence[types.RecommendExample] = [],
+        negative: Sequence[types.RecommendExample] = [],
+        strategy: Optional[types.RecommendStrategy] = None,
         query_filter: Optional[types.Filter] = None,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ) -> Tuple[str, List[float], Optional[types.Filter]]:
-        collection = self if lookup_from_collection is None else lookup_from_collection
+    ) -> Tuple[List[List[float]], List[List[float]], types.Filter]:
+        collection = lookup_from_collection if lookup_from_collection is not None else self
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         vector_name = (
-            search_in_vector_name if lookup_from_vector_name is None else lookup_from_vector_name
+            lookup_from_vector_name if lookup_from_vector_name is not None else search_in_vector_name
         )
 
-        if len(positive) == 0:
-            raise ValueError("Positive list is empty")
-
+        # Validate input depending on strategy
+        if strategy == types.RecommendStrategy.AVERAGE_VECTOR:
+            if len(positive) == 0:
+                raise ValueError("Positive list is empty")
+        elif strategy == types.RecommendStrategy.BEST_SCORE:
+            if len(positive) == 0 and len(negative) == 0:
+                raise ValueError("No positive or negative examples given")
+        
+        # Turn every example into vectors
         positive_vectors = []
         negative_vectors = []
+        mentioned_ids: list[ExtendedPointId]= []
 
-        for point_id in positive:
-            if point_id not in collection.ids:
-                raise ValueError(f"Point {point_id} is not found in the collection")
+        for example in positive:
+            if isinstance(example, types.PointId):
+                if example not in collection.ids:
+                    raise ValueError(f"Point {example} is not found in the collection")
 
-            idx = collection.ids[point_id]
-            positive_vectors.append(collection.vectors[vector_name][idx])
+                idx = collection.ids[example]
+                positive_vectors.append(collection.vectors[vector_name][idx]) # type: ignore
+                mentioned_ids.append(example)
 
-        for point_id in negative or []:
-            if point_id not in collection.ids:
-                raise ValueError(f"Point {point_id} is not found in the collection")
+        for example in negative:
+            if isinstance(example, types.PointId):
+                if example not in collection.ids:
+                    raise ValueError(f"Point {example} is not found in the collection")
 
-            idx = collection.ids[point_id]
-            negative_vectors.append(collection.vectors[vector_name][idx])
+                idx = collection.ids[example]
+                negative_vectors.append(collection.vectors[vector_name][idx]) # type: ignore
+                mentioned_ids.append(example)
+                
+        # Edit query filter
+        ignore_mentioned_ids = models.HasIdCondition(
+            has_id=mentioned_ids
+        )
 
+        if query_filter is None:
+            query_filter = models.Filter(must_not=[ignore_mentioned_ids])
+        else:
+            if query_filter.must_not is None: # type: ignore
+                query_filter.must_not = [ignore_mentioned_ids]
+            else:
+                query_filter.must_not.append(ignore_mentioned_ids)
+                
+        return positive_vectors, negative_vectors, query_filter # type: ignore
+    
+    
+    def _recommend_average(
+        self,
+        positive_vectors: Sequence[List[float]] = [],
+        negative_vectors: Sequence[List[float]] = [],
+    ) -> types.NumpyArray:
+        
+        # Validate input
+        if len(positive_vectors) == 0:
+            raise ValueError("Positive list is empty")
+            
         positive_vectors_np = np.stack(positive_vectors)
         negative_vectors_np = np.stack(negative_vectors) if len(negative_vectors) > 0 else None
 
@@ -399,26 +456,13 @@ class LocalCollection:
             )
         else:
             vector = mean_positive_vector
-
-        ignore_mentioned_ids = models.HasIdCondition(
-            has_id=list(positive) + (list(negative) if negative else [])
-        )
-
-        if query_filter is None:
-            query_filter = models.Filter(must_not=[ignore_mentioned_ids])
-        else:
-            if query_filter.must_not is None:
-                query_filter.must_not = [ignore_mentioned_ids]
-            else:
-                query_filter.must_not.append(ignore_mentioned_ids)
-
-        res_vector: List[float] = vector.tolist()  # type: ignore
-        return search_in_vector_name, res_vector, query_filter
-
+        
+        return vector        
+        
     def recommend(
         self,
-        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = [],
+        negative: Optional[Sequence[types.RecommendExample]] = [],
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
@@ -430,24 +474,47 @@ class LocalCollection:
         lookup_from_vector_name: Optional[str] = None,
         strategy: Optional[types.RecommendStrategy] = None,
     ) -> List[models.ScoredPoint]:
-        search_in_vector_name, vector, query_filter = self._recommend(
+        
+        strategy = (
+            strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
+        )
+        
+        positive = positive if positive is not None else []
+        negative = negative if negative is not None else []
+        
+        positive_vectors, negative_vectors, edited_query_filter = self._preprocess_recommend(
             positive,
             negative,
+            strategy,
             query_filter,
             using,
             lookup_from_collection,
             lookup_from_vector_name,
         )
-
+        
+        if strategy == types.RecommendStrategy.AVERAGE_VECTOR:
+            query_vector = self._recommend_average(
+                positive_vectors,
+                negative_vectors,
+            )
+        elif strategy == types.RecommendStrategy.BEST_SCORE:
+            query_vector = RecoQuery(
+            positive=positive_vectors,
+            negative=negative_vectors,
+        )
+        
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+        
         return self.search(
-            query_vector=(search_in_vector_name, vector),
-            query_filter=query_filter,
+            query_vector=(search_in_vector_name, query_vector),
+            query_filter=edited_query_filter,
             limit=limit,
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
         )
+        
 
     def recommend_groups(
         self,

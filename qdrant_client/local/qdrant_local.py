@@ -246,8 +246,8 @@ class QdrantLocal(QdrantBase):
     ) -> List[types.ScoredPoint]:
         collection = self._get_collection(collection_name)
         return collection.recommend(
-            positive=positive,
-            negative=negative,
+            positive=positive, # type: ignore
+            negative=negative, # type: ignore
             query_filter=query_filter,
             limit=limit,
             offset=offset,

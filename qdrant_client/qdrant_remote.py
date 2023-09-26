@@ -648,6 +648,9 @@ class QdrantRemote(QdrantBase):
         strategy: Optional[types.RecommendStrategy] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
+        if positive is None:
+            positive = []
+        
         if negative is None:
             negative = []
 
