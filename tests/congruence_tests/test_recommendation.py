@@ -1,3 +1,4 @@
+from curses import raw
 from typing import List
 
 import numpy as np
@@ -11,13 +12,18 @@ from tests.congruence_tests.test_common import (
     init_client,
     init_local,
     init_remote,
+    image_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
 
 secondary_collection_name = "secondary_collection"
 
-
 class TestSimpleRecommendation:
+    
+    def __init__(self):
+        self.query_image = np.random.random(image_vector_size).tolist()
+
+        
     @classmethod
     def simple_recommend_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
@@ -114,12 +120,20 @@ class TestSimpleRecommendation:
             strategy=models.RecommendStrategy.AVERAGE_VECTOR,
         )
         
-    @classmethod
-    def recommend_from_raw_vectors_and_ids(cls, client: QdrantBase) -> List[models.ScoredPoint]:
-        raw_vec = np.random.rand(100).tolist()
+    def recommend_from_raw_vectors(self, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
-            positive=[raw_vec, 10],
+            positive=[self.query_image],
+            negative=[],
+            with_payload=True,
+            limit=10,
+            using="image",
+        )
+    
+    def recommend_from_raw_vectors_and_ids(self, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[self.query_image, 10],
             negative=[],
             with_payload=True,
             limit=10,
@@ -149,7 +163,8 @@ def test_simple_recommend() -> None:
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
     compare_client_results(local_client, remote_client, searcher.only_negatives_best_score_recommend)
     compare_client_results(local_client, remote_client, searcher.avg_vector_recommend)
-    # compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors_and_ids)
+    compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors)
+    compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors_and_ids)
 
     for _ in range(10):
         query_filter = one_random_filter_please()

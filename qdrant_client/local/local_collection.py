@@ -409,6 +409,8 @@ class LocalCollection:
                 idx = collection.ids[example]
                 positive_vectors.append(collection.vectors[vector_name][idx]) # type: ignore
                 mentioned_ids.append(example)
+            else:
+                positive_vectors.append(example)
 
         for example in negative:
             if isinstance(example, types.PointId):
@@ -418,6 +420,8 @@ class LocalCollection:
                 idx = collection.ids[example]
                 negative_vectors.append(collection.vectors[vector_name][idx]) # type: ignore
                 mentioned_ids.append(example)
+            else:
+                negative_vectors.append(example)
                 
         # Edit query filter
         ignore_mentioned_ids = models.HasIdCondition(
