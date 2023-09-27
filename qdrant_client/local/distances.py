@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import List, Union
 from qdrant_client.conversions import common_types as types
 
 import numpy as np
@@ -17,7 +17,7 @@ class RecoQuery:
         self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
 
 
-QueryVector = RecoQuery | types.NumpyArray
+QueryVector = Union[RecoQuery, types.NumpyArray]
 
 class DistanceOrder(str, Enum):
     BIGGER_IS_BETTER = "bigger_is_better"

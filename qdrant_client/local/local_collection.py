@@ -279,7 +279,7 @@ class LocalCollection:
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
-            Tuple[str, List[float] | RecoQuery | types.NumpyArray],
+            Tuple[str, Union[List[float], RecoQuery, types.NumpyArray]],
             types.NamedVector,
             RecoQuery,
         ],
@@ -401,7 +401,7 @@ class LocalCollection:
         # Turn every example into vectors
         positive_vectors = []
         negative_vectors = []
-        mentioned_ids: list[ExtendedPointId]= []
+        mentioned_ids: List[ExtendedPointId]= []
 
         for example in positive:
             if isinstance(example, get_args(types.PointId)):
