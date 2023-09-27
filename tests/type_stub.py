@@ -43,6 +43,7 @@ qdrant_client.recommend(
     1.0,
     "using",
     rest_models.LookupLocation(collection=""),
+    rest_models.RecommendStrategy.AVERAGE_VECTOR,
     1,
 )
 qdrant_client.recommend_batch(
