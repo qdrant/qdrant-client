@@ -633,8 +633,8 @@ class QdrantRemote(QdrantBase):
     def recommend(
         self,
         collection_name: str,
-        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -644,8 +644,8 @@ class QdrantRemote(QdrantBase):
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
         strategy: Optional[types.RecommendStrategy] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         if positive is None:
@@ -797,8 +797,8 @@ class QdrantRemote(QdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
-        if negative is None:
-            negative = []
+        positive = positive if positive is not None else []
+        negative = negative if negative is not None else []
 
         if self._prefer_grpc:
             if isinstance(with_lookup, models.WithLookup):

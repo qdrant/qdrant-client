@@ -1,13 +1,11 @@
 import uuid
 from collections import OrderedDict, defaultdict
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union, get_args
 
 import numpy as np
-from pydantic import StrictFloat
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
-from qdrant_client.grpc.points_pb2 import BestScore, RecommendStrategy
 from qdrant_client.http import models
 from qdrant_client.http.models.models import ExtendedPointId
 from qdrant_client.local.distances import (
@@ -281,8 +279,9 @@ class LocalCollection:
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
-            Tuple[str, List[float]],
+            Tuple[str, List[float] | RecoQuery | types.NumpyArray],
             types.NamedVector,
+            RecoQuery,
         ],
         group_by: str,
         query_filter: Optional[models.Filter] = None,
@@ -374,8 +373,8 @@ class LocalCollection:
 
     def _preprocess_recommend(
         self,
-        positive: Sequence[types.RecommendExample] = [],
-        negative: Sequence[types.RecommendExample] = [],
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         query_filter: Optional[types.Filter] = None,
         using: Optional[str] = None,
@@ -387,6 +386,9 @@ class LocalCollection:
         vector_name = (
             lookup_from_vector_name if lookup_from_vector_name is not None else search_in_vector_name
         )
+        
+        positive = positive if positive is not None else []
+        negative = negative if negative is not None else []
 
         # Validate input depending on strategy
         if strategy == types.RecommendStrategy.AVERAGE_VECTOR:
@@ -402,7 +404,7 @@ class LocalCollection:
         mentioned_ids: list[ExtendedPointId]= []
 
         for example in positive:
-            if isinstance(example, types.PointId):
+            if isinstance(example, get_args(types.PointId)):
                 if example not in collection.ids:
                     raise ValueError(f"Point {example} is not found in the collection")
 
@@ -413,7 +415,7 @@ class LocalCollection:
                 positive_vectors.append(example)
 
         for example in negative:
-            if isinstance(example, types.PointId):
+            if isinstance(example, get_args(types.PointId)):
                 if example not in collection.ids:
                     raise ValueError(f"Point {example} is not found in the collection")
 
@@ -483,9 +485,6 @@ class LocalCollection:
             strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
         )
         
-        positive = positive if positive is not None else []
-        negative = negative if negative is not None else []
-        
         positive_vectors, negative_vectors, edited_query_filter = self._preprocess_recommend(
             positive,
             negative,
@@ -523,8 +522,8 @@ class LocalCollection:
     def recommend_groups(
         self,
         group_by: str,
-        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         group_size: int = 1,
@@ -538,17 +537,36 @@ class LocalCollection:
         with_lookup_collection: Optional["LocalCollection"] = None,
         strategy: Optional[types.RecommendStrategy] = None,
     ) -> types.GroupsResult:
-        search_in_vector_name, vector, query_filter = self._recommend(
+        strategy = (
+            strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
+        )
+        
+        positive_vectors, negative_vectors, edited_query_filter = self._preprocess_recommend(
             positive,
             negative,
+            strategy,
             query_filter,
             using,
             lookup_from_collection,
             lookup_from_vector_name,
         )
+        
+        if strategy == types.RecommendStrategy.AVERAGE_VECTOR:
+            query_vector = self._recommend_average(
+                positive_vectors,
+                negative_vectors,
+            )
+        elif strategy == types.RecommendStrategy.BEST_SCORE:
+            query_vector = RecoQuery(
+            positive=positive_vectors,
+            negative=negative_vectors,
+        )
+            
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+            
         return self.search_groups(
-            query_vector=(search_in_vector_name, vector),
-            query_filter=query_filter,
+            query_vector=(search_in_vector_name, query_vector),
+            query_filter=edited_query_filter,
             group_by=group_by,
             group_size=group_size,
             limit=limit,

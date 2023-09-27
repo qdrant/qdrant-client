@@ -454,8 +454,8 @@ class QdrantClient(QdrantFastembedMixin):
     def recommend(
         self,
         collection_name: str,
-        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -465,8 +465,8 @@ class QdrantClient(QdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
         strategy: Optional[types.RecommendStrategy] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
@@ -560,8 +560,8 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         group_by: str,
-        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -572,8 +572,8 @@ class QdrantClient(QdrantFastembedMixin):
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
-        consistency: Optional[types.ReadConsistency] = None,
         strategy: Optional[types.RecommendStrategy] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Recommend point groups: search for similar points based on already stored in Qdrant examples
