@@ -118,7 +118,7 @@ def compare_scored_record(
         point1.id == point2.id
     ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
     assert (
-        point1.score - point2.score < 1e-4
+        abs(point1.score / point2.score - 1) < 1e-4
     ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}"
     assert (
         point1.payload == point2.payload

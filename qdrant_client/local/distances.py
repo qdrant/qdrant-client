@@ -92,51 +92,36 @@ def calculate_distance(
 def calculate_best_scores(
     query: RecoQuery, vectors: np.ndarray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    vector_count = vectors.shape[0]
     
-    # get all positive scores
-    positive_scores: List[types.NumpyArray] = []
-    for positive in query.positive:
-        score = calculate_distance(positive, vectors, distance_type)
-        positive_scores.append(score)
+    def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
+        vector_count = vectors.shape[0]
         
-    # keep only max (or min) of each positive
-    if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-        if len(positive_scores) == 0:
-            positive_scores.append(np.full(vector_count, -np.inf))
-        positive_scores = np.amax(np.array(positive_scores), axis=0)
-    else:
-        if len(positive_scores) == 0:
-            positive_scores.append(np.full(vector_count, np.inf))
-        positive_scores = np.amin(np.array(positive_scores), axis=0)
+        # get all positive scores
+        scores: List[types.NumpyArray] = []
+        for example in examples:
+            score = calculate_distance(example, vectors, distance_type)
+            scores.append(score)
+            
+        # keep only max (or min) for each vector
+        if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
+            if len(scores) == 0:
+                scores.append(np.full(vector_count, -np.inf))
+            best_scores = np.array(scores, dtype=np.float32).max(axis=0)
+        else:
+            if len(scores) == 0:
+                scores.append(np.full(vector_count, np.inf))
+            best_scores = np.array(scores, dtype=np.float32).min(axis=0)
 
-    # get all negative scores
-    negative_scores: List[types.NumpyArray] = []
-    for negative in query.negative:
-        score = calculate_distance(negative, vectors, distance_type)
-        negative_scores.append(score)
-        
-    # keep only max (or min) of each negative
-    if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-        if len(negative_scores) == 0:
-            negative_scores.append(np.full(vector_count, -np.inf))
-        negative_scores = np.amax(np.array(negative_scores), axis=0)
-    else:
-        if len(negative_scores) == 0:
-            negative_scores.append(np.full(vector_count, np.inf))
-        negative_scores = np.amin(np.array(negative_scores), axis=0)
-        
-    # choose from best positive or best negative
-    zip = np.stack((positive_scores, negative_scores), axis=1)
+        return best_scores
     
+    pos = get_best_scores(query.positive)
+    neg = get_best_scores(query.negative)
+    
+    # choose from best positive or best negative
     if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-        cond_list = [zip[:,0] > zip[:,1], zip[:,0] <= zip[:,1]]
-        choice_list = [zip[:,0], -(zip[:,1]**2)]
-        return np.select(cond_list, choice_list, default=42)
+        return np.where(pos > neg, pos, -(neg*neg))  
     else:
-        cond_list = [zip[:,0] < zip[:,1], zip[:,0] >= zip[:,1]]
-        choice_list = [zip[:,0], zip[:,1]**2]
-        return np.select(cond_list, choice_list, default=42)
+        return np.where(pos < neg, pos, neg*neg)
         
 
 def test_distances() -> None:
