@@ -547,7 +547,7 @@ class QdrantLocal(QdrantBase):
         )
         self.collections[collection_name] = collection
 
-        if src_collection:
+        if src_collection and from_collection_name:
             batch_size = 100
             records, next_offset = self.scroll(from_collection_name, limit=2, with_vectors=True)
             self.upload_records(collection_name, records)
