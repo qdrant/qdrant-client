@@ -231,7 +231,7 @@ class LocalCollection:
             scores = calculate_distance(
                 query_vector, vectors[: len(self.payload)], params.distance
             )
-        elif isinstance(query_vector, RecoQuery): # type: ignore (pylance says this is unnecessary)
+        elif isinstance(query_vector, RecoQuery):
             scores = calculate_best_scores(
                 query_vector, vectors[: len(self.payload)], params.distance
             )
