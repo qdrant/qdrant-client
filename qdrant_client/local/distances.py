@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Union
+from typing import List, Optional, Union
 from qdrant_client.conversions import common_types as types
 
 import numpy as np
@@ -10,9 +10,11 @@ from qdrant_client.http import models
 class RecoQuery:
     def __init__(
         self, 
-        positive: List[List[float]] = [], 
-        negative: List[List[float]] = []
+        positive: Optional[List[List[float]]] = None, 
+        negative: Optional[List[List[float]]] = None
     ):
+        positive = positive if positive is not None else []
+        negative = negative if negative is not None else []
         self.positive: List[types.NumpyArray] = [np.array(vector) for vector in positive]
         self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
 
