@@ -98,13 +98,13 @@ def calculate_best_scores(
     def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
         vector_count = vectors.shape[0]
         
-        # get all positive scores
+        # Get scores to all examples
         scores: List[types.NumpyArray] = []
         for example in examples:
             score = calculate_distance(example, vectors, distance_type)
             scores.append(score)
             
-        # keep only max (or min) for each vector
+        # Keep only max (or min) for each vector
         if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
             if len(scores) == 0:
                 scores.append(np.full(vector_count, -np.inf))
@@ -119,10 +119,12 @@ def calculate_best_scores(
     pos = get_best_scores(query.positive)
     neg = get_best_scores(query.negative)
     
-    # choose from best positive or best negative
+    # Choose from best positive or best negative, 
+    # in case of choosing best negative, square and negate it to make it smaller than any positive
     if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-        return np.where(pos > neg, pos, -(neg*neg))  
+        return np.where(pos > neg, pos, -(neg*neg))
     else:
+        # neg*neg is not negated here because of the DistanceOrder.SMALLER_IS_BETTER
         return np.where(pos < neg, pos, neg*neg)
         
 

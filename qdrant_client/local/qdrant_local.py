@@ -14,6 +14,7 @@ from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
+from qdrant_client.http.models.models import RecommendExample
 from qdrant_client.local.local_collection import LocalCollection
 
 META_INFO_FILENAME = "meta.json"
@@ -230,8 +231,8 @@ class QdrantLocal(QdrantBase):
     def recommend(
         self,
         collection_name: str,
-        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        positive: Optional[Sequence[RecommendExample]] = None,
+        negative: Optional[Sequence[RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -246,8 +247,8 @@ class QdrantLocal(QdrantBase):
     ) -> List[types.ScoredPoint]:
         collection = self._get_collection(collection_name)
         return collection.recommend(
-            positive=positive, # type: ignore
-            negative=negative, # type: ignore
+            positive=positive,
+            negative=negative,
             query_filter=query_filter,
             limit=limit,
             offset=offset,

@@ -226,14 +226,17 @@ class LocalCollection:
 
         vectors = self.vectors[name]
         params = self.get_vector_params(name)
+        
         if isinstance(query_vector, np.ndarray):
             scores = calculate_distance(
                 query_vector, vectors[: len(self.payload)], params.distance
             )
-        else:
+        elif isinstance(query_vector, RecoQuery): # type: ignore (pylance says this is unnecessary)
             scores = calculate_best_scores(
                 query_vector, vectors[: len(self.payload)], params.distance
             )
+        else:
+            raise(ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
         # in deleted: 1 - deleted, 0 - not deleted
         # in payload_mask: 1 - accepted, 0 - rejected
@@ -446,9 +449,12 @@ class LocalCollection:
 
     def _recommend_average(
         self,
-        positive_vectors: Sequence[List[float]] = [],
-        negative_vectors: Sequence[List[float]] = [],
+        positive_vectors: Optional[Sequence[List[float]]] = None,
+        negative_vectors: Optional[Sequence[List[float]]] = None,
     ) -> types.NumpyArray:
+        positive_vectors = positive_vectors if positive_vectors is not None else []
+        negative_vectors = negative_vectors if negative_vectors is not None else []
+        
         # Validate input
         if len(positive_vectors) == 0:
             raise ValueError("Positive list is empty")
@@ -469,8 +475,8 @@ class LocalCollection:
 
     def recommend(
         self,
-        positive: Optional[Sequence[types.RecommendExample]] = [],
-        negative: Optional[Sequence[types.RecommendExample]] = [],
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
@@ -504,6 +510,8 @@ class LocalCollection:
                 positive=positive_vectors,
                 negative=negative_vectors,
             )
+        else:
+            raise ValueError(f"strategy `{strategy}` is not a valid strategy, choose one from {types.RecommendStrategy}")
 
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
 

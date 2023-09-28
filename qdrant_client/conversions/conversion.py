@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, get_args
+from typing import Any, Dict, List, Optional, Sequence, Tuple, get_args
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -1555,6 +1555,36 @@ class RestToGrpc:
             alias_name=model.alias_name,
             collection_name=model.collection_name,
         )
+
+    @classmethod
+    def convert_recommend_examples_to_ids(cls, examples: Sequence[rest.RecommendExample]) -> List[grpc.PointId]:
+        ids: List[grpc.PointId] = []
+        for example in examples:
+            if isinstance(example, get_args_subscribed(rest.ExtendedPointId)):
+                id = RestToGrpc.convert_extended_point_id(example)
+            elif isinstance(example, grpc.PointId):
+                id = example
+            else: 
+                continue
+            
+            ids.append(id)
+        
+        return ids
+    
+    @classmethod
+    def convert_recommend_examples_to_vectors(cls, examples: Sequence[rest.RecommendExample]) -> List[grpc.Vector]:
+        vectors: List[grpc.Vector] = []
+        for example in examples:
+            if isinstance(example, grpc.Vector):
+                vector = example
+            elif isinstance(example, list):
+                vector = grpc.Vector(data=example)
+            else: 
+                continue
+            
+            vectors.append(vector)
+        
+        return vectors
 
     @classmethod
     def convert_extended_point_id(cls, model: rest.ExtendedPointId) -> grpc.PointId:

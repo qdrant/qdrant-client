@@ -655,35 +655,11 @@ class QdrantRemote(QdrantBase):
             negative = []
 
         if self._prefer_grpc:
-            positive_ids = [
-                RestToGrpc.convert_extended_point_id(example)
-                if isinstance(example, get_args_subscribed(models.ExtendedPointId))
-                else example
-                for example in positive
-                if isinstance(example, get_args_subscribed(models.ExtendedPointId))
-                or isinstance(example, grpc.PointId)
-            ]
+            positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
+            positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
 
-            positive_vectors = [
-                example if isinstance(example, grpc.Vector) else grpc.Vector(data=example)
-                for example in positive
-                if isinstance(example, list) or isinstance(example, grpc.Vector)
-            ]
-
-            negative_ids = [
-                RestToGrpc.convert_extended_point_id(example)
-                if isinstance(example, get_args_subscribed(models.ExtendedPointId))
-                else example
-                for example in negative
-                if isinstance(example, get_args_subscribed(models.ExtendedPointId))
-                or isinstance(example, grpc.PointId)
-            ]
-
-            negative_vectors = [
-                example if isinstance(example, grpc.Vector) else grpc.Vector(data=example)
-                for example in negative
-                if isinstance(example, list) or isinstance(example, grpc.Vector)
-            ]
+            negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
+            negative_vectors = RestToGrpc.convert_recommend_examples_to_vectors(negative)
 
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
@@ -807,36 +783,12 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_lookup, str):
                 with_lookup = grpc.WithLookup(lookup_index=with_lookup)
 
-            positive_ids = [
-                RestToGrpc.convert_extended_point_id(example)
-                if isinstance(example, get_args_subscribed(models.ExtendedPointId))
-                else example
-                for example in positive
-                if isinstance(example, get_args_subscribed(models.ExtendedPointId))
-                or isinstance(example, grpc.PointId)
-            ]
+            positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
+            positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
 
-            positive_vectors = [
-                example if isinstance(example, grpc.Vector) else grpc.Vector(data=example)
-                for example in positive
-                if isinstance(example, list) or isinstance(example, grpc.Vector)
-            ]
-
-            negative_ids = [
-                RestToGrpc.convert_extended_point_id(example)
-                if isinstance(example, get_args_subscribed(models.ExtendedPointId))
-                else example
-                for example in negative
-                if isinstance(example, get_args_subscribed(models.ExtendedPointId))
-                or isinstance(example, grpc.PointId)
-            ]
-
-            negative_vectors = [
-                example if isinstance(example, grpc.Vector) else grpc.Vector(data=example)
-                for example in negative
-                if isinstance(example, list) or isinstance(example, grpc.Vector)
-            ]
-
+            negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
+            negative_vectors = RestToGrpc.convert_recommend_examples_to_vectors(negative)
+            
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
