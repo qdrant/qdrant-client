@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import warnings
 from multiprocessing import get_all_start_methods
@@ -30,8 +31,7 @@ from qdrant_client.conversions.conversion import (
     RestToGrpc,
     grpc_payload_schema_to_field_type,
 )
-from qdrant_client.http import AsyncApis, models
-from qdrant_client.http.api_client import AsyncApiClient
+from qdrant_client.http import AsyncApiClient, AsyncApis, models
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
@@ -52,6 +52,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         host: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._https = https if https is not None else api_key is not None
@@ -263,10 +264,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 else r
                 for r in requests
             ]
-
             if isinstance(consistency, get_args_subscribed(models.ReadConsistencyType)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-
             grpc_res: grpc.SearchBatchResponse = await self.grpc_points.SearchBatch(
                 grpc.SearchBatchPoints(
                     collection_name=collection_name,
@@ -275,7 +274,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=self._timeout,
             )
-
             return [
                 [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
             ]
@@ -318,13 +316,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "Usage of `append_payload` is deprecated. Please consider using `with_payload` instead"
             )
             with_payload = append_payload
-
         if isinstance(query_vector, np.ndarray):
             query_vector = query_vector.tolist()
-
         if self._prefer_grpc:
             vector_name = None
-
             if isinstance(query_vector, types.NamedVector):
                 vector = query_vector.vector
                 vector_name = query_vector.name
@@ -333,22 +328,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 vector = query_vector[1]
             else:
                 vector = list(query_vector)
-
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
-
             if isinstance(search_params, models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
-
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
             if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-
             res: grpc.SearchResponse = await self.grpc_points.Search(
                 grpc.SearchPoints(
                     collection_name=collection_name,
@@ -365,22 +354,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=self._timeout,
             )
-
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
-
         else:
             if isinstance(query_vector, tuple):
                 query_vector = types.NamedVector(name=query_vector[0], vector=query_vector[1])
-
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
-
             if isinstance(search_params, grpc.SearchParams):
                 search_params = GrpcToRest.convert_search_params(search_params)
-
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
             search_result = await self.http.points_api.search_points(
                 collection_name=collection_name,
                 consistency=consistency,
@@ -422,38 +405,28 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.GroupsResult:
         if self._prefer_grpc:
             vector_name = None
-
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
-
             if isinstance(with_lookup, str):
                 with_lookup = grpc.WithLookup(lookup=with_lookup)
-
             if isinstance(query_vector, types.NamedVector):
                 vector = query_vector.vector
                 vector_name = query_vector.name
-
             elif isinstance(query_vector, tuple):
                 vector_name = query_vector[0]
                 vector = query_vector[1]
             else:
                 vector = list(query_vector)
-
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
-
             if isinstance(search_params, models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
-
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
             if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-
             result: grpc.GroupsResult = (
                 await self.grpc_points.SearchGroups(
                     grpc.SearchPointGroups(
@@ -474,31 +447,22 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     timeout=self._timeout,
                 )
             ).result
-
             return GrpcToRest.convert_groups_result(result)
         else:
             if isinstance(with_lookup, grpc.WithLookup):
                 with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
-
             if isinstance(query_vector, tuple):
                 query_vector = construct(
-                    models.NamedVector,
-                    name=query_vector[0],
-                    vector=query_vector[1],
+                    models.NamedVector, name=query_vector[0], vector=query_vector[1]
                 )
-
             if isinstance(query_vector, np.ndarray):
                 query_vector = query_vector.tolist()
-
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
-
             if isinstance(search_params, grpc.SearchParams):
                 search_params = GrpcToRest.convert_search_params(search_params)
-
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
             search_groups_request = construct(
                 models.SearchGroupsRequest,
                 vector=query_vector,
@@ -512,9 +476,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 limit=limit,
                 with_lookup=with_lookup,
             )
-
             return (
-                await self.http.points_api.search_point_groups(
+                await self.openapi_client.points_api.search_point_groups(
                     search_groups_request=search_groups_request,
                     collection_name=collection_name,
                     consistency=consistency,
@@ -535,10 +498,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 else r
                 for r in requests
             ]
-
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-
             grpc_res: grpc.SearchBatchResponse = await self.grpc_points.RecommendBatch(
                 grpc.RecommendBatchPoints(
                     collection_name=collection_name,
@@ -547,7 +508,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=self._timeout,
             )
-
             return [
                 [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
             ]
@@ -586,7 +546,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> List[types.ScoredPoint]:
         if negative is None:
             negative = []
-
         if self._prefer_grpc:
             positive = [
                 RestToGrpc.convert_extended_point_id(point_id)
@@ -594,32 +553,24 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 else point_id
                 for point_id in positive
             ]
-
             negative = [
                 RestToGrpc.convert_extended_point_id(point_id)
                 if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
                 else point_id
                 for point_id in negative
             ]
-
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
-
             if isinstance(search_params, models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
-
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
             if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
             if isinstance(lookup_from, models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
-
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-
             res: grpc.SearchResponse = await self.grpc_points.Recommend(
                 grpc.RecommendPoints(
                     collection_name=collection_name,
@@ -638,7 +589,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=self._timeout,
             )
-
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
             positive = [
@@ -647,28 +597,22 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 else point_id
                 for point_id in positive
             ]
-
             negative = [
                 GrpcToRest.convert_point_id(point_id)
                 if isinstance(point_id, grpc.PointId)
                 else point_id
                 for point_id in negative
             ]
-
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
-
             if isinstance(search_params, grpc.SearchParams):
                 search_params = GrpcToRest.convert_search_params(search_params)
-
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
             if isinstance(lookup_from, grpc.LookupLocation):
                 lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
-
             result = (
-                await self.http.points_api.recommend_points(
+                await self.openapi_client.points_api.recommend_points(
                     collection_name=collection_name,
                     consistency=consistency,
                     recommend_request=models.RecommendRequest(
@@ -710,46 +654,35 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.GroupsResult:
         if negative is None:
             negative = []
-
         if self._prefer_grpc:
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
-
             if isinstance(with_lookup, str):
                 with_lookup = grpc.WithLookup(lookup_index=with_lookup)
-
             positive = [
                 RestToGrpc.convert_extended_point_id(point_id)
                 if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
                 else point_id
                 for point_id in positive
             ]
-
             negative = [
                 RestToGrpc.convert_extended_point_id(point_id)
                 if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
                 else point_id
                 for point_id in negative
             ]
-
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
-
             if isinstance(search_params, models.SearchParams):
                 search_params = RestToGrpc.convert_search_params(search_params)
-
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
             if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
             if isinstance(lookup_from, models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
-
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-
             res: grpc.GroupsResult = (
                 await self.grpc_points.RecommendGroups(
                     grpc.RecommendPointGroups(
@@ -772,41 +705,33 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     timeout=self._timeout,
                 )
             ).result
-
             assert res is not None, "Recommend groups API returned None"
             return GrpcToRest.convert_groups_result(res)
         else:
             if isinstance(with_lookup, grpc.WithLookup):
                 with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
-
             positive = [
                 GrpcToRest.convert_point_id(point_id)
                 if isinstance(point_id, grpc.PointId)
                 else point_id
                 for point_id in positive
             ]
-
             negative = [
                 GrpcToRest.convert_point_id(point_id)
                 if isinstance(point_id, grpc.PointId)
                 else point_id
                 for point_id in negative
             ]
-
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
-
             if isinstance(search_params, grpc.SearchParams):
                 search_params = GrpcToRest.convert_search_params(search_params)
-
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
             if isinstance(lookup_from, grpc.LookupLocation):
                 lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
-
             result = (
-                await self.http.points_api.recommend_point_groups(
+                await self.openapi_client.points_api.recommend_point_groups(
                     collection_name=collection_name,
                     consistency=consistency,
                     recommend_groups_request=construct(
@@ -827,7 +752,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     ),
                 )
             ).result
-
             assert result is not None, "Recommend points API returned None"
             return result
 
@@ -845,19 +769,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             if isinstance(offset, get_args_subscribed(models.ExtendedPointId)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
-
             if isinstance(scroll_filter, models.Filter):
                 scroll_filter = RestToGrpc.convert_filter(model=scroll_filter)
-
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
             if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-
             res: grpc.ScrollResponse = await self.grpc_points.Scroll(
                 grpc.ScrollPoints(
                     collection_name=collection_name,
@@ -870,24 +789,21 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=self._timeout,
             )
-
-            return [
-                GrpcToRest.convert_retrieved_point(point) for point in res.result
-            ], GrpcToRest.convert_point_id(res.next_page_offset) if res.HasField(
-                "next_page_offset"
-            ) else None
+            return (
+                [GrpcToRest.convert_retrieved_point(point) for point in res.result],
+                GrpcToRest.convert_point_id(res.next_page_offset)
+                if res.HasField("next_page_offset")
+                else None,
+            )
         else:
             if isinstance(offset, grpc.PointId):
                 offset = GrpcToRest.convert_point_id(offset)
-
             if isinstance(scroll_filter, grpc.Filter):
                 scroll_filter = GrpcToRest.convert_filter(model=scroll_filter)
-
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
             scroll_result: Optional[models.ScrollResult] = (
-                await self.http.points_api.scroll_points(
+                await self.openapi_client.points_api.scroll_points(
                     collection_name=collection_name,
                     consistency=consistency,
                     scroll_request=models.ScrollRequest(
@@ -900,8 +816,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             ).result
             assert scroll_result is not None, "Scroll points API returned None result"
-
-            return scroll_result.points, scroll_result.next_page_offset
+            return (scroll_result.points, scroll_result.next_page_offset)
 
     async def count(
         self,
@@ -916,18 +831,18 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             response = (
                 await self.grpc_points.Count(
                     grpc.CountPoints(
-                        collection_name=collection_name, filter=count_filter, exact=exact
+                        collection_name=collection_name,
+                        filter=count_filter,
+                        exact=exact,
                     ),
                     timeout=self._timeout,
                 )
             ).result
             return GrpcToRest.convert_count_result(response)
-
         if isinstance(count_filter, grpc.Filter):
             count_filter = GrpcToRest.convert_filter(model=count_filter)
-
         count_result = (
-            await self.http.points_api.count_points(
+            await self.openapi_client.points_api.count_points(
                 collection_name=collection_name,
                 count_request=models.CountRequest(filter=count_filter, exact=exact),
             )
@@ -965,10 +880,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     else point
                     for point in points
                 ]
-
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-
             grpc_result = (
                 await self.grpc_points.Upsert(
                     grpc.UpsertPoints(
@@ -980,7 +893,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     timeout=self._timeout,
                 )
             ).result
-
             assert grpc_result is not None, "Upsert returned None result"
             return GrpcToRest.convert_update_result(grpc_result)
         else:
@@ -991,14 +903,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     else point
                     for point in points
                 ]
-
                 points = models.PointsList(points=points)
-
             if isinstance(points, models.Batch):
                 points = models.PointsBatch(batch=points)
-
             http_result = (
-                await self.http.points_api.upsert_points(
+                await self.openapi_client.points_api.upsert_points(
                     collection_name=collection_name,
                     wait=wait,
                     point_insert_operations=points,
@@ -1018,10 +927,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points = [RestToGrpc.convert_point_vectors(point) for point in points]
-
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-
             grpc_result = (
                 await self.grpc_points.UpdateVectors(
                     grpc.UpdatePointVectors(
@@ -1036,7 +943,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             return GrpcToRest.convert_update_result(grpc_result)
         else:
             return (
-                await self.http.points_api.update_vectors(
+                await self.openapi_client.points_api.update_vectors(
                     collection_name=collection_name,
                     wait=wait,
                     update_vectors=models.UpdateVectors(points=points),
@@ -1055,31 +962,25 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points = self._try_argument_to_grpc_selector(points)
-
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-
             grpc_result = (
                 await self.grpc_points.DeleteVectors(
                     grpc.DeletePointVectors(
                         collection_name=collection_name,
                         wait=wait,
-                        vectors=grpc.VectorsSelector(
-                            names=vectors,
-                        ),
+                        vectors=grpc.VectorsSelector(names=vectors),
                         points_selector=points,
                         ordering=ordering,
                     )
                 )
             ).result
-
             assert grpc_result is not None, "Delete vectors returned None result"
-
             return GrpcToRest.convert_update_result(grpc_result)
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
             return (
-                await self.http.points_api.delete_vectors(
+                await self.openapi_client.points_api.delete_vectors(
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
@@ -1104,19 +1005,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
             ids = [
                 RestToGrpc.convert_extended_point_id(idx)
                 if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
                 else idx
                 for idx in ids
             ]
-
             with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-
             result = (
                 await self.grpc_points.Get(
                     grpc.GetPoints(
@@ -1129,22 +1026,17 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     timeout=self._timeout,
                 )
             ).result
-
             assert result is not None, "Retrieve returned None result"
-
             return [GrpcToRest.convert_retrieved_point(record) for record in result]
-
         else:
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
             ids = [
                 GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
                 for idx in ids
             ]
-
             http_result = (
-                await self.http.points_api.get_points(
+                await self.openapi_client.points_api.get_points(
                     collection_name=collection_name,
                     consistency=consistency,
                     point_request=models.PointRequest(
@@ -1210,7 +1102,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> List[grpc.PointId]:
         name = points_selector.WhichOneof("points_selector_one_of")
         val = getattr(points_selector, name)
-
         if name == "points":
             return list(val.ids)
         return []
@@ -1242,8 +1133,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             _filter = GrpcToRest.convert_filter(points)
         else:
             raise ValueError(f"Unsupported points selector type: {type(points)}")
-
-        return _points, _filter
+        return (_points, _filter)
 
     async def delete(
         self,
@@ -1255,10 +1145,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points_selector)
-
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-
             return GrpcToRest.convert_update_result(
                 (
                     await self.grpc_points.Delete(
@@ -1275,7 +1163,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
             result: Optional[types.UpdateResult] = (
-                await self.http.points_api.delete_points(
+                await self.openapi_client.points_api.delete_points(
                     collection_name=collection_name,
                     wait=wait,
                     points_selector=points_selector,
@@ -1296,10 +1184,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
-
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-
             return GrpcToRest.convert_update_result(
                 (
                     await self.grpc_points.SetPayload(
@@ -1315,17 +1201,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
-                await self.http.points_api.set_payload(
+                await self.openapi_client.points_api.set_payload(
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
-                    set_payload=models.SetPayload(
-                        payload=payload,
-                        points=_points,
-                        filter=_filter,
-                    ),
+                    set_payload=models.SetPayload(payload=payload, points=_points, filter=_filter),
                 )
             ).result
             assert result is not None, "Set payload returned None"
@@ -1342,10 +1224,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points)
-
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-
             return GrpcToRest.convert_update_result(
                 (
                     await self.grpc_points.OverwritePayload(
@@ -1361,17 +1241,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
-                await self.http.points_api.overwrite_payload(
+                await self.openapi_client.points_api.overwrite_payload(
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
-                    set_payload=models.SetPayload(
-                        payload=payload,
-                        points=_points,
-                        filter=_filter,
-                    ),
+                    set_payload=models.SetPayload(payload=payload, points=_points, filter=_filter),
                 )
             ).result
             assert result is not None, "Overwrite payload returned None"
@@ -1405,17 +1281,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
+            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
-                await self.http.points_api.delete_payload(
+                await self.openapi_client.points_api.delete_payload(
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
-                    delete_payload=models.DeletePayload(
-                        keys=keys,
-                        points=_points,
-                        filter=_filter,
-                    ),
+                    delete_payload=models.DeletePayload(keys=keys, points=_points, filter=_filter),
                 )
             ).result
             assert result is not None, "Delete payload returned None"
@@ -1431,10 +1303,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             points_selector = self._try_argument_to_grpc_selector(points_selector)
-
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-
             return GrpcToRest.convert_update_result(
                 (
                     await self.grpc_points.ClearPayload(
@@ -1451,7 +1321,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             points_selector = self._try_argument_to_rest_selector(points_selector)
             result: Optional[types.UpdateResult] = (
-                await self.http.points_api.clear_payload(
+                await self.openapi_client.points_api.clear_payload(
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
@@ -1473,10 +1343,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             update_operations = [
                 RestToGrpc.convert_update_operation(operation) for operation in update_operations
             ]
-
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-
             return [
                 GrpcToRest.convert_update_result(result)
                 for result in (
@@ -1492,8 +1360,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             ]
         else:
-            result: Optional[List[types.UpdateResult]] = (
-                await self.http.points_api.batch_update(
+            result: Optional[types.UpdateResult] = (
+                await self.openapi_client.points_api.batch_update(
                     collection_name=collection_name,
                     wait=wait,
                     ordering=ordering,
@@ -1518,14 +1386,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             ]
             return (
                 await self.grpc_collections.UpdateAliases(
-                    grpc.ChangeAliases(
-                        timeout=timeout,
-                        actions=change_aliases_operation,
-                    ),
+                    grpc.ChangeAliases(timeout=timeout, actions=change_aliases_operation),
                     timeout=self._timeout,
                 )
             ).result
-
         change_aliases_operation = [
             GrpcToRest.convert_alias_operations(operation)
             if isinstance(operation, grpc.AliasOperations)
@@ -1558,7 +1422,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     GrpcToRest.convert_alias_description(description) for description in response
                 ]
             )
-
         result: Optional[types.CollectionsAliasesResponse] = (
             await self.http.collections_api.get_collection_aliases(collection_name=collection_name)
         ).result
@@ -1596,7 +1459,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     for description in response
                 ]
             )
-
         result: Optional[types.CollectionsResponse] = (
             await self.http.collections_api.get_collections()
         ).result
@@ -1633,21 +1495,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             if isinstance(optimizers_config, models.OptimizersConfigDiff):
                 optimizers_config = RestToGrpc.convert_optimizers_config_diff(optimizers_config)
-
             if isinstance(collection_params, models.CollectionParamsDiff):
                 collection_params = RestToGrpc.convert_collection_params_diff(collection_params)
-
             if isinstance(vectors_config, dict):
                 vectors_config = RestToGrpc.convert_vectors_config_diff(vectors_config)
-
             if isinstance(hnsw_config, models.HnswConfigDiff):
                 hnsw_config = RestToGrpc.convert_hnsw_config_diff(hnsw_config)
-
             if isinstance(quantization_config, get_args(models.QuantizationConfigDiff)):
                 quantization_config = RestToGrpc.convert_quantization_config_diff(
                     quantization_config
                 )
-
             return (
                 await self.grpc_collections.Update(
                     grpc.UpdateCollection(
@@ -1661,22 +1518,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     timeout=self._timeout,
                 )
             ).result
-
         if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
             optimizers_config = GrpcToRest.convert_optimizers_config_diff(optimizers_config)
-
         if isinstance(collection_params, grpc.CollectionParamsDiff):
             collection_params = GrpcToRest.convert_collection_params_diff(collection_params)
-
         if isinstance(vectors_config, grpc.VectorsConfigDiff):
             vectors_config = GrpcToRest.convert_vectors_config_diff(vectors_config)
-
         if isinstance(hnsw_config, grpc.HnswConfigDiff):
             hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
-
         if isinstance(quantization_config, grpc.QuantizationConfigDiff):
             quantization_config = GrpcToRest.convert_quantization_config_diff(quantization_config)
-
         result: Optional[bool] = (
             await self.http.collections_api.update_collection(
                 collection_name,
@@ -1703,7 +1554,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     timeout=self._timeout,
                 )
             ).result
-
         result: Optional[bool] = (
             await self.http.collections_api.delete_collection(collection_name, timeout=timeout)
         ).result
@@ -1729,22 +1579,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             if isinstance(vectors_config, (models.VectorParams, dict)):
                 vectors_config = RestToGrpc.convert_vectors_config(vectors_config)
-
             if isinstance(hnsw_config, models.HnswConfigDiff):
                 hnsw_config = RestToGrpc.convert_hnsw_config_diff(hnsw_config)
-
             if isinstance(optimizers_config, models.OptimizersConfigDiff):
                 optimizers_config = RestToGrpc.convert_optimizers_config_diff(optimizers_config)
-
             if isinstance(wal_config, models.WalConfigDiff):
                 wal_config = RestToGrpc.convert_wal_config_diff(wal_config)
-
-            if isinstance(
-                quantization_config,
-                get_args(models.QuantizationConfig),
-            ):
+            if isinstance(quantization_config, get_args(models.QuantizationConfig)):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
-
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1760,19 +1602,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 quantization_config=quantization_config,
             )
             return (await self.grpc_collections.Create(create_collection)).result
-
         if isinstance(hnsw_config, grpc.HnswConfigDiff):
             hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
-
         if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
             optimizers_config = GrpcToRest.convert_optimizers_config_diff(optimizers_config)
-
         if isinstance(wal_config, grpc.WalConfigDiff):
             wal_config = GrpcToRest.convert_wal_config_diff(wal_config)
-
         if isinstance(quantization_config, grpc.QuantizationConfig):
             quantization_config = GrpcToRest.convert_quantization_config(quantization_config)
-
         create_collection_request = models.CreateCollection(
             vectors=vectors_config,
             shard_number=shard_number,
@@ -1785,7 +1622,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             quantization_config=quantization_config,
             init_from=init_from,
         )
-
         result: Optional[bool] = (
             await self.http.collections_api.create_collection(
                 collection_name=collection_name,
@@ -1793,7 +1629,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 timeout=timeout,
             )
         ).result
-
         assert result is not None, "Create collection returned None"
         return result
 
@@ -1814,7 +1649,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name, timeout=timeout)
-
         return await self.create_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,
@@ -1855,7 +1689,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
         else:
             start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
-
         if self._prefer_grpc:
             updater_kwargs = {
                 "collection_name": collection_name,
@@ -1874,7 +1707,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "wait": wait,
                 **self._rest_args,
             }
-
         if parallel == 1:
             updater = self._updater_class.start(**updater_kwargs)
             for _ in updater.process(batches_iterator):
@@ -1940,29 +1772,20 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if field_type is not None:
             warnings.warn("field_type is deprecated, use field_schema instead", DeprecationWarning)
             field_schema = field_type
-
         if self._prefer_grpc:
             field_index_params = None
             if isinstance(field_schema, models.PayloadSchemaType):
                 field_schema = RestToGrpc.convert_payload_schema_type(field_schema)
-
             if isinstance(field_schema, int):
-                # There are no means to distinguish grpc.PayloadSchemaType and grpc.FieldType,
-                # as both of them are just ints
-                # method signature assumes that grpc.PayloadSchemaType is passed,
-                # otherwise the value will be corrupted
                 field_schema = grpc_payload_schema_to_field_type(field_schema)
-
             if isinstance(field_schema, models.TextIndexParams):
                 field_index_params = grpc.PayloadIndexParams(
                     text_index_params=RestToGrpc.convert_text_index_params(field_schema)
                 )
                 field_schema = grpc.FieldType.FieldTypeText
-
             if isinstance(field_schema, grpc.PayloadIndexParams):
                 field_index_params = field_schema
                 field_schema = grpc.FieldType.FieldTypeText
-
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
                 field_name=field_name,
@@ -1974,15 +1797,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             return GrpcToRest.convert_update_result(
                 (await self.grpc_points.CreateFieldIndex(request)).result
             )
-
-        if isinstance(field_schema, int):  # type(grpc.PayloadSchemaType) == int
+        if isinstance(field_schema, int):
             field_schema = GrpcToRest.convert_payload_schema_type(field_schema)
-
         if isinstance(field_schema, grpc.PayloadIndexParams):
             field_schema = GrpcToRest.convert_payload_schema_params(field_schema)
-
         result: Optional[types.UpdateResult] = (
-            await self.http.collections_api.create_field_index(
+            await self.openapi_client.collections_api.create_field_index(
                 collection_name=collection_name,
                 create_field_index=models.CreateFieldIndex(
                     field_name=field_name, field_schema=field_schema
@@ -2012,9 +1832,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             return GrpcToRest.convert_update_result(
                 (await self.grpc_points.DeleteFieldIndex(request)).result
             )
-
         result: Optional[types.UpdateResult] = (
-            await self.http.collections_api.delete_field_index(
+            await self.openapi_client.collections_api.delete_field_index(
                 collection_name=collection_name,
                 field_name=field_name,
                 wait=wait,
@@ -2034,9 +1853,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             ).snapshot_descriptions
             return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
-
         snapshots = (
-            await self.http.collections_api.list_snapshots(collection_name=collection_name)
+            await self.openapi_client.collections_api.list_snapshots(
+                collection_name=collection_name
+            )
         ).result
         assert snapshots is not None, "List snapshots API returned None result"
         return snapshots
@@ -2051,9 +1871,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot)
-
         return (
-            await self.http.collections_api.create_snapshot(collection_name=collection_name)
+            await self.openapi_client.collections_api.create_snapshot(
+                collection_name=collection_name
+            )
         ).result
 
     async def delete_snapshot(
@@ -2066,11 +1887,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             )
             return True
-
         result: Optional[bool] = (
-            await self.http.collections_api.delete_snapshot(
-                collection_name=collection_name,
-                snapshot_name=snapshot_name,
+            await self.openapi_client.collections_api.delete_snapshot(
+                collection_name=collection_name, snapshot_name=snapshot_name
             )
         ).result
         assert result is not None, "Delete snapshot API returned None"
@@ -2082,8 +1901,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 await self.grpc_snapshots.ListFull(grpc.ListFullSnapshotsRequest())
             ).snapshot_descriptions
             return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
-
-        snapshots = (await self.http.snapshots_api.list_full_snapshots()).result
+        snapshots = (await self.openapi_client.snapshots_api.list_full_snapshots()).result
         assert snapshots is not None, "List full snapshots API returned None result"
         return snapshots
 
@@ -2093,8 +1911,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 await self.grpc_snapshots.CreateFull(grpc.CreateFullSnapshotRequest())
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot_description)
-
-        snapshot_description = (await self.http.snapshots_api.create_full_snapshot()).result
+        snapshot_description = (
+            await self.openapi_client.snapshots_api.create_full_snapshot()
+        ).result
         assert snapshot_description is not None, "Create full snapshot API returned None result"
         return snapshot_description
 
@@ -2105,8 +1924,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
             return True
         result: Optional[bool] = (
-            await self.http.snapshots_api.delete_full_snapshot(
-                snapshot_name=snapshot_name,
+            await self.openapi_client.snapshots_api.delete_full_snapshot(
+                snapshot_name=snapshot_name
             )
         ).result
         assert result is not None, "Delete full snapshot API returned None"
@@ -2121,7 +1940,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> bool:
         success = (
-            await self.http.snapshots_api.recover_from_snapshot(
+            await self.openapi_client.snapshots_api.recover_from_snapshot(
                 collection_name=collection_name,
                 wait=wait,
                 snapshot_recover=models.SnapshotRecover(location=location, priority=priority),
@@ -2134,9 +1953,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self, collection_name: str, shard_id: int, **kwargs: Any
     ) -> List[types.SnapshotDescription]:
         snapshots = (
-            await self.http.snapshots_api.list_shard_snapshots(
-                collection_name=collection_name,
-                shard_id=shard_id,
+            await self.openapi_client.snapshots_api.list_shard_snapshots(
+                collection_name=collection_name, shard_id=shard_id
             )
         ).result
         assert snapshots is not None, "List snapshots API returned None result"
@@ -2146,9 +1964,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self, collection_name: str, shard_id: int, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         return (
-            await self.http.snapshots_api.create_shard_snapshot(
-                collection_name=collection_name,
-                shard_id=shard_id,
+            await self.openapi_client.snapshots_api.create_shard_snapshot(
+                collection_name=collection_name, shard_id=shard_id
             )
         ).result
 
@@ -2156,7 +1973,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
     ) -> bool:
         result: Optional[bool] = (
-            await self.http.snapshots_api.delete_shard_snapshot(
+            await self.openapi_client.snapshots_api.delete_shard_snapshot(
                 collection_name=collection_name,
                 shard_id=shard_id,
                 snapshot_name=snapshot_name,
@@ -2175,13 +1992,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> bool:
         success = (
-            await self.http.snapshots_api.recover_shard_from_snapshot(
+            await self.openapi_client.snapshots_api.recover_shard_from_snapshot(
                 collection_name=collection_name,
                 shard_id=shard_id,
                 wait=wait,
                 shard_snapshot_recover=models.ShardSnapshotRecover(
-                    location=location,
-                    priority=priority,
+                    location=location, priority=priority
                 ),
             )
         ).result
@@ -2190,7 +2006,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         result: Optional[types.LocksOption] = (
-            await self.http.service_api.post_locks(
+            await self.openapi_client.service_api.post_locks(
                 models.LocksOption(error_message=reason, write=True)
             )
         ).result
@@ -2199,12 +2015,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
         result: Optional[types.LocksOption] = (
-            await self.http.service_api.post_locks(models.LocksOption(write=False))
+            await self.openapi_client.service_api.post_locks(models.LocksOption(write=False))
         ).result
         assert result is not None, "Post locks returned None"
         return result
 
     async def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = (await self.http.service_api.get_locks()).result
+        result: Optional[types.LocksOption] = (
+            await self.openapi_client.service_api.get_locks()
+        ).result
         assert result is not None, "Get locks returned None"
         return result

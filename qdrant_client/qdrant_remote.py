@@ -52,6 +52,7 @@ class QdrantRemote(QdrantBase):
         host: Optional[str] = None,
         **kwargs: Any,
     ):
+        super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._https = https if https is not None else api_key is not None
