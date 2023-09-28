@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import shutil
+from copy import deepcopy
 from io import TextIOWrapper
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -36,6 +37,7 @@ class QdrantLocal(QdrantBase):
         Args:
             location: Where to store data. Can be a path to a directory or `:memory:` for in-memory storage.
         """
+        super().__init__()
         self.location = location
         self.persistent = location != ":memory:"
         self.collections: Dict[str, LocalCollection] = {}
@@ -523,6 +525,14 @@ class QdrantLocal(QdrantBase):
         init_from: Optional[types.InitFrom] = None,
         **kwargs: Any,
     ) -> bool:
+        src_collection = None
+        from_collection_name = None
+        if init_from is not None:
+            from_collection_name = (
+                init_from if isinstance(init_from, str) else init_from.collection
+            )
+            src_collection = self._get_collection(from_collection_name)
+
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         collection_path = self._collection_path(collection_name)
@@ -535,8 +545,18 @@ class QdrantLocal(QdrantBase):
             ),
             location=collection_path,
         )
-
         self.collections[collection_name] = collection
+
+        if src_collection:
+            batch_size = 100
+            records, next_offset = self.scroll(from_collection_name, limit=2, with_vectors=True)
+            self.upload_records(collection_name, records)
+            while next_offset is not None:
+                records, next_offset = self.scroll(
+                    from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True
+                )
+                self.upload_records(collection_name, records)
+
         self._save()
         return True
 
