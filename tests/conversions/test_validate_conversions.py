@@ -180,7 +180,7 @@ def test_grpc_payload_scheme_conversion():
     ):
         assert payload_schema == grpc_field_type_to_payload_schema(
             grpc_payload_schema_to_field_type(payload_schema)
-        )
+        )        
 
 
 def test_init_from_conversion():
@@ -189,3 +189,19 @@ def test_init_from_conversion():
     init_from = "collection_name"
     recovered = RestToGrpc.convert_init_from(GrpcToRest.convert_init_from(init_from))
     assert init_from == recovered
+
+
+def test_recommend_examples_to_grpc_conversion():
+    from qdrant_client.conversions.conversion import RestToGrpc
+    from qdrant_client.grpc import PointId, Vector
+    
+    vector = [0.0, 2.0, 3.0, 4.0, 5.0]
+    fixture = [10, "uuid_1", "uuid_2", vector, 20]
+    
+    ids = RestToGrpc.convert_recommend_examples_to_ids(fixture)
+    
+    assert ids == [PointId(num=10), PointId(uuid="uuid_1"), PointId(uuid="uuid_2"), PointId(num=20)]
+    
+    vectors = RestToGrpc.convert_recommend_examples_to_vectors(fixture)
+    
+    assert vectors == [Vector(data=vector)]
