@@ -1112,9 +1112,9 @@ class GrpcToRest:
 
     @classmethod
     def convert_recommend_strategy(cls, model: grpc.RecommendStrategy) -> rest.RecommendStrategy:
-        if model == grpc.AverageVector:
+        if model == grpc.RecommendStrategy.AverageVector:
             return rest.RecommendStrategy.AVERAGE_VECTOR
-        if model == grpc.BestScore:
+        if model == grpc.RecommendStrategy.BestScore:
             return rest.RecommendStrategy.BEST_SCORE
         raise ValueError(f"invalid RecommendStrategy model: {model}")
 
@@ -1557,33 +1557,37 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_recommend_examples_to_ids(cls, examples: Sequence[rest.RecommendExample]) -> List[grpc.PointId]:
+    def convert_recommend_examples_to_ids(
+        cls, examples: Sequence[rest.RecommendExample]
+    ) -> List[grpc.PointId]:
         ids: List[grpc.PointId] = []
         for example in examples:
             if isinstance(example, get_args_subscribed(rest.ExtendedPointId)):
-                id = RestToGrpc.convert_extended_point_id(example)
+                id_ = cls.convert_extended_point_id(example)
             elif isinstance(example, grpc.PointId):
-                id = example
-            else: 
+                id_ = example
+            else:
                 continue
-            
-            ids.append(id)
-        
+
+            ids.append(id_)
+
         return ids
-    
+
     @classmethod
-    def convert_recommend_examples_to_vectors(cls, examples: Sequence[rest.RecommendExample]) -> List[grpc.Vector]:
+    def convert_recommend_examples_to_vectors(
+        cls, examples: Sequence[rest.RecommendExample]
+    ) -> List[grpc.Vector]:
         vectors: List[grpc.Vector] = []
         for example in examples:
             if isinstance(example, grpc.Vector):
                 vector = example
             elif isinstance(example, list):
                 vector = grpc.Vector(data=example)
-            else: 
+            else:
                 continue
-            
+
             vectors.append(vector)
-        
+
         return vectors
 
     @classmethod
@@ -1790,25 +1794,11 @@ class RestToGrpc:
     def convert_recommend_request(
         cls, model: rest.RecommendRequest, collection_name: str
     ) -> grpc.RecommendPoints:
-        positive_ids = [
-            cls.convert_extended_point_id(example)
-            for example in model.positive
-            if isinstance(example, get_args_subscribed(rest.ExtendedPointId))
-        ]
+        positive_ids = cls.convert_recommend_examples_to_ids(model.positive)
+        negative_ids = cls.convert_recommend_examples_to_ids(model.negative)
 
-        negative_ids = [
-            cls.convert_extended_point_id(example)
-            for example in model.negative
-            if isinstance(example, get_args_subscribed(rest.ExtendedPointId))
-        ]
-
-        positive_vectors = [
-            grpc.Vector(data=example) for example in model.positive if isinstance(example, list)
-        ]
-
-        negative_vectors = [
-            grpc.Vector(data=example) for example in model.negative if isinstance(example, list)
-        ]
+        positive_vectors = cls.convert_recommend_examples_to_vectors(model.positive)
+        negative_vectors = cls.convert_recommend_examples_to_vectors(model.negative)
 
         return grpc.RecommendPoints(
             collection_name=collection_name,
