@@ -196,12 +196,12 @@ def test_recommend_examples_to_grpc_conversion():
     from qdrant_client.grpc import PointId, Vector
     
     vector = [0.0, 2.0, 3.0, 4.0, 5.0]
-    fixture = [10, "uuid_1", "uuid_2", vector, 20]
+    fixture = [10, "uuid_1", "uuid_2", vector, 20, Vector(data=vector), PointId(num=30)]
     
     ids = RestToGrpc.convert_recommend_examples_to_ids(fixture)
     
-    assert ids == [PointId(num=10), PointId(uuid="uuid_1"), PointId(uuid="uuid_2"), PointId(num=20)]
+    assert ids == [PointId(num=10), PointId(uuid="uuid_1"), PointId(uuid="uuid_2"), PointId(num=20), PointId(num=30)]
     
     vectors = RestToGrpc.convert_recommend_examples_to_vectors(fixture)
     
-    assert vectors == [Vector(data=vector)]
+    assert vectors == [Vector(data=vector), Vector(data=vector)]
