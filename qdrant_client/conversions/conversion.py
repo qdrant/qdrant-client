@@ -1088,6 +1088,12 @@ class GrpcToRest:
         else:
             raise ValueError(f"invalid UpdateOperation model: {model}")  # pragma: no cover
 
+    @classmethod
+    def convert_init_from(cls, model: str) -> rest.InitFrom:
+        if isinstance(model, str):
+            return rest.InitFrom(collection=model)
+        raise ValueError(f"Invalid InitFrom model: {model}")
+
 
 # ----------------------------------------
 #
@@ -2123,3 +2129,10 @@ class RestToGrpc:
             )
         else:
             raise ValueError(f"invalid UpdateOperation model: {model}")
+
+    @classmethod
+    def convert_init_from(cls, model: rest.InitFrom) -> str:
+        if isinstance(model, rest.InitFrom):
+            return model.collection
+        else:
+            raise ValueError(f"invalid InitFrom model: {model}")
