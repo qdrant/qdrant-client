@@ -1746,6 +1746,9 @@ class QdrantRemote(QdrantBase):
             ):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
 
+            if isinstance(init_from, models.InitFrom):
+                init_from = RestToGrpc.convert_init_from(init_from)
+
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1773,6 +1776,9 @@ class QdrantRemote(QdrantBase):
 
         if isinstance(quantization_config, grpc.QuantizationConfig):
             quantization_config = GrpcToRest.convert_quantization_config(quantization_config)
+
+        if isinstance(init_from, str):
+            init_from = GrpcToRest.convert_init_from(init_from)
 
         create_collection_request = models.CreateCollection(
             vectors=vectors_config,

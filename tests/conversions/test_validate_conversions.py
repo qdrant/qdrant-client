@@ -181,3 +181,11 @@ def test_grpc_payload_scheme_conversion():
         assert payload_schema == grpc_field_type_to_payload_schema(
             grpc_payload_schema_to_field_type(payload_schema)
         )
+
+
+def test_init_from_conversion():
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    init_from = "collection_name"
+    recovered = RestToGrpc.convert_init_from(GrpcToRest.convert_init_from(init_from))
+    assert init_from == recovered

@@ -116,7 +116,7 @@ def _migrate_collection(
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
     dest_client.upload_records(collection_name, records)
-    while next_offset:
+    while next_offset is not None:
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )

@@ -2,6 +2,7 @@ import pytest
 
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
+    compare_collections,
     generate_fixtures,
     init_client,
     init_local,
@@ -24,7 +25,6 @@ def test_get_collection():
     local_client = init_local()
     init_client(local_client, fixture_records)
 
-    remote_client = init_remote()
     init_client(remote_client, fixture_records)
 
     local_collections = local_client.get_collections()
@@ -46,4 +46,47 @@ def test_get_collection():
 
     assert (
         local_collection_info.config.params.vectors == remote_collection_info.config.params.vectors
+    )
+
+
+def test_init_from():
+    vector_size = 2
+
+    remote_client = init_remote()
+    local_client = init_local()
+
+    records = generate_fixtures(vectors_sizes=vector_size)
+    vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
+
+    remote_client.recreate_collection(
+        collection_name=COLLECTION_NAME, vectors_config=vector_params
+    )
+    local_client.recreate_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
+    remote_client.upload_records(COLLECTION_NAME, records)
+    local_client.upload_records(COLLECTION_NAME, records)
+    compare_collections(remote_client, local_client, len(records), collection_name=COLLECTION_NAME)
+
+    new_collection_name = COLLECTION_NAME + "_new"
+    remote_client.recreate_collection(
+        new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
+    )
+    local_client.recreate_collection(
+        new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
+    )
+    compare_collections(
+        remote_client, local_client, len(records), collection_name=new_collection_name
+    )
+
+    remote_client.recreate_collection(
+        new_collection_name,
+        vectors_config=vector_params,
+        init_from=models.InitFrom(collection=COLLECTION_NAME),
+    )
+    local_client.recreate_collection(
+        new_collection_name,
+        vectors_config=vector_params,
+        init_from=models.InitFrom(collection=COLLECTION_NAME),
+    )
+    compare_collections(
+        remote_client, local_client, len(records), collection_name=new_collection_name
     )

@@ -81,7 +81,7 @@ VectorParams: TypeAlias = rest.VectorParams
 LocksOption: TypeAlias = rest.LocksOption
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
-InitFrom: TypeAlias = rest.InitFrom
+InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
