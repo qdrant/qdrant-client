@@ -12,7 +12,6 @@ try:
     from fastembed.embedding import DefaultEmbedding
 except ImportError:
     DefaultEmbedding = None
-
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
     "BAAI/bge-base-en": (768, models.Distance.COSINE),
     "sentence-transformers/all-MiniLM-L6-v2": (384, models.Distance.COSINE),
@@ -20,7 +19,7 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
 }
 
 
-class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
+class QueryResponse(BaseModel, extra="forbid"):
     id: Union[str, int]
     embedding: Optional[List[float]]
     metadata: Dict[str, Any]
@@ -30,7 +29,6 @@ class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
-
     embedding_models: Dict[str, "DefaultEmbedding"] = {}
 
     def __init__(self, **kwargs: Any):
@@ -58,10 +56,8 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         try:
             from fastembed.embedding import DefaultEmbedding
         except ImportError:
-            # If it's not, ask the user to install it
             raise ImportError(
-                "fastembed is not installed."
-                " Please install it to enable fast vector indexing with `pip install fastembed`."
+                "fastembed is not installed. Please install it to enable fast vector indexing with `pip install fastembed`."
             )
 
     @classmethod
@@ -70,23 +66,17 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
-
         return SUPPORTED_EMBEDDING_MODELS[model_name]
 
     @classmethod
-    def _get_or_init_model(
-        cls, model_name: str
-    ) -> "DefaultEmbedding":  # -> Embedding: # noqa: F821
+    def _get_or_init_model(cls, model_name: str) -> "DefaultEmbedding":
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
-
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
-
         cls._import_fastembed()
-
         cls.embedding_models[model_name] = DefaultEmbedding(model_name=model_name)
         return cls.embedding_models[model_name]
 
@@ -117,15 +107,13 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return f"fast-{model_name}"
 
     def _scored_points_to_query_responses(
-        self,
-        scored_points: List[types.ScoredPoint],
+        self, scored_points: List[types.ScoredPoint]
     ) -> List[QueryResponse]:
         response = []
         for scored_point in scored_points:
             embedding = None
             if scored_point.vector is not None:
                 embedding = scored_point.vector.get(self._get_vector_field_name(), None)
-
             response.append(
                 QueryResponse(
                     id=scored_point.id,
@@ -174,32 +162,23 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             List[str]: List of UUIDs of added documents. UUIDs are randomly generated on client side.
 
         """
-
-        # check if we have fastembed installed
         embeddings = self._embed_documents(
             documents=documents,
             embedding_model_name=self.embedding_model_name,
             batch_size=batch_size,
             embed_type="passage",
         )
-
         if metadata is None:
             metadata = [{} for _ in range(len(documents))]
         else:
             assert len(metadata) == len(
                 documents
             ), f"metadata length mismatch: {len(metadata)} != {len(documents)}"
-
-        payloads = ({"document": doc, **metadata} for doc, metadata in zip(documents, metadata))
-
+        payloads = ({"document": doc, **metadata} for (doc, metadata) in zip(documents, metadata))
         if ids is None:
             ids = [uuid.uuid4().hex for _ in range(len(documents))]
-
-        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
-
+        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
         vector_field_name = self._get_vector_field_name()
-
-        # Check if collection by same name exists, if not, create it
         try:
             collection_info = await self.get_collection(collection_name=collection_name)
         except Exception:
@@ -210,38 +189,24 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 },
             )
             collection_info = await self.get_collection(collection_name=collection_name)
-
-        # Check if collection has compatible vector params
         assert isinstance(
             collection_info.config.params.vectors, dict
         ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
-
         assert (
             vector_field_name in collection_info.config.params.vectors
         ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}, expected {vector_field_name}"
-
         vector_params = collection_info.config.params.vectors[vector_field_name]
-
         assert (
             embeddings_size == vector_params.size
         ), f"Embedding size mismatch: {embeddings_size} != {vector_params.size}"
-
         assert (
             distance == vector_params.distance
         ), f"Distance mismatch: {distance} != {vector_params.distance}"
-
         records = (
             models.Record(id=idx, payload=payload, vector={vector_field_name: vector})
-            for idx, payload, vector in zip(ids, payloads, embeddings)
+            for (idx, payload, vector) in zip(ids, payloads, embeddings)
         )
-
-        self.upload_records(
-            collection_name=collection_name,
-            records=records,
-            wait=True,
-            **kwargs,
-        )
-
+        self.upload_records(collection_name=collection_name, records=records, wait=True, **kwargs)
         return ids
 
     async def query(
@@ -275,7 +240,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
         embeddings = list(embedding_model_inst.query_embed(query=query_text))
         query_vector = embeddings[0]
-
         return self._scored_points_to_query_responses(
             await self.search(
                 collection_name=collection_name,
@@ -333,13 +297,10 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 with_payload=True,
                 **kwargs,
             )
-
             requests.append(request)
-
         return [
             self._scored_points_to_query_responses(response)
             for response in await self.search_batch(
-                collection_name=collection_name,
-                requests=requests,
+                collection_name=collection_name, requests=requests
             )
         ]

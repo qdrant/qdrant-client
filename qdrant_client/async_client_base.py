@@ -9,10 +9,7 @@ class AsyncQdrantBase:
         pass
 
     async def search_batch(
-        self,
-        collection_name: str,
-        requests: Sequence[types.SearchRequest],
-        **kwargs: Any,
+        self, collection_name: str, requests: Sequence[types.SearchRequest], **kwargs: Any
     ) -> List[List[types.ScoredPoint]]:
         raise NotImplementedError()
 
@@ -20,10 +17,7 @@ class AsyncQdrantBase:
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            Tuple[str, List[float]],
-            types.NamedVector,
+            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
         ],
         query_filter: Optional[models.Filter] = None,
         search_params: Optional[models.SearchParams] = None,
@@ -40,10 +34,7 @@ class AsyncQdrantBase:
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            Tuple[str, List[float]],
-            types.NamedVector,
+            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
         ],
         group_by: str,
         query_filter: Optional[models.Filter] = None,
@@ -59,10 +50,7 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     async def recommend_batch(
-        self,
-        collection_name: str,
-        requests: Sequence[types.RecommendRequest],
-        **kwargs: Any,
+        self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
     ) -> List[List[types.ScoredPoint]]:
         raise NotImplementedError()
 
@@ -126,18 +114,12 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     async def upsert(
-        self,
-        collection_name: str,
-        points: types.Points,
-        **kwargs: Any,
+        self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
     async def update_vectors(
-        self,
-        collection_name: str,
-        points: Sequence[types.PointVectors],
-        **kwargs: Any,
+        self, collection_name: str, points: Sequence[types.PointVectors], **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -161,10 +143,7 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     async def delete(
-        self,
-        collection_name: str,
-        points_selector: types.PointsSelector,
-        **kwargs: Any,
+        self, collection_name: str, points_selector: types.PointsSelector, **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -196,10 +175,7 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     async def clear_payload(
-        self,
-        collection_name: str,
-        points_selector: types.PointsSelector,
-        **kwargs: Any,
+        self, collection_name: str, points_selector: types.PointsSelector, **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -212,9 +188,7 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     async def update_collection_aliases(
-        self,
-        change_aliases_operations: Sequence[types.AliasOperations],
-        **kwargs: Any,
+        self, change_aliases_operations: Sequence[types.AliasOperations], **kwargs: Any
     ) -> bool:
         raise NotImplementedError()
 
@@ -232,11 +206,7 @@ class AsyncQdrantBase:
     async def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         raise NotImplementedError()
 
-    async def update_collection(
-        self,
-        collection_name: str,
-        **kwargs: Any,
-    ) -> bool:
+    async def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
         raise NotImplementedError()
 
     async def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
@@ -259,10 +229,7 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     def upload_records(
-        self,
-        collection_name: str,
-        records: Iterable[types.Record],
-        **kwargs: Any,
+        self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
     ) -> None:
         raise NotImplementedError()
 
@@ -289,10 +256,7 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     async def delete_payload_index(
-        self,
-        collection_name: str,
-        field_name: str,
-        **kwargs: Any,
+        self, collection_name: str, field_name: str, **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -320,12 +284,7 @@ class AsyncQdrantBase:
     async def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
         raise NotImplementedError()
 
-    async def recover_snapshot(
-        self,
-        collection_name: str,
-        location: str,
-        **kwargs: Any,
-    ) -> bool:
+    async def recover_snapshot(self, collection_name: str, location: str, **kwargs: Any) -> bool:
         raise NotImplementedError()
 
     async def list_shard_snapshots(
@@ -344,11 +303,7 @@ class AsyncQdrantBase:
         raise NotImplementedError()
 
     async def recover_shard_snapshot(
-        self,
-        collection_name: str,
-        shard_id: int,
-        location: str,
-        **kwargs: Any,
+        self, collection_name: str, shard_id: int, location: str, **kwargs: Any
     ) -> bool:
         raise NotImplementedError()
 

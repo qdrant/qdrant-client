@@ -5,8 +5,9 @@ from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.async_qdrant_fastembed import AsyncQdrantFastembedMixin
 from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
 from qdrant_client.conversions import common_types as types
-from qdrant_client.http import AsyncApis
-from qdrant_client.http.api_client import AsyncApiClient
+from qdrant_client.http import AsyncApiClient, AsyncApis
+from qdrant_client.local.qdrant_local import QdrantLocal
+from qdrant_client.migrate import migrate
 
 
 class AsyncQdrantClient(AsyncQdrantFastembedMixin):
@@ -73,7 +74,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     ):
         super().__init__(**kwargs)
         self._client: AsyncQdrantBase
-
         self._client = AsyncQdrantRemote(
             url=url,
             port=port,
@@ -87,10 +87,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             **kwargs,
         )
         self._is_fastembed_installed: Optional[bool] = None
-        # if fastembed is installed, set to true else False
         if self._is_fastembed_installed is None:
             try:
-                from fastembed.embedding import DefaultEmbedding  # noqa: F401
+                from fastembed.embedding import DefaultEmbedding
 
                 self._is_fastembed_installed = True
             except ImportError:
@@ -104,22 +103,26 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             await self._client.close(**kwargs)
 
     @property
-    def grpc_points(self) -> grpc.PointsStub:
-        """gRPC client for points methods
-
-        Returns:
-            An instance of raw gRPC client, generated from Protobuf
-        """
-        return self._client.grpc_points
-
-    @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
 
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        return self._client.grpc_collections
+        if isinstance(self._client, AsyncQdrantRemote):
+            return self._client.grpc_collections
+        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
+
+    @property
+    def grpc_points(self) -> grpc.PointsStub:
+        """gRPC client for points methods
+
+        Returns:
+            An instance of raw gRPC client, generated from Protobuf
+        """
+        if isinstance(self._client, AsyncQdrantRemote):
+            return self._client.grpc_points
+        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
     def rest(self) -> AsyncApis[AsyncApiClient]:
@@ -128,7 +131,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
-        return self._client.rest
+        if isinstance(self._client, AsyncQdrantRemote):
+            return self._client.rest
+        raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
 
     @property
     def http(self) -> AsyncApis[AsyncApiClient]:
@@ -137,7 +142,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
-        return self._client.http
+        if isinstance(self._client, AsyncQdrantRemote):
+            return self._client.http
+        raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
 
     async def search_batch(
         self,
@@ -163,22 +170,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of search responses
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.search_batch(
-            collection_name=collection_name,
-            requests=requests,
-            consistency=consistency,
-            **kwargs,
+            collection_name=collection_name, requests=requests, consistency=consistency, **kwargs
         )
 
     async def search(
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            Tuple[str, List[float]],
-            types.NamedVector,
+            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -256,7 +256,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of found close points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.search(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -276,10 +275,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            Tuple[str, List[float]],
-            types.NamedVector,
+            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
         ],
         group_by: str,
         query_filter: Optional[types.Filter] = None,
@@ -347,7 +343,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Each group also contains an id of the group, which is the value of the payload field.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.search_groups(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -388,12 +383,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of recommend responses
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.recommend_batch(
-            collection_name=collection_name,
-            requests=requests,
-            consistency=consistency,
-            **kwargs,
+            collection_name=collection_name, requests=requests, consistency=consistency, **kwargs
         )
 
     async def recommend(
@@ -473,7 +464,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of recommended points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.recommend(
             collection_name=collection_name,
             positive=positive,
@@ -579,7 +569,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.recommend_groups(
             collection_name=collection_name,
             group_by=group_by,
@@ -644,7 +633,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             If next page offset is `None` - there is no more points in the collection to scroll.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.scroll(
             collection_name=collection_name,
             scroll_filter=scroll_filter,
@@ -678,12 +666,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Amount of points in the collection matching the filter.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.count(
-            collection_name=collection_name,
-            count_filter=count_filter,
-            exact=exact,
-            **kwargs,
+            collection_name=collection_name, count_filter=count_filter, exact=exact, **kwargs
         )
 
     async def upsert(
@@ -717,13 +701,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.upsert(
-            collection_name=collection_name,
-            points=points,
-            wait=wait,
-            ordering=ordering,
-            **kwargs,
+            collection_name=collection_name, points=points, wait=wait, ordering=ordering, **kwargs
         )
 
     async def update_vectors(
@@ -754,12 +733,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.update_vectors(
-            collection_name=collection_name,
-            points=points,
-            wait=wait,
-            ordering=ordering,
+            collection_name=collection_name, points=points, wait=wait, ordering=ordering
         )
 
     async def delete_vectors(
@@ -795,7 +770,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.delete_vectors(
             collection_name=collection_name,
             vectors=vectors,
@@ -841,7 +815,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of points
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.retrieve(
             collection_name=collection_name,
             ids=ids,
@@ -883,7 +856,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.delete(
             collection_name=collection_name,
             points_selector=points_selector,
@@ -941,7 +913,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.set_payload(
             collection_name=collection_name,
             payload=payload,
@@ -1002,7 +973,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.overwrite_payload(
             collection_name=collection_name,
             payload=payload,
@@ -1046,7 +1016,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.delete_payload(
             collection_name=collection_name,
             keys=keys,
@@ -1088,7 +1057,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.clear_payload(
             collection_name=collection_name,
             points_selector=points_selector,
@@ -1125,7 +1093,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             Operation results
         """
-
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.batch_update_points(
             collection_name=collection_name,
@@ -1155,11 +1122,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.update_collection_aliases(
-            change_aliases_operations=change_aliases_operations,
-            timeout=timeout,
-            **kwargs,
+            change_aliases_operations=change_aliases_operations, timeout=timeout, **kwargs
         )
 
     async def get_collection_aliases(
@@ -1174,7 +1138,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Collection aliases
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.get_collection_aliases(collection_name=collection_name, **kwargs)
 
     async def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
@@ -1184,7 +1147,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             All aliases of all collections
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.get_aliases(**kwargs)
 
     async def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
@@ -1194,7 +1156,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of the collections
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.get_collections(**kwargs)
 
     async def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
@@ -1207,7 +1168,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Detailed information about the collection
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.get_collection(collection_name=collection_name, **kwargs)
 
     async def update_collection(
@@ -1240,12 +1200,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             raise ValueError(
                 "Only one of optimizer_config and optimizers_config should be specified"
             )
-
         if "optimizer_config" in kwargs:
             optimizers_config = kwargs.pop("optimizer_config")
-
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.update_collection(
             collection_name=collection_name,
             optimizers_config=optimizers_config,
@@ -1272,7 +1229,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.delete_collection(
             collection_name=collection_name, timeout=timeout, **kwargs
         )
@@ -1331,7 +1287,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.create_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,
@@ -1402,7 +1357,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.recreate_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,
@@ -1450,7 +1404,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return self._client.upload_records(
             collection_name=collection_name,
             records=records,
@@ -1498,7 +1451,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Default: `false`
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return self._client.upload_collection(
             collection_name=collection_name,
             vectors=vectors,
@@ -1546,7 +1498,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation Result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.create_payload_index(
             collection_name=collection_name,
             field_name=field_name,
@@ -1586,7 +1537,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation Result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.delete_payload_index(
             collection_name=collection_name,
             field_name=field_name,
@@ -1607,7 +1557,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of snapshots
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.list_snapshots(collection_name=collection_name, **kwargs)
 
     async def create_snapshot(
@@ -1622,7 +1571,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Snapshot description
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.create_snapshot(collection_name=collection_name, **kwargs)
 
     async def delete_snapshot(
@@ -1638,7 +1586,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             True if snapshot was deleted
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.delete_snapshot(
             collection_name=collection_name, snapshot_name=snapshot_name, **kwargs
         )
@@ -1650,7 +1597,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of snapshots
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.list_full_snapshots(**kwargs)
 
     async def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
@@ -1660,7 +1606,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Snapshot description
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.create_full_snapshot(**kwargs)
 
     async def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
@@ -1673,7 +1618,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             True if snapshot was deleted
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.delete_full_snapshot(snapshot_name=snapshot_name, **kwargs)
 
     async def recover_snapshot(
@@ -1703,7 +1647,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.recover_snapshot(
             collection_name=collection_name,
             location=location,
@@ -1725,11 +1668,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of snapshots
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.list_shard_snapshots(
-            collection_name=collection_name,
-            shard_id=shard_id,
-            **kwargs,
+            collection_name=collection_name, shard_id=shard_id, **kwargs
         )
 
     async def create_shard_snapshot(
@@ -1746,11 +1686,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.create_shard_snapshot(
-            collection_name=collection_name,
-            shard_id=shard_id,
-            **kwargs,
+            collection_name=collection_name, shard_id=shard_id, **kwargs
         )
 
     async def delete_shard_snapshot(
@@ -1766,9 +1703,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             True if snapshot was deleted
         """
-
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.delete_shard_snapshot(
             collection_name=collection_name,
             shard_id=shard_id,
@@ -1806,9 +1741,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             True if snapshot was deleted
         """
-
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.recover_shard_snapshot(
             collection_name=collection_name,
             shard_id=shard_id,
@@ -1821,37 +1754,14 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         """Lock storage for writing."""
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.lock_storage(reason=reason, **kwargs)
 
     async def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
         """Unlock storage for writing."""
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.unlock_storage(**kwargs)
 
     async def get_locks(self, **kwargs: Any) -> types.LocksOption:
         """Get current locks state."""
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
         return await self._client.get_locks(**kwargs)
-
-    def migrate(
-        self,
-        dest_client: AsyncQdrantBase,
-        collection_names: Optional[List[str]] = None,
-        batch_size: int = 100,
-        recreate_on_collision: bool = False,
-    ) -> None:
-        """Migrate data from one Qdrant instance to another.
-
-        Args:
-            dest_client: Destination Qdrant instance either in local or remote mode
-            collection_names: List of collection names to migrate. If None - migrate all collections
-            batch_size: Batch size to be in scroll and upsert operations during migration
-            recreate_on_collision: If True - recreate collection on destination if it already exists, otherwise
-                raise ValueError exception
-        """
-        raise NotImplementedError(
-            "Migrate is not implemented for AsyncQdrantClient, use QdrantClient instead"
-        )

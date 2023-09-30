@@ -57,87 +57,61 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_port = grpc_port
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
-
         self._prefix = prefix or ""
         if len(self._prefix) > 0 and self._prefix[0] != "/":
             self._prefix = f"/{self._prefix}"
-
         if url is not None and host is not None:
             raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
-
         if host is not None and (host.startswith("http://") or host.startswith("https://")):
             raise ValueError(
-                f"`host` param is not expected to contain protocol (http:// or https://). "
-                f"Try to use `url` parameter instead."
+                f"`host` param is not expected to contain protocol (http:// or https://). Try to use `url` parameter instead."
             )
-
         elif url:
             if url.startswith("localhost"):
-                # Handle for a special case when url is localhost:port
-                # Which is not parsed correctly by urllib
                 url = f"//{url}"
-
             parsed_url: Url = parse_url(url)
-            self._host, self._port = parsed_url.host, parsed_url.port
-
+            (self._host, self._port) = (parsed_url.host, parsed_url.port)
             if parsed_url.scheme:
                 self._https = parsed_url.scheme == "https"
                 self._scheme = parsed_url.scheme
-
             self._port = self._port if self._port else port
-
             if self._prefix and parsed_url.path:
                 raise ValueError(
-                    "Prefix can be set either in `url` or in `prefix`. "
-                    f"url is {url}, prefix is {parsed_url.path}"
+                    f"Prefix can be set either in `url` or in `prefix`. url is {url}, prefix is {parsed_url.path}"
                 )
-
             if self._scheme not in ("http", "https"):
                 raise ValueError(f"Unknown scheme: {self._scheme}")
         else:
             self._host = host or "localhost"
             self._port = port
-
         self._timeout = timeout
         self._api_key = api_key
-
         limits = kwargs.pop("limits", None)
         if limits is None:
             if self._host in ["localhost", "127.0.0.1"]:
-                # Disable keep-alive for local connections
-                # Cause in some cases, it may cause extra delays
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
-
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
         self._rest_headers = kwargs.pop("metadata", {})
         if api_key is not None:
             if self._scheme == "http":
                 warnings.warn("Api key is used with unsecure connection.")
-
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
-
         address = f"{self._host}:{self._port}" if self._port is not None else self._host
         self.rest_uri = f"{self._scheme}://{address}{self._prefix}"
-
         self._rest_args = {"headers": self._rest_headers, "http2": http2, **kwargs}
-
         if limits is not None:
             self._rest_args["limits"] = limits
-
         if self._timeout is not None:
             self._rest_args["timeout"] = self._timeout
-
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
             host=self.rest_uri, **self._rest_args
         )
-
         self._grpc_channel = None
         self._grpc_points_client: Optional[grpc.PointsStub] = None
         self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
-
         self._closed: bool = False
 
     @property
@@ -154,38 +128,36 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             except RuntimeError:
                 pass
-
         try:
             await self.http.aclose()
         except Exception:
             logging.warning(
                 "Unable to close http connection. Connection was interrupted on the server side"
             )
-
         self._closed = True
 
     @staticmethod
     def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
         parse_result: Url = parse_url(url)
-        scheme, host, port, prefix = (
+        (scheme, host, port, prefix) = (
             parse_result.scheme,
             parse_result.host,
             parse_result.port,
             parse_result.path,
         )
-        return scheme, host, port, prefix
+        return (scheme, host, port, prefix)
 
     def _init_grpc_channel(self) -> None:
         if self._closed:
             raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
-
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
-                host=self._host,
-                port=self._grpc_port,
-                ssl=self._https,
-                metadata=self._grpc_headers,
+                host=self._host, port=self._grpc_port, ssl=self._https, metadata=self._grpc_headers
             )
+
+    def _init_grpc_points_client(self) -> None:
+        self._init_grpc_channel()
+        self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
     def _init_grpc_collections_client(self) -> None:
         self._init_grpc_channel()
@@ -194,10 +166,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     def _init_grpc_snapshots_client(self) -> None:
         self._init_grpc_channel()
         self._grpc_snapshots_client = grpc.SnapshotsStub(self._grpc_channel)
-
-    def _init_grpc_points_client(self) -> None:
-        self._init_grpc_channel()
-        self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
@@ -239,7 +207,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
-        return self.http
+        return self.openapi_client
 
     @property
     def http(self) -> AsyncApis[AsyncApiClient]:
@@ -295,10 +263,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            Tuple[str, List[float]],
-            types.NamedVector,
+            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -386,10 +351,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            Tuple[str, List[float]],
-            types.NamedVector,
+            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
         ],
         group_by: str,
         query_filter: Optional[models.Filter] = None,
@@ -831,9 +793,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             response = (
                 await self.grpc_points.Count(
                     grpc.CountPoints(
-                        collection_name=collection_name,
-                        filter=count_filter,
-                        exact=exact,
+                        collection_name=collection_name, filter=count_filter, exact=exact
                     ),
                     timeout=self._timeout,
                 )
@@ -985,10 +945,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     wait=wait,
                     ordering=ordering,
                     delete_vectors=construct(
-                        models.DeleteVectors,
-                        vector=vectors,
-                        points=_points,
-                        filter=_filter,
+                        models.DeleteVectors, vector=vectors, points=_points, filter=_filter
                     ),
                 )
             ).result
@@ -1360,7 +1317,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             ]
         else:
-            result: Optional[types.UpdateResult] = (
+            result: Optional[List[types.UpdateResult]] = (
                 await self.openapi_client.points_api.batch_update(
                     collection_name=collection_name,
                     wait=wait,
@@ -1550,8 +1507,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             return (
                 await self.grpc_collections.Delete(
-                    grpc.DeleteCollection(collection_name=collection_name),
-                    timeout=self._timeout,
+                    grpc.DeleteCollection(collection_name=collection_name), timeout=self._timeout
                 )
             ).result
         result: Optional[bool] = (
@@ -1587,6 +1543,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 wal_config = RestToGrpc.convert_wal_config_diff(wal_config)
             if isinstance(quantization_config, get_args(models.QuantizationConfig)):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
+            if isinstance(init_from, models.InitFrom):
+                init_from = RestToGrpc.convert_init_from(init_from)
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1610,6 +1568,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             wal_config = GrpcToRest.convert_wal_config_diff(wal_config)
         if isinstance(quantization_config, grpc.QuantizationConfig):
             quantization_config = GrpcToRest.convert_quantization_config(quantization_config)
+        if isinstance(init_from, str):
+            init_from = GrpcToRest.convert_init_from(init_from)
         create_collection_request = models.CreateCollection(
             vectors=vectors_config,
             shard_number=shard_number,
@@ -1974,9 +1934,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> bool:
         result: Optional[bool] = (
             await self.openapi_client.snapshots_api.delete_shard_snapshot(
-                collection_name=collection_name,
-                shard_id=shard_id,
-                snapshot_name=snapshot_name,
+                collection_name=collection_name, shard_id=shard_id, snapshot_name=snapshot_name
             )
         ).result
         assert result is not None, "Delete snapshot API returned None"
