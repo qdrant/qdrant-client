@@ -225,7 +225,8 @@ async def main():
     # region teardown
     await client.delete_collection(COLLECTION_NAME)
     collections = await client.get_collections()
-    assert any(collection.name != COLLECTION_NAME for collection in collections.collections)
+
+    assert all(collection.name != COLLECTION_NAME for collection in collections.collections)
     await client.close()
     # endregion
 
