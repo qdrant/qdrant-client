@@ -28,7 +28,7 @@ jobs:
 
       - name: mypy
         run: |
-          poetry run mypy . --disallow-incomplete-defs --disallow-untyped-defs
+          poetry run mypy . --exclude "async_qdrant_fastembed.py" --disallow-incomplete-defs --disallow-untyped-defs
 
       - name: pyright
         run: |

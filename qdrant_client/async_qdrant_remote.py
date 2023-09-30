@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import warnings
 from multiprocessing import get_all_start_methods

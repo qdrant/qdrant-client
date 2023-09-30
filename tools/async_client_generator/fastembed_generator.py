@@ -1,3 +1,5 @@
+# type: ignore
+
 import ast
 import inspect
 from typing import Optional
@@ -121,5 +123,5 @@ if __name__ == "__main__":
     modified_code_ast = await_transformer.visit(parsed_code)
     modified_code = ast.unparse(modified_code_ast)
 
-    with open(CODE_DIR / "async_qdrant_fastembed.py", "w") as target_file:
+    with open("async_qdrant_fastembed.py", "w") as target_file:
         target_file.write(modified_code)

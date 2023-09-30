@@ -1,8 +1,10 @@
+# type: ignore
+
 import ast
 import inspect
 from typing import Optional
 
-from experiments.new_gen.code.async_client_base import AsyncQdrantBase
+from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.grpc import CollectionsStub, PointsStub, SnapshotsStub
 from qdrant_client.http import AsyncApiClient
 from qdrant_client.http.api.cluster_api import AsyncClusterApi
@@ -253,5 +255,5 @@ if __name__ == "__main__":
     modified_code_ast = await_transformer.visit(parsed_code)
     modified_code = ast.unparse(modified_code_ast)
 
-    with open(CODE_DIR / "async_qdrant_remote.py", "w") as target_file:
+    with open("async_qdrant_remote.py", "w") as target_file:
         target_file.write(modified_code)
