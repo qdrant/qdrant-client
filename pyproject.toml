@@ -26,6 +26,7 @@ grpcio-tools = ">=1.41.0"
 urllib3 = "^1.26.14"
 portalocker = "^2.7.0"
 fastembed = { version = "0.0.4", optional = true }
+shapely = "^2.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1"
