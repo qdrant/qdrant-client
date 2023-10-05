@@ -35,6 +35,20 @@ class TestGroupRecommendation:
             group_size=self.group_size,
             search_params=models.SearchParams(exact=True),
         )
+        
+    def simple_recommend_groups_best_scores(self, client: QdrantBase) -> models.GroupsResult:
+        return client.recommend_groups(
+            collection_name=COLLECTION_NAME,
+            positive=[10],
+            negative=[],
+            with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
+            limit=10,
+            using="image",
+            strategy=models.RecommendStrategy.BEST_SCORE,
+            group_by=self.group_by,
+            group_size=self.group_size,
+            search_params=models.SearchParams(exact=True),
+        )
 
     def many_recommend_groups(self, client: QdrantBase) -> models.GroupsResult:
         return client.recommend_groups(
@@ -117,6 +131,9 @@ def test_simple_recommend_groups() -> None:
         recommender.group_size = group_size
         compare_client_results(
             local_client, remote_client, recommender.simple_recommend_groups_image
+        )
+        compare_client_results(
+            local_client, remote_client, recommender.simple_recommend_groups_best_scores
         )
         compare_client_results(local_client, remote_client, recommender.many_recommend_groups)
         compare_client_results(

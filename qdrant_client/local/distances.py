@@ -1,9 +1,25 @@
 from enum import Enum
+from typing import List, Optional, Union
+from qdrant_client.conversions import common_types as types
 
 import numpy as np
 
 from qdrant_client.http import models
 
+
+class RecoQuery:
+    def __init__(
+        self, 
+        positive: Optional[List[List[float]]] = None, 
+        negative: Optional[List[List[float]]] = None
+    ):
+        positive = positive if positive is not None else []
+        negative = negative if negative is not None else []
+        self.positive: List[types.NumpyArray] = [np.array(vector) for vector in positive]
+        self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
+
+
+QueryVector = Union[RecoQuery, types.NumpyArray]
 
 class DistanceOrder(str, Enum):
     BIGGER_IS_BETTER = "bigger_is_better"
@@ -64,7 +80,7 @@ def euclidean_distance(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
 
 def calculate_distance(
     query: np.ndarray, vectors: np.ndarray, distance_type: models.Distance
-) -> np.ndarray:
+) -> types.NumpyArray:
     if distance_type == models.Distance.COSINE:
         return cosine_similarity(query, vectors)
     elif distance_type == models.Distance.DOT:
@@ -74,6 +90,43 @@ def calculate_distance(
     else:
         raise ValueError(f"Unknown distance type {distance_type}")
 
+
+def calculate_best_scores(
+    query: RecoQuery, vectors: np.ndarray, distance_type: models.Distance
+) -> types.NumpyArray:
+    
+    def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
+        vector_count = vectors.shape[0]
+        
+        # Get scores to all examples
+        scores: List[types.NumpyArray] = []
+        for example in examples:
+            score = calculate_distance(example, vectors, distance_type)
+            scores.append(score)
+            
+        # Keep only max (or min) for each vector
+        if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
+            if len(scores) == 0:
+                scores.append(np.full(vector_count, -np.inf))
+            best_scores = np.array(scores, dtype=np.float32).max(axis=0)
+        else:
+            if len(scores) == 0:
+                scores.append(np.full(vector_count, np.inf))
+            best_scores = np.array(scores, dtype=np.float32).min(axis=0)
+
+        return best_scores
+    
+    pos = get_best_scores(query.positive)
+    neg = get_best_scores(query.negative)
+    
+    # Choose from best positive or best negative, 
+    # in case of choosing best negative, square and negate it to make it smaller than any positive
+    if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
+        return np.where(pos > neg, pos, -(neg*neg))
+    else:
+        # neg*neg is not negated here because of the DistanceOrder.SMALLER_IS_BETTER
+        return np.where(pos < neg, pos, neg*neg)
+        
 
 def test_distances() -> None:
     query = np.array([1.0, 2.0, 3.0])

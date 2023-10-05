@@ -58,6 +58,8 @@ PointsSelector = Union[
     List[PointId], rest.Filter, grpc.Filter, rest.PointsSelector, grpc.PointsSelector
 ]
 LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
+RecommendStrategy: TypeAlias = rest.RecommendStrategy
+RecommendExample: TypeAlias = rest.RecommendExample
 
 AliasOperations = Union[
     rest.CreateAliasOperation,
@@ -83,6 +85,7 @@ SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
 InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
+
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]

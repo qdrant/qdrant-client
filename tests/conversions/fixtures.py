@@ -176,6 +176,7 @@ collection_params_2 = grpc.CollectionParams(
     vectors_config=multiple_vector_config,
     replication_factor=2,
     write_consistency_factor=1,
+    read_fan_out_factor=2,
 )
 
 hnsw_config = grpc.HnswConfigDiff(
@@ -562,6 +563,9 @@ search_points_all_vectors = grpc.SearchPoints(
     with_vectors=grpc.WithVectorsSelector(enable=True),
 )
 
+recommend_strategy = grpc.RecommendStrategy.BestScore
+recommend_strategy2 = grpc.RecommendStrategy.AverageVector
+
 recommend_points = grpc.RecommendPoints(
     collection_name="collection-123",
     positive=[point_id_1, point_id_2],
@@ -574,6 +578,14 @@ recommend_points = grpc.RecommendPoints(
     offset=10,
     using="abc",
     with_vectors=grpc.WithVectorsSelector(enable=True),
+    strategy=recommend_strategy,
+    positive_vectors=[
+        grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
+        grpc.Vector(data=[2.0, 2.0, -1.0, -0.2]),
+    ],
+    negative_vectors=[
+        grpc.Vector(data=[3.0, 2.0, -1.0, -0.2]),
+    ],
 )
 
 lookup_location_1 = grpc.LookupLocation(
@@ -725,6 +737,12 @@ delete_vectors_operation = grpc.PointsUpdateOperation(
     ),
 )
 
+delete_vectors_operation_2 = grpc.PointsUpdateOperation(
+    delete_vectors=grpc.PointsUpdateOperation.DeleteVectors(
+        points_selector=points_selector_filter,
+        vectors=grpc.VectorsSelector(names=["image", "text"]),
+    ),
+)
 
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
@@ -786,6 +804,7 @@ fixtures = {
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
     "RecommendPoints": [recommend_points],
+    "RecommendStrategy": [recommend_strategy, recommend_strategy2],
     "TextIndexParams": [
         text_index_params_1,
         text_index_params_2,
@@ -821,6 +840,7 @@ fixtures = {
         clear_payload_operation_2,
         update_vectors_operation,
         delete_vectors_operation,
+        delete_vectors_operation_2,
     ],
 }
 
