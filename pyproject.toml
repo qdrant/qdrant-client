@@ -29,6 +29,7 @@ portalocker = "^2.7.0"
 fastembed = [
     { version = "0.0.5", optional = true, python = "<3.12" }
 ]
+shapely = "^2.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1"

@@ -140,3 +140,50 @@ def test_nested_payload_filters():
 
     res = check_filter(query, payload, 0)
     assert res is False
+    
+
+def test_geo_polygon_filter():
+    payload = {
+        "location": [
+            {
+                "lon": 70.0,
+                "lat": 70.0,
+            },
+        ]
+    }
+
+    query = models.Filter(
+        **{
+            "must": [
+                {
+                    "key": "location",
+                    "geo_polygon": {
+                        "exterior": {
+                            "points": [
+                                {"lon": 55.455868, "lat": 55.495862},
+                                {"lon": 86.455868, "lat": 55.495862},
+                                {"lon": 86.455868, "lat": 86.495862},
+                                {"lon": 55.455868, "lat": 86.495862},
+                                {"lon": 55.455868, "lat": 55.495862},
+                            ]
+                        },
+                    },
+                }
+            ]
+        }
+    )
+
+    res = check_filter(query, payload, 0)
+    assert res is True
+
+    payload = {
+        "location": [
+            {
+                "lon": 30.693738,
+                "lat": 30.502165,
+            },
+        ]
+    }
+
+    res = check_filter(query, payload, 0)
+    assert res is False
