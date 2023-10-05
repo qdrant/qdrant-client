@@ -215,7 +215,7 @@ message SearchParams {
   optional bool exact = 2;
 
   /*
-  If set to true, search will ignore quantized vector data
+  If set to true, search will ignore quantized vector data 
   */
   optional QuantizationSearchParams quantization = 3;
   /*
@@ -283,12 +283,12 @@ message ScrollPoints {
 
 // How to use positive and negative vectors to find the results, default is `AverageVector`:
 enum RecommendStrategy {
-  // Average positive and negative vectors and create a single query with the formula
+  // Average positive and negative vectors and create a single query with the formula 
   // `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.
   AverageVector = 0;
 
-  // Uses custom search objective. Each candidate is compared against all
-  // examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`.
+  // Uses custom search objective. Each candidate is compared against all 
+  // examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. 
   // If the `max_neg_score` is chosen then it is squared and negated.
   BestScore = 1;
 }
@@ -432,7 +432,7 @@ message GroupId {
 
 message PointGroup {
   GroupId id = 1; // Group id
-  repeated ScoredPoint hits = 2; // Points in the group
+  repeated ScoredPoint hits = 2; // Points in the group 
   RetrievedPoint lookup = 3; // Point(s) from the lookup collection that matches the group id
 }
 
@@ -551,7 +551,7 @@ message FieldCondition {
   GeoBoundingBox geo_bounding_box = 4; // Check if points geolocation lies in a given area
   GeoRadius geo_radius = 5; // Check if geo point is within a given radius
   ValuesCount values_count = 6; // Check number of values for a specific field
-  //  GeoPolygon geo_polygon = 7; // Check if geo point is within a given polygon
+  GeoPolygon geo_polygon = 7; // Check if geo point is within a given polygon
 }
 
 message Match {
@@ -592,11 +592,15 @@ message GeoRadius {
   float radius = 2; // In meters
 }
 
+message GeoLineString {
+  repeated GeoPoint points = 1;  // Ordered sequence of GeoPoints representing the line
+}
+
+// For a valid GeoPolygon, both the exterior and interior GeoLineStrings must consist of a minimum of 4 points.
+// Additionally, the first and last points of each GeoLineString must be the same.
 message GeoPolygon {
-  // Ordered list of coordinates representing the vertices of a polygon.
-  // The minimum size is 4, and the first coordinate and the last coordinate
-  // should be the same to form a closed polygon.
-  repeated GeoPoint points = 1;
+  GeoLineString exterior = 1; // The exterior line bounds the surface
+  repeated GeoLineString interiors = 2; // Interior lines (if present) bound holes within the surface
 }
 
 message ValuesCount {

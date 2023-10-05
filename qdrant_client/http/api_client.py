@@ -89,7 +89,7 @@ class ApiClient:
 
     def send(self, request: Request, type_: Type[T]) -> T:
         response = self.middleware(request, self.send_inner)
-        if response.status_code in [200, 201]:
+        if response.status_code in [200, 201, 202]:
             try:
                 return parse_as_type(response.json(), type_)
             except ValidationError as e:
@@ -161,7 +161,7 @@ class AsyncApiClient:
 
     async def send(self, request: Request, type_: Type[T]) -> T:
         response = await self.middleware(request, self.send_inner)
-        if response.status_code in [200, 201]:
+        if response.status_code in [200, 201, 202]:
             try:
                 return parse_as_type(response.json(), type_)
             except ValidationError as e:
