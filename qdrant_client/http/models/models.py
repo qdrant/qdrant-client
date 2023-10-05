@@ -491,8 +491,8 @@ class GeoPolygon(BaseModel, extra="forbid"):
         ...,
         description="Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
     )
-    interiors: List["GeoLineString"] = Field(
-        ...,
+    interiors: Optional[List["GeoLineString"]] = Field(
+        default=None,
         description="Interior lines (if present) bound holes within the surface each GeoLineString must consist of a minimum of 4 points, and the first and last points must be the same.",
     )
 
@@ -1644,7 +1644,7 @@ class UpdateCollection(BaseModel, extra="forbid"):
 
     vectors: Optional["VectorsConfigDiff"] = Field(
         default=None,
-        description="Vector data parameters to update. It is possible to provide one config for single vector mode and list of configs for multiple vectors mode.",
+        description="Map of vector data parameters to update for each named vector. To update parameters in a collection having a single unnamed vector, use an empty string as name.",
     )
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         default=None,
