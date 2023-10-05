@@ -168,6 +168,10 @@ class CollectionParams(BaseModel, extra="forbid"):
         default=1,
         description="Defines how many replicas should apply the operation for us to consider it successful. Increasing this number will make the collection more resilient to inconsistencies, but will also make it fail if not enough replicas are available. Does not have any performance impact.",
     )
+    read_fan_out_factor: Optional[int] = Field(
+        default=None,
+        description="Defines how many additional replicas should be processing read request at the same time. Default value is Auto, which means that fan-out will be determined automatically based on the busyness of the local replica. Having more than 0 might be useful to smooth latency spikes of individual nodes.",
+    )
     on_disk_payload: Optional[bool] = Field(
         default=False,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
@@ -179,6 +183,10 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
     write_consistency_factor: Optional[int] = Field(
         default=None, description="Minimal number successful responses from replicas to consider operation successful"
     )
+    read_fan_out_factor: Optional[int] = Field(
+        default=None,
+        description="Fan-out every read request to these many additional remote nodes (and return first available response)",
+    )
     on_disk_payload: Optional[bool] = Field(
         default=None,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
@@ -186,6 +194,10 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
 
 
 class CollectionStatus(str, Enum):
+    """
+    Current state of the collection. `Green` - all good. `Yellow` - optimization is running, `Red` - some operations failed and was not recovered
+    """
+
     GREEN = "green"
     YELLOW = "yellow"
     RED = "red"
@@ -385,6 +397,10 @@ class Disabled(str, Enum):
 
 
 class Distance(str, Enum):
+    """
+    Type of internal tags, build from payload Distance function types used to compare vectors
+    """
+
     COSINE = "Cosine"
     EUCLID = "Euclid"
     DOT = "Dot"
@@ -933,6 +949,10 @@ class OptimizersConfigDiff(BaseModel, extra="forbid"):
 
 
 class OptimizersStatusOneOf(str, Enum):
+    """
+    Optimizers are reporting as expected
+    """
+
     OK = "ok"
 
 
@@ -980,6 +1000,10 @@ class PayloadIndexTelemetry(BaseModel, extra="forbid"):
 
 
 class PayloadSchemaType(str, Enum):
+    """
+    All possible names of payload types
+    """
+
     KEYWORD = "keyword"
     INTEGER = "integer"
     FLOAT = "float"
@@ -1071,8 +1095,8 @@ class QuantizationSearchParams(BaseModel, extra="forbid"):
         default=False, description="If true, quantized vectors are ignored. Default is false."
     )
     rescore: Optional[bool] = Field(
-        default=False,
-        description="If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. Default is false.",
+        default=None,
+        description="If true, use original vectors to re-score top-k results. Might require more time in case if original vectors are stored on disk. If not set, qdrant decides automatically apply rescoring or not.",
     )
     oversampling: Optional[float] = Field(
         default=None,
@@ -1112,14 +1136,21 @@ class Range(BaseModel, extra="forbid"):
 
 
 class ReadConsistencyType(str, Enum):
+    """
+    * `majority` - send N/2+1 random request and return points, which present on all of them  * `quorum` - send requests to all nodes and return points which present on majority of nodes  * `all` - send requests to all nodes and return points which present on all nodes
+    """
+
     MAJORITY = "majority"
     QUORUM = "quorum"
     ALL = "all"
 
 
 class RecommendGroupsRequest(BaseModel, extra="forbid"):
-    positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
-    negative: Optional[List["ExtendedPointId"]] = Field(default=[], description="Try to avoid vectors like this")
+    positive: Optional[List["RecommendExample"]] = Field(default=[], description="Look for vectors closest to those")
+    negative: Optional[List["RecommendExample"]] = Field(default=[], description="Try to avoid vectors like this")
+    strategy: Optional["RecommendStrategy"] = Field(
+        default=None, description="How to use positive and negative examples to find the results"
+    )
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     with_payload: Optional["WithPayloadInterface"] = Field(
@@ -1153,11 +1184,14 @@ class RecommendGroupsRequest(BaseModel, extra="forbid"):
 
 class RecommendRequest(BaseModel, extra="forbid"):
     """
-    Recommendation request. Provides positive and negative examples of the vectors, which are already stored in the collection.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to implementation in `segment` crate.
+    Recommendation request. Provides positive and negative examples of the vectors, which can be ids of points that are already stored in the collection, raw vectors, or even ids and vectors combined.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to the `strategy` chosen.
     """
 
-    positive: List["ExtendedPointId"] = Field(..., description="Look for vectors closest to those")
-    negative: Optional[List["ExtendedPointId"]] = Field(default=[], description="Try to avoid vectors like this")
+    positive: Optional[List["RecommendExample"]] = Field(default=[], description="Look for vectors closest to those")
+    negative: Optional[List["RecommendExample"]] = Field(default=[], description="Try to avoid vectors like this")
+    strategy: Optional["RecommendStrategy"] = Field(
+        default=None, description="How to use positive and negative examples to find the results"
+    )
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
@@ -1187,6 +1221,15 @@ class RecommendRequest(BaseModel, extra="forbid"):
 
 class RecommendRequestBatch(BaseModel, extra="forbid"):
     searches: List["RecommendRequest"] = Field(..., description="")
+
+
+class RecommendStrategy(str, Enum):
+    """
+    How to use positive and negative examples to find the results, default is `average_vector`:  * `average_vector` - Average positive and negative vectors and create a single query with the formula `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.  * `best_score` - Uses custom search objective. Each candidate is compared against all examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. If the `max_neg_score` is chosen then it is squared and negated, otherwise it is just the `max_pos_score`.
+    """
+
+    AVERAGE_VECTOR = "average_vector"
+    BEST_SCORE = "best_score"
 
 
 class Record(BaseModel, extra="forbid"):
@@ -1242,6 +1285,10 @@ class ReplicaSetTelemetry(BaseModel, extra="forbid"):
 
 
 class ReplicaState(str, Enum):
+    """
+    State of the single shard within a replica set.
+    """
+
     ACTIVE = "Active"
     DEAD = "Dead"
     PARTIAL = "Partial"
@@ -1436,6 +1483,10 @@ class SegmentTelemetry(BaseModel, extra="forbid"):
 
 
 class SegmentType(str, Enum):
+    """
+    Type of segment
+    """
+
     PLAIN = "plain"
     INDEXED = "indexed"
     SPECIAL = "special"
@@ -1477,6 +1528,10 @@ class SnapshotDescription(BaseModel, extra="forbid"):
 
 
 class SnapshotPriority(str, Enum):
+    """
+    Defines source of truth for snapshot recovery: `NoSync` means - restore snapshot without *any* additional synchronization. `Snapshot` means - prefer snapshot data over the current state. `Replica` means - prefer existing data over the snapshot.
+    """
+
     NO_SYNC = "no_sync"
     SNAPSHOT = "snapshot"
     REPLICA = "replica"
@@ -1494,6 +1549,10 @@ class SnapshotRecover(BaseModel, extra="forbid"):
 
 
 class StateRole(str, Enum):
+    """
+    Role of the peer in the consensus
+    """
+
     FOLLOWER = "Follower"
     CANDIDATE = "Candidate"
     LEADER = "Leader"
@@ -1586,6 +1645,10 @@ class UpdateResult(BaseModel, extra="forbid"):
 
 
 class UpdateStatus(str, Enum):
+    """
+    `Acknowledged` - Request is saved to WAL and will be process in a queue. `Completed` - Request is completed, changes are actual.
+    """
+
     ACKNOWLEDGED = "acknowledged"
     COMPLETED = "completed"
 
@@ -1678,14 +1741,26 @@ class VectorParamsDiff(BaseModel, extra="forbid"):
 
 
 class VectorStorageTypeOneOf(str, Enum):
+    """
+    Storage in memory (RAM)  Will be very fast at the cost of consuming a lot of memory.
+    """
+
     MEMORY = "Memory"
 
 
 class VectorStorageTypeOneOf1(str, Enum):
+    """
+    Storage in mmap file, not appendable  Search performance is defined by disk speed and the fraction of vectors that fit in memory.
+    """
+
     MMAP = "Mmap"
 
 
 class VectorStorageTypeOneOf2(str, Enum):
+    """
+    Storage in chunked mmap files, appendable  Search performance is defined by disk speed and the fraction of vectors that fit in memory.
+    """
+
     CHUNKEDMMAP = "ChunkedMmap"
 
 
@@ -1716,6 +1791,10 @@ class WithLookup(BaseModel, extra="forbid"):
 
 
 class WriteOrdering(str, Enum):
+    """
+    Defines write ordering guarantees for collection operations  * `weak` - write operations may be reordered, works faster, default  * `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change  * `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+    """
+
     WEAK = "weak"
     MEDIUM = "medium"
     STRONG = "strong"
@@ -1871,6 +1950,10 @@ WithVector = Union[
 PayloadFieldSchema = Union[
     PayloadSchemaType,
     PayloadSchemaParams,
+]
+RecommendExample = Union[
+    ExtendedPointId,
+    List[StrictFloat],
 ]
 WithPayloadInterface = Union[
     PayloadSelector,

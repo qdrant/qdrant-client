@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, get_args
+from typing import Any, Dict, List, Optional, Sequence, Tuple, get_args
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
 
 from qdrant_client._pydantic_compat import construct
+from qdrant_client.conversions.common_types import get_args_subscribed
 
 try:
     from google.protobuf.pyext._message import MessageMapContainer  # type: ignore
@@ -518,6 +519,9 @@ class GrpcToRest:
             replication_factor=model.replication_factor
             if model.HasField("replication_factor")
             else None,
+            read_fan_out_factor=model.read_fan_out_factor
+            if model.HasField("read_fan_out_factor")
+            else None,
             write_consistency_factor=model.write_consistency_factor
             if model.HasField("write_consistency_factor")
             else None,
@@ -741,9 +745,15 @@ class GrpcToRest:
 
     @classmethod
     def convert_recommend_points(cls, model: grpc.RecommendPoints) -> rest.RecommendRequest:
+        positive_ids = [cls.convert_point_id(point_id) for point_id in model.positive]
+        negative_ids = [cls.convert_point_id(point_id) for point_id in model.negative]
+
+        positive_vectors = [cls.convert_vector(vector) for vector in model.positive_vectors]
+        negative_vectors = [cls.convert_vector(vector) for vector in model.negative_vectors]
+
         return rest.RecommendRequest(
-            positive=[cls.convert_point_id(point_id) for point_id in model.positive],
-            negative=[cls.convert_point_id(point_id) for point_id in model.negative],
+            positive=positive_ids + positive_vectors,
+            negative=negative_ids + negative_vectors,
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
             limit=model.limit,
             with_payload=cls.convert_with_payload_interface(model.with_payload)
@@ -758,6 +768,9 @@ class GrpcToRest:
             using=model.using,
             lookup_from=cls.convert_lookup_location(model.lookup_from)
             if model.HasField("lookup_from")
+            else None,
+            strategy=cls.convert_recommend_strategy(model.strategy)
+            if model.HasField("strategy")
             else None,
         )
 
@@ -793,6 +806,9 @@ class GrpcToRest:
             else None,
             write_consistency_factor=model.write_consistency_factor
             if model.HasField("write_consistency_factor")
+            else None,
+            read_fan_out_factor=model.read_fan_out_factor
+            if model.HasField("read_fan_out_factor")
             else None,
             on_disk_payload=model.on_disk_payload if model.HasField("on_disk_payload") else None,
         )
@@ -1093,6 +1109,14 @@ class GrpcToRest:
         if isinstance(model, str):
             return rest.InitFrom(collection=model)
         raise ValueError(f"Invalid InitFrom model: {model}")
+
+    @classmethod
+    def convert_recommend_strategy(cls, model: grpc.RecommendStrategy) -> rest.RecommendStrategy:
+        if model == grpc.RecommendStrategy.AverageVector:
+            return rest.RecommendStrategy.AVERAGE_VECTOR
+        if model == grpc.RecommendStrategy.BestScore:
+            return rest.RecommendStrategy.BEST_SCORE
+        raise ValueError(f"invalid RecommendStrategy model: {model}")
 
 
 # ----------------------------------------
@@ -1426,6 +1450,7 @@ class RestToGrpc:
             on_disk_payload=model.on_disk_payload or False,
             write_consistency_factor=model.write_consistency_factor,
             replication_factor=model.replication_factor,
+            read_fan_out_factor=model.read_fan_out_factor,
         )
 
     @classmethod
@@ -1530,6 +1555,40 @@ class RestToGrpc:
             alias_name=model.alias_name,
             collection_name=model.collection_name,
         )
+
+    @classmethod
+    def convert_recommend_examples_to_ids(
+        cls, examples: Sequence[rest.RecommendExample]
+    ) -> List[grpc.PointId]:
+        ids: List[grpc.PointId] = []
+        for example in examples:
+            if isinstance(example, get_args_subscribed(rest.ExtendedPointId)):
+                id_ = cls.convert_extended_point_id(example)
+            elif isinstance(example, grpc.PointId):
+                id_ = example
+            else:
+                continue
+
+            ids.append(id_)
+
+        return ids
+
+    @classmethod
+    def convert_recommend_examples_to_vectors(
+        cls, examples: Sequence[rest.RecommendExample]
+    ) -> List[grpc.Vector]:
+        vectors: List[grpc.Vector] = []
+        for example in examples:
+            if isinstance(example, grpc.Vector):
+                vector = example
+            elif isinstance(example, list):
+                vector = grpc.Vector(data=example)
+            else:
+                continue
+
+            vectors.append(vector)
+
+        return vectors
 
     @classmethod
     def convert_extended_point_id(cls, model: rest.ExtendedPointId) -> grpc.PointId:
@@ -1735,10 +1794,16 @@ class RestToGrpc:
     def convert_recommend_request(
         cls, model: rest.RecommendRequest, collection_name: str
     ) -> grpc.RecommendPoints:
+        positive_ids = cls.convert_recommend_examples_to_ids(model.positive)
+        negative_ids = cls.convert_recommend_examples_to_ids(model.negative)
+
+        positive_vectors = cls.convert_recommend_examples_to_vectors(model.positive)
+        negative_vectors = cls.convert_recommend_examples_to_vectors(model.negative)
+
         return grpc.RecommendPoints(
             collection_name=collection_name,
-            positive=[cls.convert_extended_point_id(point_id) for point_id in model.positive],
-            negative=[cls.convert_extended_point_id(point_id) for point_id in model.negative],
+            positive=positive_ids,
+            negative=negative_ids,
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
             limit=model.limit,
             with_payload=cls.convert_with_payload_interface(model.with_payload)
@@ -1754,6 +1819,11 @@ class RestToGrpc:
             lookup_from=cls.convert_lookup_location(model.lookup_from)
             if model.lookup_from is not None
             else None,
+            strategy=cls.convert_recommend_strategy(model.strategy)
+            if model.strategy is not None
+            else None,
+            positive_vectors=positive_vectors,
+            negative_vectors=negative_vectors,
         )
 
     @classmethod
@@ -1794,6 +1864,7 @@ class RestToGrpc:
             replication_factor=model.replication_factor,
             write_consistency_factor=model.write_consistency_factor,
             on_disk_payload=model.on_disk_payload,
+            read_fan_out_factor=model.read_fan_out_factor,
         )
 
     @classmethod
@@ -2136,3 +2207,12 @@ class RestToGrpc:
             return model.collection
         else:
             raise ValueError(f"invalid InitFrom model: {model}")
+
+    @classmethod
+    def convert_recommend_strategy(cls, model: rest.RecommendStrategy) -> grpc.RecommendStrategy:
+        if model == rest.RecommendStrategy.AVERAGE_VECTOR:
+            return grpc.RecommendStrategy.AverageVector
+        elif model == rest.RecommendStrategy.BEST_SCORE:
+            return grpc.RecommendStrategy.BestScore
+        else:
+            raise ValueError(f"invalid RecommendStrategy model: {model}")

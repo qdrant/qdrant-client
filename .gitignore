@@ -3,6 +3,8 @@ venv
 __pycache__
 .pytest_cache
 .idea
+.vscode
+.devcontainer
 .coverage
 htmlcov
 *.iml

@@ -1,3 +1,4 @@
+import math
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
@@ -117,9 +118,11 @@ def compare_scored_record(
     assert (
         point1.id == point2.id
     ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
+    # adjust precision depending on the magnitude of score
+    max_difference = 1e-4 * 10**(math.floor(math.log(abs(point2.score), 10)))
     assert (
-        point1.score - point2.score < 1e-4
-    ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}"
+        abs(point1.score - point2.score) < max_difference
+    ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, max_difference = {max_difference}"
     assert (
         point1.payload == point2.payload
     ), f"point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"

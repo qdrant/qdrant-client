@@ -67,8 +67,10 @@ def test_conversion_completeness():
             except Exception as e:
                 logging.warning(f"Error with {fixture}")
                 raise e
-
-            if MessageToDict(grpc_fixture) != MessageToDict(fixture):
+            if isinstance(grpc_fixture, int):
+                # Is an enum
+                assert grpc_fixture == fixture, f"{model_class_name} conversion is broken"
+            elif MessageToDict(grpc_fixture) != MessageToDict(fixture):
                 assert MessageToDict(grpc_fixture) == MessageToDict(
                     fixture
                 ), f"{model_class_name} conversion is broken"
