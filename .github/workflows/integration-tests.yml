@@ -44,7 +44,7 @@ jobs:
       - name: Backward compatibility integration tests
         run: |
           export RUNNER_OS=${{ runner.os }}
-          QDRANT_VERSION='v1.4.1' ./tests/integration-tests.sh
+          QDRANT_VERSION='v1.5.1' ./tests/integration-tests.sh
         shell: bash
       - name: Check conversion coverage
         run: |
