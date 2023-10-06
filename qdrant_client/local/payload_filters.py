@@ -75,9 +75,8 @@ def check_geo_polygon(condition: models.GeoPolygon, values: Any) -> bool:
         lat = values["lat"]
         lon = values["lon"]
         exterior = LinearRing([(point.lat, point.lon) for point in condition.exterior.points])
-        if condition.interiors is None:
-            interiors = None
-        else:
+        interiors = None
+        if condition.interiors is not None:
             interiors = [
                 LinearRing([(point.lat, point.lon) for point in interior.points])
                 for interior in condition.interiors
