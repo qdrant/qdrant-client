@@ -25,7 +25,7 @@ def try_migrate_to_sqlite(location: str) -> None:
     try:
         dbm_storage = dbm.open(str(dbm_path), "c")
 
-        con = sqlite3.connect(str(sql_path), , check_same_thread=False)
+        con = sqlite3.connect(str(sql_path), check_same_thread=False)
         cur = con.cursor()
 
         # Create table
