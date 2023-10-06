@@ -45,7 +45,7 @@ def boolean_point_in_polygon(
     point: Tuple[float, float],
     exterior: List[Tuple[float, float]],
     interiors: List[List[Tuple[float, float]]],
-):
+) -> bool:
     inside_poly = False
 
     if in_ring(point, exterior, True):
@@ -61,7 +61,9 @@ def boolean_point_in_polygon(
     return inside_poly
 
 
-def in_ring(pt, ring, ignore_boundary):
+def in_ring(
+    pt: Tuple[float, float], ring: List[Tuple[float, float]], ignore_boundary: bool
+) -> bool:
     is_inside = False
     if ring[0][0] == ring[len(ring) - 1][0] and ring[0][1] == ring[len(ring) - 1][1]:
         ring = ring[0 : len(ring) - 1]
