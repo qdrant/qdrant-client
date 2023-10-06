@@ -198,6 +198,9 @@ class CollectionStatus(str, Enum):
     Current state of the collection. `Green` - all good. `Yellow` - optimization is running, `Red` - some operations failed and was not recovered
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     GREEN = "green"
     YELLOW = "yellow"
     RED = "red"
@@ -400,6 +403,9 @@ class Distance(str, Enum):
     """
     Type of internal tags, build from payload Distance function types used to compare vectors
     """
+
+    def __str__(self) -> str:
+        return str(self.value)
 
     COSINE = "Cosine"
     EUCLID = "Euclid"
@@ -979,6 +985,9 @@ class OptimizersStatusOneOf(str, Enum):
     Optimizers are reporting as expected
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     OK = "ok"
 
 
@@ -1029,6 +1038,9 @@ class PayloadSchemaType(str, Enum):
     """
     All possible names of payload types
     """
+
+    def __str__(self) -> str:
+        return str(self.value)
 
     KEYWORD = "keyword"
     INTEGER = "integer"
@@ -1166,6 +1178,9 @@ class ReadConsistencyType(str, Enum):
     * `majority` - send N/2+1 random request and return points, which present on all of them  * `quorum` - send requests to all nodes and return points which present on majority of nodes  * `all` - send requests to all nodes and return points which present on all nodes
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     MAJORITY = "majority"
     QUORUM = "quorum"
     ALL = "all"
@@ -1254,6 +1269,9 @@ class RecommendStrategy(str, Enum):
     How to use positive and negative examples to find the results, default is `average_vector`:  * `average_vector` - Average positive and negative vectors and create a single query with the formula `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.  * `best_score` - Uses custom search objective. Each candidate is compared against all examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. If the `max_neg_score` is chosen then it is squared and negated, otherwise it is just the `max_pos_score`.
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     AVERAGE_VECTOR = "average_vector"
     BEST_SCORE = "best_score"
 
@@ -1314,6 +1332,9 @@ class ReplicaState(str, Enum):
     """
     State of the single shard within a replica set.
     """
+
+    def __str__(self) -> str:
+        return str(self.value)
 
     ACTIVE = "Active"
     DEAD = "Dead"
@@ -1513,6 +1534,9 @@ class SegmentType(str, Enum):
     Type of segment
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     PLAIN = "plain"
     INDEXED = "indexed"
     SPECIAL = "special"
@@ -1558,6 +1582,9 @@ class SnapshotPriority(str, Enum):
     Defines source of truth for snapshot recovery: `NoSync` means - restore snapshot without *any* additional synchronization. `Snapshot` means - prefer snapshot data over the current state. `Replica` means - prefer existing data over the snapshot.
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     NO_SYNC = "no_sync"
     SNAPSHOT = "snapshot"
     REPLICA = "replica"
@@ -1578,6 +1605,9 @@ class StateRole(str, Enum):
     """
     Role of the peer in the consensus
     """
+
+    def __str__(self) -> str:
+        return str(self.value)
 
     FOLLOWER = "Follower"
     CANDIDATE = "Candidate"
@@ -1675,6 +1705,9 @@ class UpdateStatus(str, Enum):
     `Acknowledged` - Request is saved to WAL and will be process in a queue. `Completed` - Request is completed, changes are actual.
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     ACKNOWLEDGED = "acknowledged"
     COMPLETED = "completed"
 
@@ -1771,6 +1804,9 @@ class VectorStorageTypeOneOf(str, Enum):
     Storage in memory (RAM)  Will be very fast at the cost of consuming a lot of memory.
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     MEMORY = "Memory"
 
 
@@ -1779,6 +1815,9 @@ class VectorStorageTypeOneOf1(str, Enum):
     Storage in mmap file, not appendable  Search performance is defined by disk speed and the fraction of vectors that fit in memory.
     """
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     MMAP = "Mmap"
 
 
@@ -1786,6 +1825,9 @@ class VectorStorageTypeOneOf2(str, Enum):
     """
     Storage in chunked mmap files, appendable  Search performance is defined by disk speed and the fraction of vectors that fit in memory.
     """
+
+    def __str__(self) -> str:
+        return str(self.value)
 
     CHUNKEDMMAP = "ChunkedMmap"
 
@@ -1820,6 +1862,9 @@ class WriteOrdering(str, Enum):
     """
     Defines write ordering guarantees for collection operations  * `weak` - write operations may be reordered, works faster, default  * `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change  * `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
     """
+
+    def __str__(self) -> str:
+        return str(self.value)
 
     WEAK = "weak"
     MEDIUM = "medium"

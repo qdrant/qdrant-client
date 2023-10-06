@@ -1,6 +1,7 @@
+import re
 import uuid
 from collections import OrderedDict, defaultdict
-from typing import Dict, List, Optional, Sequence, Tuple, Union, get_args
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args
 
 import numpy as np
 
@@ -146,6 +147,63 @@ class LocalCollection:
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
     @classmethod
+    def _check_include_pattern(cls, pattern: str, key: str) -> bool:
+        """
+        >>> LocalCollection._check_include_pattern('a', 'a')
+        True
+        >>> LocalCollection._check_include_pattern('a.b', 'b')
+        False
+        >>> LocalCollection._check_include_pattern('a.b', 'a.b')
+        True
+        >>> LocalCollection._check_include_pattern('a.b', 'a.b.c')
+        True
+        >>> LocalCollection._check_include_pattern('a.b[]', 'a.b[].c')
+        True
+        >>> LocalCollection._check_include_pattern('a.b[]', 'a.b.c')
+        False
+        >>> LocalCollection._check_include_pattern('a', 'a.b')
+        True
+        >>> LocalCollection._check_include_pattern('a.b', 'a')
+        True
+        >>> LocalCollection._check_include_pattern('a', 'aa.b.c')
+        False
+        """
+        if pattern.startswith(key) or key.startswith(pattern):
+            return True
+        return False
+
+    @classmethod
+    def _check_exclude_pattern(cls, pattern: str, key: str) -> bool:
+        if key.startswith(pattern):
+            return True
+        return False
+
+    @classmethod
+    def _filter_payload(
+        cls, payload: Any, predicate: Callable[[str], bool], path: str = ""
+    ) -> Any:
+        if isinstance(payload, dict):
+            res = {}
+            if path != "":
+                new_path = path + "."
+            else:
+                new_path = path
+
+            for key, value in payload.items():
+                if predicate(new_path + key):
+                    res[key] = cls._filter_payload(value, predicate, new_path + key)
+            return res
+        elif isinstance(payload, list):
+            res_array = []
+            path = path + "[]"
+            for idx, value in enumerate(payload):
+                if predicate(path):
+                    res_array.append(cls._filter_payload(value, predicate, path))
+            return res_array
+        else:
+            return payload
+
+    @classmethod
     def _process_payload(
         cls,
         payload: dict,
@@ -158,13 +216,34 @@ class LocalCollection:
             return payload
 
         if isinstance(with_payload, list):
-            return {key: payload.get(key) for key in with_payload if key in payload}
+            return cls._filter_payload(
+                payload,
+                lambda key: any(
+                    map(lambda pattern: cls._check_include_pattern(pattern, key), with_payload)  # type: ignore
+                ),
+            )
 
         if isinstance(with_payload, models.PayloadSelectorInclude):
-            return {key: payload.get(key) for key in with_payload.include if key in payload}
+            return cls._filter_payload(
+                payload,
+                lambda key: any(
+                    map(
+                        lambda pattern: cls._check_include_pattern(pattern, key),
+                        with_payload.include,  # type: ignore
+                    )
+                ),
+            )
 
         if isinstance(with_payload, models.PayloadSelectorExclude):
-            return {key: payload.get(key) for key in payload if key not in with_payload.exclude}
+            return cls._filter_payload(
+                payload,
+                lambda key: all(
+                    map(
+                        lambda pattern: not cls._check_exclude_pattern(pattern, key),
+                        with_payload.exclude,  # type: ignore
+                    )
+                ),
+            )
 
         return payload
 
@@ -226,7 +305,7 @@ class LocalCollection:
 
         vectors = self.vectors[name]
         params = self.get_vector_params(name)
-        
+
         if isinstance(query_vector, np.ndarray):
             scores = calculate_distance(
                 query_vector, vectors[: len(self.payload)], params.distance
@@ -236,7 +315,7 @@ class LocalCollection:
                 query_vector, vectors[: len(self.payload)], params.distance
             )
         else:
-            raise(ValueError(f"Unsupported query vector type {type(query_vector)}"))
+            raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
         # in deleted: 1 - deleted, 0 - not deleted
         # in payload_mask: 1 - accepted, 0 - rejected
@@ -454,7 +533,7 @@ class LocalCollection:
     ) -> types.NumpyArray:
         positive_vectors = positive_vectors if positive_vectors is not None else []
         negative_vectors = negative_vectors if negative_vectors is not None else []
-        
+
         # Validate input
         if len(positive_vectors) == 0:
             raise ValueError("Positive list is empty")
@@ -511,7 +590,9 @@ class LocalCollection:
                 negative=negative_vectors,
             )
         else:
-            raise ValueError(f"strategy `{strategy}` is not a valid strategy, choose one from {types.RecommendStrategy}")
+            raise ValueError(
+                f"strategy `{strategy}` is not a valid strategy, choose one from {types.RecommendStrategy}"
+            )
 
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
 
