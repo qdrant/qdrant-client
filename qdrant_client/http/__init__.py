@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from qdrant_client._pydantic_compat import update_forward_refs
 from qdrant_client.http.api_client import (  # noqa F401
     ApiClient as ApiClient,
+    AsyncApiClient as AsyncApiClient,
     AsyncApis as AsyncApis,
     SyncApis as SyncApis,
 )

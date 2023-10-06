@@ -432,6 +432,9 @@ class FieldCondition(BaseModel, extra="forbid"):
         default=None, description="Check if points geo location lies in a given area"
     )
     geo_radius: Optional["GeoRadius"] = Field(default=None, description="Check if geo point is within a given radius")
+    geo_polygon: Optional["GeoPolygon"] = Field(
+        default=None, description="Check if geo point is within a given polygon"
+    )
     values_count: Optional["ValuesCount"] = Field(default=None, description="Check number of values of the field")
 
 
@@ -462,6 +465,14 @@ class GeoBoundingBox(BaseModel, extra="forbid"):
     )
 
 
+class GeoLineString(BaseModel, extra="forbid"):
+    """
+    Ordered sequence of GeoPoints representing the line
+    """
+
+    points: List["GeoPoint"] = Field(..., description="Ordered sequence of GeoPoints representing the line")
+
+
 class GeoPoint(BaseModel, extra="forbid"):
     """
     Geo point payload schema
@@ -469,6 +480,21 @@ class GeoPoint(BaseModel, extra="forbid"):
 
     lon: float = Field(..., description="Geo point payload schema")
     lat: float = Field(..., description="Geo point payload schema")
+
+
+class GeoPolygon(BaseModel, extra="forbid"):
+    """
+    Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`
+    """
+
+    exterior: "GeoLineString" = Field(
+        ...,
+        description="Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
+    )
+    interiors: Optional[List["GeoLineString"]] = Field(
+        default=None,
+        description="Interior lines (if present) bound holes within the surface each GeoLineString must consist of a minimum of 4 points, and the first and last points must be the same.",
+    )
 
 
 class GeoRadius(BaseModel, extra="forbid"):
@@ -1618,7 +1644,7 @@ class UpdateCollection(BaseModel, extra="forbid"):
 
     vectors: Optional["VectorsConfigDiff"] = Field(
         default=None,
-        description="Vector data parameters to update. It is possible to provide one config for single vector mode and list of configs for multiple vectors mode.",
+        description="Map of vector data parameters to update for each named vector. To update parameters in a collection having a single unnamed vector, use an empty string as name.",
     )
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         default=None,
