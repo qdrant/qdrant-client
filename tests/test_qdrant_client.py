@@ -323,16 +323,16 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
 
     version = os.getenv("QDRANT_VERSION")
-    if version is not None and (version >= "v1.0.0" or version == "dev"):
-        collection_aliases = client.get_collection_aliases(COLLECTION_NAME)
 
-        assert collection_aliases.aliases[0].collection_name == COLLECTION_NAME
-        assert collection_aliases.aliases[0].alias_name == COLLECTION_NAME_ALIAS
+    collection_aliases = client.get_collection_aliases(COLLECTION_NAME)
 
-        all_aliases = client.get_aliases()
+    assert collection_aliases.aliases[0].collection_name == COLLECTION_NAME
+    assert collection_aliases.aliases[0].alias_name == COLLECTION_NAME_ALIAS
 
-        assert all_aliases.aliases[0].collection_name == COLLECTION_NAME
-        assert all_aliases.aliases[0].alias_name == COLLECTION_NAME_ALIAS
+    all_aliases = client.get_aliases()
+
+    assert all_aliases.aliases[0].collection_name == COLLECTION_NAME
+    assert all_aliases.aliases[0].alias_name == COLLECTION_NAME_ALIAS
 
     # Create payload index for field `rand_number`
     # If indexed field appear in filtering condition - search operation could be performed faster
@@ -380,37 +380,35 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     assert "11" in hits[0].payload["id_str"]
 
-    # Compare MatchAny with should filter
-    if not (version is not None and version < "v1.1.0"):
-        hits_should = client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
-            query_filter=Filter(
-                should=[
-                    FieldCondition(key="id_str", match=MatchValue(value="10")),
-                    FieldCondition(key="id_str", match=MatchValue(value="11")),
-                ]
-            ),
-            with_payload=True,
-            limit=5,
-        )
+    hits_should = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        query_filter=Filter(
+            should=[
+                FieldCondition(key="id_str", match=MatchValue(value="10")),
+                FieldCondition(key="id_str", match=MatchValue(value="11")),
+            ]
+        ),
+        with_payload=True,
+        limit=5,
+    )
 
-        hits_match_any = client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
-            query_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key="id_str",
-                        match=MatchAny(any=["10", "11"]),
-                    )
-                ]
-            ),
-            with_payload=True,
-            limit=5,
-        )
+    hits_match_any = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        query_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="id_str",
+                    match=MatchAny(any=["10", "11"]),
+                )
+            ]
+        ),
+        with_payload=True,
+        limit=5,
+    )
 
-        assert hits_should == hits_match_any
+    assert hits_should == hits_match_any
 
     # Let's now query same vector with filter condition
     hits = client.search(
@@ -688,9 +686,10 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     assert next_page is None
 
-    if version is not None and (version >= "v1.5.0" or version == "dev"):
+    if version is None or (version >= "v1.5.0" or version == "dev"):
         client.batch_update_points(
             collection_name=COLLECTION_NAME,
+            ordering=models.WriteOrdering.STRONG,
             update_operations=[
                 models.UpsertOperation(
                     upsert=models.PointsList(
@@ -788,7 +787,7 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
     # Many collection update parameters are available since v1.4.0
     version = os.getenv("QDRANT_VERSION")
-    if version is not None and (version >= "v1.4.0" or version == "dev"):
+    if version is None or (version >= "v1.4.0" or version == "dev"):
         assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
         assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
         assert (
@@ -854,10 +853,6 @@ def test_points_crud(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_quantization_config(prefer_grpc):
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v1.1.0":
-        return
-
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(
@@ -1005,9 +1000,6 @@ def test_conditional_payload_update(prefer_grpc):
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_conditional_payload_update(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v0.11.5":
-        return
 
     client.recreate_collection(
         collection_name=COLLECTION_NAME,
@@ -1087,10 +1079,6 @@ def test_insert_float():
 
 
 def test_locks():
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v0.11.0":
-        return  # Locks are supported since v0.11.0
-
     client = QdrantClient(timeout=TIMEOUT)
 
     client.recreate_collection(
