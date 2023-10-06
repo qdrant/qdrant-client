@@ -25,7 +25,7 @@ def try_migrate_to_sqlite(location: str) -> None:
     try:
         dbm_storage = dbm.open(str(dbm_path), "c")
 
-        con = sqlite3.connect(str(sql_path))
+        con = sqlite3.connect(str(sql_path), check_same_thread=False)
         cur = con.cursor()
 
         # Create table
@@ -73,7 +73,7 @@ class CollectionPersistence:
 
         self.location = Path(location) / STORAGE_FILE_NAME
         self.location.parent.mkdir(exist_ok=True, parents=True)
-        self.storage = sqlite3.connect(str(self.location))
+        self.storage = sqlite3.connect(str(self.location), check_same_thread=False)
         self._ensure_table()
 
     def close(self) -> None:
