@@ -147,7 +147,7 @@ class LocalCollection:
         raise ValueError(f"Malformed config.vectors: {self.config.vectors}")
 
     @classmethod
-    def _check_include_pattern(cls, pattern, key) -> bool:
+    def _check_include_pattern(cls, pattern: str, key: str) -> bool:
         """
         >>> LocalCollection._check_include_pattern('a', 'a')
         True
@@ -173,13 +173,15 @@ class LocalCollection:
         return False
 
     @classmethod
-    def _check_exclude_pattern(cls, pattern, key) -> bool:
+    def _check_exclude_pattern(cls, pattern: str, key: str) -> bool:
         if key.startswith(pattern):
             return True
         return False
 
     @classmethod
-    def _filter_payload(cls, payload: Any, predicate: Callable[[str], bool], path="") -> Any:
+    def _filter_payload(
+        cls, payload: Any, predicate: Callable[[str], bool], path: str = ""
+    ) -> Any:
         if isinstance(payload, dict):
             res = {}
             if path != "":
@@ -192,12 +194,12 @@ class LocalCollection:
                     res[key] = cls._filter_payload(value, predicate, new_path + key)
             return res
         elif isinstance(payload, list):
-            res = []
+            res_array = []
             path = path + "[]"
             for idx, value in enumerate(payload):
                 if predicate(path):
-                    res.append(cls._filter_payload(value, predicate, path))
-            return res
+                    res_array.append(cls._filter_payload(value, predicate, path))
+            return res_array
         else:
             return payload
 
@@ -217,7 +219,7 @@ class LocalCollection:
             return cls._filter_payload(
                 payload,
                 lambda key: any(
-                    map(lambda pattern: cls._check_include_pattern(pattern, key), with_payload)
+                    map(lambda pattern: cls._check_include_pattern(pattern, key), with_payload)  # type: ignore
                 ),
             )
 
@@ -227,7 +229,7 @@ class LocalCollection:
                 lambda key: any(
                     map(
                         lambda pattern: cls._check_include_pattern(pattern, key),
-                        with_payload.include,
+                        with_payload.include,  # type: ignore
                     )
                 ),
             )
@@ -238,7 +240,7 @@ class LocalCollection:
                 lambda key: all(
                     map(
                         lambda pattern: not cls._check_exclude_pattern(pattern, key),
-                        with_payload.exclude,
+                        with_payload.exclude,  # type: ignore
                     )
                 ),
             )
