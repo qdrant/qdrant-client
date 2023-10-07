@@ -1533,6 +1533,7 @@ class QdrantClient(QdrantFastembedMixin):
             parallel=parallel,
             method=method,
             max_retries=max_retries,
+            wait=wait,
             **kwargs,
         )
 
