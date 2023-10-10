@@ -11,3 +11,4 @@ htmlcov
 dist
 *.tar.gz
 local_cache/*/*
+.python-version

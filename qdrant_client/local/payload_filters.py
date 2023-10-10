@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 import numpy as np
 
 from qdrant_client.http import models
-from qdrant_client.local.geo import geo_distance
+from qdrant_client.local.geo import boolean_point_in_polygon, geo_distance
 from qdrant_client.local.payload_value_extractor import value_by_key
 
 
@@ -66,6 +66,22 @@ def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> boo
             condition.top_left.lat >= lat >= condition.bottom_right.lat
             and condition.top_left.lon <= lon <= condition.bottom_right.lon
         )
+
+    return False
+
+
+def check_geo_polygon(condition: models.GeoPolygon, values: Any) -> bool:
+    if isinstance(values, dict) and "lat" in values and "lon" in values:
+        lat = values["lat"]
+        lon = values["lon"]
+        exterior = [(point.lat, point.lon) for point in condition.exterior.points]
+        interiors = []
+        if condition.interiors is not None:
+            interiors = [
+                [(point.lat, point.lon) for point in interior.points]
+                for interior in condition.interiors
+            ]
+        return boolean_point_in_polygon(point=(lat, lon), exterior=exterior, interiors=interiors)
 
     return False
 
@@ -141,6 +157,10 @@ def check_condition(
         if condition.values_count is not None:
             values = value_by_key(payload, condition.key, flat=False)
             return check_values_count(condition.values_count, values)
+        if condition.geo_polygon is not None:
+            if values is None:
+                return False
+            return any(check_geo_polygon(condition.geo_polygon, v) for v in values)
     elif isinstance(condition, models.NestedCondition):
         values = value_by_key(payload, condition.nested.key)
         if values is None:
