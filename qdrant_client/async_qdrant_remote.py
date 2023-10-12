@@ -491,8 +491,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def recommend(
         self,
         collection_name: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -502,24 +502,19 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
+        if positive is None:
+            positive = []
         if negative is None:
             negative = []
         if self._prefer_grpc:
-            positive = [
-                RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
-                else point_id
-                for point_id in positive
-            ]
-            negative = [
-                RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
-                else point_id
-                for point_id in negative
-            ]
+            positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
+            positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
+            negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
+            negative_vectors = RestToGrpc.convert_recommend_examples_to_vectors(negative)
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
             if isinstance(search_params, models.SearchParams):
@@ -532,11 +527,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
+            if isinstance(strategy, models.RecommendStrategy):
+                strategy = RestToGrpc.convert_recommend_strategy(strategy)
             res: grpc.SearchResponse = await self.grpc_points.Recommend(
                 grpc.RecommendPoints(
                     collection_name=collection_name,
-                    positive=positive,
-                    negative=negative,
+                    positive=positive_ids,
+                    negative=negative_ids,
                     filter=query_filter,
                     limit=limit,
                     offset=offset,
@@ -547,22 +544,25 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     using=using,
                     lookup_from=lookup_from,
                     read_consistency=consistency,
+                    strategy=strategy,
+                    positive_vectors=positive_vectors,
+                    negative_vectors=negative_vectors,
                 ),
                 timeout=self._timeout,
             )
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
             positive = [
-                GrpcToRest.convert_point_id(point_id)
-                if isinstance(point_id, grpc.PointId)
-                else point_id
-                for point_id in positive
+                GrpcToRest.convert_point_id(example)
+                if isinstance(example, grpc.PointId)
+                else example
+                for example in positive
             ]
             negative = [
-                GrpcToRest.convert_point_id(point_id)
-                if isinstance(point_id, grpc.PointId)
-                else point_id
-                for point_id in negative
+                GrpcToRest.convert_point_id(example)
+                if isinstance(example, grpc.PointId)
+                else example
+                for example in negative
             ]
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
@@ -588,6 +588,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         score_threshold=score_threshold,
                         lookup_from=lookup_from,
                         using=using,
+                        strategy=strategy,
                     ),
                 )
             ).result
@@ -598,8 +599,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         group_by: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
         query_filter: Optional[models.Filter] = None,
         search_params: Optional[models.SearchParams] = None,
         limit: int = 10,
@@ -610,28 +611,21 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         using: Optional[str] = None,
         lookup_from: Optional[models.LookupLocation] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
-        consistency: Optional[models.ReadConsistencyType] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
-        if negative is None:
-            negative = []
+        positive = positive if positive is not None else []
+        negative = negative if negative is not None else []
         if self._prefer_grpc:
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
             if isinstance(with_lookup, str):
                 with_lookup = grpc.WithLookup(lookup_index=with_lookup)
-            positive = [
-                RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
-                else point_id
-                for point_id in positive
-            ]
-            negative = [
-                RestToGrpc.convert_extended_point_id(point_id)
-                if isinstance(point_id, get_args_subscribed(models.ExtendedPointId))
-                else point_id
-                for point_id in negative
-            ]
+            positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
+            positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
+            negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
+            negative_vectors = RestToGrpc.convert_recommend_examples_to_vectors(negative)
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
             if isinstance(search_params, models.SearchParams):
@@ -644,12 +638,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
+            if isinstance(strategy, models.RecommendStrategy):
+                strategy = RestToGrpc.convert_recommend_strategy(strategy)
             res: grpc.GroupsResult = (
                 await self.grpc_points.RecommendGroups(
                     grpc.RecommendPointGroups(
                         collection_name=collection_name,
-                        positive=positive,
-                        negative=negative,
+                        positive=positive_ids,
+                        negative=negative_ids,
                         filter=query_filter,
                         group_by=group_by,
                         limit=limit,
@@ -662,6 +658,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         lookup_from=lookup_from,
                         read_consistency=consistency,
                         with_lookup=with_lookup,
+                        strategy=strategy,
+                        positive_vectors=positive_vectors,
+                        negative_vectors=negative_vectors,
                     ),
                     timeout=self._timeout,
                 )
@@ -710,6 +709,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         lookup_from=lookup_from,
                         using=using,
                         with_lookup=with_lookup,
+                        strategy=strategy,
                     ),
                 )
             ).result

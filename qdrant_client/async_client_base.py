@@ -57,8 +57,8 @@ class AsyncQdrantBase:
     async def recommend(
         self,
         collection_name: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -67,7 +67,8 @@ class AsyncQdrantBase:
         with_vectors: Union[bool, List[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
-        lookup_from: Optional[models.LookupLocation] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         raise NotImplementedError()
@@ -76,8 +77,8 @@ class AsyncQdrantBase:
         self,
         collection_name: str,
         group_by: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[models.Filter] = None,
         search_params: Optional[models.SearchParams] = None,
         limit: int = 10,
@@ -88,6 +89,7 @@ class AsyncQdrantBase:
         using: Optional[str] = None,
         lookup_from: Optional[models.LookupLocation] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         raise NotImplementedError()

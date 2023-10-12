@@ -388,8 +388,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     async def recommend(
         self,
         collection_name: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -399,6 +399,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -410,14 +411,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Args:
             collection_name: Collection to search in
             positive:
-                List of stored point IDs, which should be used as reference for similarity search.
-                If there is only one ID provided - this request is equivalent to the regular search with vector of that
+                List of stored point IDs or vectors, which should be used as reference for similarity search.
+                If there is only one example - this request is equivalent to the regular search with vector of that
                 point.
-                If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
-                Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
+                If there are more than one example, Qdrant will attempt to search for similar to all of them.
+                Recommendation for multiple vectors is experimental.
+                Its behaviour may change depending on selected strategy.
             negative:
-                List of stored point IDs, which should be dissimilar to the search result.
-                Negative examples is an experimental functionality. Its behaviour may change in the future.
+                List of stored point IDs or vectors, which should be dissimilar to the search result.
+                Negative examples is an experimental functionality.
+                Its behaviour may change depending on selected strategy.
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
@@ -457,6 +460,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            strategy:
+                Strategy to use for recommendation.
+                Strategy defines how to combine multiple examples into a recommendation query.
+                Possible values:
+                - 'average_vector' - calculates average vector of all examples and uses it for search
+                - 'best_score' - finds the result which is closer to positive examples and further from negative
 
         Returns:
             List of recommended points with similarity scores.
@@ -476,6 +485,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            strategy=strategy,
             **kwargs,
         )
 
@@ -483,8 +493,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self,
         collection_name: str,
         group_by: str,
-        positive: Sequence[types.PointId],
-        negative: Optional[Sequence[types.PointId]] = None,
+        positive: Optional[Sequence[types.RecommendExample]] = None,
+        negative: Optional[Sequence[types.RecommendExample]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -495,6 +505,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
@@ -508,14 +519,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Args:
             collection_name: Collection to search in
             positive:
-                List of stored point IDs, which should be used as reference for similarity search.
-                If there is only one ID provided - this request is equivalent to the regular search with vector of that
+                List of stored point IDs or vectors, which should be used as reference for similarity search.
+                If there is only one example - this request is equivalent to the regular search with vector of that
                 point.
-                If there are more than one IDs, Qdrant will attempt to search for similar to all of them.
-                Recommendation for multiple vectors is experimental. Its behaviour may change in the future.
+                If there are more than one example, Qdrant will attempt to search for similar to all of them.
+                Recommendation for multiple vectors is experimental.
+                Its behaviour may change depending on selected strategy.
             negative:
-                List of stored point IDs, which should be dissimilar to the search result.
-                Negative examples is an experimental functionality. Its behaviour may change in the future.
+                List of stored point IDs or vectors, which should be dissimilar to the search result.
+                Negative examples is an experimental functionality.
+                Its behaviour may change depending on selected strategy.
             group_by: Name of the payload field to group by.
                 Field must be of type "keyword" or "integer".
                 Nested fields are specified using dot notation, e.g. "nested_field.subfield".
@@ -560,6 +573,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            strategy:
+                Strategy to use for recommendation.
+                Strategy defines how to combine multiple examples into a recommendation query.
+                Possible values:
+                - 'average_vector' - calculates average vector of all examples and uses it for search
+                - 'best_score' - finds the result which is closer to positive examples and further from negative
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -583,6 +602,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             lookup_from=lookup_from,
             consistency=consistency,
             with_lookup=with_lookup,
+            strategy=strategy,
             **kwargs,
         )
 
@@ -1409,6 +1429,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             parallel=parallel,
             method=method,
             max_retries=max_retries,
+            wait=wait,
             **kwargs,
         )
 

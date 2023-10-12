@@ -4,7 +4,7 @@ import ast
 import inspect
 from typing import Optional
 
-from qdrant_client.async_client_base import AsyncQdrantBase
+from .async_client_base import AsyncQdrantBase
 
 
 # Define a custom AST transformer to add 'await' before method calls

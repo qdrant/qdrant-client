@@ -4,7 +4,6 @@ import ast
 import inspect
 from typing import Optional
 
-from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.grpc import CollectionsStub, PointsStub, SnapshotsStub
 from qdrant_client.http import AsyncApiClient
 from qdrant_client.http.api.cluster_api import AsyncClusterApi
@@ -12,6 +11,8 @@ from qdrant_client.http.api.collections_api import AsyncCollectionsApi
 from qdrant_client.http.api.points_api import AsyncPointsApi
 from qdrant_client.http.api.service_api import AsyncServiceApi
 from qdrant_client.http.api.snapshots_api import AsyncSnapshotsApi
+
+from .async_client_base import AsyncQdrantBase
 
 
 class AsyncAwaitTransformer(ast.NodeTransformer):
