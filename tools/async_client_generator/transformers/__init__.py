@@ -1,4 +1,3 @@
-from .ann_assign_transformer import AnnAssignTransformer
 from .call_transformer import CallTransformer
 from .class_def_transformer import ClassDefTransformer
 from .constant_transformer import ConstantTransformer

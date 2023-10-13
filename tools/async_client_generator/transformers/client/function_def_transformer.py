@@ -32,7 +32,7 @@ class ClientFunctionDefTransformer(FunctionDefTransformer):
     def generate_init(self, sync_node: ast.FunctionDef) -> ast.AST:
         """Traverse body of sync node, remove any mentions of local mode and keep only server mode"""
 
-        def traverse(node):
+        def traverse(node: ast.AST) -> List[ast.Assign]:
             assignment_nodes = []
 
             if isinstance(node, ast.Assign):
@@ -49,12 +49,20 @@ class ClientFunctionDefTransformer(FunctionDefTransformer):
         def unwrap_orelse_assignment(assign_node: ast.Assign) -> Optional[ast.Assign]:
             for target in assign_node.targets:
                 if isinstance(target, ast.Attribute) and target.attr == "_client":
-                    if isinstance(assign_node.value, ast.Call):
-                        if assign_node.value.func.id in self.class_replace_map:
-                            assign_node.value.func.id = self.class_replace_map[
-                                assign_node.value.func.id
-                            ]
+                    value = assign_node.value
+                    if isinstance(value, ast.Call):
+                        func = getattr(value, "func", None)
+                        if func is None:
+                            continue
+
+                        id_ = getattr(func, "id", None)
+                        if id_ is None:
+                            continue
+
+                        if id_ in self.class_replace_map:
+                            func.id = self.class_replace_map[func.id]
                             return assign_node
+            return None
 
         args, defaults = [sync_node.args.args[0]], []
         for arg, default in zip(sync_node.args.args[1:], sync_node.args.defaults):
@@ -77,6 +85,6 @@ class ClientFunctionDefTransformer(FunctionDefTransformer):
                     )
                 )
                 if len(assignments) == 1:
-                    sync_node.body[i] = assignments[0]
+                    sync_node.body[i] = assignments[0]  # type: ignore
                     break
         return self.generic_visit(sync_node)

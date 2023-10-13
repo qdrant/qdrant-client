@@ -1,4 +1,3 @@
-# type: ignore
 import inspect
 from typing import Dict, List, Optional
 
@@ -26,7 +25,7 @@ class ClientGenerator(BaseGenerator):
         rename_methods: Optional[Dict[str, str]] = None,
     ):
         super().__init__()
-        self._async_methods = None
+        self._async_methods: Optional[List[str]] = None
 
         self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))
         self.transformers.append(ImportFromTransformer(import_replace_map=import_replace_map))

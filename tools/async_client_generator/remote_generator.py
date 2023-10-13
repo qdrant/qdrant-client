@@ -1,4 +1,3 @@
-# type: ignore
 import ast
 import inspect
 from typing import Dict, List, Optional
@@ -34,7 +33,7 @@ class RemoteGenerator(BaseGenerator):
         rename_methods: Optional[Dict[str, str]] = None,
     ):
         super().__init__()
-        self._async_methods = None
+        self._async_methods: Optional[List[str]] = None
 
         self.transformers.append(
             RemoteImportFromTransformer(import_replace_map=import_replace_map)
@@ -60,7 +59,7 @@ class RemoteGenerator(BaseGenerator):
         )
 
     @staticmethod
-    def _get_grpc_methods(grpc_stub_class) -> List[str]:
+    def _get_grpc_methods(grpc_stub_class: type) -> List[str]:
         init_source = inspect.getsource(grpc_stub_class)
 
         # Parse the source code using ast
@@ -101,7 +100,7 @@ class RemoteGenerator(BaseGenerator):
         return self._async_methods
 
     @staticmethod
-    def get_async_methods(class_obj) -> List[str]:
+    def get_async_methods(class_obj: type) -> List[str]:
         async_methods = []
         for name, method in inspect.getmembers(class_obj):
             if inspect.iscoroutinefunction(method):

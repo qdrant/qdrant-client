@@ -8,7 +8,7 @@ class ConstantTransformer(ast.NodeTransformer):
             constant_replace_map if constant_replace_map is not None else {}
         )
 
-    def visit_Constant(self, node: ast.arg) -> ast.AST:
+    def visit_Constant(self, node: ast.Constant) -> ast.AST:
         for old_value, new_value in self.constant_replace_map.items():
             if isinstance(node.value, str):
                 node.value = node.value.replace(old_value, new_value)

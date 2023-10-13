@@ -1,5 +1,3 @@
-# type: ignore
-
 import inspect
 from typing import Dict, List, Optional
 
@@ -24,7 +22,7 @@ class FastembedGenerator(BaseGenerator):
         import_replace_map: Optional[Dict[str, str]] = None,
     ):
         super().__init__()
-        self._async_methods = None
+        self._async_methods: Optional[List[str]] = None
         self.transformers.append(FastembedCallTransformer(async_methods=self.async_methods))
         self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
         self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))

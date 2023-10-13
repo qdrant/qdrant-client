@@ -14,5 +14,6 @@ class ClassDefTransformer(ast.NodeTransformer):
         # update parent classes names
         for base in node.bases:
             for old_value, new_value in self.class_replace_map.items():
-                base.id = base.id.replace(old_value, new_value)
+                if hasattr(base, "id"):
+                    base.id = base.id.replace(old_value, new_value)
         return self.generic_visit(node)

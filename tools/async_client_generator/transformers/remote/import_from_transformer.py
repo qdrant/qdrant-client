@@ -9,7 +9,8 @@ class RemoteImportFromTransformer(ast.NodeTransformer):
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.AST:
         # update module name
         for old_value, new_value in self.import_replace_map.items():
-            node.module = node.module.replace(old_value, new_value)
+            if node.module is not None:
+                node.module = node.module.replace(old_value, new_value)
 
         # update imported item name
 

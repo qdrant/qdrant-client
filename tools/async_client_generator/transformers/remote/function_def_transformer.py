@@ -1,5 +1,5 @@
 import ast
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from tools.async_client_generator.transformers import FunctionDefTransformer
 
@@ -13,15 +13,15 @@ class RemoteFunctionDefTransformer(FunctionDefTransformer):
     ):
         super().__init__(keep_sync=keep_sync)
         self.exclude_methods = exclude_methods if exclude_methods is not None else []
-        self.async_methods = async_methods
+        self.async_methods = async_methods if async_methods is not None else []
 
     def _keep_sync(self, name: str) -> bool:
         return name in self.keep_sync or name not in self.async_methods
 
     @staticmethod
-    def override_init(sync_node) -> ast.AST:
+    def override_init(sync_node: ast.FunctionDef) -> ast.FunctionDef:
         # remove aio grpc and remain only pure grpc instead
-        kick_assignments = []
+        kick_assignments: List[Union[ast.Assign, ast.AnnAssign]] = []
         for child_node in sync_node.body:
             if isinstance(child_node, ast.Assign):
                 for target in child_node.targets:
