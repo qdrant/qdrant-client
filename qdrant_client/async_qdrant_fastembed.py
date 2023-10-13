@@ -174,10 +174,10 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             assert len(metadata) == len(
                 documents
             ), f"metadata length mismatch: {len(metadata)} != {len(documents)}"
-        payloads = ({"document": doc, **metadata} for (doc, metadata) in zip(documents, metadata))
+        payloads = ({"document": doc, **metadata} for doc, metadata in zip(documents, metadata))
         if ids is None:
             ids = [uuid.uuid4().hex for _ in range(len(documents))]
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         vector_field_name = self._get_vector_field_name()
         try:
             collection_info = await self.get_collection(collection_name=collection_name)
@@ -204,7 +204,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         ), f"Distance mismatch: {distance} != {vector_params.distance}"
         records = (
             models.Record(id=idx, payload=payload, vector={vector_field_name: vector})
-            for (idx, payload, vector) in zip(ids, payloads, embeddings)
+            for idx, payload, vector in zip(ids, payloads, embeddings)
         )
         self.upload_records(collection_name=collection_name, records=records, wait=True, **kwargs)
         return ids
