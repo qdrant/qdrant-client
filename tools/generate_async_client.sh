@@ -22,4 +22,4 @@ cd $ABSOLUTE_PROJECT_ROOT/qdrant_client
 
 ls -1 async* | autoflake --recursive --imports qdrant_client --remove-unused-variables --in-place async*.py
 ls -1 async* | xargs -I {} isort --profile black {}
-ls -1 async* | xargs -I {} black -l 99 {}
+ls -1 async* | xargs -I {} black -l 99 --target-version py39 {}
