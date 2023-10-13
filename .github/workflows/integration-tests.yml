@@ -37,6 +37,10 @@ jobs:
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --all-extras
+      - name: Run async client generation tests
+        run: |
+          ./tests/async-client-consistency-check.sh
+        shell: bash
       - name: Run integration tests
         run: |
           ./tests/integration-tests.sh

@@ -26,7 +26,7 @@ class AsyncQdrantBase:
         with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> List[types.ScoredPoint]:
         raise NotImplementedError()
 
@@ -45,7 +45,7 @@ class AsyncQdrantBase:
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
@@ -69,7 +69,7 @@ class AsyncQdrantBase:
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         strategy: Optional[types.RecommendStrategy] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> List[types.ScoredPoint]:
         raise NotImplementedError()
 
@@ -90,7 +90,7 @@ class AsyncQdrantBase:
         lookup_from: Optional[models.LookupLocation] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
         strategy: Optional[types.RecommendStrategy] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
@@ -102,7 +102,7 @@ class AsyncQdrantBase:
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         raise NotImplementedError()
 
@@ -111,7 +111,7 @@ class AsyncQdrantBase:
         collection_name: str,
         count_filter: Optional[types.Filter] = None,
         exact: bool = True,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> types.CountResult:
         raise NotImplementedError()
 
@@ -130,7 +130,7 @@ class AsyncQdrantBase:
         collection_name: str,
         vectors: Sequence[str],
         points: types.PointsSelector,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -140,7 +140,7 @@ class AsyncQdrantBase:
         ids: Sequence[types.PointId],
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> List[types.Record]:
         raise NotImplementedError()
 
@@ -154,7 +154,7 @@ class AsyncQdrantBase:
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -163,7 +163,7 @@ class AsyncQdrantBase:
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -172,7 +172,7 @@ class AsyncQdrantBase:
         collection_name: str,
         keys: Sequence[str],
         points: types.PointsSelector,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
@@ -185,7 +185,7 @@ class AsyncQdrantBase:
         self,
         collection_name: str,
         update_operations: Sequence[types.UpdateOperation],
-        **kwargs: Any,
+        **kwargs: Any
     ) -> List[types.UpdateResult]:
         raise NotImplementedError()
 
@@ -218,7 +218,7 @@ class AsyncQdrantBase:
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
-        **kwargs: Any,
+        **kwargs: Any
     ) -> bool:
         raise NotImplementedError()
 
@@ -226,7 +226,7 @@ class AsyncQdrantBase:
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
-        **kwargs: Any,
+        **kwargs: Any
     ) -> bool:
         raise NotImplementedError()
 
@@ -243,7 +243,7 @@ class AsyncQdrantBase:
         ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> None:
         raise NotImplementedError()
 
@@ -253,7 +253,7 @@ class AsyncQdrantBase:
         field_name: str,
         field_schema: Optional[types.PayloadSchemaType] = None,
         field_type: Optional[types.PayloadSchemaType] = None,
-        **kwargs: Any,
+        **kwargs: Any
     ) -> types.UpdateResult:
         raise NotImplementedError()
 
