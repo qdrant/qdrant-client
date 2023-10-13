@@ -11,7 +11,7 @@ cd $ABSOLUTE_PROJECT_ROOT/tools/async_client_generator
 python3 -m tools.async_client_generator.base_client_generator
 python3 -m tools.async_client_generator.fastembed_generator
 python3 -m tools.async_client_generator.client_generator
-python3 -m tools.async_client_generator.qdrant_remote_generator
+python3 -m tools.async_client_generator.remote_generator
 
 ls -1 | autoflake --recursive --imports qdrant_client --remove-unused-variables --in-place async*.py
 ls -1 | grep async | xargs -I {} isort -w 99 --multi-line 3 --trailing-comma --force-grid-wrap 0 --combine-as {}
