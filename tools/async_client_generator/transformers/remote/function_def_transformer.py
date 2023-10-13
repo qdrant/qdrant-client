@@ -1,7 +1,7 @@
 import ast
 from typing import List, Optional
 
-from ...transformers import FunctionDefTransformer
+from tools.async_client_generator.transformers import FunctionDefTransformer
 
 
 class RemoteFunctionDefTransformer(FunctionDefTransformer):
@@ -20,6 +20,7 @@ class RemoteFunctionDefTransformer(FunctionDefTransformer):
 
     @staticmethod
     def override_init(sync_node) -> ast.AST:
+        # remove aio grpc and remain only pure grpc instead
         kick_assignments = []
         for child_node in sync_node.body:
             if isinstance(child_node, ast.Assign):

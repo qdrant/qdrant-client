@@ -8,7 +8,7 @@ class FastembedCallTransformer(ast.NodeTransformer):
 
     def visit_Call(self, node: ast.Call) -> Union[ast.AST, ast.Await]:
         if isinstance(node.func, ast.Attribute):
-            if isinstance(node.func.value, ast.Name) and node.func.value.id == "self":
+            if isinstance(node.func.value, ast.Name):
                 if node.func.attr in self.async_methods:
                     return ast.Await(value=node)
         return self.generic_visit(node)

@@ -17,9 +17,9 @@ class BaseClientGenerator(BaseGenerator):
     ):
         super().__init__()
 
-        self.transformers.append(FunctionDefTransformer(keep_sync))
-        self.transformers.append(ClassDefTransformer(class_replace_map))
-        self.transformers.append(ConstantTransformer(constant_replace_map))
+        self.transformers.append(FunctionDefTransformer(keep_sync=keep_sync))
+        self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
+        self.transformers.append(ConstantTransformer(constant_replace_map=constant_replace_map))
 
 
 if __name__ == "__main__":

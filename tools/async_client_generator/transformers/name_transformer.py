@@ -3,6 +3,8 @@ from typing import Dict, Optional
 
 
 class NameTransformer(ast.NodeTransformer):
+    """Required to change return statement type hints"""
+
     def __init__(
         self,
         class_replace_map: Optional[Dict[str, str]] = None,

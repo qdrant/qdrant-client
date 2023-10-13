@@ -25,11 +25,11 @@ class FastembedGenerator(BaseGenerator):
     ):
         super().__init__()
         self._async_methods = None
-        self.transformers.append(FastembedCallTransformer(self.async_methods))
-        self.transformers.append(ClassDefTransformer(class_replace_map))
-        self.transformers.append(ImportTransformer(import_replace_map))
-        self.transformers.append(ImportFromTransformer(import_replace_map))
-        self.transformers.append(FastembedFunctionDefTransformer(keep_sync))
+        self.transformers.append(FastembedCallTransformer(async_methods=self.async_methods))
+        self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
+        self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))
+        self.transformers.append(ImportFromTransformer(import_replace_map=import_replace_map))
+        self.transformers.append(FastembedFunctionDefTransformer(keep_sync=keep_sync))
 
     @property
     def async_methods(self) -> List[str]:

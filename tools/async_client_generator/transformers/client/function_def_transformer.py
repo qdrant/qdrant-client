@@ -1,7 +1,7 @@
 import ast
 from typing import Dict, List, Optional
 
-from ...transformers import FunctionDefTransformer
+from tools.async_client_generator.transformers import FunctionDefTransformer
 
 
 class ClientFunctionDefTransformer(FunctionDefTransformer):
@@ -10,13 +10,11 @@ class ClientFunctionDefTransformer(FunctionDefTransformer):
         keep_sync: Optional[List[str]] = None,
         class_replace_map: Optional[Dict[str, str]] = None,
         exclude_methods: Optional[List[str]] = None,
-        rename_methods: Optional[Dict[str, str]] = None,
         async_methods: Optional[List[str]] = None,
     ):
         super().__init__(keep_sync)
         self.class_replace_map = class_replace_map if class_replace_map is not None else {}
         self.exclude_methods = exclude_methods if exclude_methods is not None else []
-        self.rename_methods = rename_methods if rename_methods is not None else {}
         self.async_methods = async_methods if async_methods is not None else []
 
     def _keep_sync(self, name: str) -> bool:
@@ -32,6 +30,8 @@ class ClientFunctionDefTransformer(FunctionDefTransformer):
         return super().visit_FunctionDef(sync_node)
 
     def generate_init(self, sync_node: ast.FunctionDef) -> ast.AST:
+        """Traverse body of sync node, remove any mentions of local mode and keep only server mode"""
+
         def traverse(node):
             assignment_nodes = []
 

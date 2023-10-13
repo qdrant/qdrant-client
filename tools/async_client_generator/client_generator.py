@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 from tools.async_client_generator.async_client_base import AsyncQdrantBase
 from tools.async_client_generator.base_generator import BaseGenerator
 from tools.async_client_generator.transformers import (
-    AnnAssignTransformer,
     CallTransformer,
     ClassDefTransformer,
     ImportFromTransformer,
@@ -29,21 +28,29 @@ class ClientGenerator(BaseGenerator):
         super().__init__()
         self._async_methods = None
 
-        self.transformers.append(ImportTransformer(import_replace_map))
-        self.transformers.append(ImportFromTransformer(import_replace_map))
+        self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))
+        self.transformers.append(ImportFromTransformer(import_replace_map=import_replace_map))
         self.transformers.append(
             ClientFunctionDefTransformer(
-                keep_sync, class_replace_map, exclude_methods, rename_methods, self.async_methods
+                keep_sync=keep_sync,
+                class_replace_map=class_replace_map,
+                exclude_methods=exclude_methods,
+                async_methods=self.async_methods,
             )
         )
-        self.transformers.append(ClassDefTransformer(class_replace_map))
-        self.transformers.append(AnnAssignTransformer(class_replace_map))
+        self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
 
         # call_transformer should be after function_def_transformer
-        self.transformers.append(CallTransformer(class_replace_map, self.async_methods))
+        self.transformers.append(
+            CallTransformer(class_replace_map=class_replace_map, async_methods=self.async_methods)
+        )
         # name_transformer should be after function_def, class_def and ann_assign transformers
         self.transformers.append(
-            NameTransformer(class_replace_map, import_replace_map, rename_methods)
+            NameTransformer(
+                class_replace_map=class_replace_map,
+                import_replace_map=import_replace_map,
+                rename_methods=rename_methods,
+            )
         )
 
     @property
