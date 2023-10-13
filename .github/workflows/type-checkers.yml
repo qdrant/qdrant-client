@@ -28,8 +28,12 @@ jobs:
 
       - name: mypy
         run: |
-          poetry run mypy . --exclude "async_qdrant_fastembed.py" --disallow-incomplete-defs --disallow-untyped-defs
+          if [[ ${{ matrix.python-version }} != "3.8" ]] || [[ ! -d "tools/async_client_generator" ]]; then
+            poetry run mypy . --disallow-incomplete-defs --disallow-untyped-defs
+          fi
 
       - name: pyright
         run: |
-          poetry run pyright tests/type_stub.py
+          if [[ ${{ matrix.python-version }} != "3.8" ]] || [[ ! -d "tools/async_client_generator" ]]; then
+            poetry run mypy . --disallow-incomplete-defs --disallow-untyped-defs
+          fi
