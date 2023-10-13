@@ -35,6 +35,4 @@ jobs:
 
       - name: pyright
         run: |
-          if [[ ${{ matrix.python-version }} != "3.8" ]] || [[ ! -d "tools/async_client_generator" ]]; then
-            poetry run mypy . --disallow-incomplete-defs --disallow-untyped-defs
-          fi
+          poetry run pyright tests/type_stub.py
