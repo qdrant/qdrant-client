@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import shutil
-from copy import deepcopy
 from io import TextIOWrapper
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
@@ -224,6 +223,14 @@ class QdrantLocal(QdrantBase):
                 with_payload=request.with_payload,
                 with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
+                using=request.using,
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
+                strategy=request.strategy,
             )
             for request in requests
         ]
