@@ -8,21 +8,22 @@ from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
     generate_fixtures,
+    image_vector_size,
     init_client,
     init_local,
     init_remote,
-    image_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
 
 secondary_collection_name = "secondary_collection"
 
+
 class TestSimpleRecommendation:
-    
+    __test__ = False
+
     def __init__(self):
         self.query_image = np.random.random(image_vector_size).tolist()
 
-        
     @classmethod
     def simple_recommend_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
@@ -82,19 +83,22 @@ class TestSimpleRecommendation:
             limit=10,
             using="text",
         )
-        
+
     @classmethod
     def best_score_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
-            positive=[10, 20,],
+            positive=[
+                10,
+                20,
+            ],
             negative=[],
             with_payload=True,
             limit=10,
             using="image",
             strategy=models.RecommendStrategy.BEST_SCORE,
         )
-    
+
     @classmethod
     def only_negatives_best_score_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
@@ -106,7 +110,7 @@ class TestSimpleRecommendation:
             using="image",
             strategy=models.RecommendStrategy.BEST_SCORE,
         )
-    
+
     @classmethod
     def avg_vector_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
@@ -118,7 +122,7 @@ class TestSimpleRecommendation:
             using="image",
             strategy=models.RecommendStrategy.AVERAGE_VECTOR,
         )
-        
+
     def recommend_from_raw_vectors(self, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
@@ -128,7 +132,7 @@ class TestSimpleRecommendation:
             limit=10,
             using="image",
         )
-    
+
     def recommend_from_raw_vectors_and_ids(self, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
@@ -137,6 +141,32 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="image",
+        )
+
+    @staticmethod
+    def recommend_batch(client: QdrantBase) -> List[List[models.ScoredPoint]]:
+        return client.recommend_batch(
+            collection_name=COLLECTION_NAME,
+            requests=[
+                models.RecommendRequest(
+                    positive=[3],
+                    negative=[],
+                    limit=1,
+                    using="image",
+                    strategy=models.RecommendStrategy.AVERAGE_VECTOR,
+                ),
+                models.RecommendRequest(
+                    positive=[10],
+                    negative=[],
+                    limit=2,
+                    using="image",
+                    strategy=models.RecommendStrategy.BEST_SCORE,
+                    lookup_from=models.LookupLocation(
+                        collection=secondary_collection_name,
+                        vector="image",
+                    ),
+                ),
+            ],
         )
 
 
@@ -160,10 +190,15 @@ def test_simple_recommend() -> None:
     compare_client_results(local_client, remote_client, searcher.simple_recommend_negative)
     compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
-    compare_client_results(local_client, remote_client, searcher.only_negatives_best_score_recommend)
+    compare_client_results(
+        local_client, remote_client, searcher.only_negatives_best_score_recommend
+    )
     compare_client_results(local_client, remote_client, searcher.avg_vector_recommend)
     compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors)
-    compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors_and_ids)
+    compare_client_results(
+        local_client, remote_client, searcher.recommend_from_raw_vectors_and_ids
+    )
+    compare_client_results(local_client, remote_client, searcher.recommend_batch)
 
     for _ in range(10):
         query_filter = one_random_filter_please()
