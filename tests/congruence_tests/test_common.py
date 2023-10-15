@@ -119,7 +119,7 @@ def compare_scored_record(
         point1.id == point2.id
     ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
     # adjust precision depending on the magnitude of score
-    max_difference = 1e-4 * 10**(math.floor(math.log(abs(point2.score), 10)))
+    max_difference = 1e-4 * 10 ** (math.floor(math.log(abs(point2.score), 10)))
     assert (
         abs(point1.score - point2.score) < max_difference
     ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, max_difference = {max_difference}"
@@ -135,7 +135,12 @@ def compare_records(res1: list, res2: list) -> None:
         res1_item = res1[i]
         res2_item = res2[i]
 
-        if isinstance(res1_item, models.ScoredPoint) and isinstance(res2_item, models.ScoredPoint):
+        if isinstance(res1_item, list) and isinstance(res2_item, list):
+            compare_records(res1_item, res2_item)
+
+        elif isinstance(res1_item, models.ScoredPoint) and isinstance(
+            res2_item, models.ScoredPoint
+        ):
             compare_scored_record(res1_item, res2_item, i)
 
         elif isinstance(res1_item, models.Record) and isinstance(res2_item, models.Record):
