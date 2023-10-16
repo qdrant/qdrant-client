@@ -1,4 +1,5 @@
 import uuid
+from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 from pydantic import BaseModel
@@ -95,23 +96,24 @@ class QdrantFastembedMixin(QdrantBase):
         parallel: Optional[int] = None,
     ) -> Iterable[Tuple[str, List[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
-        for batch_docs in iter_batch(documents, batch_size):
-            if embed_type == "passage":
-                vectors_batches = embedding_model.passage_embed(
-                    batch_docs, batch_size=batch_size, parallel=parallel
-                )
-            elif embed_type == "query":
-                vectors_batches = (
-                    list(embedding_model.query_embed(query=query))[0] for query in batch_docs
-                )
-            elif embed_type == "default":
-                vectors_batches = embedding_model.embed(
-                    batch_docs, batch_size=batch_size, parallel=parallel
-                )
-            else:
-                raise ValueError(f"Unknown embed type: {embed_type}")
-            for vector, doc in zip(vectors_batches, batch_docs):
-                yield doc, vector.tolist()
+        documents_a, documents_b = tee(documents, 2)
+        if embed_type == "passage":
+            vectors_iter = embedding_model.passage_embed(
+                documents_a, batch_size=batch_size, parallel=parallel
+            )
+        elif embed_type == "query":
+            vectors_iter = (
+                list(embedding_model.query_embed(query=query))[0] for query in documents_a
+            )
+        elif embed_type == "default":
+            vectors_iter = embedding_model.embed(
+                documents_a, batch_size=batch_size, parallel=parallel
+            )
+        else:
+            raise ValueError(f"Unknown embed type: {embed_type}")
+
+        for vector, doc in zip(vectors_iter, documents_b):
+            yield doc, vector.tolist()
 
     def get_vector_field_name(self) -> str:
         """
