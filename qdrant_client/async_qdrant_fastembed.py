@@ -12,6 +12,8 @@
 import uuid
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
+from pydantic import BaseModel
+
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.fastembed_common import QueryResponse
