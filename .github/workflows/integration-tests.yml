@@ -39,7 +39,7 @@ jobs:
           poetry install --no-interaction --no-ansi --all-extras
       - name: Run async client generation tests
         run: |
-          if [[ ${{ matrix.python-version }} == "3.9.x" ]]; then
+          if [[ ${{ matrix.python-version }} == "3.11.x" ]]; then
             ./tests/async-client-consistency-check.sh
           fi
         shell: bash

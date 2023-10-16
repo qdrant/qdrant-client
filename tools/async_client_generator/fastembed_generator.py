@@ -54,6 +54,8 @@ if __name__ == "__main__":
         keep_sync=[
             "__init__",
             "set_model",
+            "get_vector_field_name",
+            "get_fastembed_vector_params",
         ],
         class_replace_map={
             "QdrantBase": "AsyncQdrantBase",
