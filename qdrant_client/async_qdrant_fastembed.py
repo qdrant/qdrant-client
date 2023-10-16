@@ -267,6 +267,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             records=records,
             wait=True,
             parallel=parallel or 1,
+            batch_size=batch_size,
             **kwargs,
         )
         return inserted_ids
