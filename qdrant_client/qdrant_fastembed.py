@@ -230,7 +230,7 @@ class QdrantFastembedMixin(QdrantBase):
             ImportError: If fastembed is not installed.
 
         Returns:
-            List[str]: List of UUIDs of added documents. UUIDs are randomly generated on client side.
+            List of IDs of added documents. If no ids provided, UUIDs will be randomly generated on client side.
 
         """
 
