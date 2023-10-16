@@ -350,7 +350,7 @@ class LocalCollection:
             scored_point = construct(
                 models.ScoredPoint,
                 id=point_id,
-                score=score,
+                score=float(score),
                 version=0,
                 payload=self._get_payload(idx, with_payload),
                 vector=self._get_vectors(idx, with_vectors),
@@ -645,6 +645,10 @@ class LocalCollection:
             query_vector = RecoQuery(
                 positive=positive_vectors,
                 negative=negative_vectors,
+            )
+        else:
+            raise ValueError(
+                f"strategy `{strategy}` is not a valid strategy, choose one from {types.RecommendStrategy}"
             )
 
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
