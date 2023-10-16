@@ -17,6 +17,9 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
     "BAAI/bge-base-en": (768, models.Distance.COSINE),
     "sentence-transformers/all-MiniLM-L6-v2": (384, models.Distance.COSINE),
     "BAAI/bge-small-en": (384, models.Distance.COSINE),
+    "BAAI/bge-small-en-v1.5": (384, models.Distance.COSINE),
+    "BAAI/bge-base-en-v1.5": (768, models.Distance.COSINE),
+    "intfloat/multilingual-e5-large": (1024, models.Distance.COSINE),
 }
 
 
@@ -92,27 +95,37 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _embed_documents(
         self,
-        documents: List[str],
+        documents: Iterable[str],
         embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
         batch_size: int = 32,
         embed_type: str = "default",
-    ) -> Iterable[List[float]]:
+        parallel: Optional[int] = None,
+    ) -> Iterable[Tuple[str, List[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
         for batch_docs in iter_batch(documents, batch_size):
             if embed_type == "passage":
-                vectors_batches = embedding_model.passage_embed(batch_docs, batch_size=batch_size)
+                vectors_batches = embedding_model.passage_embed(
+                    batch_docs, batch_size=batch_size, parallel=parallel
+                )
             elif embed_type == "query":
                 vectors_batches = (
                     list(embedding_model.query_embed(query=query))[0] for query in batch_docs
                 )
             elif embed_type == "default":
-                vectors_batches = embedding_model.embed(batch_docs, batch_size=batch_size)
+                vectors_batches = embedding_model.embed(
+                    batch_docs, batch_size=batch_size, parallel=parallel
+                )
             else:
                 raise ValueError(f"Unknown embed type: {embed_type}")
-            for vector in vectors_batches:
-                yield vector.tolist()
+            for vector, doc in zip(vectors_batches, batch_docs):
+                yield doc, vector.tolist()
 
-    def _get_vector_field_name(self) -> str:
+    def get_vector_field_name(self) -> str:
+        """
+        Returns name of the vector field in qdrant collection, used by current fastembed model.
+        Returns:
+            Name of the vector field.
+        """
         model_name = self.embedding_model_name.split("/")[-1].lower()
         return f"fast-{model_name}"
 
@@ -124,7 +137,7 @@ class QdrantFastembedMixin(QdrantBase):
         for scored_point in scored_points:
             embedding = None
             if scored_point.vector is not None:
-                embedding = scored_point.vector.get(self._get_vector_field_name(), None)
+                embedding = scored_point.vector.get(self.get_vector_field_name(), None)
 
             response.append(
                 QueryResponse(
@@ -137,13 +150,63 @@ class QdrantFastembedMixin(QdrantBase):
             )
         return response
 
+    def _records_iterator(
+        self,
+        ids: Optional[Iterable[models.ExtendedPointId]],
+        metadata: Optional[Iterable[Dict[str, Any]]],
+        encoded_docs: Iterable[Tuple[str, List[float]]],
+        ids_accumulator: list,
+    ) -> Iterable[models.Record]:
+        if ids is None:
+            ids = iter(lambda: uuid.uuid4().hex, None)
+
+        if metadata is None:
+            metadata = iter(lambda: {}, None)
+
+        vector_name = self.get_vector_field_name()
+
+        for idx, meta, (doc, vector) in zip(ids, metadata, encoded_docs):
+            ids_accumulator.append(idx)
+            payload = {"document": doc, **meta}
+            yield models.Record(id=idx, payload=payload, vector={vector_name: vector})
+
+    def get_fastembed_vector_params(
+        self,
+        on_disk: Optional[bool] = None,
+        quantization_config: Optional[models.QuantizationConfig] = None,
+        hnsw_config: Optional[models.HnswConfigDiff] = None,
+    ) -> Dict[str, models.VectorParams]:
+        """
+        Generates vector configuration, compatible with fastembed models.
+
+        Args:
+            on_disk: if True, vectors will be stored on disk. If None, default value will be used.
+            quantization_config: Quantization configuration. If None, quantization will be disabled.
+            hnsw_config: HNSW configuration. If None, default configuration will be used.
+
+        Returns:
+            Configuration for `vectors_config` argument in `create_collection` method.
+        """
+        vector_field_name = self.get_vector_field_name()
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
+        return {
+            vector_field_name: models.VectorParams(
+                size=embeddings_size,
+                distance=distance,
+                on_disk=on_disk,
+                quantization_config=quantization_config,
+                hnsw_config=hnsw_config,
+            )
+        }
+
     def add(
         self,
         collection_name: str,
-        documents: List[str],
-        metadata: Optional[List[Dict[str, Any]]] = None,
-        ids: Optional[List[models.ExtendedPointId]] = None,
+        documents: Iterable[str],
+        metadata: Optional[Iterable[Dict[str, Any]]] = None,
+        ids: Optional[Iterable[models.ExtendedPointId]] = None,
         batch_size: int = 32,
+        parallel: Optional[int] = None,
         **kwargs: Any,
     ) -> List[str]:
         """
@@ -157,15 +220,18 @@ class QdrantFastembedMixin(QdrantBase):
         Args:
             collection_name (str):
                 Name of the collection to add documents to.
-            documents (List[str]):
+            documents (Iterable[str]):
                 List of documents to embed and add to the collection.
-            metadata (List[Dict[str, Any]], optional):
+            metadata (Iterable[Dict[str, Any]], optional):
                 List of metadata dicts. Defaults to None.
-            ids (List[models.ExtendedPointId], optional):
+            ids (Iterable[models.ExtendedPointId], optional):
                 List of ids to assign to documents.
                 If not specified, UUIDs will be generated. Defaults to None.
             batch_size (int, optional):
                 How many documents to embed and upload in single request. Defaults to 32.
+            parallel (Optional[int], optional):
+                How many parallel workers to use for embedding. Defaults to None.
+                If number is specified, data-parallel process will be used.
 
         Raises:
             ImportError: If fastembed is not installed.
@@ -176,28 +242,16 @@ class QdrantFastembedMixin(QdrantBase):
         """
 
         # check if we have fastembed installed
-        embeddings = self._embed_documents(
+        encoded_docs = self._embed_documents(
             documents=documents,
             embedding_model_name=self.embedding_model_name,
             batch_size=batch_size,
             embed_type="passage",
+            parallel=parallel,
         )
 
-        if metadata is None:
-            metadata = [{} for _ in range(len(documents))]
-        else:
-            assert len(metadata) == len(
-                documents
-            ), f"metadata length mismatch: {len(metadata)} != {len(documents)}"
-
-        payloads = ({"document": doc, **metadata} for doc, metadata in zip(documents, metadata))
-
-        if ids is None:
-            ids = [uuid.uuid4().hex for _ in range(len(documents))]
-
         embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
-
-        vector_field_name = self._get_vector_field_name()
+        vector_field_name = self.get_vector_field_name()
 
         # Check if collection by same name exists, if not, create it
         try:
@@ -205,9 +259,7 @@ class QdrantFastembedMixin(QdrantBase):
         except Exception:
             self.create_collection(
                 collection_name=collection_name,
-                vectors_config={
-                    vector_field_name: models.VectorParams(size=embeddings_size, distance=distance)
-                },
+                vectors_config=self.get_fastembed_vector_params(),
             )
             collection_info = self.get_collection(collection_name=collection_name)
 
@@ -230,19 +282,24 @@ class QdrantFastembedMixin(QdrantBase):
             distance == vector_params.distance
         ), f"Distance mismatch: {distance} != {vector_params.distance}"
 
-        records = (
-            models.Record(id=idx, payload=payload, vector={vector_field_name: vector})
-            for idx, payload, vector in zip(ids, payloads, embeddings)
+        inserted_ids = []
+
+        records = self._records_iterator(
+            ids=ids,
+            metadata=metadata,
+            encoded_docs=encoded_docs,
+            ids_accumulator=inserted_ids,
         )
 
         self.upload_records(
             collection_name=collection_name,
             records=records,
             wait=True,
+            parallel=parallel or 1,
             **kwargs,
         )
 
-        return ids
+        return inserted_ids
 
     def query(
         self,
@@ -280,7 +337,7 @@ class QdrantFastembedMixin(QdrantBase):
             self.search(
                 collection_name=collection_name,
                 query_vector=models.NamedVector(
-                    name=self._get_vector_field_name(), vector=query_vector.tolist()
+                    name=self.get_vector_field_name(), vector=query_vector.tolist()
                 ),
                 query_filter=query_filter,
                 limit=limit,
@@ -326,7 +383,7 @@ class QdrantFastembedMixin(QdrantBase):
         for vector in query_vectors:
             request = models.SearchRequest(
                 vector=models.NamedVector(
-                    name=self._get_vector_field_name(), vector=vector.tolist()
+                    name=self.get_vector_field_name(), vector=vector.tolist()
                 ),
                 filter=query_filter,
                 limit=limit,
