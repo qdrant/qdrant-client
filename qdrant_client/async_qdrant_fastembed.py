@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.uploader.uploader import iter_batch
 
@@ -27,15 +28,10 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
     "BAAI/bge-base-en": (768, models.Distance.COSINE),
     "sentence-transformers/all-MiniLM-L6-v2": (384, models.Distance.COSINE),
     "BAAI/bge-small-en": (384, models.Distance.COSINE),
+    "BAAI/bge-small-en-v1.5": (384, models.Distance.COSINE),
+    "BAAI/bge-base-en-v1.5": (768, models.Distance.COSINE),
+    "intfloat/multilingual-e5-large": (1024, models.Distance.COSINE),
 }
-
-
-class QueryResponse(BaseModel, extra="forbid"):
-    id: Union[str, int]
-    embedding: Optional[List[float]]
-    metadata: Dict[str, Any]
-    document: str
-    score: float
 
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
@@ -201,7 +197,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         batch_size: int = 32,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> List[Union[str, int]]:
         """
         Adds text documents into qdrant collection.
         If collection does not exist, it will be created with default parameters.
@@ -262,7 +258,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         assert (
             distance == vector_params.distance
         ), f"Distance mismatch: {distance} != {vector_params.distance}"
-        inserted_ids = []
+        inserted_ids: list = []
         records = self._records_iterator(
             ids=ids, metadata=metadata, encoded_docs=encoded_docs, ids_accumulator=inserted_ids
         )

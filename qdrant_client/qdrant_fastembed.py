@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.uploader.uploader import iter_batch
 
@@ -21,14 +22,6 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
     "BAAI/bge-base-en-v1.5": (768, models.Distance.COSINE),
     "intfloat/multilingual-e5-large": (1024, models.Distance.COSINE),
 }
-
-
-class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
-    id: Union[str, int]
-    embedding: Optional[List[float]]
-    metadata: Dict[str, Any]
-    document: str
-    score: float
 
 
 class QdrantFastembedMixin(QdrantBase):
@@ -208,7 +201,7 @@ class QdrantFastembedMixin(QdrantBase):
         batch_size: int = 32,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[str]:
+    ) -> List[Union[str, int]]:
         """
         Adds text documents into qdrant collection.
         If collection does not exist, it will be created with default parameters.
@@ -282,7 +275,7 @@ class QdrantFastembedMixin(QdrantBase):
             distance == vector_params.distance
         ), f"Distance mismatch: {distance} != {vector_params.distance}"
 
-        inserted_ids = []
+        inserted_ids: list = []
 
         records = self._records_iterator(
             ids=ids,
