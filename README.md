@@ -20,7 +20,7 @@
 
 # Python Qdrant Client
 
-Client library and SDK for the [Qdrant](https://github.com/qdrant/qdrant) vector search engine.
+Client library and SDK for the [Qdrant](https://github.com/qdrant/qdrant) vector search engine. Python Client API Documentation is available [here](https://python-client.qdrant.tech/).
 
 Library contains type definitions for all Qdrant API and allows to make both Sync and Async requests.
 
