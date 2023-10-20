@@ -17,6 +17,7 @@ from qdrant_client.async_qdrant_fastembed import AsyncQdrantFastembedMixin
 from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import AsyncApiClient, AsyncApis
+from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
 
 
 class AsyncQdrantClient(AsyncQdrantFastembedMixin):
@@ -70,6 +71,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
     def __init__(
         self,
+        location: Optional[str] = None,
         url: Optional[str] = None,
         port: Optional[int] = 6333,
         grpc_port: int = 6334,
@@ -79,22 +81,30 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         prefix: Optional[str] = None,
         timeout: Optional[float] = None,
         host: Optional[str] = None,
+        path: Optional[str] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._client: AsyncQdrantBase
-        self._client = AsyncQdrantRemote(
-            url=url,
-            port=port,
-            grpc_port=grpc_port,
-            prefer_grpc=prefer_grpc,
-            https=https,
-            api_key=api_key,
-            prefix=prefix,
-            timeout=timeout,
-            host=host,
-            **kwargs,
-        )
+        if location == ":memory:":
+            self._client = AsyncQdrantLocal(location=location)
+        elif path is not None:
+            self._client = AsyncQdrantLocal(location=path)
+        else:
+            if location is not None and url is None:
+                url = location
+            self._client = AsyncQdrantRemote(
+                url=url,
+                port=port,
+                grpc_port=grpc_port,
+                prefer_grpc=prefer_grpc,
+                https=https,
+                api_key=api_key,
+                prefix=prefix,
+                timeout=timeout,
+                host=host,
+                **kwargs,
+            )
         self._is_fastembed_installed: Optional[bool] = None
         if self._is_fastembed_installed is None:
             try:
