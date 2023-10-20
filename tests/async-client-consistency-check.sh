@@ -9,9 +9,10 @@ CLIENT_DIR=$ROOT_DIR/qdrant_client
 cd $CLIENT_DIR
 
 async_files=$(ls -1 async*)
+async_files+=" local/async_qdrant_local.py"
 
 for file in $async_files ; do
-    cp {,.diff.}$file
+    cp $file{,.diff}
 done
 
 
@@ -20,7 +21,7 @@ $ROOT_DIR/tools/generate_async_client.sh
 
 # Ensure generated files are the same as files in this repository
 for file in $async_files ; do
-    if diff -wa {,.diff.}$file
+    if diff -wa $file{,.diff}
     then
         set +x
         echo "No diffs found."
@@ -33,5 +34,5 @@ done
 
 # Cleanup
 for file in $async_files ; do
-    rm -f .diff.$file
+    rm -f $file.diff
 done
