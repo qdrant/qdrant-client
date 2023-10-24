@@ -130,6 +130,7 @@ Indices and tables
    :caption: Examples
 
    examples/upload_collection
+   examples/install
 
 .. toctree::
    :maxdepth: 2
