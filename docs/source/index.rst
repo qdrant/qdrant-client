@@ -46,7 +46,7 @@ Get info about created collection
 .. code-block:: python
    from qdrant_client._pydantic_compat import to_dict
    my_collection_info = client.http.collections_api.get_collection("my_collection")
-   print(to_dict(my_collection_info)
+   print(to_dict(my_collection_info))
 
 Insert vectors into a collection
 
@@ -134,5 +134,4 @@ Indices and tables
    :maxdepth: 1
    :caption: API reference
 
-   qdrant_client.qdrant_client
-   qdrant_client
+   qdrant_client.qdrant_client.http.models
