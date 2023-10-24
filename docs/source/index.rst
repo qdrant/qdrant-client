@@ -132,7 +132,7 @@ Indices and tables
 
 .. toctree::
    :maxdepth: 1
-   :caption: API reference
+   :caption: Complete API reference
 
    qdrant_client.qdrant_client
    qdrant_client
