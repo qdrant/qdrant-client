@@ -44,6 +44,7 @@ Create a new collection
 Get info about created collection
 
 .. code-block:: python
+
    from qdrant_client._pydantic_compat import to_dict
    my_collection_info = client.http.collections_api.get_collection("my_collection")
    print(to_dict(my_collection_info))
@@ -131,8 +132,19 @@ Indices and tables
    examples/upload_collection
 
 .. toctree::
-   :maxdepth: 1
-   :caption: API reference
+   :maxdepth: 2
+   :caption: Selected API Reference
 
-   qdrant_client.http.models
-   qdrant_client.qdrant_client
+   DataTypes aka Models <qdrant_client.http.models.models>
+   Conversions <qdrant_client.conversions>
+   HTTP API <qdrant_client.http>
+   Exceptions <qdrant_client.https.exceptions>
+   gRPC API <qdrant_client.grpc>
+   Filters <qdrant_client.http.models.models.filters>
+   Uploader <qdrant_client.uploader.uploader>
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Complete Docs
+
+   Complete Client API Docs <qdrant_client.qdrant_client>
