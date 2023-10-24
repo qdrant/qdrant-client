@@ -134,4 +134,4 @@ Indices and tables
    :maxdepth: 1
    :caption: API reference
 
-   qdrant_client.qdrant_client.http.models
+   qdrant_client.qdrant_client
