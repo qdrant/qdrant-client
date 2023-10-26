@@ -1,6 +1,4 @@
-.. Quaterion documentation master file, created by
-   sphinx-quickstart on Thu Feb 17 16:24:11 2022.
-   You can adapt this file completely to your liking, but it should at least
+.. You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 Python Qdrant client library
@@ -76,8 +74,7 @@ Search for similar vectors
       collection_name="my_collection",
       query_vector=query_vector,
       query_filter=None,  # Don't use any filters for now, search across all indexed points
-      append_payload=True,  # Also return a stored payload for found points
-      limit=5  # Return 5 closest points
+      with_payload=True, # Also return a stored payload for found points, true by default
    )
 
 Search for similar vectors with filtering condition
@@ -99,8 +96,7 @@ Search for similar vectors with filtering condition
                )
            ]
        ),
-       append_payload=True,  # Also return a stored payload for found points
-       limit=5  # Return 5 closest points
+       with_payload=True, # Return payload, true by default
    )
 
 Check out `full example code <https://github.com/qdrant/qdrant-client/blob/master/tests/test_qdrant_client.py>`_
@@ -118,6 +114,18 @@ To enable (much faster) collection uploading with gRPC, use the following initia
 
    client = QdrantClient(host="localhost", grpc_port=6334, prefer_grpc=True)
 
+Highlighted Classes
+===================
+
+- :class:`qdrant_client.http.models.models.PointStruct`
+- :class:`qdrant_client.http.models.models.Filter`
+- :class:`qdrant_client.http.models.models.VectorParams`
+- :class:`qdrant_client.http.models.models.BinaryQuantization`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: PointStruct Reference
+
 Indices and tables
 ==================
 
@@ -129,21 +137,15 @@ Indices and tables
    :maxdepth: 2
    :caption: Examples
 
-   examples/upload_collection
-   examples/install
+   examples/quickstart.ipynb
 
 .. toctree::
    :maxdepth: 2
    :caption: Selected API Reference
 
    DataTypes aka Models <qdrant_client.http.models.models>
-   Conversions <qdrant_client.conversions>
-   HTTP API <qdrant_client.http>
-   Exceptions <qdrant_client.https.exceptions>
-   gRPC API <qdrant_client.grpc>
-   Filters <qdrant_client.http.models.models.filters>
-   Uploader <qdrant_client.uploader.uploader>
-
+   Exceptions <qdrant_client.http.exceptions>
+   
 .. toctree::
    :maxdepth: 1
    :caption: Complete Docs
