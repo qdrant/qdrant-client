@@ -728,8 +728,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points: Batch or list of points to insert
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -884,7 +883,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering: Define strategy for ordering of the points. Possible values:
-
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -936,12 +934,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
-            points: List of affected points, filter or points selector.
-             Example
+            points: List of affected points, filter or points selector. Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -1000,8 +996,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
              Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -1043,8 +1038,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Example
                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -1084,8 +1078,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Example
                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -1120,8 +1113,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             wait: Await for the results to be processed.
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -1526,8 +1518,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -1562,11 +1553,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name: Name of the collection
             field_name: Name of the payload field
             wait: Await for the results to be processed.
-
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
