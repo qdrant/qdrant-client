@@ -32,6 +32,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "nbsphinx"
 ]
 
 # prevents sphinx from adding full path to type hints
