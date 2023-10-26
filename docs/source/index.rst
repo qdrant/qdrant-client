@@ -137,9 +137,9 @@ Indices and tables
 
    DataTypes aka Models <qdrant_client.http.models.models>
    Conversions <qdrant_client.conversions>
-   HTTP API <qdrant_client.http>
+   Points API <qdrant_client.http.api.points_api>
+   Collections API <qdrant_client.http.api.collections_api>
    Exceptions <qdrant_client.https.exceptions>
-   gRPC API <qdrant_client.grpc>
    Filters <qdrant_client.http.models.models.filters>
    Uploader <qdrant_client.uploader.uploader>
 
