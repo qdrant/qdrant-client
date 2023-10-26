@@ -23,9 +23,9 @@ class QdrantClient(QdrantFastembedMixin):
         This module methods are wrappers around generated client code for gRPC and REST methods.
         If you need lower-level access to generated clients, use following properties:
 
-        - :attr:`QdrantClient.grpc_points`
-        - :attr:`QdrantClient.grpc_collections`
-        - :attr:`QdrantClient.rest`
+        - :py:attr:`QdrantClient.grpc_points`
+        - :py:attr:`QdrantClient.grpc_collections`
+        - :py:attr:`QdrantClient.rest`
 
     .. note::
         If you need to use async versions of API, please consider using raw implementations of clients directly:
