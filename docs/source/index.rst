@@ -129,8 +129,7 @@ Indices and tables
    :maxdepth: 2
    :caption: Examples
 
-   examples/upload_collection
-   examples/install
+   examples/quickstart.ipynb
 
 .. toctree::
    :maxdepth: 2
