@@ -76,7 +76,7 @@ Search for similar vectors
       collection_name="my_collection",
       query_vector=query_vector,
       query_filter=None,  # Don't use any filters for now, search across all indexed points
-      with_payload=True, # Also return a stored payload for found points
+      with_payload=True, # Also return a stored payload for found points, true by default
    )
 
 Search for similar vectors with filtering condition
@@ -98,7 +98,7 @@ Search for similar vectors with filtering condition
                )
            ]
        ),
-       with_payload=True, # Also return a stored payload for found points
+       with_payload=True, # Return payload, true by default
    )
 
 Check out `full example code <https://github.com/qdrant/qdrant-client/blob/master/tests/test_qdrant_client.py>`_
