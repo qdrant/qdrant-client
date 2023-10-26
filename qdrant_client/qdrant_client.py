@@ -1188,8 +1188,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait: Await for the results to be processed.
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            ordering:
-                Define strategy for ordering of the points. Possible values:
+            ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
