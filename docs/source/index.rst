@@ -134,13 +134,9 @@ Indices and tables
    :caption: Selected API Reference
 
    DataTypes aka Models <qdrant_client.http.models.models>
-   Points API <qdrant_client.http.api.points_api>
-   Collections API <qdrant_client.http.api.collections_api>
    Exceptions <qdrant_client.https.exceptions>
    Filters <qdrant_client.http.models.models.filters>
-   Uploader <qdrant_client.uploader.uploader>
-   Conversions <qdrant_client.conversions>
-
+   
 .. toctree::
    :maxdepth: 1
    :caption: Complete Docs
