@@ -76,8 +76,6 @@ Search for similar vectors
       collection_name="my_collection",
       query_vector=query_vector,
       query_filter=None,  # Don't use any filters for now, search across all indexed points
-      append_payload=True,  # Also return a stored payload for found points
-      limit=5  # Return 5 closest points
    )
 
 Search for similar vectors with filtering condition
@@ -100,7 +98,6 @@ Search for similar vectors with filtering condition
            ]
        ),
        append_payload=True,  # Also return a stored payload for found points
-       limit=5  # Return 5 closest points
    )
 
 Check out `full example code <https://github.com/qdrant/qdrant-client/blob/master/tests/test_qdrant_client.py>`_
@@ -136,12 +133,12 @@ Indices and tables
    :caption: Selected API Reference
 
    DataTypes aka Models <qdrant_client.http.models.models>
-   Conversions <qdrant_client.conversions>
    Points API <qdrant_client.http.api.points_api>
    Collections API <qdrant_client.http.api.collections_api>
    Exceptions <qdrant_client.https.exceptions>
    Filters <qdrant_client.http.models.models.filters>
    Uploader <qdrant_client.uploader.uploader>
+   Conversions <qdrant_client.conversions>
 
 .. toctree::
    :maxdepth: 1
