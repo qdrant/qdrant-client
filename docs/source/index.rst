@@ -116,6 +116,19 @@ To enable (much faster) collection uploading with gRPC, use the following initia
 
    client = QdrantClient(host="localhost", grpc_port=6334, prefer_grpc=True)
 
+Highlighted Classes
+===================
+
+- :class:`qdrant_client.http.models.models.PointStruct`
+- :class:`qdrant_client.http.models.models.Filter`
+- :class:`qdrant_client.http.models.models.VectorParams`
+- :class:`qdrant_client.http.models.models.BinaryQuantization`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: PointStruct Reference
+
+
 Indices and tables
 ==================
 
@@ -134,8 +147,7 @@ Indices and tables
    :caption: Selected API Reference
 
    DataTypes aka Models <qdrant_client.http.models.models>
-   Exceptions <qdrant_client.https.exceptions>
-   Filters <qdrant_client.http.models.models.filters>
+   Exceptions <qdrant_client.http.exceptions>
    
 .. toctree::
    :maxdepth: 1
