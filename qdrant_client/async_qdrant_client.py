@@ -772,7 +772,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
 
         Returns:
-            Operation result
+            Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.update_vectors(
@@ -791,22 +791,23 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         """Delete specified vector from the collection. Does not affect payload.
 
         Args:
-            collection_name: Name of the collection to delete vector from
-            vectors:
-                List of names of the vectors to delete.
-                Use `""` to delete the default vector.
-                At least one vector should be specified.
-            points: Selects points based on list of IDs or filter
-                 Examples
-                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            wait: Await for the results to be processed.
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+
+            collection_name (str): Name of the collection to delete vector from
+            vectors: List of names of the vectors to delete. Use `""` to delete the default vector. At least one vector should be specified.
+            points (Point): Selects points based on list of IDs or filter
+                Examples
+
+                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            wait (bool): Await for the results to be processed.
+
+                - If `true`, result will be returned only when all changes are applied
+                - If `false`, result will be returned immediately after the confirmation of receiving.
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -882,16 +883,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            points_selector: Selects points based on list of IDs or filter
+            points_selector: Selects points based on list of IDs or filter.
                 Examples
-                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+
+                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -938,16 +939,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
-            points: List of affected points, filter or points selector.
-             Example
+            points: List of affected points, filter or points selector
+            Example
+
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -1001,12 +1002,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
         Returns:
             Operation result
@@ -1043,12 +1044,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is downn
 
         Returns:
             Operation result
@@ -1081,13 +1081,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points_selector: List of affected points, filter or points selector. Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering: Define strategy for ordering of the points
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
         Returns:
             Operation result
         """
@@ -1116,13 +1114,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             wait: Await for the results to be processed.
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
-            **kwargs:
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
         Returns:
             Operation results
@@ -1521,12 +1517,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
         Returns:
             Operation Result
@@ -1559,12 +1554,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
         Returns:
             Operation Result
@@ -1665,17 +1659,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Args:
             collection_name: Name of the collection
-            location:
-                URL of the snapshot.
+            location: URL of the snapshot
                 Example:
-                    - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
-                    - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
+                - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
+                - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
             priority:
                 Defines source of truth for snapshot recovery
+
+                    - `replica` (default) means - prefer existing data over the snapshot
                     - `no_sync` means - do not sync shard with other shards
                     - `snapshot` means - prefer snapshot data over the current state
-                    - `replica` means - prefer existing data over the snapshot
-                Default: `replica`
             wait: Await for the results to be processed.
 
         """
@@ -1758,17 +1751,17 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Args:
             collection_name: Name of the collection
             shard_id: Index of the shard
-            location:
-                URL of the snapshot.
+            location: URL of the snapshot
                 Example:
-                    - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
-                    - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
+                - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
+                - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
             priority:
                 Defines source of truth for snapshot recovery
+
+                    - `replica` (default) means - prefer existing data over the snapshot
                     - `no_sync` means - do not sync shard with other shards
                     - `snapshot` means - prefer snapshot data over the current state
-                    - `replica` means - prefer existing data over the snapshot
-                Default: `replica`
+
             wait: Await for the results to be processed.
 
         Returns:
