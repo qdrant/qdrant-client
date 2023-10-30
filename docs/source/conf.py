@@ -32,7 +32,8 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
-    "nbsphinx"
+    "nbsphinx",
+    "IPython.sphinxext.ipython_console_highlighting"
 ]
 
 # prevents sphinx from adding full path to type hints
