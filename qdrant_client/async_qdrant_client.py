@@ -717,18 +717,18 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         ordering: Optional[types.WriteOrdering] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
-        """Update or insert a new point into the collection.
+        """
+        Update or insert a new point into the collection.
 
         If point with given ID already exists - it will be overwritten.
 
         Args:
-            collection_name: To which collection to insert
-            wait: Await for the results to be processed.
-
+            collection_name (str): To which collection to insert
+            points (Point): Batch or list of points to insert
+            wait (bool): Await for the results to be processed.
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            points: Batch or list of points to insert
-            ordering: Define strategy for ordering of the points. Possible values:
+            ordering (Optional[WriteOrdering): Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -736,7 +736,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                     consistent, but may be unavailable if leader is down
 
         Returns:
-            Operation result
+            Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.upsert(
@@ -883,7 +883,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering: Define strategy for ordering of the points. Possible values:
-
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -995,7 +994,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector.
-             Example
+            Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering: Define strategy for ordering of the points. Possible values:
@@ -1037,9 +1036,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             keys: List of payload keys to remove
             points: List of affected points, filter or points selector.
-                Example
-                   - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                   - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            Example
+                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering: Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
@@ -1073,14 +1072,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Args:
             collection_name: Name of the collection
             wait: Await for the results to be processed.
-
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            points_selector: List of affected points, filter or points selector.
-                Example
-                   - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                   - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
-            ordering: Define strategy for ordering of the points. Possible values:
+            points_selector: List of affected points, filter or points selector. Example
+                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+            ordering: Define strategy for ordering of the points
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
