@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../"
 
 brew install pandoc
 
-pip install qdrant-client
+pip install -e .
 
 pip install sphinx==4.5.0
 pip install ipython
