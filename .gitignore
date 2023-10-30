@@ -12,3 +12,4 @@ dist
 *.tar.gz
 local_cache/*/*
 .python-version
+docs/source/examples/*/*/*
