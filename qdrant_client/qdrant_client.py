@@ -778,6 +778,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name (str): To which collection to insert
             points (Point): Batch or list of points to insert
             wait (bool): Await for the results to be processed.
+
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
@@ -810,18 +811,22 @@ class QdrantClient(QdrantFastembedMixin):
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
 
         Args:
-            collection_name: Name of the collection to update vectors in
-            points: List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
-                Example
+            collection_name (str): Name of the collection to update vectors in
+            points (Point): List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
+                Examples:
+                
                 - `PointVectors(id=1, vector=[1, 2, 3])`
                 - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
-            wait: Await for the results to be processed.
-            ordering: Define strategy for ordering of the points. Possible values:
-                - 'weak' - write operations may be reordered, works faster, default
-                - 'medium' - write operations go through dynamically selected leader,
-                    may be inconsistent for a short period of time in case of leader change
-                - 'strong' - Write operations go through the permanent leader,
-                    consistent, but may be unavailable if leader is down
+            wait (bool): Await for the results to be processed.
+
+                - If `true`, result will be returned only when all changes are applied
+                - If `false`, result will be returned immediately after the confirmation of receiving.
+            ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+                
+                - `weak` (default) - write operations may be reordered, works faster
+                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
+                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+        
 
         Returns:
             Operation result
