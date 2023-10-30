@@ -769,18 +769,18 @@ class QdrantClient(QdrantFastembedMixin):
         ordering: Optional[types.WriteOrdering] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
-        """Update or insert a new point into the collection.
+        """
+        Update or insert a new point into the collection.
 
         If point with given ID already exists - it will be overwritten.
 
         Args:
-            collection_name: To which collection to insert
-            wait: Await for the results to be processed.
-
+            collection_name (str): To which collection to insert
+            points (Point): Batch or list of points to insert
+            wait (bool): Await for the results to be processed.
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            points: Batch or list of points to insert
-            ordering: Define strategy for ordering of the points. Possible values:
+            ordering (Optional[WriteOrdering): Define strategy for ordering of the points. Possible values:
                 - 'weak' - write operations may be reordered, works faster, default
                 - 'medium' - write operations go through dynamically selected leader,
                     may be inconsistent for a short period of time in case of leader change
@@ -788,7 +788,7 @@ class QdrantClient(QdrantFastembedMixin):
                     consistent, but may be unavailable if leader is down
 
         Returns:
-            Operation result
+            Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
