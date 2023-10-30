@@ -40,13 +40,15 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
 
     def __init__(self, **kwargs: Any):
         self.embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
+        self.embedding_model_cache_dir = None
         super().__init__(**kwargs)
 
-    def set_model(self, embedding_model_name: str) -> None:
+    def set_model(self, embedding_model_name: str, cache_dir: Optional[str] = None) -> None:
         """
         Set embedding model to use for encoding documents and queries.
         Args:
             embedding_model_name: One of the supported embedding models. See `SUPPORTED_EMBEDDING_MODELS` for details.
+            cache_dir: Cache directory for accessing embedding models data.
 
         Raises:
             ValueError: If embedding model is not supported.
@@ -55,8 +57,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Returns:
             None
         """
-        self._get_or_init_model(model_name=embedding_model_name)
+        self._get_or_init_model(model_name=embedding_model_name, cache_dir=cache_dir)
         self.embedding_model_name = embedding_model_name
+        self.embedding_model_cache_dir = cache_dir
 
     @staticmethod
     def _import_fastembed() -> None:
@@ -76,7 +79,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return SUPPORTED_EMBEDDING_MODELS[model_name]
 
     @classmethod
-    def _get_or_init_model(cls, model_name: str) -> "DefaultEmbedding":
+    def _get_or_init_model(
+        cls, model_name: str, cache_dir: Optional[str] = None
+    ) -> "DefaultEmbedding":
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
@@ -84,18 +89,23 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
         cls._import_fastembed()
-        cls.embedding_models[model_name] = DefaultEmbedding(model_name=model_name)
+        cls.embedding_models[model_name] = DefaultEmbedding(
+            model_name=model_name, cache_dir=cache_dir
+        )
         return cls.embedding_models[model_name]
 
     def _embed_documents(
         self,
         documents: Iterable[str],
         embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
+        embedding_model_cache_dir: Optional[str] = None,
         batch_size: int = 32,
         embed_type: str = "default",
         parallel: Optional[int] = None,
     ) -> Iterable[Tuple[str, List[float]]]:
-        embedding_model = self._get_or_init_model(model_name=embedding_model_name)
+        embedding_model = self._get_or_init_model(
+            model_name=embedding_model_name, cache_dir=embedding_model_cache_dir
+        )
         documents_a, documents_b = tee(documents, 2)
         if embed_type == "passage":
             vectors_iter = embedding_model.passage_embed(
@@ -232,6 +242,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         encoded_docs = self._embed_documents(
             documents=documents,
             embedding_model_name=self.embedding_model_name,
+            embedding_model_cache_dir=self.embedding_model_cache_dir,
             batch_size=batch_size,
             embed_type="passage",
             parallel=parallel,
@@ -300,7 +311,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             List[types.ScoredPoint]: List of scored points.
 
         """
-        embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+        embedding_model_inst = self._get_or_init_model(
+            model_name=self.embedding_model_name, cache_dir=self.embedding_model_cache_dir
+        )
         embeddings = list(embedding_model_inst.query_embed(query=query_text))
         query_vector = embeddings[0]
         return self._scored_points_to_query_responses(
@@ -344,7 +357,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             List[List[QueryResponse]]: List of lists of responses for each query text.
 
         """
-        embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+        embedding_model_inst = self._get_or_init_model(
+            model_name=self.embedding_model_name, cache_dir=self.embedding_model_cache_dir
+        )
         query_vectors = [
             list(embedding_model_inst.query_embed(query=query_text))[0]
             for query_text in query_texts
