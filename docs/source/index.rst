@@ -143,7 +143,7 @@ Indices and tables
    :maxdepth: 2
    :caption: Selected API Reference
 
-   DataTypes aka Models <qdrant_client.http.models.models>
+   Models <qdrant_client.http.models.models>
    Exceptions <qdrant_client.http.exceptions>
    
 .. toctree::
