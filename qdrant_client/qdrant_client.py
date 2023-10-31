@@ -703,12 +703,10 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `PayloadSelector` - use explicit rules
             with_vectors:
                 - If `True` - Attach stored vector to the search result.
-                - If `False` - Do not attach vector.
+                - If `False` (default) - Do not attach vector.
                 - If List of string - include only specified fields
-                - Default: `False`
             consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result.
-                Values:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values: 
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
