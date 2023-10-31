@@ -7,7 +7,8 @@ cd "$(dirname "$0")/../"
 
 brew install pandoc
 
-pip install -e .
+curl -sSL https://install.python-poetry.org | python3 -
+poetry install
 
 pip install sphinx==4.5.0
 pip install ipython
