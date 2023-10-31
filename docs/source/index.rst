@@ -150,4 +150,5 @@ Indices and tables
    :maxdepth: 1
    :caption: Complete Docs
 
-   Complete Client API Docs <qdrant_client.qdrant_client>
+   Complete Client API Docs <qdrant_client>
+   
