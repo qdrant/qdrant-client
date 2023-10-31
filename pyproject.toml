@@ -44,7 +44,7 @@ black = "^23.9.1"
 sphinx = "^4.5.0"
 qdrant-sphinx-theme = { git = "https://github.com/qdrant/qdrant_sphinx_theme.git", branch = "master" }
 nbsphinx = "^0.9.3"
-ipython = "8.17.2"
+ipython = "8"
 Pygments= "2.16.1"
 
 [tool.poetry.group.types.dependencies]
