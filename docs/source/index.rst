@@ -1,8 +1,8 @@
 .. You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Qdrant Client Documentation [Python]
-=============================
+Qdrant Python Client Documentation
+==================================
 
 Client library for the `Qdrant <https://github.com/qdrant/qdrant>`_ vector search engine.
 
@@ -134,7 +134,7 @@ Starting from version 1.6.1, all python client methods are available in async ve
    asyncio.run(main())
 
 
-Both, gRPC and REST API are supported in async mode. More examples can be found [here](https://github.com/qdrant/qdrant-client/blob/master/tests/test_async_qdrant_client.py).
+Both, gRPC and REST API are supported in async mode.
 
 Highlighted Classes
 ===================
@@ -163,10 +163,13 @@ Indices and tables
 
 .. toctree::
    :maxdepth: 2
-   :caption: Selected API Reference
+   :caption: API Reference
 
    Models <qdrant_client.http.models.models>
    Exceptions <qdrant_client.http.exceptions>
+   QdrantClient <qdrant_client.qdrant_client>
+   AsyncQdrantClient <qdrant_client.async_qdrant_client>
+   FastEmbed Mixin <qdrant_client.qdrant_fastembed>
    
 .. toctree::
    :maxdepth: 1
