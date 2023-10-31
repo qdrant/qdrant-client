@@ -8,6 +8,7 @@ cd "$(dirname "$0")/../"
 brew install pandoc
 
 curl -sSL https://install.python-poetry.org | python3 -
+export PATH="/opt/buildhome/.local/bin:$PATH"
 poetry install
 
 pip install sphinx==4.5.0
