@@ -1664,12 +1664,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
                 - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
-            priority:
-                Defines source of truth for snapshot recovery
+            priority: Defines source of truth for snapshot recovery
 
-                    - `replica` (default) means - prefer existing data over the snapshot
-                    - `no_sync` means - do not sync shard with other shards
-                    - `snapshot` means - prefer snapshot data over the current state
+                - `replica` (default) means - prefer existing data over the snapshot
+                - `no_sync` means - do not sync shard with other shards
+                - `snapshot` means - prefer snapshot data over the current state
             wait: Await for the results to be processed.
 
         """
@@ -1756,13 +1755,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
                 - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
-            priority:
-                Defines source of truth for snapshot recovery
+            priority: Defines source of truth for snapshot recovery
 
-                    - `replica` (default) means - prefer existing data over the snapshot
-                    - `no_sync` means - do not sync shard with other shards
-                    - `snapshot` means - prefer snapshot data over the current state
-
+                - `replica` (default) means - prefer existing data over the snapshot
+                - `no_sync` means - do not sync shard with other shards
+                - `snapshot` means - prefer snapshot data over the current state
             wait: Await for the results to be processed.
 
         Returns:
