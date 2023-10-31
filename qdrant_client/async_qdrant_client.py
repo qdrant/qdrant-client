@@ -178,8 +178,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name: Name of the collection
             requests: List of search requests
             consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result.
-                Values:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -245,8 +245,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 E.g. for cosine similarity only higher scores will be returned.
             append_payload: Same as `with_payload`. Deprecated.
             consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result.
-                Values:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -391,8 +391,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name: Name of the collection
             requests: List of recommend requests
             consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result.
-                Values:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -475,8 +475,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
                 If `None` - use current collection will be used.
             consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result.
-                Values:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -485,6 +485,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Strategy to use for recommendation.
                 Strategy defines how to combine multiple examples into a recommendation query.
                 Possible values:
+
                 - 'average_vector' - calculates average vector of all examples and uses it for search
                 - 'best_score' - finds the result which is closer to positive examples and further from negative
 
@@ -588,8 +589,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 with the same id as the group id. In addition, the parameter allows to specify
                 which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
             consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result.
-                Values:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -598,6 +599,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Strategy to use for recommendation.
                 Strategy defines how to combine multiple examples into a recommendation query.
                 Possible values:
+
                 - 'average_vector' - calculates average vector of all examples and uses it for search
                 - 'best_score' - finds the result which is closer to positive examples and further from negative
 
@@ -660,6 +662,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If List of string - include only specified fields
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -845,8 +848,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If List of string - Attach only specified vectors.
                 - Default: `False`
             consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result.
-                Values:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
