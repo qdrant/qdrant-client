@@ -70,6 +70,8 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
     "*qdrant_openapi_client*",
+    "*grpc*",
+    "*tests*" # tests are not part of the documentation
 ]
 # -- Options for HTML output -------------------------------------------------
 
