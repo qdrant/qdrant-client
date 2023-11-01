@@ -1,6 +1,7 @@
 from typing import List
 
 import numpy as np
+import pytest
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
@@ -100,6 +101,21 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
+    def best_score_recommend_euclid(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[
+                10,
+                20,
+            ],
+            negative=[11, 21],
+            with_payload=True,
+            limit=10,
+            using="code",
+            strategy=models.RecommendStrategy.BEST_SCORE,
+        )
+
+    @classmethod
     def only_negatives_best_score_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
@@ -108,6 +124,20 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="image",
+            strategy=models.RecommendStrategy.BEST_SCORE,
+        )
+
+    @classmethod
+    def only_negatives_best_score_recommend_euclid(
+        cls, client: QdrantBase
+    ) -> List[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=None,
+            negative=[10, 12],
+            with_payload=True,
+            limit=10,
+            using="code",
             strategy=models.RecommendStrategy.BEST_SCORE,
         )
 
