@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -20,6 +20,23 @@ class RecoQuery:
 
 
 QueryVector = Union[RecoQuery, types.NumpyArray]
+
+class DiscoveryQuery:
+    def __init__(self, target: List[float], context_pairs: List[Tuple[List[float], List[float]]]):
+        self.target: types.NumpyArray = np.array(target)
+        self.context_pairs: List[Tuple[types.NumpyArray, types.NumpyArray]] = [
+            (np.array(pair[0]), np.array(pair[1])) for pair in context_pairs
+        ]
+
+
+class ContextQuery:
+    def __init__(self, context_pairs: List[Tuple[List[float], List[float]]]):
+        self.context_pairs: List[Tuple[types.NumpyArray, types.NumpyArray]] = [
+            (np.array(pair[0]), np.array(pair[1])) for pair in context_pairs
+        ]
+
+
+QueryVector = Union[DiscoveryQuery, ContextQuery, RecoQuery, types.NumpyArray]
 
 
 class DistanceOrder(str, Enum):
