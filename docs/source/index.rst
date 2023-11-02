@@ -159,7 +159,7 @@ Indices and tables
    :maxdepth: 2
    :caption: Examples
 
-   examples/quickstart.ipynb
+   quickstart.ipynb
 
 .. toctree::
    :maxdepth: 2
