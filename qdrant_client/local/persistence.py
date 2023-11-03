@@ -89,7 +89,7 @@ class CollectionPersistence:
                 self.__class__.CHECK_SAME_THREAD = threadsafe != "THREADSAFE=1"
 
         self.storage = sqlite3.connect(
-            str(self.location), check_same_thread=self.CHECK_SAME_THREAD
+            str(self.location), check_same_thread=self.CHECK_SAME_THREAD  # type: ignore
         )
 
         self._ensure_table()
