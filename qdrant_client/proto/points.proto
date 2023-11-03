@@ -215,7 +215,7 @@ message SearchParams {
   optional bool exact = 2;
 
   /*
-  If set to true, search will ignore quantized vector data 
+  If set to true, search will ignore quantized vector data
   */
   optional QuantizationSearchParams quantization = 3;
   /*
@@ -239,12 +239,14 @@ message SearchPoints {
   optional string vector_name = 10; // Which vector to use for search, if not specified - use default vector
   optional WithVectorsSelector with_vectors = 11; // Options for specifying which vectors to include into response
   optional ReadConsistency read_consistency = 12; // Options for specifying read consistency guarantees
+  optional uint64 timeout = 13; // If set, overrides global timeout setting for this request. Unit is seconds.
 }
 
 message SearchBatchPoints {
   string collection_name = 1; // Name of the collection
   repeated SearchPoints search_points = 2;
   optional ReadConsistency read_consistency = 3; // Options for specifying read consistency guarantees
+  optional uint64 timeout = 4; // If set, overrides global timeout setting for this request. Unit is seconds.
 }
 
 message WithLookup {
@@ -268,6 +270,7 @@ message SearchPointGroups {
   uint32 group_size = 11; // Maximum amount of points to return per group
   optional ReadConsistency read_consistency = 12; // Options for specifying read consistency guarantees
   optional WithLookup with_lookup = 13; // Options for specifying how to use the group id to lookup points in another collection
+  optional uint64 timeout = 14; // If set, overrides global timeout setting for this request. Unit is seconds.
 }
 
 message ScrollPoints {
@@ -283,12 +286,12 @@ message ScrollPoints {
 
 // How to use positive and negative vectors to find the results, default is `AverageVector`:
 enum RecommendStrategy {
-  // Average positive and negative vectors and create a single query with the formula 
+  // Average positive and negative vectors and create a single query with the formula
   // `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.
   AverageVector = 0;
 
-  // Uses custom search objective. Each candidate is compared against all 
-  // examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. 
+  // Uses custom search objective. Each candidate is compared against all
+  // examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`.
   // If the `max_neg_score` is chosen then it is squared and negated.
   BestScore = 1;
 }
@@ -316,12 +319,14 @@ message RecommendPoints {
   optional RecommendStrategy strategy = 16; // How to use the example vectors to find the results
   repeated Vector positive_vectors = 17; // Look for vectors closest to those
   repeated Vector negative_vectors = 18; // Try to avoid vectors like this
+  optional uint64 timeout = 19; // If set, overrides global timeout setting for this request. Unit is seconds.
 }
 
 message RecommendBatchPoints {
   string collection_name = 1; // Name of the collection
   repeated RecommendPoints recommend_points = 2;
   optional ReadConsistency read_consistency = 3; // Options for specifying read consistency guarantees
+  optional uint64 timeout = 4; // If set, overrides global timeout setting for this request. Unit is seconds.
 }
 
 message RecommendPointGroups {
@@ -343,6 +348,42 @@ message RecommendPointGroups {
   optional RecommendStrategy strategy = 17; // How to use the example vectors to find the results
   repeated Vector positive_vectors = 18; // Look for vectors closest to those
   repeated Vector negative_vectors = 19; // Try to avoid vectors like this
+  optional uint64 timeout = 20; // If set, overrides global timeout setting for this request. Unit is seconds.
+}
+
+message VectorExample {
+  oneof example {
+    PointId id = 1;
+    Vector vector = 2;
+  }
+}
+
+message ContextExamplePair {
+  VectorExample positive = 1;
+  VectorExample negative = 2;
+}
+
+message DiscoverPoints {
+  string collection_name = 1; // name of the collection
+  VectorExample target = 2; // Use this as the primary search objective
+  repeated ContextExamplePair context_pairs = 3; // Search will be constrained by these pairs of examples
+  Filter filter = 4; // Filter conditions - return only those points that satisfy the specified conditions
+  uint64 limit = 5; // Max number of result
+  WithPayloadSelector with_payload = 6; // Options for specifying which payload to include or not
+  SearchParams params = 7; // Search config
+  optional uint64 offset = 8; // Offset of the result
+  optional string using = 9; // Define which vector to use for recommendation, if not specified - default vector
+  optional WithVectorsSelector with_vectors = 10; // Options for specifying which vectors to include into response
+  optional LookupLocation lookup_from = 11; // Name of the collection to use for points lookup, if not specified - use current collection
+  optional ReadConsistency read_consistency = 12; // Options for specifying read consistency guarantees
+  optional uint64 timeout = 13; // If set, overrides global timeout setting for this request. Unit is seconds.
+}
+
+message DiscoverBatchPoints {
+  string collection_name = 1; // Name of the collection
+  repeated DiscoverPoints discover_points = 2;
+  optional ReadConsistency read_consistency = 3; // Options for specifying read consistency guarantees
+  optional uint64 timeout = 4; // If set, overrides global timeout setting for this request. Unit is seconds.
 }
 
 message CountPoints {
@@ -432,7 +473,7 @@ message GroupId {
 
 message PointGroup {
   GroupId id = 1; // Group id
-  repeated ScoredPoint hits = 2; // Points in the group 
+  repeated ScoredPoint hits = 2; // Points in the group
   RetrievedPoint lookup = 3; // Point(s) from the lookup collection that matches the group id
 }
 
@@ -492,6 +533,16 @@ message RecommendResponse {
 }
 
 message RecommendBatchResponse {
+  repeated BatchResult result = 1;
+  double time = 2; // Time spent to process
+}
+
+message DiscoverResponse {
+  repeated ScoredPoint result = 1;
+  double time = 2; // Time spent to process
+}
+
+message DiscoverBatchResponse {
   repeated BatchResult result = 1;
   double time = 2; // Time spent to process
 }

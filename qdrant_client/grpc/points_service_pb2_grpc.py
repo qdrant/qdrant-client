@@ -104,6 +104,16 @@ class PointsStub(object):
                 request_serializer=points__pb2.RecommendPointGroups.SerializeToString,
                 response_deserializer=points__pb2.RecommendGroupsResponse.FromString,
                 )
+        self.Discover = channel.unary_unary(
+                '/qdrant.Points/Discover',
+                request_serializer=points__pb2.DiscoverPoints.SerializeToString,
+                response_deserializer=points__pb2.DiscoverResponse.FromString,
+                )
+        self.DiscoverBatch = channel.unary_unary(
+                '/qdrant.Points/DiscoverBatch',
+                request_serializer=points__pb2.DiscoverBatchPoints.SerializeToString,
+                response_deserializer=points__pb2.DiscoverBatchResponse.FromString,
+                )
         self.Count = channel.unary_unary(
                 '/qdrant.Points/Count',
                 request_serializer=points__pb2.CountPoints.SerializeToString,
@@ -263,6 +273,35 @@ class PointsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Discover(self, request, context):
+        """
+        Use context and a target to find the most similar points, constrained by the context.
+
+        When using only the context, a special search is performed where pairs of points are 
+        used to generate a loss that guides the search towards the zone where most positive 
+        examples overlap. This means that the score minimizes the scenario of finding a point
+        closer to a negative than to a positive part of a pair. 
+        Since the score of a context relates to loss, the maximum score a point can get is 0.0, 
+        and it becomes normal that many points can have 0.0 as score.
+
+        Using only a target is equivalent to regular search, so the score is the distance to the target.
+
+        When using both context and target, the score behaves a little different: The 
+        integer part of the score represents the "rank" with respect to the context, while the
+        decimal part of the score relates to the distance to the target.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DiscoverBatch(self, request, context):
+        """
+        Batch request points based on [positive, negative] pairs of examples, and/or a target
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Count(self, request, context):
         """
         Count points in collection with given filtering conditions
@@ -371,6 +410,16 @@ def add_PointsServicer_to_server(servicer, server):
                     servicer.RecommendGroups,
                     request_deserializer=points__pb2.RecommendPointGroups.FromString,
                     response_serializer=points__pb2.RecommendGroupsResponse.SerializeToString,
+            ),
+            'Discover': grpc.unary_unary_rpc_method_handler(
+                    servicer.Discover,
+                    request_deserializer=points__pb2.DiscoverPoints.FromString,
+                    response_serializer=points__pb2.DiscoverResponse.SerializeToString,
+            ),
+            'DiscoverBatch': grpc.unary_unary_rpc_method_handler(
+                    servicer.DiscoverBatch,
+                    request_deserializer=points__pb2.DiscoverBatchPoints.FromString,
+                    response_serializer=points__pb2.DiscoverBatchResponse.SerializeToString,
             ),
             'Count': grpc.unary_unary_rpc_method_handler(
                     servicer.Count,
@@ -695,6 +744,40 @@ class Points(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Points/RecommendGroups',
             points__pb2.RecommendPointGroups.SerializeToString,
             points__pb2.RecommendGroupsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Discover(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/Discover',
+            points__pb2.DiscoverPoints.SerializeToString,
+            points__pb2.DiscoverResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DiscoverBatch(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/DiscoverBatch',
+            points__pb2.DiscoverBatchPoints.SerializeToString,
+            points__pb2.DiscoverBatchResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
