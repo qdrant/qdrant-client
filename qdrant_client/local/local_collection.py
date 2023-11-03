@@ -10,11 +10,15 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 from qdrant_client.http.models.models import ExtendedPointId
 from qdrant_client.local.distances import (
+    ContextQuery,
+    DiscoveryQuery,
     DistanceOrder,
     QueryVector,
     RecoQuery,
-    calculate_best_scores,
+    calculate_context_scores,
+    calculate_discovery_scores,
     calculate_distance,
+    calculate_recommend_best_scores,
     distance_to_order,
 )
 from qdrant_client.local.payload_filters import calculate_payload_mask
@@ -41,7 +45,7 @@ class LocalCollection:
         if isinstance(vectors_config, models.VectorParams):
             vectors_config = {DEFAULT_VECTOR_NAME: vectors_config}
 
-        self.vectors: Dict[str, np.ndarray] = {
+        self.vectors: Dict[str, types.NumpyArray] = {
             name: np.zeros((0, params.size), dtype=np.float32)
             for name, params in vectors_config.items()
         }
@@ -102,17 +106,17 @@ class LocalCollection:
         cls,
         query_vector: Union[
             types.NumpyArray,
-            Sequence[float],
+            List[float],
             Tuple[str, List[float]],
             types.NamedVector,
-            RecoQuery,
-            Tuple[str, RecoQuery],
+            QueryVector,
+            Tuple[str, QueryVector],
         ],
     ) -> Tuple[str, QueryVector]:
         if isinstance(query_vector, tuple):
             name, vector = query_vector
-            if isinstance(vector, RecoQuery):
-                return name, vector
+            if isinstance(vector, list):
+                vector = np.array(vector)
         elif isinstance(query_vector, types.NamedVector):
             name = query_vector.name
             vector = query_vector.vector
@@ -122,10 +126,9 @@ class LocalCollection:
         elif isinstance(query_vector, list):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
-        elif isinstance(query_vector, RecoQuery):
+        elif isinstance(query_vector, get_args(QueryVector)):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
-            return name, vector
         else:
             raise ValueError(f"Unsupported vector type {type(query_vector)}")
 
@@ -279,10 +282,11 @@ class LocalCollection:
         self,
         query_vector: Union[
             types.NumpyArray,
-            Sequence[float],
+            List[float],
+            Tuple[str, List[float]],
             types.NamedVector,
-            RecoQuery,
-            Tuple[str, Union[RecoQuery, types.NumpyArray, List[float]]],
+            QueryVector,
+            Tuple[str, QueryVector],
         ],
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
@@ -311,7 +315,17 @@ class LocalCollection:
                 query_vector, vectors[: len(self.payload)], params.distance
             )
         elif isinstance(query_vector, RecoQuery):
-            scores = calculate_best_scores(
+            scores = calculate_recommend_best_scores(
+                query_vector, vectors[: len(self.payload)], params.distance
+            )
+        elif isinstance(query_vector, DiscoveryQuery):
+            scores = calculate_discovery_scores(
+                query_vector, vectors[: len(self.payload)], params.distance
+            )
+        elif isinstance(
+            query_vector, ContextQuery
+        ):  # pyright: ignore[reportUnnecessaryIsInstance]
+            scores = calculate_context_scores(
                 query_vector, vectors[: len(self.payload)], params.distance
             )
         else:

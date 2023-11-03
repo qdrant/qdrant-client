@@ -19,8 +19,6 @@ class RecoQuery:
         self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
 
 
-QueryVector = Union[RecoQuery, types.NumpyArray]
-
 class DiscoveryQuery:
     def __init__(self, target: List[float], context_pairs: List[Tuple[List[float], List[float]]]):
         self.target: types.NumpyArray = np.array(target)
@@ -58,7 +56,7 @@ def distance_to_order(distance: models.Distance) -> DistanceOrder:
     return DistanceOrder.BIGGER_IS_BETTER
 
 
-def cosine_similarity(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
+def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
     """
     Calculate cosine distance between query and vectors
     Args:
@@ -72,7 +70,7 @@ def cosine_similarity(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
     return np.dot(vectors, query)
 
 
-def dot_product(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
+def dot_product(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
     """
     Calculate dot product between query and vectors
     Args:
@@ -84,7 +82,7 @@ def dot_product(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
     return np.dot(vectors, query)
 
 
-def euclidean_distance(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
+def euclidean_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
     """
     Calculate euclidean distance between query and vectors
     Args:
@@ -97,7 +95,7 @@ def euclidean_distance(query: np.ndarray, vectors: np.ndarray) -> np.ndarray:
 
 
 def calculate_distance(
-    query: np.ndarray, vectors: np.ndarray, distance_type: models.Distance
+    query: types.NumpyArray, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
     if distance_type == models.Distance.COSINE:
         return cosine_similarity(query, vectors)
@@ -117,8 +115,8 @@ def scaled_fast_sigmoid(x: np.float32) -> np.float32:
         return x
 
 
-def calculate_best_scores(
-    query: RecoQuery, vectors: np.ndarray, distance_type: models.Distance
+def calculate_recommend_best_scores(
+    query: RecoQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
     def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
         vector_count = vectors.shape[0]
@@ -159,6 +157,80 @@ def calculate_best_scores(
             np.fromiter((-scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
             np.fromiter((scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
         )
+
+
+def calculate_discovery_ranks(
+    context_pairs: List[Tuple[types.NumpyArray, types.NumpyArray]],
+    vectors: types.NumpyArray,
+    distance_type: models.Distance,
+) -> types.NumpyArray:
+    overall_ranks = np.zeros(vectors.shape[0], dtype=np.int32)
+    for pair in context_pairs:
+        pos = calculate_distance(pair[0], vectors, distance_type)  # distances to positive
+        neg = calculate_distance(pair[1], vectors, distance_type)  # distances to negative
+
+        if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
+            pair_ranks = np.array(
+                [
+                    1 if is_bigger else 0 if is_equal else -1
+                    for is_bigger, is_equal in zip(pos > neg, pos == neg)
+                ]
+            )
+        else:
+            pair_ranks = np.array(
+                [
+                    1 if is_smaller else 0 if is_equal else -1
+                    for is_smaller, is_equal in zip(pos < neg, pos == neg)
+                ]
+            )
+        overall_ranks += pair_ranks
+
+    return overall_ranks
+
+
+def calculate_discovery_scores(
+    query: DiscoveryQuery, vectors: types.NumpyArray, distance_type: models.Distance
+) -> types.NumpyArray:
+    ranks = calculate_discovery_ranks(query.context_pairs, vectors, distance_type)
+
+    distances_to_target = calculate_distance(query.target, vectors, distance_type)
+
+    sigmoided_distances = np.fromiter(
+        (scaled_fast_sigmoid(xi) for xi in distances_to_target), distances_to_target.dtype
+    )
+
+    return ranks + sigmoided_distances
+
+
+def calculate_context_scores(
+    query: ContextQuery, vectors: types.NumpyArray, distance_type: models.Distance
+) -> types.NumpyArray:
+    overall_scores = np.zeros(vectors.shape[0], dtype=np.int32)
+    for pair in query.context_pairs:
+        pos = calculate_distance(pair[0], vectors, distance_type)  # distances to positive
+        neg = calculate_distance(pair[1], vectors, distance_type)  # distances to negative
+
+        sig_pos = np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype)
+        sig_neg = np.fromiter((scaled_fast_sigmoid(xi) for xi in neg), neg.dtype)
+
+        if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
+            pair_scores = np.array(
+                [
+                    from_pos if is_bigger else -from_neg
+                    for is_bigger, from_pos, from_neg in zip(pos > neg, sig_pos, sig_neg)
+                ]
+            )
+        else:
+            pair_scores = np.array(
+                [
+                    from_pos if is_smaller else -from_neg
+                    for is_smaller, from_pos, from_neg in zip(pos < neg, sig_pos, sig_neg)
+                ]
+            )
+
+        overall_scores += pair_scores
+
+    return overall_scores
 
 
 def test_distances() -> None:
