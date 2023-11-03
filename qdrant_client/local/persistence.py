@@ -4,7 +4,7 @@ import logging
 import pickle
 import sqlite3
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 
 from qdrant_client.http import models
 
@@ -58,6 +58,8 @@ def try_migrate_to_sqlite(location: str) -> None:
 
 
 class CollectionPersistence:
+    CHECK_SAME_THREAD: Optional[bool] = None
+
     @classmethod
     def encode_key(cls, key: models.ExtendedPointId) -> str:
         return base64.b64encode(pickle.dumps(key)).decode("utf-8")
@@ -73,7 +75,23 @@ class CollectionPersistence:
 
         self.location = Path(location) / STORAGE_FILE_NAME
         self.location.parent.mkdir(exist_ok=True, parents=True)
-        self.storage = sqlite3.connect(str(self.location))
+
+        if self.CHECK_SAME_THREAD is None:
+            with sqlite3.connect(":memory:") as tmp_conn:
+                # it is unsafe to use `sqlite3.threadsafety` until python3.11 since it was hardcoded to 1, thus we
+                # need to fetch threadsafe with a query
+                # THREADSAFE = 0: Threads may not share the module
+                # THREADSAFE = 1: Threads may share the module, connections and cursors. Default for Linux.
+                # THREADSAFE = 2: Threads may share the module, but not connections. Default for macOS.
+                threadsafe = tmp_conn.execute(
+                    "select * from pragma_compile_options where compile_options like 'THREADSAFE=%'"
+                ).fetchone()[0]
+                self.__class__.CHECK_SAME_THREAD = threadsafe != "THREADSAFE=1"
+
+        self.storage = sqlite3.connect(
+            str(self.location), check_same_thread=self.CHECK_SAME_THREAD
+        )
+
         self._ensure_table()
 
     def close(self) -> None:
