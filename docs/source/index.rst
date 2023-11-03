@@ -1,10 +1,8 @@
-.. Quaterion documentation master file, created by
-   sphinx-quickstart on Thu Feb 17 16:24:11 2022.
-   You can adapt this file completely to your liking, but it should at least
+.. You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Python Qdrant client library
-=============================
+Qdrant Python Client Documentation
+==================================
 
 Client library for the `Qdrant <https://github.com/qdrant/qdrant>`_ vector search engine.
 
@@ -37,33 +35,28 @@ Create a new collection
 .. code-block:: python
 
    client.recreate_collection(
-       collection_name="my_collection",
-       vector_size=100
+      collection_name="my_collection",
+      vectors_config=VectorParams(size=100, distance=Distance.COSINE),
    )
-
-Get info about created collection
-
-.. code-block:: python
-   from qdrant_client._pydantic_compat import to_dict
-   my_collection_info = client.http.collections_api.get_collection("my_collection")
-   print(to_dict(my_collection_info)
 
 Insert vectors into a collection
 
 .. code-block:: python
 
-   from qdrant_client.http.models import PointStruct
+   import numpy as np
+   from qdrant_client.models import PointStruct
 
    vectors = np.random.rand(100, 100)
    client.upsert(
-       collection_name="my_collection",
-       points=[
-           PointStruct(
+      collection_name="my_collection",
+      points=[
+         PointStruct(
                id=idx,
-               vector=vector,
-           )
-           for idx, vector in enumerate(vectors)
-       ]
+               vector=vector.tolist(),
+               payload={"color": "red", "rand_number": idx % 10}
+         )
+         for idx, vector in enumerate(vectors)
+      ]
    )
 
 Search for similar vectors
@@ -74,8 +67,6 @@ Search for similar vectors
    hits = client.search(
       collection_name="my_collection",
       query_vector=query_vector,
-      query_filter=None,  # Don't use any filters for now, search across all indexed points
-      append_payload=True,  # Also return a stored payload for found points
       limit=5  # Return 5 closest points
    )
 
@@ -83,39 +74,79 @@ Search for similar vectors with filtering condition
 
 .. code-block:: python
 
-   from qdrant_client.http.models import Filter, FieldCondition, Range
+   from qdrant_client.models import Filter, FieldCondition, Range
 
    hits = client.search(
-       collection_name="my_collection",
-       query_vector=query_vector,
-       query_filter=Filter(
-           must=[  # These conditions are required for search results
+      collection_name="my_collection",
+      query_vector=query_vector,
+      query_filter=Filter(
+         must=[  # These conditions are required for search results
                FieldCondition(
-                   key='rand_number',  # Condition based on values of `rand_number` field.
-                   range=Range(
-                       gte=0.5  # Select only those results where `rand_number` >= 0.5
+                  key='rand_number',  # Condition based on values of `rand_number` field.
+                  range=Range(
+                     gte=3  # Select only those results where `rand_number` >= 3
                   )
                )
-           ]
-       ),
-       append_payload=True,  # Also return a stored payload for found points
-       limit=5  # Return 5 closest points
+         ]
+      ),
+      limit=5  # Return 5 closest points
    )
 
-Check out `full example code <https://github.com/qdrant/qdrant-client/blob/master/tests/test_qdrant_client.py>`_
+Async Client
+============
 
-gRPC
-====
-
-gRPC support in Qdrant client is under active development. Basic classes could be found `here <https://github.com/qdrant/qdrant-client/blob/master/qdrant_client/grpc/__init__.py>`_.
-
-To enable (much faster) collection uploading with gRPC, use the following initialization:
+Starting from version 1.6.1, all python client methods are available in async version.
 
 .. code-block:: python
 
-   from qdrant_client import QdrantClient
+   from qdrant_client import AsyncQdrantClient, models
+   import numpy as np
+   import asyncio
 
-   client = QdrantClient(host="localhost", grpc_port=6334, prefer_grpc=True)
+   async def main():
+      # Your async code using QdrantClient might be put here
+      client = AsyncQdrantClient(url="http://localhost:6333")
+
+      await client.create_collection(
+         collection_name="my_collection",
+         vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+      )
+
+      await client.upsert(
+         collection_name="my_collection",
+         points=[
+               models.PointStruct(
+                  id=i,
+                  vector=np.random.rand(10).tolist(),
+               )
+               for i in range(100)
+         ],
+      )
+
+      res = await client.search(
+         collection_name="my_collection",
+         query_vector=np.random.rand(10).tolist(),  # type: ignore
+         limit=10,
+      )
+
+      print(res)
+
+   asyncio.run(main())
+
+
+Both, gRPC and REST API are supported in async mode.
+
+Highlighted Classes
+===================
+
+- :class:`qdrant_client.http.models.models.PointStruct`
+- :class:`qdrant_client.http.models.models.Filter`
+- :class:`qdrant_client.http.models.models.VectorParams`
+- :class:`qdrant_client.http.models.models.BinaryQuantization`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: PointStruct Reference
 
 Indices and tables
 ==================
@@ -128,11 +159,21 @@ Indices and tables
    :maxdepth: 2
    :caption: Examples
 
-   examples/upload_collection
+   quickstart.ipynb
 
 .. toctree::
-   :maxdepth: 1
-   :caption: API reference
+   :maxdepth: 2
+   :caption: API Reference
 
-   qdrant_client.qdrant_client
-   qdrant_client
+   Models <qdrant_client.http.models.models>
+   Exceptions <qdrant_client.http.exceptions>
+   QdrantClient <qdrant_client.qdrant_client>
+   AsyncQdrantClient <qdrant_client.async_qdrant_client>
+   FastEmbed Mixin <qdrant_client.qdrant_fastembed>
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Complete Docs
+
+   Complete Client API Docs <qdrant_client>
+   

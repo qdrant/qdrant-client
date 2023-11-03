@@ -11,7 +11,6 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 from tests.fixtures.filters import one_random_filter_please
-from tests.fixtures.payload import one_random_payload_please
 
 secondary_collection_name = "secondary_collection"
 
@@ -35,7 +34,7 @@ class TestGroupRecommendation:
             group_size=self.group_size,
             search_params=models.SearchParams(exact=True),
         )
-        
+
     def simple_recommend_groups_best_scores(self, client: QdrantBase) -> models.GroupsResult:
         return client.recommend_groups(
             collection_name=COLLECTION_NAME,

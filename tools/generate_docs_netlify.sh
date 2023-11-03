@@ -5,9 +5,10 @@ set -xe
 # Ensure current path is project root
 cd "$(dirname "$0")/../"
 
-pip install qdrant-client
+brew install pandoc
 
-pip install sphinx==4.5.0
-pip install "git+https://github.com/qdrant/qdrant_sphinx_theme.git@master#egg=qdrant-sphinx-theme"
+curl -sSL https://install.python-poetry.org | python3 -
+export PATH="/opt/buildhome/.local/bin:$PATH"
+poetry install
 
 sphinx-build docs/source docs/html
