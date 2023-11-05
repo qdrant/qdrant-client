@@ -2167,7 +2167,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         return snapshots
 
     async def create_snapshot(
-        self, collection_name: str, **kwargs: Any
+        self, collection_name: str, wait: bool = True, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         if self._prefer_grpc:
             snapshot = (
@@ -2178,13 +2178,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             return GrpcToRest.convert_snapshot_description(snapshot)
         return (
             await self.openapi_client.collections_api.create_snapshot(
-                collection_name=collection_name
+                collection_name=collection_name, wait=wait
             )
         ).result
 
     async def delete_snapshot(
-        self, collection_name: str, snapshot_name: str, **kwargs: Any
-    ) -> bool:
+        self, collection_name: str, snapshot_name: str, wait: bool = True, **kwargs: Any
+    ) -> Optional[bool]:
         if self._prefer_grpc:
             await self.grpc_snapshots.Delete(
                 grpc.DeleteSnapshotRequest(
@@ -2192,13 +2192,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             )
             return True
-        result: Optional[bool] = (
+        return (
             await self.openapi_client.collections_api.delete_snapshot(
-                collection_name=collection_name, snapshot_name=snapshot_name
+                collection_name=collection_name, snapshot_name=snapshot_name, wait=wait
             )
         ).result
-        assert result is not None, "Delete snapshot API returned None"
-        return result
 
     async def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
         if self._prefer_grpc:
@@ -2210,31 +2208,29 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         assert snapshots is not None, "List full snapshots API returned None result"
         return snapshots
 
-    async def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
+    async def create_full_snapshot(
+        self, wait: bool = True, **kwargs: Any
+    ) -> types.SnapshotDescription:
         if self._prefer_grpc:
             snapshot_description = (
                 await self.grpc_snapshots.CreateFull(grpc.CreateFullSnapshotRequest())
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot_description)
-        snapshot_description = (
-            await self.openapi_client.snapshots_api.create_full_snapshot()
-        ).result
-        assert snapshot_description is not None, "Create full snapshot API returned None result"
-        return snapshot_description
+        return (await self.openapi_client.snapshots_api.create_full_snapshot(wait=wait)).result
 
-    async def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
+    async def delete_full_snapshot(
+        self, snapshot_name: str, wait: bool = True, **kwargs: Any
+    ) -> Optional[bool]:
         if self._prefer_grpc:
             await self.grpc_snapshots.DeleteFull(
                 grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name)
             )
             return True
-        result: Optional[bool] = (
+        return (
             await self.openapi_client.snapshots_api.delete_full_snapshot(
-                snapshot_name=snapshot_name
+                snapshot_name=snapshot_name, wait=wait
             )
         ).result
-        assert result is not None, "Delete full snapshot API returned None"
-        return result
 
     async def recover_snapshot(
         self,
@@ -2243,16 +2239,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> bool:
-        success = (
+    ) -> Optional[bool]:
+        return (
             await self.openapi_client.snapshots_api.recover_from_snapshot(
                 collection_name=collection_name,
                 wait=wait,
                 snapshot_recover=models.SnapshotRecover(location=location, priority=priority),
             )
         ).result
-        assert success is not None, "Recover from snapshot API returned None result"
-        return success
 
     async def list_shard_snapshots(
         self, collection_name: str, shard_id: int, **kwargs: Any
@@ -2266,24 +2260,30 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         return snapshots
 
     async def create_shard_snapshot(
-        self, collection_name: str, shard_id: int, **kwargs: Any
+        self, collection_name: str, shard_id: int, wait: bool = True, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         return (
             await self.openapi_client.snapshots_api.create_shard_snapshot(
-                collection_name=collection_name, shard_id=shard_id
+                collection_name=collection_name, shard_id=shard_id, wait=wait
             )
         ).result
 
     async def delete_shard_snapshot(
-        self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
-    ) -> bool:
-        result: Optional[bool] = (
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+        wait: bool = True,
+        **kwargs: Any,
+    ) -> Optional[bool]:
+        return (
             await self.openapi_client.snapshots_api.delete_shard_snapshot(
-                collection_name=collection_name, shard_id=shard_id, snapshot_name=snapshot_name
+                collection_name=collection_name,
+                shard_id=shard_id,
+                snapshot_name=snapshot_name,
+                wait=wait,
             )
         ).result
-        assert result is not None, "Delete snapshot API returned None"
-        return result
 
     async def recover_shard_snapshot(
         self,
@@ -2293,8 +2293,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> bool:
-        success = (
+    ) -> Optional[bool]:
+        return (
             await self.openapi_client.snapshots_api.recover_shard_from_snapshot(
                 collection_name=collection_name,
                 shard_id=shard_id,
@@ -2304,8 +2304,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
             )
         ).result
-        assert success is not None, "Recover from snapshot API returned None result"
-        return success
 
     async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         result: Optional[types.LocksOption] = (

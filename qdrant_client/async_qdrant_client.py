@@ -1887,34 +1887,44 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         return await self._client.list_snapshots(collection_name=collection_name, **kwargs)
 
     async def create_snapshot(
-        self, collection_name: str, **kwargs: Any
+        self, collection_name: str, wait: bool = True, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a given collection.
 
         Args:
             collection_name: Name of the collection
+            wait: Await for the snapshot to be created.
+
+                - If `true`, result will be returned only when a snapshot is created
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             Snapshot description
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.create_snapshot(collection_name=collection_name, **kwargs)
+        return await self._client.create_snapshot(
+            collection_name=collection_name, wait=wait, **kwargs
+        )
 
     async def delete_snapshot(
-        self, collection_name: str, snapshot_name: str, **kwargs: Any
-    ) -> bool:
+        self, collection_name: str, snapshot_name: str, wait: bool = True, **kwargs: Any
+    ) -> Optional[bool]:
         """Delete snapshot for a given collection.
 
         Args:
             collection_name: Name of the collection
             snapshot_name: Snapshot id
+            wait: Await for the snapshot to be deleted.
+
+                - If `true`, result will be returned only when the snapshot is deleted
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             True if snapshot was deleted
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.delete_snapshot(
-            collection_name=collection_name, snapshot_name=snapshot_name, **kwargs
+            collection_name=collection_name, snapshot_name=snapshot_name, wait=wait, **kwargs
         )
 
     async def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
@@ -1926,26 +1936,42 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.list_full_snapshots(**kwargs)
 
-    async def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
+    async def create_full_snapshot(
+        self, wait: bool = True, **kwargs: Any
+    ) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a whole storage.
+
+        Args:
+            wait: Await for the snapshot to be created.
+
+                - If `true`, result will be returned only when the snapshot is created
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             Snapshot description
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.create_full_snapshot(**kwargs)
+        return await self._client.create_full_snapshot(wait=wait, **kwargs)
 
-    async def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
+    async def delete_full_snapshot(
+        self, snapshot_name: str, wait: bool = True, **kwargs: Any
+    ) -> Optional[bool]:
         """Delete snapshot for a whole storage.
 
         Args:
             snapshot_name: Snapshot name
+            wait: Await for the snapshot to be deleted.
+
+                - If `true`, result will be returned only when the snapshot is deleted
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             True if snapshot was deleted
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.delete_full_snapshot(snapshot_name=snapshot_name, **kwargs)
+        return await self._client.delete_full_snapshot(
+            snapshot_name=snapshot_name, wait=wait, **kwargs
+        )
 
     async def recover_snapshot(
         self,
@@ -1954,7 +1980,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> bool:
+    ) -> Optional[bool]:
         """Recover collection from snapshot.
 
         Args:
@@ -1963,13 +1989,20 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
                 - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
+
             priority: Defines source of truth for snapshot recovery
 
                 - `replica` (default) means - prefer existing data over the snapshot
                 - `no_sync` means - do not sync shard with other shards
                 - `snapshot` means - prefer snapshot data over the current state
-            wait: Await for the results to be processed.
 
+            wait: Await for the recovery to be done.
+
+                - If `true`, result will be returned only when the recovery is done
+                - If `false`, result will be returned immediately after the confirmation of receiving.
+
+        Returns:
+            True if snapshot was recovered
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.recover_snapshot(
@@ -1998,32 +2031,44 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         )
 
     async def create_shard_snapshot(
-        self, collection_name: str, shard_id: int, **kwargs: Any
+        self, collection_name: str, shard_id: int, wait: bool = True, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a given shard.
 
         Args:
             collection_name: Name of the collection
             shard_id: Index of the shard
+            wait: Await for the snapshot to be created.
+
+                - If `true`, result will be returned only when the snapshot is created.
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             Snapshot description
-
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.create_shard_snapshot(
-            collection_name=collection_name, shard_id=shard_id, **kwargs
+            collection_name=collection_name, shard_id=shard_id, wait=wait, **kwargs
         )
 
     async def delete_shard_snapshot(
-        self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
-    ) -> bool:
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+        wait: bool = True,
+        **kwargs: Any,
+    ) -> Optional[bool]:
         """Delete snapshot for a given shard.
 
         Args:
             collection_name: Name of the collection
             shard_id: Index of the shard
             snapshot_name: Snapshot id
+            wait: Await for the snapshot to be deleted.
+
+                - If `true`, result will be returned only when the snapshot is deleted
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             True if snapshot was deleted
@@ -2033,6 +2078,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name=collection_name,
             shard_id=shard_id,
             snapshot_name=snapshot_name,
+            wait=wait,
             **kwargs,
         )
 
@@ -2044,7 +2090,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> bool:
+    ) -> Optional[bool]:
         """Recover shard from snapshot.
 
         Args:
@@ -2059,10 +2105,13 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - `replica` (default) means - prefer existing data over the snapshot
                 - `no_sync` means - do not sync shard with other shards
                 - `snapshot` means - prefer snapshot data over the current state
-            wait: Await for the results to be processed.
+            wait: Await for the recovery to be done.
+
+                - If `true`, result will be returned only when the recovery is done
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
-            True if snapshot was deleted
+            True if snapshot was recovered
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.recover_shard_snapshot(
