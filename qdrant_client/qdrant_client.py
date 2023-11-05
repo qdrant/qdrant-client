@@ -1008,6 +1008,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name (str): Name of the collection to update vectors in
             points (Point): List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
                 Examples:
+
                 - `PointVectors(id=1, vector=[1, 2, 3])`
                 - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
 
@@ -1954,26 +1955,36 @@ class QdrantClient(QdrantFastembedMixin):
         return self._client.list_snapshots(collection_name=collection_name, **kwargs)
 
     def create_snapshot(
-        self, collection_name: str, **kwargs: Any
+        self, collection_name: str, wait: bool = True, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a given collection.
 
         Args:
             collection_name: Name of the collection
+            wait: Await for the snapshot to be created.
+
+                - If `true`, result will be returned only when a snapshot is created
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             Snapshot description
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.create_snapshot(collection_name=collection_name, **kwargs)
+        return self._client.create_snapshot(collection_name=collection_name, wait=wait, **kwargs)
 
-    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
+    def delete_snapshot(
+        self, collection_name: str, snapshot_name: str, wait: bool = True, **kwargs: Any
+    ) -> Optional[bool]:
         """Delete snapshot for a given collection.
 
         Args:
             collection_name: Name of the collection
             snapshot_name: Snapshot id
+            wait: Await for the snapshot to be deleted.
+
+                - If `true`, result will be returned only when the snapshot is deleted
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             True if snapshot was deleted
@@ -1981,7 +1992,7 @@ class QdrantClient(QdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.delete_snapshot(
-            collection_name=collection_name, snapshot_name=snapshot_name, **kwargs
+            collection_name=collection_name, snapshot_name=snapshot_name, wait=wait, **kwargs
         )
 
     def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
@@ -1994,28 +2005,42 @@ class QdrantClient(QdrantFastembedMixin):
 
         return self._client.list_full_snapshots(**kwargs)
 
-    def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
+    def create_full_snapshot(
+        self, wait: bool = True, **kwargs: Any
+    ) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a whole storage.
+
+        Args:
+            wait: Await for the snapshot to be created.
+
+                - If `true`, result will be returned only when the snapshot is created
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             Snapshot description
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.create_full_snapshot(**kwargs)
+        return self._client.create_full_snapshot(wait=wait, **kwargs)
 
-    def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
+    def delete_full_snapshot(
+        self, snapshot_name: str, wait: bool = True, **kwargs: Any
+    ) -> Optional[bool]:
         """Delete snapshot for a whole storage.
 
         Args:
             snapshot_name: Snapshot name
+            wait: Await for the snapshot to be deleted.
+
+                - If `true`, result will be returned only when the snapshot is deleted
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             True if snapshot was deleted
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.delete_full_snapshot(snapshot_name=snapshot_name, **kwargs)
+        return self._client.delete_full_snapshot(snapshot_name=snapshot_name, wait=wait, **kwargs)
 
     def recover_snapshot(
         self,
@@ -2024,7 +2049,7 @@ class QdrantClient(QdrantFastembedMixin):
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> bool:
+    ) -> Optional[bool]:
         """Recover collection from snapshot.
 
         Args:
@@ -2033,13 +2058,20 @@ class QdrantClient(QdrantFastembedMixin):
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
                 - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
+
             priority: Defines source of truth for snapshot recovery
 
                 - `replica` (default) means - prefer existing data over the snapshot
                 - `no_sync` means - do not sync shard with other shards
                 - `snapshot` means - prefer snapshot data over the current state
-            wait: Await for the results to be processed.
 
+            wait: Await for the recovery to be done.
+
+                - If `true`, result will be returned only when the recovery is done
+                - If `false`, result will be returned immediately after the confirmation of receiving.
+
+        Returns:
+            True if snapshot was recovered
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
@@ -2072,35 +2104,48 @@ class QdrantClient(QdrantFastembedMixin):
         )
 
     def create_shard_snapshot(
-        self, collection_name: str, shard_id: int, **kwargs: Any
+        self, collection_name: str, shard_id: int, wait: bool = True, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         """Create snapshot for a given shard.
 
         Args:
             collection_name: Name of the collection
             shard_id: Index of the shard
+            wait: Await for the snapshot to be created.
+
+                - If `true`, result will be returned only when the snapshot is created.
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             Snapshot description
-
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.create_shard_snapshot(
             collection_name=collection_name,
             shard_id=shard_id,
+            wait=wait,
             **kwargs,
         )
 
     def delete_shard_snapshot(
-        self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
-    ) -> bool:
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+        wait: bool = True,
+        **kwargs: Any,
+    ) -> Optional[bool]:
         """Delete snapshot for a given shard.
 
         Args:
             collection_name: Name of the collection
             shard_id: Index of the shard
             snapshot_name: Snapshot id
+            wait: Await for the snapshot to be deleted.
+
+                - If `true`, result will be returned only when the snapshot is deleted
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
             True if snapshot was deleted
@@ -2112,6 +2157,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             shard_id=shard_id,
             snapshot_name=snapshot_name,
+            wait=wait,
             **kwargs,
         )
 
@@ -2123,7 +2169,7 @@ class QdrantClient(QdrantFastembedMixin):
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> bool:
+    ) -> Optional[bool]:
         """Recover shard from snapshot.
 
         Args:
@@ -2138,10 +2184,13 @@ class QdrantClient(QdrantFastembedMixin):
                 - `replica` (default) means - prefer existing data over the snapshot
                 - `no_sync` means - do not sync shard with other shards
                 - `snapshot` means - prefer snapshot data over the current state
-            wait: Await for the results to be processed.
+            wait: Await for the recovery to be done.
+
+                - If `true`, result will be returned only when the recovery is done
+                - If `false`, result will be returned immediately after the confirmation of receiving.
 
         Returns:
-            True if snapshot was deleted
+            True if snapshot was recovered
         """
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
