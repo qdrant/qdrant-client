@@ -651,7 +651,7 @@ class QdrantRemote(QdrantBase):
     ) -> List[types.ScoredPoint]:
         if positive is None:
             positive = []
-        
+
         if negative is None:
             negative = []
 
@@ -738,9 +738,9 @@ class QdrantRemote(QdrantBase):
                 consistency=consistency,
                 recommend_request=models.RecommendRequest(
                     filter=query_filter,
+                    positive=positive,
                     negative=negative,
                     params=search_params,
-                    positive=positive,
                     limit=limit,
                     offset=offset,
                     with_payload=with_payload,
@@ -789,7 +789,7 @@ class QdrantRemote(QdrantBase):
 
             negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
             negative_vectors = RestToGrpc.convert_recommend_examples_to_vectors(negative)
-            
+
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
 
@@ -891,6 +891,155 @@ class QdrantRemote(QdrantBase):
 
             assert result is not None, "Recommend points API returned None"
             return result
+
+    def discover(
+        self,
+        collection_name: str,
+        target: Optional[types.RecommendExample] = None,
+        context_pairs: Optional[
+            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+        ] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        if context_pairs is None:
+            context_pairs = []
+
+        if self._prefer_grpc:
+            context_pairs = RestToGrpc.convert_context_example_pairs(context_pairs)
+            target = RestToGrpc.convert_recommend_example(target)
+
+            if isinstance(query_filter, models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
+
+            if isinstance(search_params, models.SearchParams):
+                search_params = RestToGrpc.convert_search_params(search_params)
+
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
+                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
+
+            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
+                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
+
+            if isinstance(lookup_from, models.LookupLocation):
+                lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
+
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
+            res: grpc.SearchResponse = self.grpc_points.Discover(
+                grpc.DiscoverPoints(
+                    collection_name=collection_name,
+                    target=target,
+                    context_pairs=context_pairs,
+                    filter=query_filter,
+                    limit=limit,
+                    offset=offset,
+                    with_vectors=with_vectors,
+                    with_payload=with_payload,
+                    params=search_params,
+                    score_threshold=score_threshold,
+                    using=using,
+                    lookup_from=lookup_from,
+                    read_consistency=consistency,
+                    timeout=timeout,
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            )
+
+            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+        else:
+            if target is not None and isinstance(target, grpc.PointId):
+                target = GrpcToRest.convert_point_id(target)
+
+            context_pairs = [
+                [
+                    GrpcToRest.convert_point_id(example)
+                    if isinstance(example, grpc.PointId)
+                    else example
+                    for example in pair
+                ]
+                for pair in context_pairs
+            ]
+
+            if isinstance(query_filter, grpc.Filter):
+                query_filter = GrpcToRest.convert_filter(model=query_filter)
+
+            if isinstance(search_params, grpc.SearchParams):
+                search_params = GrpcToRest.convert_search_params(search_params)
+
+            if isinstance(with_payload, grpc.WithPayloadSelector):
+                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
+
+            if isinstance(lookup_from, grpc.LookupLocation):
+                lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
+
+            result = self.openapi_client.points_api.discover_points(
+                collection_name=collection_name,
+                consistency=consistency,
+                timeout=timeout,
+                discover_request=models.DiscoverRequest(
+                    target=target,
+                    context_pairs=context_pairs,
+                    filter=query_filter,
+                    params=search_params,
+                    limit=limit,
+                    offset=offset,
+                    with_payload=with_payload,
+                    with_vector=with_vectors,
+                    lookup_from=lookup_from,
+                    using=using,
+                ),
+            ).result
+            assert result is not None, "Discover points API returned None"
+            return result
+
+    def discover_batch(
+        self,
+        collection_name: str,
+        requests: Sequence[types.DiscoverRequest],
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[List[types.ScoredPoint]]:
+        if self._prefer_grpc:
+            requests = [
+                RestToGrpc.convert_discover_request(r, collection_name)
+                if isinstance(r, models.DiscoverRequest)
+                else r
+                for r in requests
+            ]
+
+            grpc_res: grpc.SearchBatchResponse = self.grpc_points.DiscoverBatch(
+                grpc.DiscoverBatchPoints(
+                    collection_name=collection_name,
+                    discover_points=requests,
+                    timeout=timeout,
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            )
+
+            return [
+                [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
+            ]
+        else:
+            requests = [
+                GrpcToRest.convert_discover_points(r) if isinstance(r, grpc.DiscoverPoints) else r
+                for r in requests
+            ]
+            http_res: List[List[models.ScoredPoint]] = self.http.points_api.discover_batch_points(
+                collection_name=collection_name,
+                discover_request_batch=models.DiscoverRequestBatch(searches=requests),
+            ).result
+            return http_res
 
     def scroll(
         self,

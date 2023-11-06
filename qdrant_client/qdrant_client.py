@@ -207,7 +207,7 @@ class QdrantClient(QdrantFastembedMixin):
             requests: List of search requests
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
-                 
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -281,7 +281,7 @@ class QdrantClient(QdrantFastembedMixin):
             append_payload: Same as `with_payload`. Deprecated.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
-                 
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -432,7 +432,7 @@ class QdrantClient(QdrantFastembedMixin):
             requests: List of recommend requests
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
-                 
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -520,7 +520,7 @@ class QdrantClient(QdrantFastembedMixin):
                 If `None` - use current collection will be used.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
-                 
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -529,7 +529,7 @@ class QdrantClient(QdrantFastembedMixin):
                 Strategy to use for recommendation.
                 Strategy defines how to combine multiple examples into a recommendation query.
                 Possible values:
-                
+
                 - 'average_vector' - calculates average vector of all examples and uses it for search
                 - 'best_score' - finds the result which is closer to positive examples and further from negative
 
@@ -635,7 +635,7 @@ class QdrantClient(QdrantFastembedMixin):
                 which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
-                 
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -672,6 +672,54 @@ class QdrantClient(QdrantFastembedMixin):
             consistency=consistency,
             with_lookup=with_lookup,
             strategy=strategy,
+            **kwargs,
+        )
+
+    def discover(
+        self,
+        collection_name: str,
+        target: Optional[types.RecommendExample] = None,
+        context_pairs: Optional[
+            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+        ] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        return self._client.discover(
+            collection_name=collection_name,
+            target=target,
+            context_pairs=context_pairs,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            using=using,
+            lookup_from=lookup_from,
+            timeout=timeout,
+            **kwargs,
+        )
+
+    def discover_batch(
+        self,
+        collection_name: str,
+        requests: Sequence[types.DiscoverRequest],
+        **kwargs: Any,
+    ) -> List[List[types.ScoredPoint]]:
+        return self._client.discover_batch(
+            collection_name=collection_name,
+            requests=requests,
             **kwargs,
         )
 
@@ -782,7 +830,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
@@ -814,7 +862,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name (str): Name of the collection to update vectors in
             points (Point): List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
                 Examples:
-                
+
                 - `PointVectors(id=1, vector=[1, 2, 3])`
                 - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
             wait (bool): Await for the results to be processed.
@@ -822,11 +870,11 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
-        
+
 
         Returns:
             Operation Result(UpdateResult)
@@ -857,7 +905,7 @@ class QdrantClient(QdrantFastembedMixin):
             vectors: List of names of the vectors to delete. Use `""` to delete the default vector. At least one vector should be specified.
             points (Point): Selects points based on list of IDs or filter
                 Examples
-                
+
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             wait (bool): Await for the results to be processed.
@@ -865,7 +913,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
@@ -910,7 +958,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - Default: `False`
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
-                 
+
                 - int - number of replicas to query, values should present in all queried replicas
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
@@ -946,13 +994,13 @@ class QdrantClient(QdrantFastembedMixin):
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            points_selector: Selects points based on list of IDs or filter. 
+            points_selector: Selects points based on list of IDs or filter.
                 Examples
 
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
@@ -1009,7 +1057,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
@@ -1063,13 +1111,13 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
-            points: List of affected points, filter or points selector.    
+            points: List of affected points, filter or points selector.
             Example
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
 
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
@@ -1111,7 +1159,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is downn
@@ -1149,7 +1197,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
@@ -1183,7 +1231,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
@@ -1602,7 +1650,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
@@ -1640,7 +1688,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
-                
+
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
