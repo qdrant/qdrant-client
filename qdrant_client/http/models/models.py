@@ -163,6 +163,10 @@ class CollectionInfo(BaseModel, extra="forbid"):
 class CollectionParams(BaseModel, extra="forbid"):
     vectors: "VectorsConfig" = Field(..., description="")
     shard_number: Optional[int] = Field(default=1, description="Number of shards the collection has")
+    sharding_method: Optional["ShardingMethod"] = Field(
+        default=None,
+        description="Sharding method Default is Auto - points are distributed across all available shards Custom - points are distributed across shards according to shard key",
+    )
     replication_factor: Optional[int] = Field(default=1, description="Number of replicas for each shard")
     write_consistency_factor: Optional[int] = Field(
         default=1,
@@ -312,7 +316,11 @@ class CreateCollection(BaseModel, extra="forbid"):
     )
     shard_number: Optional[int] = Field(
         default=None,
-        description="Number of shards in collection. Default is 1 for standalone, otherwise equal to the number of nodes Minimum is 1",
+        description="For auto sharding: Number of shards in collection. - Default is 1 for standalone, otherwise equal to the number of nodes - Minimum is 1 For custom sharding: Number of shards in collection per shard group. - Default is 1, meaning that each shard key will be mapped to a single shard - Minimum is 1",
+    )
+    sharding_method: Optional["ShardingMethod"] = Field(
+        default=None,
+        description="Sharding method Default is Auto - points are distributed across all available shards Custom - points are distributed across shards according to shard key",
     )
     replication_factor: Optional[int] = Field(
         default=None, description="Number of shards replicas. Default is 1 Minimum is 1"
@@ -345,6 +353,26 @@ class CreateCollection(BaseModel, extra="forbid"):
 class CreateFieldIndex(BaseModel, extra="forbid"):
     field_name: str = Field(..., description="")
     field_schema: Optional["PayloadFieldSchema"] = Field(default=None, description="")
+
+
+class CreateShardingKey(BaseModel, extra="forbid"):
+    shard_key: "ShardKey" = Field(..., description="")
+    shards_number: Optional[int] = Field(
+        default=None,
+        description="How many shards to create for this key If not specified, will use the default value from config",
+    )
+    replication_factor: Optional[int] = Field(
+        default=None,
+        description="How many replicas to create for each shard If not specified, will use the default value from config",
+    )
+    placement: Optional[List[int]] = Field(
+        default=None,
+        description="Placement of shards for this key List of peer ids, that can be used to place shards for this key If not specified, will be randomly placed among all peers",
+    )
+
+
+class CreateShardingKeyOperation(BaseModel, extra="forbid"):
+    create_sharding_key: "CreateShardingKey" = Field(..., description="")
 
 
 class DeleteAlias(BaseModel, extra="forbid"):
@@ -399,6 +427,42 @@ class Disabled(str, Enum):
     DISABLED = "Disabled"
 
 
+class DiscoverRequest(BaseModel, extra="forbid"):
+    """
+    Use context and a target to find the most similar points, constrained by the context.  When using only the context, a special search is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have 0.0 as score.  Using only a target is equivalent to regular search, so the score is the distance to the target.  When using both context and target, the score behaves a little different: The integer part of the score represents the \&quot;rank\&quot; with respect to the context, while the decimal part of the score relates to the distance to the target.
+    """
+
+    target: Optional["RecommendExample"] = Field(default=None, description="Look for vectors closest to this")
+    context_pairs: Optional[List[List["RecommendExample"]]] = Field(
+        default=None, description="Pairs of [positive, negative] examples to provide context to the search"
+    )
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
+    limit: int = Field(..., description="Max number of result to return")
+    offset: Optional[int] = Field(
+        default=0,
+        description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
+    )
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        default=None, description="Select which payload to return with the response. Default: None"
+    )
+    with_vector: Optional["WithVector"] = Field(
+        default=None, description="Whether to return the point vector with the result?"
+    )
+    using: Optional["UsingVector"] = Field(
+        default=None,
+        description="Define which vector to use for recommendation, if not specified - try to use default vector",
+    )
+    lookup_from: Optional["LookupLocation"] = Field(
+        default=None,
+        description="The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection",
+    )
+
+
+class DiscoverRequestBatch(BaseModel, extra="forbid"):
+    searches: List["DiscoverRequest"] = Field(..., description="")
+
+
 class Distance(str, Enum):
     """
     Type of internal tags, build from payload Distance function types used to compare vectors
@@ -414,6 +478,14 @@ class Distance(str, Enum):
 
 class DropReplicaOperation(BaseModel, extra="forbid"):
     drop_replica: "Replica" = Field(..., description="")
+
+
+class DropShardingKey(BaseModel, extra="forbid"):
+    shard_key: "ShardKey" = Field(..., description="")
+
+
+class DropShardingKeyOperation(BaseModel, extra="forbid"):
+    drop_sharding_key: "DropShardingKey" = Field(..., description="")
 
 
 class ErrorResponse(BaseModel, extra="forbid"):
@@ -805,6 +877,7 @@ class IsNullCondition(BaseModel, extra="forbid"):
 
 class LocalShardInfo(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="Local shard id")
+    shard_key: Optional["ShardKey"] = Field(default=None, description="User-defined sharding key")
     points_count: int = Field(..., description="Number of points in the shard")
     state: "ReplicaState" = Field(..., description="")
 
@@ -879,6 +952,9 @@ class MoveShard(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
     to_peer_id: int = Field(..., description="")
     from_peer_id: int = Field(..., description="")
+    method: Optional["ShardTransferMethod"] = Field(
+        default=None, description="Method for transferring the shard from one node to another"
+    )
 
 
 class MoveShardOperation(BaseModel, extra="forbid"):
@@ -1288,6 +1364,7 @@ class Record(BaseModel, extra="forbid"):
 
 class RemoteShardInfo(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="Remote shard id")
+    shard_key: Optional["ShardKey"] = Field(default=None, description="User-defined sharding key")
     peer_id: int = Field(..., description="Remote peer id")
     state: "ReplicaState" = Field(..., description="")
 
@@ -1341,6 +1418,7 @@ class ReplicaState(str, Enum):
     PARTIAL = "Partial"
     INITIALIZING = "Initializing"
     LISTENER = "Listener"
+    PARTIALSNAPSHOT = "PartialSnapshot"
 
 
 class ReplicateShardOperation(BaseModel, extra="forbid"):
@@ -1569,6 +1647,34 @@ class ShardTransferInfo(BaseModel, extra="forbid"):
         ...,
         description="If `true` transfer is a synchronization of a replicas If `false` transfer is a moving of a shard from one peer to another",
     )
+    method: Optional["ShardTransferMethod"] = Field(default=None, description="")
+
+
+class ShardTransferMethodOneOf(str, Enum):
+    """
+    Stream all shard records in batches until the whole shard is transferred.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    STREAM_RECORDS = "stream_records"
+
+
+class ShardTransferMethodOneOf1(str, Enum):
+    """
+    Snapshot the shard, transfer and restore it on the receiver.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    SNAPSHOT = "snapshot"
+
+
+class ShardingMethod(str, Enum):
+    AUTO = "auto"
+    CUSTOM = "custom"
 
 
 class SnapshotDescription(BaseModel, extra="forbid"):
@@ -1889,6 +1995,8 @@ ClusterOperations = Union[
     ReplicateShardOperation,
     AbortTransferOperation,
     DropReplicaOperation,
+    CreateShardingKeyOperation,
+    DropShardingKeyOperation,
 ]
 ClusterStatus = Union[
     ClusterStatusOneOf,
@@ -1971,8 +2079,16 @@ ReadConsistency = Union[
     ReadConsistencyType,
     StrictInt,
 ]
+ShardKey = Union[
+    StrictInt,
+    StrictStr,
+]
 ShardSnapshotLocation = Union[
     StrictStr,
+]
+ShardTransferMethod = Union[
+    ShardTransferMethodOneOf,
+    ShardTransferMethodOneOf1,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
