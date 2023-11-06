@@ -89,6 +89,7 @@ UpdateOperation: TypeAlias = rest.UpdateOperation
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
+DiscoverRequest: TypeAlias = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering

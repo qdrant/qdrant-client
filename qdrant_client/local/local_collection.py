@@ -1,4 +1,3 @@
-import re
 import uuid
 from collections import OrderedDict, defaultdict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args
@@ -678,6 +677,128 @@ class LocalCollection:
             score_threshold=score_threshold,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
+        )
+
+    def _preprocess_discover(
+        self,
+        target: Optional[types.RecommendExample] = None,
+        context_pairs: Optional[
+            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+        ] = None,
+        query_filter: Optional[types.Filter] = None,
+        using: Optional[str] = None,
+        lookup_from_collection: Optional["LocalCollection"] = None,
+        lookup_from_vector_name: Optional[str] = None,
+    ) -> Tuple[Optional[List[float]], List[Tuple[List[float], List[float]]], types.Filter]:
+        collection = lookup_from_collection if lookup_from_collection is not None else self
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+        vector_name = (
+            lookup_from_vector_name
+            if lookup_from_vector_name is not None
+            else search_in_vector_name
+        )
+        context_pairs = context_pairs if context_pairs is not None else []
+
+        # Validate inputs
+        if target is None and len(context_pairs) == 0:
+            raise ValueError("No target or context_pairs given")
+
+        # Turn every example into vectors
+        target_vector: Optional[types.NumpyArray] = None
+        context_pairs_vectors: List[Tuple[types.NumpyArray]] = []
+        mentioned_ids: List[ExtendedPointId] = []
+
+        if isinstance(target, get_args(types.PointId)):
+            if target not in collection.ids:
+                raise ValueError(f"Point {target} is not found in the collection")
+
+            idx = collection.ids[target]
+            target_vector = collection.vectors[vector_name][idx]
+            mentioned_ids.append(target)
+        else:
+            target_vector = target
+
+        for pair in context_pairs:
+            pair_vectors = []
+            for example in pair:
+                if isinstance(example, get_args(types.PointId)):
+                    if example not in collection.ids:
+                        raise ValueError(f"Point {example} is not found in the collection")
+
+                    idx = collection.ids[example]
+                    pair_vectors.append(collection.vectors[vector_name][idx])
+                    mentioned_ids.append(example)
+                else:
+                    pair_vectors.append(example)
+
+            context_pairs_vectors.append(tuple(pair_vectors))
+
+        # Edit query filter
+        ignore_mentioned_ids = models.HasIdCondition(has_id=mentioned_ids)
+
+        if query_filter is None:
+            query_filter = models.Filter(must_not=[ignore_mentioned_ids])
+        else:
+            if query_filter.must_not is None:  # type: ignore
+                query_filter.must_not = [ignore_mentioned_ids]
+            else:
+                query_filter.must_not.append(ignore_mentioned_ids)
+
+        return target_vector, context_pairs_vectors, query_filter  # type: ignore
+
+    def discover(
+        self,
+        target: Optional[types.RecommendExample] = None,
+        context_pairs: Optional[
+            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+        ] = None,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from_collection: Optional["LocalCollection"] = None,
+        lookup_from_vector_name: Optional[str] = None,
+    ) -> List[models.ScoredPoint]:
+        strategy = strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
+
+        target_vector, context_pairs_vectors, edited_query_filter = self._preprocess_discover(
+            target,
+            context_pairs,
+            query_filter,
+            using,
+            lookup_from_collection,
+            lookup_from_vector_name,
+        )
+
+        query_vector: QueryVector
+
+        # Discovery search
+        if target_vector is not None and len(context_pairs_vectors) > 0:
+            query_vector = DiscoveryQuery(target_vector, context_pairs_vectors)
+
+        # Nearest search
+        elif target_vector is not None and len(context_pairs_vectors) == 0:
+            query_vector = np.array(target_vector)
+
+        # Context search
+        elif target_vector is None and len(context_pairs_vectors) > 0:
+            query_vector = ContextQuery(context_pairs_vectors)
+        else:
+            raise ValueError("No target or context_pairs given")
+
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+
+        return self.search(
+            query_vector=(search_in_vector_name, query_vector),
+            query_filter=edited_query_filter,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
         )
 
     @classmethod

@@ -106,6 +106,34 @@ class QdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
+    def discover(
+        self,
+        collection_name: str,
+        target: Optional[types.RecommendExample] = None,
+        context_pairs: Optional[
+            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+        ] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        raise NotImplementedError()
+
+    def discover_batch(
+        self,
+        collection_name: str,
+        requests: Sequence[types.DiscoverRequest],
+        **kwargs: Any,
+    ) -> List[List[types.ScoredPoint]]:
+        raise NotImplementedError()
+
     def scroll(
         self,
         collection_name: str,
