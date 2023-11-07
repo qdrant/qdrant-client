@@ -908,6 +908,7 @@ class QdrantRemote(QdrantBase):
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -1007,6 +1008,7 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         requests: Sequence[types.DiscoverRequest],
+        consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
@@ -1022,6 +1024,7 @@ class QdrantRemote(QdrantBase):
                 grpc.DiscoverBatchPoints(
                     collection_name=collection_name,
                     discover_points=requests,
+                    read_consistency=consistency,
                     timeout=timeout,
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
@@ -1038,6 +1041,7 @@ class QdrantRemote(QdrantBase):
             http_res: List[List[models.ScoredPoint]] = self.http.points_api.discover_batch_points(
                 collection_name=collection_name,
                 discover_request_batch=models.DiscoverRequestBatch(searches=requests),
+                consistency=consistency,
             ).result
             return http_res
 

@@ -112,17 +112,20 @@ class LocalCollection:
             Tuple[str, QueryVector],
         ],
     ) -> Tuple[str, QueryVector]:
+        vector: QueryVector
         if isinstance(query_vector, tuple):
-            name, vector = query_vector
-            if isinstance(vector, list):
-                vector = np.array(vector)
+            name, query = query_vector
+            if isinstance(query, list):
+                vector = np.array(query)
+            else:
+                vector = query
         elif isinstance(query_vector, types.NamedVector):
             name = query_vector.name
-            vector = query_vector.vector
-        elif isinstance(query_vector, np.ndarray):
-            name = DEFAULT_VECTOR_NAME
-            vector = query_vector
+            vector = np.array(query_vector.vector)
         elif isinstance(query_vector, list):
+            name = DEFAULT_VECTOR_NAME
+            vector = np.array(query_vector)
+        elif isinstance(query_vector, np.ndarray):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
         elif isinstance(query_vector, get_args(QueryVector)):
@@ -131,7 +134,7 @@ class LocalCollection:
         else:
             raise ValueError(f"Unsupported vector type {type(query_vector)}")
 
-        return name, np.array(vector)
+        return name, vector
 
     def get_vector_params(self, name: str) -> models.VectorParams:
         if isinstance(self.config.vectors, dict):
@@ -683,7 +686,10 @@ class LocalCollection:
         self,
         target: Optional[types.RecommendExample] = None,
         context_pairs: Optional[
-            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+            Union[
+                Sequence[Tuple[types.RecommendExample, types.RecommendExample]],
+                Sequence[Sequence[types.RecommendExample]],
+            ]
         ] = None,
         query_filter: Optional[types.Filter] = None,
         using: Optional[str] = None,
@@ -702,6 +708,10 @@ class LocalCollection:
         # Validate inputs
         if target is None and len(context_pairs) == 0:
             raise ValueError("No target or context_pairs given")
+
+        for pair in context_pairs:
+            if len(pair) != 2:
+                raise ValueError(f"Context pair must contain exactly 2 elements, got {len(pair)}")
 
         # Turn every example into vectors
         target_vector: Optional[types.NumpyArray] = None
@@ -750,7 +760,10 @@ class LocalCollection:
         self,
         target: Optional[types.RecommendExample] = None,
         context_pairs: Optional[
-            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+            Union[
+                Sequence[Tuple[types.RecommendExample, types.RecommendExample]],
+                Sequence[Sequence[types.RecommendExample]],
+            ]
         ] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
@@ -762,8 +775,6 @@ class LocalCollection:
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
     ) -> List[models.ScoredPoint]:
-        strategy = strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
-
         target_vector, context_pairs_vectors, edited_query_filter = self._preprocess_discover(
             target,
             context_pairs,

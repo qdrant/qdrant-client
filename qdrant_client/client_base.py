@@ -111,7 +111,10 @@ class QdrantBase:
         collection_name: str,
         target: Optional[types.RecommendExample] = None,
         context_pairs: Optional[
-            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+            Union[
+                Sequence[Tuple[types.RecommendExample, types.RecommendExample]],
+                Sequence[Sequence[types.RecommendExample]],
+            ]
         ] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,

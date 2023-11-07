@@ -322,7 +322,10 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         target: Optional[types.RecommendExample] = None,
         context_pairs: Optional[
-            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
+            Union[
+                Sequence[Tuple[types.RecommendExample, types.RecommendExample]],
+                Sequence[Sequence[types.RecommendExample]],
+            ]
         ] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -364,12 +367,11 @@ class QdrantLocal(QdrantBase):
             collection.discover(
                 target=request.target,
                 context_pairs=request.context_pairs,
-                query_filter=request.query_filter,
+                query_filter=request.filter,
                 limit=request.limit,
                 offset=request.offset,
                 with_payload=request.with_payload,
-                with_vectors=request.with_vectors,
-                score_threshold=request.score_threshold,
+                with_vectors=request.with_vector,
                 using=request.using,
                 lookup_from_collection=self._get_collection(request.lookup_from.collection)
                 if request.lookup_from

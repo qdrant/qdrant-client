@@ -6,6 +6,9 @@ import numpy as np
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 
+EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
+# https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
+
 
 class RecoQuery:
     def __init__(
@@ -205,29 +208,18 @@ def calculate_discovery_scores(
 def calculate_context_scores(
     query: ContextQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    overall_scores = np.zeros(vectors.shape[0], dtype=np.int32)
+    overall_scores = np.zeros(vectors.shape[0], dtype=np.float32)
     for pair in query.context_pairs:
         pos = calculate_distance(pair[0], vectors, distance_type)  # distances to positive
         neg = calculate_distance(pair[1], vectors, distance_type)  # distances to negative
 
-        sig_pos = np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype)
-        sig_neg = np.fromiter((scaled_fast_sigmoid(xi) for xi in neg), neg.dtype)
+        # Adjust
+        if distance_type == models.Distance.EUCLID:
+            pos = -(pos * pos)
+            neg = -(neg * neg)
 
-        if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-            pair_scores = np.array(
-                [
-                    from_pos if is_bigger else -from_neg
-                    for is_bigger, from_pos, from_neg in zip(pos > neg, sig_pos, sig_neg)
-                ]
-            )
-        else:
-            pair_scores = np.array(
-                [
-                    from_pos if is_smaller else -from_neg
-                    for is_smaller, from_pos, from_neg in zip(pos < neg, sig_pos, sig_neg)
-                ]
-            )
-
+        difference = pos - neg - EPSILON
+        pair_scores = np.minimum(difference, 0.0)
         overall_scores += pair_scores
 
     return overall_scores
