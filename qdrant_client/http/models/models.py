@@ -271,6 +271,11 @@ class ConsensusThreadStatusOneOf2(BaseModel, extra="forbid"):
     err: str = Field(..., description="")
 
 
+class ContextExamplePair(BaseModel, extra="forbid"):
+    positive: "RecommendExample" = Field(..., description="")
+    negative: "RecommendExample" = Field(..., description="")
+
+
 class CountRequest(BaseModel, extra="forbid"):
     """
     Count Request Counts the number of points which satisfy the given filter. If filter is not provided, the count of all points in the collection will be returned.
@@ -429,12 +434,16 @@ class Disabled(str, Enum):
 
 class DiscoverRequest(BaseModel, extra="forbid"):
     """
-    Use context and a target to find the most similar points, constrained by the context.  When using only the context, a special search is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have 0.0 as score.  Using only a target is equivalent to regular search, so the score is the distance to the target.  When using both context and target, the score behaves a little different: The integer part of the score represents the \&quot;rank\&quot; with respect to the context, while the decimal part of the score relates to the distance to the target.
+    Use context and a target to find the most similar points, constrained by the context.
     """
 
-    target: Optional["RecommendExample"] = Field(default=None, description="Look for vectors closest to this")
-    context_pairs: Optional[List[List["RecommendExample"]]] = Field(
-        default=None, description="Pairs of [positive, negative] examples to provide context to the search"
+    target: Optional["RecommendExample"] = Field(
+        default=None,
+        description="Look for vectors closest to this.  When using the target (with or without context), the integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target.",
+    )
+    context: Optional[List["ContextExamplePair"]] = Field(
+        default=None,
+        description="Pairs of { positive, negative } examples to constrain the search.  When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair.  Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0.  For discovery search (when including a target), the context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.",
     )
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
@@ -1865,10 +1874,12 @@ class VectorIndexSearchesTelemetry(BaseModel, extra="forbid"):
     index_name: Optional[str] = Field(default=None, description="")
     unfiltered_plain: "OperationDurationStatistics" = Field(..., description="")
     unfiltered_hnsw: "OperationDurationStatistics" = Field(..., description="")
+    unfiltered_sparse: "OperationDurationStatistics" = Field(..., description="")
     filtered_plain: "OperationDurationStatistics" = Field(..., description="")
     filtered_small_cardinality: "OperationDurationStatistics" = Field(..., description="")
     filtered_large_cardinality: "OperationDurationStatistics" = Field(..., description="")
     filtered_exact: "OperationDurationStatistics" = Field(..., description="")
+    filtered_sparse: "OperationDurationStatistics" = Field(..., description="")
     unfiltered_exact: "OperationDurationStatistics" = Field(..., description="")
 
 

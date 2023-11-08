@@ -1643,14 +1643,15 @@ class RestToGrpc:
 
     @classmethod
     def convert_context_example_pairs(
-        cls, pairs: Sequence[Tuple[rest.RecommendExample, rest.RecommendExample]]
+        cls,
+        context: Sequence[rest.ContextExamplePair] = None,
     ) -> List[grpc.ContextExamplePair]:
         return [
             grpc.ContextExamplePair(
-                positive=cls.convert_recommend_example(pair[0]),
-                negative=cls.convert_recommend_example(pair[1]),
+                positive=cls.convert_recommend_example(pair.positive),
+                negative=cls.convert_recommend_example(pair.negative),
             )
-            for pair in pairs
+            for pair in context
         ]
 
     @classmethod

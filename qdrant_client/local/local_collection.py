@@ -685,12 +685,7 @@ class LocalCollection:
     def _preprocess_discover(
         self,
         target: Optional[types.RecommendExample] = None,
-        context_pairs: Optional[
-            Union[
-                Sequence[Tuple[types.RecommendExample, types.RecommendExample]],
-                Sequence[Sequence[types.RecommendExample]],
-            ]
-        ] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
@@ -703,19 +698,15 @@ class LocalCollection:
             if lookup_from_vector_name is not None
             else search_in_vector_name
         )
-        context_pairs = context_pairs if context_pairs is not None else []
+        context = context if context is not None else []
 
         # Validate inputs
-        if target is None and len(context_pairs) == 0:
-            raise ValueError("No target or context_pairs given")
-
-        for pair in context_pairs:
-            if len(pair) != 2:
-                raise ValueError(f"Context pair must contain exactly 2 elements, got {len(pair)}")
+        if target is None and len(context) == 0:
+            raise ValueError("No target or context given")
 
         # Turn every example into vectors
         target_vector: Optional[types.NumpyArray] = None
-        context_pairs_vectors: List[Tuple[types.NumpyArray]] = []
+        context_vectors: List[Tuple[types.NumpyArray]] = []
         mentioned_ids: List[ExtendedPointId] = []
 
         if isinstance(target, get_args(types.PointId)):
@@ -728,9 +719,9 @@ class LocalCollection:
         else:
             target_vector = target
 
-        for pair in context_pairs:
+        for pair in context:
             pair_vectors = []
-            for example in pair:
+            for example in [pair.positive, pair.negative]:
                 if isinstance(example, get_args(types.PointId)):
                     if example not in collection.ids:
                         raise ValueError(f"Point {example} is not found in the collection")
@@ -741,7 +732,7 @@ class LocalCollection:
                 else:
                     pair_vectors.append(example)
 
-            context_pairs_vectors.append(tuple(pair_vectors))
+            context_vectors.append(tuple(pair_vectors))
 
         # Edit query filter
         ignore_mentioned_ids = models.HasIdCondition(has_id=mentioned_ids)
@@ -754,17 +745,12 @@ class LocalCollection:
             else:
                 query_filter.must_not.append(ignore_mentioned_ids)
 
-        return target_vector, context_pairs_vectors, query_filter  # type: ignore
+        return target_vector, context_vectors, query_filter  # type: ignore
 
     def discover(
         self,
         target: Optional[types.RecommendExample] = None,
-        context_pairs: Optional[
-            Union[
-                Sequence[Tuple[types.RecommendExample, types.RecommendExample]],
-                Sequence[Sequence[types.RecommendExample]],
-            ]
-        ] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
@@ -777,7 +763,7 @@ class LocalCollection:
     ) -> List[models.ScoredPoint]:
         target_vector, context_pairs_vectors, edited_query_filter = self._preprocess_discover(
             target,
-            context_pairs,
+            context,
             query_filter,
             using,
             lookup_from_collection,
@@ -787,12 +773,8 @@ class LocalCollection:
         query_vector: QueryVector
 
         # Discovery search
-        if target_vector is not None and len(context_pairs_vectors) > 0:
+        if target_vector is not None:
             query_vector = DiscoveryQuery(target_vector, context_pairs_vectors)
-
-        # Nearest search
-        elif target_vector is not None and len(context_pairs_vectors) == 0:
-            query_vector = np.array(target_vector)
 
         # Context search
         elif target_vector is None and len(context_pairs_vectors) > 0:

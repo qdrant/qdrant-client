@@ -321,12 +321,7 @@ class QdrantLocal(QdrantBase):
         self,
         collection_name: str,
         target: Optional[types.RecommendExample] = None,
-        context_pairs: Optional[
-            Union[
-                Sequence[Tuple[types.RecommendExample, types.RecommendExample]],
-                Sequence[Sequence[types.RecommendExample]],
-            ]
-        ] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -341,7 +336,7 @@ class QdrantLocal(QdrantBase):
         collection = self._get_collection(collection_name)
         return collection.discover(
             target=target,
-            context_pairs=context_pairs,
+            context=context,
             query_filter=query_filter,
             limit=limit,
             offset=offset,

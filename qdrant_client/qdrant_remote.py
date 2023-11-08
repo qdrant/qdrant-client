@@ -896,9 +896,7 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         target: Optional[types.RecommendExample] = None,
-        context_pairs: Optional[
-            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
-        ] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -912,11 +910,11 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
-        if context_pairs is None:
-            context_pairs = []
+        if context is None:
+            context = []
 
         if self._prefer_grpc:
-            context_pairs = RestToGrpc.convert_context_example_pairs(context_pairs)
+            context = RestToGrpc.convert_context_example_pairs(context)
             target = RestToGrpc.convert_recommend_example(target)
 
             if isinstance(query_filter, models.Filter):
@@ -941,7 +939,7 @@ class QdrantRemote(QdrantBase):
                 grpc.DiscoverPoints(
                     collection_name=collection_name,
                     target=target,
-                    context_pairs=context_pairs,
+                    context=context,
                     filter=query_filter,
                     limit=limit,
                     offset=offset,
@@ -962,14 +960,16 @@ class QdrantRemote(QdrantBase):
             if target is not None and isinstance(target, grpc.PointId):
                 target = GrpcToRest.convert_point_id(target)
 
-            context_pairs = [
-                [
-                    GrpcToRest.convert_point_id(example)
-                    if isinstance(example, grpc.PointId)
-                    else example
-                    for example in pair
-                ]
-                for pair in context_pairs
+            context = [
+                models.ContextExamplePair(
+                    positive=GrpcToRest.convert_point_id(pair.positive)
+                    if isinstance(pair.positive, grpc.PointId)
+                    else pair.positive,
+                    negative=GrpcToRest.convert_point_id(pair.negative)
+                    if isinstance(pair.negative, grpc.PointId)
+                    else pair.negative,
+                )
+                for pair in context
             ]
 
             if isinstance(query_filter, grpc.Filter):
@@ -990,7 +990,7 @@ class QdrantRemote(QdrantBase):
                 timeout=timeout,
                 discover_request=models.DiscoverRequest(
                     target=target,
-                    context_pairs=context_pairs,
+                    context=context,
                     filter=query_filter,
                     params=search_params,
                     limit=limit,

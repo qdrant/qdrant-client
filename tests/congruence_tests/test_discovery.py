@@ -49,7 +49,7 @@ class TestDiscovery:
     ) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
-            context_pairs=[(10, 19)],
+            context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
             limit=1000,
             using="image",
@@ -60,7 +60,7 @@ class TestDiscovery:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
-            context_pairs=[(10, 19)],
+            context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
             limit=10,
             using="image",
@@ -72,7 +72,7 @@ class TestDiscovery:
     ) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
-            context_pairs=[(random_code_vector(), 19)],
+            context=[models.ContextExamplePair(positive=random_code_vector(), negative=19)],
             with_payload=True,
             limit=1000,
             using="code",
@@ -83,7 +83,7 @@ class TestDiscovery:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
-            context_pairs=[(random_code_vector(), 19)],
+            context=[models.ContextExamplePair(positive=random_code_vector(), negative=19)],
             with_payload=True,
             limit=10,
             using="code",
@@ -94,7 +94,7 @@ class TestDiscovery:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
-            context_pairs=[(15, 7)],
+            context=[models.ContextExamplePair(positive=15, negative=7)],
             with_payload=True,
             limit=10,
             using="image",
@@ -111,7 +111,7 @@ class TestDiscovery:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
-            context_pairs=[(15, random_image_vector())],
+            context=[(15, random_image_vector())],
             query_filter=query_filter,
             with_payload=True,
             limit=10,
@@ -122,24 +122,24 @@ class TestDiscovery:
     def discover_batch(client: QdrantBase) -> List[List[models.ScoredPoint]]:
         return client.discover_batch(
             collection_name=COLLECTION_NAME,
-            requests=[
+            requests=(
                 models.DiscoverRequest(
                     target=10,
-                    context_pairs=[[15, 7]],
-                    limit=1,
+                    context=[models.ContextExamplePair(positive=15, negative=7)],
+                    limit=5,
                     using="image",
                 ),
                 models.DiscoverRequest(
                     target=11,
-                    context_pairs=[[16, 17]],
-                    limit=2,
+                    context=[models.ContextExamplePair(positive=15, negative=17)],
+                    limit=6,
                     using="image",
                     lookup_from=models.LookupLocation(
                         collection=secondary_collection_name,
                         vector="image",
                     ),
                 ),
-            ],
+            ),
         )
 
 

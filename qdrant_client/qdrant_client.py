@@ -679,9 +679,7 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         target: Optional[types.RecommendExample] = None,
-        context_pairs: Optional[
-            Sequence[Tuple[types.RecommendExample, types.RecommendExample]]
-        ] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -697,7 +695,7 @@ class QdrantClient(QdrantFastembedMixin):
         return self._client.discover(
             collection_name=collection_name,
             target=target,
-            context_pairs=context_pairs,
+            context=context,
             query_filter=query_filter,
             search_params=search_params,
             limit=limit,
