@@ -1,17 +1,17 @@
 from enum import Enum
 from typing import List, Optional, Union
-from qdrant_client.conversions import common_types as types
 
 import numpy as np
 
+from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 
 
 class RecoQuery:
     def __init__(
-        self, 
-        positive: Optional[List[List[float]]] = None, 
-        negative: Optional[List[List[float]]] = None
+        self,
+        positive: Optional[List[List[float]]] = None,
+        negative: Optional[List[List[float]]] = None,
     ):
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
@@ -20,6 +20,7 @@ class RecoQuery:
 
 
 QueryVector = Union[RecoQuery, types.NumpyArray]
+
 
 class DistanceOrder(str, Enum):
     BIGGER_IS_BETTER = "bigger_is_better"
@@ -91,19 +92,26 @@ def calculate_distance(
         raise ValueError(f"Unknown distance type {distance_type}")
 
 
+def scaled_fast_sigmoid(x: np.float32) -> np.float32:
+    if np.isfinite(x):
+        return 0.5 * (x / (1.0 + abs(x)) + 1.0)
+    else:
+        # To avoid NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
+        return x
+
+
 def calculate_best_scores(
     query: RecoQuery, vectors: np.ndarray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    
     def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
         vector_count = vectors.shape[0]
-        
+
         # Get scores to all examples
         scores: List[types.NumpyArray] = []
         for example in examples:
             score = calculate_distance(example, vectors, distance_type)
             scores.append(score)
-            
+
         # Keep only max (or min) for each vector
         if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
             if len(scores) == 0:
@@ -115,18 +123,26 @@ def calculate_best_scores(
             best_scores = np.array(scores, dtype=np.float32).min(axis=0)
 
         return best_scores
-    
+
     pos = get_best_scores(query.positive)
     neg = get_best_scores(query.negative)
-    
-    # Choose from best positive or best negative, 
-    # in case of choosing best negative, square and negate it to make it smaller than any positive
+
+    # Choose from best positive or best negative,
+    # in in both cases we apply sigmoid and then negate depending on the order
     if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-        return np.where(pos > neg, pos, -(neg*neg))
+        return np.where(
+            pos > neg,
+            np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
+            np.fromiter((-scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
+        )
     else:
-        # neg*neg is not negated here because of the DistanceOrder.SMALLER_IS_BETTER
-        return np.where(pos < neg, pos, neg*neg)
-        
+        # negative option is not negated here because of the DistanceOrder.SMALLER_IS_BETTER
+        return np.where(
+            pos < neg,
+            np.fromiter((-scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
+            np.fromiter((scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
+        )
+
 
 def test_distances() -> None:
     query = np.array([1.0, 2.0, 3.0])
