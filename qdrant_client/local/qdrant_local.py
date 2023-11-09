@@ -361,7 +361,7 @@ class QdrantLocal(QdrantBase):
         return [
             collection.discover(
                 target=request.target,
-                context_pairs=request.context_pairs,
+                context=request.context,
                 query_filter=request.filter,
                 limit=request.limit,
                 offset=request.offset,

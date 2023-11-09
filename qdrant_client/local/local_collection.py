@@ -9,6 +9,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 from qdrant_client.http.models.models import ExtendedPointId
 from qdrant_client.local.distances import (
+    ContextPair,
     ContextQuery,
     DiscoveryQuery,
     DistanceOrder,
@@ -340,7 +341,9 @@ class LocalCollection:
 
         required_order = distance_to_order(params.distance)
 
-        if required_order == DistanceOrder.BIGGER_IS_BETTER:
+        if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
+            query_vector, (DiscoveryQuery, ContextQuery, RecoQuery)
+        ):
             order = np.argsort(scores)[::-1]
         else:
             order = np.argsort(scores)
@@ -690,7 +693,7 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ) -> Tuple[Optional[List[float]], List[Tuple[List[float], List[float]]], types.Filter]:
+    ) -> Tuple[Optional[List[float]], List[ContextPair], types.Filter]:
         collection = lookup_from_collection if lookup_from_collection is not None else self
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         vector_name = (
@@ -706,7 +709,7 @@ class LocalCollection:
 
         # Turn every example into vectors
         target_vector: Optional[types.NumpyArray] = None
-        context_vectors: List[Tuple[types.NumpyArray]] = []
+        context_vectors: List[ContextPair] = []
         mentioned_ids: List[ExtendedPointId] = []
 
         if isinstance(target, get_args(types.PointId)):
@@ -732,7 +735,7 @@ class LocalCollection:
                 else:
                     pair_vectors.append(example)
 
-            context_vectors.append(tuple(pair_vectors))
+            context_vectors.append(ContextPair(positive=pair_vectors[0], negative=pair_vectors[1]))
 
         # Edit query filter
         ignore_mentioned_ids = models.HasIdCondition(has_id=mentioned_ids)
@@ -761,7 +764,7 @@ class LocalCollection:
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
     ) -> List[models.ScoredPoint]:
-        target_vector, context_pairs_vectors, edited_query_filter = self._preprocess_discover(
+        target_vector, context_vectors, edited_query_filter = self._preprocess_discover(
             target,
             context,
             query_filter,
@@ -774,13 +777,13 @@ class LocalCollection:
 
         # Discovery search
         if target_vector is not None:
-            query_vector = DiscoveryQuery(target_vector, context_pairs_vectors)
+            query_vector = DiscoveryQuery(target_vector, context_vectors)
 
         # Context search
-        elif target_vector is None and len(context_pairs_vectors) > 0:
-            query_vector = ContextQuery(context_pairs_vectors)
+        elif target_vector is None and len(context_vectors) > 0:
+            query_vector = ContextQuery(context_vectors)
         else:
-            raise ValueError("No target or context_pairs given")
+            raise ValueError("No target or context given")
 
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
 

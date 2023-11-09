@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
 import numpy as np
 
@@ -22,19 +22,21 @@ class RecoQuery:
         self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
 
 
+class ContextPair:
+    def __init__(self, positive: List[float], negative: List[float]):
+        self.positive: types.NumpyArray = np.array(positive)
+        self.negative: types.NumpyArray = np.array(negative)
+
+
 class DiscoveryQuery:
-    def __init__(self, target: List[float], context_pairs: List[Tuple[List[float], List[float]]]):
+    def __init__(self, target: List[float], context: List[ContextPair]):
         self.target: types.NumpyArray = np.array(target)
-        self.context_pairs: List[Tuple[types.NumpyArray, types.NumpyArray]] = [
-            (np.array(pair[0]), np.array(pair[1])) for pair in context_pairs
-        ]
+        self.context = context
 
 
 class ContextQuery:
-    def __init__(self, context_pairs: List[Tuple[List[float], List[float]]]):
-        self.context_pairs: List[Tuple[types.NumpyArray, types.NumpyArray]] = [
-            (np.array(pair[0]), np.array(pair[1])) for pair in context_pairs
-        ]
+    def __init__(self, context_pairs: List[ContextPair]):
+        self.context_pairs = context_pairs
 
 
 QueryVector = Union[DiscoveryQuery, ContextQuery, RecoQuery, types.NumpyArray]
@@ -163,29 +165,32 @@ def calculate_recommend_best_scores(
 
 
 def calculate_discovery_ranks(
-    context_pairs: List[Tuple[types.NumpyArray, types.NumpyArray]],
+    context: List[ContextPair],
     vectors: types.NumpyArray,
     distance_type: models.Distance,
 ) -> types.NumpyArray:
     overall_ranks = np.zeros(vectors.shape[0], dtype=np.int32)
-    for pair in context_pairs:
-        pos = calculate_distance(pair[0], vectors, distance_type)  # distances to positive
-        neg = calculate_distance(pair[1], vectors, distance_type)  # distances to negative
-
-        if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-            pair_ranks = np.array(
-                [
-                    1 if is_bigger else 0 if is_equal else -1
-                    for is_bigger, is_equal in zip(pos > neg, pos == neg)
-                ]
+    for pair in context:
+        # Get distances to positive and negative vectors
+        if distance_type == models.Distance.EUCLID:
+            # Use same internal distances as in core
+            pos = -np.square(vectors - pair.positive, dtype=np.float32).sum(
+                axis=1, dtype=np.float32
+            )
+            neg = -np.square(vectors - pair.negative, dtype=np.float32).sum(
+                axis=1, dtype=np.float32
             )
         else:
-            pair_ranks = np.array(
-                [
-                    1 if is_smaller else 0 if is_equal else -1
-                    for is_smaller, is_equal in zip(pos < neg, pos == neg)
-                ]
-            )
+            pos = calculate_distance(pair.positive, vectors, distance_type)
+            neg = calculate_distance(pair.negative, vectors, distance_type)
+
+        pair_ranks = np.array(
+            [
+                1 if is_bigger else 0 if is_equal else -1
+                for is_bigger, is_equal in zip(pos > neg, pos == neg)
+            ]
+        )
+
         overall_ranks += pair_ranks
 
     return overall_ranks
@@ -194,12 +199,17 @@ def calculate_discovery_ranks(
 def calculate_discovery_scores(
     query: DiscoveryQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    ranks = calculate_discovery_ranks(query.context_pairs, vectors, distance_type)
+    ranks = calculate_discovery_ranks(query.context, vectors, distance_type)
 
-    distances_to_target = calculate_distance(query.target, vectors, distance_type)
+    # Get distances to target
+    if distance_type == models.Distance.EUCLID:
+        # Use same internal distance as in core
+        distances_to_target = -np.square(vectors - query.target).sum(axis=1)
+    else:
+        distances_to_target = calculate_distance(query.target, vectors, distance_type)
 
     sigmoided_distances = np.fromiter(
-        (scaled_fast_sigmoid(xi) for xi in distances_to_target), distances_to_target.dtype
+        (scaled_fast_sigmoid(xi) for xi in distances_to_target), np.float32
     )
 
     return ranks + sigmoided_distances
@@ -210,13 +220,18 @@ def calculate_context_scores(
 ) -> types.NumpyArray:
     overall_scores = np.zeros(vectors.shape[0], dtype=np.float32)
     for pair in query.context_pairs:
-        pos = calculate_distance(pair[0], vectors, distance_type)  # distances to positive
-        neg = calculate_distance(pair[1], vectors, distance_type)  # distances to negative
-
-        # Adjust
+        # Get distances to positive and negative vectors
         if distance_type == models.Distance.EUCLID:
-            pos = -(pos * pos)
-            neg = -(neg * neg)
+            # Use same internal distance as in core
+            pos = -np.square(vectors - pair.positive, dtype=np.float32).sum(
+                axis=1, dtype=np.float32
+            )
+            neg = -np.square(vectors - pair.negative, dtype=np.float32).sum(
+                axis=1, dtype=np.float32
+            )
+        else:
+            pos = calculate_distance(pair.positive, vectors, distance_type)
+            neg = calculate_distance(pair.negative, vectors, distance_type)
 
         difference = pos - neg - EPSILON
         pair_scores = np.minimum(difference, 0.0)
