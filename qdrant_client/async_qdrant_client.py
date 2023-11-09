@@ -1988,7 +1988,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             location: URL of the snapshot
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
-                - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
+                - Local path `file:///qdrant/snapshots/test_collection/test_collection-6194298859870377-2023-11-09-15-17-51.snapshot`
 
             priority: Defines source of truth for snapshot recovery
 
@@ -2099,7 +2099,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             location: URL of the snapshot
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
-                - Local path `file:///qdrant/snapshots/test_collection-2022-08-04-10-49-10.snapshot`
             priority: Defines source of truth for snapshot recovery
 
                 - `replica` (default) means - prefer existing data over the snapshot
