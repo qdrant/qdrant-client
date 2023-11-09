@@ -120,6 +120,7 @@ class QdrantBase:
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -127,12 +128,12 @@ class QdrantBase:
         Use context and a target to find the most similar points, constrained by the context.
 
         Args:
-            target (Optional["RecommendExample"]):
+            target:
                 Look for vectors closest to this.
 
                 When using the target (with or without context), the integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target.
 
-            context (Optional[Sequence["ContextExamplePair"]]):
+            context:
                 Pairs of { positive, negative } examples to constrain the search.
 
                 When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair.
@@ -141,29 +142,43 @@ class QdrantBase:
 
                 For discovery search (when including a target), the context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.
 
-            filter (Optional["Filter"]):
+            filter:
                 Look only for points which satisfies this conditions
 
-            params: (Optional["SearchParams"]):
+            params:
                 Additional search params
 
-            limit (int)
+            limit:
                 Max number of result to return
 
-            offset (Optional[int]):
+            offset:
                 Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.
 
-            with_payload (Optional["WithPayloadInterface"]):
+            with_payload:
                 Select which payload to return with the response. Default: None
 
-            with_vector (Optional["WithVector"]):
+            with_vector:
                 Whether to return the point vector with the result?
 
-            using (Optional["UsingVector"]):
-                Define which vector to use for recommendation, if not specified - try to use default vector
+            using:
+                Define which vector to use for recommendation, if not specified - try to use default vector.
 
-            lookup_from (Optional["LookupLocation"]):
-                The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection
+            lookup_from:
+                The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection.
+
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
+
+        Returns:
+            List of discovered points with discovery or context scores, accordingly.
         """
         raise NotImplementedError()
 

@@ -331,6 +331,8 @@ class QdrantLocal(QdrantBase):
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         collection = self._get_collection(collection_name)
