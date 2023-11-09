@@ -628,6 +628,48 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             **kwargs,
         )
 
+    async def discover(
+        self,
+        collection_name: str,
+        target: Optional[types.RecommendExample] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        return await self._client.discover(
+            collection_name=collection_name,
+            target=target,
+            context=context,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            using=using,
+            lookup_from=lookup_from,
+            timeout=timeout,
+            **kwargs,
+        )
+
+    async def discover_batch(
+        self, collection_name: str, requests: Sequence[types.DiscoverRequest], **kwargs: Any
+    ) -> List[List[types.ScoredPoint]]:
+        return await self._client.discover_batch(
+            collection_name=collection_name, requests=requests, **kwargs
+        )
+
     async def scroll(
         self,
         collection_name: str,
