@@ -112,6 +112,18 @@ def calculate_distance(
         raise ValueError(f"Unknown distance type {distance_type}")
 
 
+def calculate_distance_core(
+    query: types.NumpyArray, vectors: types.NumpyArray, distance_type: models.Distance
+) -> types.NumpyArray:
+    """
+    Calculate same internal distances as in core, rather than the final displayed distance
+    """
+    if distance_type == models.Distance.EUCLID:
+        return -np.square(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
+    else:
+        return calculate_distance(query, vectors, distance_type)
+
+
 def scaled_fast_sigmoid(x: np.float32) -> np.float32:
     if np.isfinite(x):
         return 0.5 * (x / (1.0 + abs(x)) + 1.0)
@@ -129,18 +141,13 @@ def calculate_recommend_best_scores(
         # Get scores to all examples
         scores: List[types.NumpyArray] = []
         for example in examples:
-            score = calculate_distance(example, vectors, distance_type)
+            score = calculate_distance_core(example, vectors, distance_type)
             scores.append(score)
 
-        # Keep only max (or min) for each vector
-        if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-            if len(scores) == 0:
-                scores.append(np.full(vector_count, -np.inf))
-            best_scores = np.array(scores, dtype=np.float32).max(axis=0)
-        else:
-            if len(scores) == 0:
-                scores.append(np.full(vector_count, np.inf))
-            best_scores = np.array(scores, dtype=np.float32).min(axis=0)
+        # Keep only max for each vector
+        if len(scores) == 0:
+            scores.append(np.full(vector_count, -np.inf))
+        best_scores = np.array(scores, dtype=np.float32).max(axis=0)
 
         return best_scores
 
@@ -149,19 +156,11 @@ def calculate_recommend_best_scores(
 
     # Choose from best positive or best negative,
     # in in both cases we apply sigmoid and then negate depending on the order
-    if distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER:
-        return np.where(
-            pos > neg,
-            np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
-            np.fromiter((-scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
-        )
-    else:
-        # negative option is not negated here because of the DistanceOrder.SMALLER_IS_BETTER
-        return np.where(
-            pos < neg,
-            np.fromiter((-scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
-            np.fromiter((scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
-        )
+    return np.where(
+        pos > neg,
+        np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
+        np.fromiter((-scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
+    )
 
 
 def calculate_discovery_ranks(
@@ -172,17 +171,8 @@ def calculate_discovery_ranks(
     overall_ranks = np.zeros(vectors.shape[0], dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors
-        if distance_type == models.Distance.EUCLID:
-            # Use same internal distances as in core
-            pos = -np.square(vectors - pair.positive, dtype=np.float32).sum(
-                axis=1, dtype=np.float32
-            )
-            neg = -np.square(vectors - pair.negative, dtype=np.float32).sum(
-                axis=1, dtype=np.float32
-            )
-        else:
-            pos = calculate_distance(pair.positive, vectors, distance_type)
-            neg = calculate_distance(pair.negative, vectors, distance_type)
+        pos = calculate_distance_core(pair.positive, vectors, distance_type)
+        neg = calculate_distance_core(pair.negative, vectors, distance_type)
 
         pair_ranks = np.array(
             [
@@ -202,11 +192,7 @@ def calculate_discovery_scores(
     ranks = calculate_discovery_ranks(query.context, vectors, distance_type)
 
     # Get distances to target
-    if distance_type == models.Distance.EUCLID:
-        # Use same internal distance as in core
-        distances_to_target = -np.square(vectors - query.target).sum(axis=1)
-    else:
-        distances_to_target = calculate_distance(query.target, vectors, distance_type)
+    distances_to_target = calculate_distance_core(query.target, vectors, distance_type)
 
     sigmoided_distances = np.fromiter(
         (scaled_fast_sigmoid(xi) for xi in distances_to_target), np.float32
@@ -221,17 +207,8 @@ def calculate_context_scores(
     overall_scores = np.zeros(vectors.shape[0], dtype=np.float32)
     for pair in query.context_pairs:
         # Get distances to positive and negative vectors
-        if distance_type == models.Distance.EUCLID:
-            # Use same internal distance as in core
-            pos = -np.square(vectors - pair.positive, dtype=np.float32).sum(
-                axis=1, dtype=np.float32
-            )
-            neg = -np.square(vectors - pair.negative, dtype=np.float32).sum(
-                axis=1, dtype=np.float32
-            )
-        else:
-            pos = calculate_distance(pair.positive, vectors, distance_type)
-            neg = calculate_distance(pair.negative, vectors, distance_type)
+        pos = calculate_distance_core(pair.positive, vectors, distance_type)
+        neg = calculate_distance_core(pair.negative, vectors, distance_type)
 
         difference = pos - neg - EPSILON
         pair_scores = np.minimum(difference, 0.0)
