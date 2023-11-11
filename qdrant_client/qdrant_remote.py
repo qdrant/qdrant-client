@@ -903,7 +903,6 @@ class QdrantRemote(QdrantBase):
         offset: int = 0,
         with_payload: Union[bool, List[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, List[str]] = False,
-        score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
@@ -914,7 +913,7 @@ class QdrantRemote(QdrantBase):
             context = []
 
         if self._prefer_grpc:
-            context = RestToGrpc.convert_context_example_pairs(context)
+            context = [RestToGrpc.convert_context_example_pair(pair) for pair in context]
             target = RestToGrpc.convert_recommend_example(target)
 
             if isinstance(query_filter, models.Filter):
@@ -946,7 +945,6 @@ class QdrantRemote(QdrantBase):
                     with_vectors=with_vectors,
                     with_payload=with_payload,
                     params=search_params,
-                    score_threshold=score_threshold,
                     using=using,
                     lookup_from=lookup_from,
                     read_consistency=consistency,

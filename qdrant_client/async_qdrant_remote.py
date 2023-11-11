@@ -748,7 +748,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if context is None:
             context = []
         if self._prefer_grpc:
-            context = RestToGrpc.convert_context_example_pairs(context)
+            context = [RestToGrpc.convert_context_example_pair(pair) for pair in context]
             target = RestToGrpc.convert_recommend_example(target)
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)

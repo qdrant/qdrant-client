@@ -117,7 +117,6 @@ class QdrantBase:
         offset: int = 0,
         with_payload: Union[bool, List[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, List[str]] = False,
-        score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,

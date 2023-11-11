@@ -778,13 +778,10 @@ class GrpcToRest:
     @classmethod
     def convert_discover_points(cls, model: grpc.DiscoverPoints) -> rest.DiscoverRequest:
         target = cls.convert_vector_example(model.target) if model.HasField("target") else None
-        context_pairs = (
-            cls.convert_context_example_pairs(model.context_pairs)
-            if model.HasField("context_pairs")
-            else None
-        )
+        context_pairs = [cls.convert_context_example_pair(pair) for pair in model.context_pairs]
         return rest.DiscoverRequest(
             target=target,
+            context=context_pairs,
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
             limit=model.limit,
             with_payload=cls.convert_with_payload_interface(model.with_payload)
@@ -809,13 +806,13 @@ class GrpcToRest:
             return cls.convert_point_id(model.id)
 
     @classmethod
-    def convert_context_example_pairs(
-        cls, pairs: Sequence[grpc.ContextExamplePair]
-    ) -> Sequence[List[rest.RecommendExample]]:
-        return [
-            [cls.convert_vector_example(pair.positive), cls.convert_vector_example(pair.negative)]
-            for pair in pairs
-        ]
+    def convert_context_example_pair(
+        cls, model: grpc.ContextExamplePair
+    ) -> Sequence[rest.ContextExamplePair]:
+        return rest.ContextExamplePair(
+            positive=cls.convert_vector_example(model.positive),
+            negative=cls.convert_vector_example(model.negative),
+        )
 
     @classmethod
     def convert_tokenizer_type(cls, model: grpc.TokenizerType) -> rest.TokenizerType:
@@ -1638,28 +1635,27 @@ class RestToGrpc:
         return vectors
 
     @classmethod
-    def convert_recommend_example(cls, model: rest.RecommendExample) -> grpc.VectorExample:
-        if isinstance(model, get_args(rest.ExtendedPointId)):
-            return grpc.VectorExample(id=cls.convert_extended_point_id(model))
-        if isinstance(model, get_args(List[StrictFloat])):
-            return grpc.VectorExample(vector=cls.convert_vector_struct(model))
-
-        raise ValueError(f"invalid RecommendExample model: {model}")  # pragma: no cover
+    def convert_vector_example(cls, model: rest.RecommendExample) -> grpc.VectorExample:
+        return cls.convert_recommend_example(model)
 
     @classmethod
-    def convert_context_example_pairs(
+    def convert_recommend_example(cls, model: rest.RecommendExample) -> grpc.VectorExample:
+        if isinstance(model, get_args_subscribed(rest.ExtendedPointId)):
+            return grpc.VectorExample(id=cls.convert_extended_point_id(model))
+        if isinstance(model, list):
+            return grpc.VectorExample(vector=grpc.Vector(data=model))
+
+        raise ValueError(f"Invalid RecommendExample model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_context_example_pair(
         cls,
-        context: Optional[Sequence[rest.ContextExamplePair]] = None,
-    ) -> List[grpc.ContextExamplePair]:
-        if context is None:
-            return []
-        return [
-            grpc.ContextExamplePair(
-                positive=cls.convert_recommend_example(pair.positive),
-                negative=cls.convert_recommend_example(pair.negative),
-            )
-            for pair in context
-        ]
+        model: rest.ContextExamplePair,
+    ) -> grpc.ContextExamplePair:
+        return grpc.ContextExamplePair(
+            positive=cls.convert_recommend_example(model.positive),
+            negative=cls.convert_recommend_example(model.negative),
+        )
 
     @classmethod
     def convert_extended_point_id(cls, model: rest.ExtendedPointId) -> grpc.PointId:
@@ -1898,19 +1894,22 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_discover_points(
+        cls, model: rest.DiscoverRequest, collection_name: str
+    ) -> grpc.DiscoverPoints:
+        return cls.convert_discover_request(model, collection_name)
+
+    @classmethod
     def convert_discover_request(
         cls, model: rest.DiscoverRequest, collection_name: str
     ) -> grpc.DiscoverPoints:
-        context_pairs = cls.convert_context_example_pairs(model.context_pairs)
         target = cls.convert_recommend_example(model.target)
 
-        query_filter = (
-            None if model.query_filter is None else cls.convert_filter(model=model.query_filter)
-        )
+        context_pairs = [cls.convert_context_example_pair(pair) for pair in model.context]
 
-        search_params = (
-            None if model.search_params is None else cls.convert_search_params(model.search_params)
-        )
+        query_filter = None if model.filter is None else cls.convert_filter(model=model.filter)
+
+        search_params = None if model.params is None else cls.convert_search_params(model.params)
 
         with_payload = (
             None

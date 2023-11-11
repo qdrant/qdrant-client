@@ -64,6 +64,37 @@ qdrant_client.recommend_batch(
         )
     ],
 )
+qdrant_client.discover(
+    "collection",
+    None,
+    [],
+    rest_models.Filter(),
+    rest_models.SearchParams(),
+    10,
+    0,
+    True,
+    True,
+    "using",
+    rest_models.LookupLocation(collection=""),
+    1,
+)
+qdrant_client.discover_batch(
+    "collection",
+    [
+        rest_models.DiscoverRequest(
+            target=None,
+            context=[],
+            filter=rest_models.Filter(),
+            params=rest_models.SearchParams(),
+            limit=10,
+            offset=0,
+            with_vector=True,
+            with_payload=True,
+            using="using",
+            lookup_from=rest_models.LookupLocation(collection=""),
+        ),
+    ],
+)
 qdrant_client.recover_snapshot("collection", "location", rest_models.SnapshotPriority.REPLICA)
 qdrant_client.create_collection(
     "collection",

@@ -759,7 +759,6 @@ class LocalCollection:
         offset: int = 0,
         with_payload: Union[bool, List[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, List[str]] = False,
-        score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
@@ -794,7 +793,7 @@ class LocalCollection:
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
-            score_threshold=score_threshold,
+            score_threshold=None,
         )
 
     @classmethod

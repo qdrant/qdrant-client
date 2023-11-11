@@ -337,7 +337,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
-            score_threshold=score_threshold,
             using=using,
             lookup_from_collection=self._get_collection(lookup_from.collection)
             if lookup_from

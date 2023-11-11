@@ -328,7 +328,6 @@ class QdrantLocal(QdrantBase):
         offset: int = 0,
         with_payload: Union[bool, List[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, List[str]] = False,
-        score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
@@ -344,7 +343,6 @@ class QdrantLocal(QdrantBase):
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
-            score_threshold=score_threshold,
             using=using,
             lookup_from_collection=self._get_collection(lookup_from.collection)
             if lookup_from
