@@ -694,11 +694,15 @@ upsert_operation = grpc.PointsUpdateOperation(
 )
 
 delete_operation_1 = grpc.PointsUpdateOperation(
-    delete_points=grpc.PointsUpdateOperation.DeletePoints(points=points_selector_list)
+    delete_points=grpc.PointsUpdateOperation.DeletePoints(points=points_selector_list),
+    # TODO: remove deprecated field in v1.8.0
+    delete_deprecated=points_selector_list,
 )
 
 delete_operation_2 = grpc.PointsUpdateOperation(
     delete_points=grpc.PointsUpdateOperation.DeletePoints(points=points_selector_filter),
+    # TODO: remove deprecated field in v1.8.0
+    delete_deprecated=points_selector_filter,
 )
 
 set_payload_operation_1 = grpc.PointsUpdateOperation(
@@ -745,10 +749,14 @@ delete_payload_operation_2 = grpc.PointsUpdateOperation(
 
 clear_payload_operation_1 = grpc.PointsUpdateOperation(
     clear_payload=grpc.PointsUpdateOperation.ClearPayload(points=points_selector_list),
+    # TODO: remove deprecated field in v1.8.0
+    clear_payload_deprecated=points_selector_list,
 )
 
 clear_payload_operation_2 = grpc.PointsUpdateOperation(
     clear_payload=grpc.PointsUpdateOperation.ClearPayload(points=points_selector_filter),
+    # TODO: remove deprecated field in v1.8.0
+    clear_payload_deprecated=points_selector_filter,
 )
 
 update_vectors_operation = grpc.PointsUpdateOperation(

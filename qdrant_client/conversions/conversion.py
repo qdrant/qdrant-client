@@ -1051,11 +1051,13 @@ class GrpcToRest:
                     points=[cls.convert_point_struct(point) for point in val.points]
                 )
             )
+        # TODO: remove deprecated field in v1.8.0
+        elif name == "delete_deprecated":
+            return rest.DeleteOperation(delete=cls.convert_points_selector(val))
         elif name == "delete_points":
             points_selector = cls.convert_points_selector(val.points)
 
             return rest.DeleteOperation(delete=points_selector)
-
         elif name == "set_payload":
             points_selector = cls.convert_points_selector(val.points_selector)
             points = None
@@ -1116,6 +1118,9 @@ class GrpcToRest:
                     filter=filter_,
                 )
             )
+        # TODO: remove deprecated field in v1.8.0
+        elif name == "clear_payload_deprecated":
+            return rest.ClearPayloadOperation(clear_payload=cls.convert_points_selector(val))
         elif name == "clear_payload":
             points_selector = cls.convert_points_selector(val.points)
             return rest.ClearPayloadOperation(clear_payload=points_selector)
@@ -2238,7 +2243,11 @@ class RestToGrpc:
         elif isinstance(model, rest.DeleteOperation):
             points_selector = cls.convert_points_selector(model.delete)
             delete_points = grpc.PointsUpdateOperation.DeletePoints(points=points_selector)
-            return grpc.PointsUpdateOperation(delete_points=delete_points)
+            return grpc.PointsUpdateOperation(
+                delete_points=delete_points,
+                # TODO: remove deprecated field in v1.8.0
+                delete_deprecated=points_selector,
+            )
         elif isinstance(model, rest.SetPayloadOperation):
             if model.set_payload.points:
                 points_selector = rest.PointIdsList(points=model.set_payload.points)
@@ -2290,6 +2299,8 @@ class RestToGrpc:
             clear_payload = grpc.PointsUpdateOperation.ClearPayload(points=points_selector)
             return grpc.PointsUpdateOperation(
                 clear_payload=clear_payload,
+                # TODO: remove deprecated field in v1.8.0
+                clear_payload_deprecated=points_selector,
             )
         elif isinstance(model, rest.UpdateVectorsOperation):
             return grpc.PointsUpdateOperation(
