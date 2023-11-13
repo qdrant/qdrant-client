@@ -808,7 +808,7 @@ class GrpcToRest:
     @classmethod
     def convert_context_example_pair(
         cls, model: grpc.ContextExamplePair
-    ) -> Sequence[rest.ContextExamplePair]:
+    ) -> rest.ContextExamplePair:
         return rest.ContextExamplePair(
             positive=cls.convert_vector_example(model.positive),
             negative=cls.convert_vector_example(model.negative),
