@@ -80,7 +80,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if url.startswith("localhost"):
                 url = f"//{url}"
             parsed_url: Url = parse_url(url)
-            (self._host, self._port) = (parsed_url.host, parsed_url.port)
+            self._host, self._port = (parsed_url.host, parsed_url.port)
             if parsed_url.scheme:
                 self._https = parsed_url.scheme == "https"
                 self._scheme = parsed_url.scheme
@@ -149,7 +149,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @staticmethod
     def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
         parse_result: Url = parse_url(url)
-        (scheme, host, port, prefix) = (
+        scheme, host, port, prefix = (
             parse_result.scheme,
             parse_result.host,
             parse_result.port,
@@ -1086,7 +1086,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             assert grpc_result is not None, "Delete vectors returned None result"
             return GrpcToRest.convert_update_result(grpc_result)
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             return (
                 await self.openapi_client.points_api.delete_vectors(
                     collection_name=collection_name,
@@ -1306,7 +1306,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.set_payload(
                     collection_name=collection_name,
@@ -1346,7 +1346,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.overwrite_payload(
                     collection_name=collection_name,
@@ -1386,7 +1386,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.delete_payload(
                     collection_name=collection_name,
