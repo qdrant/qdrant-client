@@ -64,6 +64,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         host: Host name of Qdrant service. If url and host are None, set to 'localhost'.
             Default: `None`
         path: Persistence path for QdrantLocal. Default: `None`
+        force_disable_check_same_thread:
+            For QdrantLocal, force disable check_same_thread. Default: `False`
+            Only use this if you can guarantee that you can resolve the thread safety outside QdrantClient.
         **kwargs: Additional arguments passed directly into REST client initialization
 
     """
@@ -81,14 +84,19 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         timeout: Optional[float] = None,
         host: Optional[str] = None,
         path: Optional[str] = None,
+        force_disable_check_same_thread: bool = False,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._client: AsyncQdrantBase
         if location == ":memory:":
-            self._client = AsyncQdrantLocal(location=location)
+            self._client = AsyncQdrantLocal(
+                location=location, force_disable_check_same_thread=force_disable_check_same_thread
+            )
         elif path is not None:
-            self._client = AsyncQdrantLocal(location=path)
+            self._client = AsyncQdrantLocal(
+                location=path, force_disable_check_same_thread=force_disable_check_same_thread
+            )
         else:
             if location is not None and url is None:
                 url = location

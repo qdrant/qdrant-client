@@ -30,11 +30,17 @@ class LocalCollection:
     LocalCollection is a class that represents a collection of vectors in the local storage.
     """
 
-    def __init__(self, config: models.CreateCollection, location: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        config: models.CreateCollection,
+        location: Optional[str] = None,
+        force_disable_check_same_thread: bool = False,
+    ) -> None:
         """
         Create or load a collection from the local storage.
         Args:
             location: path to the collection directory. If None, the collection will be created in memory.
+            force_disable_check_same_thread: force disable check_same_thread for sqlite3 connection. default: False
         """
         vectors_config = config.vectors
         if isinstance(vectors_config, models.VectorParams):
@@ -53,7 +59,7 @@ class LocalCollection:
         self.storage = None
         self.config = config
         if location is not None:
-            self.storage = CollectionPersistence(location)
+            self.storage = CollectionPersistence(location, force_disable_check_same_thread)
         self.load()
 
     def close(self) -> None:

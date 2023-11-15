@@ -41,14 +41,16 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     If you need more speed or size, use Qdrant server.
     """
 
-    def __init__(self, location: str) -> None:
+    def __init__(self, location: str, force_disable_check_same_thread: bool = False) -> None:
         """
         Initialize local Qdrant.
 
         Args:
             location: Where to store data. Can be a path to a directory or `:memory:` for in-memory storage.
+            force_disable_check_same_thread: Disable SQLite check_same_thread check. Use only if you know what you are doing.
         """
         super().__init__()
+        self.force_disable_check_same_thread = force_disable_check_same_thread
         self.location = location
         self.persistent = location != ":memory:"
         self.collections: Dict[str, LocalCollection] = {}
@@ -533,7 +535,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if collection_path is not None:
             os.makedirs(collection_path, exist_ok=True)
         collection = LocalCollection(
-            rest_models.CreateCollection(vectors=vectors_config), location=collection_path
+            rest_models.CreateCollection(vectors=vectors_config),
+            location=collection_path,
+            force_disable_check_same_thread=self.force_disable_check_same_thread,
         )
         self.collections[collection_name] = collection
         if src_collection and from_collection_name:
