@@ -72,7 +72,11 @@ class QdrantLocal(QdrantBase):
                 for collection_name, config_json in meta["collections"].items():
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
-                    self.collections[collection_name] = LocalCollection(config, collection_path)
+                    self.collections[collection_name] = LocalCollection(
+                        config,
+                        collection_path,
+                        force_disable_check_same_thread=self.force_disable_check_same_thread,
+                    )
                 self.aliases = meta["aliases"]
 
         lock_file_path = os.path.join(self.location, ".lock")
