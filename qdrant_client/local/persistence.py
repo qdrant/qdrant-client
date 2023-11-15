@@ -64,7 +64,7 @@ class CollectionPersistence:
     def encode_key(cls, key: models.ExtendedPointId) -> str:
         return base64.b64encode(pickle.dumps(key)).decode("utf-8")
 
-    def __init__(self, location: str):
+    def __init__(self, location: str, force_disable_check_same_thread: bool = False):
         """
         Create or load a collection from the local storage.
         Args:
@@ -76,7 +76,7 @@ class CollectionPersistence:
         self.location = Path(location) / STORAGE_FILE_NAME
         self.location.parent.mkdir(exist_ok=True, parents=True)
 
-        if self.CHECK_SAME_THREAD is None:
+        if self.CHECK_SAME_THREAD is None and force_disable_check_same_thread is False:
             with sqlite3.connect(":memory:") as tmp_conn:
                 # it is unsafe to use `sqlite3.threadsafety` until python3.11 since it was hardcoded to 1, thus we
                 # need to fetch threadsafe with a query
@@ -87,6 +87,9 @@ class CollectionPersistence:
                     "select * from pragma_compile_options where compile_options like 'THREADSAFE=%'"
                 ).fetchone()[0]
                 self.__class__.CHECK_SAME_THREAD = threadsafe != "THREADSAFE=1"
+
+        if force_disable_check_same_thread:
+            self.__class__.CHECK_SAME_THREAD = False
 
         self.storage = sqlite3.connect(
             str(self.location), check_same_thread=self.CHECK_SAME_THREAD  # type: ignore
