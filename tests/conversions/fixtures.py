@@ -1,5 +1,4 @@
 import datetime
-from multiprocessing import context
 from typing import List
 
 from google.protobuf.message import Message
@@ -669,6 +668,10 @@ vector_example_2 = grpc.VectorExample(
     id=point_id_1,
 )
 
+target_vector_1 = grpc.TargetVector(
+    single=vector_example_1,
+)
+
 context_example_pair_1 = grpc.ContextExamplePair(
     positive=vector_example_1,
     negative=vector_example_2,
@@ -676,8 +679,8 @@ context_example_pair_1 = grpc.ContextExamplePair(
 
 discover_points = grpc.DiscoverPoints(
     collection_name="collection-123",
-    target=vector_example_1,
-    context_pairs=[context_example_pair_1, context_example_pair_1],
+    target=target_vector_1,
+    context=[context_example_pair_1, context_example_pair_1],
     filter=filter_,
     limit=100,
     with_payload=with_payload_bool,
@@ -880,6 +883,7 @@ fixtures = {
     "DiscoverPoints": [discover_points],
     "ContextExamplePair": [context_example_pair_1],
     "VectorExample": [vector_example_1, vector_example_2],
+    "TargetVector": [target_vector_1],
 }
 
 

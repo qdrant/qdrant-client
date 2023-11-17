@@ -730,7 +730,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def discover(
         self,
         collection_name: str,
-        target: Optional[types.RecommendExample] = None,
+        target: Optional[types.TargetVector] = None,
         context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -747,8 +747,18 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if context is None:
             context = []
         if self._prefer_grpc:
-            context = [RestToGrpc.convert_context_example_pair(pair) for pair in context]
-            target = RestToGrpc.convert_recommend_example(target)
+            target = (
+                RestToGrpc.convert_target_vector(target)
+                if target is not None
+                and isinstance(target, get_args_subscribed(models.RecommendExample))
+                else target
+            )
+            context = [
+                RestToGrpc.convert_context_example_pair(pair)
+                if isinstance(pair, models.ContextExamplePair)
+                else pair
+                for pair in context
+            ]
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
             if isinstance(search_params, models.SearchParams):
@@ -781,17 +791,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
-            if target is not None and isinstance(target, grpc.PointId):
-                target = GrpcToRest.convert_point_id(target)
+            target = (
+                GrpcToRest.convert_target_vector(target)
+                if target is not None and isinstance(target, grpc.TargetVector)
+                else target
+            )
             context = [
-                models.ContextExamplePair(
-                    positive=GrpcToRest.convert_point_id(pair.positive)
-                    if isinstance(pair.positive, grpc.PointId)
-                    else pair.positive,
-                    negative=GrpcToRest.convert_point_id(pair.negative)
-                    if isinstance(pair.negative, grpc.PointId)
-                    else pair.negative,
-                )
+                GrpcToRest.convert_context_example_pair(pair)
+                if isinstance(pair, grpc.ContextExamplePair)
+                else pair
                 for pair in context
             ]
             if isinstance(query_filter, grpc.Filter):

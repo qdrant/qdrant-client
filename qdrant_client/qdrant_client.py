@@ -678,7 +678,7 @@ class QdrantClient(QdrantFastembedMixin):
     def discover(
         self,
         collection_name: str,
-        target: Optional[types.RecommendExample] = None,
+        target: Optional[types.TargetVector] = None,
         context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,

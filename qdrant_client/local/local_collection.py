@@ -4,8 +4,10 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, 
 
 import numpy as np
 
+from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import ExtendedPointId
 from qdrant_client.local.distances import (
@@ -687,7 +689,7 @@ class LocalCollection:
 
     def _preprocess_discover(
         self,
-        target: Optional[types.RecommendExample] = None,
+        target: Optional[types.TargetVector] = None,
         context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         using: Optional[str] = None,
@@ -701,14 +703,27 @@ class LocalCollection:
             if lookup_from_vector_name is not None
             else search_in_vector_name
         )
+
+        target = (
+            GrpcToRest.convert_target_vector(target)
+            if target is not None and isinstance(target, grpc.TargetVector)
+            else target
+        )
+
         context = context if context is not None else []
+        context = [
+            GrpcToRest.convert_context_example_pair(pair)
+            if isinstance(pair, grpc.ContextExamplePair)
+            else pair
+            for pair in context
+        ]
 
         # Validate inputs
         if target is None and len(context) == 0:
             raise ValueError("No target or context given")
 
         # Turn every example into vectors
-        target_vector: Optional[types.NumpyArray] = None
+        target_vector: Optional[List[float]]
         context_vectors: List[ContextPair] = []
         mentioned_ids: List[ExtendedPointId] = []
 
@@ -717,7 +732,7 @@ class LocalCollection:
                 raise ValueError(f"Point {target} is not found in the collection")
 
             idx = collection.ids[target]
-            target_vector = collection.vectors[vector_name][idx]
+            target_vector = collection.vectors[vector_name][idx].tolist()
             mentioned_ids.append(target)
         else:
             target_vector = target
@@ -730,7 +745,7 @@ class LocalCollection:
                         raise ValueError(f"Point {example} is not found in the collection")
 
                     idx = collection.ids[example]
-                    pair_vectors.append(collection.vectors[vector_name][idx])
+                    pair_vectors.append(collection.vectors[vector_name][idx].tolist())
                     mentioned_ids.append(example)
                 else:
                     pair_vectors.append(example)
@@ -752,7 +767,7 @@ class LocalCollection:
 
     def discover(
         self,
-        target: Optional[types.RecommendExample] = None,
+        target: Optional[types.TargetVector] = None,
         context: Optional[Sequence[types.ContextExamplePair]] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,

@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, get_args
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
-from pydantic import StrictFloat
+from numpy import single
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -777,11 +777,11 @@ class GrpcToRest:
 
     @classmethod
     def convert_discover_points(cls, model: grpc.DiscoverPoints) -> rest.DiscoverRequest:
-        target = cls.convert_vector_example(model.target) if model.HasField("target") else None
-        context_pairs = [cls.convert_context_example_pair(pair) for pair in model.context_pairs]
+        target = cls.convert_target_vector(model.target) if model.HasField("target") else None
+        context = [cls.convert_context_example_pair(pair) for pair in model.context]
         return rest.DiscoverRequest(
             target=target,
-            context=context_pairs,
+            context=context,
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
             limit=model.limit,
             with_payload=cls.convert_with_payload_interface(model.with_payload)
@@ -804,6 +804,15 @@ class GrpcToRest:
             return cls.convert_vector(model.vector)
         if model.HasField("id"):
             return cls.convert_point_id(model.id)
+
+        raise ValueError(f"invalid VectorExample model: {model}")
+
+    @classmethod
+    def convert_target_vector(cls, model: grpc.TargetVector) -> rest.RecommendExample:
+        if model.HasField("single"):
+            return cls.convert_vector_example(model.single)
+
+        raise ValueError(f"invalid TargetVector model: {model}")
 
     @classmethod
     def convert_context_example_pair(
@@ -1650,7 +1659,11 @@ class RestToGrpc:
         if isinstance(model, list):
             return grpc.VectorExample(vector=grpc.Vector(data=model))
 
-        raise ValueError(f"Invalid RecommendExample model: {model}")  # pragma: no cover
+        raise ValueError(f"Invalid RecommendExample model: {model}")
+
+    @classmethod
+    def convert_target_vector(cls, model: rest.RecommendExample) -> grpc.TargetVector:
+        return grpc.TargetVector(single=cls.convert_recommend_example(model))
 
     @classmethod
     def convert_context_example_pair(
@@ -1908,9 +1921,9 @@ class RestToGrpc:
     def convert_discover_request(
         cls, model: rest.DiscoverRequest, collection_name: str
     ) -> grpc.DiscoverPoints:
-        target = cls.convert_recommend_example(model.target)
+        target = cls.convert_target_vector(model.target)
 
-        context_pairs = [cls.convert_context_example_pair(pair) for pair in model.context]
+        context = [cls.convert_context_example_pair(pair) for pair in model.context]
 
         query_filter = None if model.filter is None else cls.convert_filter(model=model.filter)
 
@@ -1933,7 +1946,7 @@ class RestToGrpc:
         return grpc.DiscoverPoints(
             collection_name=collection_name,
             target=target,
-            context_pairs=context_pairs,
+            context=context,
             filter=query_filter,
             limit=model.limit,
             offset=model.offset,
