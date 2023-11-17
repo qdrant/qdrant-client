@@ -121,7 +121,7 @@ filter_ = grpc.Filter(
 
 vector_param = grpc.VectorParams(
     size=100,
-    distance=grpc.Distance.Cosine,
+    distance=grpc.Distance.Dot,
 )
 
 vector_param_with_hnsw = grpc.VectorParams(
