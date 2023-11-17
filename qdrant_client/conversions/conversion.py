@@ -18,6 +18,21 @@ from qdrant_client.grpc import ListValue, NullValue, Struct, Value
 from qdrant_client.http.models import models as rest
 
 
+def has_field(message: Any, field: str) -> bool:
+    """
+    Same as protobuf HasField, but also works for primitive values
+    (https://stackoverflow.com/questions/51918871/check-if-a-field-has-been-set-in-protocol-buffer-3)
+
+    Args:
+        message (Any): protobuf message
+        field (str): name of the field
+    """
+    try:
+        return message.HasField(field)
+    except ValueError:
+        return field in message._fields
+
+
 def json_to_value(payload: Any) -> Value:
     if payload is None:
         return Value(null_value=NullValue.NULL_VALUE)
@@ -417,7 +432,7 @@ class GrpcToRest:
         return construct(
             rest.ScoredPoint,
             id=cls.convert_point_id(model.id),
-            payload=cls.convert_payload(model.payload),
+            payload=cls.convert_payload(model.payload) if has_field(model, "payload") else None,
             score=model.score,
             vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
             version=model.version,

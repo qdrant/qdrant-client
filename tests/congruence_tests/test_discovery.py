@@ -44,14 +44,24 @@ def local_client(fixture_records, secondary_collection_records) -> QdrantLocal:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def remote_client(fixture_records, secondary_collection_records) -> QdrantClient:
+def http_client(fixture_records, secondary_collection_records) -> QdrantClient:
     client = init_remote()
     init_client(client, fixture_records)
     init_client(client, secondary_collection_records, secondary_collection_name)
     return client
 
 
-def test_context_cosine(local_client, remote_client):
+@pytest.fixture(scope="module", autouse=True)
+def grpc_client(fixture_records, secondary_collection_records) -> QdrantClient:
+    client = QdrantClient(host="localhost", port=6333, timeout=30, prefer_grpc=True)
+    return client
+
+
+def test_context_cosine(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -61,10 +71,15 @@ def test_context_cosine(local_client, remote_client):
             using="image",
         )
 
-    compare_client_results(local_client, remote_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f, is_context_search=True)
+    compare_client_results(local_client, http_client, f, is_context_search=True)
 
 
-def test_context_dot(local_client, remote_client):
+def test_context_dot(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -74,10 +89,15 @@ def test_context_dot(local_client, remote_client):
             using="text",
         )
 
-    compare_client_results(local_client, remote_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f, is_context_search=True)
+    compare_client_results(local_client, http_client, f, is_context_search=True)
 
 
-def test_context_euclidean(local_client, remote_client):
+def test_context_euclidean(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -87,10 +107,15 @@ def test_context_euclidean(local_client, remote_client):
             using="code",
         )
 
-    compare_client_results(local_client, remote_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f, is_context_search=True)
+    compare_client_results(local_client, http_client, f, is_context_search=True)
 
 
-def test_context_many_pairs(local_client, remote_client):
+def test_context_many_pairs(
+    local_client,
+    http_client,
+    grpc_client,
+):
     random_image_vector_1 = random_vector(image_vector_size)
     random_image_vector_2 = random_vector(image_vector_size)
 
@@ -111,10 +136,15 @@ def test_context_many_pairs(local_client, remote_client):
             using="image",
         )
 
-    compare_client_results(local_client, remote_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f, is_context_search=True)
+    compare_client_results(local_client, http_client, f, is_context_search=True)
 
 
-def test_discover_cosine(local_client, remote_client):
+def test_discover_cosine(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -125,10 +155,15 @@ def test_discover_cosine(local_client, remote_client):
             using="image",
         )
 
-    compare_client_results(local_client, remote_client, f)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
-def test_discover_dot(local_client, remote_client):
+def test_discover_dot(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -139,10 +174,15 @@ def test_discover_dot(local_client, remote_client):
             using="text",
         )
 
-    compare_client_results(local_client, remote_client, f)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
-def test_discover_euclidean(local_client, remote_client):
+def test_discover_euclidean(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -153,10 +193,15 @@ def test_discover_euclidean(local_client, remote_client):
             using="code",
         )
 
-    compare_client_results(local_client, remote_client, f)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
-def test_discover_raw_target(local_client, remote_client):
+def test_discover_raw_target(
+    local_client,
+    http_client,
+    grpc_client,
+):
     random_image_vector = random_vector(image_vector_size)
 
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
@@ -168,10 +213,15 @@ def test_discover_raw_target(local_client, remote_client):
             using="image",
         )
 
-    compare_client_results(local_client, remote_client, f)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
-def test_context_raw_positive(local_client, remote_client):
+def test_context_raw_positive(
+    local_client,
+    http_client,
+    grpc_client,
+):
     random_image_vector = random_vector(image_vector_size)
 
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
@@ -183,10 +233,15 @@ def test_context_raw_positive(local_client, remote_client):
             using="image",
         )
 
-    compare_client_results(local_client, remote_client, f)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
-def test_only_target(local_client, remote_client):
+def test_only_target(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -196,10 +251,15 @@ def test_only_target(local_client, remote_client):
             using="image",
         )
 
-    compare_client_results(local_client, remote_client, f)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
-def test_discover_from_another_collection(local_client, remote_client):
+def test_discover_from_another_collection(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -214,10 +274,15 @@ def test_discover_from_another_collection(local_client, remote_client):
             ),
         )
 
-    compare_client_results(local_client, remote_client, f)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
-def test_discover_batch(local_client, remote_client):
+def test_discover_batch(
+    local_client,
+    http_client,
+    grpc_client,
+):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[List[models.ScoredPoint]]:
         return client.discover_batch(
             collection_name=COLLECTION_NAME,
@@ -241,11 +306,12 @@ def test_discover_batch(local_client, remote_client):
             ],
         )
 
-    compare_client_results(local_client, remote_client, f)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 @pytest.mark.parametrize("filter", [one_random_filter_please() for _ in range(10)])
-def test_discover_with_filters(local_client, remote_client, filter: models.Filter):
+def test_discover_with_filters(local_client, http_client, grpc_client, filter: models.Filter):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -258,7 +324,7 @@ def test_discover_with_filters(local_client, remote_client, filter: models.Filte
 
 
 @pytest.mark.parametrize("filter", [one_random_filter_please() for _ in range(10)])
-def test_context_with_filters(local_client, remote_client, filter: models.Filter):
+def test_context_with_filters(local_client, http_client, grpc_client, filter: models.Filter):
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
@@ -268,4 +334,5 @@ def test_context_with_filters(local_client, remote_client, filter: models.Filter
             query_filter=filter,
         )
 
-    compare_client_results(local_client, remote_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f, is_context_search=True)
+    compare_client_results(local_client, http_client, f, is_context_search=True)
