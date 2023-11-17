@@ -132,7 +132,7 @@ def test_context_many_pairs(
                 models.ContextExamplePair(positive=random_image_vector_1, negative=15),
             ],
             with_payload=True,
-            limit=500,
+            limit=1000,
             using="image",
         )
 
