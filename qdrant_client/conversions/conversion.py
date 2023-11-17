@@ -30,7 +30,8 @@ def has_field(message: Any, field: str) -> bool:
     try:
         return message.HasField(field)
     except ValueError:
-        return field in message._fields
+        all_fields = set([descriptor.name for descriptor, _value in message.ListFields()])
+        return field in all_fields
 
 
 def json_to_value(payload: Any) -> Value:
