@@ -46,7 +46,7 @@ class _ServiceApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2001,
+            type_=m.InlineResponse2002,
             method="GET",
             url="/locks",
             headers=headers if headers else None,
@@ -112,7 +112,7 @@ class _ServiceApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2001, method="POST", url="/locks", headers=headers if headers else None, data=body
+            type_=m.InlineResponse2002, method="POST", url="/locks", headers=headers if headers else None, data=body
         )
 
     def _build_for_readyz(
@@ -142,7 +142,7 @@ class _ServiceApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse2001,
             method="GET",
             url="/telemetry",
             headers=headers if headers else None,
@@ -153,7 +153,7 @@ class _ServiceApi:
 class AsyncServiceApi(_ServiceApi):
     async def get_locks(
         self,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Get lock options. If write is locked, all write operations and collection creation are forbidden
         """
@@ -189,7 +189,7 @@ class AsyncServiceApi(_ServiceApi):
     async def post_locks(
         self,
         locks_option: m.LocksOption = None,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
         """
@@ -208,7 +208,7 @@ class AsyncServiceApi(_ServiceApi):
     async def telemetry(
         self,
         anonymize: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
@@ -220,7 +220,7 @@ class AsyncServiceApi(_ServiceApi):
 class SyncServiceApi(_ServiceApi):
     def get_locks(
         self,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Get lock options. If write is locked, all write operations and collection creation are forbidden
         """
@@ -256,7 +256,7 @@ class SyncServiceApi(_ServiceApi):
     def post_locks(
         self,
         locks_option: m.LocksOption = None,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
         """
@@ -275,7 +275,7 @@ class SyncServiceApi(_ServiceApi):
     def telemetry(
         self,
         anonymize: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse2001:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """

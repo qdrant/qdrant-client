@@ -9,7 +9,7 @@ from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
-from qdrant_client.http.models.models import ExtendedPointId
+from qdrant_client.http.models.models import ExtendedPointId, SparseVector
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
@@ -26,6 +26,7 @@ from qdrant_client.local.distances import (
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
+from qdrant_client.local.sparse import calculate_distance_sparse, empty_sparse_vector
 
 DEFAULT_VECTOR_NAME = ""
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
@@ -50,6 +51,7 @@ class LocalCollection:
             force_disable_check_same_thread: force disable check_same_thread for sqlite3 connection. default: False
         """
         vectors_config = config.vectors
+        sparse_vectors_config = config.sparse_vectors
         if isinstance(vectors_config, models.VectorParams):
             vectors_config = {DEFAULT_VECTOR_NAME: vectors_config}
 
@@ -57,6 +59,11 @@ class LocalCollection:
             name: np.zeros((0, params.size), dtype=np.float32)
             for name, params in vectors_config.items()
         }
+        self.sparse_vectors: Dict[str, List[SparseVector]] = (
+            {
+                name: [] for name, params in sparse_vectors_config.items()
+            } if sparse_vectors_config is not None else {}
+        )
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
         self.deleted_per_vector = {name: np.zeros(0, dtype=bool) for name in self.vectors.keys()}
@@ -67,18 +74,22 @@ class LocalCollection:
         self.config = config
         if location is not None:
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
-        self.load()
+        self.load_dense_vectors()
+        self.load_sparse_vectors()
 
     def close(self) -> None:
         if self.storage is not None:
             self.storage.close()
 
-    def load(self) -> None:
+    def load_dense_vectors(self) -> None:
         if self.storage is not None:
             vectors = defaultdict(list)
             deleted_ids = []
 
             for idx, point in enumerate(self.storage.load()):
+                if isinstance(point.vector, SparseVector):
+                    continue  # skip sparse vectors
+
                 self.ids[point.id] = idx
                 self.ids_inv.append(point.id)
 
@@ -109,6 +120,38 @@ class LocalCollection:
 
             self.deleted = np.zeros(len(self.payload), dtype=bool)
 
+    def load_sparse_vectors(self) -> None:
+        if self.storage is not None:
+            sparse_vectors = defaultdict(list)
+            deleted_ids = []
+
+            for idx, point in enumerate(self.storage.load()):
+                if not isinstance(point.vector, SparseVector):
+                    continue  # only process sparse vectors
+
+                vector = point.vector
+
+                all_sparse_vector_names = list(self.sparse_vectors.keys())
+
+                for name in all_sparse_vector_names:
+                    v = vector.get(name)
+                    if v is not None:
+                        sparse_vectors[name].append(v)
+                    else:
+                        sparse_vectors[name].append(empty_sparse_vector())
+                        deleted_ids.append((idx, name))
+
+                self.payload.append(point.payload or {})
+
+            for name, named_vectors in sparse_vectors.items():
+                self.sparse_vectors[name] = np.array(named_vectors)
+                self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
+
+            for idx, name in deleted_ids:
+                self.deleted_per_vector[name][idx] = 1
+
+            self.deleted = np.zeros(len(self.payload), dtype=bool)
+
     @classmethod
     def _resolve_query_vector_name(
         cls,
@@ -117,6 +160,7 @@ class LocalCollection:
             List[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
             QueryVector,
             Tuple[str, QueryVector],
         ],
@@ -131,6 +175,9 @@ class LocalCollection:
         elif isinstance(query_vector, types.NamedVector):
             name = query_vector.name
             vector = np.array(query_vector.vector)
+        elif isinstance(query_vector, types.NamedSparseVector):
+            name = query_vector.name
+            vector = query_vector.vector
         elif isinstance(query_vector, list):
             name = DEFAULT_VECTOR_NAME
             vector = np.array(query_vector)
@@ -296,6 +343,7 @@ class LocalCollection:
             List[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
             QueryVector,
             Tuple[str, QueryVector],
         ],
@@ -338,6 +386,11 @@ class LocalCollection:
         ):  # pyright: ignore[reportUnnecessaryIsInstance]
             scores = calculate_context_scores(
                 query_vector, vectors[: len(self.payload)], params.distance
+            )
+        elif isinstance(query_vector, SparseVector):
+            sparse_vectors = self.sparse_vectors[name]
+            scores = calculate_distance_sparse(
+                query_vector, sparse_vectors[: len(self.payload)]
             )
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))

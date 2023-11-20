@@ -79,6 +79,7 @@ CollectionInfo: TypeAlias = rest.CollectionInfo
 CountResult: TypeAlias = rest.CountResult
 SnapshotDescription: TypeAlias = rest.SnapshotDescription
 NamedVector: TypeAlias = rest.NamedVector
+NamedSparseVector: TypeAlias = rest.NamedSparseVector
 PointVectors: TypeAlias = rest.PointVectors
 VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams

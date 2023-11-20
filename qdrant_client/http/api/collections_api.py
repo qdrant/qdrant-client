@@ -80,7 +80,7 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="PUT",
             url="/collections/{collection_name}",
             headers=headers if headers else None,
@@ -117,6 +117,34 @@ class _CollectionsApi:
             type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/index",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            data=body,
+        )
+
+    def _build_for_create_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        create_sharding_key: m.CreateShardingKey = None,
+    ):
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(create_sharding_key)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse200,
+            method="PUT",
+            url="/collections/{collection_name}/shards",
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
@@ -195,7 +223,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="DELETE",
             url="/collections/{collection_name}",
             headers=headers if headers else None,
@@ -234,6 +262,34 @@ class _CollectionsApi:
             params=query_params,
         )
 
+    def _build_for_delete_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        drop_sharding_key: m.DropShardingKey = None,
+    ):
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(drop_sharding_key)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse200,
+            method="POST",
+            url="/collections/{collection_name}/shards/delete",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            data=body,
+        )
+
     def _build_for_delete_shard_snapshot(
         self,
         collection_name: str,
@@ -256,7 +312,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="DELETE",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
@@ -284,7 +340,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="DELETE",
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
@@ -470,7 +526,7 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="PUT",
             url="/collections/{collection_name}/snapshots/recover",
             headers=headers if headers else None,
@@ -506,7 +562,7 @@ class _CollectionsApi:
             files["snapshot"] = snapshot
 
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="POST",
             url="/collections/{collection_name}/snapshots/upload",
             headers=headers if headers else None,
@@ -540,7 +596,7 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="PUT",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/recover",
             headers=headers if headers else None,
@@ -578,7 +634,7 @@ class _CollectionsApi:
             files["snapshot"] = snapshot
 
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="POST",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/upload",
             headers=headers if headers else None,
@@ -602,7 +658,7 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="POST",
             url="/collections/aliases",
             headers=headers if headers else None,
@@ -632,7 +688,7 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="PATCH",
             url="/collections/{collection_name}",
             headers=headers if headers else None,
@@ -660,7 +716,7 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="POST",
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
@@ -687,7 +743,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         timeout: int = None,
         create_collection: m.CreateCollection = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Create new collection with given parameters
         """
@@ -712,6 +768,18 @@ class AsyncCollectionsApi(_CollectionsApi):
             wait=wait,
             ordering=ordering,
             create_field_index=create_field_index,
+        )
+
+    async def create_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        create_sharding_key: m.CreateShardingKey = None,
+    ) -> m.InlineResponse200:
+        return await self._build_for_create_shard_key(
+            collection_name=collection_name,
+            timeout=timeout,
+            create_sharding_key=create_sharding_key,
         )
 
     async def create_shard_snapshot(
@@ -746,7 +814,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         timeout: int = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Drop collection and all associated data
         """
@@ -772,13 +840,25 @@ class AsyncCollectionsApi(_CollectionsApi):
             ordering=ordering,
         )
 
+    async def delete_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        drop_sharding_key: m.DropShardingKey = None,
+    ) -> m.InlineResponse200:
+        return await self._build_for_delete_shard_key(
+            collection_name=collection_name,
+            timeout=timeout,
+            drop_sharding_key=drop_sharding_key,
+        )
+
     async def delete_shard_snapshot(
         self,
         collection_name: str,
         shard_id: int,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Delete snapshot of a shard for a collection
         """
@@ -794,7 +874,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Delete snapshot for a collection
         """
@@ -899,7 +979,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         wait: bool = None,
         snapshot_recover: m.SnapshotRecover = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
@@ -915,7 +995,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         priority: SnapshotPriority = None,
         snapshot: IO[Any] = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
@@ -932,7 +1012,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         shard_id: int,
         wait: bool = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
         """
@@ -950,7 +1030,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         priority: SnapshotPriority = None,
         snapshot: IO[Any] = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
         """
@@ -966,7 +1046,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         timeout: int = None,
         change_aliases_operation: m.ChangeAliasesOperation = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         return await self._build_for_update_aliases(
             timeout=timeout,
             change_aliases_operation=change_aliases_operation,
@@ -977,7 +1057,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         timeout: int = None,
         update_collection: m.UpdateCollection = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Update parameters of the existing collection
         """
@@ -992,7 +1072,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         return await self._build_for_update_collection_cluster(
             collection_name=collection_name,
             timeout=timeout,
@@ -1017,7 +1097,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         timeout: int = None,
         create_collection: m.CreateCollection = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Create new collection with given parameters
         """
@@ -1042,6 +1122,18 @@ class SyncCollectionsApi(_CollectionsApi):
             wait=wait,
             ordering=ordering,
             create_field_index=create_field_index,
+        )
+
+    def create_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        create_sharding_key: m.CreateShardingKey = None,
+    ) -> m.InlineResponse200:
+        return self._build_for_create_shard_key(
+            collection_name=collection_name,
+            timeout=timeout,
+            create_sharding_key=create_sharding_key,
         )
 
     def create_shard_snapshot(
@@ -1076,7 +1168,7 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         timeout: int = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Drop collection and all associated data
         """
@@ -1102,13 +1194,25 @@ class SyncCollectionsApi(_CollectionsApi):
             ordering=ordering,
         )
 
+    def delete_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        drop_sharding_key: m.DropShardingKey = None,
+    ) -> m.InlineResponse200:
+        return self._build_for_delete_shard_key(
+            collection_name=collection_name,
+            timeout=timeout,
+            drop_sharding_key=drop_sharding_key,
+        )
+
     def delete_shard_snapshot(
         self,
         collection_name: str,
         shard_id: int,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Delete snapshot of a shard for a collection
         """
@@ -1124,7 +1228,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Delete snapshot for a collection
         """
@@ -1229,7 +1333,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         wait: bool = None,
         snapshot_recover: m.SnapshotRecover = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
@@ -1245,7 +1349,7 @@ class SyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         priority: SnapshotPriority = None,
         snapshot: IO[Any] = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
@@ -1262,7 +1366,7 @@ class SyncCollectionsApi(_CollectionsApi):
         shard_id: int,
         wait: bool = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
         """
@@ -1280,7 +1384,7 @@ class SyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         priority: SnapshotPriority = None,
         snapshot: IO[Any] = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
         """
@@ -1296,7 +1400,7 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         timeout: int = None,
         change_aliases_operation: m.ChangeAliasesOperation = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         return self._build_for_update_aliases(
             timeout=timeout,
             change_aliases_operation=change_aliases_operation,
@@ -1307,7 +1411,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         timeout: int = None,
         update_collection: m.UpdateCollection = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Update parameters of the existing collection
         """
@@ -1322,7 +1426,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         return self._build_for_update_collection_cluster(
             collection_name=collection_name,
             timeout=timeout,

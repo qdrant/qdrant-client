@@ -46,7 +46,7 @@ class _ClusterApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2002,
+            type_=m.InlineResponse2003,
             method="GET",
             url="/cluster",
             headers=headers if headers else None,
@@ -72,12 +72,68 @@ class _ClusterApi:
             path_params=path_params,
         )
 
+    def _build_for_create_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        create_sharding_key: m.CreateShardingKey = None,
+    ):
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(create_sharding_key)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse200,
+            method="PUT",
+            url="/collections/{collection_name}/shards",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            data=body,
+        )
+
+    def _build_for_delete_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        drop_sharding_key: m.DropShardingKey = None,
+    ):
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(drop_sharding_key)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse200,
+            method="POST",
+            url="/collections/{collection_name}/shards/delete",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            data=body,
+        )
+
     def _build_for_recover_current_peer(
         self,
     ):
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="POST",
             url="/cluster/recover",
             headers=headers if headers else None,
@@ -101,7 +157,7 @@ class _ClusterApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="DELETE",
             url="/cluster/peer/{peer_id}",
             headers=headers if headers else None,
@@ -128,7 +184,7 @@ class _ClusterApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse200,
             method="POST",
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
@@ -141,7 +197,7 @@ class _ClusterApi:
 class AsyncClusterApi(_ClusterApi):
     async def cluster_status(
         self,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Get information about the current state and composition of the cluster
         """
@@ -158,16 +214,40 @@ class AsyncClusterApi(_ClusterApi):
             collection_name=collection_name,
         )
 
+    async def create_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        create_sharding_key: m.CreateShardingKey = None,
+    ) -> m.InlineResponse200:
+        return await self._build_for_create_shard_key(
+            collection_name=collection_name,
+            timeout=timeout,
+            create_sharding_key=create_sharding_key,
+        )
+
+    async def delete_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        drop_sharding_key: m.DropShardingKey = None,
+    ) -> m.InlineResponse200:
+        return await self._build_for_delete_shard_key(
+            collection_name=collection_name,
+            timeout=timeout,
+            drop_sharding_key=drop_sharding_key,
+        )
+
     async def recover_current_peer(
         self,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         return await self._build_for_recover_current_peer()
 
     async def remove_peer(
         self,
         peer_id: int,
         force: bool = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Tries to remove peer from the cluster. Will return an error if peer has shards on it.
         """
@@ -181,7 +261,7 @@ class AsyncClusterApi(_ClusterApi):
         collection_name: str,
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         return await self._build_for_update_collection_cluster(
             collection_name=collection_name,
             timeout=timeout,
@@ -192,7 +272,7 @@ class AsyncClusterApi(_ClusterApi):
 class SyncClusterApi(_ClusterApi):
     def cluster_status(
         self,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Get information about the current state and composition of the cluster
         """
@@ -209,16 +289,40 @@ class SyncClusterApi(_ClusterApi):
             collection_name=collection_name,
         )
 
+    def create_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        create_sharding_key: m.CreateShardingKey = None,
+    ) -> m.InlineResponse200:
+        return self._build_for_create_shard_key(
+            collection_name=collection_name,
+            timeout=timeout,
+            create_sharding_key=create_sharding_key,
+        )
+
+    def delete_shard_key(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        drop_sharding_key: m.DropShardingKey = None,
+    ) -> m.InlineResponse200:
+        return self._build_for_delete_shard_key(
+            collection_name=collection_name,
+            timeout=timeout,
+            drop_sharding_key=drop_sharding_key,
+        )
+
     def recover_current_peer(
         self,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         return self._build_for_recover_current_peer()
 
     def remove_peer(
         self,
         peer_id: int,
         force: bool = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         """
         Tries to remove peer from the cluster. Will return an error if peer has shards on it.
         """
@@ -232,7 +336,7 @@ class SyncClusterApi(_ClusterApi):
         collection_name: str,
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse200:
         return self._build_for_update_collection_cluster(
             collection_name=collection_name,
             timeout=timeout,
