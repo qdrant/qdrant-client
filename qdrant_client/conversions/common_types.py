@@ -60,6 +60,8 @@ PointsSelector = Union[
 LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
 RecommendStrategy: TypeAlias = rest.RecommendStrategy
 RecommendExample: TypeAlias = rest.RecommendExample
+TargetVector: TypeAlias = Union[rest.RecommendExample, grpc.TargetVector]
+ContextExamplePair: TypeAlias = Union[rest.ContextExamplePair, grpc.ContextExamplePair]
 
 AliasOperations = Union[
     rest.CreateAliasOperation,
@@ -89,6 +91,7 @@ UpdateOperation: TypeAlias = rest.UpdateOperation
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
+DiscoverRequest: TypeAlias = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering

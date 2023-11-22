@@ -121,7 +121,7 @@ filter_ = grpc.Filter(
 
 vector_param = grpc.VectorParams(
     size=100,
-    distance=grpc.Distance.Cosine,
+    distance=grpc.Distance.Dot,
 )
 
 vector_param_with_hnsw = grpc.VectorParams(
@@ -660,6 +660,36 @@ with_lookup = grpc.WithLookup(
     with_payload=with_payload_include,
 )
 
+vector_example_1 = grpc.VectorExample(
+    vector=grpc.Vector(data=[1.0, 2.0, 3.0, 5.0]),
+)
+
+vector_example_2 = grpc.VectorExample(
+    id=point_id_1,
+)
+
+target_vector_1 = grpc.TargetVector(
+    single=vector_example_1,
+)
+
+context_example_pair_1 = grpc.ContextExamplePair(
+    positive=vector_example_1,
+    negative=vector_example_2,
+)
+
+discover_points = grpc.DiscoverPoints(
+    collection_name="collection-123",
+    target=target_vector_1,
+    context=[context_example_pair_1, context_example_pair_1],
+    filter=filter_,
+    limit=100,
+    with_payload=with_payload_bool,
+    params=search_params,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+)
+
 upsert_operation = grpc.PointsUpdateOperation(
     upsert=grpc.PointsUpdateOperation.PointStructList(
         points=[point_struct],
@@ -667,11 +697,15 @@ upsert_operation = grpc.PointsUpdateOperation(
 )
 
 delete_operation_1 = grpc.PointsUpdateOperation(
-    delete=points_selector_list,
+    delete_points=grpc.PointsUpdateOperation.DeletePoints(points=points_selector_list),
+    # TODO: remove deprecated field in v1.8.0
+    delete_deprecated=points_selector_list,
 )
 
 delete_operation_2 = grpc.PointsUpdateOperation(
-    delete=points_selector_filter,
+    delete_points=grpc.PointsUpdateOperation.DeletePoints(points=points_selector_filter),
+    # TODO: remove deprecated field in v1.8.0
+    delete_deprecated=points_selector_filter,
 )
 
 set_payload_operation_1 = grpc.PointsUpdateOperation(
@@ -717,11 +751,15 @@ delete_payload_operation_2 = grpc.PointsUpdateOperation(
 )
 
 clear_payload_operation_1 = grpc.PointsUpdateOperation(
-    clear_payload=points_selector_list,
+    clear_payload=grpc.PointsUpdateOperation.ClearPayload(points=points_selector_list),
+    # TODO: remove deprecated field in v1.8.0
+    clear_payload_deprecated=points_selector_list,
 )
 
 clear_payload_operation_2 = grpc.PointsUpdateOperation(
-    clear_payload=points_selector_filter,
+    clear_payload=grpc.PointsUpdateOperation.ClearPayload(points=points_selector_filter),
+    # TODO: remove deprecated field in v1.8.0
+    clear_payload_deprecated=points_selector_filter,
 )
 
 update_vectors_operation = grpc.PointsUpdateOperation(
@@ -842,6 +880,10 @@ fixtures = {
         delete_vectors_operation,
         delete_vectors_operation_2,
     ],
+    "DiscoverPoints": [discover_points],
+    "ContextExamplePair": [context_example_pair_1],
+    "VectorExample": [vector_example_1, vector_example_2],
+    "TargetVector": [target_vector_1],
 }
 
 

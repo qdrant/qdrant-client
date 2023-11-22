@@ -220,6 +220,7 @@ def test_simple_recommend() -> None:
     compare_client_results(local_client, remote_client, searcher.simple_recommend_negative)
     compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
+    compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend
     )

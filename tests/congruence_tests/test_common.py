@@ -113,23 +113,25 @@ def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], 
 
 
 def compare_scored_record(
-    point1: models.ScoredPoint, point2: models.ScoredPoint, idx: int
+    point1: models.ScoredPoint,
+    point2: models.ScoredPoint,
+    idx: int,
+    rel_tol: float = 1e-4,
+    abs_tol: float = 0,
 ) -> None:
     assert (
         point1.id == point2.id
     ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
-    # adjust precision depending on the magnitude of score
-    max_difference = 1e-4 * 10 ** (math.floor(math.log(abs(point2.score), 10)))
-    assert (
-        abs(point1.score - point2.score) < max_difference
-    ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, max_difference = {max_difference}"
+    assert math.isclose(
+        point1.score, point2.score, rel_tol=rel_tol, abs_tol=abs_tol
+    ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, rel_tol={rel_tol}"
     assert (
         point1.payload == point2.payload
     ), f"point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
     compare_vectors(point1.vector, point2.vector, idx)
 
 
-def compare_records(res1: list, res2: list) -> None:
+def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 0) -> None:
     assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
     for i in range(len(res1)):
         res1_item = res1[i]
@@ -141,7 +143,7 @@ def compare_records(res1: list, res2: list) -> None:
         elif isinstance(res1_item, models.ScoredPoint) and isinstance(
             res2_item, models.ScoredPoint
         ):
-            compare_scored_record(res1_item, res2_item, i)
+            compare_scored_record(res1_item, res2_item, i, rel_tol=rel_tol, abs_tol=abs_tol)
 
         elif isinstance(res1_item, models.Record) and isinstance(res2_item, models.Record):
             assert (
@@ -173,7 +175,14 @@ def compare_client_results(
             assert offset1 == offset2, f"offset1 = {offset1}, offset2 = {offset2}"
 
     if isinstance(res1, list):
-        compare_records(res1, res2)
+        if kwargs.get("is_context_search") == True:
+            # context search can have many points with the same 0.0 score
+            sorted_1 = sorted(res1, key=lambda x: (x.id))
+            sorted_2 = sorted(res2, key=lambda x: (x.id))
+
+            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+        else:
+            compare_records(res1, res2)
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
         groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))

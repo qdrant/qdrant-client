@@ -233,6 +233,74 @@ class _PointsApi:
             data=body,
         )
 
+    def _build_for_discover_batch_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        discover_request_batch: m.DiscoverRequestBatch = None,
+    ):
+        """
+        Look for points based on target and/or positive and negative example pairs, in batch.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(discover_request_batch)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20016,
+            method="POST",
+            url="/collections/{collection_name}/points/discover/batch",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            data=body,
+        )
+
+    def _build_for_discover_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        discover_request: m.DiscoverRequest = None,
+    ):
+        """
+        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(discover_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20015,
+            method="POST",
+            url="/collections/{collection_name}/points/discover",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            data=body,
+        )
+
     def _build_for_get_point(
         self,
         collection_name: str,
@@ -330,6 +398,7 @@ class _PointsApi:
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
     ):
         """
@@ -342,6 +411,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(recommend_request_batch)
@@ -361,6 +432,7 @@ class _PointsApi:
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_groups_request: m.RecommendGroupsRequest = None,
     ):
         """
@@ -373,6 +445,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(recommend_groups_request)
@@ -392,6 +466,7 @@ class _PointsApi:
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_request: m.RecommendRequest = None,
     ):
         """
@@ -404,6 +479,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(recommend_request)
@@ -454,6 +531,7 @@ class _PointsApi:
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_request_batch: m.SearchRequestBatch = None,
     ):
         """
@@ -466,6 +544,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(search_request_batch)
@@ -485,6 +565,7 @@ class _PointsApi:
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_groups_request: m.SearchGroupsRequest = None,
     ):
         """
@@ -497,6 +578,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(search_groups_request)
@@ -516,6 +599,7 @@ class _PointsApi:
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_request: m.SearchRequest = None,
     ):
         """
@@ -528,6 +612,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(search_request)
@@ -745,6 +831,40 @@ class AsyncPointsApi(_PointsApi):
             delete_vectors=delete_vectors,
         )
 
+    async def discover_batch_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        discover_request_batch: m.DiscoverRequestBatch = None,
+    ) -> m.InlineResponse20016:
+        """
+        Look for points based on target and/or positive and negative example pairs, in batch.
+        """
+        return await self._build_for_discover_batch_points(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            discover_request_batch=discover_request_batch,
+        )
+
+    async def discover_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        discover_request: m.DiscoverRequest = None,
+    ) -> m.InlineResponse20015:
+        """
+        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
+        """
+        return await self._build_for_discover_points(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            discover_request=discover_request,
+        )
+
     async def get_point(
         self,
         collection_name: str,
@@ -796,6 +916,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
     ) -> m.InlineResponse20016:
         """
@@ -804,6 +925,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_recommend_batch_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             recommend_request_batch=recommend_request_batch,
         )
 
@@ -811,6 +933,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_groups_request: m.RecommendGroupsRequest = None,
     ) -> m.InlineResponse20017:
         """
@@ -819,6 +942,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_recommend_point_groups(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             recommend_groups_request=recommend_groups_request,
         )
 
@@ -826,6 +950,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_request: m.RecommendRequest = None,
     ) -> m.InlineResponse20015:
         """
@@ -834,6 +959,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_recommend_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             recommend_request=recommend_request,
         )
 
@@ -856,6 +982,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_request_batch: m.SearchRequestBatch = None,
     ) -> m.InlineResponse20016:
         """
@@ -864,6 +991,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_search_batch_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             search_request_batch=search_request_batch,
         )
 
@@ -871,6 +999,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_groups_request: m.SearchGroupsRequest = None,
     ) -> m.InlineResponse20017:
         """
@@ -879,6 +1008,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_search_point_groups(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             search_groups_request=search_groups_request,
         )
 
@@ -886,6 +1016,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_request: m.SearchRequest = None,
     ) -> m.InlineResponse20015:
         """
@@ -894,6 +1025,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_search_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             search_request=search_request,
         )
 
@@ -1048,6 +1180,40 @@ class SyncPointsApi(_PointsApi):
             delete_vectors=delete_vectors,
         )
 
+    def discover_batch_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        discover_request_batch: m.DiscoverRequestBatch = None,
+    ) -> m.InlineResponse20016:
+        """
+        Look for points based on target and/or positive and negative example pairs, in batch.
+        """
+        return self._build_for_discover_batch_points(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            discover_request_batch=discover_request_batch,
+        )
+
+    def discover_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        discover_request: m.DiscoverRequest = None,
+    ) -> m.InlineResponse20015:
+        """
+        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
+        """
+        return self._build_for_discover_points(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            discover_request=discover_request,
+        )
+
     def get_point(
         self,
         collection_name: str,
@@ -1099,6 +1265,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
     ) -> m.InlineResponse20016:
         """
@@ -1107,6 +1274,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_recommend_batch_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             recommend_request_batch=recommend_request_batch,
         )
 
@@ -1114,6 +1282,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_groups_request: m.RecommendGroupsRequest = None,
     ) -> m.InlineResponse20017:
         """
@@ -1122,6 +1291,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_recommend_point_groups(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             recommend_groups_request=recommend_groups_request,
         )
 
@@ -1129,6 +1299,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         recommend_request: m.RecommendRequest = None,
     ) -> m.InlineResponse20015:
         """
@@ -1137,6 +1308,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_recommend_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             recommend_request=recommend_request,
         )
 
@@ -1159,6 +1331,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_request_batch: m.SearchRequestBatch = None,
     ) -> m.InlineResponse20016:
         """
@@ -1167,6 +1340,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_search_batch_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             search_request_batch=search_request_batch,
         )
 
@@ -1174,6 +1348,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_groups_request: m.SearchGroupsRequest = None,
     ) -> m.InlineResponse20017:
         """
@@ -1182,6 +1357,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_search_point_groups(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             search_groups_request=search_groups_request,
         )
 
@@ -1189,6 +1365,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         search_request: m.SearchRequest = None,
     ) -> m.InlineResponse20015:
         """
@@ -1197,6 +1374,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_search_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             search_request=search_request,
         )
 

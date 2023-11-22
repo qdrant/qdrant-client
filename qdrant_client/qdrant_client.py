@@ -1,3 +1,4 @@
+from socket import timeout
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client import grpc as grpc
@@ -207,6 +208,7 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         requests: Sequence[types.SearchRequest],
+        timeout: Optional[int] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
@@ -222,6 +224,8 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of search responses
@@ -232,6 +236,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             requests=requests,
             consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -253,6 +258,7 @@ class QdrantClient(QdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         append_payload: bool = True,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
@@ -296,6 +302,8 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Examples:
 
@@ -333,6 +341,7 @@ class QdrantClient(QdrantFastembedMixin):
             score_threshold=score_threshold,
             append_payload=append_payload,
             consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -355,6 +364,7 @@ class QdrantClient(QdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Search for closest vectors grouped by payload field.
@@ -405,6 +415,8 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -423,8 +435,9 @@ class QdrantClient(QdrantFastembedMixin):
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
-            consistency=consistency,
             with_lookup=with_lookup,
+            consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -433,6 +446,7 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         requests: Sequence[types.RecommendRequest],
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         """Perform multiple recommend requests in batch mode
@@ -447,6 +461,8 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of recommend responses
@@ -457,6 +473,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             requests=requests,
             consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -476,6 +493,7 @@ class QdrantClient(QdrantFastembedMixin):
         lookup_from: Optional[types.LookupLocation] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
@@ -542,6 +560,8 @@ class QdrantClient(QdrantFastembedMixin):
 
                 - 'average_vector' - calculates average vector of all examples and uses it for search
                 - 'best_score' - finds the result which is closer to positive examples and further from negative
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of recommended points with similarity scores.
@@ -563,6 +583,7 @@ class QdrantClient(QdrantFastembedMixin):
             lookup_from=lookup_from,
             consistency=consistency,
             strategy=strategy,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -584,6 +605,7 @@ class QdrantClient(QdrantFastembedMixin):
         with_lookup: Optional[types.WithLookupInterface] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Recommend point groups: search for similar points based on already stored in Qdrant examples
@@ -657,6 +679,8 @@ class QdrantClient(QdrantFastembedMixin):
 
                 - 'average_vector' - calculates average vector of all examples and uses it for search
                 - 'best_score' - finds the result which is closer to positive examples and further from negative
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -679,9 +703,116 @@ class QdrantClient(QdrantFastembedMixin):
             with_vectors=with_vectors,
             using=using,
             lookup_from=lookup_from,
-            consistency=consistency,
             with_lookup=with_lookup,
             strategy=strategy,
+            consistency=consistency,
+            timeout=timeout,
+            **kwargs,
+        )
+
+    def discover(
+        self,
+        collection_name: str,
+        target: Optional[types.TargetVector] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        """
+        Use context and a target to find the most similar points, constrained by the context.
+
+        Args:
+            target:
+                Look for vectors closest to this.
+
+                When using the target (with or without context), the integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target.
+
+            context:
+                Pairs of { positive, negative } examples to constrain the search.
+
+                When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair.
+
+                Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0.
+
+                For discovery search (when including a target), the context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.
+
+            query_filter:
+                Look only for points which satisfies this conditions
+
+            saerch_params:
+                Additional search params
+
+            limit:
+                Max number of result to return
+
+            offset:
+                Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.
+
+            with_payload:
+                Select which payload to return with the response. Default: None
+
+            with_vectors:
+                Whether to return the point vector with the result?
+
+            using:
+                Define which vector to use for recommendation, if not specified - try to use default vector.
+
+            lookup_from:
+                The location used to lookup vectors. If not specified - use current collection. Note: the other collection should have the same vector size as the current collection.
+
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
+
+        Returns:
+            List of discovered points with discovery or context scores, accordingly.
+        """
+        return self._client.discover(
+            collection_name=collection_name,
+            target=target,
+            context=context,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            using=using,
+            lookup_from=lookup_from,
+            consistency=consistency,
+            timeout=timeout,
+            **kwargs,
+        )
+
+    def discover_batch(
+        self,
+        collection_name: str,
+        requests: Sequence[types.DiscoverRequest],
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[List[types.ScoredPoint]]:
+        return self._client.discover_batch(
+            collection_name=collection_name,
+            requests=requests,
+            consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
