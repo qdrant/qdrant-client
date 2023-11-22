@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, get_args
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
+from numpy import single
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -15,6 +16,22 @@ except ImportError:
 from qdrant_client import grpc as grpc
 from qdrant_client.grpc import ListValue, NullValue, Struct, Value
 from qdrant_client.http.models import models as rest
+
+
+def has_field(message: Any, field: str) -> bool:
+    """
+    Same as protobuf HasField, but also works for primitive values
+    (https://stackoverflow.com/questions/51918871/check-if-a-field-has-been-set-in-protocol-buffer-3)
+
+    Args:
+        message (Any): protobuf message
+        field (str): name of the field
+    """
+    try:
+        return message.HasField(field)
+    except ValueError:
+        all_fields = set([descriptor.name for descriptor, _value in message.ListFields()])
+        return field in all_fields
 
 
 def json_to_value(payload: Any) -> Value:
@@ -416,7 +433,7 @@ class GrpcToRest:
         return construct(
             rest.ScoredPoint,
             id=cls.convert_point_id(model.id),
-            payload=cls.convert_payload(model.payload),
+            payload=cls.convert_payload(model.payload) if has_field(model, "payload") else None,
             score=model.score,
             vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
             version=model.version,
@@ -775,6 +792,54 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_discover_points(cls, model: grpc.DiscoverPoints) -> rest.DiscoverRequest:
+        target = cls.convert_target_vector(model.target) if model.HasField("target") else None
+        context = [cls.convert_context_example_pair(pair) for pair in model.context]
+        return rest.DiscoverRequest(
+            target=target,
+            context=context,
+            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
+            limit=model.limit,
+            with_payload=cls.convert_with_payload_interface(model.with_payload)
+            if model.HasField("with_payload")
+            else None,
+            params=cls.convert_search_params(model.params) if model.HasField("params") else None,
+            offset=model.offset if model.HasField("offset") else None,
+            with_vector=cls.convert_with_vectors_selector(model.with_vectors)
+            if model.HasField("with_vectors")
+            else None,
+            using=model.using,
+            lookup_from=cls.convert_lookup_location(model.lookup_from)
+            if model.HasField("lookup_from")
+            else None,
+        )
+
+    @classmethod
+    def convert_vector_example(cls, model: grpc.VectorExample) -> rest.RecommendExample:
+        if model.HasField("vector"):
+            return cls.convert_vector(model.vector)
+        if model.HasField("id"):
+            return cls.convert_point_id(model.id)
+
+        raise ValueError(f"invalid VectorExample model: {model}")
+
+    @classmethod
+    def convert_target_vector(cls, model: grpc.TargetVector) -> rest.RecommendExample:
+        if model.HasField("single"):
+            return cls.convert_vector_example(model.single)
+
+        raise ValueError(f"invalid TargetVector model: {model}")
+
+    @classmethod
+    def convert_context_example_pair(
+        cls, model: grpc.ContextExamplePair
+    ) -> rest.ContextExamplePair:
+        return rest.ContextExamplePair(
+            positive=cls.convert_vector_example(model.positive),
+            negative=cls.convert_vector_example(model.negative),
+        )
+
+    @classmethod
     def convert_tokenizer_type(cls, model: grpc.TokenizerType) -> rest.TokenizerType:
         if model == grpc.Prefix:
             return rest.TokenizerType.PREFIX
@@ -1011,8 +1076,13 @@ class GrpcToRest:
                     points=[cls.convert_point_struct(point) for point in val.points]
                 )
             )
-        elif name == "delete":
+        # TODO: remove deprecated field in v1.8.0
+        elif name == "delete_deprecated":
             return rest.DeleteOperation(delete=cls.convert_points_selector(val))
+        elif name == "delete_points":
+            points_selector = cls.convert_points_selector(val.points)
+
+            return rest.DeleteOperation(delete=points_selector)
         elif name == "set_payload":
             points_selector = cls.convert_points_selector(val.points_selector)
             points = None
@@ -1073,8 +1143,12 @@ class GrpcToRest:
                     filter=filter_,
                 )
             )
-        elif name == "clear_payload":
+        # TODO: remove deprecated field in v1.8.0
+        elif name == "clear_payload_deprecated":
             return rest.ClearPayloadOperation(clear_payload=cls.convert_points_selector(val))
+        elif name == "clear_payload":
+            points_selector = cls.convert_points_selector(val.points)
+            return rest.ClearPayloadOperation(clear_payload=points_selector)
         elif name == "update_vectors":
             return rest.UpdateVectorsOperation(
                 update_vectors=rest.UpdateVectors(
@@ -1591,6 +1665,33 @@ class RestToGrpc:
         return vectors
 
     @classmethod
+    def convert_vector_example(cls, model: rest.RecommendExample) -> grpc.VectorExample:
+        return cls.convert_recommend_example(model)
+
+    @classmethod
+    def convert_recommend_example(cls, model: rest.RecommendExample) -> grpc.VectorExample:
+        if isinstance(model, get_args_subscribed(rest.ExtendedPointId)):
+            return grpc.VectorExample(id=cls.convert_extended_point_id(model))
+        if isinstance(model, list):
+            return grpc.VectorExample(vector=grpc.Vector(data=model))
+
+        raise ValueError(f"Invalid RecommendExample model: {model}")
+
+    @classmethod
+    def convert_target_vector(cls, model: rest.RecommendExample) -> grpc.TargetVector:
+        return grpc.TargetVector(single=cls.convert_recommend_example(model))
+
+    @classmethod
+    def convert_context_example_pair(
+        cls,
+        model: rest.ContextExamplePair,
+    ) -> grpc.ContextExamplePair:
+        return grpc.ContextExamplePair(
+            positive=cls.convert_recommend_example(model.positive),
+            negative=cls.convert_recommend_example(model.negative),
+        )
+
+    @classmethod
     def convert_extended_point_id(cls, model: rest.ExtendedPointId) -> grpc.PointId:
         if isinstance(model, int):
             return grpc.PointId(num=model)
@@ -1824,6 +1925,56 @@ class RestToGrpc:
             else None,
             positive_vectors=positive_vectors,
             negative_vectors=negative_vectors,
+        )
+
+    @classmethod
+    def convert_discover_points(
+        cls, model: rest.DiscoverRequest, collection_name: str
+    ) -> grpc.DiscoverPoints:
+        return cls.convert_discover_request(model, collection_name)
+
+    @classmethod
+    def convert_discover_request(
+        cls, model: rest.DiscoverRequest, collection_name: str
+    ) -> grpc.DiscoverPoints:
+        target = cls.convert_target_vector(model.target) if model.target is not None else None
+
+        context = (
+            [cls.convert_context_example_pair(pair) for pair in model.context]
+            if model.context is not None
+            else None
+        )
+
+        query_filter = None if model.filter is None else cls.convert_filter(model=model.filter)
+
+        search_params = None if model.params is None else cls.convert_search_params(model.params)
+
+        with_payload = (
+            None
+            if model.with_payload is None
+            else cls.convert_with_payload_interface(model.with_payload)
+        )
+
+        with_vectors = (
+            None if model.with_vector is None else cls.convert_with_vectors(model.with_vector)
+        )
+
+        lookup_from = (
+            None if model.lookup_from is None else cls.convert_lookup_location(model.lookup_from)
+        )
+
+        return grpc.DiscoverPoints(
+            collection_name=collection_name,
+            target=target,
+            context=context,
+            filter=query_filter,
+            limit=model.limit,
+            offset=model.offset,
+            with_vectors=with_vectors,
+            with_payload=with_payload,
+            params=search_params,
+            using=model.using,
+            lookup_from=lookup_from,
         )
 
     @classmethod
@@ -2123,7 +2274,13 @@ class RestToGrpc:
                 )
             )
         elif isinstance(model, rest.DeleteOperation):
-            return grpc.PointsUpdateOperation(delete=cls.convert_points_selector(model.delete))
+            points_selector = cls.convert_points_selector(model.delete)
+            delete_points = grpc.PointsUpdateOperation.DeletePoints(points=points_selector)
+            return grpc.PointsUpdateOperation(
+                delete_points=delete_points,
+                # TODO: remove deprecated field in v1.8.0
+                delete_deprecated=points_selector,
+            )
         elif isinstance(model, rest.SetPayloadOperation):
             if model.set_payload.points:
                 points_selector = rest.PointIdsList(points=model.set_payload.points)
@@ -2171,8 +2328,12 @@ class RestToGrpc:
                 )
             )
         elif isinstance(model, rest.ClearPayloadOperation):
+            points_selector = cls.convert_points_selector(model.clear_payload)
+            clear_payload = grpc.PointsUpdateOperation.ClearPayload(points=points_selector)
             return grpc.PointsUpdateOperation(
-                clear_payload=cls.convert_points_selector(model.clear_payload)
+                clear_payload=clear_payload,
+                # TODO: remove deprecated field in v1.8.0
+                clear_payload_deprecated=points_selector,
             )
         elif isinstance(model, rest.UpdateVectorsOperation):
             return grpc.PointsUpdateOperation(

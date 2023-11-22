@@ -316,6 +316,63 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             strategy=strategy,
         )
 
+    async def discover(
+        self,
+        collection_name: str,
+        target: Optional[types.TargetVector] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        collection = self._get_collection(collection_name)
+        return collection.discover(
+            target=target,
+            context=context,
+            query_filter=query_filter,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            using=using,
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
+            lookup_from_vector_name=lookup_from.vector if lookup_from else None,
+        )
+
+    async def discover_batch(
+        self, collection_name: str, requests: Sequence[types.DiscoverRequest], **kwargs: Any
+    ) -> List[List[types.ScoredPoint]]:
+        collection = self._get_collection(collection_name)
+        return [
+            collection.discover(
+                target=request.target,
+                context=request.context,
+                query_filter=request.filter,
+                limit=request.limit,
+                offset=request.offset,
+                with_payload=request.with_payload,
+                with_vectors=request.with_vector,
+                using=request.using,
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
+            )
+            for request in requests
+        ]
+
     async def scroll(
         self,
         collection_name: str,

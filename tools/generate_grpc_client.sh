@@ -20,16 +20,17 @@ CLIENT_DIR="qdrant_client/proto"
 cp $PROTO_DIR/*.proto $CLIENT_DIR/
 
 # Remove internal services *.proto
-rm $CLIENT_DIR/points_internal_service.proto
 rm $CLIENT_DIR/collections_internal_service.proto
+rm $CLIENT_DIR/points_internal_service.proto
 rm $CLIENT_DIR/qdrant_internal_service.proto
-
-
+rm $CLIENT_DIR/shard_snapshots_service.proto
 rm $CLIENT_DIR/raft_service.proto
+
 cat $CLIENT_DIR/qdrant.proto \
  | grep -v 'collections_internal_service.proto' \
  | grep -v 'points_internal_service.proto' \
  | grep -v 'qdrant_internal_service.proto' \
+ | grep -v 'shard_snapshots_service.proto' \
  | grep -v 'raft_service.proto' \
   > $CLIENT_DIR/qdrant_tmp.proto
 mv $CLIENT_DIR/qdrant_tmp.proto $CLIENT_DIR/qdrant.proto

@@ -4,16 +4,23 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, 
 
 import numpy as np
 
+from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import ExtendedPointId
 from qdrant_client.local.distances import (
+    ContextPair,
+    ContextQuery,
+    DiscoveryQuery,
     DistanceOrder,
     QueryVector,
     RecoQuery,
-    calculate_best_scores,
+    calculate_context_scores,
+    calculate_discovery_scores,
     calculate_distance,
+    calculate_recommend_best_scores,
     distance_to_order,
 )
 from qdrant_client.local.payload_filters import calculate_payload_mask
@@ -46,7 +53,7 @@ class LocalCollection:
         if isinstance(vectors_config, models.VectorParams):
             vectors_config = {DEFAULT_VECTOR_NAME: vectors_config}
 
-        self.vectors: Dict[str, np.ndarray] = {
+        self.vectors: Dict[str, types.NumpyArray] = {
             name: np.zeros((0, params.size), dtype=np.float32)
             for name, params in vectors_config.items()
         }
@@ -107,34 +114,36 @@ class LocalCollection:
         cls,
         query_vector: Union[
             types.NumpyArray,
-            Sequence[float],
+            List[float],
             Tuple[str, List[float]],
             types.NamedVector,
-            RecoQuery,
-            Tuple[str, RecoQuery],
+            QueryVector,
+            Tuple[str, QueryVector],
         ],
     ) -> Tuple[str, QueryVector]:
+        vector: QueryVector
         if isinstance(query_vector, tuple):
-            name, vector = query_vector
-            if isinstance(vector, RecoQuery):
-                return name, vector
+            name, query = query_vector
+            if isinstance(query, list):
+                vector = np.array(query)
+            else:
+                vector = query
         elif isinstance(query_vector, types.NamedVector):
             name = query_vector.name
-            vector = query_vector.vector
+            vector = np.array(query_vector.vector)
+        elif isinstance(query_vector, list):
+            name = DEFAULT_VECTOR_NAME
+            vector = np.array(query_vector)
         elif isinstance(query_vector, np.ndarray):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
-        elif isinstance(query_vector, list):
+        elif isinstance(query_vector, get_args(QueryVector)):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
-        elif isinstance(query_vector, RecoQuery):
-            name = DEFAULT_VECTOR_NAME
-            vector = query_vector
-            return name, vector
         else:
             raise ValueError(f"Unsupported vector type {type(query_vector)}")
 
-        return name, np.array(vector)
+        return name, vector
 
     def get_vector_params(self, name: str) -> models.VectorParams:
         if isinstance(self.config.vectors, dict):
@@ -284,10 +293,11 @@ class LocalCollection:
         self,
         query_vector: Union[
             types.NumpyArray,
-            Sequence[float],
+            List[float],
+            Tuple[str, List[float]],
             types.NamedVector,
-            RecoQuery,
-            Tuple[str, Union[RecoQuery, types.NumpyArray, List[float]]],
+            QueryVector,
+            Tuple[str, QueryVector],
         ],
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
@@ -316,7 +326,17 @@ class LocalCollection:
                 query_vector, vectors[: len(self.payload)], params.distance
             )
         elif isinstance(query_vector, RecoQuery):
-            scores = calculate_best_scores(
+            scores = calculate_recommend_best_scores(
+                query_vector, vectors[: len(self.payload)], params.distance
+            )
+        elif isinstance(query_vector, DiscoveryQuery):
+            scores = calculate_discovery_scores(
+                query_vector, vectors[: len(self.payload)], params.distance
+            )
+        elif isinstance(
+            query_vector, ContextQuery
+        ):  # pyright: ignore[reportUnnecessaryIsInstance]
+            scores = calculate_context_scores(
                 query_vector, vectors[: len(self.payload)], params.distance
             )
         else:
@@ -329,7 +349,9 @@ class LocalCollection:
 
         required_order = distance_to_order(params.distance)
 
-        if required_order == DistanceOrder.BIGGER_IS_BETTER:
+        if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
+            query_vector, (DiscoveryQuery, ContextQuery, RecoQuery)
+        ):
             order = np.argsort(scores)[::-1]
         else:
             order = np.argsort(scores)
@@ -669,6 +691,130 @@ class LocalCollection:
             score_threshold=score_threshold,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
+        )
+
+    def _preprocess_discover(
+        self,
+        target: Optional[types.TargetVector] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
+        query_filter: Optional[types.Filter] = None,
+        using: Optional[str] = None,
+        lookup_from_collection: Optional["LocalCollection"] = None,
+        lookup_from_vector_name: Optional[str] = None,
+    ) -> Tuple[Optional[List[float]], List[ContextPair], types.Filter]:
+        collection = lookup_from_collection if lookup_from_collection is not None else self
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+        vector_name = (
+            lookup_from_vector_name
+            if lookup_from_vector_name is not None
+            else search_in_vector_name
+        )
+
+        target = (
+            GrpcToRest.convert_target_vector(target)
+            if target is not None and isinstance(target, grpc.TargetVector)
+            else target
+        )
+
+        context = context if context is not None else []
+        context = [
+            GrpcToRest.convert_context_example_pair(pair)
+            if isinstance(pair, grpc.ContextExamplePair)
+            else pair
+            for pair in context
+        ]
+
+        # Validate inputs
+        if target is None and len(context) == 0:
+            raise ValueError("No target or context given")
+
+        # Turn every example into vectors
+        target_vector: Optional[List[float]]
+        context_vectors: List[ContextPair] = []
+        mentioned_ids: List[ExtendedPointId] = []
+
+        if isinstance(target, get_args(types.PointId)):
+            if target not in collection.ids:
+                raise ValueError(f"Point {target} is not found in the collection")
+
+            idx = collection.ids[target]
+            target_vector = collection.vectors[vector_name][idx].tolist()
+            mentioned_ids.append(target)
+        else:
+            target_vector = target
+
+        for pair in context:
+            pair_vectors = []
+            for example in [pair.positive, pair.negative]:
+                if isinstance(example, get_args(types.PointId)):
+                    if example not in collection.ids:
+                        raise ValueError(f"Point {example} is not found in the collection")
+
+                    idx = collection.ids[example]
+                    pair_vectors.append(collection.vectors[vector_name][idx].tolist())
+                    mentioned_ids.append(example)
+                else:
+                    pair_vectors.append(example)
+
+            context_vectors.append(ContextPair(positive=pair_vectors[0], negative=pair_vectors[1]))
+
+        # Edit query filter
+        ignore_mentioned_ids = models.HasIdCondition(has_id=mentioned_ids)
+
+        if query_filter is None:
+            query_filter = models.Filter(must_not=[ignore_mentioned_ids])
+        else:
+            if query_filter.must_not is None:  # type: ignore
+                query_filter.must_not = [ignore_mentioned_ids]
+            else:
+                query_filter.must_not.append(ignore_mentioned_ids)
+
+        return target_vector, context_vectors, query_filter  # type: ignore
+
+    def discover(
+        self,
+        target: Optional[types.TargetVector] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        using: Optional[str] = None,
+        lookup_from_collection: Optional["LocalCollection"] = None,
+        lookup_from_vector_name: Optional[str] = None,
+    ) -> List[models.ScoredPoint]:
+        target_vector, context_vectors, edited_query_filter = self._preprocess_discover(
+            target,
+            context,
+            query_filter,
+            using,
+            lookup_from_collection,
+            lookup_from_vector_name,
+        )
+
+        query_vector: QueryVector
+
+        # Discovery search
+        if target_vector is not None:
+            query_vector = DiscoveryQuery(target_vector, context_vectors)
+
+        # Context search
+        elif target_vector is None and len(context_vectors) > 0:
+            query_vector = ContextQuery(context_vectors)
+        else:
+            raise ValueError("No target or context given")
+
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+
+        return self.search(
+            query_vector=(search_in_vector_name, query_vector),
+            query_filter=edited_query_filter,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=None,
         )
 
     @classmethod

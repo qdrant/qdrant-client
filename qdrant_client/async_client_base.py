@@ -105,6 +105,29 @@ class AsyncQdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
+    async def discover(
+        self,
+        collection_name: str,
+        target: Optional[types.TargetVector] = None,
+        context: Optional[Sequence[types.ContextExamplePair]] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: int = 0,
+        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, List[str]] = False,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        raise NotImplementedError()
+
+    async def discover_batch(
+        self, collection_name: str, requests: Sequence[types.DiscoverRequest], **kwargs: Any
+    ) -> List[List[types.ScoredPoint]]:
+        raise NotImplementedError()
+
     async def scroll(
         self,
         collection_name: str,
