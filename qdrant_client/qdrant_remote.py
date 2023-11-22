@@ -326,6 +326,7 @@ class QdrantRemote(QdrantBase):
         collection_name: str,
         requests: Sequence[types.SearchRequest],
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
