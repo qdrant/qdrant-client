@@ -233,6 +233,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         requests: Sequence[types.SearchRequest],
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
@@ -249,8 +250,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     search_points=requests,
                     read_consistency=consistency,
+                    timeout=timeout,
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
             return [
                 [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
@@ -264,6 +266,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 await self.http.points_api.search_batch_points(
                     collection_name=collection_name,
                     consistency=consistency,
+                    timeout=timeout,
                     search_request_batch=models.SearchRequestBatch(searches=requests),
                 )
             ).result
@@ -284,6 +287,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         score_threshold: Optional[float] = None,
         append_payload: bool = True,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         if not append_payload:
@@ -326,8 +330,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     params=search_params,
                     score_threshold=score_threshold,
                     read_consistency=consistency,
+                    timeout=timeout,
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is None else self._timeout,
             )
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
@@ -342,6 +347,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             search_result = await self.http.points_api.search_points(
                 collection_name=collection_name,
                 consistency=consistency,
+                timeout=timeout,
                 search_request=models.SearchRequest(
                     vector=query_vector,
                     filter=query_filter,
@@ -373,6 +379,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         if self._prefer_grpc:
@@ -415,8 +422,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         group_by=group_by,
                         read_consistency=consistency,
                         with_lookup=with_lookup,
+                        timeout=timeout,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
             return GrpcToRest.convert_groups_result(result)
@@ -453,6 +461,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     search_groups_request=search_groups_request,
                     collection_name=collection_name,
                     consistency=consistency,
+                    timeout=timeout,
                 )
             ).result
 
@@ -461,6 +470,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         requests: Sequence[types.RecommendRequest],
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
@@ -477,8 +487,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     recommend_points=requests,
                     read_consistency=consistency,
+                    timeout=timeout,
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
             return [
                 [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
@@ -515,6 +526,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         lookup_from: Optional[types.LookupLocation] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         if positive is None:
@@ -558,8 +570,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     strategy=strategy,
                     positive_vectors=positive_vectors,
                     negative_vectors=negative_vectors,
+                    timeout=timeout,
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
@@ -587,6 +600,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 await self.openapi_client.points_api.recommend_points(
                     collection_name=collection_name,
                     consistency=consistency,
+                    timeout=timeout,
                     recommend_request=models.RecommendRequest(
                         filter=query_filter,
                         positive=positive,
@@ -624,6 +638,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         with_lookup: Optional[types.WithLookupInterface] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         positive = positive if positive is not None else []
@@ -672,8 +687,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         strategy=strategy,
                         positive_vectors=positive_vectors,
                         negative_vectors=negative_vectors,
+                        timeout=timeout,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
             assert res is not None, "Recommend groups API returned None"
@@ -705,6 +721,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 await self.openapi_client.points_api.recommend_point_groups(
                     collection_name=collection_name,
                     consistency=consistency,
+                    timeout=timeout,
                     recommend_groups_request=construct(
                         models.RecommendGroupsRequest,
                         positive=positive,
@@ -869,6 +886,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     collection_name=collection_name,
                     discover_request_batch=models.DiscoverRequestBatch(searches=requests),
                     consistency=consistency,
+                    timeout=timeout,
                 )
             ).result
             return http_res
