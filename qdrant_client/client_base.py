@@ -120,7 +120,6 @@ class QdrantBase:
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         raise NotImplementedError()

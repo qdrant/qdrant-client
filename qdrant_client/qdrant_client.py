@@ -1,3 +1,4 @@
+from socket import timeout
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client import grpc as grpc
@@ -197,6 +198,7 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         requests: Sequence[types.SearchRequest],
+        timeout: Optional[int] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
@@ -212,6 +214,8 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of search responses
@@ -222,6 +226,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             requests=requests,
             consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -243,6 +248,7 @@ class QdrantClient(QdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         append_payload: bool = True,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
@@ -286,6 +292,8 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Examples:
 
@@ -323,6 +331,7 @@ class QdrantClient(QdrantFastembedMixin):
             score_threshold=score_threshold,
             append_payload=append_payload,
             consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -345,6 +354,7 @@ class QdrantClient(QdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Search for closest vectors grouped by payload field.
@@ -395,6 +405,8 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -413,8 +425,9 @@ class QdrantClient(QdrantFastembedMixin):
             with_payload=with_payload,
             with_vectors=with_vectors,
             score_threshold=score_threshold,
-            consistency=consistency,
             with_lookup=with_lookup,
+            consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -423,6 +436,7 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         requests: Sequence[types.RecommendRequest],
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         """Perform multiple recommend requests in batch mode
@@ -437,6 +451,8 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of recommend responses
@@ -447,6 +463,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             requests=requests,
             consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -466,6 +483,7 @@ class QdrantClient(QdrantFastembedMixin):
         lookup_from: Optional[types.LookupLocation] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
@@ -532,6 +550,8 @@ class QdrantClient(QdrantFastembedMixin):
 
                 - 'average_vector' - calculates average vector of all examples and uses it for search
                 - 'best_score' - finds the result which is closer to positive examples and further from negative
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of recommended points with similarity scores.
@@ -553,6 +573,7 @@ class QdrantClient(QdrantFastembedMixin):
             lookup_from=lookup_from,
             consistency=consistency,
             strategy=strategy,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -574,6 +595,7 @@ class QdrantClient(QdrantFastembedMixin):
         with_lookup: Optional[types.WithLookupInterface] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         """Recommend point groups: search for similar points based on already stored in Qdrant examples
@@ -647,6 +669,8 @@ class QdrantClient(QdrantFastembedMixin):
 
                 - 'average_vector' - calculates average vector of all examples and uses it for search
                 - 'best_score' - finds the result which is closer to positive examples and further from negative
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
 
         Returns:
             List of groups with not more than `group_size` hits in each group.
@@ -669,9 +693,10 @@ class QdrantClient(QdrantFastembedMixin):
             with_vectors=with_vectors,
             using=using,
             lookup_from=lookup_from,
-            consistency=consistency,
             with_lookup=with_lookup,
             strategy=strategy,
+            consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -760,6 +785,7 @@ class QdrantClient(QdrantFastembedMixin):
             with_vectors=with_vectors,
             using=using,
             lookup_from=lookup_from,
+            consistency=consistency,
             timeout=timeout,
             **kwargs,
         )
@@ -768,11 +794,15 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         requests: Sequence[types.DiscoverRequest],
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
         return self._client.discover_batch(
             collection_name=collection_name,
             requests=requests,
+            consistency=consistency,
+            timeout=timeout,
             **kwargs,
         )
 
