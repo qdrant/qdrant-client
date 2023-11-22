@@ -1937,9 +1937,13 @@ class RestToGrpc:
     def convert_discover_request(
         cls, model: rest.DiscoverRequest, collection_name: str
     ) -> grpc.DiscoverPoints:
-        target = cls.convert_target_vector(model.target)
+        target = cls.convert_target_vector(model.target) if model.target is not None else None
 
-        context = [cls.convert_context_example_pair(pair) for pair in model.context]
+        context = (
+            [cls.convert_context_example_pair(pair) for pair in model.context]
+            if model.context is not None
+            else None
+        )
 
         query_filter = None if model.filter is None else cls.convert_filter(model=model.filter)
 
