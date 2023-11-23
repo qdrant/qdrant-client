@@ -80,7 +80,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         else:
             with open(meta_path, "r") as f:
                 meta = json.load(f)
-                for collection_name, config_json in meta["collections"].items():
+                for (collection_name, config_json) in meta["collections"].items():
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
                     self.collections[collection_name] = LocalCollection(
@@ -581,6 +581,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
         init_from: Optional[types.InitFrom] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         src_collection = None
@@ -596,7 +597,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if collection_path is not None:
             os.makedirs(collection_path, exist_ok=True)
         collection = LocalCollection(
-            rest_models.CreateCollection(vectors=vectors_config),
+            rest_models.CreateCollection(
+                vectors=vectors_config, sparse_vectors=sparse_vectors_config
+            ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,
         )
@@ -620,10 +623,13 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
         init_from: Optional[types.InitFrom] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name)
-        return await self.create_collection(collection_name, vectors_config, init_from)
+        return await self.create_collection(
+            collection_name, vectors_config, init_from, sparse_vectors_config
+        )
 
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any

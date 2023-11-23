@@ -111,7 +111,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
         else:
             raise ValueError(f"Unknown embed type: {embed_type}")
-        for vector, doc in zip(vectors_iter, documents_b):
+        for (vector, doc) in zip(vectors_iter, documents_b):
             yield (doc, vector.tolist())
 
     def get_vector_field_name(self) -> str:
@@ -154,7 +154,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         if metadata is None:
             metadata = iter(lambda: {}, None)
         vector_name = self.get_vector_field_name()
-        for idx, meta, (doc, vector) in zip(ids, metadata, encoded_docs):
+        for (idx, meta, (doc, vector)) in zip(ids, metadata, encoded_docs):
             ids_accumulator.append(idx)
             payload = {"document": doc, **meta}
             yield models.Record(id=idx, payload=payload, vector={vector_name: vector})
