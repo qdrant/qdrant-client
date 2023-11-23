@@ -83,6 +83,7 @@ NamedSparseVector: TypeAlias = rest.NamedSparseVector
 PointVectors: TypeAlias = rest.PointVectors
 VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
+SparseVectorParams: TypeAlias = rest.SparseVectorParams
 LocksOption: TypeAlias = rest.LocksOption
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse

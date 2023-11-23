@@ -1907,6 +1907,7 @@ class QdrantRemote(QdrantBase):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1931,6 +1932,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(init_from, models.InitFrom):
                 init_from = RestToGrpc.convert_init_from(init_from)
 
+            # TODO(sparse) gRPC support
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1973,6 +1975,7 @@ class QdrantRemote(QdrantBase):
             wal_config=wal_config,
             quantization_config=quantization_config,
             init_from=init_from,
+            sparse_vectors=sparse_vectors_config,
         )
 
         result: Optional[bool] = self.http.collections_api.create_collection(
@@ -1998,6 +2001,7 @@ class QdrantRemote(QdrantBase):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name, timeout=timeout)
@@ -2015,6 +2019,7 @@ class QdrantRemote(QdrantBase):
             quantization_config=quantization_config,
             init_from=init_from,
             timeout=timeout,
+            sparse_vectors_config=sparse_vectors_config,
         )
 
     @property

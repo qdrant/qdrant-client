@@ -1573,6 +1573,7 @@ class QdrantClient(QdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1608,6 +1609,9 @@ class QdrantClient(QdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
+            sparse_vectors_config:
+                Configuration of the sparse vector storage.
+                The service will create a sparse vector storage for each key in the dict.
 
         Returns:
             Operation result
@@ -1627,6 +1631,7 @@ class QdrantClient(QdrantFastembedMixin):
             quantization_config=quantization_config,
             init_from=init_from,
             timeout=timeout,
+            sparse_vectors_config=sparse_vectors_config,
             **kwargs,
         )
 

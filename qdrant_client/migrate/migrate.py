@@ -74,6 +74,7 @@ def _recreate_collection(
     dest_client.recreate_collection(
         collection_name,
         vectors_config=src_config.params.vectors,
+        sparse_vectors_config=src_config.params.sparse_vectors,
         shard_number=src_config.params.shard_number,
         replication_factor=src_config.params.replication_factor,
         write_consistency_factor=src_config.params.write_consistency_factor,
