@@ -1704,6 +1704,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1719,6 +1720,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
             if isinstance(init_from, models.InitFrom):
                 init_from = RestToGrpc.convert_init_from(init_from)
+            #TODO(sparse) gRPC support
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1746,6 +1748,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             init_from = GrpcToRest.convert_init_from(init_from)
         create_collection_request = models.CreateCollection(
             vectors=vectors_config,
+            sparse_vectors=sparse_vectors_config,
             shard_number=shard_number,
             replication_factor=replication_factor,
             write_consistency_factor=write_consistency_factor,
