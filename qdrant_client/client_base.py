@@ -29,7 +29,7 @@ class QdrantBase:
         query_filter: Optional[models.Filter] = None,
         search_params: Optional[models.SearchParams] = None,
         limit: int = 10,
-        offset: int = 0,
+        offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,

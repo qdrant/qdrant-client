@@ -378,7 +378,7 @@ class QdrantRemote(QdrantBase):
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
-        offset: int = 0,
+        offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
@@ -1949,7 +1949,6 @@ class QdrantRemote(QdrantBase):
                 write_consistency_factor=write_consistency_factor,
                 init_from_collection=init_from,
                 quantization_config=quantization_config,
-                sparse_vectors=sparse_vectors_config,
             )
             return self.grpc_collections.Create(create_collection).result
 

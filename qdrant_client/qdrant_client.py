@@ -257,7 +257,7 @@ class QdrantClient(QdrantFastembedMixin):
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
-        offset: int = 0,
+        offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,

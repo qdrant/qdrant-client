@@ -4,8 +4,9 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -15,18 +16,36 @@ _sym_db = _symbol_database.Default()
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12health_check.proto\x12\x0egrpc.health.v1\"%\n\x12HealthCheckRequest\x12\x0f\n\x07service\x18\x01 \x01(\t\"\xa9\x01\n\x13HealthCheckResponse\x12\x41\n\x06status\x18\x01 \x01(\x0e\x32\x31.grpc.health.v1.HealthCheckResponse.ServingStatus\"O\n\rServingStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07SERVING\x10\x01\x12\x0f\n\x0bNOT_SERVING\x10\x02\x12\x13\n\x0fSERVICE_UNKNOWN\x10\x03\x32Z\n\x06Health\x12P\n\x05\x43heck\x12\".grpc.health.v1.HealthCheckRequest\x1a#.grpc.health.v1.HealthCheckResponseB\x15\xaa\x02\x12Qdrant.Client.Grpcb\x06proto3')
 
-_globals = globals()
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'health_check_pb2', _globals)
+
+
+_HEALTHCHECKREQUEST = DESCRIPTOR.message_types_by_name['HealthCheckRequest']
+_HEALTHCHECKRESPONSE = DESCRIPTOR.message_types_by_name['HealthCheckResponse']
+_HEALTHCHECKRESPONSE_SERVINGSTATUS = _HEALTHCHECKRESPONSE.enum_types_by_name['ServingStatus']
+HealthCheckRequest = _reflection.GeneratedProtocolMessageType('HealthCheckRequest', (_message.Message,), {
+  'DESCRIPTOR' : _HEALTHCHECKREQUEST,
+  '__module__' : 'health_check_pb2'
+  # @@protoc_insertion_point(class_scope:grpc.health.v1.HealthCheckRequest)
+  })
+_sym_db.RegisterMessage(HealthCheckRequest)
+
+HealthCheckResponse = _reflection.GeneratedProtocolMessageType('HealthCheckResponse', (_message.Message,), {
+  'DESCRIPTOR' : _HEALTHCHECKRESPONSE,
+  '__module__' : 'health_check_pb2'
+  # @@protoc_insertion_point(class_scope:grpc.health.v1.HealthCheckResponse)
+  })
+_sym_db.RegisterMessage(HealthCheckResponse)
+
+_HEALTH = DESCRIPTOR.services_by_name['Health']
 if _descriptor._USE_C_DESCRIPTORS == False:
+
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\252\002\022Qdrant.Client.Grpc'
-  _globals['_HEALTHCHECKREQUEST']._serialized_start=38
-  _globals['_HEALTHCHECKREQUEST']._serialized_end=75
-  _globals['_HEALTHCHECKRESPONSE']._serialized_start=78
-  _globals['_HEALTHCHECKRESPONSE']._serialized_end=247
-  _globals['_HEALTHCHECKRESPONSE_SERVINGSTATUS']._serialized_start=168
-  _globals['_HEALTHCHECKRESPONSE_SERVINGSTATUS']._serialized_end=247
-  _globals['_HEALTH']._serialized_start=249
-  _globals['_HEALTH']._serialized_end=339
+  _HEALTHCHECKREQUEST._serialized_start=38
+  _HEALTHCHECKREQUEST._serialized_end=75
+  _HEALTHCHECKRESPONSE._serialized_start=78
+  _HEALTHCHECKRESPONSE._serialized_end=247
+  _HEALTHCHECKRESPONSE_SERVINGSTATUS._serialized_start=168
+  _HEALTHCHECKRESPONSE_SERVINGSTATUS._serialized_end=247
+  _HEALTH._serialized_start=249
+  _HEALTH._serialized_end=339
 # @@protoc_insertion_point(module_scope)
