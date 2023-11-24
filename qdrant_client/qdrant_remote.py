@@ -1949,6 +1949,7 @@ class QdrantRemote(QdrantBase):
                 write_consistency_factor=write_consistency_factor,
                 init_from_collection=init_from,
                 quantization_config=quantization_config,
+                sparse_vectors=sparse_vectors_config,
             )
             return self.grpc_collections.Create(create_collection).result
 
