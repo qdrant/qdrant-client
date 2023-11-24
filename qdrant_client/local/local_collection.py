@@ -9,7 +9,7 @@ from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
-from qdrant_client.http.models.models import ExtendedPointId, SparseVector
+from qdrant_client.http.models.models import ExtendedPointId, SparseVector, Distance
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
@@ -54,7 +54,6 @@ class LocalCollection:
         sparse_vectors_config = config.sparse_vectors
         if isinstance(vectors_config, models.VectorParams):
             vectors_config = {DEFAULT_VECTOR_NAME: vectors_config}
-
         self.vectors: Dict[str, types.NumpyArray] = {
             name: np.zeros((0, params.size), dtype=np.float32)
             for name, params in vectors_config.items()
@@ -66,7 +65,8 @@ class LocalCollection:
         )
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
-        self.deleted_per_vector = {name: np.zeros(0, dtype=bool) for name in self.vectors.keys()}
+        all_vectors_keys = list(self.vectors.keys()) + list(self.sparse_vectors.keys())
+        self.deleted_per_vector = {name: np.zeros(0, dtype=bool) for name in all_vectors_keys}
         self.ids: Dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id
         self.ids_inv: List[models.ExtendedPointId] = []  # Mapping from internal id to external id
         self.persistent = location is not None
@@ -74,32 +74,44 @@ class LocalCollection:
         self.config = config
         if location is not None:
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
-        self.load_dense_vectors()
-        self.load_sparse_vectors()
+        self.load_vectors()
 
     def close(self) -> None:
         if self.storage is not None:
             self.storage.close()
 
-    def load_dense_vectors(self) -> None:
+    def load_vectors(self) -> None:
         if self.storage is not None:
             vectors = defaultdict(list)
+            sparse_vectors = defaultdict(list)
             deleted_ids = []
 
             for idx, point in enumerate(self.storage.load()):
-                if isinstance(point.vector, SparseVector):
-                    continue  # skip sparse vectors
-
+                # id tracker
                 self.ids[point.id] = idx
+                # no gaps in idx
                 self.ids_inv.append(point.id)
 
+                # payload tracker
+                self.payload.append(point.payload or {})
+
                 vector = point.vector
+
+                # add default name to anonymous dense vector
                 if isinstance(point.vector, list):
                     vector = {DEFAULT_VECTOR_NAME: point.vector}
 
-                all_vector_names = list(self.vectors.keys())
+                all_sparse_vector_names = list(self.sparse_vectors.keys())
+                for name in all_sparse_vector_names:
+                    v = vector.get(name)
+                    if v is not None:
+                        sparse_vectors[name].append(v)
+                    else:
+                        sparse_vectors[name].append(empty_sparse_vector())
+                        deleted_ids.append((idx, name))
 
-                for name in all_vector_names:
+                all_dense_vector_names = list(self.vectors.keys())
+                for name in all_dense_vector_names:
                     v = vector.get(name)
                     if v is not None:
                         vectors[name].append(v)
@@ -109,44 +121,17 @@ class LocalCollection:
                         )
                         deleted_ids.append((idx, name))
 
-                self.payload.append(point.payload or {})
-
+            # setup dense vectors by name
             for name, named_vectors in vectors.items():
                 self.vectors[name] = np.array(named_vectors)
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
-            for idx, name in deleted_ids:
-                self.deleted_per_vector[name][idx] = 1
-
-            self.deleted = np.zeros(len(self.payload), dtype=bool)
-
-    def load_sparse_vectors(self) -> None:
-        if self.storage is not None:
-            sparse_vectors = defaultdict(list)
-            deleted_ids = []
-
-            for idx, point in enumerate(self.storage.load()):
-                if not isinstance(point.vector, SparseVector):
-                    continue  # only process sparse vectors
-
-                vector = point.vector
-
-                all_sparse_vector_names = list(self.sparse_vectors.keys())
-
-                for name in all_sparse_vector_names:
-                    v = vector.get(name)
-                    if v is not None:
-                        sparse_vectors[name].append(v)
-                    else:
-                        sparse_vectors[name].append(empty_sparse_vector())
-                        deleted_ids.append((idx, name))
-
-                self.payload.append(point.payload or {})
-
+            # setup sparse vectors by name
             for name, named_vectors in sparse_vectors.items():
                 self.sparse_vectors[name] = np.array(named_vectors)
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
+            # track deleted points
             for idx, name in deleted_ids:
                 self.deleted_per_vector[name][idx] = 1
 
@@ -363,29 +348,37 @@ class LocalCollection:
 
         result: List[models.ScoredPoint] = []
 
-        if name not in self.vectors:
-            raise ValueError(f"Vector {name} is not found in the collection")
-
-        vectors = self.vectors[name]
-        params = self.get_vector_params(name)
+        # early exit if the named vector does not exist
+        if isinstance(query_vector, SparseVector):
+            if name not in self.sparse_vectors:
+                raise ValueError(f"Sparse vector {name} is not found in the collection")
+            else:
+                vectors = self.sparse_vectors[name]
+                distance = Distance.DOT
+        else:
+            if name not in self.vectors:
+                raise ValueError(f"Dense vector {name} is not found in the collection")
+            else:
+                vectors = self.vectors[name]
+                distance = self.get_vector_params(name).distance
 
         if isinstance(query_vector, np.ndarray):
             scores = calculate_distance(
-                query_vector, vectors[: len(self.payload)], params.distance
+                query_vector, vectors[: len(self.payload)], distance
             )
         elif isinstance(query_vector, RecoQuery):
             scores = calculate_recommend_best_scores(
-                query_vector, vectors[: len(self.payload)], params.distance
+                query_vector, vectors[: len(self.payload)], distance
             )
         elif isinstance(query_vector, DiscoveryQuery):
             scores = calculate_discovery_scores(
-                query_vector, vectors[: len(self.payload)], params.distance
+                query_vector, vectors[: len(self.payload)], distance
             )
         elif isinstance(
             query_vector, ContextQuery
         ):  # pyright: ignore[reportUnnecessaryIsInstance]
             scores = calculate_context_scores(
-                query_vector, vectors[: len(self.payload)], params.distance
+                query_vector, vectors[: len(self.payload)], distance
             )
         elif isinstance(query_vector, SparseVector):
             sparse_vectors = self.sparse_vectors[name]
@@ -400,7 +393,7 @@ class LocalCollection:
         # in mask: 1 - ok, 0 - rejected
         mask = payload_mask & ~self.deleted & ~self.deleted_per_vector[name]
 
-        required_order = distance_to_order(params.distance)
+        required_order = distance_to_order(distance)
 
         if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
             query_vector, (DiscoveryQuery, ContextQuery, RecoQuery)
@@ -447,6 +440,7 @@ class LocalCollection:
             Sequence[float],
             Tuple[str, Union[List[float], RecoQuery, types.NumpyArray]],
             types.NamedVector,
+            types.NamedSparseVector,
             RecoQuery,
         ],
         group_by: str,
@@ -942,6 +936,7 @@ class LocalCollection:
         else:
             vectors = point.vector
 
+        # dense vectors
         for vector_name, named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
@@ -949,6 +944,15 @@ class LocalCollection:
                 if params.distance == models.Distance.COSINE:
                     norm = np.linalg.norm(vector)
                     vector = np.array(vector) / norm if norm > EPSILON else vector
+                self.vectors[vector_name][idx] = vector
+                self.deleted_per_vector[vector_name][idx] = 0
+            else:
+                self.deleted_per_vector[vector_name][idx] = 1
+
+        # sparse vectors
+        for vector_name, named_vectors in self.sparse_vectors.items():
+            vector = vectors.get(vector_name)
+            if vector is not None:
                 self.vectors[vector_name][idx] = vector
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
@@ -968,6 +972,7 @@ class LocalCollection:
         else:
             vectors = point.vector
 
+        # dense vectors
         for vector_name, named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if named_vectors.shape[0] <= idx:
@@ -988,6 +993,28 @@ class LocalCollection:
                     vector_np = vector_np / norm if norm > EPSILON else vector_np
                 named_vectors[idx] = vector_np
                 self.vectors[vector_name] = named_vectors
+                self.deleted_per_vector[vector_name] = np.append(
+                    self.deleted_per_vector[vector_name], 0
+                )
+
+        # sparse vectors
+        for vector_name, named_vectors in self.sparse_vectors.items():
+            vector = vectors.get(vector_name)
+            if len(named_vectors) <= idx:
+                diff = idx - len(named_vectors) + 1
+                for _ in range(diff):
+                    named_vectors.append(empty_sparse_vector())
+
+            if vector is None:
+                # Add fake vector and mark as removed
+                fake_vector = empty_sparse_vector()
+                named_vectors[idx] = fake_vector
+                self.deleted_per_vector[vector_name] = np.append(
+                    self.deleted_per_vector[vector_name], 1
+                )
+            else:
+                named_vectors[idx] = vector
+                self.sparse_vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )

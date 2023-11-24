@@ -81,6 +81,7 @@ SnapshotDescription: TypeAlias = rest.SnapshotDescription
 NamedVector: TypeAlias = rest.NamedVector
 NamedSparseVector: TypeAlias = rest.NamedSparseVector
 PointVectors: TypeAlias = rest.PointVectors
+Vector: TypeAlias = rest.Vector
 VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
 SparseVectorParams: TypeAlias = rest.SparseVectorParams

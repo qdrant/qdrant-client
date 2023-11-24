@@ -6,8 +6,8 @@ import numpy as np
 
 def empty_sparse_vector() -> SparseVector:
     return SparseVector(
-        indices=np.array([], dtype=np.int64),
-        values=np.array([], dtype=np.float32),
+        indices=[],
+        values=[],
     )
 
 
