@@ -67,7 +67,7 @@ class SnapshotsServicer(object):
 
     def Delete(self, request, context):
         """
-        Delete collection snapshots
+        Delete collection snapshot
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -91,7 +91,7 @@ class SnapshotsServicer(object):
 
     def DeleteFull(self, request, context):
         """
-        List full storage snapshots
+        Delete full storage snapshot
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

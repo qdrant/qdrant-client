@@ -160,7 +160,7 @@ message OptimizersConfigDiff {
   Do not create segments larger this size (in kilobytes).
   Large segments might require disproportionately long indexation times,
   therefore it makes sense to limit the size of segments.
-
+    
   If indexing speed is more important - make this parameter lower.
   If search speed is more important - make this parameter higher.
   Note: 1Kb = 1 vector of size 256
@@ -180,11 +180,11 @@ message OptimizersConfigDiff {
   optional uint64 memmap_threshold = 5;
   /*
   Maximum size (in kilobytes) of vectors allowed for plain index, exceeding this threshold will enable vector indexing
-
+  
   Default value is 20,000, based on <https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md>.
-
+  
   To disable vector indexing, set to `0`.
-
+  
   Note: 1kB = 1 vector of size 256.
   */
   optional uint64 indexing_threshold = 6;
@@ -430,7 +430,7 @@ message ShardTransferInfo {
 }
 
 message CollectionClusterInfoResponse {
-  uint64 peer_id = 1;  // ID of this peer
+  uint64 peer_id = 1;  // ID of this peer 
   uint64 shard_count = 2; // Total number of shards
   repeated LocalShardInfo local_shards = 3; // Local shards
   repeated RemoteShardInfo remote_shards = 4; // Remote shards
@@ -454,6 +454,17 @@ message Replica {
   uint64 peer_id = 2;
 }
 
+message CreateShardKey {
+    ShardKey shard_key = 1; // User-defined shard key
+    optional uint32 shards_number = 2; // Number of shards to create per shard key
+    optional uint32 replication_factor = 3; // Number of replicas of each shard to create
+    repeated uint64 placement = 4; // List of peer ids, allowed to create shards. If empty - all peers are allowed
+}
+
+message DeleteShardKey {
+    ShardKey shard_key = 1; // Shard key to delete
+}
+
 message UpdateCollectionClusterSetupRequest {
   string collection_name = 1; // Name of the collection
   oneof operation {
@@ -461,10 +472,32 @@ message UpdateCollectionClusterSetupRequest {
     MoveShard replicate_shard = 3;
     MoveShard abort_transfer = 4;
     Replica drop_replica = 5;
+    CreateShardKey create_shard_key = 7;
+    DeleteShardKey delete_shard_key = 8;
   }
   optional uint64 timeout = 6; // Wait timeout for operation commit in seconds, if not specified - default value will be supplied
 }
 
 message UpdateCollectionClusterSetupResponse {
   bool result = 1;
+}
+
+message CreateShardKeyRequest {
+    string collection_name = 1; // Name of the collection
+    CreateShardKey request = 2; // Request to create shard key
+    optional uint64 timeout = 3; // Wait timeout for operation commit in seconds, if not specified - default value will be supplied
+}
+
+message DeleteShardKeyRequest {
+    string collection_name = 1; // Name of the collection
+    DeleteShardKey request = 2; // Request to delete shard key
+    optional uint64 timeout = 3; // Wait timeout for operation commit in seconds, if not specified - default value will be supplied
+}
+
+message CreateShardKeyResponse {
+    bool result = 1;
+}
+
+message DeleteShardKeyResponse {
+    bool result = 1;
 }
