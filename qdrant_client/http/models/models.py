@@ -471,7 +471,7 @@ class DiscoverRequest(BaseModel, extra="forbid"):
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
-        default=0,
+        default=None,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
@@ -1373,7 +1373,7 @@ class RecommendRequest(BaseModel, extra="forbid"):
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
-        default=0,
+        default=None,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
@@ -1633,7 +1633,7 @@ class SearchRequest(BaseModel, extra="forbid"):
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
-        default=0,
+        default=None,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
