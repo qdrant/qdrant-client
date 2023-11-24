@@ -121,7 +121,7 @@ def _migrate_collection(
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
-        dest_client.upload_records(collection_name, records)
+        dest_client.upload_records(collection_name, records, wait=True)
     source_client_vectors_count = source_client.get_collection(collection_name).vectors_count
     dest_client_vectors_count = dest_client.get_collection(collection_name).vectors_count
     assert (

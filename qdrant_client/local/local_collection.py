@@ -95,30 +95,33 @@ class LocalCollection:
                 # payload tracker
                 self.payload.append(point.payload or {})
 
-                vector = point.vector
+                # persisted named vectors
+                loaded_vector = point.vector
 
                 # add default name to anonymous dense vector
                 if isinstance(point.vector, list):
-                    vector = {DEFAULT_VECTOR_NAME: point.vector}
+                    loaded_vector = {DEFAULT_VECTOR_NAME: point.vector}
 
-                all_sparse_vector_names = list(self.sparse_vectors.keys())
-                for name in all_sparse_vector_names:
-                    v = vector.get(name)
-                    if v is not None:
-                        sparse_vectors[name].append(v)
-                    else:
-                        sparse_vectors[name].append(empty_sparse_vector())
-                        deleted_ids.append((idx, name))
-
+                # handle dense vectors
                 all_dense_vector_names = list(self.vectors.keys())
                 for name in all_dense_vector_names:
-                    v = vector.get(name)
+                    v = loaded_vector.get(name)
                     if v is not None:
                         vectors[name].append(v)
                     else:
                         vectors[name].append(
                             np.ones(self.config.vectors[name].size, dtype=np.float32)
                         )
+                        deleted_ids.append((idx, name))
+
+                # handle sparse vectors
+                all_sparse_vector_names = list(self.sparse_vectors.keys())
+                for name in all_sparse_vector_names:
+                    v = loaded_vector.get(name)
+                    if v is not None:
+                        sparse_vectors[name].append(v)
+                    else:
+                        sparse_vectors[name].append(empty_sparse_vector())
                         deleted_ids.append((idx, name))
 
             # setup dense vectors by name
@@ -131,7 +134,7 @@ class LocalCollection:
                 self.sparse_vectors[name] = np.array(named_vectors)
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
-            # track deleted points
+            # track deleted points by named vector
             for idx, name in deleted_ids:
                 self.deleted_per_vector[name][idx] = 1
 
