@@ -2,6 +2,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
+from qdrant_client.http.models import SparseVector
 
 
 class QdrantBase:

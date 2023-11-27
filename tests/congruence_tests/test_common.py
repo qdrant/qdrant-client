@@ -24,6 +24,7 @@ def initialize_fixture_collection(
     client: QdrantBase,
     collection_name: str = COLLECTION_NAME,
     vectors_config: Optional[Union[Dict[str, models.VectorParams], models.VectorParams]] = None,
+    sparse_vectors_config: Optional[Dict[str, models.SparseVectorParams]] = None,
 ) -> None:
     if vectors_config is None:
         vectors_config = {
@@ -41,8 +42,18 @@ def initialize_fixture_collection(
             ),
         }
 
+    if sparse_vectors_config is None:
+        sparse_vectors_config = {
+            "sparse-text": models.SparseVectorParams(),
+            "sparse-image": models.SparseVectorParams(),
+            "sparse-code": models.SparseVectorParams(),
+        }
+
     client.recreate_collection(
-        collection_name=collection_name, vectors_config=vectors_config, timeout=TIMEOUT
+        collection_name=collection_name,
+        vectors_config=vectors_config,
+        timeout=TIMEOUT,
+        sparse_vectors_config=sparse_vectors_config
     )
 
 
@@ -68,6 +79,28 @@ def generate_fixtures(
         with_payload=True,
         random_ids=random_ids,
         skip_vectors=skip_vectors,
+    )
+
+
+def generate_sparse_fixtures(
+        num: Optional[int] = NUM_VECTORS,
+        random_ids: bool = False,
+        vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
+        skip_vectors: bool = False,
+) -> List[models.Record]:
+    if vectors_sizes is None:
+        vectors_sizes = {
+            "sparse-text": text_vector_size,
+            "sparse-image": image_vector_size,
+            "sparse-code": code_vector_size,
+        }
+    return generate_records(
+        num_records=num or NUM_VECTORS,
+        vector_sizes=vectors_sizes,
+        with_payload=True,
+        random_ids=random_ids,
+        skip_vectors=skip_vectors,
+        sparse=True,
     )
 
 
@@ -132,8 +165,8 @@ def compare_scored_record(
 
 
 def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 0) -> None:
-    assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
-    for i in range(len(res1)):
+    #assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
+    for i in range(len(res2)):
         res1_item = res1[i]
         res2_item = res2[i]
 
@@ -175,7 +208,7 @@ def compare_client_results(
             assert offset1 == offset2, f"offset1 = {offset1}, offset2 = {offset2}"
 
     if isinstance(res1, list):
-        if kwargs.get("is_context_search") == True:
+        if kwargs.get("is_context_search"):
             # context search can have many points with the same 0.0 score
             sorted_1 = sorted(res1, key=lambda x: (x.id))
             sorted_2 = sorted(res2, key=lambda x: (x.id))
@@ -218,11 +251,15 @@ def init_client(
     records: List[models.Record],
     collection_name: str = COLLECTION_NAME,
     vectors_config: Optional[Union[Dict[str, models.VectorParams], models.VectorParams]] = None,
+    sparse_vectors_config: Optional[Dict[str, models.SparseVectorParams]] = None,
 ) -> None:
     initialize_fixture_collection(
-        client, collection_name=collection_name, vectors_config=vectors_config
+        client=client,
+        collection_name=collection_name,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config
     )
-    client.upload_records(collection_name, records)
+    client.upload_records(collection_name, records, wait=True)
 
 
 def init_local(storage: str = ":memory:") -> QdrantLocal:

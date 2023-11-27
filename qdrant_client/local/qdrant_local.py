@@ -149,6 +149,7 @@ class QdrantLocal(QdrantBase):
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,

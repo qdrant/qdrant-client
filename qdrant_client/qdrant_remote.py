@@ -32,6 +32,7 @@ from qdrant_client.conversions.conversion import (
     grpc_payload_schema_to_field_type,
 )
 from qdrant_client.http import ApiClient, SyncApis, models
+from qdrant_client.http.models import SparseVector
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
@@ -374,6 +375,7 @@ class QdrantRemote(QdrantBase):
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -2083,7 +2085,7 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         records: Iterable[types.Record],
-        batch_size: int = 64,
+        batch_size: int = 2,
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,

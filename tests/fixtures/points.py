@@ -6,6 +6,7 @@ import numpy as np
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.http import models
+from qdrant_client.local.sparse import generate_random_sparse_vector_list, generate_random_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
 
@@ -23,12 +24,20 @@ def random_vectors(
         raise ValueError("vector_sizes must be int or dict")
 
 
+def random_sparse_vectors(vector_sizes: Union[Dict[str, int], int],) -> models.VectorStruct:
+    vectors = {}
+    for vector_name, vector_size in vector_sizes.items():
+        vectors[vector_name] = generate_random_sparse_vector(vector_size, 0.1)
+    return vectors
+
+
 def generate_records(
     num_records: int,
     vector_sizes: Union[Dict[str, int], int],
     with_payload: bool = False,
     random_ids: bool = False,
     skip_vectors: bool = False,
+    sparse: bool = False,
 ) -> List[models.Record]:
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
@@ -43,7 +52,10 @@ def generate_records(
         if random_ids:
             idx = str(uuid.uuid4())
 
-        vectors = random_vectors(vector_sizes)
+        if sparse:
+            vectors = random_sparse_vectors(vector_sizes)
+        else:
+            vectors = random_vectors(vector_sizes)
 
         if skip_vectors:
             if random.random() > 0.8:

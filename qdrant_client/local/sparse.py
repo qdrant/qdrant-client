@@ -49,6 +49,9 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> float:
     result = 0.0
     i, j = 0, 0
 
+    assert is_sorted(vector1)
+    assert is_sorted(vector2)
+
     while i < len(vector1.indices) and j < len(vector2.indices):
         if vector1.indices[i] == vector2.indices[j]:
             result += vector1.values[i] * vector2.values[j]
@@ -59,15 +62,17 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> float:
         else:
             j += 1
 
-    return result
+    return round(result, 6)
 
 
 def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
     num_non_zero = int(size * density)
     indices: List[int] = random.sample(range(size), num_non_zero)
-    values: List[float] = [random.random() for _ in range(num_non_zero)]
+    values: List[float] = [round(random.random(), 3) for _ in range(num_non_zero)]
     indices.sort()
-    return SparseVector(indices=indices, values=values)
+    sparse_vector = SparseVector(indices=indices, values=values)
+    validate_sparse_vector(sparse_vector)
+    return sparse_vector
 
 
 def generate_random_sparse_vector_list(num_vectors: int, vector_size: int, vector_density: float) -> List[SparseVector]:

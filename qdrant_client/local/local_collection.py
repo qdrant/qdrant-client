@@ -26,7 +26,7 @@ from qdrant_client.local.distances import (
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
-from qdrant_client.local.sparse import calculate_distance_sparse, empty_sparse_vector
+from qdrant_client.local.sparse import calculate_distance_sparse, empty_sparse_vector, sort
 
 DEFAULT_VECTOR_NAME = ""
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
@@ -353,9 +353,9 @@ class LocalCollection:
 
         # early exit if the named vector does not exist
         if isinstance(query_vector, SparseVector):
-            if name not in self.sparse_vectors:
-                raise ValueError(f"Sparse vector {name} is not found in the collection")
-            else:
+            # sparse vector query must be sorted by indices for dot product to work with persisted vectors
+            sort(query_vector)
+            if name in self.sparse_vectors:
                 vectors = self.sparse_vectors[name]
                 distance = Distance.DOT
         else:
@@ -1030,6 +1030,8 @@ class LocalCollection:
                 _uuid = uuid.UUID(point.id)
             except ValueError as e:
                 raise ValueError(f"Point id {point.id} is not a valid UUID") from e
+
+        # TODO(sparse) the sparse vector must be sorted before persistence
 
         if point.id in self.ids:
             self._update_point(point)
