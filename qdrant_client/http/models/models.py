@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
 Payload = Dict[str, Any]
+SparseVectorsConfigDiff = Dict[str, "SparseVectorConfigDiff"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 
@@ -1828,6 +1829,13 @@ class SparseVector(BaseModel, extra="forbid"):
     )
 
 
+class SparseVectorConfigDiff(BaseModel, extra="forbid"):
+    index: Optional["SparseIndexConfigDiff"] = Field(default=None, description="")
+    on_disk: Optional[bool] = Field(
+        default=None, description="If true, vectors are served from disk, improving RAM usage at the cost of latency"
+    )
+
+
 class SparseVectorDataConfig(BaseModel, extra="forbid"):
     """
     Config of single vector data storage
@@ -1938,6 +1946,10 @@ class UpdateCollection(BaseModel, extra="forbid"):
     )
     quantization_config: Optional["QuantizationConfigDiff"] = Field(
         default=None, description="Quantization parameters to update. If none - it is left unchanged."
+    )
+    sparse_vectors: Optional["SparseVectorsConfigDiff"] = Field(
+        default=None,
+        description="Map of vector data parameters to update for each named vector. To update parameters in a collection having a single unnamed vector, use an empty string as name.",
     )
 
 

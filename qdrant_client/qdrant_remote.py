@@ -1866,7 +1866,6 @@ class QdrantRemote(QdrantBase):
         if isinstance(quantization_config, grpc.QuantizationConfigDiff):
             quantization_config = GrpcToRest.convert_quantization_config_diff(quantization_config)
 
-        # TODO(sparse) support update sparse vectors config
         result: Optional[bool] = self.http.collections_api.update_collection(
             collection_name,
             update_collection=models.UpdateCollection(
@@ -1875,6 +1874,7 @@ class QdrantRemote(QdrantBase):
                 vectors=vectors_config,
                 hnsw_config=hnsw_config,
                 quantization_config=quantization_config,
+                sparse_vectors=sparse_vectors_config,
             ),
             timeout=timeout,
         ).result
