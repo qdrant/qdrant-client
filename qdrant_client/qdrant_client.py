@@ -86,32 +86,36 @@ class QdrantClient(QdrantFastembedMixin):
 
         self._client: QdrantBase
 
+        if sum([param is not None for param in (location, url, host, path)]) > 1:
+            raise ValueError(
+                "Only one of <location>, <url>, <host> or <path> should be specified."
+            )
+
         if location == ":memory:":
             self._client = QdrantLocal(
                 location=location,
                 force_disable_check_same_thread=force_disable_check_same_thread,
             )
+        elif path is not None:
+            self._client = QdrantLocal(
+                location=path,
+                force_disable_check_same_thread=force_disable_check_same_thread,
+            )
         else:
-            if path is not None:
-                self._client = QdrantLocal(
-                    location=path,
-                    force_disable_check_same_thread=force_disable_check_same_thread,
-                )
-            else:
-                if location is not None and url is None:
-                    url = location
-                self._client = QdrantRemote(
-                    url=url,
-                    port=port,
-                    grpc_port=grpc_port,
-                    prefer_grpc=prefer_grpc,
-                    https=https,
-                    api_key=api_key,
-                    prefix=prefix,
-                    timeout=timeout,
-                    host=host,
-                    **kwargs,
-                )
+            if location is not None and url is None:
+                url = location
+            self._client = QdrantRemote(
+                url=url,
+                port=port,
+                grpc_port=grpc_port,
+                prefer_grpc=prefer_grpc,
+                https=https,
+                api_key=api_key,
+                prefix=prefix,
+                timeout=timeout,
+                host=host,
+                **kwargs,
+            )
         self._is_fastembed_installed: Optional[bool] = None
         # if fastembed is installed, set to true else False
         if self._is_fastembed_installed is None:
