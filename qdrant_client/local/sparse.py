@@ -1,5 +1,5 @@
 from qdrant_client.http.models import SparseVector
-from typing import List
+from typing import List, Optional
 import random
 import numpy as np
 
@@ -39,21 +39,25 @@ def calculate_distance_sparse(query: SparseVector, vectors: List[SparseVector]) 
 
     for vector in vectors:
         score = sparse_dot_product(query, vector)
-        scores.append(score)
+        if score is not None:
+            scores.append(score)
 
     return scores
 
 
 # Expects sorted indices
-def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> float:
+# Returns None if no overlap
+def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional[float]:
     result = 0.0
     i, j = 0, 0
+    overlap = False
 
     assert is_sorted(vector1)
     assert is_sorted(vector2)
 
     while i < len(vector1.indices) and j < len(vector2.indices):
         if vector1.indices[i] == vector2.indices[j]:
+            overlap = True
             result += vector1.values[i] * vector2.values[j]
             i += 1
             j += 1
@@ -62,7 +66,10 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> float:
         else:
             j += 1
 
-    return round(result, 6)
+    if overlap:
+        return round(result, 6)
+    else:
+        return None
 
 
 def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
