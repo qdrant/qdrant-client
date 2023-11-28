@@ -12,7 +12,7 @@ def test_delete_points(local_client, remote_client):
     vector = records[0].vector["image"]
 
     local_client.upload_records(COLLECTION_NAME, records)
-    remote_client.upload_records(COLLECTION_NAME, records)
+    remote_client.upload_records(COLLECTION_NAME, records, wait=True)
 
     compare_client_results(
         local_client,

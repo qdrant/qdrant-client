@@ -121,7 +121,7 @@ def test_upload_records(local_client, remote_client):
     records = generate_fixtures(UPLOAD_NUM_VECTORS)
 
     local_client.upload_records(COLLECTION_NAME, records)
-    remote_client.upload_records(COLLECTION_NAME, records)
+    remote_client.upload_records(COLLECTION_NAME, records, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 

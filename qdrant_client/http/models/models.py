@@ -1830,7 +1830,7 @@ class SparseVector(BaseModel, extra="forbid"):
 
 
 class SparseVectorConfigDiff(BaseModel, extra="forbid"):
-    index: Optional["SparseIndexConfigDiff"] = Field(default=None, description="")
+    index: Optional["SparseIndexConfigDiff"] = Field(default=None, description="Update params for sparse index")
     on_disk: Optional[bool] = Field(
         default=None, description="If true, vectors are served from disk, improving RAM usage at the cost of latency"
     )

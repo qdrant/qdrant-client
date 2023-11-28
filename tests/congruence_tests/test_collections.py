@@ -62,7 +62,7 @@ def test_init_from():
         collection_name=COLLECTION_NAME, vectors_config=vector_params
     )
     local_client.recreate_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
-    remote_client.upload_records(COLLECTION_NAME, records)
+    remote_client.upload_records(COLLECTION_NAME, records, wait=True)
     local_client.upload_records(COLLECTION_NAME, records)
     compare_collections(remote_client, local_client, len(records), collection_name=COLLECTION_NAME)
 

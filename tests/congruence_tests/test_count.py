@@ -4,6 +4,7 @@ from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
     generate_fixtures,
+    generate_sparse_fixtures,
     init_client,
     init_local,
     init_remote,
@@ -27,6 +28,28 @@ def filter_count(client: QdrantBase, count_filter: models.Filter) -> int:
 
 def test_simple_search():
     fixture_records = generate_fixtures()
+
+    local_client = init_local()
+    init_client(local_client, fixture_records)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_records)
+
+    compare_client_results(local_client, remote_client, count_all)
+
+    for i in range(100):
+        count_filter = one_random_filter_please()
+        try:
+            compare_client_results(
+                local_client, remote_client, filter_count, count_filter=count_filter
+            )
+        except AssertionError as e:
+            print(f"\nFailed with filter {count_filter}")
+            raise e
+
+
+def test_simple_sparse_search():
+    fixture_records = generate_sparse_fixtures()
 
     local_client = init_local()
     init_client(local_client, fixture_records)

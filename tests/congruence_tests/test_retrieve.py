@@ -14,7 +14,7 @@ def test_retrieve(local_client, remote_client) -> None:
     keys = list(fixture_records[0].payload.keys())
 
     local_client.upload_records(COLLECTION_NAME, fixture_records)
-    remote_client.upload_records(COLLECTION_NAME, fixture_records)
+    remote_client.upload_records(COLLECTION_NAME, fixture_records, wait=True)
 
     id_ = random.randint(0, num_vectors)
 
@@ -74,7 +74,7 @@ def test_sparse_retrieve(local_client, remote_client) -> None:
     keys = list(fixture_records[0].payload.keys())
 
     local_client.upload_records(COLLECTION_NAME, fixture_records)
-    remote_client.upload_records(COLLECTION_NAME, fixture_records)
+    remote_client.upload_records(COLLECTION_NAME, fixture_records, wait=True)
 
     id_ = random.randint(0, num_vectors)
 
