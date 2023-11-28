@@ -79,6 +79,7 @@ def generate_fixtures(
         with_payload=True,
         random_ids=random_ids,
         skip_vectors=skip_vectors,
+        sparse=False,
     )
 
 
