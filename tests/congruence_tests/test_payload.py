@@ -11,8 +11,8 @@ NUM_VECTORS = 100
 def upload(client_1, client_2, num_vectors=NUM_VECTORS):
     records = generate_fixtures(num_vectors)
 
-    client_1.upload_records(COLLECTION_NAME, records)
-    client_2.upload_records(COLLECTION_NAME, records)
+    client_1.upload_records(COLLECTION_NAME, records, wait=True)
+    client_2.upload_records(COLLECTION_NAME, records, wait=True)
     return records
 
 
@@ -28,7 +28,7 @@ def test_delete_payload(local_client, remote_client):
 
     key = "text_data"
     local_client.delete_payload(COLLECTION_NAME, keys=[key], points=[id_])
-    remote_client.delete_payload(COLLECTION_NAME, keys=[key], points=[id_])
+    remote_client.delete_payload(COLLECTION_NAME, keys=[key], points=[id_], wait=True)
 
     assert local_client.retrieve(COLLECTION_NAME, [id_]) == remote_client.retrieve(
         COLLECTION_NAME, [id_]
@@ -39,7 +39,7 @@ def test_delete_payload(local_client, remote_client):
     keys_to_delete = ["rand_number", "text_array"]
     ids = [records[1].id, records[2].id]
     local_client.delete_payload(COLLECTION_NAME, keys=keys_to_delete, points=ids)
-    remote_client.delete_payload(COLLECTION_NAME, keys=keys_to_delete, points=ids)
+    remote_client.delete_payload(COLLECTION_NAME, keys=keys_to_delete, points=ids, wait=True)
 
     compare_collections(local_client, remote_client, NUM_VECTORS)
     # endregion
@@ -53,7 +53,7 @@ def test_delete_payload(local_client, remote_client):
     )
 
     local_client.delete_payload(COLLECTION_NAME, keys=["text_data"], points=delete_filter)
-    remote_client.delete_payload(COLLECTION_NAME, keys=["text_data"], points=delete_filter)
+    remote_client.delete_payload(COLLECTION_NAME, keys=["text_data"], points=delete_filter, wait=True)
 
     compare_collections(local_client, remote_client, NUM_VECTORS)
     # endregion

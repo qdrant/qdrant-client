@@ -158,7 +158,6 @@ def test_simple_search():
             compare_client_results(
                 local_client, remote_client, searcher.filter_search_text, query_filter=query_filter
             )
-            print("Ok!")
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
