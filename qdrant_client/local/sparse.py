@@ -1,3 +1,4 @@
+from qdrant_client.conversions import common_types as types
 from qdrant_client.http.models import SparseVector
 from typing import List, Optional
 import random
@@ -34,7 +35,7 @@ def sort(vector: SparseVector) -> SparseVector:
     )
 
 
-def calculate_distance_sparse(query: SparseVector, vectors: List[SparseVector]) -> List[float]:
+def calculate_distance_sparse(query: SparseVector, vectors: List[SparseVector]) -> types.NumpyArray:
     scores = []
 
     for vector in vectors:
@@ -42,13 +43,13 @@ def calculate_distance_sparse(query: SparseVector, vectors: List[SparseVector]) 
         if score is not None:
             scores.append(score)
 
-    return scores
+    return np.array(scores, dtype=np.float32)
 
 
 # Expects sorted indices
 # Returns None if no overlap
-def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional[float]:
-    result = 0.0
+def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional[np.float32]:
+    result: np.float32 = np.float32(0.0)
     i, j = 0, 0
     overlap = False
 
@@ -58,7 +59,7 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional
     while i < len(vector1.indices) and j < len(vector2.indices):
         if vector1.indices[i] == vector2.indices[j]:
             overlap = True
-            result += vector1.values[i] * vector2.values[j]
+            result += np.float32(vector1.values[i]) * np.float32(vector2.values[j])
             i += 1
             j += 1
         elif vector1.indices[i] < vector2.indices[j]:
@@ -67,7 +68,7 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional
             j += 1
 
     if overlap:
-        return round(result, 6)
+        return result
     else:
         return None
 
