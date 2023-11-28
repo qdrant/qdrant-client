@@ -166,7 +166,7 @@ def compare_scored_record(
 
 
 def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 0) -> None:
-    #assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
+    assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
     for i in range(len(res2)):
         res1_item = res1[i]
         res2_item = res2[i]
