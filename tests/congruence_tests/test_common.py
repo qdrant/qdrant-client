@@ -12,7 +12,7 @@ from qdrant_client.local.qdrant_local import QdrantLocal
 from tests.congruence_tests.settings import TIMEOUT
 from tests.fixtures.points import generate_records
 
-COLLECTION_NAME = "test_collection"
+COLLECTION_NAME = "congruence_test_collection"
 text_vector_size = 50
 image_vector_size = 100
 code_vector_size = 80
