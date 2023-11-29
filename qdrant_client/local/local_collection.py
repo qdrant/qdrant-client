@@ -225,9 +225,11 @@ class LocalCollection:
 
     @classmethod
     def _check_exclude_pattern(cls, pattern: str, key: str) -> bool:
+        if len(pattern) > len(key):
+            return False
         pattern_parts = pattern.replace('.', '[.').split('[')
         key_parts = key.replace('.', '[.').split('[')
-        return any(p == v for p, v in zip(pattern_parts, key_parts))
+        return all(p == v for p, v in zip(pattern_parts, key_parts))
 
     @classmethod
     def _filter_payload(
