@@ -216,16 +216,18 @@ class LocalCollection:
         True
         >>> LocalCollection._check_include_pattern('a', 'aa.b.c')
         False
+        >>> LocalCollection._check_include_pattern('a_b', 'a')
+        False
         """
-        if pattern.startswith(key) or key.startswith(pattern):
-            return True
-        return False
+        pattern_parts = pattern.replace('.', '[.').split('[')
+        key_parts = key.replace('.', '[.').split('[')
+        return all(p == v for p, v in zip(pattern_parts, key_parts))
 
     @classmethod
     def _check_exclude_pattern(cls, pattern: str, key: str) -> bool:
-        if key.startswith(pattern):
-            return True
-        return False
+        pattern_parts = pattern.replace('.', '[.').split('[')
+        key_parts = key.replace('.', '[.').split('[')
+        return any(p == v for p, v in zip(pattern_parts, key_parts))
 
     @classmethod
     def _filter_payload(
@@ -969,6 +971,7 @@ class LocalCollection:
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
         self.payload.append(point.payload or {})
+        assert len(self.payload) == len(self.ids_inv)
         self.deleted = np.append(self.deleted, 0)
 
         if isinstance(point.vector, list):

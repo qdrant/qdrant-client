@@ -183,9 +183,10 @@ def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: floa
             assert (
                 res1_item.id == res2_item.id
             ), f"res1[{i}].id = {res1_item.id}, res2[{i}].id = {res2_item.id}"
+            # same id means same payload
             assert (
                 res1_item.payload == res2_item.payload
-            ), f"res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
+            ), f"id:{res1_item.id} res1[{i}].payload = {res1_item.payload}, res2[{i}].payload = {res2_item.payload}"
 
             compare_vectors(res1_item.vector, res2_item.vector, i)
         else:
