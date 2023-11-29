@@ -59,6 +59,16 @@ class TestSimpleSearcher:
             offset=10,
         )
 
+    def simple_search_text_with_vector(self, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=("text", self.query_text),
+            with_payload=True,
+            with_vectors=True,
+            limit=10,
+            offset=10,
+        )
+
     def search_score_threshold(self, client: QdrantBase) -> List[models.ScoredPoint]:
         res1 = client.search(
             collection_name=COLLECTION_NAME,
@@ -150,6 +160,7 @@ def test_simple_search():
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
+    compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
     compare_client_results(local_client, remote_client, searcher.search_score_threshold)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
     compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
@@ -181,6 +192,7 @@ def test_simple_opt_vectors_search():
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
+    compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
     compare_client_results(local_client, remote_client, searcher.search_score_threshold)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
     compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)

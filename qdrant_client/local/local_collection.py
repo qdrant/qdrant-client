@@ -314,19 +314,29 @@ class LocalCollection:
         if not with_vectors:
             return None
 
-        vectors = {
+        dense_vectors = {
             name: self.vectors[name][idx].tolist()
             for name in self.vectors
             if not self.deleted_per_vector[name][idx]
         }
 
+        sparse_vectors = {
+            name: self.sparse_vectors[name][idx]
+            for name in self.sparse_vectors
+            if not self.deleted_per_vector[name][idx]
+        }
+
+        # merge dense and sparse vectors
+        all_vectors = dense_vectors.copy()
+        all_vectors.update(sparse_vectors)
+
         if isinstance(with_vectors, list):
-            vectors = {name: vectors[name] for name in with_vectors if name in vectors}
+            all_vectors = {name: all_vectors[name] for name in with_vectors if name in all_vectors}
 
-        if len(vectors) == 1 and DEFAULT_VECTOR_NAME in vectors:
-            return vectors[DEFAULT_VECTOR_NAME]
+        if len(all_vectors) == 1 and DEFAULT_VECTOR_NAME in all_vectors:
+            return all_vectors[DEFAULT_VECTOR_NAME]
 
-        return vectors
+        return all_vectors
 
     def search(
         self,
@@ -354,6 +364,7 @@ class LocalCollection:
         name, query_vector = self._resolve_query_vector_name(query_vector)
 
         result: List[models.ScoredPoint] = []
+        sparse_scoring = False
 
         # early exit if the named vector does not exist
         if isinstance(query_vector, SparseVector):
@@ -388,6 +399,7 @@ class LocalCollection:
                 query_vector, vectors[: len(self.payload)], distance
             )
         elif isinstance(query_vector, SparseVector):
+            sparse_scoring = True
             sparse_vectors = self.sparse_vectors[name]
             scores = calculate_distance_sparse(
                 query_vector, sparse_vectors[: len(self.payload)]
@@ -418,6 +430,9 @@ class LocalCollection:
                 continue
 
             score = scores[idx]
+            # skip undefined scores from sparse vectors
+            if sparse_scoring and score == np.NINF:
+                continue
             point_id = self.ids_inv[idx]
 
             if score_threshold is not None:

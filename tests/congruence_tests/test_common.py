@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
-from qdrant_client.http.models import VectorStruct
+from qdrant_client.http.models import VectorStruct, SparseVector
 from qdrant_client.local.qdrant_local import QdrantLocal
 from tests.congruence_tests.settings import TIMEOUT
 from tests.fixtures.points import generate_records
@@ -88,6 +88,7 @@ def generate_sparse_fixtures(
         random_ids: bool = False,
         vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
         skip_vectors: bool = False,
+        with_payload: bool = True,
 ) -> List[models.Record]:
     if vectors_sizes is None:
         vectors_sizes = {
@@ -98,7 +99,7 @@ def generate_sparse_fixtures(
     return generate_records(
         num_records=num or NUM_VECTORS,
         vector_sizes=vectors_sizes,
-        with_payload=True,
+        with_payload=with_payload,
         random_ids=random_ids,
         skip_vectors=skip_vectors,
         sparse=True,
@@ -137,9 +138,13 @@ def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], 
 
     if isinstance(vec1, dict):
         for key, value in vec1.items():
-            assert np.allclose(vec1[key], vec2[key], atol=1.0e-3), (
-                f"res1[{i}].vectors[{key}] = {value}, " f"res2[{i}].vectors[{key}] = {vec2[key]}"
-            )
+            if isinstance(value, SparseVector):
+                assert vec1[key].indices == vec2[key].indices, f"res1[{i}].vectors[{key}].indices = {value}, " f"res2[{i}].vectors[{key}].indices = {vec2[key].indices}"
+                assert vec1[key].values == vec2[key].values, f"res1[{i}].vectors[{key}].values = {value}, " f"res2[{i}].vectors[{key}].values = {vec2[key].values}"
+            else:
+                assert np.allclose(vec1[key], vec2[key], atol=1.0e-3), (
+                    f"res1[{i}].vectors[{key}] = {value}, " f"res2[{i}].vectors[{key}] = {vec2[key]}"
+                )
     else:
         assert np.allclose(
             vec1, vec2, atol=1.0e-3

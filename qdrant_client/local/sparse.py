@@ -42,6 +42,9 @@ def calculate_distance_sparse(query: SparseVector, vectors: List[SparseVector]) 
         score = sparse_dot_product(query, vector)
         if score is not None:
             scores.append(score)
+        else:
+            # means no overlap
+            scores.append(np.float32("-inf"))
 
     return np.array(scores, dtype=np.float32)
 

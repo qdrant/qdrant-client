@@ -28,6 +28,7 @@ class TestSimpleSparseSearcher:
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
             with_payload=True,
+            with_vectors=["sparse-text"],
             limit=10,
         )
 
@@ -36,6 +37,7 @@ class TestSimpleSparseSearcher:
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-image", vector=self.query_image),
             with_payload=True,
+            with_vectors=["sparse-image"],
             limit=10,
         )
 
@@ -44,6 +46,7 @@ class TestSimpleSparseSearcher:
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-code", vector=self.query_code),
             with_payload=True,
+            with_vectors=True,
             limit=10,
         )
 
