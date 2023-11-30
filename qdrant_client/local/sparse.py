@@ -13,8 +13,8 @@ def empty_sparse_vector() -> SparseVector:
 
 
 def validate_sparse_vector(vector: SparseVector) -> None:
-    assert len(vector.indices) == len(vector.values)
-    assert len(vector.indices) == len(set(vector.indices))
+    assert len(vector.indices) == len(vector.values), "Indices and values must have the same length"
+    assert len(vector.indices) == len(set(vector.indices)), "Indices must be unique"
 
 
 def is_sorted(vector: SparseVector) -> bool:
@@ -56,8 +56,8 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional
     i, j = 0, 0
     overlap = False
 
-    assert is_sorted(vector1)
-    assert is_sorted(vector2)
+    assert is_sorted(vector1), "Query sparse vector must be sorted"
+    assert is_sorted(vector2), "Sparse vector to compare with must be sorted"
 
     while i < len(vector1.indices) and j < len(vector2.indices):
         if vector1.indices[i] == vector2.indices[j]:

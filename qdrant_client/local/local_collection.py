@@ -26,7 +26,7 @@ from qdrant_client.local.distances import (
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
-from qdrant_client.local.sparse import calculate_distance_sparse, empty_sparse_vector, sort
+from qdrant_client.local.sparse import calculate_distance_sparse, empty_sparse_vector, sort, validate_sparse_vector
 
 DEFAULT_VECTOR_NAME = ""
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
@@ -989,7 +989,7 @@ class LocalCollection:
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
         self.payload.append(point.payload or {})
-        assert len(self.payload) == len(self.ids_inv)
+        assert len(self.payload) == len(self.ids_inv), "Payload and ids_inv must be the same size"
         self.deleted = np.append(self.deleted, 0)
 
         if isinstance(point.vector, list):
@@ -1052,7 +1052,16 @@ class LocalCollection:
             except ValueError as e:
                 raise ValueError(f"Point id {point.id} is not a valid UUID") from e
 
-        # TODO(sparse) the sparse vector must be sorted before persistence
+        if isinstance(point.vector, dict):
+            updated_sparse_vectors = {}
+            for vector_name, vector in point.vector.items():
+                if isinstance(vector, SparseVector):
+                    # validate sparse vector
+                    validate_sparse_vector(vector)
+                    # sort sparse vector by indices before persistence
+                    updated_sparse_vectors[vector_name] = sort(vector)
+            # update point.vector with the modified values after iteration
+            point.vector.update(updated_sparse_vectors)
 
         if point.id in self.ids:
             self._update_point(point)
