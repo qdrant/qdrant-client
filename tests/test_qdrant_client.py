@@ -150,6 +150,21 @@ def test_client_init():
     client = QdrantClient(":memory:", not_exist_param="test")
     assert isinstance(client._client, QdrantLocal)
 
+    grid_params = [
+        {"location": ":memory:", "url": "http://localhost:6333"},
+        {"location": ":memory:", "host": "localhost"},
+        {"location": ":memory:", "path": "/tmp/test.db"},
+        {"url": "http://localhost:6333", "host": "localhost"},
+        {"url": "http://localhost:6333", "path": "/tmp/test.db"},
+        {"host": "localhost", "path": "/tmp/test.db"},
+    ]
+    for params in grid_params:
+        with pytest.raises(
+            ValueError,
+            match="Only one of <location>, <url>, <host> or <path> should be specified.",
+        ):
+            QdrantClient(**params)
+
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_record_upload(prefer_grpc):

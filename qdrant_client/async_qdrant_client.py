@@ -89,6 +89,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     ):
         super().__init__(**kwargs)
         self._client: AsyncQdrantBase
+        if sum([param is not None for param in (location, url, host, path)]) > 1:
+            raise ValueError(
+                "Only one of <location>, <url>, <host> or <path> should be specified."
+            )
         if location == ":memory:":
             self._client = AsyncQdrantLocal(
                 location=location, force_disable_check_same_thread=force_disable_check_same_thread
