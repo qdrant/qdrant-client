@@ -91,7 +91,7 @@ def test_upload_collection(local_client, remote_client):
         payload.append(record.payload)
 
     local_client.upload_collection(COLLECTION_NAME, vectors, payload)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
 
@@ -107,7 +107,7 @@ def test_upload_collection_generators(local_client, remote_client):
 
     payload = itertools.cycle(payload)
     local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
+    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count(), wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
 

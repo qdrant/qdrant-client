@@ -2122,7 +2122,7 @@ class QdrantRemote(QdrantBase):
         batches_iterator = self._updater_class.iterate_batches(
             vectors=vectors, payload=payload, ids=ids, batch_size=batch_size
         )
-        self._upload_collection(batches_iterator, collection_name, max_retries, parallel, method)
+        self._upload_collection(batches_iterator, collection_name, max_retries, parallel, method, wait)
 
     def create_payload_index(
         self,
