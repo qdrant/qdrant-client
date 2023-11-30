@@ -977,7 +977,7 @@ class LocalCollection:
         for vector_name, _named_vectors in self.sparse_vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
-                self.vectors[vector_name][idx] = vector
+                self.sparse_vectors[vector_name][idx] = vector
                 self.deleted_per_vector[vector_name][idx] = 0
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
