@@ -1,9 +1,9 @@
 import random
 import tempfile
-import pytest
+from typing import Optional
 
 import numpy as np
-from typing import Optional
+import pytest
 
 import qdrant_client
 import qdrant_client.http.models as rest
@@ -42,10 +42,10 @@ def ingest_dense_vector_data(
 
 
 def ingest_sparse_vector_data(
-        vector_count: int = 10,
-        max_vector_size: int = 100,
-        path: Optional[str] = None,
-        collection_name: str = default_collection_name,
+    vector_count: int = 10,
+    max_vector_size: int = 100,
+    path: Optional[str] = None,
+    collection_name: str = default_collection_name,
 ):
     sparse_vectors = generate_random_sparse_vector_list(vector_count, max_vector_size, 0.2)
     client = qdrant_client.QdrantClient(path=path)
@@ -58,13 +58,21 @@ def ingest_sparse_vector_data(
         },
     )
 
+    batch = construct(
+        rest.Batch,
+        ids=random.sample(range(100), vector_count),
+        vectors={"text": sparse_vectors},
+    )
+
     client.upsert(
         collection_name=collection_name,
-        points=construct(
-            rest.Batch,
-            ids=random.sample(range(100), vector_count),
-            vectors=sparse_vectors,
-        ),
+        points=batch,
+    )
+
+    (res, _) = client.scroll(
+        collection_name=default_collection_name,
+        limit=10,
+        with_vectors=True,
     )
 
 
@@ -102,6 +110,31 @@ def test_local_sparse_persistence():
         ingest_sparse_vector_data(path=tmpdir)
         client = qdrant_client.QdrantClient(path=tmpdir)
         assert client.count(default_collection_name).count == 10
+
+        (post_result, _) = client.scroll(
+            collection_name=default_collection_name,
+            limit=10,
+            with_vectors=True,
+        )
+
+        del client
+
+        client = qdrant_client.QdrantClient(path=tmpdir)
+
+        (pre_result, _) = client.scroll(
+            collection_name=default_collection_name,
+            limit=10,
+            with_vectors=True,
+        )
+
+        for i in range(len(pre_result)):
+            assert pre_result[i].vector["text"] == post_result[i].vector["text"]
+            assert len(pre_result[i].vector["text"].indices) > 0
+            assert len(pre_result[i].vector["text"].values) > 0
+            assert len(pre_result[i].vector["text"].indices) == len(
+                pre_result[i].vector["text"].values
+            )
+
         del client
 
         ingest_sparse_vector_data(path=tmpdir)

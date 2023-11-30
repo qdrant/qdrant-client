@@ -9,7 +9,7 @@ from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
-from qdrant_client.http.models.models import ExtendedPointId, SparseVector, Distance
+from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
@@ -26,7 +26,12 @@ from qdrant_client.local.distances import (
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
-from qdrant_client.local.sparse import calculate_distance_sparse, empty_sparse_vector, sort, validate_sparse_vector
+from qdrant_client.local.sparse import (
+    calculate_distance_sparse,
+    empty_sparse_vector,
+    sort,
+    validate_sparse_vector,
+)
 
 DEFAULT_VECTOR_NAME = ""
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
@@ -59,9 +64,9 @@ class LocalCollection:
             for name, params in vectors_config.items()
         }
         self.sparse_vectors: Dict[str, List[SparseVector]] = (
-            {
-                name: [] for name, params in sparse_vectors_config.items()
-            } if sparse_vectors_config is not None else {}
+            {name: [] for name, params in sparse_vectors_config.items()}
+            if sparse_vectors_config is not None
+            else {}
         )
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
@@ -131,7 +136,7 @@ class LocalCollection:
 
             # setup sparse vectors by name
             for name, named_vectors in sparse_vectors.items():
-                self.sparse_vectors[name] = np.array(named_vectors)
+                self.sparse_vectors[name] = named_vectors
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
             # track deleted points by named vector
@@ -219,16 +224,16 @@ class LocalCollection:
         >>> LocalCollection._check_include_pattern('a_b', 'a')
         False
         """
-        pattern_parts = pattern.replace('.', '[.').split('[')
-        key_parts = key.replace('.', '[.').split('[')
+        pattern_parts = pattern.replace(".", "[.").split("[")
+        key_parts = key.replace(".", "[.").split("[")
         return all(p == v for p, v in zip(pattern_parts, key_parts))
 
     @classmethod
     def _check_exclude_pattern(cls, pattern: str, key: str) -> bool:
         if len(pattern) > len(key):
             return False
-        pattern_parts = pattern.replace('.', '[.').split('[')
-        key_parts = key.replace('.', '[.').split('[')
+        pattern_parts = pattern.replace(".", "[.").split("[")
+        key_parts = key.replace(".", "[.").split("[")
         return all(p == v for p, v in zip(pattern_parts, key_parts))
 
     @classmethod
@@ -380,9 +385,7 @@ class LocalCollection:
             distance = self.get_vector_params(name).distance
 
         if isinstance(query_vector, np.ndarray):
-            scores = calculate_distance(
-                query_vector, vectors[: len(self.payload)], distance
-            )
+            scores = calculate_distance(query_vector, vectors[: len(self.payload)], distance)
         elif isinstance(query_vector, RecoQuery):
             scores = calculate_recommend_best_scores(
                 query_vector, vectors[: len(self.payload)], distance
@@ -394,17 +397,13 @@ class LocalCollection:
         elif isinstance(
             query_vector, ContextQuery
         ):  # pyright: ignore[reportUnnecessaryIsInstance]
-            scores = calculate_context_scores(
-                query_vector, vectors[: len(self.payload)], distance
-            )
+            scores = calculate_context_scores(query_vector, vectors[: len(self.payload)], distance)
         elif isinstance(query_vector, SparseVector):
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
             sort(query_vector)
             sparse_scoring = True
             sparse_vectors = self.sparse_vectors[name]
-            scores = calculate_distance_sparse(
-                query_vector, sparse_vectors[: len(self.payload)]
-            )
+            scores = calculate_distance_sparse(query_vector, sparse_vectors[: len(self.payload)])
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
