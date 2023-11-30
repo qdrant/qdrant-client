@@ -1864,7 +1864,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         records: Iterable[types.Record],
-        batch_size: int = 2,
+        batch_size: int = 64,
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
