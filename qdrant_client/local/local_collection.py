@@ -1314,6 +1314,7 @@ class LocalCollection:
                     replication_factor=self.config.replication_factor,
                     write_consistency_factor=self.config.write_consistency_factor,
                     on_disk_payload=self.config.on_disk_payload,
+                    sparse_vectors=self.config.sparse_vectors,
                 ),
                 hnsw_config=models.HnswConfig(
                     m=16,
