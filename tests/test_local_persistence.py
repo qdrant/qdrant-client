@@ -69,11 +69,7 @@ def ingest_sparse_vector_data(
         points=batch,
     )
 
-    (res, _) = client.scroll(
-        collection_name=default_collection_name,
-        limit=10,
-        with_vectors=True,
-    )
+    return client
 
 
 def test_prevent_parallel_access():
@@ -107,8 +103,7 @@ def test_local_dense_persistence():
 
 def test_local_sparse_persistence():
     with tempfile.TemporaryDirectory() as tmpdir:
-        ingest_sparse_vector_data(path=tmpdir)
-        client = qdrant_client.QdrantClient(path=tmpdir)
+        client = ingest_sparse_vector_data(path=tmpdir)
         assert client.count(default_collection_name).count == 10
 
         (post_result, _) = client.scroll(
