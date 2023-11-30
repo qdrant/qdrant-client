@@ -368,17 +368,16 @@ class LocalCollection:
 
         # early exit if the named vector does not exist
         if isinstance(query_vector, SparseVector):
-            # sparse vector query must be sorted by indices for dot product to work with persisted vectors
-            sort(query_vector)
-            if name in self.sparse_vectors:
-                vectors = self.sparse_vectors[name]
-                distance = Distance.DOT
+            if name not in self.sparse_vectors:
+                raise ValueError(f"Sparse vector {name} is not found in the collection")
+            vectors = self.sparse_vectors[name]
+            distance = Distance.DOT
         else:
+            # it must be dense vector
             if name not in self.vectors:
                 raise ValueError(f"Dense vector {name} is not found in the collection")
-            else:
-                vectors = self.vectors[name]
-                distance = self.get_vector_params(name).distance
+            vectors = self.vectors[name]
+            distance = self.get_vector_params(name).distance
 
         if isinstance(query_vector, np.ndarray):
             scores = calculate_distance(
@@ -399,6 +398,8 @@ class LocalCollection:
                 query_vector, vectors[: len(self.payload)], distance
             )
         elif isinstance(query_vector, SparseVector):
+            # sparse vector query must be sorted by indices for dot product to work with persisted vectors
+            sort(query_vector)
             sparse_scoring = True
             sparse_vectors = self.sparse_vectors[name]
             scores = calculate_distance_sparse(
@@ -960,7 +961,7 @@ class LocalCollection:
             vectors = point.vector
 
         # dense vectors
-        for vector_name, named_vectors in self.vectors.items():
+        for vector_name, _named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
                 params = self.get_vector_params(vector_name)
@@ -973,7 +974,7 @@ class LocalCollection:
                 self.deleted_per_vector[vector_name][idx] = 1
 
         # sparse vectors
-        for vector_name, named_vectors in self.sparse_vectors.items():
+        for vector_name, _named_vectors in self.sparse_vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
                 self.vectors[vector_name][idx] = vector
