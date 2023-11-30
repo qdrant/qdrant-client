@@ -1,6 +1,10 @@
+from time import sleep, time
+from typing import Callable
+
 import pytest
 
 from qdrant_client.http import models
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     compare_collections,
     generate_fixtures,
@@ -73,8 +77,10 @@ def test_init_from():
     local_client.recreate_collection(
         new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
     )
-    compare_collections(
-        remote_client, local_client, len(records), collection_name=new_collection_name
+
+    # init_from is performed asynchronously, so we need to retry
+    wait_for(
+        compare_collections, remote_client, local_client, len(records), collection_name=new_collection_name
     )
 
     remote_client.recreate_collection(
@@ -87,6 +93,18 @@ def test_init_from():
         vectors_config=vector_params,
         init_from=models.InitFrom(collection=COLLECTION_NAME),
     )
-    compare_collections(
-        remote_client, local_client, len(records), collection_name=new_collection_name
+
+    # init_from is performed asynchronously, so we need to retry
+    wait_for(
+            compare_collections, remote_client, local_client, len(records), collection_name=new_collection_name
     )
+
+
+def wait_for(condition: Callable, *args, **kwargs):
+    for i in range(0, 10):
+        try:
+            condition(*args, **kwargs)
+        except AssertionError:
+            sleep(0.5)
+            continue
+        break
