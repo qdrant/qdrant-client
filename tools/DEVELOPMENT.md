@@ -16,8 +16,8 @@ For fixes:
   * Install system pyenv dependencies https://github.com/pyenv/pyenv/wiki#suggested-build-environment
   * `pyenv install 3.10.10` - install python 3.10.10
   * `pyenv local 3.10.10` - set python version
-  * `pip install grpcio==1.48.2` - install grpcio
-  * `pip install grpcio-tools==1.48.2` - install grpcio-tools
+  * `pip install grpcio==1.59.3` - install grpcio
+  * `pip install grpcio-tools==1.59.3` - install grpcio-tools
   * `pip install virtualenv` - install venv manager
   * `virtualenv venv` - create virtual env
   * `source venv/bin/activate` - enter venv

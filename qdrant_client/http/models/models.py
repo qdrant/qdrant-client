@@ -162,7 +162,7 @@ class CollectionInfo(BaseModel, extra="forbid"):
 
 
 class CollectionParams(BaseModel, extra="forbid"):
-    vectors: "VectorsConfig" = Field(..., description="")
+    vectors: Optional["VectorsConfig"] = Field(default=None, description="")
     shard_number: Optional[int] = Field(default=1, description="Number of shards the collection has")
     sharding_method: Optional["ShardingMethod"] = Field(
         default=None,
@@ -324,8 +324,8 @@ class CreateCollection(BaseModel, extra="forbid"):
     Operation for creating new collection and (optionally) specify index params
     """
 
-    vectors: "VectorsConfig" = Field(
-        ..., description="Operation for creating new collection and (optionally) specify index params"
+    vectors: Optional["VectorsConfig"] = Field(
+        default=None, description="Operation for creating new collection and (optionally) specify index params"
     )
     shard_number: Optional[int] = Field(
         default=None,
@@ -1654,7 +1654,7 @@ class SearchRequestBatch(BaseModel, extra="forbid"):
 
 
 class SegmentConfig(BaseModel, extra="forbid"):
-    vector_data: Optional[Dict[str, "VectorDataConfig"]] = Field(default=None, description="")
+    vector_data: Optional[Dict[str, "VectorDataConfig"]] = Field(default={}, description="")
     sparse_vector_data: Optional[Dict[str, "SparseVectorDataConfig"]] = Field(default=None, description="")
     payload_storage_type: "PayloadStorageType" = Field(..., description="")
 
@@ -1838,7 +1838,6 @@ class SparseVectorDataConfig(BaseModel, extra="forbid"):
     Config of single vector data storage
     """
 
-    storage_type: "SparseVectorStorageType" = Field(..., description="Config of single vector data storage")
     index: "SparseIndexConfig" = Field(..., description="Config of single vector data storage")
 
 
@@ -1941,8 +1940,7 @@ class UpdateCollection(BaseModel, extra="forbid"):
         default=None, description="Quantization parameters to update. If none - it is left unchanged."
     )
     sparse_vectors: Optional["SparseVectorsConfigDiff"] = Field(
-        default=None,
-        description="Map of vector data parameters to update for each named vector. To update parameters in a collection having a single unnamed vector, use an empty string as name.",
+        default=None, description="Map of sparse vector data parameters to update for each sparse vector."
     )
 
 
@@ -2238,10 +2236,6 @@ ShardSnapshotLocation = Union[
 ShardTransferMethod = Union[
     ShardTransferMethodOneOf,
     ShardTransferMethodOneOf1,
-]
-SparseVectorStorageType = Union[
-    VectorStorageTypeOneOf,
-    VectorStorageTypeOneOf1,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
