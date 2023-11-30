@@ -421,7 +421,6 @@ class LocalCollection:
             order = np.argsort(scores)[::-1]
         else:
             order = np.argsort(scores)
-        # TODO correct fix for https://github.com/qdrant/qdrant/pull/3082 ?
         offset = offset if offset is not None else 0
         for idx in order:
             if len(result) >= limit + offset:
