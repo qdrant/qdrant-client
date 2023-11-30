@@ -80,7 +80,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         else:
             with open(meta_path, "r") as f:
                 meta = json.load(f)
-                for (collection_name, config_json) in meta["collections"].items():
+                for collection_name, config_json in meta["collections"].items():
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
                     self.collections[collection_name] = LocalCollection(
@@ -150,12 +150,16 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+            types.NamedSparseVector,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
-        offset: int = 0,
+        offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
