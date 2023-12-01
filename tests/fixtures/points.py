@@ -6,7 +6,7 @@ import numpy as np
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.http import models
-from qdrant_client.local.sparse import generate_random_sparse_vector_list, generate_random_sparse_vector
+from qdrant_client.local.sparse import generate_random_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
 
@@ -27,7 +27,8 @@ def random_vectors(
 def random_sparse_vectors(vector_sizes: Union[Dict[str, int], int],) -> models.VectorStruct:
     vectors = {}
     for vector_name, vector_size in vector_sizes.items():
-        vectors[vector_name] = generate_random_sparse_vector(vector_size, 0.1)
+        # use sparse vectors with 20% density
+        vectors[vector_name] = generate_random_sparse_vector(vector_size, density=0.2)
     return vectors
 
 

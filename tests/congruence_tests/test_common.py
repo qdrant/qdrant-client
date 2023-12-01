@@ -13,10 +13,18 @@ from tests.congruence_tests.settings import TIMEOUT
 from tests.fixtures.points import generate_records
 
 COLLECTION_NAME = "congruence_test_collection"
+
+# dense vectors sizes
 text_vector_size = 50
 image_vector_size = 100
 code_vector_size = 80
 
+# sparse vectors sizes
+sparse_text_vector_size = 100
+sparse_image_vector_size = 1_000
+sparse_code_vector_size = 10_000
+
+# number of vectors to generate
 NUM_VECTORS = 1000
 
 
@@ -92,9 +100,9 @@ def generate_sparse_fixtures(
 ) -> List[models.Record]:
     if vectors_sizes is None:
         vectors_sizes = {
-            "sparse-text": text_vector_size,
-            "sparse-image": image_vector_size,
-            "sparse-code": code_vector_size,
+            "sparse-text": sparse_text_vector_size,
+            "sparse-image": sparse_image_vector_size,
+            "sparse-code": sparse_code_vector_size,
         }
     return generate_records(
         num_records=num or NUM_VECTORS,

@@ -10,7 +10,7 @@ from tests.congruence_tests.test_common import (
     generate_sparse_fixtures,
     init_client,
     init_local,
-    init_remote,
+    init_remote, sparse_text_vector_size, sparse_image_vector_size, sparse_code_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
 
@@ -19,9 +19,9 @@ class TestSimpleSparseSearcher:
     __test__ = False
 
     def __init__(self):
-        self.query_text = generate_random_sparse_vector(100, 0.1)
-        self.query_image = generate_random_sparse_vector(1000, 0.1)
-        self.query_code = generate_random_sparse_vector(10000, 0.1)
+        self.query_text = generate_random_sparse_vector(sparse_text_vector_size, density=0.3)
+        self.query_image = generate_random_sparse_vector(sparse_image_vector_size, density=0.2)
+        self.query_code = generate_random_sparse_vector(sparse_code_vector_size, density=0.1)
 
     def simple_search_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.search(
