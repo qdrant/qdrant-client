@@ -1,5 +1,5 @@
 # flake8: noqa E501
-from typing import TYPE_CHECKING, Any, Dict, Set, Union
+from typing import TYPE_CHECKING, Any, Dict, Set, TypeVar, Union
 
 from pydantic import BaseModel
 from pydantic.main import BaseModel
@@ -8,7 +8,7 @@ from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
 
 PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
-Model = typing.TypeVar("Model", bound="BaseModel")
+Model = TypeVar("Model", bound="BaseModel")
 
 SetIntStr = Set[Union[int, str]]
 DictIntStrAny = Dict[Union[int, str], Any]
