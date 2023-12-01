@@ -1793,6 +1793,10 @@ class SnapshotRecover(BaseModel, extra="forbid"):
 
 
 class SparseIndexConfig(BaseModel, extra="forbid"):
+    """
+    Configuration for sparse inverted index.
+    """
+
     full_scan_threshold: Optional[int] = Field(
         default=None,
         description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
