@@ -4,7 +4,7 @@ from qdrant_client.http.models import PayloadSelectorExclude, PayloadSelectorInc
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
-    generate_fixtures, generate_sparse_fixtures,
+    generate_fixtures, generate_sparse_fixtures, init_local, sparse_vectors_config, init_client, init_remote,
 )
 
 
@@ -68,9 +68,16 @@ def test_retrieve(local_client, remote_client) -> None:
     )
 
 
-def test_sparse_retrieve(local_client, remote_client) -> None:
+def test_sparse_retrieve() -> None:
     num_vectors = 1000
     fixture_records = generate_sparse_fixtures(num_vectors)
+
+    local_client = init_local()
+    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+
     keys = list(fixture_records[0].payload.keys())
 
     local_client.upload_records(COLLECTION_NAME, fixture_records)

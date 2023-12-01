@@ -8,16 +8,22 @@ from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
-    generate_sparse_fixtures,
+    generate_sparse_fixtures, init_local, init_client, init_remote, sparse_vectors_config,
 )
 from tests.fixtures.payload import one_random_payload_please
 
 UPLOAD_NUM_VECTORS = 100
 
 
-def test_upsert(local_client, remote_client):
+def test_upsert():
     # region upload data
     records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+    local_client = init_local()
+    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
+
     ids, payload = [], []
     vectors = {}
     for record in records:
@@ -81,8 +87,14 @@ def test_upsert(local_client, remote_client):
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
 
 
-def test_upload_collection(local_client, remote_client):
+def test_upload_collection():
     records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+
+    local_client = init_local()
+    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
 
     vectors = []
     payload = []
@@ -97,8 +109,15 @@ def test_upload_collection(local_client, remote_client):
 
 
 @pytest.mark.timeout(60)  # normally takes less than a second
-def test_upload_collection_generators(local_client, remote_client):
+def test_upload_collection_generators():
     records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+
+    local_client = init_local()
+    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
+
     vectors = []
     payload = []
     for record in records:
@@ -112,8 +131,14 @@ def test_upload_collection_generators(local_client, remote_client):
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
 
 
-def test_upload_records(local_client, remote_client):
+def test_upload_records():
     records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+
+    local_client = init_local()
+    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
 
     local_client.upload_records(COLLECTION_NAME, records)
     remote_client.upload_records(COLLECTION_NAME, records, wait=True)
@@ -121,8 +146,15 @@ def test_upload_records(local_client, remote_client):
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
 
 
-def test_upload_uuid_in_batches(local_client, remote_client):
+def test_upload_uuid_in_batches():
     records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+
+    local_client = init_local()
+    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
+
     vectors = defaultdict(list)
 
     for record in records:

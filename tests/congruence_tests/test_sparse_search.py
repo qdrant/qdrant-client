@@ -10,7 +10,7 @@ from tests.congruence_tests.test_common import (
     generate_sparse_fixtures,
     init_client,
     init_local,
-    init_remote, sparse_text_vector_size, sparse_image_vector_size, sparse_code_vector_size,
+    init_remote, sparse_text_vector_size, sparse_image_vector_size, sparse_code_vector_size, sparse_vectors_config,
 )
 from tests.fixtures.filters import one_random_filter_please
 
@@ -141,10 +141,10 @@ def test_simple_search():
     searcher = TestSimpleSparseSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
@@ -172,10 +172,10 @@ def test_simple_opt_vectors_search():
     searcher = TestSimpleSparseSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
@@ -204,7 +204,7 @@ def test_search_with_persistence():
     searcher = TestSimpleSparseSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
-        init_client(local_client, fixture_records)
+        init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -213,7 +213,7 @@ def test_search_with_persistence():
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
-        init_client(remote_client, fixture_records)
+        init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
@@ -242,7 +242,7 @@ def test_search_with_persistence_and_skipped_vectors():
     searcher = TestSimpleSparseSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
-        init_client(local_client, fixture_records)
+        init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -256,7 +256,7 @@ def test_search_with_persistence_and_skipped_vectors():
         assert count_after_load == count_before_load
 
         remote_client = init_remote()
-        init_client(remote_client, fixture_records)
+        init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 

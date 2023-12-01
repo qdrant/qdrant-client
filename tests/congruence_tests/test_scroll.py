@@ -10,7 +10,7 @@ from tests.congruence_tests.test_common import (
     generate_sparse_fixtures,
     init_client,
     init_local,
-    init_remote
+    init_remote, sparse_vectors_config
 )
 
 
@@ -52,16 +52,16 @@ def test_simple_search() -> None:
     compare_client_results(local_client, remote_client, scroller.scroll_all)
 
 
-def test_simple_sparse_search() -> None:
+def test_simple_sparse_scroll() -> None:
     fixture_records = generate_sparse_fixtures(200)
 
-    scroller = TestSimpleScroller()
-
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+
+    scroller = TestSimpleScroller()
 
     compare_client_results(local_client, remote_client, scroller.scroll_all)
 
@@ -94,9 +94,9 @@ def test_sparse_mixed_ids() -> None:
     scroller = TestSimpleScroller()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, scroller.scroll_all)
