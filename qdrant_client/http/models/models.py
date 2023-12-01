@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
 Payload = Dict[str, Any]
-SparseVectorsConfigDiff = Dict[str, "SparseVectorConfigDiff"]
+SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 
@@ -1793,17 +1793,6 @@ class SnapshotRecover(BaseModel, extra="forbid"):
 
 
 class SparseIndexConfig(BaseModel, extra="forbid"):
-    full_scan_threshold: int = Field(
-        ...,
-        description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
-    )
-    on_disk: Optional[bool] = Field(
-        default=None,
-        description="Store index on disk. If set to false, the index will be stored in RAM. Default: false",
-    )
-
-
-class SparseIndexConfigDiff(BaseModel, extra="forbid"):
     full_scan_threshold: Optional[int] = Field(
         default=None,
         description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
@@ -1829,16 +1818,12 @@ class SparseVector(BaseModel, extra="forbid"):
     )
 
 
-class SparseVectorConfigDiff(BaseModel, extra="forbid"):
-    index: Optional["SparseIndexConfigDiff"] = Field(default=None, description="Update params for sparse index")
-
-
 class SparseVectorDataConfig(BaseModel, extra="forbid"):
     """
     Config of single vector data storage
     """
 
-    index: "SparseIndexConfig" = Field(..., description="Config of single vector data storage")
+    index: Optional["SparseIndexConfig"] = Field(default=None, description="Type of index used for search")
 
 
 class SparseVectorParams(BaseModel, extra="forbid"):
@@ -1846,7 +1831,7 @@ class SparseVectorParams(BaseModel, extra="forbid"):
     Params of single sparse vector data storage
     """
 
-    index: Optional["SparseIndexConfigDiff"] = Field(
+    index: Optional["SparseIndexConfig"] = Field(
         default=None, description="Custom params for index. If none - values from collection configuration are used."
     )
 
@@ -1939,7 +1924,7 @@ class UpdateCollection(BaseModel, extra="forbid"):
     quantization_config: Optional["QuantizationConfigDiff"] = Field(
         default=None, description="Quantization parameters to update. If none - it is left unchanged."
     )
-    sparse_vectors: Optional["SparseVectorsConfigDiff"] = Field(
+    sparse_vectors: Optional["SparseVectorsConfig"] = Field(
         default=None, description="Map of sparse vector data parameters to update for each sparse vector."
     )
 

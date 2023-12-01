@@ -80,7 +80,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         else:
             with open(meta_path, "r") as f:
                 meta = json.load(f)
-                for collection_name, config_json in meta["collections"].items():
+                for (collection_name, config_json) in meta["collections"].items():
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
                     self.collections[collection_name] = LocalCollection(
