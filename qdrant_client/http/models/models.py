@@ -1809,17 +1809,11 @@ class SparseIndexConfig(BaseModel, extra="forbid"):
 
 class SparseVector(BaseModel, extra="forbid"):
     """
-    Sparse vector structure  expects: - indices to be unique - indices and values to be the same length
+    Sparse vector structure
     """
 
-    indices: List[int] = Field(
-        ...,
-        description="Sparse vector structure  expects: - indices to be unique - indices and values to be the same length",
-    )
-    values: List[float] = Field(
-        ...,
-        description="Sparse vector structure  expects: - indices to be unique - indices and values to be the same length",
-    )
+    indices: List[int] = Field(..., description="indices must be unique")
+    values: List[float] = Field(..., description="values and indices must be the same length")
 
 
 class SparseVectorDataConfig(BaseModel, extra="forbid"):
