@@ -166,6 +166,39 @@ def test_vector_batch_conversion():
     ]
 
 
+def test_sparse_vector_batch_conversion():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import RestToGrpc
+    from qdrant_client.grpc import SparseIndices
+
+    from qdrant_client.http.models import SparseVector
+
+    batch = {
+        "image": [SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30])]
+    }
+    res = RestToGrpc.convert_batch_vector_struct(batch, 1)
+    assert len(res) == 1
+    assert res == [
+        grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1.5, 2.4, 8.1], indices=SparseIndices(data=[10, 20, 30]))})),
+    ]
+
+    batch = {
+        "image":
+            [
+                SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30]),
+                SparseVector(values=[7.8, 3.2, 9.5], indices=[100, 200, 300])
+            ]
+    }
+    res = RestToGrpc.convert_batch_vector_struct(batch, 2)
+    assert len(res) == 2
+    assert res == [
+        grpc.Vectors(vectors=grpc.NamedVectors(vectors={
+            "image": grpc.Vector(data=[1.5, 2.4, 8.1], indices=SparseIndices(data=[10, 20, 30]))})),
+        grpc.Vectors(vectors=grpc.NamedVectors(vectors={
+            "image": grpc.Vector(data=[7.8, 3.2, 9.5], indices=SparseIndices(data=[100, 200, 300]))})),
+    ]
+
+
 def test_grpc_payload_scheme_conversion():
     from qdrant_client.conversions.conversion import (
         grpc_field_type_to_payload_schema,

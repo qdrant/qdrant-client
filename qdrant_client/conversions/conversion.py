@@ -14,8 +14,8 @@ except ImportError:
     pass
 
 from qdrant_client import grpc as grpc
-from qdrant_client.grpc import ListValue, NullValue, Struct, Value
-from qdrant_client.http.models import models as rest
+from qdrant_client.grpc import ListValue, NullValue, Struct, Value, SparseIndices
+from qdrant_client.http.models import models as rest, SparseVector
 
 
 def has_field(message: Any, field: str) -> bool:
@@ -1819,11 +1819,13 @@ class RestToGrpc:
         if isinstance(model, list):
             return grpc.Vectors(vector=grpc.Vector(data=model))
         elif isinstance(model, dict):
-            return grpc.Vectors(
-                vectors=grpc.NamedVectors(
-                    vectors=dict((key, grpc.Vector(data=val)) for key, val in model.items())
-                )
-            )
+            vectors: Dict = {}
+            for key, val in model.items():
+                if isinstance(val, list):
+                    vectors.update({key: grpc.Vector(data=val)})
+                elif isinstance(val, rest.SparseVector):
+                    vectors.update({key: grpc.Vector(data=val.values, indices=SparseIndices(data=val.indices))})
+            return grpc.Vectors(vectors=grpc.NamedVectors(vectors=vectors))
         else:
             raise ValueError(f"invalid VectorStruct model: {model}")  # pragma: no cover
 
