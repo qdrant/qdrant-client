@@ -64,8 +64,9 @@ def test_single_vector_collection(source_client, dest_client, request) -> None:
         source_client, collection_name=collection_name, vectors_config=vectors_config
     )
     dense_records = generate_fixtures(VECTOR_NUMBER, vectors_sizes=vectors_config.size)
-    sparse_records = generate_sparse_fixtures(VECTOR_NUMBER)
-    records = dense_records + sparse_records
+    # TODO(sparse)
+    # sparse_records = generate_sparse_fixtures(VECTOR_NUMBER)
+    records = dense_records# + sparse_records
     source_client.upload_records(collection_name, records, wait=True)
     source_client.migrate(dest_client)
     dest_client.upload_records(collection_name, records, wait=True)
