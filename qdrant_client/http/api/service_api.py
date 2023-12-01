@@ -1,13 +1,25 @@
 # flake8: noqa E501
 from typing import TYPE_CHECKING, Any, Dict, Set, Union
 
-from qdrant_client._pydantic_compat import to_json
+from pydantic import BaseModel
+from pydantic.main import BaseModel
+from pydantic.version import VERSION as PYDANTIC_VERSION
 from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
+
+PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
+Model = typing.TypeVar("Model", bound="BaseModel")
 
 SetIntStr = Set[Union[int, str]]
 DictIntStrAny = Dict[Union[int, str], Any]
 file = None
+
+
+def to_json(model: BaseModel, *args: Any, **kwargs: Any) -> str:
+    if PYDANTIC_V2:
+        return model.model_dump_json(*args, **kwargs)
+    else:
+        return model.json(*args, **kwargs)
 
 
 def jsonable_encoder(
@@ -16,7 +28,8 @@ def jsonable_encoder(
     exclude=None,
     by_alias: bool = True,
     skip_defaults: bool = None,
-    exclude_unset: bool = False,
+    exclude_unset: bool = True,
+    exclude_none: bool = True,
 ):
     if hasattr(obj, "json") or hasattr(obj, "model_dump_json"):
         return to_json(
@@ -25,6 +38,7 @@ def jsonable_encoder(
             exclude=exclude,
             by_alias=by_alias,
             exclude_unset=bool(exclude_unset or skip_defaults),
+            exclude_none=exclude_none,
         )
 
     return obj
