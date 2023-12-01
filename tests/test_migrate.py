@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient, models
 from tests.congruence_tests.test_common import (
     compare_collections,
     generate_fixtures,
-    initialize_fixture_collection,
+    initialize_fixture_collection, generate_sparse_fixtures,
 )
 
 VECTOR_NUMBER = 1000
@@ -63,11 +63,12 @@ def test_single_vector_collection(source_client, dest_client, request) -> None:
     initialize_fixture_collection(
         source_client, collection_name=collection_name, vectors_config=vectors_config
     )
-    records = generate_fixtures(VECTOR_NUMBER, vectors_sizes=vectors_config.size)
-
-    source_client.upload_records(collection_name, records)
+    dense_records = generate_fixtures(VECTOR_NUMBER, vectors_sizes=vectors_config.size)
+    sparse_records = generate_sparse_fixtures(VECTOR_NUMBER)
+    records = dense_records + sparse_records
+    source_client.upload_records(collection_name, records, wait=True)
     source_client.migrate(dest_client)
-    dest_client.upload_records(collection_name, records)
+    dest_client.upload_records(collection_name, records, wait=True)
     compare_collections(
         source_client,
         dest_client,
@@ -98,7 +99,7 @@ def test_multiple_vectors_collection(source_client, dest_client, request) -> Non
     initialize_fixture_collection(source_client, collection_name="multiple_vectors_collection")
     records = generate_fixtures(VECTOR_NUMBER)
 
-    source_client.upload_records(collection_name, records)
+    source_client.upload_records(collection_name, records, wait=True)
     source_client.migrate(dest_client)
     compare_collections(
         source_client,
@@ -134,6 +135,7 @@ def test_migrate_all_collections(source_client, dest_client, request) -> None:
         source_client.upload_records(
             collection_name,
             records,
+            wait=True,
         )
 
     source_client.migrate(dest_client)
@@ -173,6 +175,7 @@ def test_migrate_particular_collections(source_client, dest_client, request) -> 
         source_client.upload_records(
             collection_name,
             records,
+            wait=True,
         )
 
     source_client.migrate(dest_client, collection_names=collection_names[:2])
@@ -219,6 +222,7 @@ def test_action_on_collision(source_client, dest_client, request) -> None:
     source_client.upload_records(
         collection_name,
         records,
+        wait=True,
     )
     source_client.migrate(dest_client, recreate_on_collision=True)
     compare_collections(
