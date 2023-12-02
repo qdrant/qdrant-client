@@ -1,18 +1,19 @@
 import random
 import tempfile
-import pytest
+from typing import Optional
 
 import numpy as np
-from typing import Optional
+import pytest
 
 import qdrant_client
 import qdrant_client.http.models as rest
 from qdrant_client._pydantic_compat import construct
+from qdrant_client.local.sparse import generate_random_sparse_vector_list
 
 default_collection_name = "example"
 
 
-def ingest_data(
+def ingest_dense_vector_data(
     vector_size: int = 1500,
     path: Optional[str] = None,
     collection_name: str = default_collection_name,
@@ -40,6 +41,37 @@ def ingest_data(
     )
 
 
+def ingest_sparse_vector_data(
+    vector_count: int = 10,
+    max_vector_size: int = 100,
+    path: Optional[str] = None,
+    collection_name: str = default_collection_name,
+):
+    sparse_vectors = generate_random_sparse_vector_list(vector_count, max_vector_size, 0.2)
+    client = qdrant_client.QdrantClient(path=path)
+
+    client.recreate_collection(
+        collection_name,
+        vectors_config={},
+        sparse_vectors_config={
+            "text": rest.SparseVectorParams(),
+        },
+    )
+
+    batch = construct(
+        rest.Batch,
+        ids=random.sample(range(100), vector_count),
+        vectors={"text": sparse_vectors},
+    )
+
+    client.upsert(
+        collection_name=collection_name,
+        points=batch,
+    )
+
+    return client
+
+
 def test_prevent_parallel_access():
     with tempfile.TemporaryDirectory() as tmpdir:
         _client = qdrant_client.QdrantClient(path=tmpdir)
@@ -50,20 +82,63 @@ def test_prevent_parallel_access():
         assert "already accessed by another instance" in str(e)
 
 
-def test_local_persistence():
+def test_local_dense_persistence():
     with tempfile.TemporaryDirectory() as tmpdir:
-        ingest_data(path=tmpdir)
+        ingest_dense_vector_data(path=tmpdir)
         client = qdrant_client.QdrantClient(path=tmpdir)
         assert client.count(default_collection_name).count == 10
         del client
 
-        ingest_data(path=tmpdir)
+        ingest_dense_vector_data(path=tmpdir)
         client = qdrant_client.QdrantClient(path=tmpdir)
         assert client.count(default_collection_name).count == 10
         del client
 
-        ingest_data(path=tmpdir)
-        ingest_data(path=tmpdir, collection_name="example_2")
+        ingest_dense_vector_data(path=tmpdir)
+        ingest_dense_vector_data(path=tmpdir, collection_name="example_2")
+        client = qdrant_client.QdrantClient(path=tmpdir)
+        assert client.count(default_collection_name).count == 10
+        assert client.count("example_2").count == 10
+
+
+def test_local_sparse_persistence():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = ingest_sparse_vector_data(path=tmpdir)
+        assert client.count(default_collection_name).count == 10
+
+        (post_result, _) = client.scroll(
+            collection_name=default_collection_name,
+            limit=10,
+            with_vectors=True,
+        )
+
+        del client
+
+        client = qdrant_client.QdrantClient(path=tmpdir)
+
+        (pre_result, _) = client.scroll(
+            collection_name=default_collection_name,
+            limit=10,
+            with_vectors=True,
+        )
+
+        for i in range(len(pre_result)):
+            assert pre_result[i].vector["text"] == post_result[i].vector["text"]
+            assert len(pre_result[i].vector["text"].indices) > 0
+            assert len(pre_result[i].vector["text"].values) > 0
+            assert len(pre_result[i].vector["text"].indices) == len(
+                pre_result[i].vector["text"].values
+            )
+
+        del client
+
+        ingest_sparse_vector_data(path=tmpdir)
+        client = qdrant_client.QdrantClient(path=tmpdir)
+        assert client.count(default_collection_name).count == 10
+        del client
+
+        ingest_sparse_vector_data(path=tmpdir)
+        ingest_sparse_vector_data(path=tmpdir, collection_name="example_2")
         client = qdrant_client.QdrantClient(path=tmpdir)
         assert client.count(default_collection_name).count == 10
         assert client.count("example_2").count == 10

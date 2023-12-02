@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
 Payload = Dict[str, Any]
+SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 
@@ -161,7 +162,7 @@ class CollectionInfo(BaseModel, extra="forbid"):
 
 
 class CollectionParams(BaseModel, extra="forbid"):
-    vectors: "VectorsConfig" = Field(..., description="")
+    vectors: Optional["VectorsConfig"] = Field(default=None, description="")
     shard_number: Optional[int] = Field(default=1, description="Number of shards the collection has")
     sharding_method: Optional["ShardingMethod"] = Field(
         default=None,
@@ -179,6 +180,9 @@ class CollectionParams(BaseModel, extra="forbid"):
     on_disk_payload: Optional[bool] = Field(
         default=False,
         description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
+    )
+    sparse_vectors: Optional[Dict[str, "SparseVectorParams"]] = Field(
+        default=None, description="Configuration of the sparse vector storage"
     )
 
 
@@ -281,6 +285,10 @@ class CountRequest(BaseModel, extra="forbid"):
     Count Request Counts the number of points which satisfy the given filter. If filter is not provided, the count of all points in the collection will be returned.
     """
 
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     exact: Optional[bool] = Field(
         default=True,
@@ -316,8 +324,8 @@ class CreateCollection(BaseModel, extra="forbid"):
     Operation for creating new collection and (optionally) specify index params
     """
 
-    vectors: "VectorsConfig" = Field(
-        ..., description="Operation for creating new collection and (optionally) specify index params"
+    vectors: Optional["VectorsConfig"] = Field(
+        default=None, description="Operation for creating new collection and (optionally) specify index params"
     )
     shard_number: Optional[int] = Field(
         default=None,
@@ -352,6 +360,9 @@ class CreateCollection(BaseModel, extra="forbid"):
     init_from: Optional["InitFrom"] = Field(default=None, description="Specify other collection to copy data from.")
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Quantization parameters. If none - quantization is disabled."
+    )
+    sparse_vectors: Optional[Dict[str, "SparseVectorParams"]] = Field(
+        default=None, description="Sparse vector data config."
     )
 
 
@@ -401,12 +412,19 @@ class DeleteOperation(BaseModel, extra="forbid"):
 
 
 class DeletePayload(BaseModel, extra="forbid"):
+    """
+    This data structure is used in API interface and applied across multiple shards
+    """
+
     keys: List[str] = Field(..., description="List of payload keys to remove from payload")
     points: Optional[List["ExtendedPointId"]] = Field(
         default=None, description="Deletes values from each point in this list"
     )
     filter: Optional["Filter"] = Field(
         default=None, description="Deletes values from points that satisfy this filter condition"
+    )
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None, description="This data structure is used in API interface and applied across multiple shards"
     )
 
 
@@ -422,6 +440,7 @@ class DeleteVectors(BaseModel, extra="forbid"):
         default=None, description="Deletes values from points that satisfy this filter condition"
     )
     vector: List[str] = Field(..., description="Vector names")
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
 
 
 class DeleteVectorsOperation(BaseModel, extra="forbid"):
@@ -437,19 +456,23 @@ class DiscoverRequest(BaseModel, extra="forbid"):
     Use context and a target to find the most similar points, constrained by the context.
     """
 
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
     target: Optional["RecommendExample"] = Field(
         default=None,
         description="Look for vectors closest to this.  When using the target (with or without context), the integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target.",
     )
     context: Optional[List["ContextExamplePair"]] = Field(
         default=None,
-        description="Pairs of { positive, negative } examples to constrain the search.  When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair.  Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0.  For discovery search (when including a target), the context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.",
+        description="Pairs of { positive, negative } examples to constrain the search.  When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair.  Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0.  For discovery search (when including a target), the context part of the score for each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, and -1 otherwise.",
     )
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
-        default=0,
+        default=None,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
@@ -535,6 +558,7 @@ class Filter(BaseModel, extra="forbid"):
 
 class FilterSelector(BaseModel, extra="forbid"):
     filter: "Filter" = Field(..., description="")
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
 
 
 class GeoBoundingBox(BaseModel, extra="forbid"):
@@ -714,7 +738,7 @@ class InlineResponse200(BaseModel, extra="forbid"):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["TelemetryData"] = Field(default=None, description="")
+    result: Optional[bool] = Field(default=None, description="")
 
 
 class InlineResponse2001(BaseModel, extra="forbid"):
@@ -722,7 +746,7 @@ class InlineResponse2001(BaseModel, extra="forbid"):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["LocksOption"] = Field(default=None, description="")
+    result: Optional["TelemetryData"] = Field(default=None, description="")
 
 
 class InlineResponse20010(BaseModel, extra="forbid"):
@@ -802,7 +826,7 @@ class InlineResponse2002(BaseModel, extra="forbid"):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional["ClusterStatus"] = Field(default=None, description="")
+    result: Optional["LocksOption"] = Field(default=None, description="")
 
 
 class InlineResponse2003(BaseModel, extra="forbid"):
@@ -810,7 +834,7 @@ class InlineResponse2003(BaseModel, extra="forbid"):
     status: Literal[
         "ok",
     ] = Field(None, description="")
-    result: Optional[bool] = Field(default=None, description="")
+    result: Optional["ClusterStatus"] = Field(default=None, description="")
 
 
 class InlineResponse2004(BaseModel, extra="forbid"):
@@ -912,6 +936,10 @@ class LookupLocation(BaseModel, extra="forbid"):
         default=None,
         description="Optional name of the vector field within the collection. If not provided, the default vector field will be used.",
     )
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
 
 
 class MatchAny(BaseModel, extra="forbid"):
@@ -968,6 +996,15 @@ class MoveShard(BaseModel, extra="forbid"):
 
 class MoveShardOperation(BaseModel, extra="forbid"):
     move_shard: "MoveShard" = Field(..., description="")
+
+
+class NamedSparseVector(BaseModel, extra="forbid"):
+    """
+    Sparse vector data with name
+    """
+
+    name: str = Field(..., description="Name of vector data")
+    vector: "SparseVector" = Field(..., description="Sparse vector data with name")
 
 
 class NamedVector(BaseModel, extra="forbid"):
@@ -1171,9 +1208,14 @@ class PointGroup(BaseModel, extra="forbid"):
 
 class PointIdsList(BaseModel, extra="forbid"):
     points: List["ExtendedPointId"] = Field(..., description="")
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
 
 
 class PointRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
     ids: List["ExtendedPointId"] = Field(..., description="Look for points with ids")
     with_payload: Optional["WithPayloadInterface"] = Field(
         default=None, description="Select which payload to return with the response. Default: All"
@@ -1194,10 +1236,12 @@ class PointVectors(BaseModel, extra="forbid"):
 
 class PointsBatch(BaseModel, extra="forbid"):
     batch: "Batch" = Field(..., description="")
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
 
 
 class PointsList(BaseModel, extra="forbid"):
     points: List["PointStruct"] = Field(..., description="")
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
 
 
 class ProductQuantization(BaseModel, extra="forbid"):
@@ -1272,6 +1316,10 @@ class ReadConsistencyType(str, Enum):
 
 
 class RecommendGroupsRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
     positive: Optional[List["RecommendExample"]] = Field(default=[], description="Look for vectors closest to those")
     negative: Optional[List["RecommendExample"]] = Field(default=[], description="Try to avoid vectors like this")
     strategy: Optional["RecommendStrategy"] = Field(
@@ -1313,6 +1361,10 @@ class RecommendRequest(BaseModel, extra="forbid"):
     Recommendation request. Provides positive and negative examples of the vectors, which can be ids of points that are already stored in the collection, raw vectors, or even ids and vectors combined.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to the `strategy` chosen.
     """
 
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
     positive: Optional[List["RecommendExample"]] = Field(default=[], description="Look for vectors closest to those")
     negative: Optional[List["RecommendExample"]] = Field(default=[], description="Try to avoid vectors like this")
     strategy: Optional["RecommendStrategy"] = Field(
@@ -1322,7 +1374,7 @@ class RecommendRequest(BaseModel, extra="forbid"):
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
-        default=0,
+        default=None,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
@@ -1369,6 +1421,7 @@ class Record(BaseModel, extra="forbid"):
     id: "ExtendedPointId" = Field(..., description="Point data")
     payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
     vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
+    shard_key: Optional["ShardKey"] = Field(default=None, description="Shard Key")
 
 
 class RemoteShardInfo(BaseModel, extra="forbid"):
@@ -1479,6 +1532,7 @@ class ScoredPoint(BaseModel, extra="forbid"):
     score: float = Field(..., description="Points vector distance to the query vector")
     payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
     vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
+    shard_key: Optional["ShardKey"] = Field(default=None, description="Shard Key")
 
 
 class ScrollRequest(BaseModel, extra="forbid"):
@@ -1486,6 +1540,10 @@ class ScrollRequest(BaseModel, extra="forbid"):
     Scroll request - paginate over all points which matches given condition
     """
 
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
     offset: Optional["ExtendedPointId"] = Field(default=None, description="Start ID to read points from.")
     limit: Optional[int] = Field(default=None, description="Page size. Default: 10")
     filter: Optional["Filter"] = Field(
@@ -1511,6 +1569,10 @@ class ScrollResult(BaseModel, extra="forbid"):
 
 
 class SearchGroupsRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
     vector: "NamedVectorStruct" = Field(..., description="")
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
@@ -1560,6 +1622,10 @@ class SearchRequest(BaseModel, extra="forbid"):
     Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.
     """
 
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
     vector: "NamedVectorStruct" = Field(
         ...,
         description="Search request. Holds all conditions and parameters for the search of most similar points by vector similarity given the filtering restrictions.",
@@ -1568,7 +1634,7 @@ class SearchRequest(BaseModel, extra="forbid"):
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     limit: int = Field(..., description="Max number of result to return")
     offset: Optional[int] = Field(
-        default=0,
+        default=None,
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
@@ -1588,7 +1654,8 @@ class SearchRequestBatch(BaseModel, extra="forbid"):
 
 
 class SegmentConfig(BaseModel, extra="forbid"):
-    vector_data: Dict[str, "VectorDataConfig"] = Field(..., description="")
+    vector_data: Optional[Dict[str, "VectorDataConfig"]] = Field(default={}, description="")
+    sparse_vector_data: Optional[Dict[str, "SparseVectorDataConfig"]] = Field(default=None, description="")
     payload_storage_type: "PayloadStorageType" = Field(..., description="")
 
 
@@ -1630,12 +1697,21 @@ class SegmentType(str, Enum):
 
 
 class SetPayload(BaseModel, extra="forbid"):
-    payload: "Payload" = Field(..., description="")
+    """
+    This data structure is used in API interface and applied across multiple shards
+    """
+
+    payload: "Payload" = Field(
+        ..., description="This data structure is used in API interface and applied across multiple shards"
+    )
     points: Optional[List["ExtendedPointId"]] = Field(
         default=None, description="Assigns payload to each point in this list"
     )
     filter: Optional["Filter"] = Field(
         default=None, description="Assigns payload to each point that satisfy this filter condition"
+    )
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None, description="This data structure is used in API interface and applied across multiple shards"
     )
 
 
@@ -1713,6 +1789,48 @@ class SnapshotRecover(BaseModel, extra="forbid"):
     priority: Optional["SnapshotPriority"] = Field(
         default=None,
         description="Defines which data should be used as a source of truth if there are other replicas in the cluster. If set to `Snapshot`, the snapshot will be used as a source of truth, and the current state will be overwritten. If set to `Replica`, the current state will be used as a source of truth, and after recovery if will be synchronized with the snapshot.",
+    )
+
+
+class SparseIndexConfig(BaseModel, extra="forbid"):
+    """
+    Configuration for sparse inverted index.
+    """
+
+    full_scan_threshold: Optional[int] = Field(
+        default=None,
+        description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
+    )
+    on_disk: Optional[bool] = Field(
+        default=None,
+        description="Store index on disk. If set to false, the index will be stored in RAM. Default: false",
+    )
+
+
+class SparseVector(BaseModel, extra="forbid"):
+    """
+    Sparse vector structure
+    """
+
+    indices: List[int] = Field(..., description="indices must be unique")
+    values: List[float] = Field(..., description="values and indices must be the same length")
+
+
+class SparseVectorDataConfig(BaseModel, extra="forbid"):
+    """
+    Config of single vector data storage
+    """
+
+    index: Optional["SparseIndexConfig"] = Field(default=None, description="Type of index used for search")
+
+
+class SparseVectorParams(BaseModel, extra="forbid"):
+    """
+    Params of single sparse vector data storage
+    """
+
+    index: Optional["SparseIndexConfig"] = Field(
+        default=None, description="Custom params for index. If none - values from collection configuration are used."
     )
 
 
@@ -1804,6 +1922,9 @@ class UpdateCollection(BaseModel, extra="forbid"):
     quantization_config: Optional["QuantizationConfigDiff"] = Field(
         default=None, description="Quantization parameters to update. If none - it is left unchanged."
     )
+    sparse_vectors: Optional["SparseVectorsConfig"] = Field(
+        default=None, description="Map of sparse vector data parameters to update for each sparse vector."
+    )
 
 
 class UpdateOperations(BaseModel, extra="forbid"):
@@ -1811,7 +1932,7 @@ class UpdateOperations(BaseModel, extra="forbid"):
 
 
 class UpdateResult(BaseModel, extra="forbid"):
-    operation_id: int = Field(..., description="Sequential number of the operation")
+    operation_id: Optional[int] = Field(default=None, description="Sequential number of the operation")
     status: "UpdateStatus" = Field(..., description="")
 
 
@@ -1829,6 +1950,7 @@ class UpdateStatus(str, Enum):
 
 class UpdateVectors(BaseModel, extra="forbid"):
     points: List["PointVectors"] = Field(..., description="Points with named vectors")
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
 
 
 class UpdateVectorsOperation(BaseModel, extra="forbid"):
@@ -1997,10 +2119,6 @@ AnyVariants = Union[
     List[StrictInt],
     List[StrictStr],
 ]
-BatchVectorStruct = Union[
-    List[List[StrictFloat]],
-    Dict[StrictStr, List[List[StrictFloat]]],
-]
 ClusterOperations = Union[
     MoveShardOperation,
     ReplicateShardOperation,
@@ -2049,6 +2167,7 @@ Match = Union[
     MatchExcept,
 ]
 NamedVectorStruct = Union[
+    NamedSparseVector,
     NamedVector,
     List[StrictFloat],
 ]
@@ -2124,14 +2243,14 @@ ValueVariants = Union[
     StrictInt,
     StrictStr,
 ]
+Vector = Union[
+    SparseVector,
+    List[StrictFloat],
+]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,
     VectorStorageTypeOneOf1,
     VectorStorageTypeOneOf2,
-]
-VectorStruct = Union[
-    List[StrictFloat],
-    Dict[StrictStr, List[StrictFloat]],
 ]
 VectorsConfig = Union[
     VectorParams,
@@ -2145,13 +2264,26 @@ WithVector = Union[
     List[StrictStr],
     StrictBool,
 ]
+BatchVectorStruct = Union[
+    List[List[StrictFloat]],
+    Dict[StrictStr, List[Vector]],
+]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
     PayloadSchemaParams,
 ]
 RecommendExample = Union[
     ExtendedPointId,
+    SparseVector,
     List[StrictFloat],
+]
+ShardKeySelector = Union[
+    ShardKey,
+    List[ShardKey],
+]
+VectorStruct = Union[
+    List[StrictFloat],
+    Dict[StrictStr, Vector],
 ]
 WithPayloadInterface = Union[
     PayloadSelector,

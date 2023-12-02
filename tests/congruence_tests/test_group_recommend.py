@@ -12,7 +12,7 @@ from tests.congruence_tests.test_common import (
 )
 from tests.fixtures.filters import one_random_filter_please
 
-secondary_collection_name = "secondary_collection"
+secondary_collection_name = "congruence_secondary_collection"
 
 
 class TestGroupRecommendation:

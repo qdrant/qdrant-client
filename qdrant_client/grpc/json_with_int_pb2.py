@@ -15,7 +15,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13json_with_int.proto\x12\x06qdrant\"r\n\x06Struct\x12*\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1a.qdrant.Struct.FieldsEntry\x1a<\n\x0b\x46ieldsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\"\xe8\x01\n\x05Value\x12\'\n\nnull_value\x18\x01 \x01(\x0e\x32\x11.qdrant.NullValueH\x00\x12\x16\n\x0c\x64ouble_value\x18\x02 \x01(\x01H\x00\x12\x17\n\rinteger_value\x18\x03 \x01(\x03H\x00\x12\x16\n\x0cstring_value\x18\x04 \x01(\tH\x00\x12\x14\n\nbool_value\x18\x05 \x01(\x08H\x00\x12&\n\x0cstruct_value\x18\x06 \x01(\x0b\x32\x0e.qdrant.StructH\x00\x12\'\n\nlist_value\x18\x07 \x01(\x0b\x32\x11.qdrant.ListValueH\x00\x42\x06\n\x04kind\"*\n\tListValue\x12\x1d\n\x06values\x18\x01 \x03(\x0b\x32\r.qdrant.Value*\x1b\n\tNullValue\x12\x0e\n\nNULL_VALUE\x10\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13json_with_int.proto\x12\x06qdrant\"r\n\x06Struct\x12*\n\x06\x66ields\x18\x01 \x03(\x0b\x32\x1a.qdrant.Struct.FieldsEntry\x1a<\n\x0b\x46ieldsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\"\xe8\x01\n\x05Value\x12\'\n\nnull_value\x18\x01 \x01(\x0e\x32\x11.qdrant.NullValueH\x00\x12\x16\n\x0c\x64ouble_value\x18\x02 \x01(\x01H\x00\x12\x17\n\rinteger_value\x18\x03 \x01(\x03H\x00\x12\x16\n\x0cstring_value\x18\x04 \x01(\tH\x00\x12\x14\n\nbool_value\x18\x05 \x01(\x08H\x00\x12&\n\x0cstruct_value\x18\x06 \x01(\x0b\x32\x0e.qdrant.StructH\x00\x12\'\n\nlist_value\x18\x07 \x01(\x0b\x32\x11.qdrant.ListValueH\x00\x42\x06\n\x04kind\"*\n\tListValue\x12\x1d\n\x06values\x18\x01 \x03(\x0b\x32\r.qdrant.Value*\x1b\n\tNullValue\x12\x0e\n\nNULL_VALUE\x10\x00\x42\x15\xaa\x02\x12Qdrant.Client.Grpcb\x06proto3')
 
 _NULLVALUE = DESCRIPTOR.enum_types_by_name['NullValue']
 NullValue = enum_type_wrapper.EnumTypeWrapper(_NULLVALUE)
@@ -58,6 +58,7 @@ _sym_db.RegisterMessage(ListValue)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
+  DESCRIPTOR._serialized_options = b'\252\002\022Qdrant.Client.Grpc'
   _STRUCT_FIELDSENTRY._options = None
   _STRUCT_FIELDSENTRY._serialized_options = b'8\001'
   _NULLVALUE._serialized_start=426

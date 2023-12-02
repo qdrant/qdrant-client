@@ -64,6 +64,16 @@ class CollectionsStub(object):
                 request_serializer=collections__pb2.UpdateCollectionClusterSetupRequest.SerializeToString,
                 response_deserializer=collections__pb2.UpdateCollectionClusterSetupResponse.FromString,
                 )
+        self.CreateShardKey = channel.unary_unary(
+                '/qdrant.Collections/CreateShardKey',
+                request_serializer=collections__pb2.CreateShardKeyRequest.SerializeToString,
+                response_deserializer=collections__pb2.CreateShardKeyResponse.FromString,
+                )
+        self.DeleteShardKey = channel.unary_unary(
+                '/qdrant.Collections/DeleteShardKey',
+                request_serializer=collections__pb2.DeleteShardKeyRequest.SerializeToString,
+                response_deserializer=collections__pb2.DeleteShardKeyResponse.FromString,
+                )
 
 
 class CollectionsServicer(object):
@@ -149,6 +159,22 @@ class CollectionsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CreateShardKey(self, request, context):
+        """
+        Create shard key
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteShardKey(self, request, context):
+        """
+        Delete shard key
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CollectionsServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -201,6 +227,16 @@ def add_CollectionsServicer_to_server(servicer, server):
                     servicer.UpdateCollectionClusterSetup,
                     request_deserializer=collections__pb2.UpdateCollectionClusterSetupRequest.FromString,
                     response_serializer=collections__pb2.UpdateCollectionClusterSetupResponse.SerializeToString,
+            ),
+            'CreateShardKey': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateShardKey,
+                    request_deserializer=collections__pb2.CreateShardKeyRequest.FromString,
+                    response_serializer=collections__pb2.CreateShardKeyResponse.SerializeToString,
+            ),
+            'DeleteShardKey': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteShardKey,
+                    request_deserializer=collections__pb2.DeleteShardKeyRequest.FromString,
+                    response_serializer=collections__pb2.DeleteShardKeyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -379,5 +415,39 @@ class Collections(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/UpdateCollectionClusterSetup',
             collections__pb2.UpdateCollectionClusterSetupRequest.SerializeToString,
             collections__pb2.UpdateCollectionClusterSetupResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CreateShardKey(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/CreateShardKey',
+            collections__pb2.CreateShardKeyRequest.SerializeToString,
+            collections__pb2.CreateShardKeyResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def DeleteShardKey(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/DeleteShardKey',
+            collections__pb2.DeleteShardKeyRequest.SerializeToString,
+            collections__pb2.DeleteShardKeyResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
