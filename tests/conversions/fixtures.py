@@ -125,6 +125,16 @@ vector_param = grpc.VectorParams(
     distance=grpc.Distance.Dot,
 )
 
+vector_param_1 = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Euclid,
+)
+
+vector_param_2 = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Manhattan,
+)
+
 vector_param_with_hnsw = grpc.VectorParams(
     size=100,
     distance=grpc.Distance.Cosine,
@@ -682,12 +692,6 @@ vector_example_3 = grpc.VectorExample(
     id=point_id_1,
 )
 
-retrieved_point = grpc.RetrievedPoint(
-    id=point_id_1,
-    payload=payload_to_grpc({"key": payload_value}),
-    vectors=single_vector,
-)
-
 target_vector_1 = grpc.TargetVector(
     single=vector_example_1,
 )
@@ -857,7 +861,13 @@ fixtures = {
     "RetrievedPoint": [retrieved_point],
     "CountResult": [count_result],
     "SnapshotDescription": [snapshot_description],
-    "VectorParams": [vector_param, vector_param_with_hnsw, vector_param_with_quant],
+    "VectorParams": [
+        vector_param,
+        vector_param_with_hnsw,
+        vector_param_with_quant,
+        vector_param_1,
+        vector_param_2,
+    ],
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
     "RecommendPoints": [recommend_points],
@@ -905,7 +915,6 @@ fixtures = {
     "TargetVector": [target_vector_1],
     "SparseVectorParams": [sparse_vector_params],
     "SparseVectorConfig": [sparse_vector_config],
-    "RetrievedPoint": [retrieved_point],
 }
 
 

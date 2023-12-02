@@ -58,6 +58,8 @@ def distance_to_order(distance: models.Distance) -> DistanceOrder:
     """
     if distance == models.Distance.EUCLID:
         return DistanceOrder.SMALLER_IS_BETTER
+    elif distance == models.Distance.MANHATTAN:
+        return DistanceOrder.SMALLER_IS_BETTER
 
     return DistanceOrder.BIGGER_IS_BETTER
 
@@ -100,6 +102,18 @@ def euclidean_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
     return np.linalg.norm(vectors - query, axis=1)
 
 
+def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
+    """
+    Calculate manhattan distance between query and vectors
+    Args:
+        query: query vector.
+        vectors: vectors to calculate distance with
+    Returns:
+        distances
+    """
+    return np.sum(np.abs(vectors - query), axis=1)
+
+
 def calculate_distance(
     query: types.NumpyArray, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
@@ -109,6 +123,8 @@ def calculate_distance(
         return dot_product(query, vectors)
     elif distance_type == models.Distance.EUCLID:
         return euclidean_distance(query, vectors)
+    elif distance_type == models.Distance.MANHATTAN:
+        return manhattan_distance(query, vectors)
     else:
         raise ValueError(f"Unknown distance type {distance_type}")
 
@@ -121,6 +137,8 @@ def calculate_distance_core(
     """
     if distance_type == models.Distance.EUCLID:
         return -np.square(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
+    if distance_type == models.Distance.MANHATTAN:
+        return -np.abs(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
     else:
         return calculate_distance(query, vectors, distance_type)
 
@@ -224,6 +242,7 @@ def test_distances() -> None:
     assert np.allclose(calculate_distance(query, vectors, models.Distance.COSINE), [1.0, 1.0])
     assert np.allclose(calculate_distance(query, vectors, models.Distance.DOT), [14.0, 14.0])
     assert np.allclose(calculate_distance(query, vectors, models.Distance.EUCLID), [0.0, 0.0])
+    assert np.allclose(calculate_distance(query, vectors, models.Distance.MANHATTAN), [0.0, 0.0])
 
     query = np.array([1.0, 0.0, 1.0])
     vectors = np.array([[1.0, 2.0, 3.0], [0.0, 1.0, 0.0]])
@@ -239,5 +258,11 @@ def test_distances() -> None:
     assert np.allclose(
         calculate_distance(query, vectors, models.Distance.EUCLID),
         [2.82842712, 1.7320508],
+        atol=0.0001,
+    )
+
+    assert np.allclose(
+        calculate_distance(query, vectors, models.Distance.MANHATTAN),
+        [4.0, 3.0],
         atol=0.0001,
     )

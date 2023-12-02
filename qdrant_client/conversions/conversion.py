@@ -274,6 +274,8 @@ class GrpcToRest:
             return rest.Distance.COSINE
         elif model == grpc.Distance.Euclid:
             return rest.Distance.EUCLID
+        elif model == grpc.Distance.Manhattan:
+            return rest.Distance.MANHATTAN
         elif model == grpc.Distance.Dot:
             return rest.Distance.DOT
         else:
@@ -1504,6 +1506,8 @@ class RestToGrpc:
             return grpc.Distance.Cosine
         if model == rest.Distance.EUCLID:
             return grpc.Distance.Euclid
+        if model == rest.Distance.MANHATTAN:
+            return grpc.Distance.Manhattan
 
         raise ValueError(f"invalid Distance model: {model}")  # pragma: no cover
 
