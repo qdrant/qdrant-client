@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, g
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
-from numpy import single
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -1210,6 +1209,18 @@ class GrpcToRest:
         cls, model: grpc.SparseVectorConfig
     ) -> Dict[str, rest.SparseVectorParams]:
         return dict((key, cls.convert_sparse_vector_params(val)) for key, val in model.map.items())
+
+    @classmethod
+    def convert_shard_key(cls, model: grpc.ShardKey) -> rest.ShardKey:
+        name = model.WhichOneof("key")
+        val = getattr(model, name)
+        return val
+
+    @classmethod
+    def convert_shard_key_selector(cls, model: grpc.ShardKeySelector) -> rest.ShardKeySelector:
+        if len(model.shard_keys) == 1:
+            return cls.convert_shard_key(model.shard_keys[0])
+        return [cls.convert_shard_key(shard_key) for shard_key in model.shard_keys]
 
 
 # ----------------------------------------
@@ -2420,3 +2431,22 @@ class RestToGrpc:
         return grpc.SparseVectorConfig(
             map=dict((key, cls.convert_sparse_vector_params(val)) for key, val in model.items())
         )
+
+    @classmethod
+    def convert_shard_key(cls, model: rest.ShardKey) -> grpc.ShardKey:
+        if isinstance(model, int):
+            return grpc.ShardKey(number=model)
+        if isinstance(model, str):
+            return grpc.ShardKey(keyword=model)
+
+        raise ValueError(f"invalid ShardKey model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_shard_key_selector(cls, model: rest.ShardKeySelector) -> grpc.ShardKeySelector:
+        if isinstance(model, get_args_subscribed(rest.ShardKey)):
+            return grpc.ShardKeySelector(shard_keys=[cls.convert_shard_key(model)])
+
+        if isinstance(model, list):
+            return grpc.ShardKeySelector(shard_keys=[cls.convert_shard_key(key) for key in model])
+
+        raise ValueError(f"invalid ShardKeySelector model: {model}")  # pragma: no cover

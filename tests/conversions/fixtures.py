@@ -806,6 +806,20 @@ delete_vectors_operation_2 = grpc.PointsUpdateOperation(
     ),
 )
 
+shard_key_selector = grpc.ShardKeySelector(
+    shard_keys=[
+        grpc.ShardKey(number=123),
+    ]
+)
+
+shard_key_selector_2 = grpc.ShardKeySelector(
+    shard_keys=[
+        grpc.ShardKey(number=123),
+        grpc.ShardKey(keyword="abc"),
+    ]
+)
+
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -915,6 +929,7 @@ fixtures = {
     "TargetVector": [target_vector_1],
     "SparseVectorParams": [sparse_vector_params],
     "SparseVectorConfig": [sparse_vector_config],
+    "ShardKeySelector": [shard_key_selector, shard_key_selector_2],
 }
 
 
