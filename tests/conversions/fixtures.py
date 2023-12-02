@@ -6,6 +6,7 @@ from google.protobuf.timestamp_pb2 import Timestamp
 
 from qdrant_client import grpc as grpc
 from qdrant_client.conversions.conversion import payload_to_grpc
+from qdrant_client.grpc import SparseIndices
 
 point_id = grpc.PointId(num=1)
 point_id_1 = grpc.PointId(num=2)
@@ -424,6 +425,7 @@ multi_vectors = grpc.Vectors(
         vectors={
             "image": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
             "text": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
+            "sparse": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2], indices=SparseIndices(data=[1, 2, 3])),
         }
     )
 )

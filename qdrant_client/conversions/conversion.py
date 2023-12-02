@@ -716,8 +716,19 @@ class GrpcToRest:
         return model.data[:]
 
     @classmethod
-    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, List[float]]:
-        return {name: cls.convert_vector(vector) for name, vector in model.vectors.items()}
+    def convert_sparse_vector(cls, model: grpc.Vector) -> SparseVector:
+        return SparseVector(indices=model.indices.data[:], values=model.data[:])
+
+    @classmethod
+    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, List[rest.Vector]]:
+        vectors = {}
+        for name, vector in model.vectors.items():
+            if vector.indices is not None and len(vector.indices.data) > 0:
+                vectors[name] = cls.convert_sparse_vector(vector)
+            else:
+                vectors[name] = cls.convert_vector(vector)
+
+        return vectors
 
     @classmethod
     def convert_vectors(cls, model: grpc.Vectors) -> rest.VectorStruct:
