@@ -400,10 +400,15 @@ class QdrantRemote(QdrantBase):
 
         if self._prefer_grpc:
             vector_name = None
+            sparse_indices = None
 
             if isinstance(query_vector, types.NamedVector):
                 vector = query_vector.vector
                 vector_name = query_vector.name
+            elif isinstance(query_vector, types.NamedSparseVector):
+                vector_name = query_vector.name
+                sparse_indices = grpc.SparseIndices(data=query_vector.vector.indices)
+                vector = query_vector.vector.values
             elif isinstance(query_vector, tuple):
                 vector_name = query_vector[0]
                 vector = query_vector[1]
@@ -439,6 +444,7 @@ class QdrantRemote(QdrantBase):
                     score_threshold=score_threshold,
                     read_consistency=consistency,
                     timeout=timeout,
+                    sparse_indices=sparse_indices,
                 ),
                 timeout=timeout if timeout is None else self._timeout,
             )
@@ -485,6 +491,7 @@ class QdrantRemote(QdrantBase):
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
         ],
         group_by: str,
         query_filter: Optional[models.Filter] = None,
@@ -501,6 +508,7 @@ class QdrantRemote(QdrantBase):
     ) -> types.GroupsResult:
         if self._prefer_grpc:
             vector_name = None
+            sparse_indices = None
 
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
@@ -511,7 +519,10 @@ class QdrantRemote(QdrantBase):
             if isinstance(query_vector, types.NamedVector):
                 vector = query_vector.vector
                 vector_name = query_vector.name
-
+            elif isinstance(query_vector, types.NamedSparseVector):
+                vector_name = query_vector.name
+                sparse_indices = grpc.SparseIndices(data=query_vector.vector.indices)
+                vector = query_vector.vector.values
             elif isinstance(query_vector, tuple):
                 vector_name = query_vector[0]
                 vector = query_vector[1]
@@ -549,6 +560,7 @@ class QdrantRemote(QdrantBase):
                     read_consistency=consistency,
                     with_lookup=with_lookup,
                     timeout=timeout,
+                    sparse_indices=sparse_indices,
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             ).result
@@ -1840,7 +1852,11 @@ class QdrantRemote(QdrantBase):
                     quantization_config
                 )
 
-            # TODO(sparse) gRPC support
+            if isinstance(sparse_vectors_config, dict):
+                sparse_vectors_config = RestToGrpc.convert_sparse_vector_config(
+                    sparse_vectors_config
+                )
+
             return self.grpc_collections.Update(
                 grpc.UpdateCollection(
                     collection_name=collection_name,
@@ -1849,6 +1865,7 @@ class QdrantRemote(QdrantBase):
                     vectors_config=vectors_config,
                     hnsw_config=hnsw_config,
                     quantization_config=quantization_config,
+                    sparse_vectors_config=sparse_vectors_config,
                 ),
                 timeout=self._timeout,
             ).result
@@ -1937,7 +1954,11 @@ class QdrantRemote(QdrantBase):
             if isinstance(init_from, models.InitFrom):
                 init_from = RestToGrpc.convert_init_from(init_from)
 
-            # TODO(sparse) gRPC support
+            if isinstance(sparse_vectors_config, dict):
+                sparse_vectors_config = RestToGrpc.convert_sparse_vector_config(
+                    sparse_vectors_config
+                )
+
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1951,6 +1972,7 @@ class QdrantRemote(QdrantBase):
                 write_consistency_factor=write_consistency_factor,
                 init_from_collection=init_from,
                 quantization_config=quantization_config,
+                sparse_vectors_config=sparse_vectors_config,
             )
             return self.grpc_collections.Create(create_collection).result
 
@@ -2122,7 +2144,9 @@ class QdrantRemote(QdrantBase):
         batches_iterator = self._updater_class.iterate_batches(
             vectors=vectors, payload=payload, ids=ids, batch_size=batch_size
         )
-        self._upload_collection(batches_iterator, collection_name, max_retries, parallel, method, wait)
+        self._upload_collection(
+            batches_iterator, collection_name, max_retries, parallel, method, wait
+        )
 
     def create_payload_index(
         self,

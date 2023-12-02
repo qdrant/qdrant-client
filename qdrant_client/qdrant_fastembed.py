@@ -255,7 +255,6 @@ class QdrantFastembedMixin(QdrantBase):
             self.create_collection(
                 collection_name=collection_name,
                 vectors_config=self.get_fastembed_vector_params(),
-                # TODO(sparse) no sparse vectors for fastembed for the time being?
             )
             collection_info = self.get_collection(collection_name=collection_name)
 

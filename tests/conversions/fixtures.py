@@ -392,16 +392,18 @@ binary_quantization_config = grpc.QuantizationConfig(
     binary=binary_quantization,
 )
 
-create_collection = grpc.CreateCollection(
-    collection_name="my_collection",
-    vectors_config=grpc.VectorsConfig(
-        params=grpc.VectorParams(size=100, distance=grpc.Distance.Euclid)
-    ),
-    hnsw_config=hnsw_config,
-    wal_config=wal_config,
-    optimizers_config=optimizer_config,
-    shard_number=10,
-    quantization_config=quantization_config,
+
+sparse_vector_params = grpc.SparseVectorParams(
+    index=grpc.SparseIndexConfig(
+        full_scan_threshold=1000,
+        on_disk=True,
+    )
+)
+
+sparse_vector_config = grpc.SparseVectorConfig(
+    map={
+        "sparse": sparse_vector_params,
+    }
 )
 
 update_status = grpc.UpdateStatus.Acknowledged
@@ -425,7 +427,9 @@ multi_vectors = grpc.Vectors(
         vectors={
             "image": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
             "text": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
-            "sparse": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2], indices=SparseIndices(data=[1, 2, 3])),
+            "sparse": grpc.Vector(
+                data=[1.0, 2.0, -1.0, -0.2], indices=SparseIndices(data=[1, 2, 3])
+            ),
         }
     )
 )
@@ -670,6 +674,20 @@ vector_example_2 = grpc.VectorExample(
     id=point_id_1,
 )
 
+vector_example_3 = grpc.VectorExample(
+    vector=grpc.Vector(
+        data=[1.0, 2.0, 3.0, 5.0],
+        indices=SparseIndices(data=[1, 2, 3, 4]),
+    ),
+    id=point_id_1,
+)
+
+retrieved_point = grpc.RetrievedPoint(
+    id=point_id_1,
+    payload=payload_to_grpc({"key": payload_value}),
+    vectors=single_vector,
+)
+
 target_vector_1 = grpc.TargetVector(
     single=vector_example_1,
 )
@@ -797,7 +815,6 @@ fixtures = {
     "Filter": [filter_nested, filter_],
     "OptimizersConfigDiff": [optimizer_config, optimizer_config_half],
     "CollectionInfo": [collection_info, collection_info_ok, collection_info_red],
-    "CreateCollection": [create_collection],
     "FieldCondition": [
         field_condition_match,
         field_condition_range,
@@ -884,8 +901,11 @@ fixtures = {
     ],
     "DiscoverPoints": [discover_points],
     "ContextExamplePair": [context_example_pair_1],
-    "VectorExample": [vector_example_1, vector_example_2],
+    "VectorExample": [vector_example_1, vector_example_2, vector_example_3],
     "TargetVector": [target_vector_1],
+    "SparseVectorParams": [sparse_vector_params],
+    "SparseVectorConfig": [sparse_vector_config],
+    "RetrievedPoint": [retrieved_point],
 }
 
 
