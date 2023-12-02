@@ -276,12 +276,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+            types.NamedSparseVector,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
-        offset: int = 0,
+        offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
@@ -299,9 +303,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             query_vector = query_vector.tolist()
         if self._prefer_grpc:
             vector_name = None
+            sparse_indices = None
             if isinstance(query_vector, types.NamedVector):
                 vector = query_vector.vector
                 vector_name = query_vector.name
+            elif isinstance(query_vector, types.NamedSparseVector):
+                vector_name = query_vector.name
+                sparse_indices = grpc.SparseIndices(data=query_vector.vector.indices)
+                vector = query_vector.vector.values
             elif isinstance(query_vector, tuple):
                 vector_name = query_vector[0]
                 vector = query_vector[1]
@@ -331,6 +340,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     score_threshold=score_threshold,
                     read_consistency=consistency,
                     timeout=timeout,
+                    sparse_indices=sparse_indices,
                 ),
                 timeout=timeout if timeout is None else self._timeout,
             )
@@ -367,7 +377,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
+            types.NumpyArray,
+            Sequence[float],
+            Tuple[str, List[float]],
+            types.NamedVector,
+            types.NamedSparseVector,
         ],
         group_by: str,
         query_filter: Optional[models.Filter] = None,
@@ -384,6 +398,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.GroupsResult:
         if self._prefer_grpc:
             vector_name = None
+            sparse_indices = None
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
             if isinstance(with_lookup, str):
@@ -391,6 +406,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if isinstance(query_vector, types.NamedVector):
                 vector = query_vector.vector
                 vector_name = query_vector.name
+            elif isinstance(query_vector, types.NamedSparseVector):
+                vector_name = query_vector.name
+                sparse_indices = grpc.SparseIndices(data=query_vector.vector.indices)
+                vector = query_vector.vector.values
             elif isinstance(query_vector, tuple):
                 vector_name = query_vector[0]
                 vector = query_vector[1]
@@ -423,6 +442,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         read_consistency=consistency,
                         with_lookup=with_lookup,
                         timeout=timeout,
+                        sparse_indices=sparse_indices,
                     ),
                     timeout=timeout if timeout is not None else self._timeout,
                 )
@@ -1621,6 +1641,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         hnsw_config: Optional[types.HnswConfigDiff] = None,
         quantization_config: Optional[types.QuantizationConfigDiff] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1636,6 +1657,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 quantization_config = RestToGrpc.convert_quantization_config_diff(
                     quantization_config
                 )
+            if isinstance(sparse_vectors_config, dict):
+                sparse_vectors_config = RestToGrpc.convert_sparse_vector_config(
+                    sparse_vectors_config
+                )
             return (
                 await self.grpc_collections.Update(
                     grpc.UpdateCollection(
@@ -1645,6 +1670,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         vectors_config=vectors_config,
                         hnsw_config=hnsw_config,
                         quantization_config=quantization_config,
+                        sparse_vectors_config=sparse_vectors_config,
                     ),
                     timeout=self._timeout,
                 )
@@ -1668,6 +1694,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     vectors=vectors_config,
                     hnsw_config=hnsw_config,
                     quantization_config=quantization_config,
+                    sparse_vectors=sparse_vectors_config,
                 ),
                 timeout=timeout,
             )
@@ -1704,6 +1731,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -1719,6 +1747,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
             if isinstance(init_from, models.InitFrom):
                 init_from = RestToGrpc.convert_init_from(init_from)
+            if isinstance(sparse_vectors_config, dict):
+                sparse_vectors_config = RestToGrpc.convert_sparse_vector_config(
+                    sparse_vectors_config
+                )
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -1732,6 +1764,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 write_consistency_factor=write_consistency_factor,
                 init_from_collection=init_from,
                 quantization_config=quantization_config,
+                sparse_vectors_config=sparse_vectors_config,
             )
             return (await self.grpc_collections.Create(create_collection)).result
         if isinstance(hnsw_config, grpc.HnswConfigDiff):
@@ -1755,6 +1788,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             wal_config=wal_config,
             quantization_config=quantization_config,
             init_from=init_from,
+            sparse_vectors=sparse_vectors_config,
         )
         result: Optional[bool] = (
             await self.http.collections_api.create_collection(
@@ -1780,6 +1814,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name, timeout=timeout)
@@ -1796,6 +1831,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             quantization_config=quantization_config,
             init_from=init_from,
             timeout=timeout,
+            sparse_vectors_config=sparse_vectors_config,
         )
 
     @property
@@ -1891,7 +1927,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         batches_iterator = self._updater_class.iterate_batches(
             vectors=vectors, payload=payload, ids=ids, batch_size=batch_size
         )
-        self._upload_collection(batches_iterator, collection_name, max_retries, parallel, method)
+        self._upload_collection(
+            batches_iterator, collection_name, max_retries, parallel, method, wait
+        )
 
     async def create_payload_index(
         self,

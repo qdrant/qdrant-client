@@ -74,6 +74,7 @@ def _recreate_collection(
     dest_client.recreate_collection(
         collection_name,
         vectors_config=src_config.params.vectors,
+        sparse_vectors_config=src_config.params.sparse_vectors,
         shard_number=src_config.params.shard_number,
         replication_factor=src_config.params.replication_factor,
         write_consistency_factor=src_config.params.write_consistency_factor,
@@ -120,7 +121,7 @@ def _migrate_collection(
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
-        dest_client.upload_records(collection_name, records)
+        dest_client.upload_records(collection_name, records, wait=True)
     source_client_vectors_count = source_client.get_collection(collection_name).vectors_count
     dest_client_vectors_count = dest_client.get_collection(collection_name).vectors_count
     assert (

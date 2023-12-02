@@ -2,6 +2,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
+from qdrant_client.http.models import SparseVector
 
 
 class QdrantBase:
@@ -24,11 +25,12 @@ class QdrantBase:
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
         ],
         query_filter: Optional[models.Filter] = None,
         search_params: Optional[models.SearchParams] = None,
         limit: int = 10,
-        offset: int = 0,
+        offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
@@ -44,6 +46,7 @@ class QdrantBase:
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
         ],
         group_by: str,
         query_filter: Optional[models.Filter] = None,

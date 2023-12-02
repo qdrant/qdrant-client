@@ -1,13 +1,25 @@
 # flake8: noqa E501
-from typing import TYPE_CHECKING, Any, Dict, Set, Union
+from typing import TYPE_CHECKING, Any, Dict, Set, TypeVar, Union
 
-from qdrant_client._pydantic_compat import to_json
+from pydantic import BaseModel
+from pydantic.main import BaseModel
+from pydantic.version import VERSION as PYDANTIC_VERSION
 from qdrant_client.http.models import *
 from qdrant_client.http.models import models as m
+
+PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
+Model = TypeVar("Model", bound="BaseModel")
 
 SetIntStr = Set[Union[int, str]]
 DictIntStrAny = Dict[Union[int, str], Any]
 file = None
+
+
+def to_json(model: BaseModel, *args: Any, **kwargs: Any) -> str:
+    if PYDANTIC_V2:
+        return model.model_dump_json(*args, **kwargs)
+    else:
+        return model.json(*args, **kwargs)
 
 
 def jsonable_encoder(
@@ -16,7 +28,8 @@ def jsonable_encoder(
     exclude=None,
     by_alias: bool = True,
     skip_defaults: bool = None,
-    exclude_unset: bool = False,
+    exclude_unset: bool = True,
+    exclude_none: bool = True,
 ):
     if hasattr(obj, "json") or hasattr(obj, "model_dump_json"):
         return to_json(
@@ -25,6 +38,7 @@ def jsonable_encoder(
             exclude=exclude,
             by_alias=by_alias,
             exclude_unset=bool(exclude_unset or skip_defaults),
+            exclude_none=exclude_none,
         )
 
     return obj
@@ -275,7 +289,7 @@ class _PointsApi:
         discover_request: m.DiscoverRequest = None,
     ):
         """
-        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
+        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
         """
         path_params = {
             "collection_name": str(collection_name),
@@ -856,7 +870,7 @@ class AsyncPointsApi(_PointsApi):
         discover_request: m.DiscoverRequest = None,
     ) -> m.InlineResponse20015:
         """
-        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
+        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
         """
         return await self._build_for_discover_points(
             collection_name=collection_name,
@@ -1205,7 +1219,7 @@ class SyncPointsApi(_PointsApi):
         discover_request: m.DiscoverRequest = None,
     ) -> m.InlineResponse20015:
         """
-        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search –called context search– is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
+        Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
         """
         return self._build_for_discover_points(
             collection_name=collection_name,

@@ -252,11 +252,12 @@ class QdrantClient(QdrantFastembedMixin):
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
-        offset: int = 0,
+        offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
@@ -271,7 +272,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name: Collection to search in
             query_vector:
                 Search for vectors closest to this.
-                Can be either a vector itself, or a named vector, or a tuple of vector name and vector itself
+                Can be either a vector itself, or a named vector, or a named sparse vector, or a tuple of vector name and vector itself
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
@@ -357,6 +358,7 @@ class QdrantClient(QdrantFastembedMixin):
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
+            types.NamedSparseVector,
         ],
         group_by: str,
         query_filter: Optional[types.Filter] = None,
@@ -381,7 +383,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name: Collection to search in
             query_vector:
                 Search for vectors closest to this.
-                Can be either a vector itself, or a named vector, or a tuple of vector name and vector itself
+                Can be either a vector itself, or a named vector, or a named sparse vector, or a tuple of vector name and vector itself
             group_by: Name of the payload field to group by.
                 Field must be of type "keyword" or "integer".
                 Nested fields are specified using dot notation, e.g. "nested_field.subfield".
@@ -752,7 +754,7 @@ class QdrantClient(QdrantFastembedMixin):
             query_filter:
                 Look only for points which satisfies this conditions
 
-            saerch_params:
+            search_params:
                 Additional search params
 
             limit:
@@ -1430,6 +1432,7 @@ class QdrantClient(QdrantFastembedMixin):
         hnsw_config: Optional[types.HnswConfigDiff] = None,
         quantization_config: Optional[types.QuantizationConfigDiff] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         """Update parameters of the collection
@@ -1444,6 +1447,7 @@ class QdrantClient(QdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
+            sparse_vectors_config: Override for sparse vector-specific configuration
         Returns:
             Operation result
         """
@@ -1465,6 +1469,7 @@ class QdrantClient(QdrantFastembedMixin):
             hnsw_config=hnsw_config,
             quantization_config=quantization_config,
             timeout=timeout,
+            sparse_vectors_config=sparse_vectors_config,
             **kwargs,
         )
 
@@ -1502,6 +1507,7 @@ class QdrantClient(QdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1537,6 +1543,9 @@ class QdrantClient(QdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
+            sparse_vectors_config:
+                Configuration of the sparse vector storage.
+                The service will create a sparse vector storage for each key in the dict.
 
         Returns:
             Operation result
@@ -1556,6 +1565,7 @@ class QdrantClient(QdrantFastembedMixin):
             quantization_config=quantization_config,
             init_from=init_from,
             timeout=timeout,
+            sparse_vectors_config=sparse_vectors_config,
             **kwargs,
         )
 
@@ -1573,6 +1583,7 @@ class QdrantClient(QdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1608,6 +1619,9 @@ class QdrantClient(QdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
+            sparse_vectors_config:
+                Configuration of the sparse vector storage.
+                The service will create a sparse vector storage for each key in the dict.
 
         Returns:
             Operation result
@@ -1627,6 +1641,7 @@ class QdrantClient(QdrantFastembedMixin):
             quantization_config=quantization_config,
             init_from=init_from,
             timeout=timeout,
+            sparse_vectors_config=sparse_vectors_config,
             **kwargs,
         )
 
