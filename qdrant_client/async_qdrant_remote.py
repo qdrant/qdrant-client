@@ -327,7 +327,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             res: grpc.SearchResponse = await self.grpc_points.Search(
                 grpc.SearchPoints(
@@ -431,7 +431,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             result: grpc.GroupsResult = (
                 await self.grpc_points.SearchGroups(
@@ -583,7 +583,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
             if isinstance(strategy, models.RecommendStrategy):
                 strategy = RestToGrpc.convert_recommend_strategy(strategy)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             res: grpc.SearchResponse = await self.grpc_points.Recommend(
                 grpc.RecommendPoints(
@@ -702,7 +702,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
             if isinstance(strategy, models.RecommendStrategy):
                 strategy = RestToGrpc.convert_recommend_strategy(strategy)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             res: grpc.GroupsResult = (
                 await self.grpc_points.RecommendGroups(
@@ -829,7 +829,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             res: grpc.SearchResponse = await self.grpc_points.Discover(
                 grpc.DiscoverPoints(
@@ -959,7 +959,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             res: grpc.ScrollResponse = await self.grpc_points.Scroll(
                 grpc.ScrollPoints(
@@ -1015,7 +1015,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             if isinstance(count_filter, models.Filter):
                 count_filter = RestToGrpc.convert_filter(model=count_filter)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             response = (
                 await self.grpc_points.Count(
@@ -1075,7 +1075,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ]
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             grpc_result = (
                 await self.grpc_points.Upsert(
@@ -1126,7 +1126,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points = [RestToGrpc.convert_point_vectors(point) for point in points]
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             grpc_result = (
                 await self.grpc_points.UpdateVectors(
@@ -1167,7 +1167,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points = self._try_argument_to_grpc_selector(points)
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             grpc_result = (
                 await self.grpc_points.DeleteVectors(
@@ -1222,7 +1222,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             result = (
                 await self.grpc_points.Get(
@@ -1372,7 +1372,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = self._try_argument_to_grpc_selector(points_selector)
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             return GrpcToRest.convert_update_result(
                 (
@@ -1417,7 +1417,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = self._try_argument_to_grpc_selector(points)
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             return GrpcToRest.convert_update_result(
                 (
@@ -1466,7 +1466,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = self._try_argument_to_grpc_selector(points)
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             return GrpcToRest.convert_update_result(
                 (
@@ -1515,7 +1515,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = self._try_argument_to_grpc_selector(points)
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             return GrpcToRest.convert_update_result(
                 (
@@ -1560,7 +1560,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = self._try_argument_to_grpc_selector(points_selector)
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             return GrpcToRest.convert_update_result(
                 (

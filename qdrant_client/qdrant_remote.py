@@ -431,7 +431,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             res: grpc.SearchResponse = self.grpc_points.Search(
@@ -551,7 +551,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             result: grpc.GroupsResult = self.grpc_points.SearchGroups(
@@ -722,7 +722,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(strategy, models.RecommendStrategy):
                 strategy = RestToGrpc.convert_recommend_strategy(strategy)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             res: grpc.SearchResponse = self.grpc_points.Recommend(
@@ -859,7 +859,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(strategy, models.RecommendStrategy):
                 strategy = RestToGrpc.convert_recommend_strategy(strategy)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             res: grpc.GroupsResult = self.grpc_points.RecommendGroups(
@@ -1001,7 +1001,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             res: grpc.SearchResponse = self.grpc_points.Discover(
@@ -1142,7 +1142,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             res: grpc.ScrollResponse = self.grpc_points.Scroll(
@@ -1204,7 +1204,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(count_filter, models.Filter):
                 count_filter = RestToGrpc.convert_filter(model=count_filter)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             response = self.grpc_points.Count(
@@ -1267,7 +1267,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             grpc_result = self.grpc_points.Upsert(
@@ -1321,7 +1321,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             grpc_result = self.grpc_points.UpdateVectors(
@@ -1362,7 +1362,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             grpc_result = self.grpc_points.DeleteVectors(
@@ -1422,7 +1422,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             result = self.grpc_points.Get(
@@ -1582,7 +1582,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             return GrpcToRest.convert_update_result(
@@ -1626,7 +1626,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             return GrpcToRest.convert_update_result(
@@ -1674,7 +1674,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             return GrpcToRest.convert_update_result(
@@ -1723,7 +1723,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             return GrpcToRest.convert_update_result(
@@ -1770,7 +1770,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
 
-            if isinstance(shard_key_selector, models.ShardKeySelector):
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
             return GrpcToRest.convert_update_result(
