@@ -786,7 +786,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         shard_key: types.ShardKey,
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
-        placement_type: Optional[List[int]] = None,
+        placement: Optional[List[int]] = None,
         **kwargs: Any,
     ) -> bool:
         raise NotImplementedError(

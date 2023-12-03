@@ -2321,22 +2321,23 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shard_key: types.ShardKey,
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
-        placement_type: Optional[List[int]] = None,
+        placement: Optional[List[int]] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            if isinstance(shard_key, models.ShardKey):
+            if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
+            request = await grpc.CreateShardKey(
+                shard_key=shard_key,
+                shards_number=shards_number,
+                replication_factor=replication_factor,
+                placement=placement or [],
+            )
             return (
                 await self.grpc_collections.CreateShardKey(
-                    grpc.CreateShardKey(
-                        collection_name=collection_name,
-                        timeout=timeout,
-                        shard_key=shard_key,
-                        shards_number=shards_number,
-                        replication_factor=replication_factor,
-                        placement_type=placement_type,
+                    grpc.CreateShardKeyRequest(
+                        collection_name=collection_name, timeout=timeout, request=request
                     ),
                     timeout=self._timeout,
                 )
@@ -2346,11 +2347,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 await self.openapi_client.cluster_api.create_shard_key(
                     collection_name=collection_name,
                     timeout=timeout,
-                    shard_key=models.CreateShardingKey(
+                    create_sharding_key=models.CreateShardingKey(
                         shard_key=shard_key,
                         shards_number=shards_number,
                         replication_factor=replication_factor,
-                        placement_type=placement_type,
+                        placement=placement,
                     ),
                 )
             ).result
@@ -2365,12 +2366,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            if isinstance(shard_key, models.ShardKey):
+            if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
             return (
                 await self.grpc_collections.DeleteShardKey(
-                    grpc.DeleteShardKey(
-                        collection_name=collection_name, timeout=timeout, shard_key=shard_key
+                    grpc.DeleteShardKeyRequest(
+                        collection_name=collection_name,
+                        timeout=timeout,
+                        request=grpc.DeleteShardKey(shard_key=shard_key),
                     ),
                     timeout=self._timeout,
                 )
@@ -2380,7 +2383,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 await self.openapi_client.cluster_api.delete_shard_key(
                     collection_name=collection_name,
                     timeout=timeout,
-                    shard_key=models.DropShardingKey(shard_key=shard_key),
+                    drop_sharding_key=models.DropShardingKey(shard_key=shard_key),
                 )
             ).result
             assert result is not None, "Delete shard key returned None"
