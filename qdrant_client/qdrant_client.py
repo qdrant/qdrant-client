@@ -1749,6 +1749,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             vectors_config=vectors_config,
             shard_number=shard_number,
+            sharding_method=sharding_method,
             replication_factor=replication_factor,
             write_consistency_factor=write_consistency_factor,
             on_disk_payload=on_disk_payload,
@@ -2200,7 +2201,7 @@ class QdrantClient(QdrantFastembedMixin):
         shard_key: types.ShardKey,
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
-        placement_type: Optional[List[int]] = None,
+        placement: Optional[List[int]] = None,
         **kwargs: Any,
     ) -> bool:
         """Create shard key for collection.
@@ -2212,7 +2213,7 @@ class QdrantClient(QdrantFastembedMixin):
             shard_key: Shard key to create
             shards_number: How many shards to create for this key
             replication_factor: Replication factor for this key
-            placement_type: List of peers to place shards on. If None - place on all peers.
+            placement: List of peers to place shards on. If None - place on all peers.
 
         Returns:
             Operation result
@@ -2222,7 +2223,7 @@ class QdrantClient(QdrantFastembedMixin):
             shard_key=shard_key,
             shards_number=shards_number,
             replication_factor=replication_factor,
-            placement_type=placement_type,
+            placement=placement,
             **kwargs,
         )
 

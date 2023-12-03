@@ -2547,22 +2547,26 @@ class QdrantRemote(QdrantBase):
         shard_key: types.ShardKey,
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
-        placement_type: Optional[List[int]] = None,
+        placement: Optional[List[int]] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            if isinstance(shard_key, models.ShardKey):
+            if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
 
+            request = grpc.CreateShardKey(
+                shard_key=shard_key,
+                shards_number=shards_number,
+                replication_factor=replication_factor,
+                placement=placement or [],
+            )
+
             return self.grpc_collections.CreateShardKey(
-                grpc.CreateShardKey(
+                grpc.CreateShardKeyRequest(
                     collection_name=collection_name,
                     timeout=timeout,
-                    shard_key=shard_key,
-                    shards_number=shards_number,
-                    replication_factor=replication_factor,
-                    placement_type=placement_type,
+                    request=request,
                 ),
                 timeout=self._timeout,
             ).result
@@ -2570,11 +2574,11 @@ class QdrantRemote(QdrantBase):
             result = self.openapi_client.cluster_api.create_shard_key(
                 collection_name=collection_name,
                 timeout=timeout,
-                shard_key=models.CreateShardingKey(
+                create_sharding_key=models.CreateShardingKey(
                     shard_key=shard_key,
                     shards_number=shards_number,
                     replication_factor=replication_factor,
-                    placement_type=placement_type,
+                    placement=placement,
                 ),
             ).result
             assert result is not None, "Create shard key returned None"
@@ -2588,14 +2592,16 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
-            if isinstance(shard_key, models.ShardKey):
+            if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
 
             return self.grpc_collections.DeleteShardKey(
-                grpc.DeleteShardKey(
+                grpc.DeleteShardKeyRequest(
                     collection_name=collection_name,
                     timeout=timeout,
-                    shard_key=shard_key,
+                    request=grpc.DeleteShardKey(
+                        shard_key=shard_key,
+                    ),
                 ),
                 timeout=self._timeout,
             ).result
@@ -2603,7 +2609,7 @@ class QdrantRemote(QdrantBase):
             result = self.openapi_client.cluster_api.delete_shard_key(
                 collection_name=collection_name,
                 timeout=timeout,
-                shard_key=models.DropShardingKey(
+                drop_sharding_key=models.DropShardingKey(
                     shard_key=shard_key,
                 ),
             ).result
