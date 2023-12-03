@@ -230,6 +230,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         append_payload: bool = True,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -274,6 +275,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
 
@@ -312,6 +316,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             score_threshold=score_threshold,
             append_payload=append_payload,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             timeout=timeout,
             **kwargs,
         )
@@ -336,6 +341,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
@@ -387,6 +393,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
 
@@ -408,6 +417,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             score_threshold=score_threshold,
             with_lookup=with_lookup,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             timeout=timeout,
             **kwargs,
         )
@@ -463,6 +473,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         lookup_from: Optional[types.LookupLocation] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -523,6 +534,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
             strategy:
                 Strategy to use for recommendation.
                 Strategy defines how to combine multiple examples into a recommendation query.
@@ -551,6 +565,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             strategy=strategy,
             timeout=timeout,
             **kwargs,
@@ -574,6 +589,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         with_lookup: Optional[types.WithLookupInterface] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
@@ -641,6 +657,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
             strategy:
                 Strategy to use for recommendation.
                 Strategy defines how to combine multiple examples into a recommendation query.
@@ -674,6 +693,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             with_lookup=with_lookup,
             strategy=strategy,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             timeout=timeout,
             **kwargs,
         )
@@ -692,6 +712,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -699,6 +720,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Use context and a target to find the most similar points, constrained by the context.
 
         Args:
+            collection_name: Collection to discover in
+
             target:
                 Look for vectors closest to this.
 
@@ -745,6 +768,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
 
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
 
@@ -764,6 +791,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             timeout=timeout,
             **kwargs,
         )
@@ -793,6 +821,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
@@ -823,6 +852,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
 
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+
         Returns:
             A pair of (List of points) and (optional offset for the next scroll request).
             If next page offset is `None` - there is no more points in the collection to scroll.
@@ -836,6 +869,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             with_payload=with_payload,
             with_vectors=with_vectors,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -844,6 +878,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         collection_name: str,
         count_filter: Optional[types.Filter] = None,
         exact: bool = True,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.CountResult:
         """Count points in the collection.
@@ -856,6 +891,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             exact:
                 If `True` - provide the exact count of points matching the filter.
                 If `False` - provide the approximate count of points matching the filter. Works faster.
+
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
 
         Returns:
             Amount of points in the collection matching the filter.
@@ -871,6 +910,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         points: types.Points,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -891,12 +931,22 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+
         Returns:
             Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.upsert(
-            collection_name=collection_name, points=points, wait=wait, ordering=ordering, **kwargs
+            collection_name=collection_name,
+            points=points,
+            wait=wait,
+            ordering=ordering,
+            shard_key_selector=shard_key_selector,
+            **kwargs,
         )
 
     async def update_vectors(
@@ -905,6 +955,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         points: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
@@ -913,26 +964,35 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name (str): Name of the collection to update vectors in
             points (Point): List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
                 Examples:
-
                 - `PointVectors(id=1, vector=[1, 2, 3])`
                 - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
+
             wait (bool): Await for the results to be processed.
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
+
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
 
         Returns:
             Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.update_vectors(
-            collection_name=collection_name, points=points, wait=wait, ordering=ordering
+            collection_name=collection_name,
+            points=points,
+            wait=wait,
+            ordering=ordering,
+            shard_key_selector=shard_key_selector,
         )
 
     async def delete_vectors(
@@ -942,6 +1002,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete specified vector from the collection. Does not affect payload.
@@ -965,6 +1026,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+
         Returns:
             Operation result
         """
@@ -975,6 +1041,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
         )
 
     async def retrieve(
@@ -984,6 +1051,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> List[types.Record]:
         """Retrieve stored points by IDs
@@ -1010,6 +1078,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
 
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+
         Returns:
             List of points
         """
@@ -1020,6 +1092,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             with_payload=with_payload,
             with_vectors=with_vectors,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1029,6 +1102,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
@@ -1050,6 +1124,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+
         Returns:
             Operation result
         """
@@ -1059,6 +1138,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points_selector=points_selector,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1069,6 +1149,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Modifies payload of the specified points
@@ -1096,15 +1177,20 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector
-            Example
+                Example
 
-                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
 
         Returns:
             Operation result
@@ -1116,6 +1202,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1126,6 +1213,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Overwrites payload of the specified points
@@ -1155,15 +1243,20 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector.
-            Example
-                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+                Example
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
 
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
 
         Returns:
             Operation result
@@ -1175,6 +1268,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1185,6 +1279,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Remove values from point's payload
@@ -1197,14 +1292,19 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             keys: List of payload keys to remove
             points: List of affected points, filter or points selector.
-            Example
-                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+                Example
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is downn
+
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
 
         Returns:
             Operation result
@@ -1216,6 +1316,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1225,6 +1326,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete all payload for selected points
@@ -1242,6 +1344,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+
         Returns:
             Operation result
         """
@@ -1251,6 +1359,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             points_selector=points_selector,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1426,7 +1535,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         shard_number: Optional[int] = None,
+        sharding_method: Optional[types.ShardingMethod] = None,
         replication_factor: Optional[int] = None,
         write_consistency_factor: Optional[int] = None,
         on_disk_payload: Optional[bool] = None,
@@ -1436,7 +1547,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1447,7 +1557,17 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Configuration of the vector storage. Vector params contains size and distance for the vector storage.
                 If dict is passed, service will create a vector storage for each key in the dict.
                 If single VectorParams is passed, service will create a single anonymous vector storage.
+            sparse_vectors_config:
+                Configuration of the sparse vector storage.
+                The service will create a sparse vector storage for each key in the dict.
             shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            sharding_method:
+                Defines strategy for shard creation.
+                Option `auto` (default) creates defined number of shards automatically.
+                Data will be distributed between shards automatically.
+                After creation, shards could be additionally replicated, but new shards could not be created.
+                Option `custom` allows to create shards manually, each shard should be created with assigned
+                unique `shard_key`. Data will be distributed between based on `shard_key` value.
             replication_factor:
                 Replication factor for collection. Default is 1, minimum is 1.
                 Defines how many copies of each shard will be created.
@@ -1472,9 +1592,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
-            sparse_vectors_config:
-                Configuration of the sparse vector storage.
-                The service will create a sparse vector storage for each key in the dict.
 
         Returns:
             Operation result
@@ -1501,7 +1618,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         shard_number: Optional[int] = None,
+        sharding_method: Optional[types.ShardingMethod] = None,
         replication_factor: Optional[int] = None,
         write_consistency_factor: Optional[int] = None,
         on_disk_payload: Optional[bool] = None,
@@ -1511,7 +1630,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1522,7 +1640,17 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Configuration of the vector storage. Vector params contains size and distance for the vector storage.
                 If dict is passed, service will create a vector storage for each key in the dict.
                 If single VectorParams is passed, service will create a single anonymous vector storage.
+            sparse_vectors_config:
+                Configuration of the sparse vector storage.
+                The service will create a sparse vector storage for each key in the dict.
             shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            sharding_method:
+                Defines strategy for shard creation.
+                Option `auto` (default) creates defined number of shards automatically.
+                Data will be distributed between shards automatically.
+                After creation, shards could be additionally replicated, but new shards could not be created.
+                Option `custom` allows to create shards manually, each shard should be created with assigned
+                unique `shard_key`. Data will be distributed between based on `shard_key` value.
             replication_factor:
                 Replication factor for collection. Default is 1, minimum is 1.
                 Defines how many copies of each shard will be created.
@@ -1547,9 +1675,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
-            sparse_vectors_config:
-                Configuration of the sparse vector storage.
-                The service will create a sparse vector storage for each key in the dict.
 
         Returns:
             Operation result
@@ -1957,3 +2082,53 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         """Get current locks state."""
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.get_locks(**kwargs)
+
+    async def create_shard_key(
+        self,
+        collection_name: str,
+        shard_key: types.ShardKey,
+        shards_number: Optional[int] = None,
+        replication_factor: Optional[int] = None,
+        placement_type: Optional[List[int]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        """Create shard key for collection.
+
+        Only works for collections with `custom` sharding method.
+
+        Args:
+            collection_name: Name of the collection
+            shard_key: Shard key to create
+            shards_number: How many shards to create for this key
+            replication_factor: Replication factor for this key
+            placement_type: List of peers to place shards on. If None - place on all peers.
+
+        Returns:
+            Operation result
+        """
+        return await self._client.create_shard_key(
+            collection_name=collection_name,
+            shard_key=shard_key,
+            shards_number=shards_number,
+            replication_factor=replication_factor,
+            placement_type=placement_type,
+            **kwargs,
+        )
+
+    async def delete_shard_key(
+        self, collection_name: str, shard_key: types.ShardKey, **kwargs: Any
+    ) -> bool:
+        """Delete shard key for collection.
+
+        Only works for collections with `custom` sharding method.
+
+        Args:
+            collection_name: Name of the collection
+            shard_key: Shard key to delete
+
+        Returns:
+            Operation result
+        """
+        return await self._client.delete_shard_key(
+            collection_name=collection_name, shard_key=shard_key, **kwargs
+        )

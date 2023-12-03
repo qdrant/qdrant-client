@@ -779,3 +779,23 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
     async def get_locks(self, **kwargs: Any) -> types.LocksOption:
         return types.LocksOption(error_message=None, write=False)
+
+    async def create_shard_key(
+        self,
+        collection_name: str,
+        shard_key: types.ShardKey,
+        shards_number: Optional[int] = None,
+        replication_factor: Optional[int] = None,
+        placement_type: Optional[List[int]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        raise NotImplementedError(
+            "Sharding is not supported in the local Qdrant. Please use server Qdrant if you need sharding."
+        )
+
+    async def delete_shard_key(
+        self, collection_name: str, shard_key: types.ShardKey, **kwargs: Any
+    ) -> bool:
+        raise NotImplementedError(
+            "Sharding is not supported in the local Qdrant. Please use server Qdrant if you need sharding."
+        )
