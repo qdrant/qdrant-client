@@ -1,4 +1,3 @@
-from socket import timeout
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 from qdrant_client import grpc as grpc
@@ -263,6 +262,7 @@ class QdrantClient(QdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         append_payload: bool = True,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -307,6 +307,9 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
 
@@ -346,6 +349,7 @@ class QdrantClient(QdrantFastembedMixin):
             score_threshold=score_threshold,
             append_payload=append_payload,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             timeout=timeout,
             **kwargs,
         )
@@ -370,6 +374,7 @@ class QdrantClient(QdrantFastembedMixin):
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
@@ -421,6 +426,9 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
 
@@ -443,6 +451,7 @@ class QdrantClient(QdrantFastembedMixin):
             score_threshold=score_threshold,
             with_lookup=with_lookup,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             timeout=timeout,
             **kwargs,
         )
@@ -499,6 +508,7 @@ class QdrantClient(QdrantFastembedMixin):
         lookup_from: Optional[types.LookupLocation] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -559,6 +569,9 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
             strategy:
                 Strategy to use for recommendation.
                 Strategy defines how to combine multiple examples into a recommendation query.
@@ -588,6 +601,7 @@ class QdrantClient(QdrantFastembedMixin):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             strategy=strategy,
             timeout=timeout,
             **kwargs,
@@ -611,6 +625,7 @@ class QdrantClient(QdrantFastembedMixin):
         with_lookup: Optional[types.WithLookupInterface] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
@@ -678,6 +693,9 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'majority' - query all replicas, but return values present in the majority of replicas
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
             strategy:
                 Strategy to use for recommendation.
                 Strategy defines how to combine multiple examples into a recommendation query.
@@ -712,6 +730,7 @@ class QdrantClient(QdrantFastembedMixin):
             with_lookup=with_lookup,
             strategy=strategy,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             timeout=timeout,
             **kwargs,
         )
@@ -730,6 +749,7 @@ class QdrantClient(QdrantFastembedMixin):
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
@@ -737,6 +757,8 @@ class QdrantClient(QdrantFastembedMixin):
         Use context and a target to find the most similar points, constrained by the context.
 
         Args:
+            collection_name: Collection to discover in
+
             target:
                 Look for vectors closest to this.
 
@@ -783,6 +805,10 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
 
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
 
@@ -802,6 +828,7 @@ class QdrantClient(QdrantFastembedMixin):
             using=using,
             lookup_from=lookup_from,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             timeout=timeout,
             **kwargs,
         )
@@ -831,6 +858,7 @@ class QdrantClient(QdrantFastembedMixin):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
@@ -861,6 +889,10 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
 
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+
         Returns:
             A pair of (List of points) and (optional offset for the next scroll request).
             If next page offset is `None` - there is no more points in the collection to scroll.
@@ -875,6 +907,7 @@ class QdrantClient(QdrantFastembedMixin):
             with_payload=with_payload,
             with_vectors=with_vectors,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -883,6 +916,7 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         count_filter: Optional[types.Filter] = None,
         exact: bool = True,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.CountResult:
         """Count points in the collection.
@@ -895,6 +929,10 @@ class QdrantClient(QdrantFastembedMixin):
             exact:
                 If `True` - provide the exact count of points matching the filter.
                 If `False` - provide the approximate count of points matching the filter. Works faster.
+
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
 
         Returns:
             Amount of points in the collection matching the filter.
@@ -1037,6 +1075,7 @@ class QdrantClient(QdrantFastembedMixin):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> List[types.Record]:
         """Retrieve stored points by IDs
@@ -1063,6 +1102,10 @@ class QdrantClient(QdrantFastembedMixin):
                 - 'quorum' - query the majority of replicas, return values present in all of them
                 - 'all' - query all replicas, and return values present in all replicas
 
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+
         Returns:
             List of points
         """
@@ -1074,6 +1117,7 @@ class QdrantClient(QdrantFastembedMixin):
             with_payload=with_payload,
             with_vectors=with_vectors,
             consistency=consistency,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1497,7 +1541,9 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         shard_number: Optional[int] = None,
+        sharding_method: Optional[types.ShardingMethod] = None,
         replication_factor: Optional[int] = None,
         write_consistency_factor: Optional[int] = None,
         on_disk_payload: Optional[bool] = None,
@@ -1507,7 +1553,6 @@ class QdrantClient(QdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -1518,7 +1563,17 @@ class QdrantClient(QdrantFastembedMixin):
                 Configuration of the vector storage. Vector params contains size and distance for the vector storage.
                 If dict is passed, service will create a vector storage for each key in the dict.
                 If single VectorParams is passed, service will create a single anonymous vector storage.
+            sparse_vectors_config:
+                Configuration of the sparse vector storage.
+                The service will create a sparse vector storage for each key in the dict.
             shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            sharding_method:
+                Defines strategy for shard creation.
+                Option `auto` (default) creates defined number of shards automatically.
+                Data will be distributed between shards automatically.
+                After creation, shards could be additionally replicated, but new shards could not be created.
+                Option `custom` allows to create shards manually, each shard should be created with assigned
+                unique `shard_key`. Data will be distributed between based on `shard_key` value.
             replication_factor:
                 Replication factor for collection. Default is 1, minimum is 1.
                 Defines how many copies of each shard will be created.
@@ -1543,9 +1598,6 @@ class QdrantClient(QdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
-            sparse_vectors_config:
-                Configuration of the sparse vector storage.
-                The service will create a sparse vector storage for each key in the dict.
 
         Returns:
             Operation result
@@ -1573,7 +1625,9 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         shard_number: Optional[int] = None,
+        sharding_method: Optional[types.ShardingMethod] = None,
         replication_factor: Optional[int] = None,
         write_consistency_factor: Optional[int] = None,
         on_disk_payload: Optional[bool] = None,
@@ -1583,7 +1637,6 @@ class QdrantClient(QdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
-        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -1594,7 +1647,17 @@ class QdrantClient(QdrantFastembedMixin):
                 Configuration of the vector storage. Vector params contains size and distance for the vector storage.
                 If dict is passed, service will create a vector storage for each key in the dict.
                 If single VectorParams is passed, service will create a single anonymous vector storage.
+            sparse_vectors_config:
+                Configuration of the sparse vector storage.
+                The service will create a sparse vector storage for each key in the dict.
             shard_number: Number of shards in collection. Default is 1, minimum is 1.
+            sharding_method:
+                Defines strategy for shard creation.
+                Option `auto` (default) creates defined number of shards automatically.
+                Data will be distributed between shards automatically.
+                After creation, shards could be additionally replicated, but new shards could not be created.
+                Option `custom` allows to create shards manually, each shard should be created with assigned
+                unique `shard_key`. Data will be distributed between based on `shard_key` value.
             replication_factor:
                 Replication factor for collection. Default is 1, minimum is 1.
                 Defines how many copies of each shard will be created.
@@ -1619,9 +1682,6 @@ class QdrantClient(QdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
-            sparse_vectors_config:
-                Configuration of the sparse vector storage.
-                The service will create a sparse vector storage for each key in the dict.
 
         Returns:
             Operation result

@@ -553,6 +553,21 @@ vector_config = grpc.VectorsConfig(
     )
 )
 
+
+shard_key_selector = grpc.ShardKeySelector(
+    shard_keys=[
+        grpc.ShardKey(number=123),
+    ]
+)
+
+shard_key_selector_2 = grpc.ShardKeySelector(
+    shard_keys=[
+        grpc.ShardKey(number=123),
+        grpc.ShardKey(keyword="abc"),
+    ]
+)
+
+
 search_points = grpc.SearchPoints(
     collection_name="collection-123",
     vector=[1.0, 2.0, 3.0, 5.0],
@@ -564,6 +579,7 @@ search_points = grpc.SearchPoints(
     offset=10,
     vector_name="abc",
     with_vectors=grpc.WithVectorsSelector(include=grpc.VectorsSelector(names=["abc", "def"])),
+    shard_key_selector=shard_key_selector,
 )
 
 search_points_all_vectors = grpc.SearchPoints(
@@ -577,6 +593,7 @@ search_points_all_vectors = grpc.SearchPoints(
     offset=10,
     vector_name="abc",
     with_vectors=grpc.WithVectorsSelector(enable=True),
+    shard_key_selector=shard_key_selector_2,
 )
 
 recommend_strategy = grpc.RecommendStrategy.BestScore
@@ -602,6 +619,7 @@ recommend_points = grpc.RecommendPoints(
     negative_vectors=[
         grpc.Vector(data=[3.0, 2.0, -1.0, -0.2]),
     ],
+    shard_key_selector=shard_key_selector_2,
 )
 
 lookup_location_1 = grpc.LookupLocation(
@@ -712,6 +730,7 @@ discover_points = grpc.DiscoverPoints(
     offset=10,
     using="abc",
     with_vectors=grpc.WithVectorsSelector(enable=True),
+    shard_key_selector=shard_key_selector_2,
 )
 
 upsert_operation = grpc.PointsUpdateOperation(
@@ -806,19 +825,8 @@ delete_vectors_operation_2 = grpc.PointsUpdateOperation(
     ),
 )
 
-shard_key_selector = grpc.ShardKeySelector(
-    shard_keys=[
-        grpc.ShardKey(number=123),
-    ]
-)
-
-shard_key_selector_2 = grpc.ShardKeySelector(
-    shard_keys=[
-        grpc.ShardKey(number=123),
-        grpc.ShardKey(keyword="abc"),
-    ]
-)
-
+sharding_method_1 = grpc.Auto
+sharding_method_2 = grpc.Custom
 
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
@@ -930,6 +938,7 @@ fixtures = {
     "SparseVectorParams": [sparse_vector_params],
     "SparseVectorConfig": [sparse_vector_config],
     "ShardKeySelector": [shard_key_selector, shard_key_selector_2],
+    "ShardingMethod": [sharding_method_1, sharding_method_2],
 }
 
 

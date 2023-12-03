@@ -751,6 +751,9 @@ class GrpcToRest:
             with_vector=cls.convert_with_vectors_selector(model.with_vectors)
             if model.HasField("with_vectors")
             else None,
+            shard_key=cls.convert_shard_key_selector(model.shard_key_selector)
+            if model.HasField("shard_key_selector")
+            else None,
         )
 
     @classmethod
@@ -782,6 +785,9 @@ class GrpcToRest:
             strategy=cls.convert_recommend_strategy(model.strategy)
             if model.HasField("strategy")
             else None,
+            shard_key=cls.convert_shard_key_selector(model.shard_key_selector)
+            if model.HasField("shard_key_selector")
+            else None,
         )
 
     @classmethod
@@ -804,6 +810,9 @@ class GrpcToRest:
             using=model.using,
             lookup_from=cls.convert_lookup_location(model.lookup_from)
             if model.HasField("lookup_from")
+            else None,
+            shard_key=cls.convert_shard_key_selector(model.shard_key_selector)
+            if model.HasField("shard_key_selector")
             else None,
         )
 
@@ -1221,6 +1230,14 @@ class GrpcToRest:
         if len(model.shard_keys) == 1:
             return cls.convert_shard_key(model.shard_keys[0])
         return [cls.convert_shard_key(shard_key) for shard_key in model.shard_keys]
+
+    @classmethod
+    def convert_sharding_method(cls, model: grpc.ShardingMethod) -> rest.ShardingMethod:
+        if model == grpc.Auto:
+            return rest.ShardingMethod.AUTO
+        if model == grpc.Custom:
+            return rest.ShardingMethod.CUSTOM
+        raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover
 
 
 # ----------------------------------------
@@ -1910,6 +1927,9 @@ class RestToGrpc:
             with_vectors=cls.convert_with_vectors(model.with_vector)
             if model.with_vector is not None
             else None,
+            shard_key_selector=cls.convert_shard_key_selector(model.shard_key)
+            if model.shard_key
+            else None,
         )
 
     @classmethod
@@ -1952,6 +1972,9 @@ class RestToGrpc:
             else None,
             positive_vectors=positive_vectors,
             negative_vectors=negative_vectors,
+            shard_key_selector=cls.convert_shard_key_selector(model.shard_key)
+            if model.shard_key
+            else None,
         )
 
     @classmethod
@@ -1990,6 +2013,10 @@ class RestToGrpc:
             None if model.lookup_from is None else cls.convert_lookup_location(model.lookup_from)
         )
 
+        shard_key_selector = (
+            None if model.shard_key is None else cls.convert_shard_key_selector(model.shard_key)
+        )
+
         return grpc.DiscoverPoints(
             collection_name=collection_name,
             target=target,
@@ -2002,6 +2029,7 @@ class RestToGrpc:
             params=search_params,
             using=model.using,
             lookup_from=lookup_from,
+            shard_key_selector=shard_key_selector,
         )
 
     @classmethod
@@ -2450,3 +2478,12 @@ class RestToGrpc:
             return grpc.ShardKeySelector(shard_keys=[cls.convert_shard_key(key) for key in model])
 
         raise ValueError(f"invalid ShardKeySelector model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_sharding_method(cls, model: rest.ShardingMethod) -> grpc.ShardingMethod:
+        if model == rest.ShardingMethod.AUTO:
+            return grpc.Auto
+        elif model == rest.ShardingMethod.CUSTOM:
+            return grpc.Custom
+        else:
+            raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover
