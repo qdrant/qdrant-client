@@ -611,14 +611,22 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_points_selector(cls, model: grpc.PointsSelector) -> rest.PointsSelector:
+    def convert_points_selector(
+        cls, model: grpc.PointsSelector, shard_key_selector: Optional[grpc.ShardKeySelector] = None
+    ) -> rest.PointsSelector:
         name = model.WhichOneof("points_selector_one_of")
         val = getattr(model, name)
 
         if name == "points":
-            return rest.PointIdsList(points=[cls.convert_point_id(point) for point in val.ids])
+            return rest.PointIdsList(
+                points=[cls.convert_point_id(point) for point in val.ids],
+                shard_key=shard_key_selector,
+            )
         if name == "filter":
-            return rest.FilterSelector(filter=cls.convert_filter(val))
+            return rest.FilterSelector(
+                filter=cls.convert_filter(val),
+                shard_key=shard_key_selector,
+            )
         raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1073,20 +1081,35 @@ class GrpcToRest:
         val = getattr(model, name)
 
         if name == "upsert":
+            shard_key_selector = (
+                cls.convert_shard_key(val.shard_key_selector)
+                if val.HasField("shard_key_selector")
+                else None
+            )
             return rest.UpsertOperation(
                 upsert=rest.PointsList(
-                    points=[cls.convert_point_struct(point) for point in val.points]
+                    points=[cls.convert_point_struct(point) for point in val.points],
+                    shard_key=shard_key_selector,
                 )
             )
         # TODO: remove deprecated field in v1.8.0
         elif name == "delete_deprecated":
             return rest.DeleteOperation(delete=cls.convert_points_selector(val))
         elif name == "delete_points":
-            points_selector = cls.convert_points_selector(val.points)
-
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points, shard_key_selector=shard_key_selector
+            )
             return rest.DeleteOperation(delete=points_selector)
         elif name == "set_payload":
-            points_selector = cls.convert_points_selector(val.points_selector)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points_selector, shard_key_selector=shard_key_selector
+            )
             points = None
             filter_ = None
             if isinstance(points_selector, rest.PointIdsList):
@@ -1106,7 +1129,12 @@ class GrpcToRest:
                 )
             )
         elif name == "overwrite_payload":
-            points_selector = cls.convert_points_selector(val.points_selector)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points_selector, shard_key_selector=shard_key_selector
+            )
             points = None
             filter_ = None
             if isinstance(points_selector, rest.PointIdsList):
@@ -1126,7 +1154,12 @@ class GrpcToRest:
                 )
             )
         elif name == "delete_payload":
-            points_selector = cls.convert_points_selector(val.points_selector)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points_selector, shard_key_selector=shard_key_selector
+            )
             points = None
             filter_ = None
             if isinstance(points_selector, rest.PointIdsList):
@@ -1149,16 +1182,32 @@ class GrpcToRest:
         elif name == "clear_payload_deprecated":
             return rest.ClearPayloadOperation(clear_payload=cls.convert_points_selector(val))
         elif name == "clear_payload":
-            points_selector = cls.convert_points_selector(val.points)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points, shard_key_selector=shard_key_selector
+            )
             return rest.ClearPayloadOperation(clear_payload=points_selector)
         elif name == "update_vectors":
+            shard_key_selector = (
+                cls.convert_shard_key(val.shard_key_selector)
+                if val.HasField("shard_key_selector")
+                else None
+            )
             return rest.UpdateVectorsOperation(
                 update_vectors=rest.UpdateVectors(
-                    points=[cls.convert_point_vectors(point) for point in val.points]
+                    points=[cls.convert_point_vectors(point) for point in val.points],
+                    shard_key=shard_key_selector,
                 )
             )
         elif name == "delete_vectors":
-            points_selector = cls.convert_points_selector(val.points_selector)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points_selector, shard_key_selector=shard_key_selector
+            )
             points = None
             filter_ = None
             if isinstance(points_selector, rest.PointIdsList):
@@ -2323,14 +2372,28 @@ class RestToGrpc:
         points_selector: rest.PointsSelector
 
         if isinstance(model, rest.UpsertOperation):
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.upsert.shard_key)
+                if model.upsert.shard_key
+                else None
+            )
             return grpc.PointsUpdateOperation(
                 upsert=grpc.PointsUpdateOperation.PointStructList(
-                    points=cls.convert_point_insert_operation(model.upsert)
+                    points=cls.convert_point_insert_operation(model.upsert),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.DeleteOperation):
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.delete.shard_key)
+                if model.delete.shard_key
+                else None
+            )
             points_selector = cls.convert_points_selector(model.delete)
-            delete_points = grpc.PointsUpdateOperation.DeletePoints(points=points_selector)
+            delete_points = grpc.PointsUpdateOperation.DeletePoints(
+                points=points_selector,
+                shard_key_selector=shard_key_selector,
+            )
             return grpc.PointsUpdateOperation(
                 delete_points=delete_points,
                 # TODO: remove deprecated field in v1.8.0
@@ -2344,10 +2407,17 @@ class RestToGrpc:
             else:
                 raise ValueError(f"invalid SetPayloadOperation model: {model}")  # pragma: no cover
 
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.set_payload.shard_key)
+                if model.set_payload.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 set_payload=grpc.PointsUpdateOperation.SetPayload(
                     payload=cls.convert_payload(model.set_payload.payload),
                     points_selector=cls.convert_points_selector(points_selector),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.OverwritePayloadOperation):
@@ -2360,10 +2430,17 @@ class RestToGrpc:
                     f"invalid OverwritePayloadOperation model: {model}"
                 )  # pragma: no cover
 
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.overwrite_payload.shard_key)
+                if model.overwrite_payload.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
                     payload=cls.convert_payload(model.overwrite_payload.payload),
                     points_selector=cls.convert_points_selector(points_selector),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.DeletePayloadOperation):
@@ -2376,26 +2453,48 @@ class RestToGrpc:
                     f"invalid DeletePayloadOperation model: {model}"
                 )  # pragma: no cover
 
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.delete_payload.shard_key)
+                if model.delete_payload.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 delete_payload=grpc.PointsUpdateOperation.DeletePayload(
                     keys=model.delete_payload.keys,
                     points_selector=cls.convert_points_selector(points_selector),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.ClearPayloadOperation):
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.clear_payload.shard_key)
+                if model.clear_payload.shard_key
+                else None
+            )
             points_selector = cls.convert_points_selector(model.clear_payload)
-            clear_payload = grpc.PointsUpdateOperation.ClearPayload(points=points_selector)
+            clear_payload = grpc.PointsUpdateOperation.ClearPayload(
+                points=points_selector,
+                shard_key_selector=shard_key_selector,
+            )
             return grpc.PointsUpdateOperation(
                 clear_payload=clear_payload,
                 # TODO: remove deprecated field in v1.8.0
                 clear_payload_deprecated=points_selector,
             )
         elif isinstance(model, rest.UpdateVectorsOperation):
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.update_vectors.shard_key)
+                if model.update_vectors.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 update_vectors=grpc.PointsUpdateOperation.UpdateVectors(
                     points=[
                         cls.convert_point_vectors(point) for point in model.update_vectors.points
-                    ]
+                    ],
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.DeleteVectorsOperation):
@@ -2408,10 +2507,17 @@ class RestToGrpc:
                     f"invalid DeletePayloadOperation model: {model}"
                 )  # pragma: no cover
 
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.delete_vectors.shard_key)
+                if model.delete_vectors.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 delete_vectors=grpc.PointsUpdateOperation.DeleteVectors(
                     points_selector=cls.convert_points_selector(points_selector),
                     vectors=grpc.VectorsSelector(names=model.delete_vectors.vector),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         else:

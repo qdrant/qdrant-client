@@ -652,7 +652,9 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name)
-        return self.create_collection(collection_name, vectors_config, init_from, sparse_vectors_config)
+        return self.create_collection(
+            collection_name, vectors_config, init_from, sparse_vectors_config
+        )
 
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
@@ -807,4 +809,27 @@ class QdrantLocal(QdrantBase):
         return types.LocksOption(
             error_message=None,
             write=False,
+        )
+
+    def create_shard_key(
+        self,
+        collection_name: str,
+        shard_key: types.ShardKey,
+        shards_number: Optional[int] = None,
+        replication_factor: Optional[int] = None,
+        placement_type: Optional[List[int]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        raise NotImplementedError(
+            "Sharding is not supported in the local Qdrant. Please use server Qdrant if you need sharding."
+        )
+
+    def delete_shard_key(
+        self,
+        collection_name: str,
+        shard_key: types.ShardKey,
+        **kwargs: Any,
+    ) -> bool:
+        raise NotImplementedError(
+            "Sharding is not supported in the local Qdrant. Please use server Qdrant if you need sharding."
         )

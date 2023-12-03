@@ -952,6 +952,7 @@ class QdrantClient(QdrantFastembedMixin):
         points: types.Points,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -972,6 +973,11 @@ class QdrantClient(QdrantFastembedMixin):
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+
         Returns:
             Operation Result(UpdateResult)
         """
@@ -982,6 +988,7 @@ class QdrantClient(QdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -991,6 +998,7 @@ class QdrantClient(QdrantFastembedMixin):
         points: Sequence[types.PointVectors],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
@@ -999,19 +1007,24 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name (str): Name of the collection to update vectors in
             points (Point): List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
                 Examples:
-
                 - `PointVectors(id=1, vector=[1, 2, 3])`
                 - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
+
             wait (bool): Await for the results to be processed.
 
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
+
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
 
         Returns:
             Operation Result(UpdateResult)
@@ -1023,6 +1036,7 @@ class QdrantClient(QdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
         )
 
     def delete_vectors(
@@ -1032,6 +1046,7 @@ class QdrantClient(QdrantFastembedMixin):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete specified vector from the collection. Does not affect payload.
@@ -1055,6 +1070,11 @@ class QdrantClient(QdrantFastembedMixin):
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+
         Returns:
             Operation result
         """
@@ -1066,6 +1086,7 @@ class QdrantClient(QdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
         )
 
     def retrieve(
@@ -1127,6 +1148,7 @@ class QdrantClient(QdrantFastembedMixin):
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
@@ -1148,6 +1170,11 @@ class QdrantClient(QdrantFastembedMixin):
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
 
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+
         Returns:
             Operation result
         """
@@ -1158,6 +1185,7 @@ class QdrantClient(QdrantFastembedMixin):
             points_selector=points_selector,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1168,6 +1196,7 @@ class QdrantClient(QdrantFastembedMixin):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Modifies payload of the specified points
@@ -1195,15 +1224,20 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector
-            Example
+                Example
 
-                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
 
         Returns:
             Operation result
@@ -1216,6 +1250,7 @@ class QdrantClient(QdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1226,6 +1261,7 @@ class QdrantClient(QdrantFastembedMixin):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Overwrites payload of the specified points
@@ -1255,15 +1291,20 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector.
-            Example
-                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+                Example
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
 
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
 
         Returns:
             Operation result
@@ -1276,6 +1317,7 @@ class QdrantClient(QdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1286,6 +1328,7 @@ class QdrantClient(QdrantFastembedMixin):
         points: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Remove values from point's payload
@@ -1298,14 +1341,19 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             keys: List of payload keys to remove
             points: List of affected points, filter or points selector.
-            Example
-                - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
-                - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
+                Example
+                    - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
+                    - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
 
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is downn
+
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
 
         Returns:
             Operation result
@@ -1318,6 +1366,7 @@ class QdrantClient(QdrantFastembedMixin):
             points=points,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1327,6 +1376,7 @@ class QdrantClient(QdrantFastembedMixin):
         points_selector: types.PointsSelector,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Delete all payload for selected points
@@ -1344,6 +1394,12 @@ class QdrantClient(QdrantFastembedMixin):
                 - `weak` (default) - write operations may be reordered, works faster
                 - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
                 - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
+
+            shard_key_selector:
+                Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+
         Returns:
             Operation result
         """
@@ -1354,6 +1410,7 @@ class QdrantClient(QdrantFastembedMixin):
             points_selector=points_selector,
             wait=wait,
             ordering=ordering,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -2135,4 +2192,59 @@ class QdrantClient(QdrantFastembedMixin):
             collection_names=collection_names,
             batch_size=batch_size,
             recreate_on_collision=recreate_on_collision,
+        )
+
+    def create_shard_key(
+        self,
+        collection_name: str,
+        shard_key: types.ShardKey,
+        shards_number: Optional[int] = None,
+        replication_factor: Optional[int] = None,
+        placement_type: Optional[List[int]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        """Create shard key for collection.
+
+        Only works for collections with `custom` sharding method.
+
+        Args:
+            collection_name: Name of the collection
+            shard_key: Shard key to create
+            shards_number: How many shards to create for this key
+            replication_factor: Replication factor for this key
+            placement_type: List of peers to place shards on. If None - place on all peers.
+
+        Returns:
+            Operation result
+        """
+        return self._client.create_shard_key(
+            collection_name=collection_name,
+            shard_key=shard_key,
+            shards_number=shards_number,
+            replication_factor=replication_factor,
+            placement_type=placement_type,
+            **kwargs,
+        )
+
+    def delete_shard_key(
+        self,
+        collection_name: str,
+        shard_key: types.ShardKey,
+        **kwargs: Any,
+    ) -> bool:
+        """Delete shard key for collection.
+
+        Only works for collections with `custom` sharding method.
+
+        Args:
+            collection_name: Name of the collection
+            shard_key: Shard key to delete
+
+        Returns:
+            Operation result
+        """
+        return self._client.delete_shard_key(
+            collection_name=collection_name,
+            shard_key=shard_key,
+            **kwargs,
         )
