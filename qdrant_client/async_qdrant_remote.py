@@ -2323,7 +2323,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         replication_factor: Optional[int] = None,
         placement_type: Optional[List[int]] = None,
         timeout: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
             if isinstance(shard_key, models.ShardKey):
@@ -2362,7 +2362,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         shard_key: types.ShardKey,
         timeout: Optional[int] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
             if isinstance(shard_key, models.ShardKey):
