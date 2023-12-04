@@ -1176,7 +1176,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         collection_name=collection_name,
                         wait=wait,
                         vectors=grpc.VectorsSelector(names=vectors),
-                        points_selector=points,
+                        points_selector=points_selector,
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
                     )
