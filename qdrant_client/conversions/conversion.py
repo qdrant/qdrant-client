@@ -424,6 +424,9 @@ class GrpcToRest:
             score=model.score,
             vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
             version=model.version,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.HasField("shard_key")
+            else None,
         )
 
     @classmethod
@@ -657,6 +660,9 @@ class GrpcToRest:
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
             vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.HasField("shard_key")
+            else None,
         )
 
     @classmethod
@@ -713,7 +719,7 @@ class GrpcToRest:
         return model.data[:]
 
     @classmethod
-    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, List[rest.Vector]]:
+    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, rest.Vector]:
         vectors = {}
         for name, vector in model.vectors.items():
             vectors[name] = cls.convert_vector(vector)
@@ -1476,6 +1482,7 @@ class RestToGrpc:
             score=model.score,
             vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
             version=model.version,
+            shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
         )
 
     @classmethod
@@ -1850,6 +1857,7 @@ class RestToGrpc:
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload),
             vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
+            shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
         )
 
     @classmethod

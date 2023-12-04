@@ -959,6 +959,8 @@ def test_custom_sharding(prefer_grpc):
     )
 
     assert len(res) == 3
+    for record in res:
+        assert record.shard_key == "cats"
 
     res = client.search(
         collection_name=COLLECTION_NAME,

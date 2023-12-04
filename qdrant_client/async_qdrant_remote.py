@@ -1164,7 +1164,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            points = self._try_argument_to_grpc_selector(points)
+            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
@@ -1262,7 +1263,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             return http_result
 
     @classmethod
-    def _try_argument_to_grpc_selector(cls, points: types.PointsSelector) -> grpc.PointsSelector:
+    def _try_argument_to_grpc_selector(
+        cls, points: types.PointsSelector
+    ) -> Tuple[grpc.PointsSelector, Optional[grpc.ShardKeySelector]]:
+        shard_key_selector = None
         if isinstance(points, list):
             points_selector = grpc.PointsSelector(
                 points=grpc.PointsIdsList(
@@ -1277,6 +1281,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         elif isinstance(points, grpc.PointsSelector):
             points_selector = points
         elif isinstance(points, get_args(models.PointsSelector)):
+            if points.shard_key is not None:
+                shard_key_selector = RestToGrpc.convert_shard_key_selector(points.shard_key)
             points_selector = RestToGrpc.convert_points_selector(points)
         elif isinstance(points, models.Filter):
             points_selector = RestToGrpc.convert_points_selector(
@@ -1286,7 +1292,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = grpc.PointsSelector(filter=points)
         else:
             raise ValueError(f"Unsupported points selector type: {type(points)}")
-        return points_selector
+        return (points_selector, shard_key_selector)
 
     @classmethod
     def _try_argument_to_rest_selector(
@@ -1369,7 +1375,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            points_selector = self._try_argument_to_grpc_selector(points_selector)
+            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(
+                points_selector
+            )
+            shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
@@ -1414,7 +1423,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            points_selector = self._try_argument_to_grpc_selector(points)
+            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
@@ -1463,7 +1473,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            points_selector = self._try_argument_to_grpc_selector(points)
+            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
@@ -1512,7 +1523,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            points_selector = self._try_argument_to_grpc_selector(points)
+            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
@@ -1557,7 +1569,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            points_selector = self._try_argument_to_grpc_selector(points_selector)
+            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(
+                points_selector
+            )
+            shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):

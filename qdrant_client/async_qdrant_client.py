@@ -901,7 +901,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.count(
-            collection_name=collection_name, count_filter=count_filter, exact=exact, **kwargs
+            collection_name=collection_name,
+            count_filter=count_filter,
+            exact=exact,
+            shard_key_selector=shard_key_selector,
+            **kwargs,
         )
 
     async def upsert(
@@ -1601,6 +1605,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name=collection_name,
             vectors_config=vectors_config,
             shard_number=shard_number,
+            sharding_method=sharding_method,
             replication_factor=replication_factor,
             write_consistency_factor=write_consistency_factor,
             on_disk_payload=on_disk_payload,
