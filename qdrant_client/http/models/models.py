@@ -506,6 +506,7 @@ class Distance(str, Enum):
     COSINE = "Cosine"
     EUCLID = "Euclid"
     DOT = "Dot"
+    MANHATTAN = "Manhattan"
 
 
 class DropReplicaOperation(BaseModel, extra="forbid"):

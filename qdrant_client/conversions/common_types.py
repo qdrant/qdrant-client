@@ -62,6 +62,9 @@ RecommendStrategy: TypeAlias = rest.RecommendStrategy
 RecommendExample: TypeAlias = rest.RecommendExample
 TargetVector: TypeAlias = Union[rest.RecommendExample, grpc.TargetVector]
 ContextExamplePair: TypeAlias = Union[rest.ContextExamplePair, grpc.ContextExamplePair]
+ShardingMethod: TypeAlias = rest.ShardingMethod
+ShardKey: TypeAlias = rest.ShardKey
+ShardKeySelector: TypeAlias = rest.ShardKeySelector
 
 AliasOperations = Union[
     rest.CreateAliasOperation,

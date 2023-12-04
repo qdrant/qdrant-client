@@ -2,7 +2,6 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
-from qdrant_client.http.models import SparseVector
 
 
 class QdrantBase:
@@ -400,4 +399,23 @@ class QdrantBase:
         batch_size: int = 100,
         recreate_on_collision: bool = False,
     ) -> None:
+        raise NotImplementedError()
+
+    def create_shard_key(
+        self,
+        collection_name: str,
+        shard_key: types.ShardKey,
+        shards_number: Optional[int] = None,
+        replication_factor: Optional[int] = None,
+        placement: Optional[List[int]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        raise NotImplementedError()
+
+    def delete_shard_key(
+        self,
+        collection_name: str,
+        shard_key: types.ShardKey,
+        **kwargs: Any,
+    ) -> bool:
         raise NotImplementedError()
