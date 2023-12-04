@@ -943,6 +943,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             count_filter=count_filter,
             exact=exact,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1665,6 +1666,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             vectors_config=vectors_config,
             shard_number=shard_number,
+            sharding_method=sharding_method,
             replication_factor=replication_factor,
             write_consistency_factor=write_consistency_factor,
             on_disk_payload=on_disk_payload,
