@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, g
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
-from numpy import single
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -274,6 +273,8 @@ class GrpcToRest:
             return rest.Distance.COSINE
         elif model == grpc.Distance.Euclid:
             return rest.Distance.EUCLID
+        elif model == grpc.Distance.Manhattan:
+            return rest.Distance.MANHATTAN
         elif model == grpc.Distance.Dot:
             return rest.Distance.DOT
         else:
@@ -423,6 +424,9 @@ class GrpcToRest:
             score=model.score,
             vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
             version=model.version,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.HasField("shard_key")
+            else None,
         )
 
     @classmethod
@@ -610,14 +614,22 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_points_selector(cls, model: grpc.PointsSelector) -> rest.PointsSelector:
+    def convert_points_selector(
+        cls, model: grpc.PointsSelector, shard_key_selector: Optional[grpc.ShardKeySelector] = None
+    ) -> rest.PointsSelector:
         name = model.WhichOneof("points_selector_one_of")
         val = getattr(model, name)
 
         if name == "points":
-            return rest.PointIdsList(points=[cls.convert_point_id(point) for point in val.ids])
+            return rest.PointIdsList(
+                points=[cls.convert_point_id(point) for point in val.ids],
+                shard_key=shard_key_selector,
+            )
         if name == "filter":
-            return rest.FilterSelector(filter=cls.convert_filter(val))
+            return rest.FilterSelector(
+                filter=cls.convert_filter(val),
+                shard_key=shard_key_selector,
+            )
         raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
 
     @classmethod
@@ -648,6 +660,9 @@ class GrpcToRest:
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
             vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.HasField("shard_key")
+            else None,
         )
 
     @classmethod
@@ -704,7 +719,7 @@ class GrpcToRest:
         return model.data[:]
 
     @classmethod
-    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, List[rest.Vector]]:
+    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, rest.Vector]:
         vectors = {}
         for name, vector in model.vectors.items():
             vectors[name] = cls.convert_vector(vector)
@@ -750,6 +765,9 @@ class GrpcToRest:
             with_vector=cls.convert_with_vectors_selector(model.with_vectors)
             if model.HasField("with_vectors")
             else None,
+            shard_key=cls.convert_shard_key_selector(model.shard_key_selector)
+            if model.HasField("shard_key_selector")
+            else None,
         )
 
     @classmethod
@@ -781,6 +799,9 @@ class GrpcToRest:
             strategy=cls.convert_recommend_strategy(model.strategy)
             if model.HasField("strategy")
             else None,
+            shard_key=cls.convert_shard_key_selector(model.shard_key_selector)
+            if model.HasField("shard_key_selector")
+            else None,
         )
 
     @classmethod
@@ -803,6 +824,9 @@ class GrpcToRest:
             using=model.using,
             lookup_from=cls.convert_lookup_location(model.lookup_from)
             if model.HasField("lookup_from")
+            else None,
+            shard_key=cls.convert_shard_key_selector(model.shard_key_selector)
+            if model.HasField("shard_key_selector")
             else None,
         )
 
@@ -1063,20 +1087,35 @@ class GrpcToRest:
         val = getattr(model, name)
 
         if name == "upsert":
+            shard_key_selector = (
+                cls.convert_shard_key(val.shard_key_selector)
+                if val.HasField("shard_key_selector")
+                else None
+            )
             return rest.UpsertOperation(
                 upsert=rest.PointsList(
-                    points=[cls.convert_point_struct(point) for point in val.points]
+                    points=[cls.convert_point_struct(point) for point in val.points],
+                    shard_key=shard_key_selector,
                 )
             )
         # TODO: remove deprecated field in v1.8.0
         elif name == "delete_deprecated":
             return rest.DeleteOperation(delete=cls.convert_points_selector(val))
         elif name == "delete_points":
-            points_selector = cls.convert_points_selector(val.points)
-
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points, shard_key_selector=shard_key_selector
+            )
             return rest.DeleteOperation(delete=points_selector)
         elif name == "set_payload":
-            points_selector = cls.convert_points_selector(val.points_selector)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points_selector, shard_key_selector=shard_key_selector
+            )
             points = None
             filter_ = None
             if isinstance(points_selector, rest.PointIdsList):
@@ -1096,7 +1135,12 @@ class GrpcToRest:
                 )
             )
         elif name == "overwrite_payload":
-            points_selector = cls.convert_points_selector(val.points_selector)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points_selector, shard_key_selector=shard_key_selector
+            )
             points = None
             filter_ = None
             if isinstance(points_selector, rest.PointIdsList):
@@ -1116,7 +1160,12 @@ class GrpcToRest:
                 )
             )
         elif name == "delete_payload":
-            points_selector = cls.convert_points_selector(val.points_selector)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points_selector, shard_key_selector=shard_key_selector
+            )
             points = None
             filter_ = None
             if isinstance(points_selector, rest.PointIdsList):
@@ -1139,16 +1188,32 @@ class GrpcToRest:
         elif name == "clear_payload_deprecated":
             return rest.ClearPayloadOperation(clear_payload=cls.convert_points_selector(val))
         elif name == "clear_payload":
-            points_selector = cls.convert_points_selector(val.points)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points, shard_key_selector=shard_key_selector
+            )
             return rest.ClearPayloadOperation(clear_payload=points_selector)
         elif name == "update_vectors":
+            shard_key_selector = (
+                cls.convert_shard_key(val.shard_key_selector)
+                if val.HasField("shard_key_selector")
+                else None
+            )
             return rest.UpdateVectorsOperation(
                 update_vectors=rest.UpdateVectors(
-                    points=[cls.convert_point_vectors(point) for point in val.points]
+                    points=[cls.convert_point_vectors(point) for point in val.points],
+                    shard_key=shard_key_selector,
                 )
             )
         elif name == "delete_vectors":
-            points_selector = cls.convert_points_selector(val.points_selector)
+            shard_key_selector = (
+                val.shard_key_selector if val.HasField("shard_key_selector") else None
+            )
+            points_selector = cls.convert_points_selector(
+                val.points_selector, shard_key_selector=shard_key_selector
+            )
             points = None
             filter_ = None
             if isinstance(points_selector, rest.PointIdsList):
@@ -1208,6 +1273,26 @@ class GrpcToRest:
         cls, model: grpc.SparseVectorConfig
     ) -> Dict[str, rest.SparseVectorParams]:
         return dict((key, cls.convert_sparse_vector_params(val)) for key, val in model.map.items())
+
+    @classmethod
+    def convert_shard_key(cls, model: grpc.ShardKey) -> rest.ShardKey:
+        name = model.WhichOneof("key")
+        val = getattr(model, name)
+        return val
+
+    @classmethod
+    def convert_shard_key_selector(cls, model: grpc.ShardKeySelector) -> rest.ShardKeySelector:
+        if len(model.shard_keys) == 1:
+            return cls.convert_shard_key(model.shard_keys[0])
+        return [cls.convert_shard_key(shard_key) for shard_key in model.shard_keys]
+
+    @classmethod
+    def convert_sharding_method(cls, model: grpc.ShardingMethod) -> rest.ShardingMethod:
+        if model == grpc.Auto:
+            return rest.ShardingMethod.AUTO
+        if model == grpc.Custom:
+            return rest.ShardingMethod.CUSTOM
+        raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover
 
 
 # ----------------------------------------
@@ -1397,6 +1482,7 @@ class RestToGrpc:
             score=model.score,
             vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
             version=model.version,
+            shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
         )
 
     @classmethod
@@ -1504,6 +1590,8 @@ class RestToGrpc:
             return grpc.Distance.Cosine
         if model == rest.Distance.EUCLID:
             return grpc.Distance.Euclid
+        if model == rest.Distance.MANHATTAN:
+            return grpc.Distance.Manhattan
 
         raise ValueError(f"invalid Distance model: {model}")  # pragma: no cover
 
@@ -1769,6 +1857,7 @@ class RestToGrpc:
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload),
             vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
+            shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
         )
 
     @classmethod
@@ -1895,6 +1984,9 @@ class RestToGrpc:
             with_vectors=cls.convert_with_vectors(model.with_vector)
             if model.with_vector is not None
             else None,
+            shard_key_selector=cls.convert_shard_key_selector(model.shard_key)
+            if model.shard_key
+            else None,
         )
 
     @classmethod
@@ -1937,6 +2029,9 @@ class RestToGrpc:
             else None,
             positive_vectors=positive_vectors,
             negative_vectors=negative_vectors,
+            shard_key_selector=cls.convert_shard_key_selector(model.shard_key)
+            if model.shard_key
+            else None,
         )
 
     @classmethod
@@ -1975,6 +2070,10 @@ class RestToGrpc:
             None if model.lookup_from is None else cls.convert_lookup_location(model.lookup_from)
         )
 
+        shard_key_selector = (
+            None if model.shard_key is None else cls.convert_shard_key_selector(model.shard_key)
+        )
+
         return grpc.DiscoverPoints(
             collection_name=collection_name,
             target=target,
@@ -1987,6 +2086,7 @@ class RestToGrpc:
             params=search_params,
             using=model.using,
             lookup_from=lookup_from,
+            shard_key_selector=shard_key_selector,
         )
 
     @classmethod
@@ -2280,14 +2380,28 @@ class RestToGrpc:
         points_selector: rest.PointsSelector
 
         if isinstance(model, rest.UpsertOperation):
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.upsert.shard_key)
+                if model.upsert.shard_key
+                else None
+            )
             return grpc.PointsUpdateOperation(
                 upsert=grpc.PointsUpdateOperation.PointStructList(
-                    points=cls.convert_point_insert_operation(model.upsert)
+                    points=cls.convert_point_insert_operation(model.upsert),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.DeleteOperation):
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.delete.shard_key)
+                if model.delete.shard_key
+                else None
+            )
             points_selector = cls.convert_points_selector(model.delete)
-            delete_points = grpc.PointsUpdateOperation.DeletePoints(points=points_selector)
+            delete_points = grpc.PointsUpdateOperation.DeletePoints(
+                points=points_selector,
+                shard_key_selector=shard_key_selector,
+            )
             return grpc.PointsUpdateOperation(
                 delete_points=delete_points,
                 # TODO: remove deprecated field in v1.8.0
@@ -2301,10 +2415,17 @@ class RestToGrpc:
             else:
                 raise ValueError(f"invalid SetPayloadOperation model: {model}")  # pragma: no cover
 
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.set_payload.shard_key)
+                if model.set_payload.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 set_payload=grpc.PointsUpdateOperation.SetPayload(
                     payload=cls.convert_payload(model.set_payload.payload),
                     points_selector=cls.convert_points_selector(points_selector),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.OverwritePayloadOperation):
@@ -2317,10 +2438,17 @@ class RestToGrpc:
                     f"invalid OverwritePayloadOperation model: {model}"
                 )  # pragma: no cover
 
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.overwrite_payload.shard_key)
+                if model.overwrite_payload.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
                     payload=cls.convert_payload(model.overwrite_payload.payload),
                     points_selector=cls.convert_points_selector(points_selector),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.DeletePayloadOperation):
@@ -2333,26 +2461,48 @@ class RestToGrpc:
                     f"invalid DeletePayloadOperation model: {model}"
                 )  # pragma: no cover
 
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.delete_payload.shard_key)
+                if model.delete_payload.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 delete_payload=grpc.PointsUpdateOperation.DeletePayload(
                     keys=model.delete_payload.keys,
                     points_selector=cls.convert_points_selector(points_selector),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.ClearPayloadOperation):
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.clear_payload.shard_key)
+                if model.clear_payload.shard_key
+                else None
+            )
             points_selector = cls.convert_points_selector(model.clear_payload)
-            clear_payload = grpc.PointsUpdateOperation.ClearPayload(points=points_selector)
+            clear_payload = grpc.PointsUpdateOperation.ClearPayload(
+                points=points_selector,
+                shard_key_selector=shard_key_selector,
+            )
             return grpc.PointsUpdateOperation(
                 clear_payload=clear_payload,
                 # TODO: remove deprecated field in v1.8.0
                 clear_payload_deprecated=points_selector,
             )
         elif isinstance(model, rest.UpdateVectorsOperation):
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.update_vectors.shard_key)
+                if model.update_vectors.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 update_vectors=grpc.PointsUpdateOperation.UpdateVectors(
                     points=[
                         cls.convert_point_vectors(point) for point in model.update_vectors.points
-                    ]
+                    ],
+                    shard_key_selector=shard_key_selector,
                 )
             )
         elif isinstance(model, rest.DeleteVectorsOperation):
@@ -2365,10 +2515,17 @@ class RestToGrpc:
                     f"invalid DeletePayloadOperation model: {model}"
                 )  # pragma: no cover
 
+            shard_key_selector = (
+                cls.convert_shard_key_selector(model.delete_vectors.shard_key)
+                if model.delete_vectors.shard_key
+                else None
+            )
+
             return grpc.PointsUpdateOperation(
                 delete_vectors=grpc.PointsUpdateOperation.DeleteVectors(
                     points_selector=cls.convert_points_selector(points_selector),
                     vectors=grpc.VectorsSelector(names=model.delete_vectors.vector),
+                    shard_key_selector=shard_key_selector,
                 )
             )
         else:
@@ -2416,3 +2573,31 @@ class RestToGrpc:
         return grpc.SparseVectorConfig(
             map=dict((key, cls.convert_sparse_vector_params(val)) for key, val in model.items())
         )
+
+    @classmethod
+    def convert_shard_key(cls, model: rest.ShardKey) -> grpc.ShardKey:
+        if isinstance(model, int):
+            return grpc.ShardKey(number=model)
+        if isinstance(model, str):
+            return grpc.ShardKey(keyword=model)
+
+        raise ValueError(f"invalid ShardKey model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_shard_key_selector(cls, model: rest.ShardKeySelector) -> grpc.ShardKeySelector:
+        if isinstance(model, get_args_subscribed(rest.ShardKey)):
+            return grpc.ShardKeySelector(shard_keys=[cls.convert_shard_key(model)])
+
+        if isinstance(model, list):
+            return grpc.ShardKeySelector(shard_keys=[cls.convert_shard_key(key) for key in model])
+
+        raise ValueError(f"invalid ShardKeySelector model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_sharding_method(cls, model: rest.ShardingMethod) -> grpc.ShardingMethod:
+        if model == rest.ShardingMethod.AUTO:
+            return grpc.Auto
+        elif model == rest.ShardingMethod.CUSTOM:
+            return grpc.Custom
+        else:
+            raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover

@@ -456,7 +456,7 @@ async def test_async_qdrant_client_local():
 
     await client.delete_payload_index(COLLECTION_NAME, field_name="random_dig")
 
-    assert client.get_locks()
+    assert await client.get_locks()
 
     assert len(await client.list_snapshots(COLLECTION_NAME)) == 0
     assert len(await client.list_full_snapshots()) == 0

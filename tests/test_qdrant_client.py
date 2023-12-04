@@ -915,6 +915,72 @@ def test_quantization_config(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_custom_sharding(prefer_grpc):
+    version = os.getenv("QDRANT_VERSION")
+    if version is not None and version < "v1.7.0":
+        pytest.skip("Custom sharding is supported since v1.7.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        sharding_method=models.ShardingMethod.CUSTOM,
+    )
+
+    client.create_shard_key(collection_name=COLLECTION_NAME, shard_key="cats")
+
+    client.create_shard_key(collection_name=COLLECTION_NAME, shard_key="dogs")
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(id=1, vector=np.random.rand(DIM).tolist(), payload={"name": "Barsik"}),
+            PointStruct(id=2, vector=np.random.rand(DIM).tolist(), payload={"name": "Murzik"}),
+            PointStruct(id=3, vector=np.random.rand(DIM).tolist(), payload={"name": "Chubais"}),
+        ],
+        shard_key_selector="cats",
+    )
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(id=4, vector=np.random.rand(DIM).tolist(), payload={"name": "Sharik"}),
+            PointStruct(id=5, vector=np.random.rand(DIM).tolist(), payload={"name": "Tuzik"}),
+            PointStruct(id=6, vector=np.random.rand(DIM).tolist(), payload={"name": "Bobik"}),
+        ],
+        shard_key_selector="dogs",
+    )
+
+    res = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=np.random.rand(DIM),
+        shard_key_selector="cats",
+    )
+
+    assert len(res) == 3
+    for record in res:
+        assert record.shard_key == "cats"
+
+    res = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=np.random.rand(DIM),
+        shard_key_selector=["cats", "dogs"],
+    )
+
+    assert len(res) == 6
+
+    res = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=np.random.rand(DIM),
+    )
+
+    assert len(res) == 6
+
+    client.delete_shard_key(collection_name=COLLECTION_NAME, shard_key="dogs")
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors(prefer_grpc):
     version = os.getenv("QDRANT_VERSION")
     if version is not None and version < "v1.7.0":
