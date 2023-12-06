@@ -1798,6 +1798,18 @@ class SparseIndexConfig(BaseModel, extra="forbid"):
     Configuration for sparse inverted index.
     """
 
+    full_scan_threshold: int = Field(
+        ...,
+        description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
+    )
+    index_type: "SparseIndexType" = Field(..., description="Configuration for sparse inverted index.")
+
+
+class SparseIndexParams(BaseModel, extra="forbid"):
+    """
+    Configuration for sparse inverted index.
+    """
+
     full_scan_threshold: Optional[int] = Field(
         default=None,
         description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
@@ -1806,6 +1818,39 @@ class SparseIndexConfig(BaseModel, extra="forbid"):
         default=None,
         description="Store index on disk. If set to false, the index will be stored in RAM. Default: false",
     )
+
+
+class SparseIndexTypeOneOf(str, Enum):
+    """
+    Mutable RAM sparse index
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    MUTABLERAM = "MutableRam"
+
+
+class SparseIndexTypeOneOf1(str, Enum):
+    """
+    Immutable RAM sparse index
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    IMMUTABLERAM = "ImmutableRam"
+
+
+class SparseIndexTypeOneOf2(str, Enum):
+    """
+    Mmap sparse index
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    MMAP = "Mmap"
 
 
 class SparseVector(BaseModel, extra="forbid"):
@@ -1822,7 +1867,7 @@ class SparseVectorDataConfig(BaseModel, extra="forbid"):
     Config of single vector data storage
     """
 
-    index: Optional["SparseIndexConfig"] = Field(default=None, description="Type of index used for search")
+    index: "SparseIndexConfig" = Field(..., description="Config of single vector data storage")
 
 
 class SparseVectorParams(BaseModel, extra="forbid"):
@@ -1830,7 +1875,7 @@ class SparseVectorParams(BaseModel, extra="forbid"):
     Params of single sparse vector data storage
     """
 
-    index: Optional["SparseIndexConfig"] = Field(
+    index: Optional["SparseIndexParams"] = Field(
         default=None, description="Custom params for index. If none - values from collection configuration are used."
     )
 
@@ -2220,6 +2265,11 @@ ShardSnapshotLocation = Union[
 ShardTransferMethod = Union[
     ShardTransferMethodOneOf,
     ShardTransferMethodOneOf1,
+]
+SparseIndexType = Union[
+    SparseIndexTypeOneOf,
+    SparseIndexTypeOneOf1,
+    SparseIndexTypeOneOf2,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
