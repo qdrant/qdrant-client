@@ -2409,7 +2409,7 @@ class QdrantRemote(QdrantBase):
         return snapshots
 
     def create_snapshot(
-        self, collection_name: str, **kwargs: Any
+        self, collection_name: str, wait: bool = True, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         if self._prefer_grpc:
             snapshot = self.grpc_snapshots.Create(
@@ -2418,10 +2418,12 @@ class QdrantRemote(QdrantBase):
             return GrpcToRest.convert_snapshot_description(snapshot)
 
         return self.openapi_client.collections_api.create_snapshot(
-            collection_name=collection_name
+            collection_name=collection_name, wait=wait
         ).result
 
-    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
+    def delete_snapshot(
+        self, collection_name: str, snapshot_name: str, wait: bool = True, **kwargs: Any
+    ) -> Optional[bool]:
         if self._prefer_grpc:
             self.grpc_snapshots.Delete(
                 grpc.DeleteSnapshotRequest(
@@ -2430,12 +2432,11 @@ class QdrantRemote(QdrantBase):
             )
             return True
 
-        result: Optional[bool] = self.openapi_client.collections_api.delete_snapshot(
+        return self.openapi_client.collections_api.delete_snapshot(
             collection_name=collection_name,
             snapshot_name=snapshot_name,
+            wait=wait,
         ).result
-        assert result is not None, "Delete snapshot API returned None"
-        return result
 
     def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
         if self._prefer_grpc:
@@ -2448,28 +2449,27 @@ class QdrantRemote(QdrantBase):
         assert snapshots is not None, "List full snapshots API returned None result"
         return snapshots
 
-    def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
+    def create_full_snapshot(self, wait: bool = True, **kwargs: Any) -> types.SnapshotDescription:
         if self._prefer_grpc:
             snapshot_description = self.grpc_snapshots.CreateFull(
                 grpc.CreateFullSnapshotRequest()
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot_description)
 
-        snapshot_description = self.openapi_client.snapshots_api.create_full_snapshot().result
-        assert snapshot_description is not None, "Create full snapshot API returned None result"
-        return snapshot_description
+        return self.openapi_client.snapshots_api.create_full_snapshot(wait=wait).result
 
-    def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
+    def delete_full_snapshot(
+        self, snapshot_name: str, wait: bool = True, **kwargs: Any
+    ) -> Optional[bool]:
         if self._prefer_grpc:
             self.grpc_snapshots.DeleteFull(
                 grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name)
             )
             return True
-        result: Optional[bool] = self.openapi_client.snapshots_api.delete_full_snapshot(
-            snapshot_name=snapshot_name,
+
+        return self.openapi_client.snapshots_api.delete_full_snapshot(
+            snapshot_name=snapshot_name, wait=wait
         ).result
-        assert result is not None, "Delete full snapshot API returned None"
-        return result
 
     def recover_snapshot(
         self,
@@ -2478,14 +2478,12 @@ class QdrantRemote(QdrantBase):
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> bool:
-        success = self.openapi_client.snapshots_api.recover_from_snapshot(
+    ) -> Optional[bool]:
+        return self.openapi_client.snapshots_api.recover_from_snapshot(
             collection_name=collection_name,
             wait=wait,
             snapshot_recover=models.SnapshotRecover(location=location, priority=priority),
         ).result
-        assert success is not None, "Recover from snapshot API returned None result"
-        return success
 
     def list_shard_snapshots(
         self, collection_name: str, shard_id: int, **kwargs: Any
@@ -2498,23 +2496,28 @@ class QdrantRemote(QdrantBase):
         return snapshots
 
     def create_shard_snapshot(
-        self, collection_name: str, shard_id: int, **kwargs: Any
+        self, collection_name: str, shard_id: int, wait: bool = True, **kwargs: Any
     ) -> Optional[types.SnapshotDescription]:
         return self.openapi_client.snapshots_api.create_shard_snapshot(
             collection_name=collection_name,
             shard_id=shard_id,
+            wait=wait,
         ).result
 
     def delete_shard_snapshot(
-        self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
-    ) -> bool:
-        result: Optional[bool] = self.openapi_client.snapshots_api.delete_shard_snapshot(
+        self,
+        collection_name: str,
+        shard_id: int,
+        snapshot_name: str,
+        wait: bool = True,
+        **kwargs: Any,
+    ) -> Optional[bool]:
+        return self.openapi_client.snapshots_api.delete_shard_snapshot(
             collection_name=collection_name,
             shard_id=shard_id,
             snapshot_name=snapshot_name,
+            wait=wait,
         ).result
-        assert result is not None, "Delete snapshot API returned None"
-        return result
 
     def recover_shard_snapshot(
         self,
@@ -2524,8 +2527,8 @@ class QdrantRemote(QdrantBase):
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
-    ) -> bool:
-        success = self.openapi_client.snapshots_api.recover_shard_from_snapshot(
+    ) -> Optional[bool]:
+        return self.openapi_client.snapshots_api.recover_shard_from_snapshot(
             collection_name=collection_name,
             shard_id=shard_id,
             wait=wait,
@@ -2534,8 +2537,6 @@ class QdrantRemote(QdrantBase):
                 priority=priority,
             ),
         ).result
-        assert success is not None, "Recover from snapshot API returned None result"
-        return success
 
     def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
         result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
