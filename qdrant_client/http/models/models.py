@@ -143,16 +143,17 @@ class CollectionInfo(BaseModel, extra="forbid"):
     optimizer_status: "OptimizersStatus" = Field(
         ..., description="Current statistics and configuration of the collection"
     )
-    vectors_count: int = Field(
-        ...,
-        description="Number of vectors in collection All vectors in collection are available for querying Calculated as `points_count x vectors_per_point` Where `vectors_per_point` is a number of named vectors in schema",
+    vectors_count: Optional[int] = Field(
+        default=None,
+        description="Approximate number of vectors in collection. All vectors in collection are available for querying. Calculated as `points_count x vectors_per_point`. Where `vectors_per_point` is a number of named vectors in schema.",
     )
-    indexed_vectors_count: int = Field(
-        ...,
-        description="Number of indexed vectors in the collection. Indexed vectors in large segments are faster to query, as it is stored in vector index (HNSW)",
+    indexed_vectors_count: Optional[int] = Field(
+        default=None,
+        description="Approximate number of indexed vectors in the collection. Indexed vectors in large segments are faster to query, as it is stored in a specialized vector index.",
     )
-    points_count: int = Field(
-        ..., description="Number of points (vectors + payloads) in collection Each point could be accessed by unique id"
+    points_count: Optional[int] = Field(
+        default=None,
+        description="Approximate number of points (vectors + payloads) in collection. Each point could be accessed by unique id.",
     )
     segments_count: int = Field(
         ..., description="Number of segments in collection. Each segment has independent vector as payload indexes"
@@ -736,161 +737,121 @@ class InitFrom(BaseModel, extra="forbid"):
 
 class InlineResponse200(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[bool] = Field(default=None, description="")
 
 
 class InlineResponse2001(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["TelemetryData"] = Field(default=None, description="")
 
 
 class InlineResponse20010(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["SnapshotDescription"] = Field(default=None, description="")
 
 
 class InlineResponse20011(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["Record"] = Field(default=None, description="")
 
 
 class InlineResponse20012(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["Record"]] = Field(default=None, description="")
 
 
 class InlineResponse20013(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["UpdateResult"]] = Field(default=None, description="")
 
 
 class InlineResponse20014(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
 class InlineResponse20015(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
 
 
 class InlineResponse20016(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
 
 
 class InlineResponse20017(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["GroupsResult"] = Field(default=None, description="")
 
 
 class InlineResponse20018(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CountResult"] = Field(default=None, description="")
 
 
 class InlineResponse2002(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["LocksOption"] = Field(default=None, description="")
 
 
 class InlineResponse2003(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["ClusterStatus"] = Field(default=None, description="")
 
 
 class InlineResponse2004(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2005(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2006(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["UpdateResult"] = Field(default=None, description="")
 
 
 class InlineResponse2007(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2008(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2009(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
 class InlineResponse202(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "accepted",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
 
 
 class IsEmptyCondition(BaseModel, extra="forbid"):
@@ -1802,10 +1763,55 @@ class SparseIndexConfig(BaseModel, extra="forbid"):
         default=None,
         description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
     )
+    index_type: "SparseIndexType" = Field(..., description="Configuration for sparse inverted index.")
+
+
+class SparseIndexParams(BaseModel, extra="forbid"):
+    """
+    Configuration for sparse inverted index.
+    """
+
+    full_scan_threshold: Optional[int] = Field(
+        default=None,
+        description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
+    )
     on_disk: Optional[bool] = Field(
         default=None,
         description="Store index on disk. If set to false, the index will be stored in RAM. Default: false",
     )
+
+
+class SparseIndexTypeOneOf(str, Enum):
+    """
+    Mutable RAM sparse index
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    MUTABLERAM = "MutableRam"
+
+
+class SparseIndexTypeOneOf1(str, Enum):
+    """
+    Immutable RAM sparse index
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    IMMUTABLERAM = "ImmutableRam"
+
+
+class SparseIndexTypeOneOf2(str, Enum):
+    """
+    Mmap sparse index
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    MMAP = "Mmap"
 
 
 class SparseVector(BaseModel, extra="forbid"):
@@ -1819,10 +1825,10 @@ class SparseVector(BaseModel, extra="forbid"):
 
 class SparseVectorDataConfig(BaseModel, extra="forbid"):
     """
-    Config of single vector data storage
+    Config of single sparse vector data storage
     """
 
-    index: Optional["SparseIndexConfig"] = Field(default=None, description="Type of index used for search")
+    index: "SparseIndexConfig" = Field(..., description="Config of single sparse vector data storage")
 
 
 class SparseVectorParams(BaseModel, extra="forbid"):
@@ -1830,7 +1836,7 @@ class SparseVectorParams(BaseModel, extra="forbid"):
     Params of single sparse vector data storage
     """
 
-    index: Optional["SparseIndexConfig"] = Field(
+    index: Optional["SparseIndexParams"] = Field(
         default=None, description="Custom params for index. If none - values from collection configuration are used."
     )
 
@@ -2220,6 +2226,11 @@ ShardSnapshotLocation = Union[
 ShardTransferMethod = Union[
     ShardTransferMethodOneOf,
     ShardTransferMethodOneOf1,
+]
+SparseIndexType = Union[
+    SparseIndexTypeOneOf,
+    SparseIndexTypeOneOf1,
+    SparseIndexTypeOneOf2,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,

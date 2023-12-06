@@ -993,7 +993,7 @@ def test_sparse_vectors(prefer_grpc):
         vectors_config={},
         sparse_vectors_config={
             "text": models.SparseVectorParams(
-                index=models.SparseIndexConfig(
+                index=models.SparseIndexParams(
                     on_disk=False,
                     full_scan_threshold=100,
                 )
