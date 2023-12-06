@@ -143,16 +143,17 @@ class CollectionInfo(BaseModel, extra="forbid"):
     optimizer_status: "OptimizersStatus" = Field(
         ..., description="Current statistics and configuration of the collection"
     )
-    vectors_count: int = Field(
-        ...,
-        description="Number of vectors in collection All vectors in collection are available for querying Calculated as `points_count x vectors_per_point` Where `vectors_per_point` is a number of named vectors in schema",
+    vectors_count: Optional[int] = Field(
+        default=None,
+        description="Approximate number of vectors in collection. All vectors in collection are available for querying. Calculated as `points_count x vectors_per_point`. Where `vectors_per_point` is a number of named vectors in schema.",
     )
-    indexed_vectors_count: int = Field(
-        ...,
-        description="Number of indexed vectors in the collection. Indexed vectors in large segments are faster to query, as it is stored in vector index (HNSW)",
+    indexed_vectors_count: Optional[int] = Field(
+        default=None,
+        description="Approximate umber of indexed vectors in the collection. Indexed vectors in large segments are faster to query, as it is stored in vector index (HNSW).",
     )
-    points_count: int = Field(
-        ..., description="Number of points (vectors + payloads) in collection Each point could be accessed by unique id"
+    points_count: Optional[int] = Field(
+        default=None,
+        description="Approximate number of points (vectors + payloads) in collection. Each point could be accessed by unique id.",
     )
     segments_count: int = Field(
         ..., description="Number of segments in collection. Each segment has independent vector as payload indexes"
@@ -1798,8 +1799,8 @@ class SparseIndexConfig(BaseModel, extra="forbid"):
     Configuration for sparse inverted index.
     """
 
-    full_scan_threshold: int = Field(
-        ...,
+    full_scan_threshold: Optional[int] = Field(
+        default=None,
         description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
     )
     index_type: "SparseIndexType" = Field(..., description="Configuration for sparse inverted index.")
