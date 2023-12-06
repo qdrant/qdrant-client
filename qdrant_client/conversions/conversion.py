@@ -1255,7 +1255,7 @@ class GrpcToRest:
             full_scan_threshold=model.full_scan_threshold
             if model.HasField("full_scan_threshold")
             else None,
-            on_disk=model.on_disk if model.HasField("on_disk") else None,
+            index_type=model.on_disk if model.HasField("on_disk") else None, # TODO the types are incompatible for a conversion?
         )
 
     @classmethod
