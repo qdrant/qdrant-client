@@ -1250,12 +1250,12 @@ class GrpcToRest:
         raise ValueError(f"invalid RecommendStrategy model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_sparse_index_config(cls, model: grpc.SparseIndexConfig) -> rest.SparseIndexConfig:
-        return rest.SparseIndexConfig(
+    def convert_sparse_index_config(cls, model: grpc.SparseIndexConfig) -> rest.SparseIndexParams:
+        return rest.SparseIndexParams(
             full_scan_threshold=model.full_scan_threshold
             if model.HasField("full_scan_threshold")
             else None,
-            index_type=model.on_disk if model.HasField("on_disk") else None, # TODO the types are incompatible for a conversion?
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
         )
 
     @classmethod
