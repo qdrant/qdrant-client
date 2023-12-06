@@ -6,14 +6,13 @@ RELATIVE_PROJECT_ROOT="$(dirname "$0")/.."
 cd $RELATIVE_PROJECT_ROOT
 ABSOLUTE_PROJECT_ROOT=$(pwd)
 
-cd $ABSOLUTE_PROJECT_ROOT/tools/async_client_generator
-
 python3 -m tools.async_client_generator.base_client_generator
 python3 -m tools.async_client_generator.fastembed_generator
 python3 -m tools.async_client_generator.client_generator
 python3 -m tools.async_client_generator.remote_generator
 python3 -m tools.async_client_generator.local_generator
 
+cd $ABSOLUTE_PROJECT_ROOT/tools/async_client_generator
 
 mv async_client_base.py $ABSOLUTE_PROJECT_ROOT/qdrant_client/async_client_base.py
 mv async_qdrant_client.py $ABSOLUTE_PROJECT_ROOT/qdrant_client/async_qdrant_client.py

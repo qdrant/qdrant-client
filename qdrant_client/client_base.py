@@ -336,16 +336,18 @@ class QdrantBase:
     ) -> Optional[types.SnapshotDescription]:
         raise NotImplementedError()
 
-    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
+    def delete_snapshot(
+        self, collection_name: str, snapshot_name: str, **kwargs: Any
+    ) -> Optional[bool]:
         raise NotImplementedError()
 
     def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
         raise NotImplementedError()
 
-    def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
+    def create_full_snapshot(self, **kwargs: Any) -> Optional[types.SnapshotDescription]:
         raise NotImplementedError()
 
-    def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> bool:
+    def delete_full_snapshot(self, snapshot_name: str, **kwargs: Any) -> Optional[bool]:
         raise NotImplementedError()
 
     def recover_snapshot(
@@ -353,7 +355,7 @@ class QdrantBase:
         collection_name: str,
         location: str,
         **kwargs: Any,
-    ) -> bool:
+    ) -> Optional[bool]:
         raise NotImplementedError()
 
     def list_shard_snapshots(
@@ -368,7 +370,7 @@ class QdrantBase:
 
     def delete_shard_snapshot(
         self, collection_name: str, shard_id: int, snapshot_name: str, **kwargs: Any
-    ) -> bool:
+    ) -> Optional[bool]:
         raise NotImplementedError()
 
     def recover_shard_snapshot(
@@ -377,7 +379,7 @@ class QdrantBase:
         shard_id: int,
         location: str,
         **kwargs: Any,
-    ) -> bool:
+    ) -> Optional[bool]:
         raise NotImplementedError()
 
     def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
