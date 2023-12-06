@@ -736,161 +736,121 @@ class InitFrom(BaseModel, extra="forbid"):
 
 class InlineResponse200(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[bool] = Field(default=None, description="")
 
 
 class InlineResponse2001(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["TelemetryData"] = Field(default=None, description="")
 
 
 class InlineResponse20010(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["SnapshotDescription"] = Field(default=None, description="")
 
 
 class InlineResponse20011(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["Record"] = Field(default=None, description="")
 
 
 class InlineResponse20012(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["Record"]] = Field(default=None, description="")
 
 
 class InlineResponse20013(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["UpdateResult"]] = Field(default=None, description="")
 
 
 class InlineResponse20014(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
 class InlineResponse20015(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
 
 
 class InlineResponse20016(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
 
 
 class InlineResponse20017(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["GroupsResult"] = Field(default=None, description="")
 
 
 class InlineResponse20018(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CountResult"] = Field(default=None, description="")
 
 
 class InlineResponse2002(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["LocksOption"] = Field(default=None, description="")
 
 
 class InlineResponse2003(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["ClusterStatus"] = Field(default=None, description="")
 
 
 class InlineResponse2004(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2005(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2006(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["UpdateResult"] = Field(default=None, description="")
 
 
 class InlineResponse2007(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2008(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2009(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "ok",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
 class InlineResponse202(BaseModel, extra="forbid"):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Literal[
-        "accepted",
-    ] = Field(None, description="")
+    status: Optional[str] = Field(default=None, description="")
 
 
 class IsEmptyCondition(BaseModel, extra="forbid"):
