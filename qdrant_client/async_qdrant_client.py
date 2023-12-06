@@ -968,6 +968,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name (str): Name of the collection to update vectors in
             points (Point): List of (id, vector) pairs to update. Vector might be a list of numbers or a dict of named vectors.
                 Examples:
+
                 - `PointVectors(id=1, vector=[1, 2, 3])`
                 - `PointVectors(id=2, vector={'vector_1': [1, 2, 3], 'vector_2': [4, 5, 6]})`
 
