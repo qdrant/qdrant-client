@@ -1250,8 +1250,8 @@ class GrpcToRest:
         raise ValueError(f"invalid RecommendStrategy model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_sparse_index_config(cls, model: grpc.SparseIndexConfig) -> rest.SparseIndexConfig:
-        return rest.SparseIndexConfig(
+    def convert_sparse_index_config(cls, model: grpc.SparseIndexConfig) -> rest.SparseIndexParams:
+        return rest.SparseIndexParams(
             full_scan_threshold=model.full_scan_threshold
             if model.HasField("full_scan_threshold")
             else None,

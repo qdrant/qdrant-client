@@ -101,7 +101,7 @@ qdrant_client.create_collection(
     types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
     {
         "field": rest_models.SparseVectorParams(
-            index=rest_models.SparseIndexConfig(
+            index=rest_models.SparseIndexParams(
                 full_scan_threshold=1000,
                 on_disk=False,
             )
@@ -124,7 +124,7 @@ qdrant_client.recreate_collection(
     types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
     {
         "field": rest_models.SparseVectorParams(
-            index=rest_models.SparseIndexConfig(
+            index=rest_models.SparseIndexParams(
                 full_scan_threshold=1000,
                 on_disk=False,
             )
@@ -147,7 +147,7 @@ qdrant_client.recreate_collection(
     types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
     {
         "field": rest_models.SparseVectorParams(
-            index=rest_models.SparseIndexConfig(
+            index=rest_models.SparseIndexParams(
                 full_scan_threshold=1000,
                 on_disk=False,
             )
