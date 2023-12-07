@@ -33,28 +33,27 @@ class BaseUploader(Worker, ABC):
         vectors_batch: Iterable,
         payload_batch: Iterable,
         shard_keys_batch: List[Optional[ShardKey]],
-    ) -> Tuple[Iterable, ShardKey]:
+    ) -> Iterable:
         bucket_map = {shard_key: index for index, shard_key in enumerate(set(shard_keys_batch))}
         if len(bucket_map) == 1:
             yield (ids_batch, vectors_batch, payload_batch), list(bucket_map.keys())[0]
-            return
+        else:
+            buckets: list[list[tuple]] = [[] for _ in range(len(bucket_map))]
 
-        buckets: list[list[tuple]] = [[] for _ in range(len(bucket_map))]
+            for id_, vector, payload, shard_key in zip(
+                ids_batch, vectors_batch, payload_batch, shard_keys_batch
+            ):
+                buckets[bucket_map[shard_key]].append((id_, vector, payload))
 
-        for id_, vector, payload, shard_key in zip(
-            ids_batch, vectors_batch, payload_batch, shard_keys_batch
-        ):
-            buckets[bucket_map[shard_key]].append((id_, vector, payload))
-
-        for shard_key, index in bucket_map.items():
-            ids_batch_for_shard, vectors_batch_for_shard, payload_batch_for_shard = zip(
-                *buckets[index]
-            )
-            yield (
-                ids_batch_for_shard,
-                vectors_batch_for_shard,
-                payload_batch_for_shard,
-            ), shard_key
+            for shard_key, index in bucket_map.items():
+                ids_batch_for_shard, vectors_batch_for_shard, payload_batch_for_shard = zip(
+                    *buckets[index]
+                )
+                yield (
+                    ids_batch_for_shard,
+                    vectors_batch_for_shard,
+                    payload_batch_for_shard,
+                ), shard_key
 
     @classmethod
     def iterate_records_batches(cls, records: Iterable[Record], batch_size: int) -> Iterable:

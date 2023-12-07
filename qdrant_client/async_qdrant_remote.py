@@ -2050,6 +2050,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
+        shard_keys: Optional[Iterable[types.ShardKey]] = None,
         batch_size: int = 64,
         parallel: int = 1,
         method: Optional[str] = None,
@@ -2058,7 +2059,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(
-            vectors=vectors, payload=payload, ids=ids, batch_size=batch_size
+            vectors=vectors, payload=payload, ids=ids, shard_keys=shard_keys, batch_size=batch_size
         )
         self._upload_collection(
             batches_iterator, collection_name, max_retries, parallel, method, wait
