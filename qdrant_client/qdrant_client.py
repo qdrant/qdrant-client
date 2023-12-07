@@ -1817,6 +1817,7 @@ class QdrantClient(QdrantFastembedMixin):
         ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
+        shard_keys: Optional[Iterable[types.ShardKey]] = None,
         batch_size: int = 64,
         parallel: int = 1,
         method: Optional[str] = None,
@@ -1834,6 +1835,7 @@ class QdrantClient(QdrantFastembedMixin):
             vectors: np.ndarray or an iterable over vectors to upload. Might be mmaped
             payload: Iterable of vectors payload, Optional, Default: None
             ids: Iterable of custom vectors ids, Optional, Default: None
+            shard_keys: Iterable of custom shard keys, Optional, Default: None
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload
             method: Start method for parallel processes, Default: forkserver
@@ -1852,6 +1854,7 @@ class QdrantClient(QdrantFastembedMixin):
             vectors=vectors,
             payload=payload,
             ids=ids,
+            shard_keys=shard_keys,
             batch_size=batch_size,
             parallel=parallel,
             method=method,

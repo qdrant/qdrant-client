@@ -1,11 +1,10 @@
 import logging
-from itertools import count
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
 
 import numpy as np
 
 from qdrant_client.http import SyncApis
-from qdrant_client.http.models import Batch, PointsList, PointStruct
+from qdrant_client.http.models import Batch, PointsList, PointStruct, ShardKey
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -14,14 +13,10 @@ def upload_batch(
     collection_name: str,
     batch: Union[Tuple, Batch],
     max_retries: int,
+    shard_key: Optional[ShardKey] = None,
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
-
-    if payload_batch is not None:
-        payload_batch = list(payload_batch)
-    else:
-        payload_batch = (None for _ in count())
 
     points = [
         PointStruct(
@@ -36,7 +31,7 @@ def upload_batch(
         try:
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
-                point_insert_operations=PointsList(points=points),
+                point_insert_operations=PointsList(points=points, shard_key=shard_key),
                 wait=wait,
             )
         except Exception as e:
@@ -74,11 +69,12 @@ class RestBatchUploader(BaseUploader):
         return cls(uri=uri, collection_name=collection_name, max_retries=max_retries, **kwargs)
 
     def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
-        for batch in items:
+        for batch, shard_key in items:
             yield upload_batch(
                 self.openapi_client,
                 self.collection_name,
                 batch,
-                self.max_retries,
-                self._wait,
+                shard_key=shard_key,
+                max_retries=self.max_retries,
+                wait=self._wait,
             )

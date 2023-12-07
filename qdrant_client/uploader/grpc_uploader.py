@@ -1,12 +1,11 @@
 import logging
-from itertools import count
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
 from qdrant_client.grpc import PointId, PointsStub, PointStruct
-from qdrant_client.http.models import Batch
+from qdrant_client.http.models import Batch, ShardKey
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -15,11 +14,10 @@ def upload_batch_grpc(
     collection_name: str,
     batch: Union[Batch, Tuple],
     max_retries: int,
+    shard_key: Optional[ShardKey] = None,
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
-    if payload_batch is None:
-        payload_batch = (None for _ in count())
 
     points = [
         PointStruct(
@@ -33,7 +31,14 @@ def upload_batch_grpc(
     for attempt in range(max_retries):
         try:
             points_client.Upsert(
-                grpc.UpsertPoints(collection_name=collection_name, points=points, wait=wait)
+                grpc.UpsertPoints(
+                    collection_name=collection_name,
+                    points=points,
+                    wait=wait,
+                    shard_key_selector=RestToGrpc.convert_shard_key_selector(shard_key)
+                    if shard_key is not None
+                    else None,
+                )
             )
         except Exception as e:
             logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
@@ -83,9 +88,14 @@ class GrpcBatchUploader(BaseUploader):
     def process_upload(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         channel = get_channel(host=self._host, port=self._port, **self._kwargs)
         points_client = PointsStub(channel)
-        for batch in items:
+        for batch, shard_key in items:
             yield upload_batch_grpc(
-                points_client, self.collection_name, batch, self.max_retries, self._wait
+                points_client,
+                self.collection_name,
+                batch,
+                shard_key=shard_key,
+                max_retries=self.max_retries,
+                wait=self._wait,
             )
 
     def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
