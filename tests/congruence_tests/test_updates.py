@@ -1,4 +1,5 @@
 import itertools
+import math
 import uuid
 from collections import defaultdict
 from typing import Dict, List
@@ -6,6 +7,7 @@ from typing import Dict, List
 import numpy as np
 import pytest
 
+import qdrant_client.http.exceptions
 from qdrant_client.http import models
 from tests.congruence_tests.settings import TIMEOUT
 from tests.congruence_tests.test_common import (
@@ -16,6 +18,7 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 from tests.fixtures.payload import one_random_payload_please
+from tests.fixtures.points import generate_records
 
 UPLOAD_NUM_VECTORS = 100
 
@@ -238,3 +241,58 @@ def test_upload_collection_dict_np_arrays(local_client, remote_client):
     local_client.upload_collection(COLLECTION_NAME, vectors)
     remote_client.upload_collection(COLLECTION_NAME, vectors)
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+
+
+def test_upload_payload_contain_nan_values():
+    # usual case when payload is extracted from pandas dataframe
+
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vector_size = 2
+    nans_collection = "nans_collection"
+    local_client.recreate_collection(
+        collection_name=nans_collection,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.DOT),
+    )
+    remote_client.recreate_collection(
+        collection_name=nans_collection,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.DOT),
+    )
+    records = generate_records(
+        num_records=UPLOAD_NUM_VECTORS,
+        vector_sizes=2,
+        with_payload=False,
+    )
+    ids, vectors, payload = [], [], []
+    for i in range(len(records)):
+        records[i].payload = {"surprise": math.nan}
+
+    for record in records:
+        ids.append(record.id)
+        vectors.append(record.vector)
+        payload.append(record.payload)
+
+    with pytest.raises(ValueError):
+        local_client.upload_collection(nans_collection, vectors, payload)
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.upload_collection(nans_collection, vectors, payload)
+
+    with pytest.raises(ValueError):
+        local_client.upload_records(nans_collection, records)
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.upload_records(nans_collection, records)
+
+    points = models.Batch(
+        ids=ids,
+        vectors=vectors,
+        payloads=payload,
+    )
+
+    with pytest.raises(ValueError):
+        local_client.upsert(nans_collection, points=points)
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.upsert(nans_collection, points=points)
+
+    local_client.delete_collection(nans_collection)
+    remote_client.delete_collection(nans_collection)
