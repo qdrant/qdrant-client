@@ -1,8 +1,35 @@
-from typing import Dict, List, Optional
+import time
+from typing import Dict, Iterable, List, Optional
 
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
+
+
+def upload_with_retry(
+    client: QdrantBase,
+    collection_name: str,
+    records: Iterable[models.PointStruct],
+    max_attempts: int = 3,
+    pause: float = 3.0,
+) -> None:
+    attempts = 1
+    while attempts <= max_attempts:
+        try:
+            client.upload_points(
+                collection_name=collection_name,
+                points=records,
+                wait=True,
+            )
+            return
+        except Exception as e:
+            print(f"Exception: {e}, attempt {attempts}/{max_attempts}")
+            if attempts < max_attempts:
+                print(f"Next attempt in {pause} seconds")
+                time.sleep(pause)
+            attempts += 1
+
+    raise Exception(f"Failed to upload points after {max_attempts} attempts")
 
 
 def migrate(
@@ -25,11 +52,6 @@ def migrate(
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     collection_names = _select_source_collections(source_client, collection_names)
-    if any(
-        _has_custom_shards(source_client, collection_name) for collection_name in collection_names
-    ):
-        raise ValueError("Migration of collections with custom shards is not supported yet")
-
     collisions = _find_collisions(dest_client, collection_names)
     absent_dest_collections = set(collection_names) - set(collisions)
 
@@ -45,14 +67,6 @@ def migrate(
         _migrate_collection(source_client, dest_client, collection_name, batch_size)
 
 
-def _has_custom_shards(source_client: QdrantBase, collection_name: str) -> bool:
-    collection_info = source_client.get_collection(collection_name)
-    return (
-        getattr(collection_info.config.params, "sharding_method", None)
-        == models.ShardingMethod.CUSTOM
-    )
-
-
 def _select_source_collections(
     source_client: QdrantBase, collection_names: Optional[List[str]] = None
 ) -> List[str]:
@@ -65,7 +79,6 @@ def _select_source_collections(
         ), f"Source client does not have collections: {set(collection_names) - set(source_collection_names)}"
     else:
         collection_names = source_collection_names
-
     return collection_names
 
 
@@ -81,12 +94,12 @@ def _recreate_collection(
     dest_client: QdrantBase,
     collection_name: str,
 ) -> None:
-    src_collection_info = source_client.get_collection(collection_name)
+    src_collection_info = source_client.get_collection(collection_name=collection_name)
     src_config = src_collection_info.config
     src_payload_schema = src_collection_info.payload_schema
 
     dest_client.recreate_collection(
-        collection_name,
+        collection_name=collection_name,
         vectors_config=src_config.params.vectors,
         sparse_vectors_config=src_config.params.sparse_vectors,
         shard_number=src_config.params.shard_number,
@@ -109,7 +122,7 @@ def _recreate_payload_schema(
 ) -> None:
     for field_name, field_info in payload_schema.items():
         dest_client.create_payload_index(
-            collection_name,
+            collection_name=collection_name,
             field_name=field_name,
             field_schema=field_info.data_type if field_info.params is None else field_info.params,
         )
@@ -130,7 +143,7 @@ def _migrate_collection(
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
-    dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
+    upload_with_retry(client=dest_client, collection_name=collection_name, records=records)  # type: ignore
     # upload_records has been deprecated due to the usage of models.Record; models.Record has been deprecated as a
     # structure for uploading due to a `shard_key` field, and now is used only as a result structure.
     # since shard_keys are not supported in migration, we can safely type ignore here and use Records for uploading
@@ -138,7 +151,7 @@ def _migrate_collection(
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
-        dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
+        upload_with_retry(client=dest_client, collection_name=collection_name, records=records)  # type: ignore
     source_client_vectors_count = source_client.count(collection_name).count
     dest_client_vectors_count = dest_client.count(collection_name).count
     assert (
