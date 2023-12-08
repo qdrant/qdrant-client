@@ -1,8 +1,22 @@
+import time
 from typing import Dict, List, Optional
 
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
+
+
+def forgive_exception(func, times: int = 3, pause: float = 3.0, **func_kwargs):
+    attempts = 0
+
+    while attempts <= times:
+        try:
+            return func(**func_kwargs)
+        except Exception as e:
+            attempts += 1
+            print(f"Exception: {e}, attempt {attempts}")
+            print(f"Next attempt in {pause} seconds")
+            time.sleep(pause)
 
 
 def migrate(
@@ -67,12 +81,15 @@ def _recreate_collection(
     dest_client: QdrantBase,
     collection_name: str,
 ) -> None:
-    src_collection_info = source_client.get_collection(collection_name)
+    src_collection_info = forgive_exception(
+        func=source_client.get_collection, collection_name=collection_name
+    )
     src_config = src_collection_info.config
     src_payload_schema = src_collection_info.payload_schema
 
-    dest_client.recreate_collection(
-        collection_name,
+    forgive_exception(
+        func=dest_client.recreate_collection,
+        collection_name=collection_name,
         vectors_config=src_config.params.vectors,
         sparse_vectors_config=src_config.params.sparse_vectors,
         shard_number=src_config.params.shard_number,
@@ -94,8 +111,9 @@ def _recreate_payload_schema(
     payload_schema: Dict[str, models.PayloadIndexInfo],
 ) -> None:
     for field_name, field_info in payload_schema.items():
-        dest_client.create_payload_index(
-            collection_name,
+        forgive_exception(
+            func=dest_client.create_payload_index,
+            collection_name=collection_name,
             field_name=field_name,
             field_schema=field_info.data_type if field_info.params is None else field_info.params,
         )
@@ -115,15 +133,32 @@ def _migrate_collection(
         dest_client (QdrantBase): Destination client
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
-    records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
-    dest_client.upload_records(collection_name, records)
+    records, next_offset = forgive_exception(
+        func=source_client.scroll, collection_name=collection_name, limit=2, with_vectors=True
+    )
+    forgive_exception(
+        func=dest_client.upload_records, collection_name=collection_name, records=records
+    )
     while next_offset is not None:
-        records, next_offset = source_client.scroll(
-            collection_name, offset=next_offset, limit=batch_size, with_vectors=True
+        records, next_offset = forgive_exception(
+            func=source_client.scroll,
+            collection_name=collection_name,
+            offset=next_offset,
+            limit=batch_size,
+            with_vectors=True,
         )
-        dest_client.upload_records(collection_name, records, wait=True)
-    source_client_vectors_count = source_client.get_collection(collection_name).vectors_count
-    dest_client_vectors_count = dest_client.get_collection(collection_name).vectors_count
+        forgive_exception(
+            func=dest_client.upload_records,
+            collection_name=collection_name,
+            records=records,
+            wait=True,
+        )
+    source_client_vectors_count = forgive_exception(
+        func=source_client.get_collection, collection_name=collection_name
+    ).vectors_count
+    dest_client_vectors_count = forgive_exception(
+        func=dest_client.get_collection, collection_name=collection_name
+    ).vectors_count
     assert (
         source_client_vectors_count == dest_client_vectors_count
     ), f"Migration failed, vectors count are not equal: source vector count {source_client_vectors_count}, dest vector count {dest_client_vectors_count}"
