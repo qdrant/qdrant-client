@@ -1,12 +1,14 @@
 import time
-from typing import Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 
 
-def forgive_exception(func, times: int = 3, pause: float = 3.0, **func_kwargs):
+def forgive_exception(
+    func: Callable, times: int = 3, pause: float = 3.0, **func_kwargs: Any
+) -> Any:
     attempts = 0
 
     while attempts <= times:
