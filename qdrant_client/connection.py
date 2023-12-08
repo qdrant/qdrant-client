@@ -238,7 +238,7 @@ def get_async_channel(
     port: int,
     ssl: bool,
     metadata: Optional[List[Tuple[str, str]]] = None,
-    options: Dict[str, Any] = None,
+    options: Optional[Dict[str, Any]] = None,
 ) -> grpc.aio.Channel:
     # gRPC client options
     _options = parse_channel_options(options)
