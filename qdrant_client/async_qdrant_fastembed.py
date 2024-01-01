@@ -46,8 +46,8 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         self,
         embedding_model_name: str,
         max_length: int = 512,
-        cache_dir: str = None,
-        threads: int = None,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
     ) -> None:
         """
         Set embedding model to use for encoding documents and queries.
@@ -92,7 +92,11 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
 
     @classmethod
     def _get_or_init_model(
-        cls, model_name: str, max_length: int = 512, cache_dir: str = None, threads: int = None
+        cls,
+        model_name: str,
+        max_length: int = 512,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
     ) -> "DefaultEmbedding":
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
