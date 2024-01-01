@@ -42,12 +42,22 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         self.embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
         super().__init__(**kwargs)
 
-    def set_model(self, embedding_model_name: str) -> None:
+    def set_model_params(
+        self,
+        embedding_model_name: str,
+        max_length: int = 512,
+        cache_dir: str = None,
+        threads: int = None,
+    ) -> None:
         """
         Set embedding model to use for encoding documents and queries.
         Args:
             embedding_model_name: One of the supported embedding models. See `SUPPORTED_EMBEDDING_MODELS` for details.
-
+            max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
+            cache_dir (str, optional): The path to the cache directory.
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                                       Defaults to `fastembed_cache` in the system's temp directory.
+            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
         Raises:
             ValueError: If embedding model is not supported.
             ImportError: If fastembed is not installed.
@@ -55,7 +65,12 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Returns:
             None
         """
-        self._get_or_init_model(model_name=embedding_model_name)
+        self._get_or_init_model(
+            model_name=embedding_model_name,
+            max_length=max_length,
+            cache_dir=cache_dir,
+            threads=threads,
+        )
         self.embedding_model_name = embedding_model_name
 
     @staticmethod
@@ -76,7 +91,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return SUPPORTED_EMBEDDING_MODELS[model_name]
 
     @classmethod
-    def _get_or_init_model(cls, model_name: str) -> "DefaultEmbedding":
+    def _get_or_init_model(
+        cls, model_name: str, max_length: int = 512, cache_dir: str = None, threads: int = None
+    ) -> "DefaultEmbedding":
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
@@ -84,7 +101,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
         cls._import_fastembed()
-        cls.embedding_models[model_name] = DefaultEmbedding(model_name=model_name)
+        cls.embedding_models[model_name] = DefaultEmbedding(
+            model_name=model_name, max_length=max_length, cache_dir=cache_dir, threads=threads
+        )
         return cls.embedding_models[model_name]
 
     def _embed_documents(
@@ -96,7 +115,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         parallel: Optional[int] = None,
     ) -> Iterable[Tuple[str, List[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
-        (documents_a, documents_b) = tee(documents, 2)
+        documents_a, documents_b = tee(documents, 2)
         if embed_type == "passage":
             vectors_iter = embedding_model.passage_embed(
                 documents_a, batch_size=batch_size, parallel=parallel
@@ -177,7 +196,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Configuration for `vectors_config` argument in `create_collection` method.
         """
         vector_field_name = self.get_vector_field_name()
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         return {
             vector_field_name: models.VectorParams(
                 size=embeddings_size,
@@ -236,7 +255,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             embed_type="passage",
             parallel=parallel,
         )
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         vector_field_name = self.get_vector_field_name()
         try:
             collection_info = await self.get_collection(collection_name=collection_name)
