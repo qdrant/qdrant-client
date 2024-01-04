@@ -1,5 +1,5 @@
 import collections
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import grpc
 
@@ -178,14 +178,30 @@ def header_adder_async_interceptor(
     return create_generic_async_client_interceptor(intercept_call)
 
 
-def get_channel(
-    host: str, port: int, ssl: bool, metadata: Optional[List[Tuple[str, str]]] = None
-) -> grpc.Channel:
-    # gRPC client options
-    options = [
+def parse_channel_options(options: Optional[Dict[str, Any]] = None) -> List[Tuple[str, Any]]:
+    default_options: List[Tuple[str, Any]] = [
         ("grpc.max_send_message_length", -1),
         ("grpc.max_receive_message_length", -1),
     ]
+    if options is None:
+        return default_options
+
+    _options = [(option_name, option_value) for option_name, option_value in options.items()]
+    for option_name, option_value in default_options:
+        if option_name not in options:
+            _options.append((option_name, option_value))
+    return _options
+
+
+def get_channel(
+    host: str,
+    port: int,
+    ssl: bool,
+    metadata: Optional[List[Tuple[str, str]]] = None,
+    options: Optional[Dict[str, Any]] = None,
+) -> grpc.Channel:
+    # gRPC client options
+    _options = parse_channel_options(options)
 
     if ssl:
         if metadata:
@@ -211,20 +227,21 @@ def get_channel(
     else:
         if metadata:
             metadata_interceptor = header_adder_interceptor(metadata)
-            channel = grpc.insecure_channel(f"{host}:{port}", options)
+            channel = grpc.insecure_channel(f"{host}:{port}", _options)
             return grpc.intercept_channel(channel, metadata_interceptor)
         else:
-            return grpc.insecure_channel(f"{host}:{port}", options)
+            return grpc.insecure_channel(f"{host}:{port}", _options)
 
 
 def get_async_channel(
-    host: str, port: int, ssl: bool, metadata: Optional[List[Tuple[str, str]]] = None
+    host: str,
+    port: int,
+    ssl: bool,
+    metadata: Optional[List[Tuple[str, str]]] = None,
+    options: Optional[Dict[str, Any]] = None,
 ) -> grpc.aio.Channel:
     # gRPC client options
-    options = [
-        ("grpc.max_send_message_length", -1),
-        ("grpc.max_receive_message_length", -1),
-    ]
+    _options = parse_channel_options(options)
 
     if ssl:
         if metadata:
@@ -246,7 +263,7 @@ def get_async_channel(
             creds = grpc.ssl_channel_credentials()
 
         # finally pass in the combined credentials when creating a channel
-        return grpc.aio.secure_channel(f"{host}:{port}", creds, options)
+        return grpc.aio.secure_channel(f"{host}:{port}", creds, _options)
     else:
         if metadata:
             metadata_interceptor = header_adder_async_interceptor(metadata)
@@ -254,4 +271,4 @@ def get_async_channel(
                 f"{host}:{port}", options, interceptors=[metadata_interceptor]
             )
         else:
-            return grpc.aio.insecure_channel(f"{host}:{port}", options)
+            return grpc.aio.insecure_channel(f"{host}:{port}", _options)
