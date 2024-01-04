@@ -65,7 +65,12 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def close(self, **kwargs: Any) -> None:
         self._closed = True
         for collection in self.collections.values():
-            collection.close()
+            if collection is not None:
+                collection.close()
+            else:
+                logging.warning(
+                    f"Collection appears to be None before closing. The existing collections are: {list(self.collections.keys())}"
+                )
         if self._flock_file is not None:
             portalocker.unlock(self._flock_file)
 
