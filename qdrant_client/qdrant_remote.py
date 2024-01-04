@@ -51,11 +51,13 @@ class QdrantRemote(QdrantBase):
         prefix: Optional[str] = None,
         timeout: Optional[float] = None,
         host: Optional[str] = None,
+        grpc_options: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
+        self._grpc_options = grpc_options
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
 
@@ -200,6 +202,7 @@ class QdrantRemote(QdrantBase):
                 port=self._grpc_port,
                 ssl=self._https,
                 metadata=self._grpc_headers,
+                options=self._grpc_options,
             )
 
     def _init_async_grpc_channel(self) -> None:
@@ -212,6 +215,7 @@ class QdrantRemote(QdrantBase):
                 port=self._grpc_port,
                 ssl=self._https,
                 metadata=self._grpc_headers,
+                options=self._grpc_options,
             )
 
     def _init_grpc_points_client(self) -> None:

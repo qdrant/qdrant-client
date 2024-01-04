@@ -7,6 +7,7 @@ from typing import List
 
 import numpy as np
 import pytest
+from grpc import RpcError
 
 from qdrant_client import QdrantClient, models
 from qdrant_client._pydantic_compat import to_dict
@@ -1424,6 +1425,20 @@ def test_client_close():
         )
         local_client_persist_2.close()
     # endregion local
+
+
+def test_grpc_options():
+    client = QdrantClient(prefer_grpc=True)
+    assert client._client._grpc_options is None
+
+    client = QdrantClient(prefer_grpc=True, grpc_options={"grpc.max_send_message_length": 3})
+    assert client._client._grpc_options == {"grpc.max_send_message_length": 3}
+
+    with pytest.raises(RpcError):
+        client.create_collection(
+            "grpc_collection",
+            vectors_config=models.VectorParams(size=100, distance=models.Distance.COSINE),
+        )
 
 
 if __name__ == "__main__":
