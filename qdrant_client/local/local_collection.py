@@ -1,3 +1,4 @@
+import json
 import uuid
 from collections import OrderedDict, defaultdict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args
@@ -951,7 +952,11 @@ class LocalCollection:
 
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
-        self.payload[idx] = point.payload or {}
+        self.payload[idx] = (
+            point.payload
+            if point.payload is not None and json.dumps(point.payload, allow_nan=False)
+            else {}
+        )
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
@@ -986,7 +991,11 @@ class LocalCollection:
         idx = len(self.ids)
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
-        self.payload.append(point.payload or {})
+        self.payload.append(
+            point.payload
+            if point.payload is not None and json.dumps(point.payload, allow_nan=False)
+            else {}
+        )
         assert len(self.payload) == len(self.ids_inv), "Payload and ids_inv must be the same size"
         self.deleted = np.append(self.deleted, 0)
 
