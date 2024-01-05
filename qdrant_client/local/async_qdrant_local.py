@@ -72,7 +72,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     f"Collection appears to be None before closing. The existing collections are: {list(self.collections.keys())}"
                 )
         if self._flock_file is not None:
-            portalocker.unlock(self._flock_file)
+            try:
+                portalocker.unlock(self._flock_file)
+            except TypeError:
+                pass
 
     def _load(self) -> None:
         if not self.persistent:
