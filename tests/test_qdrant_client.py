@@ -1018,17 +1018,14 @@ def test_custom_sharding(prefer_grpc):
     # region upload_records
     init_collection()
 
-    ids = cat_ids + dog_ids
-    vectors = cat_vectors + dog_vectors
-    payload = cat_payload + dog_payload
-    shard_keys = [cats_shard_key] * len(cat_ids) + [dogs_shard_key] * len(dog_ids)
-
-    records = [
-        Record(id=id_, vector=vector, payload=payload, shard_key=shard_key)
-        for id_, vector, payload, shard_key in zip(ids, vectors, payload, shard_keys)
+    cat_records = [
+        Record(id=id_, vector=vector, payload=payload)
+        for id_, vector, payload in zip(cat_ids, cat_vectors, cat_payload)
     ]
 
-    client.upload_records(collection_name=COLLECTION_NAME, records=records)
+    client.upload_records(
+        collection_name=COLLECTION_NAME, records=cat_records, shard_key_selector=cats_shard_key
+    )
 
     res = client.search(
         collection_name=COLLECTION_NAME,
@@ -1037,38 +1034,6 @@ def test_custom_sharding(prefer_grpc):
     )
 
     assert len(res) == 3
-    for record in res:
-        assert record.shard_key == cats_shard_key
-
-    res = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
-        shard_key_selector=[cats_shard_key, dogs_shard_key],
-    )
-
-    assert len(res) == 6
-
-    res = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
-    )
-
-    assert len(res) == 6
-
-    # shard key selector overwrites shard key in record
-    init_collection()
-
-    client.upload_records(
-        collection_name=COLLECTION_NAME, records=records, shard_key_selector=cats_shard_key
-    )
-
-    res = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
-        shard_key_selector=cats_shard_key,
-    )
-
-    assert len(res) == 6
 
     res = client.search(
         collection_name=COLLECTION_NAME,

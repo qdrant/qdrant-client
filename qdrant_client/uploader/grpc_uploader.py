@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Generator, Iterable, Optional, Tuple, Union
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
@@ -14,61 +14,37 @@ def upload_batch_grpc(
     collection_name: str,
     batch: Union[Batch, Tuple],
     max_retries: int,
+    shard_key_selector: Optional[ShardKeySelector],
     wait: bool = False,
 ) -> bool:
-    def send_batch(points_list: List[PointStruct], key: Optional[ShardKeySelector]) -> None:
-        for attempt in range(max_retries):
-            try:
-                points_client.Upsert(
-                    grpc.UpsertPoints(
-                        collection_name=collection_name,
-                        points=points_list,
-                        wait=wait,
-                        shard_key_selector=RestToGrpc.convert_shard_key_selector(key)
-                        if key is not None
-                        else None,
-                    )
-                )
-            except Exception as e:
-                logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
+    ids_batch, vectors_batch, payload_batch = batch
 
-                if attempt == max_retries - 1:
-                    raise e
-
-    ids_batch, vectors_batch, payload_batch, shard_key_batch = batch
-
-    warning_emitted = False
-    prev_shard_key = None
-    points: List[PointStruct] = []
-    for i, (idx, vector, payload, shard_key) in enumerate(
-        zip(ids_batch, vectors_batch, payload_batch, shard_key_batch)
-    ):
-        if i == 0:
-            prev_shard_key = shard_key
-
-        if prev_shard_key != shard_key:
-            if not warning_emitted:
-                logging.warning(
-                    "Batch contains points with different shard keys. It can affect the performance."
-                )
-                warning_emitted = True
-
-            send_batch(points, prev_shard_key)
-            points = []
-            prev_shard_key = shard_key
-
-        points.append(
-            PointStruct(
-                id=RestToGrpc.convert_extended_point_id(idx)
-                if not isinstance(idx, PointId)
-                else idx,
-                vectors=RestToGrpc.convert_vector_struct(vector),
-                payload=payload_to_grpc(payload or {}),
-            )
+    points = [
+        PointStruct(
+            id=RestToGrpc.convert_extended_point_id(idx) if not isinstance(idx, PointId) else idx,
+            vectors=RestToGrpc.convert_vector_struct(vector),
+            payload=payload_to_grpc(payload or {}),
         )
+        for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
+    ]
 
-    if points:
-        send_batch(points, prev_shard_key)
+    for attempt in range(max_retries):
+        try:
+            points_client.Upsert(
+                grpc.UpsertPoints(
+                    collection_name=collection_name,
+                    points=points,
+                    wait=wait,
+                    shard_key_selector=RestToGrpc.convert_shard_key_selector(shard_key_selector)
+                    if shard_key_selector is not None
+                    else None,
+                )
+            )
+        except Exception as e:
+            logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
+
+            if attempt == max_retries - 1:
+                raise e
     return True
 
 
@@ -80,6 +56,7 @@ class GrpcBatchUploader(BaseUploader):
         collection_name: str,
         max_retries: int,
         wait: bool = False,
+        shard_key_selector: Optional[ShardKeySelector] = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
@@ -88,6 +65,7 @@ class GrpcBatchUploader(BaseUploader):
         self.max_retries = max_retries
         self._kwargs = kwargs
         self._wait = wait
+        self._shard_key_selector = shard_key_selector
 
     @classmethod
     def start(
@@ -117,6 +95,7 @@ class GrpcBatchUploader(BaseUploader):
                 points_client,
                 self.collection_name,
                 batch,
+                shard_key_selector=self._shard_key_selector,
                 max_retries=self.max_retries,
                 wait=self._wait,
             )
