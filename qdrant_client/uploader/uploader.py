@@ -27,45 +27,23 @@ def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
 
 class BaseUploader(Worker, ABC):
     @classmethod
-    def split_batch_by_shard_key(
+    def iterate_records_batches(
         cls,
-        ids_batch: Iterable,
-        vectors_batch: Iterable,
-        payload_batch: Iterable,
-        shard_keys_batch: List[Optional[ShardKey]],
+        records: Iterable[Record],
+        shard_key_selector: Optional[types.ShardKeySelector],
+        batch_size: int,
     ) -> Iterable:
-        bucket_map = {shard_key: index for index, shard_key in enumerate(set(shard_keys_batch))}
-        if len(bucket_map) == 1:
-            yield (ids_batch, vectors_batch, payload_batch), list(bucket_map.keys())[0]
-        else:
-            buckets: list[list[tuple]] = [[] for _ in range(len(bucket_map))]
-
-            for id_, vector, payload, shard_key in zip(
-                ids_batch, vectors_batch, payload_batch, shard_keys_batch
-            ):
-                buckets[bucket_map[shard_key]].append((id_, vector, payload))
-
-            for shard_key, index in bucket_map.items():
-                ids_batch_for_shard, vectors_batch_for_shard, payload_batch_for_shard = zip(
-                    *buckets[index]
-                )
-                yield (
-                    ids_batch_for_shard,
-                    vectors_batch_for_shard,
-                    payload_batch_for_shard,
-                ), shard_key
-
-    @classmethod
-    def iterate_records_batches(cls, records: Iterable[Record], batch_size: int) -> Iterable:
         record_batches = iter_batch(records, batch_size)
         for record_batch in record_batches:
             ids_batch = [record.id for record in record_batch]
             vectors_batch = [record.vector for record in record_batch]
             payload_batch = [record.payload for record in record_batch]
-            shard_keys_batch = [record.shard_key for record in record_batch]
-            yield from cls.split_batch_by_shard_key(
-                ids_batch, vectors_batch, payload_batch, shard_keys_batch
+            shard_keys_batch = (
+                [record.shard_key for record in record_batch]
+                if shard_key_selector is None
+                else itertools.cycle([shard_key_selector])
             )
+            yield ids_batch, vectors_batch, payload_batch, shard_keys_batch
 
     @classmethod
     def iterate_batches(
@@ -75,7 +53,7 @@ class BaseUploader(Worker, ABC):
         ],
         payload: Optional[Iterable[dict]],
         ids: Optional[Iterable[ExtendedPointId]],
-        shard_keys: Optional[Iterable[ShardKey]],
+        shard_key_selector: Optional[types.ShardKeySelector],
         batch_size: int,
     ) -> Iterable:
         if ids is None:
@@ -89,12 +67,12 @@ class BaseUploader(Worker, ABC):
         else:
             payload_batches = iter_batch(payload, batch_size)
 
-        if shard_keys is None:
+        if shard_key_selector is None:
             shard_keys_batches: Union[Generator, Iterable] = (
                 (None for _ in range(batch_size)) for _ in count()
             )
         else:
-            shard_keys_batches = iter_batch(shard_keys, batch_size)
+            shard_keys_batches = iter_batch(itertools.cycle([shard_key_selector]), batch_size)
 
         if isinstance(vectors, np.ndarray):
             vector_batches: Iterable[Any] = cls._vector_batches_from_numpy(vectors, batch_size)
@@ -105,12 +83,7 @@ class BaseUploader(Worker, ABC):
         else:
             vector_batches = iter_batch(vectors, batch_size)
 
-        for id_batch, vector_batch, payload_batch, shard_key_batch in zip(
-            ids_batches, vector_batches, payload_batches, shard_keys_batches
-        ):
-            yield from cls.split_batch_by_shard_key(
-                id_batch, vector_batch, payload_batch, list(shard_key_batch)
-            )
+        yield from zip(ids_batches, vector_batches, payload_batches, shard_keys_batches)
 
     @staticmethod
     def _vector_batches_from_numpy(vectors: types.NumpyArray, batch_size: int) -> Iterable[float]:

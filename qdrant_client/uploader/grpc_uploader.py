@@ -5,7 +5,7 @@ from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
 from qdrant_client.grpc import PointId, PointsStub, PointStruct
-from qdrant_client.http.models import Batch, ShardKey
+from qdrant_client.http.models import Batch
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -14,37 +14,61 @@ def upload_batch_grpc(
     collection_name: str,
     batch: Union[Batch, Tuple],
     max_retries: int,
-    shard_key: Optional[ShardKey] = None,
     wait: bool = False,
 ) -> bool:
-    ids_batch, vectors_batch, payload_batch = batch
-
-    points = [
-        PointStruct(
-            id=RestToGrpc.convert_extended_point_id(idx) if not isinstance(idx, PointId) else idx,
-            vectors=RestToGrpc.convert_vector_struct(vector),
-            payload=payload_to_grpc(payload or {}),
-        )
-        for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
-    ]
-
-    for attempt in range(max_retries):
-        try:
-            points_client.Upsert(
-                grpc.UpsertPoints(
-                    collection_name=collection_name,
-                    points=points,
-                    wait=wait,
-                    shard_key_selector=RestToGrpc.convert_shard_key_selector(shard_key)
-                    if shard_key is not None
-                    else None,
+    def send_batch(points_list, key):
+        for attempt in range(max_retries):
+            try:
+                points_client.Upsert(
+                    grpc.UpsertPoints(
+                        collection_name=collection_name,
+                        points=points_list,
+                        wait=wait,
+                        shard_key_selector=RestToGrpc.convert_shard_key_selector(key)
+                        if key is not None
+                        else None,
+                    )
                 )
-            )
-        except Exception as e:
-            logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
+            except Exception as e:
+                logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
 
-            if attempt == max_retries - 1:
-                raise e
+                if attempt == max_retries - 1:
+                    raise e
+
+    ids_batch, vectors_batch, payload_batch, shard_key_batch = batch
+
+    warning_emitted = False
+    prev_shard_key = None
+    points = []
+    for i, (idx, vector, payload, shard_key) in enumerate(
+        zip(ids_batch, vectors_batch, payload_batch, shard_key_batch)
+    ):
+        if i == 0:
+            prev_shard_key = shard_key
+
+        if prev_shard_key != shard_key:
+            if not warning_emitted:
+                logging.warning(
+                    "Batch contains points with different shard keys. It can affect the performance."
+                )
+                warning_emitted = True
+
+            send_batch(points, prev_shard_key)
+            points = []
+            prev_shard_key = shard_key
+
+        points.append(
+            PointStruct(
+                id=RestToGrpc.convert_extended_point_id(idx)
+                if not isinstance(idx, PointId)
+                else idx,
+                vectors=RestToGrpc.convert_vector_struct(vector),
+                payload=payload_to_grpc(payload or {}),
+            )
+        )
+
+    if points:
+        send_batch(points, prev_shard_key)
     return True
 
 
@@ -88,12 +112,11 @@ class GrpcBatchUploader(BaseUploader):
     def process_upload(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         channel = get_channel(host=self._host, port=self._port, **self._kwargs)
         points_client = PointsStub(channel)
-        for batch, shard_key in items:
+        for batch in items:
             yield upload_batch_grpc(
                 points_client,
                 self.collection_name,
                 batch,
-                shard_key=shard_key,
                 max_retries=self.max_retries,
                 wait=self._wait,
             )

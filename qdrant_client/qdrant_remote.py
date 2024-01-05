@@ -2260,10 +2260,11 @@ class QdrantRemote(QdrantBase):
         method: Optional[str] = None,
         max_retries: int = 3,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_records_batches(
-            records=records, batch_size=batch_size
+            records=records, shard_key_selector=shard_key_selector, batch_size=batch_size
         )
         self._upload_collection(
             batches_iterator=batches_iterator,
@@ -2282,16 +2283,21 @@ class QdrantRemote(QdrantBase):
         ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
-        shard_keys: Optional[Iterable[types.ShardKey]] = None,
+        shard_keys: Optional[types.ShardKey] = None,
         batch_size: int = 64,
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(
-            vectors=vectors, payload=payload, ids=ids, shard_keys=shard_keys, batch_size=batch_size
+            vectors=vectors,
+            payload=payload,
+            ids=ids,
+            shard_key_selector=shard_key_selector,
+            batch_size=batch_size,
         )
         self._upload_collection(
             batches_iterator, collection_name, max_retries, parallel, method, wait
