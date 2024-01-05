@@ -1,11 +1,11 @@
 import logging
-from typing import Any, Generator, Iterable, Optional, Tuple, Union
+from typing import Any, Generator, Iterable, List, Optional, Tuple, Union
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
 from qdrant_client.grpc import PointId, PointsStub, PointStruct
-from qdrant_client.http.models import Batch
+from qdrant_client.http.models import Batch, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -16,7 +16,7 @@ def upload_batch_grpc(
     max_retries: int,
     wait: bool = False,
 ) -> bool:
-    def send_batch(points_list, key):
+    def send_batch(points_list: List[PointStruct], key: Optional[ShardKeySelector]) -> None:
         for attempt in range(max_retries):
             try:
                 points_client.Upsert(

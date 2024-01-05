@@ -2283,7 +2283,6 @@ class QdrantRemote(QdrantBase):
         ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
-        shard_keys: Optional[types.ShardKey] = None,
         batch_size: int = 64,
         parallel: int = 1,
         method: Optional[str] = None,

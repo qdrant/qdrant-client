@@ -1,10 +1,10 @@
 import logging
-from typing import Any, Generator, Iterable, Optional, Tuple, Union
+from typing import Any, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 
 from qdrant_client.http import SyncApis
-from qdrant_client.http.models import Batch, PointsList, PointStruct
+from qdrant_client.http.models import Batch, PointsList, PointStruct, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -15,7 +15,7 @@ def upload_batch(
     max_retries: int,
     wait: bool = False,
 ) -> bool:
-    def send_batch(points_list, key):
+    def send_batch(points_list: List[PointStruct], key: Optional[ShardKeySelector]) -> None:
         for attempt in range(max_retries):
             try:
                 openapi_client.points_api.upsert_points(
