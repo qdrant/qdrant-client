@@ -1713,6 +1713,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         method: Optional[str] = None,
         max_retries: int = 3,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> None:
         """Upload records to the collection
@@ -1732,6 +1733,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
                 If `false`, each update request will return immediately after the confirmation of receiving.
                 Default: `false`
+            shard_key_selector: Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+                This parameter overwrites shard keys written in the records.
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
@@ -1743,6 +1748,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             method=method,
             max_retries=max_retries,
             wait=wait,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1754,12 +1760,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
-        shard_keys: Optional[Iterable[types.ShardKey]] = None,
         batch_size: int = 64,
         parallel: int = 1,
         method: Optional[str] = None,
         max_retries: int = 3,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -1772,7 +1778,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             vectors: np.ndarray or an iterable over vectors to upload. Might be mmaped
             payload: Iterable of vectors payload, Optional, Default: None
             ids: Iterable of custom vectors ids, Optional, Default: None
-            shard_keys: Iterable of custom shard keys, Optional, Default: None
             batch_size: How many vectors upload per-request, Default: 64
             parallel: Number of parallel processes of upload
             method: Start method for parallel processes, Default: forkserver
@@ -1783,6 +1788,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
                 If `false`, each update request will return immediately after the confirmation of receiving.
                 Default: `false`
+            shard_key_selector: Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return self._client.upload_collection(
@@ -1790,12 +1798,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             vectors=vectors,
             payload=payload,
             ids=ids,
-            shard_keys=shard_keys,
             batch_size=batch_size,
             parallel=parallel,
             method=method,
             max_retries=max_retries,
             wait=wait,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 

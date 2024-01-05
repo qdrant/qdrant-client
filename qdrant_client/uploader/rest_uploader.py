@@ -4,7 +4,7 @@ from typing import Any, Generator, Iterable, Optional, Tuple, Union
 import numpy as np
 
 from qdrant_client.http import SyncApis
-from qdrant_client.http.models import Batch, PointsList, PointStruct, ShardKey
+from qdrant_client.http.models import Batch, PointsList, PointStruct, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -13,7 +13,7 @@ def upload_batch(
     collection_name: str,
     batch: Union[Tuple, Batch],
     max_retries: int,
-    shard_key: Optional[ShardKey] = None,
+    shard_key_selector: Optional[ShardKeySelector],
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
@@ -31,7 +31,7 @@ def upload_batch(
         try:
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
-                point_insert_operations=PointsList(points=points, shard_key=shard_key),
+                point_insert_operations=PointsList(points=points, shard_key=shard_key_selector),
                 wait=wait,
             )
         except Exception as e:
@@ -49,12 +49,14 @@ class RestBatchUploader(BaseUploader):
         collection_name: str,
         max_retries: int,
         wait: bool = False,
+        shard_key_selector: Optional[ShardKeySelector] = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
         self.openapi_client: SyncApis = SyncApis(host=uri, **kwargs)
         self.max_retries = max_retries
         self._wait = wait
+        self._shard_key_selector = shard_key_selector
 
     @classmethod
     def start(
@@ -69,12 +71,12 @@ class RestBatchUploader(BaseUploader):
         return cls(uri=uri, collection_name=collection_name, max_retries=max_retries, **kwargs)
 
     def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
-        for batch, shard_key in items:
+        for batch in items:
             yield upload_batch(
                 self.openapi_client,
                 self.collection_name,
                 batch,
-                shard_key=shard_key,
+                shard_key_selector=self._shard_key_selector,
                 max_retries=self.max_retries,
                 wait=self._wait,
             )

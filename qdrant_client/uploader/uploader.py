@@ -1,14 +1,14 @@
 import itertools
-import math
+import warnings
 from abc import ABC
 from itertools import count, islice
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 import numpy as np
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import Record
-from qdrant_client.http.models import ExtendedPointId, ShardKey
+from qdrant_client.http.models import ExtendedPointId
 from qdrant_client.parallel_processor import Worker
 
 
@@ -27,45 +27,29 @@ def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
 
 class BaseUploader(Worker, ABC):
     @classmethod
-    def split_batch_by_shard_key(
+    def iterate_records_batches(
         cls,
-        ids_batch: Iterable,
-        vectors_batch: Iterable,
-        payload_batch: Iterable,
-        shard_keys_batch: List[Optional[ShardKey]],
+        records: Iterable[Record],
+        batch_size: int,
     ) -> Iterable:
-        bucket_map = {shard_key: index for index, shard_key in enumerate(set(shard_keys_batch))}
-        if len(bucket_map) == 1:
-            yield (ids_batch, vectors_batch, payload_batch), list(bucket_map.keys())[0]
-        else:
-            buckets: list[list[tuple]] = [[] for _ in range(len(bucket_map))]
-
-            for id_, vector, payload, shard_key in zip(
-                ids_batch, vectors_batch, payload_batch, shard_keys_batch
-            ):
-                buckets[bucket_map[shard_key]].append((id_, vector, payload))
-
-            for shard_key, index in bucket_map.items():
-                ids_batch_for_shard, vectors_batch_for_shard, payload_batch_for_shard = zip(
-                    *buckets[index]
-                )
-                yield (
-                    ids_batch_for_shard,
-                    vectors_batch_for_shard,
-                    payload_batch_for_shard,
-                ), shard_key
-
-    @classmethod
-    def iterate_records_batches(cls, records: Iterable[Record], batch_size: int) -> Iterable:
         record_batches = iter_batch(records, batch_size)
         for record_batch in record_batches:
-            ids_batch = [record.id for record in record_batch]
-            vectors_batch = [record.vector for record in record_batch]
-            payload_batch = [record.payload for record in record_batch]
-            shard_keys_batch = [record.shard_key for record in record_batch]
-            yield from cls.split_batch_by_shard_key(
-                ids_batch, vectors_batch, payload_batch, shard_keys_batch
-            )
+            ids_batch, vectors_batch, payload_batch = [], [], []
+
+            shard_key_is_set = False
+            for record in record_batch:
+                ids_batch.append(record.id)
+                vectors_batch.append(record.vector)
+                payload_batch.append(record.payload)
+                if getattr(record, "shard_key", None):
+                    shard_key_is_set = True
+
+            if shard_key_is_set:
+                warnings.warn(
+                    "`shard_key` in `models.Record` is ignored, use `shard_key_selector` in method's call instead"
+                )
+
+            yield ids_batch, vectors_batch, payload_batch
 
     @classmethod
     def iterate_batches(
@@ -75,7 +59,6 @@ class BaseUploader(Worker, ABC):
         ],
         payload: Optional[Iterable[dict]],
         ids: Optional[Iterable[ExtendedPointId]],
-        shard_keys: Optional[Iterable[ShardKey]],
         batch_size: int,
     ) -> Iterable:
         if ids is None:
@@ -89,13 +72,6 @@ class BaseUploader(Worker, ABC):
         else:
             payload_batches = iter_batch(payload, batch_size)
 
-        if shard_keys is None:
-            shard_keys_batches: Union[Generator, Iterable] = (
-                (None for _ in range(batch_size)) for _ in count()
-            )
-        else:
-            shard_keys_batches = iter_batch(shard_keys, batch_size)
-
         if isinstance(vectors, np.ndarray):
             vector_batches: Iterable[Any] = cls._vector_batches_from_numpy(vectors, batch_size)
         elif isinstance(vectors, dict) and any(
@@ -105,12 +81,7 @@ class BaseUploader(Worker, ABC):
         else:
             vector_batches = iter_batch(vectors, batch_size)
 
-        for id_batch, vector_batch, payload_batch, shard_key_batch in zip(
-            ids_batches, vector_batches, payload_batches, shard_keys_batches
-        ):
-            yield from cls.split_batch_by_shard_key(
-                id_batch, vector_batch, payload_batch, list(shard_key_batch)
-            )
+        yield from zip(ids_batches, vector_batches, payload_batches)
 
     @staticmethod
     def _vector_batches_from_numpy(vectors: types.NumpyArray, batch_size: int) -> Iterable[float]:
