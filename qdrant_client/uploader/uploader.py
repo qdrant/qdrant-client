@@ -1,14 +1,14 @@
 import itertools
-import math
+import warnings
 from abc import ABC
 from itertools import count, islice
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Union
 
 import numpy as np
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import Record
-from qdrant_client.http.models import ExtendedPointId, ShardKey
+from qdrant_client.http.models import ExtendedPointId
 from qdrant_client.parallel_processor import Worker
 
 
@@ -34,9 +34,21 @@ class BaseUploader(Worker, ABC):
     ) -> Iterable:
         record_batches = iter_batch(records, batch_size)
         for record_batch in record_batches:
-            ids_batch = [record.id for record in record_batch]
-            vectors_batch = [record.vector for record in record_batch]
-            payload_batch = [record.payload for record in record_batch]
+            ids_batch, vectors_batch, payload_batch = [], [], []
+
+            shard_key_is_set = False
+            for record in record_batch:
+                ids_batch.append(record.id)
+                vectors_batch.append(record.vector)
+                payload_batch.append(record.payload)
+                if getattr(record, "shard_key", None):
+                    shard_key_is_set = True
+
+            if shard_key_is_set:
+                warnings.warn(
+                    "`shard_key` in `models.Record` is ignored, use `shard_key_selector` in method's call instead"
+                )
+
             yield ids_batch, vectors_batch, payload_batch
 
     @classmethod
