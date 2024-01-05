@@ -14,7 +14,7 @@ repository = "https://github.com/qdrant/qdrant-client"
 keywords = ["vector", "search", "neural", "matching", "client"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.13"
+python = ">=3.8"
 httpx = { version = ">=0.14.0", extras = ["http2"] }
 numpy = [
     { version = "<1.21", python = "<3.8" },
