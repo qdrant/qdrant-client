@@ -64,9 +64,8 @@ class QdrantLocal(QdrantBase):
         if self._flock_file is not None:
             try:
                 portalocker.unlock(self._flock_file)
-            except (
-                TypeError
-            ):  # sometimes portalocker module can be garbage collected before QdrantLocal instance
+            except TypeError:  # sometimes portalocker module can be garbage collected before
+                # QdrantLocal instance
                 pass
 
     def _load(self) -> None:
