@@ -39,7 +39,7 @@ def upload_batch_grpc(
 
     warning_emitted = False
     prev_shard_key = None
-    points = []
+    points: List[PointStruct] = []
     for i, (idx, vector, payload, shard_key) in enumerate(
         zip(ids_batch, vectors_batch, payload_batch, shard_key_batch)
     ):
