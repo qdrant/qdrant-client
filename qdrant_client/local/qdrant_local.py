@@ -62,7 +62,11 @@ class QdrantLocal(QdrantBase):
                     f"{list(self.collections.keys())}"
                 )
         if self._flock_file is not None:
-            portalocker.unlock(self._flock_file)
+            try:
+                portalocker.unlock(self._flock_file)
+            except TypeError:  # sometimes portalocker module can be garbage collected before
+                # QdrantLocal instance
+                pass
 
     def _load(self) -> None:
         if not self.persistent:
