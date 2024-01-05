@@ -1988,6 +1988,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         parallel: int = 1,
         method: Optional[str] = None,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
     ) -> None:
         if method is not None:
             if method in get_all_start_methods():
@@ -2007,6 +2008,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "ssl": self._https,
                 "metadata": self._grpc_headers,
                 "wait": wait,
+                "shard_key_selector": shard_key_selector,
             }
         else:
             updater_kwargs = {
@@ -2014,6 +2016,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "uri": self.rest_uri,
                 "max_retries": max_retries,
                 "wait": wait,
+                "shard_key_selector": shard_key_selector,
                 **self._rest_args,
             }
         if parallel == 1:
@@ -2034,6 +2037,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         method: Optional[str] = None,
         max_retries: int = 3,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_records_batches(
@@ -2045,6 +2049,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             max_retries=max_retries,
             parallel=parallel,
             method=method,
+            shard_key_selector=shard_key_selector,
             wait=wait,
         )
 
@@ -2061,13 +2066,20 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         method: Optional[str] = None,
         max_retries: int = 3,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(
             vectors=vectors, payload=payload, ids=ids, batch_size=batch_size
         )
         self._upload_collection(
-            batches_iterator, collection_name, max_retries, parallel, method, wait
+            batches_iterator=batches_iterator,
+            collection_name=collection_name,
+            max_retries=max_retries,
+            parallel=parallel,
+            method=method,
+            wait=wait,
+            shard_key_selector=shard_key_selector,
         )
 
     async def create_payload_index(

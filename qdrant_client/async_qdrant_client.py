@@ -1715,6 +1715,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         method: Optional[str] = None,
         max_retries: int = 3,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> None:
         """Upload records to the collection
@@ -1734,6 +1735,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
                 If `false`, each update request will return immediately after the confirmation of receiving.
                 Default: `false`
+            shard_key_selector: Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
+                This parameter overwrites shard keys written in the records.
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
@@ -1745,6 +1750,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             method=method,
             max_retries=max_retries,
             wait=wait,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
@@ -1761,6 +1767,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         method: Optional[str] = None,
         max_retries: int = 3,
         wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -1783,6 +1790,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If `true`, each update request will explicitly wait for the confirmation of completion. Might be slower.
                 If `false`, each update request will return immediately after the confirmation of receiving.
                 Default: `false`
+            shard_key_selector: Defines the shard groups that should be used to write updates into.
+                If multiple shard_keys are provided, the update will be written to each of them.
+                Only works for collections with `custom` sharding method.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return self._client.upload_collection(
@@ -1795,6 +1805,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             method=method,
             max_retries=max_retries,
             wait=wait,
+            shard_key_selector=shard_key_selector,
             **kwargs,
         )
 
