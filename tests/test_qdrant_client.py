@@ -923,50 +923,64 @@ def test_custom_sharding(prefer_grpc):
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
-    client.recreate_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        sharding_method=models.ShardingMethod.CUSTOM,
-    )
+    def init_collection():
+        client.recreate_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            sharding_method=models.ShardingMethod.CUSTOM,
+        )
 
-    client.create_shard_key(collection_name=COLLECTION_NAME, shard_key="cats")
+        client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=cats_shard_key)
+        client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=dogs_shard_key)
 
-    client.create_shard_key(collection_name=COLLECTION_NAME, shard_key="dogs")
+    cat_ids = [1, 2, 3]
+    cat_vectors = [np.random.rand(DIM).tolist() for _ in range(len(cat_ids))]
+    cat_payload = [{"name": "Barsik"}, {"name": "Murzik"}, {"name": "Chubais"}]
+    cats_shard_key = "cats"
+
+    dog_ids = [4, 5, 6]
+    dog_vectors = [np.random.rand(DIM).tolist() for _ in range(len(dog_ids))]
+    dog_payload = [{"name": "Sharik"}, {"name": "Tuzik"}, {"name": "Bobik"}]
+    dogs_shard_key = "dogs"
+
+    cat_points = [
+        PointStruct(id=id_, vector=vector, payload=payload)
+        for id_, vector, payload in zip(cat_ids, cat_vectors, cat_payload)
+    ]
+    dog_points = [
+        PointStruct(id=id_, vector=vector, payload=payload)
+        for id_, vector, payload in zip(dog_ids, dog_vectors, dog_payload)
+    ]
+
+    # region upsert
+    init_collection()
 
     client.upsert(
         collection_name=COLLECTION_NAME,
-        points=[
-            PointStruct(id=1, vector=np.random.rand(DIM).tolist(), payload={"name": "Barsik"}),
-            PointStruct(id=2, vector=np.random.rand(DIM).tolist(), payload={"name": "Murzik"}),
-            PointStruct(id=3, vector=np.random.rand(DIM).tolist(), payload={"name": "Chubais"}),
-        ],
-        shard_key_selector="cats",
+        points=cat_points,
+        shard_key_selector=cats_shard_key,
     )
 
     client.upsert(
         collection_name=COLLECTION_NAME,
-        points=[
-            PointStruct(id=4, vector=np.random.rand(DIM).tolist(), payload={"name": "Sharik"}),
-            PointStruct(id=5, vector=np.random.rand(DIM).tolist(), payload={"name": "Tuzik"}),
-            PointStruct(id=6, vector=np.random.rand(DIM).tolist(), payload={"name": "Bobik"}),
-        ],
-        shard_key_selector="dogs",
+        points=dog_points,
+        shard_key_selector=dogs_shard_key,
     )
 
     res = client.search(
         collection_name=COLLECTION_NAME,
         query_vector=np.random.rand(DIM),
-        shard_key_selector="cats",
+        shard_key_selector=cats_shard_key,
     )
 
     assert len(res) == 3
     for record in res:
-        assert record.shard_key == "cats"
+        assert record.shard_key == cats_shard_key
 
     res = client.search(
         collection_name=COLLECTION_NAME,
         query_vector=np.random.rand(DIM),
-        shard_key_selector=["cats", "dogs"],
+        shard_key_selector=[cats_shard_key, dogs_shard_key],
     )
 
     assert len(res) == 6
@@ -978,7 +992,61 @@ def test_custom_sharding(prefer_grpc):
 
     assert len(res) == 6
 
-    client.delete_shard_key(collection_name=COLLECTION_NAME, shard_key="dogs")
+    # endregion
+
+    # region upload_collection
+    init_collection()
+
+    client.upload_collection(
+        collection_name=COLLECTION_NAME,
+        vectors=cat_vectors,
+        ids=cat_ids,
+        payload=cat_payload,
+        shard_key_selector=cats_shard_key,
+    )
+
+    res = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=np.random.rand(DIM),
+        shard_key_selector=cats_shard_key,
+    )
+
+    assert len(res) == 3
+    for record in res:
+        assert record.shard_key == cats_shard_key
+    # endregion
+
+    # region upload_records
+    init_collection()
+
+    cat_records = [
+        Record(id=id_, vector=vector, payload=payload)
+        for id_, vector, payload in zip(cat_ids, cat_vectors, cat_payload)
+    ]
+
+    client.upload_records(
+        collection_name=COLLECTION_NAME, records=cat_records, shard_key_selector=cats_shard_key
+    )
+
+    res = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=np.random.rand(DIM),
+        shard_key_selector=cats_shard_key,
+    )
+
+    assert len(res) == 3
+
+    res = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=np.random.rand(DIM),
+        shard_key_selector=dogs_shard_key,
+    )
+
+    assert len(res) == 0
+
+    # endregion
+
+    client.delete_shard_key(collection_name=COLLECTION_NAME, shard_key=dogs_shard_key)
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])

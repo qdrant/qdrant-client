@@ -1,11 +1,10 @@
 import logging
-from itertools import count
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
 
 import numpy as np
 
 from qdrant_client.http import SyncApis
-from qdrant_client.http.models import Batch, PointsList, PointStruct
+from qdrant_client.http.models import Batch, PointsList, PointStruct, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -14,14 +13,10 @@ def upload_batch(
     collection_name: str,
     batch: Union[Tuple, Batch],
     max_retries: int,
+    shard_key_selector: Optional[ShardKeySelector],
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
-
-    if payload_batch is not None:
-        payload_batch = list(payload_batch)
-    else:
-        payload_batch = (None for _ in count())
 
     points = [
         PointStruct(
@@ -36,7 +31,7 @@ def upload_batch(
         try:
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
-                point_insert_operations=PointsList(points=points),
+                point_insert_operations=PointsList(points=points, shard_key=shard_key_selector),
                 wait=wait,
             )
         except Exception as e:
@@ -54,12 +49,14 @@ class RestBatchUploader(BaseUploader):
         collection_name: str,
         max_retries: int,
         wait: bool = False,
+        shard_key_selector: Optional[ShardKeySelector] = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
         self.openapi_client: SyncApis = SyncApis(host=uri, **kwargs)
         self.max_retries = max_retries
         self._wait = wait
+        self._shard_key_selector = shard_key_selector
 
     @classmethod
     def start(
@@ -79,6 +76,7 @@ class RestBatchUploader(BaseUploader):
                 self.openapi_client,
                 self.collection_name,
                 batch,
-                self.max_retries,
-                self._wait,
+                shard_key_selector=self._shard_key_selector,
+                max_retries=self.max_retries,
+                wait=self._wait,
             )
