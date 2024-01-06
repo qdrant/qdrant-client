@@ -111,7 +111,7 @@ class _ClusterApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_delete_shard_key(
@@ -139,7 +139,7 @@ class _ClusterApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_recover_current_peer(
@@ -204,7 +204,7 @@ class _ClusterApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
 
