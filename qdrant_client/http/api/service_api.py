@@ -126,7 +126,7 @@ class _ServiceApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2002, method="POST", url="/locks", headers=headers if headers else None, data=body
+            type_=m.InlineResponse2002, method="POST", url="/locks", headers=headers if headers else None, content=body
         )
 
     def _build_for_readyz(

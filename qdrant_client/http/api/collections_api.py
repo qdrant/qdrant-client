@@ -100,7 +100,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_create_field_index(
@@ -134,7 +134,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_create_shard_key(
@@ -162,7 +162,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_create_shard_snapshot(
@@ -301,7 +301,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_delete_shard_snapshot(
@@ -546,7 +546,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_recover_from_uploaded_snapshot(
@@ -616,7 +616,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_recover_shard_from_uploaded_snapshot(
@@ -677,7 +677,7 @@ class _CollectionsApi:
             url="/collections/aliases",
             headers=headers if headers else None,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_update_collection(
@@ -708,7 +708,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_update_collection_cluster(
@@ -736,7 +736,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
 

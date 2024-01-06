@@ -83,7 +83,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_clear_payload(
@@ -117,7 +117,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_count_points(
@@ -142,7 +142,7 @@ class _PointsApi:
             url="/collections/{collection_name}/points/count",
             headers=headers if headers else None,
             path_params=path_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_delete_payload(
@@ -176,7 +176,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_delete_points(
@@ -210,7 +210,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_delete_vectors(
@@ -244,7 +244,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_discover_batch_points(
@@ -278,7 +278,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_discover_points(
@@ -312,7 +312,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_get_point(
@@ -371,7 +371,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_overwrite_payload(
@@ -405,7 +405,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_recommend_batch_points(
@@ -439,7 +439,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_recommend_point_groups(
@@ -473,7 +473,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_recommend_points(
@@ -507,7 +507,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_scroll_points(
@@ -538,7 +538,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_search_batch_points(
@@ -572,7 +572,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_search_point_groups(
@@ -606,7 +606,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_search_points(
@@ -640,7 +640,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_set_payload(
@@ -674,7 +674,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_update_vectors(
@@ -708,7 +708,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
     def _build_for_upsert_points(
@@ -742,7 +742,7 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            data=body,
+            content=body,
         )
 
 
