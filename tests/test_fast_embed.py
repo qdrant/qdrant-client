@@ -86,7 +86,7 @@ def test_query(
     assert len(search_result) > 0
 
 
-def test_set_model_params(
+def test_set_model(
     local_client: QdrantClient = QdrantClient(":memory:"),
     collection_name: str = "demo_collection",
     docs: List[str] = None,
