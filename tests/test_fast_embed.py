@@ -105,7 +105,7 @@ def test_set_model_params(
     embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
     max_length = 384
     temp_cache_dir = tempfile.TemporaryDirectory()
-    local_client.set_model_params(
+    local_client.set_model(
         embedding_model_name=embedding_model_name,
         max_length=max_length,
         cache_dir=temp_cache_dir.name,
