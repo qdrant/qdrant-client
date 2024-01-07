@@ -40,6 +40,7 @@ class QdrantFastembedMixin(QdrantBase):
         max_length: int = 512,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Set embedding model to use for encoding documents and queries.
