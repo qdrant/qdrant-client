@@ -63,6 +63,7 @@ class QdrantFastembedMixin(QdrantBase):
             max_length=max_length,
             cache_dir=cache_dir,
             threads=threads,
+            **kwargs,
         )
         self.embedding_model_name = embedding_model_name
 
@@ -93,6 +94,7 @@ class QdrantFastembedMixin(QdrantBase):
         max_length: int = 512,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        **kwargs: Any,
     ) -> "DefaultEmbedding":  # -> Embedding: # noqa: F821
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
@@ -109,6 +111,7 @@ class QdrantFastembedMixin(QdrantBase):
             max_length=max_length,
             cache_dir=cache_dir,
             threads=threads,
+            **kwargs,
         )
         return cls.embedding_models[model_name]
 
