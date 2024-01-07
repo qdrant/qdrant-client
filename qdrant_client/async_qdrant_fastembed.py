@@ -42,12 +42,13 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         self.embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
         super().__init__(**kwargs)
 
-    def set_model_params(
+    def set_model(
         self,
         embedding_model_name: str,
         max_length: int = 512,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Set embedding model to use for encoding documents and queries.
