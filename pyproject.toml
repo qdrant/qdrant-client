@@ -24,7 +24,7 @@ numpy = [
 pydantic = ">=1.10.8"
 grpcio = { version = ">=1.41.0", allow-prereleases = true }
 grpcio-tools = ">=1.41.0"
-urllib3 = ">1.26.4,<3"
+urllib3 = ">=1.26.14,<3"
 portalocker = "^2.7.0"
 fastembed = [
     { version = "0.1.1", optional = true, python = "<3.12" }
