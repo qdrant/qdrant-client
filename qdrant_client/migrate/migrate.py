@@ -106,6 +106,7 @@ def _migrate_collection(
     dest_client: QdrantBase,
     collection_name: str,
     batch_size: int = 100,
+    wait: bool = True,
 ) -> None:
     """Migrate collection from source client to destination client
 
@@ -116,12 +117,12 @@ def _migrate_collection(
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
-    dest_client.upload_records(collection_name, records)
+    dest_client.upload_records(collection_name, records, wait=True)
     while next_offset is not None:
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
-        dest_client.upload_records(collection_name, records, wait=True)
+        dest_client.upload_records(collection_name, records, wait=wait)
     source_client_vectors_count = source_client.get_collection(collection_name).vectors_count
     dest_client_vectors_count = dest_client.get_collection(collection_name).vectors_count
     assert (
