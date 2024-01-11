@@ -71,8 +71,10 @@ class LocalCollection:
         )
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
-        all_vectors_keys = list(self.vectors.keys()) + list(self.sparse_vectors.keys())
-        self.deleted_per_vector = {name: np.zeros(0, dtype=bool) for name in all_vectors_keys}
+        self._all_vectors_keys = list(self.vectors.keys()) + list(self.sparse_vectors.keys())
+        self.deleted_per_vector = {
+            name: np.zeros(0, dtype=bool) for name in self._all_vectors_keys
+        }
         self.ids: Dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id
         self.ids_inv: List[models.ExtendedPointId] = []  # Mapping from internal id to external id
         self.persistent = location is not None
@@ -1062,6 +1064,8 @@ class LocalCollection:
         if isinstance(point.vector, dict):
             updated_sparse_vectors = {}
             for vector_name, vector in point.vector.items():
+                if vector_name not in self._all_vectors_keys:
+                    raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
                 if isinstance(vector, SparseVector):
                     # validate sparse vector
                     validate_sparse_vector(vector)

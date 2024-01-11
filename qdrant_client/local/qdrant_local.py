@@ -669,6 +669,8 @@ class QdrantLocal(QdrantBase):
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
     ) -> None:
+        # upload_records in local mode behaves like upload_records with wait=True in server mode
+
         collection = self._get_collection(collection_name)
         collection.upsert(
             [
@@ -691,6 +693,8 @@ class QdrantLocal(QdrantBase):
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,
     ) -> None:
+        # upload_collection in local mode behaves like upload_collection with wait=True in server mode
+
         collection = self._get_collection(collection_name)
         if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
             assert (
