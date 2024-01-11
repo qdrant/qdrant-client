@@ -116,7 +116,7 @@ def _migrate_collection(
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
-    dest_client.upload_records(collection_name, records)
+    dest_client.upload_records(collection_name, records, wait=True)
     while next_offset is not None:
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
