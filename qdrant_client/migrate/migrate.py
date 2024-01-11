@@ -106,7 +106,6 @@ def _migrate_collection(
     dest_client: QdrantBase,
     collection_name: str,
     batch_size: int = 100,
-    wait: bool = True,
 ) -> None:
     """Migrate collection from source client to destination client
 
