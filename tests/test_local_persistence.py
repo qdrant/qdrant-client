@@ -17,7 +17,7 @@ def ingest_dense_vector_data(
     vector_size: int = 1500,
     path: Optional[str] = None,
     collection_name: str = default_collection_name,
-):  # vector_size < 433: works, vector_size >= 433: crashes
+):
     lines = [x for x in range(10)]
 
     embeddings = np.random.randn(len(lines), vector_size).tolist()
@@ -46,13 +46,16 @@ def ingest_sparse_vector_data(
     max_vector_size: int = 100,
     path: Optional[str] = None,
     collection_name: str = default_collection_name,
+    add_dense_to_config: bool = False,
 ):
     sparse_vectors = generate_random_sparse_vector_list(vector_count, max_vector_size, 0.2)
     client = qdrant_client.QdrantClient(path=path)
 
     client.recreate_collection(
         collection_name,
-        vectors_config={},
+        vectors_config={}
+        if not add_dense_to_config
+        else rest.VectorParams(size=1500, distance=rest.Distance.COSINE),
         sparse_vectors_config={
             "text": rest.SparseVectorParams(),
         },
@@ -101,9 +104,10 @@ def test_local_dense_persistence():
         assert client.count("example_2").count == 10
 
 
-def test_local_sparse_persistence():
+@pytest.mark.parametrize("add_dense_to_config", [True, False])
+def test_local_sparse_persistence(add_dense_to_config):
     with tempfile.TemporaryDirectory() as tmpdir:
-        client = ingest_sparse_vector_data(path=tmpdir)
+        client = ingest_sparse_vector_data(path=tmpdir, add_dense_to_config=add_dense_to_config)
         assert client.count(default_collection_name).count == 10
 
         (post_result, _) = client.scroll(

@@ -115,9 +115,12 @@ class LocalCollection:
                     if v is not None:
                         vectors[name].append(v)
                     else:
-                        vectors[name].append(
-                            np.ones(self.config.vectors[name].size, dtype=np.float32)
+                        vector_size = (
+                            self.config.vectors.size
+                            if isinstance(self.config.vectors, models.VectorParams)
+                            else self.config.vectors[name].size
                         )
+                        vectors[name].append(np.ones(vector_size, dtype=np.float32))
                         deleted_ids.append((idx, name))
 
                 # handle sparse vectors
