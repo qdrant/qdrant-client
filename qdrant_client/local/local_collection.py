@@ -1073,6 +1073,12 @@ class LocalCollection:
                     updated_sparse_vectors[vector_name] = sort(vector)
             # update point.vector with the modified values after iteration
             point.vector.update(updated_sparse_vectors)
+        else:
+            vector_names = list(self.vectors.keys())
+            if vector_names != [""]:
+                raise ValueError(
+                    f"Wrong input: Unnamed vectors are not allowed when a collection has named vectors: {vector_names}"
+                )
 
         if point.id in self.ids:
             self._update_point(point)

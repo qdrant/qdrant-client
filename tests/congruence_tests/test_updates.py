@@ -302,7 +302,7 @@ def test_upload_wrong_vectors():
     local_client = init_local()
     remote_client = init_remote()
 
-    vector_size = 5
+    vector_size = 2
     wrong_vectors_collection = "test_collection"
     vectors_config = {
         "text": models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
@@ -315,7 +315,7 @@ def test_upload_wrong_vectors():
     )
     remote_client.recreate_collection(
         collection_name=wrong_vectors_collection,
-        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+        vectors_config=vectors_config,
         sparse_vectors_config=sparse_vectors_config,
     )
 
@@ -358,3 +358,15 @@ def test_upload_wrong_vectors():
             local_client.upload_records(
                 wrong_vectors_collection, records=[models.Record(id=3, vector=dense_vector)]
             )
+
+    unnamed_vector = [0.1, 0.3]
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.upsert(
+            wrong_vectors_collection,
+            points=[models.PointStruct(id=1, vector=unnamed_vector)],
+        )
+    with pytest.raises(ValueError):
+        local_client.upsert(
+            wrong_vectors_collection,
+            points=[models.PointStruct(id=1, vector=unnamed_vector)],
+        )
