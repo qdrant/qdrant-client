@@ -244,7 +244,7 @@ class QdrantFastembedMixin(QdrantBase):
             collection_name (str):
                 Name of the collection to add documents to.
             documents (Iterable[str]):
-                List of documents to embed and add to the collection.
+                List of documents to embed and add to the collection, as strings.
             metadata (Iterable[Dict[str, Any]], optional):
                 List of metadata dicts. Defaults to None.
             ids (Iterable[models.ExtendedPointId], optional):
@@ -285,6 +285,9 @@ class QdrantFastembedMixin(QdrantBase):
                 vectors_config=self.get_fastembed_vector_params(),
             )
             collection_info = self.get_collection(collection_name=collection_name)
+
+        # Check if documents only contain strings.
+        assert all(isinstance(doc, str) for doc in documents), "Documents must be strings"
 
         # Check if collection has compatible vector params
         assert isinstance(

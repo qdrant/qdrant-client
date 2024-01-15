@@ -8,7 +8,7 @@ from qdrant_client import QdrantClient
 def test_add_without_query(
     local_client: QdrantClient = QdrantClient(":memory:"),
     collection_name: str = "demo_collection",
-    docs: List[str] = None,
+    docs: List[Any] = None,
 ):
     if docs is None:
         docs = [
@@ -21,6 +21,11 @@ def test_add_without_query(
 
     local_client.add(collection_name=collection_name, documents=docs)
     assert local_client.count(collection_name).count == 2
+
+    # Query with invalid document type
+    with pytest.raises(AssertionError, match="Documents must be strings"):
+        docs = [{"source": "Qdrant also has Llama Index integrations"}, 00000, 99999]
+        local_client.add(collection_name=collection_name, documents=docs)
 
 
 def test_no_install(
