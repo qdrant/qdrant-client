@@ -240,7 +240,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             collection_name (str):
                 Name of the collection to add documents to.
             documents (Iterable[str]):
-                List of documents to embed and add to the collection.
+                List of documents to embed and add to the collection, as strings.
             metadata (Iterable[Dict[str, Any]], optional):
                 List of metadata dicts. Defaults to None.
             ids (Iterable[models.ExtendedPointId], optional):
@@ -275,6 +275,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 collection_name=collection_name, vectors_config=self.get_fastembed_vector_params()
             )
             collection_info = await self.get_collection(collection_name=collection_name)
+        assert all((isinstance(doc, str) for doc in documents)), "Documents must be strings"
         assert isinstance(
             collection_info.config.params.vectors, dict
         ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
