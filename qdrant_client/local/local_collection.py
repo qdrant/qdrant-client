@@ -30,7 +30,7 @@ from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
     calculate_distance_sparse,
     empty_sparse_vector,
-    sort,
+    sort_sparse_vector,
     validate_sparse_vector,
 )
 
@@ -401,7 +401,7 @@ class LocalCollection:
             scores = calculate_context_scores(query_vector, vectors[: len(self.payload)], distance)
         elif isinstance(query_vector, SparseVector):
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
-            sort(query_vector)
+            sort_sparse_vector(query_vector)
             sparse_scoring = True
             sparse_vectors = self.sparse_vectors[name]
             scores = calculate_distance_sparse(query_vector, sparse_vectors[: len(self.payload)])
@@ -1066,7 +1066,7 @@ class LocalCollection:
                     # validate sparse vector
                     validate_sparse_vector(vector)
                     # sort sparse vector by indices before persistence
-                    updated_sparse_vectors[vector_name] = sort(vector)
+                    updated_sparse_vectors[vector_name] = sort_sparse_vector(vector)
             # update point.vector with the modified values after iteration
             point.vector.update(updated_sparse_vectors)
 
