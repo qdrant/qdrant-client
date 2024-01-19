@@ -3,16 +3,20 @@ from typing import List
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions.common_types import NamedSparseVector
 from qdrant_client.http.models import models
-from qdrant_client.local.sparse import generate_random_sparse_vector
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
     generate_sparse_fixtures,
     init_client,
     init_local,
-    init_remote, sparse_text_vector_size, sparse_image_vector_size, sparse_code_vector_size, sparse_vectors_config,
+    init_remote,
+    sparse_code_vector_size,
+    sparse_image_vector_size,
+    sparse_text_vector_size,
+    sparse_vectors_config,
 )
 from tests.fixtures.filters import one_random_filter_please
+from tests.fixtures.points import generate_random_sparse_vector
 
 
 class TestSimpleSparseSearcher:
@@ -112,7 +116,7 @@ class TestSimpleSparseSearcher:
         )
 
     def filter_search_text(
-            self, client: QdrantBase, query_filter: models.Filter
+        self, client: QdrantBase, query_filter: models.Filter
     ) -> List[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
@@ -123,7 +127,7 @@ class TestSimpleSparseSearcher:
         )
 
     def filter_search_text_single(
-            self, client: QdrantBase, query_filter: models.Filter
+        self, client: QdrantBase, query_filter: models.Filter
     ) -> List[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
