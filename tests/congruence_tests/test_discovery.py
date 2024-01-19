@@ -5,7 +5,6 @@ import pytest
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
-from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.qdrant_client import QdrantClient
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -26,33 +25,33 @@ def random_vector(dims: int) -> List[float]:
 
 
 @pytest.fixture(scope="module")
-def fixture_records() -> List[models.Record]:
+def fixture_points() -> List[models.PointStruct]:
     return generate_fixtures()
 
 
 @pytest.fixture(scope="module")
-def secondary_collection_records() -> List[models.Record]:
+def secondary_collection_points() -> List[models.PointStruct]:
     return generate_fixtures(100)
 
 
 @pytest.fixture(scope="module", autouse=True)
-def local_client(fixture_records, secondary_collection_records) -> QdrantLocal:
+def local_client(fixture_points, secondary_collection_points) -> QdrantClient:
     client = init_local()
-    init_client(client, fixture_records)
-    init_client(client, secondary_collection_records, secondary_collection_name)
+    init_client(client, fixture_points)
+    init_client(client, secondary_collection_points, secondary_collection_name)
     return client
 
 
 @pytest.fixture(scope="module", autouse=True)
-def http_client(fixture_records, secondary_collection_records) -> QdrantClient:
+def http_client(fixture_points, secondary_collection_points) -> QdrantClient:
     client = init_remote()
-    init_client(client, fixture_records)
-    init_client(client, secondary_collection_records, secondary_collection_name)
+    init_client(client, fixture_points)
+    init_client(client, secondary_collection_points, secondary_collection_name)
     return client
 
 
 @pytest.fixture(scope="module", autouse=True)
-def grpc_client(fixture_records, secondary_collection_records) -> QdrantClient:
+def grpc_client(fixture_points, secondary_collection_points) -> QdrantClient:
     client = QdrantClient(host="localhost", port=6333, timeout=30, prefer_grpc=True)
     return client
 

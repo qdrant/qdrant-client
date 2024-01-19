@@ -168,7 +168,11 @@ def test_client_init():
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_record_upload(prefer_grpc):
+def test_records_upload(prefer_grpc):
+    import warnings
+
+    warnings.simplefilter("ignore", category=DeprecationWarning)
+
     records = (
         Record(id=idx, vector=np.random.rand(DIM).tolist(), payload=one_random_payload_please(idx))
         for idx in range(NUM_VECTORS)
@@ -210,10 +214,54 @@ def test_record_upload(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_point_upload(prefer_grpc):
+    points = (
+        PointStruct(
+            id=idx, vector=np.random.rand(DIM).tolist(), payload=one_random_payload_please(idx)
+        )
+        for idx in range(NUM_VECTORS)
+    )
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    client.upload_points(collection_name=COLLECTION_NAME, points=points, parallel=2)
+
+    # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
+    # Let's give it a second to actually add all points to a collection.
+    # If you need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
+    sleep(1)
+
+    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+
+    assert collection_info.points_count == NUM_VECTORS
+
+    result_count = client.count(
+        COLLECTION_NAME,
+        count_filter=Filter(
+            must=[
+                FieldCondition(
+                    key="rand_number",  # Condition based on values of `rand_number` field.
+                    range=Range(gte=0.5),  # Select only those results where `rand_number` >= 0.5
+                )
+            ]
+        ),
+    )
+
+    assert result_count.count < 900
+    assert result_count.count > 100
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_multiple_vectors(prefer_grpc):
     num_vectors = 100
-    records = [
-        Record(
+    points = [
+        PointStruct(
             id=idx,
             vector={
                 "image": np.random.rand(DIM).tolist(),
@@ -235,7 +283,7 @@ def test_multiple_vectors(prefer_grpc):
         timeout=TIMEOUT,
     )
 
-    client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=1)
+    client.upload_points(collection_name=COLLECTION_NAME, points=points, parallel=1)
 
     query_vector = list(np.random.rand(DIM))
 
@@ -1016,16 +1064,16 @@ def test_custom_sharding(prefer_grpc):
         assert record.shard_key == cats_shard_key
     # endregion
 
-    # region upload_records
+    # region upload_points
     init_collection()
 
-    cat_records = [
-        Record(id=id_, vector=vector, payload=payload)
+    cat_points = [
+        PointStruct(id=id_, vector=vector, payload=payload)
         for id_, vector, payload in zip(cat_ids, cat_vectors, cat_payload)
     ]
 
-    client.upload_records(
-        collection_name=COLLECTION_NAME, records=cat_records, shard_key_selector=cats_shard_key
+    client.upload_points(
+        collection_name=COLLECTION_NAME, points=cat_points, shard_key_selector=cats_shard_key
     )
 
     res = client.search(

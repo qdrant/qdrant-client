@@ -1,5 +1,3 @@
-from typing import List
-
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
@@ -112,19 +110,19 @@ def group_by_keys():
 
 
 def test_simple_recommend_groups() -> None:
-    fixture_records = generate_fixtures()
+    fixture_points = generate_fixtures()
 
-    secondary_collection_records = generate_fixtures(100)
+    secondary_collection_points = generate_fixtures(100)
 
     recommender = TestGroupRecommendation()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
-    init_client(local_client, secondary_collection_records, secondary_collection_name)
+    init_client(local_client, fixture_points)
+    init_client(local_client, secondary_collection_points, secondary_collection_name)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
-    init_client(remote_client, secondary_collection_records, secondary_collection_name)
+    init_client(remote_client, fixture_points)
+    init_client(remote_client, secondary_collection_points, secondary_collection_name)
 
     for group_size in (3, 5):
         recommender.group_size = group_size

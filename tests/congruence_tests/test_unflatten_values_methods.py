@@ -89,15 +89,15 @@ from tests.congruence_tests.test_common import (
     ],
 )
 def test_values_count_query(payloads, filter_params, payload_key):
-    fixture_records = generate_fixtures(num=len(payloads))
-    for i, record in enumerate(fixture_records):
-        record.payload = payloads[i]
+    fixture_points = generate_fixtures(num=len(payloads))
+    for i, point in enumerate(fixture_points):
+        point.payload = payloads[i]
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     filter_ = models.Filter(
         must=[
@@ -152,15 +152,15 @@ def test_values_count_query(payloads, filter_params, payload_key):
     ],
 )
 def test_is_empty(payloads: List[Dict[str, Any]], payload_key: str) -> None:
-    fixture_records = generate_fixtures(num=len(payloads))
-    for i, record in enumerate(fixture_records):
-        record.payload = payloads[i]
+    fixture_points = generate_fixtures(num=len(payloads))
+    for i, point in enumerate(fixture_points):
+        point.payload = payloads[i]
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     filter_ = models.Filter(
         must=[models.IsEmptyCondition(is_empty=models.PayloadField(key=payload_key))]
@@ -207,15 +207,15 @@ def test_is_empty(payloads: List[Dict[str, Any]], payload_key: str) -> None:
     ],
 )
 def test_is_null(payloads, payload_key):
-    fixture_records = generate_fixtures(num=len(payloads))
-    for i, record in enumerate(fixture_records):
-        record.payload = payloads[i]
+    fixture_points = generate_fixtures(num=len(payloads))
+    for i, point in enumerate(fixture_points):
+        point.payload = payloads[i]
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     filter_ = models.Filter(
         must=[models.IsNullCondition(is_null=models.PayloadField(key=payload_key))]

@@ -201,6 +201,7 @@ qdrant_client.update_collection_aliases(
     ]
 )
 qdrant_client.upload_records("collection", [])
+qdrant_client.upload_points("collection", [])
 qdrant_client.upsert("collection", [])
 
 qdrant_client.search("collection", [123], with_payload=["str", "another one", "and another one"])

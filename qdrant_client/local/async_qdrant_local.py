@@ -643,16 +643,29 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             collection_name, vectors_config, init_from, sparse_vectors_config
         )
 
+    async def upload_points(
+        self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
+    ) -> None:
+        self._upload_points(collection_name, points, **kwargs)
+
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
+    ) -> None:
+        self._upload_points(collection_name, records, **kwargs)
+
+    def _upload_points(
+        self,
+        collection_name: str,
+        points: Iterable[Union[types.PointStruct, types.Record]],
+        **kwargs: Any,
     ) -> None:
         collection = self._get_collection(collection_name)
         collection.upsert(
             [
                 rest_models.PointStruct(
-                    id=record.id, vector=record.vector or {}, payload=record.payload or {}
+                    id=point.id, vector=point.vector or {}, payload=point.payload or {}
                 )
-                for record in records
+                for point in points
             ]
         )
 

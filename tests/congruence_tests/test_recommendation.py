@@ -1,7 +1,6 @@
 from typing import List
 
 import numpy as np
-import pytest
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
@@ -201,19 +200,19 @@ class TestSimpleRecommendation:
 
 
 def test_simple_recommend() -> None:
-    fixture_records = generate_fixtures()
+    fixture_points = generate_fixtures()
 
-    secondary_collection_records = generate_fixtures(100)
+    secondary_collection_points = generate_fixtures(100)
 
     searcher = TestSimpleRecommendation()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
-    init_client(local_client, secondary_collection_records, secondary_collection_name)
+    init_client(local_client, fixture_points)
+    init_client(local_client, secondary_collection_points, secondary_collection_name)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
-    init_client(remote_client, secondary_collection_records, secondary_collection_name)
+    init_client(remote_client, fixture_points)
+    init_client(remote_client, secondary_collection_points, secondary_collection_name)
 
     compare_client_results(local_client, remote_client, searcher.simple_recommend_image)
     compare_client_results(local_client, remote_client, searcher.many_recommend)

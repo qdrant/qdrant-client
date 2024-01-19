@@ -8,7 +8,7 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-from typing import List, Tuple, Union, get_args
+from typing import List, Union, get_args
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
@@ -53,6 +53,7 @@ PointId = Union[int, str, grpc.PointId]
 PayloadSchemaType = Union[
     rest.PayloadSchemaType, rest.PayloadSchemaParams, int, grpc.PayloadIndexParams
 ]  # type(grpc.PayloadSchemaType) == int
+PointStruct: TypeAlias = rest.PointStruct
 Points = Union[rest.Batch, List[Union[rest.PointStruct, grpc.PointStruct]]]
 PointsSelector = Union[
     List[PointId], rest.Filter, grpc.Filter, rest.PointsSelector, grpc.PointsSelector

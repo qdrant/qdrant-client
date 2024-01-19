@@ -1,5 +1,4 @@
 import itertools
-import warnings
 from abc import ABC
 from itertools import count, islice
 from typing import Any, Dict, Generator, Iterable, List, Optional, Union
@@ -29,25 +28,17 @@ class BaseUploader(Worker, ABC):
     @classmethod
     def iterate_records_batches(
         cls,
-        records: Iterable[Record],
+        records: Iterable[Union[Record, types.PointStruct]],
         batch_size: int,
     ) -> Iterable:
         record_batches = iter_batch(records, batch_size)
         for record_batch in record_batches:
             ids_batch, vectors_batch, payload_batch = [], [], []
 
-            shard_key_is_set = False
             for record in record_batch:
                 ids_batch.append(record.id)
                 vectors_batch.append(record.vector)
                 payload_batch.append(record.payload)
-                if getattr(record, "shard_key", None):
-                    shard_key_is_set = True
-
-            if shard_key_is_set:
-                warnings.warn(
-                    "`shard_key` in `models.Record` is ignored, use `shard_key_selector` in method's call instead"
-                )
 
             yield ids_batch, vectors_batch, payload_batch
 
