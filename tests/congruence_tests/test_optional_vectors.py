@@ -14,13 +14,13 @@ from tests.congruence_tests.test_common import (
 
 
 def test_simple_opt_vectors_search():
-    fixture_records = generate_fixtures()
+    fixture_points = generate_fixtures()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     ids_to_delete = [x for x in range(NUM_VECTORS) if x % 5 == 0]
 

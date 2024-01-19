@@ -13,8 +13,6 @@ import uuid
 from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-from pydantic import BaseModel
-
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.fastembed_common import QueryResponse
@@ -172,13 +170,13 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
         return response
 
-    def _records_iterator(
+    def _points_iterator(
         self,
         ids: Optional[Iterable[models.ExtendedPointId]],
         metadata: Optional[Iterable[Dict[str, Any]]],
         encoded_docs: Iterable[Tuple[str, List[float]]],
         ids_accumulator: list,
-    ) -> Iterable[models.Record]:
+    ) -> Iterable[models.PointStruct]:
         if ids is None:
             ids = iter(lambda: uuid.uuid4().hex, None)
         if metadata is None:
@@ -187,7 +185,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         for idx, meta, (doc, vector) in zip(ids, metadata, encoded_docs):
             ids_accumulator.append(idx)
             payload = {"document": doc, **meta}
-            yield models.Record(id=idx, payload=payload, vector={vector_name: vector})
+            yield models.PointStruct(id=idx, payload=payload, vector={vector_name: vector})
 
     def get_fastembed_vector_params(
         self,
@@ -289,12 +287,12 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             distance == vector_params.distance
         ), f"Distance mismatch: {distance} != {vector_params.distance}"
         inserted_ids: list = []
-        records = self._records_iterator(
+        points = self._points_iterator(
             ids=ids, metadata=metadata, encoded_docs=encoded_docs, ids_accumulator=inserted_ids
         )
-        self.upload_records(
+        await self.upload_points(
             collection_name=collection_name,
-            records=records,
+            points=points,
             wait=True,
             parallel=parallel or 1,
             batch_size=batch_size,

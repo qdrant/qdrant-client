@@ -15,7 +15,19 @@ import logging
 import os
 import shutil
 from io import TextIOWrapper
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
+from uuid import uuid4
 
 import numpy as np
 import portalocker
@@ -643,16 +655,26 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             collection_name, vectors_config, init_from, sparse_vectors_config
         )
 
+    async def upload_points(
+        self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
+    ) -> None:
+        self._upload_points(collection_name, points)
+
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
+    ) -> None:
+        self._upload_points(collection_name, records)
+
+    def _upload_points(
+        self, collection_name: str, points: Iterable[Union[types.PointStruct, types.Record]]
     ) -> None:
         collection = self._get_collection(collection_name)
         collection.upsert(
             [
                 rest_models.PointStruct(
-                    id=record.id, vector=record.vector or {}, payload=record.payload or {}
+                    id=point.id, vector=point.vector or {}, payload=point.payload or {}
                 )
-                for record in records
+                for point in points
             ]
         )
 
@@ -666,6 +688,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,
     ) -> None:
+        def uuid_generator() -> Generator[str, None, None]:
+            while True:
+                yield str(uuid4())
+
         collection = self._get_collection(collection_name)
         if isinstance(vectors, dict) and any(
             (isinstance(v, np.ndarray) for v in vectors.values())
@@ -686,7 +712,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     payload=payload or {},
                 )
                 for (point_id, vector, payload) in zip(
-                    ids or itertools.count(), iter(vectors), payload or itertools.cycle([{}])
+                    ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
                 )
             ]
         )

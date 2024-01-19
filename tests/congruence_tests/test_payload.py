@@ -1,3 +1,4 @@
+from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -8,19 +9,19 @@ from tests.congruence_tests.test_common import (
 NUM_VECTORS = 100
 
 
-def upload(client_1, client_2, num_vectors=NUM_VECTORS):
-    records = generate_fixtures(num_vectors)
+def upload(client_1: QdrantClient, client_2: QdrantClient, num_vectors=NUM_VECTORS):
+    points = generate_fixtures(num_vectors)
 
-    client_1.upload_records(COLLECTION_NAME, records, wait=True)
-    client_2.upload_records(COLLECTION_NAME, records, wait=True)
-    return records
+    client_1.upload_points(COLLECTION_NAME, points, wait=True)
+    client_2.upload_points(COLLECTION_NAME, points, wait=True)
+    return points
 
 
-def test_delete_payload(local_client, remote_client):
-    records = upload(local_client, remote_client)
+def test_delete_payload(local_client: QdrantClient, remote_client: QdrantClient):
+    points = upload(local_client, remote_client)
 
     # region delete one point
-    id_ = records[0].id
+    id_ = points[0].id
     local_point = local_client.retrieve(COLLECTION_NAME, [id_])
     remote_point = remote_client.retrieve(COLLECTION_NAME, [id_])
 
@@ -37,7 +38,7 @@ def test_delete_payload(local_client, remote_client):
 
     # region delete multiple points
     keys_to_delete = ["rand_number", "text_array"]
-    ids = [records[1].id, records[2].id]
+    ids = [points[1].id, points[2].id]
     local_client.delete_payload(COLLECTION_NAME, keys=keys_to_delete, points=ids)
     remote_client.delete_payload(COLLECTION_NAME, keys=keys_to_delete, points=ids, wait=True)
 
@@ -45,7 +46,7 @@ def test_delete_payload(local_client, remote_client):
     # endregion
 
     # region delete by filter
-    payload = records[2].payload
+    payload = points[2].payload
     key = "text_data"
     value = payload[key]
     delete_filter = models.Filter(
@@ -53,22 +54,24 @@ def test_delete_payload(local_client, remote_client):
     )
 
     local_client.delete_payload(COLLECTION_NAME, keys=["text_data"], points=delete_filter)
-    remote_client.delete_payload(COLLECTION_NAME, keys=["text_data"], points=delete_filter, wait=True)
+    remote_client.delete_payload(
+        COLLECTION_NAME, keys=["text_data"], points=delete_filter, wait=True
+    )
 
     compare_collections(local_client, remote_client, NUM_VECTORS)
     # endregion
 
 
-def test_clear_payload(local_client, remote_client):
-    records = upload(local_client, remote_client)
+def test_clear_payload(local_client: QdrantClient, remote_client: QdrantClient):
+    points = upload(local_client, remote_client)
 
-    points_selector = [record.id for record in records[:5]]
+    points_selector = [point.id for point in points[:5]]
     local_client.clear_payload(COLLECTION_NAME, points_selector)
     remote_client.clear_payload(COLLECTION_NAME, points_selector)
 
     compare_collections(local_client, remote_client, NUM_VECTORS)
 
-    payload = records[42].payload
+    payload = points[42].payload
     key = "text_data"
     value = payload[key]
     points_selector = models.Filter(
@@ -80,11 +83,11 @@ def test_clear_payload(local_client, remote_client):
     compare_collections(local_client, remote_client, NUM_VECTORS)
 
 
-def test_update_payload(local_client, remote_client):
-    records = upload(local_client, remote_client)
+def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient):
+    points = upload(local_client, remote_client)
 
     # region fetch point
-    id_ = records[0].id
+    id_ = points[0].id
     id_filter = models.Filter(must=[models.HasIdCondition(has_id=[id_])])
     local_point = local_client.scroll(
         COLLECTION_NAME,

@@ -131,7 +131,7 @@ class TestSimpleSparseSearcher:
     ) -> List[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
-            query_vector=self.query_text,
+            query_vector=self.query_text,  # why it is not a NamedSparseVector?
             query_filter=query_filter,
             with_payload=True,
             with_vectors=True,
@@ -140,15 +140,15 @@ class TestSimpleSparseSearcher:
 
 
 def test_simple_search():
-    fixture_records = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures()
 
     searcher = TestSimpleSparseSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
@@ -171,15 +171,15 @@ def test_simple_search():
 
 
 def test_simple_opt_vectors_search():
-    fixture_records = generate_sparse_fixtures(skip_vectors=True)
+    fixture_points = generate_sparse_fixtures(skip_vectors=True)
 
     searcher = TestSimpleSparseSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
@@ -204,11 +204,11 @@ def test_simple_opt_vectors_search():
 def test_search_with_persistence():
     import tempfile
 
-    fixture_records = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures()
     searcher = TestSimpleSparseSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
-        init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+        init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -217,7 +217,7 @@ def test_search_with_persistence():
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
-        init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+        init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
@@ -242,11 +242,11 @@ def test_search_with_persistence():
 def test_search_with_persistence_and_skipped_vectors():
     import tempfile
 
-    fixture_records = generate_sparse_fixtures(skip_vectors=True)
+    fixture_points = generate_sparse_fixtures(skip_vectors=True)
     searcher = TestSimpleSparseSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
-        init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+        init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -260,7 +260,7 @@ def test_search_with_persistence_and_skipped_vectors():
         assert count_after_load == count_before_load
 
         remote_client = init_remote()
-        init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+        init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 

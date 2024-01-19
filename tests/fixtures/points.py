@@ -56,19 +56,19 @@ def random_sparse_vectors(
     return vectors
 
 
-def generate_records(
-    num_records: int,
+def generate_points(
+    num_points: int,
     vector_sizes: Union[Dict[str, int], int],
     with_payload: bool = False,
     random_ids: bool = False,
     skip_vectors: bool = False,
     sparse: bool = False,
-) -> List[models.Record]:
+) -> List[models.PointStruct]:
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
 
-    records = []
-    for i in range(num_records):
+    points = []
+    for i in range(num_points):
         payload = None
         if with_payload:
             payload = one_random_payload_please(i)
@@ -87,13 +87,13 @@ def generate_records(
                 vector_to_skip = random.choice(list(vectors.keys()))
                 vectors.pop(vector_to_skip)
 
-        records.append(
+        points.append(
             construct(
-                models.Record,
+                models.PointStruct,
                 id=idx,
                 vector=vectors,
                 payload=payload,
             )
         )
 
-    return records
+    return points

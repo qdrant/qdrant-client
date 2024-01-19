@@ -12,7 +12,6 @@ from qdrant_client import grpc as qdrant_grpc
 from qdrant_client import models
 from qdrant_client.async_qdrant_client import AsyncQdrantClient
 from qdrant_client.conversions.conversion import payload_to_grpc
-from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
 from tests.fixtures.payload import one_random_payload_please
 
 NUM_VECTORS = 100
@@ -23,7 +22,7 @@ COLLECTION_NAME = "async_test_collection"
 
 @pytest.mark.asyncio
 async def test_async_grpc():
-    records = (
+    points = (
         qdrant_grpc.PointStruct(
             id=qdrant_grpc.PointId(num=idx),
             vectors=qdrant_grpc.Vectors(
@@ -60,11 +59,11 @@ async def test_async_grpc():
     upload_features = []
 
     # Upload vectors in parallel
-    for record in records:
+    for point in points:
         upload_features.append(
             grpc_points.Upsert(
                 qdrant_grpc.UpsertPoints(
-                    collection_name=COLLECTION_NAME, wait=True, points=[record]
+                    collection_name=COLLECTION_NAME, wait=True, points=[point]
                 )
             )
         )
