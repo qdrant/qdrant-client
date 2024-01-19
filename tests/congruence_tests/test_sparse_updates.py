@@ -114,8 +114,9 @@ def test_upload_collection():
         vectors.append(point.vector)
         payload.append(point.payload)
 
-    local_client.upload_collection(COLLECTION_NAME, vectors, payload)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, wait=True)
+    ids = list(range(len(vectors)))
+    local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids, wait=True)
 
     compare_collections(
         local_client,

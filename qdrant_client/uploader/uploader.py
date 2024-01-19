@@ -1,7 +1,7 @@
-import itertools
 from abc import ABC
 from itertools import count, islice
 from typing import Any, Dict, Generator, Iterable, List, Optional, Union
+from uuid import uuid4
 
 import numpy as np
 
@@ -22,6 +22,11 @@ def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
         if len(b) == 0:
             break
         yield b
+
+
+def uuid_generator() -> Generator[str, None, None]:
+    while True:
+        yield str(uuid4())
 
 
 class BaseUploader(Worker, ABC):
@@ -53,7 +58,7 @@ class BaseUploader(Worker, ABC):
         batch_size: int,
     ) -> Iterable:
         if ids is None:
-            ids = itertools.count()
+            ids = uuid_generator()
 
         ids_batches = iter_batch(ids, batch_size)
         if payload is None:
