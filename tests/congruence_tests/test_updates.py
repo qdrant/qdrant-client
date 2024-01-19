@@ -296,3 +296,77 @@ def test_upload_payload_contain_nan_values():
 
     local_client.delete_collection(nans_collection)
     remote_client.delete_collection(nans_collection)
+
+
+def test_upload_wrong_vectors():
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vector_size = 2
+    wrong_vectors_collection = "test_collection"
+    vectors_config = {
+        "text": models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
+    }
+    sparse_vectors_config = {"text-sparse": models.SparseVectorParams()}
+    local_client.recreate_collection(
+        collection_name=wrong_vectors_collection,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
+    remote_client.recreate_collection(
+        collection_name=wrong_vectors_collection,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
+
+    dense_vector = {"why_am_I_so_dense": [0.1, 0.3]}
+    dense_vectors = {"why_am_I_so_dense": [[0.1, 0.3]]}
+    sparse_vector = {"why_am_I_so_sparse": models.SparseVector(indices=[0, 1], values=[0.5, 0.6])}
+    sparse_vectors = {
+        "why_am_I_so_sparse": [models.SparseVector(indices=[0, 2], values=[0.3, 0.4])]
+    }
+
+    list_points = [models.PointStruct(id=1, vector=dense_vector)]
+    batch = models.Batch(ids=[2], vectors=dense_vectors)
+    list_points_sparse = [models.PointStruct(id=1, vector=sparse_vector)]
+    batch_sparse = models.Batch(ids=[2], vectors=sparse_vectors)
+
+    for points in (list_points, list_points_sparse, batch, batch_sparse):
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upsert(wrong_vectors_collection, points)
+
+        with pytest.raises(ValueError):
+            local_client.upsert(wrong_vectors_collection, points)
+
+    for vector in (dense_vector, sparse_vector):
+        # does not raise without wait=True
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upload_collection(wrong_vectors_collection, vectors=[vector], wait=True)
+
+        with pytest.raises(ValueError):
+            local_client.upload_collection(wrong_vectors_collection, vectors=[vector])
+
+        # does not raise without wait=True
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upload_records(
+                wrong_vectors_collection,
+                records=[models.Record(id=3, vector=dense_vector)],
+                wait=True,
+            )
+
+        with pytest.raises(ValueError):
+            local_client.upload_records(
+                wrong_vectors_collection, records=[models.Record(id=3, vector=dense_vector)]
+            )
+
+    unnamed_vector = [0.1, 0.3]
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.upsert(
+            wrong_vectors_collection,
+            points=[models.PointStruct(id=1, vector=unnamed_vector)],
+        )
+    with pytest.raises(ValueError):
+        local_client.upsert(
+            wrong_vectors_collection,
+            points=[models.PointStruct(id=1, vector=unnamed_vector)],
+        )
