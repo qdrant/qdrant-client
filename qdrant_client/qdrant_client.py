@@ -1870,7 +1870,6 @@ class QdrantClient(QdrantFastembedMixin):
             max_retries=max_retries,
             wait=wait,
             shard_key_selector=shard_key_selector,
-            **kwargs,
         )
 
     def upload_collection(
