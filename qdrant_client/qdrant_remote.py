@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import math
 import warnings
 from multiprocessing import get_all_start_methods
 from typing import (
@@ -32,7 +33,6 @@ from qdrant_client.conversions.conversion import (
     grpc_payload_schema_to_field_type,
 )
 from qdrant_client.http import ApiClient, SyncApis, models
-from qdrant_client.http.models import SparseVector
 from qdrant_client.parallel_processor import ParallelWorkerPool
 from qdrant_client.uploader.grpc_uploader import GrpcBatchUploader
 from qdrant_client.uploader.rest_uploader import RestBatchUploader
@@ -49,7 +49,7 @@ class QdrantRemote(QdrantBase):
         https: Optional[bool] = None,
         api_key: Optional[str] = None,
         prefix: Optional[str] = None,
-        timeout: Optional[float] = None,
+        timeout: Optional[int] = None,
         host: Optional[str] = None,
         grpc_options: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
@@ -101,7 +101,10 @@ class QdrantRemote(QdrantBase):
             self._host = host or "localhost"
             self._port = port
 
-        self._timeout = timeout
+        self._timeout = (
+            math.ceil(timeout) if timeout is not None else None
+        )  # it has been changed from float to int.
+        # convert it to the closest greater or equal int value (e.g. 0.5 -> 1)
         self._api_key = api_key
 
         limits = kwargs.pop("limits", None)
