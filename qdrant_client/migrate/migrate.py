@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, cast
+from typing import Dict, List, Optional
 
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
