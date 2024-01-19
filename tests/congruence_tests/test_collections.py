@@ -1,10 +1,9 @@
-from time import sleep, time
+from time import sleep
 from typing import Callable
 
 import pytest
 
 from qdrant_client.http import models
-from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     compare_collections,
     generate_fixtures,
@@ -17,7 +16,7 @@ COLLECTION_NAME = "test_collection"
 
 
 def test_get_collection():
-    fixture_records = generate_fixtures()
+    fixture_points = generate_fixtures()
 
     remote_client = init_remote()
 
@@ -27,9 +26,9 @@ def test_get_collection():
         remote_client.delete_collection(collection.name)
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     local_collections = local_client.get_collections()
 
@@ -59,16 +58,16 @@ def test_init_from():
     remote_client = init_remote()
     local_client = init_local()
 
-    records = generate_fixtures(vectors_sizes=vector_size)
+    points = generate_fixtures(vectors_sizes=vector_size)
     vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
     remote_client.recreate_collection(
         collection_name=COLLECTION_NAME, vectors_config=vector_params
     )
     local_client.recreate_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
-    remote_client.upload_records(COLLECTION_NAME, records, wait=True)
-    local_client.upload_records(COLLECTION_NAME, records)
-    compare_collections(remote_client, local_client, len(records), collection_name=COLLECTION_NAME)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+    local_client.upload_points(COLLECTION_NAME, points)
+    compare_collections(remote_client, local_client, len(points), collection_name=COLLECTION_NAME)
 
     new_collection_name = COLLECTION_NAME + "_new"
     remote_client.recreate_collection(
@@ -80,7 +79,11 @@ def test_init_from():
 
     # init_from is performed asynchronously, so we need to retry
     wait_for(
-        compare_collections, remote_client, local_client, len(records), collection_name=new_collection_name
+        compare_collections,
+        remote_client,
+        local_client,
+        len(points),
+        collection_name=new_collection_name,
     )
 
     remote_client.recreate_collection(
@@ -96,7 +99,11 @@ def test_init_from():
 
     # init_from is performed asynchronously, so we need to retry
     wait_for(
-            compare_collections, remote_client, local_client, len(records), collection_name=new_collection_name
+        compare_collections,
+        remote_client,
+        local_client,
+        len(points),
+        collection_name=new_collection_name,
     )
 
 

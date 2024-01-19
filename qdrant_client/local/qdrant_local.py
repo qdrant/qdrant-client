@@ -643,7 +643,10 @@ class QdrantLocal(QdrantBase):
         if src_collection and from_collection_name:
             batch_size = 100
             records, next_offset = self.scroll(from_collection_name, limit=2, with_vectors=True)
-            self.upload_records(collection_name, records)
+            self.upload_records(
+                collection_name, records
+            )  # it is not crucial to replace upload_records here
+            # since it is an internal usage, and we don't have custom shard keys in qdrant local
             while next_offset is not None:
                 records, next_offset = self.scroll(
                     from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True
@@ -666,18 +669,31 @@ class QdrantLocal(QdrantBase):
             collection_name, vectors_config, init_from, sparse_vectors_config
         )
 
+    def upload_points(
+        self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
+    ) -> None:
+        self._upload_points(collection_name, points, **kwargs)
+
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
+    ) -> None:
+        self._upload_points(collection_name, records, **kwargs)
+
+    def _upload_points(
+        self,
+        collection_name: str,
+        points: Iterable[Union[types.PointStruct, types.Record]],
+        **kwargs: Any,
     ) -> None:
         collection = self._get_collection(collection_name)
         collection.upsert(
             [
                 rest_models.PointStruct(
-                    id=record.id,
-                    vector=record.vector or {},
-                    payload=record.payload or {},
+                    id=point.id,
+                    vector=point.vector or {},
+                    payload=point.payload or {},
                 )
-                for record in records
+                for point in points
             ]
         )
 

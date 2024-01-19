@@ -29,15 +29,15 @@ class TestAliasRetriever:
 
 
 def test_alias_changes():
-    fixture_records = generate_fixtures(10)
+    fixture_points = generate_fixtures(10)
 
     retriever = TestAliasRetriever()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     alias_name = "test_alias"
 

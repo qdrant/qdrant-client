@@ -2283,6 +2283,32 @@ class QdrantRemote(QdrantBase):
             wait=wait,
         )
 
+    def upload_points(
+        self,
+        collection_name: str,
+        points: Iterable[types.PointStruct],
+        batch_size: int = 64,
+        parallel: int = 1,
+        method: Optional[str] = None,
+        max_retries: int = 3,
+        wait: bool = False,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        **kwargs: Any,
+    ) -> None:
+        batches_iterator = self._updater_class.iterate_records_batches(
+            records=points, batch_size=batch_size
+        )
+
+        self._upload_collection(
+            batches_iterator=batches_iterator,
+            collection_name=collection_name,
+            max_retries=max_retries,
+            parallel=parallel,
+            method=method,
+            wait=wait,
+            shard_key_selector=shard_key_selector,
+        )
+
     def upload_collection(
         self,
         collection_name: str,

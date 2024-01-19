@@ -8,7 +8,11 @@ from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
-    generate_sparse_fixtures, init_local, init_client, init_remote, sparse_vectors_config,
+    generate_sparse_fixtures,
+    init_client,
+    init_local,
+    init_remote,
+    sparse_vectors_config,
 )
 from tests.fixtures.payload import one_random_payload_please
 
@@ -17,31 +21,31 @@ UPLOAD_NUM_VECTORS = 100
 
 def test_upsert():
     # region upload data
-    records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+    points = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
     local_client = init_local()
-    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, points, sparse_vectors_config=sparse_vectors_config)
 
     ids, payload = [], []
     vectors = {}
-    for record in records:
-        ids.append(record.id)
-        payload.append(record.payload)
-        for vector_name, vector in record.vector.items():
+    for point in points:
+        ids.append(point.id)
+        payload.append(point.payload)
+        for vector_name, vector in point.vector.items():
             if vector_name not in vectors:
                 vectors[vector_name] = []
             vectors[vector_name].append(vector)
 
-    points = models.Batch(
+    points_batch = models.Batch(
         ids=ids,
         vectors=vectors,
         payloads=payload,
     )
 
-    local_client.upsert(COLLECTION_NAME, points)
-    remote_client.upsert(COLLECTION_NAME, points)
+    local_client.upsert(COLLECTION_NAME, points_batch)
+    remote_client.upsert(COLLECTION_NAME, points_batch)
 
     id_ = ids[0]
     vector = {k: v[0] for k, v in vectors.items()}
@@ -84,92 +88,132 @@ def test_upsert():
     assert local_new_point == remote_new_point
     # endregion
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
+    compare_collections(
+        local_client,
+        remote_client,
+        UPLOAD_NUM_VECTORS,
+        attrs=(
+            "points_count",
+            "vectors_count",
+        ),
+    )
 
 
 def test_upload_collection():
-    records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+    points = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
 
     local_client = init_local()
-    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, points, sparse_vectors_config=sparse_vectors_config)
 
     vectors = []
     payload = []
-    for record in records:
-        vectors.append(record.vector)
-        payload.append(record.payload)
+    for point in points:
+        vectors.append(point.vector)
+        payload.append(point.payload)
 
     local_client.upload_collection(COLLECTION_NAME, vectors, payload)
     remote_client.upload_collection(COLLECTION_NAME, vectors, payload, wait=True)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
+    compare_collections(
+        local_client,
+        remote_client,
+        UPLOAD_NUM_VECTORS,
+        attrs=(
+            "points_count",
+            "vectors_count",
+        ),
+    )
 
 
 @pytest.mark.timeout(60)  # normally takes less than a second
 def test_upload_collection_generators():
-    records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+    points = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
 
     local_client = init_local()
-    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, points, sparse_vectors_config=sparse_vectors_config)
 
     vectors = []
     payload = []
-    for record in records:
-        vectors.append(record.vector)
-        payload.append(record.payload)
+    for point in points:
+        vectors.append(point.vector)
+        payload.append(point.payload)
 
     payload = itertools.cycle(payload)
     local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count(), wait=True)
+    remote_client.upload_collection(
+        COLLECTION_NAME, vectors, payload, ids=itertools.count(), wait=True
+    )
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
+    compare_collections(
+        local_client,
+        remote_client,
+        UPLOAD_NUM_VECTORS,
+        attrs=(
+            "points_count",
+            "vectors_count",
+        ),
+    )
 
 
-def test_upload_records():
-    records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+def test_upload_points():
+    points = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
 
     local_client = init_local()
-    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, points, sparse_vectors_config=sparse_vectors_config)
 
-    local_client.upload_records(COLLECTION_NAME, records)
-    remote_client.upload_records(COLLECTION_NAME, records, wait=True)
+    local_client.upload_points(COLLECTION_NAME, points)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
+    compare_collections(
+        local_client,
+        remote_client,
+        UPLOAD_NUM_VECTORS,
+        attrs=(
+            "points_count",
+            "vectors_count",
+        ),
+    )
 
 
 def test_upload_uuid_in_batches():
-    records = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
+    points = generate_sparse_fixtures(UPLOAD_NUM_VECTORS)
 
     local_client = init_local()
-    init_client(local_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, points, sparse_vectors_config=sparse_vectors_config)
 
     vectors = defaultdict(list)
 
-    for record in records:
-        for vector_name, vector in record.vector.items():
+    for point in points:
+        for vector_name, vector in point.vector.items():
             vectors[vector_name].append(vector)
 
     batch = models.Batch(
-        ids=[str(uuid.uuid4()) for _ in records],
+        ids=[str(uuid.uuid4()) for _ in points],
         vectors=vectors,
-        payloads=[record.payload for record in records],
+        payloads=[point.payload for point in points],
     )
 
     local_client.upsert(COLLECTION_NAME, batch)
     remote_client.upsert(COLLECTION_NAME, batch)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS, attrs=("points_count", "vectors_count",))
-
-
+    compare_collections(
+        local_client,
+        remote_client,
+        UPLOAD_NUM_VECTORS,
+        attrs=(
+            "points_count",
+            "vectors_count",
+        ),
+    )

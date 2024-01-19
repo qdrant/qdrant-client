@@ -217,16 +217,16 @@ def group_by_keys():
 
 
 def test_group_search_types():
-    fixture_records = generate_fixtures(vectors_sizes=50)
+    fixture_points = generate_fixtures(vectors_sizes=50)
     vectors_config = models.VectorParams(size=50, distance=models.Distance.EUCLID)
 
     searcher = TestGroupSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_records, vectors_config=vectors_config)
+    init_client(local_client, fixture_points, vectors_config=vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records, vectors_config=vectors_config)
+    init_client(remote_client, fixture_points, vectors_config=vectors_config)
 
     query_vector_np = np.random.random(text_vector_size)
     compare_client_results(
@@ -244,9 +244,9 @@ def test_group_search_types():
     delete_fixture_collection(local_client)
     delete_fixture_collection(remote_client)
 
-    fixture_records = generate_fixtures()
-    init_client(local_client, fixture_records)
-    init_client(remote_client, fixture_records)
+    fixture_points = generate_fixtures()
+    init_client(local_client, fixture_points)
+    init_client(remote_client, fixture_points)
 
     query_vector_tuple = ("text", query_vector_list)
     compare_client_results(
@@ -269,21 +269,21 @@ def test_group_search_types():
 
 
 def test_simple_group_search():
-    fixture_records = generate_fixtures()
+    fixture_points = generate_fixtures()
 
-    lookup_records = generate_fixtures(
+    lookup_points = generate_fixtures(
         num=7, random_ids=False  # Less that group ids to test the empty lookups
     )
 
     searcher = TestGroupSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
-    init_client(local_client, lookup_records, collection_name=LOOKUP_COLLECTION_NAME)
+    init_client(local_client, fixture_points)
+    init_client(local_client, lookup_points, collection_name=LOOKUP_COLLECTION_NAME)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
-    init_client(remote_client, lookup_records, collection_name=LOOKUP_COLLECTION_NAME)
+    init_client(remote_client, fixture_points)
+    init_client(remote_client, lookup_points, collection_name=LOOKUP_COLLECTION_NAME)
 
     searcher.group_size = 1
     searcher.limit = 2
@@ -317,7 +317,7 @@ def test_simple_group_search():
 
 
 def test_single_vector():
-    fixture_records = generate_fixtures(num=200, vectors_sizes=text_vector_size)
+    fixture_points = generate_fixtures(num=200, vectors_sizes=text_vector_size)
 
     searcher = TestGroupSearcher()
 
@@ -327,10 +327,10 @@ def test_single_vector():
     )
 
     local_client = init_local()
-    init_client(local_client, fixture_records, vectors_config=vectors_config)
+    init_client(local_client, fixture_points, vectors_config=vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records, vectors_config=vectors_config)
+    init_client(remote_client, fixture_points, vectors_config=vectors_config)
 
     for group_size in (1, 5):
         searcher.group_size = group_size
@@ -353,11 +353,11 @@ def test_single_vector():
 def test_search_with_persistence():
     import tempfile
 
-    fixture_records = generate_fixtures()
+    fixture_points = generate_fixtures()
     searcher = TestGroupSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
-        init_client(local_client, fixture_records)
+        init_client(local_client, fixture_points)
 
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -366,7 +366,7 @@ def test_search_with_persistence():
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
-        init_client(remote_client, fixture_records)
+        init_client(remote_client, fixture_points)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
