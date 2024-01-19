@@ -401,7 +401,7 @@ class LocalCollection:
             scores = calculate_context_scores(query_vector, vectors[: len(self.payload)], distance)
         elif isinstance(query_vector, SparseVector):
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
-            sort_sparse_vector(query_vector)
+            query_vector = sort_sparse_vector(query_vector)
             sparse_scoring = True
             sparse_vectors = self.sparse_vectors[name]
             scores = calculate_distance_sparse(query_vector, sparse_vectors[: len(self.payload)])

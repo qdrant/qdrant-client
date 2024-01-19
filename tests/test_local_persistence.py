@@ -8,7 +8,7 @@ import pytest
 import qdrant_client
 import qdrant_client.http.models as rest
 from qdrant_client._pydantic_compat import construct
-from qdrant_client.local.sparse import generate_random_sparse_vector_list
+from tests.fixtures.points import generate_random_sparse_vector_list
 
 default_collection_name = "example"
 

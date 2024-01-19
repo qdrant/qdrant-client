@@ -6,7 +6,8 @@ import numpy as np
 
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.http import models
-from qdrant_client.local.sparse import generate_random_sparse_vector
+from qdrant_client.http.models import SparseVector
+from qdrant_client.local.sparse import validate_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
 
@@ -24,7 +25,30 @@ def random_vectors(
         raise ValueError("vector_sizes must be int or dict")
 
 
-def random_sparse_vectors(vector_sizes: Union[Dict[str, int], int],) -> models.VectorStruct:
+# Generate random sparse vector with given size and density
+# The density is the probability of non-zero value over the whole vector
+def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
+    num_non_zero = int(size * density)
+    indices: List[int] = random.sample(range(size), num_non_zero)
+    values: List[float] = [round(random.random(), 6) for _ in range(num_non_zero)]
+    sparse_vector = SparseVector(indices=indices, values=values)
+    validate_sparse_vector(sparse_vector)
+    return sparse_vector
+
+
+def generate_random_sparse_vector_list(
+    num_vectors: int, vector_size: int, vector_density: float
+) -> List[SparseVector]:
+    sparse_vector_list = []
+    for _ in range(num_vectors):
+        sparse_vector = generate_random_sparse_vector(vector_size, vector_density)
+        sparse_vector_list.append(sparse_vector)
+    return sparse_vector_list
+
+
+def random_sparse_vectors(
+    vector_sizes: Union[Dict[str, int], int],
+) -> models.VectorStruct:
     vectors = {}
     for vector_name, vector_size in vector_sizes.items():
         # use sparse vectors with 20% density

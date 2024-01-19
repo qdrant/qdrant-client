@@ -80,25 +80,3 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional
         return np.float32(result)
     else:
         return None
-
-
-# Generate random sparse vector with given size and density
-# The density is the probability of non-zero value over the whole vector
-def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
-    num_non_zero = int(size * density)
-    indices: List[int] = random.sample(range(size), num_non_zero)
-    values: List[float] = [round(random.random(), 6) for _ in range(num_non_zero)]
-    indices.sort()
-    sparse_vector = SparseVector(indices=indices, values=values)
-    validate_sparse_vector(sparse_vector)
-    return sparse_vector
-
-
-def generate_random_sparse_vector_list(
-    num_vectors: int, vector_size: int, vector_density: float
-) -> List[SparseVector]:
-    sparse_vector_list = []
-    for _ in range(num_vectors):
-        sparse_vector = generate_random_sparse_vector(vector_size, vector_density)
-        sparse_vector_list.append(sparse_vector)
-    return sparse_vector_list
