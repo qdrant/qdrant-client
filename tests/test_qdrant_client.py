@@ -352,7 +352,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         collection_name=COLLECTION_NAME,
         vectors=vectors,
         payload=payload,
-        ids=None,  # Let client auto-assign sequential ids
+        ids=range(len(vectors)),
         parallel=2,
     )
 

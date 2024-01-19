@@ -15,7 +15,19 @@ import logging
 import os
 import shutil
 from io import TextIOWrapper
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
+from uuid import uuid4
 
 import numpy as np
 import portalocker
@@ -679,6 +691,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,
     ) -> None:
+        def uuid_generator() -> Generator[str, None, None]:
+            while True:
+                yield str(uuid4())
+
         collection = self._get_collection(collection_name)
         if isinstance(vectors, dict) and any(
             (isinstance(v, np.ndarray) for v in vectors.values())
@@ -699,7 +715,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     payload=payload or {},
                 )
                 for (point_id, vector, payload) in zip(
-                    ids or itertools.count(), iter(vectors), payload or itertools.cycle([{}])
+                    ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
                 )
             ]
         )
