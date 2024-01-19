@@ -8,9 +8,8 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 from qdrant_client.http.models import SparseVector, VectorStruct
-from qdrant_client.local.qdrant_local import QdrantLocal
 from tests.congruence_tests.settings import TIMEOUT
-from tests.fixtures.points import generate_records
+from tests.fixtures.points import generate_points
 
 COLLECTION_NAME = "congruence_test_collection"
 
@@ -74,15 +73,15 @@ def generate_fixtures(
     random_ids: bool = False,
     vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
     skip_vectors: bool = False,
-) -> List[models.Record]:
+) -> List[models.PointStruct]:
     if vectors_sizes is None:
         vectors_sizes = {
             "text": text_vector_size,
             "image": image_vector_size,
             "code": code_vector_size,
         }
-    return generate_records(
-        num_records=num or NUM_VECTORS,
+    return generate_points(
+        num_points=num or NUM_VECTORS,
         vector_sizes=vectors_sizes,
         with_payload=True,
         random_ids=random_ids,
@@ -97,15 +96,15 @@ def generate_sparse_fixtures(
     vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
     skip_vectors: bool = False,
     with_payload: bool = True,
-) -> List[models.Record]:
+) -> List[models.PointStruct]:
     if vectors_sizes is None:
         vectors_sizes = {
             "sparse-text": sparse_text_vector_size,
             "sparse-image": sparse_image_vector_size,
             "sparse-code": sparse_code_vector_size,
         }
-    return generate_records(
-        num_records=num or NUM_VECTORS,
+    return generate_points(
+        num_points=num or NUM_VECTORS,
         vector_sizes=vectors_sizes,
         with_payload=with_payload,
         random_ids=random_ids,
@@ -270,7 +269,7 @@ def compare_client_results(
 
 def init_client(
     client: QdrantBase,
-    records: List[models.Record],
+    points: List[models.PointStruct],
     collection_name: str = COLLECTION_NAME,
     vectors_config: Optional[Union[Dict[str, models.VectorParams], models.VectorParams]] = None,
     sparse_vectors_config: Optional[Dict[str, models.SparseVectorParams]] = None,
@@ -281,11 +280,14 @@ def init_client(
         vectors_config=vectors_config,
         sparse_vectors_config=sparse_vectors_config,
     )
-    client.upload_records(collection_name, records, wait=True)
+    client.upload_points(collection_name, points, wait=True)
 
 
-def init_local(storage: str = ":memory:") -> QdrantLocal:
-    client = QdrantLocal(location=storage)
+def init_local(storage: Optional[str] = None) -> QdrantClient:
+    if storage is None or storage == ":memory:":
+        client = QdrantClient(location=":memory:")
+    else:
+        client = QdrantClient(path=storage)
     return client
 
 

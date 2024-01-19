@@ -10,7 +10,8 @@ from tests.congruence_tests.test_common import (
     generate_sparse_fixtures,
     init_client,
     init_local,
-    init_remote, sparse_vectors_config
+    init_remote,
+    sparse_vectors_config,
 )
 
 
@@ -39,27 +40,27 @@ class TestSimpleScroller:
 
 
 def test_simple_search() -> None:
-    fixture_records = generate_fixtures(200)
+    fixture_points = generate_fixtures(200)
 
     scroller = TestSimpleScroller()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, scroller.scroll_all)
 
 
 def test_simple_sparse_scroll() -> None:
-    fixture_records = generate_sparse_fixtures(200)
+    fixture_points = generate_sparse_fixtures(200)
 
     local_client = init_local()
-    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     scroller = TestSimpleScroller()
 
@@ -67,36 +68,36 @@ def test_simple_sparse_scroll() -> None:
 
 
 def test_mixed_ids() -> None:
-    fixture_records = generate_fixtures(100, random_ids=True) + generate_fixtures(
+    fixture_points = generate_fixtures(100, random_ids=True) + generate_fixtures(
         100, random_ids=False
     )
 
-    random.shuffle(fixture_records)
+    random.shuffle(fixture_points)
 
     scroller = TestSimpleScroller()
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, scroller.scroll_all)
 
 
 def test_sparse_mixed_ids() -> None:
-    fixture_records = generate_sparse_fixtures(100, random_ids=True) + generate_sparse_fixtures(
+    fixture_points = generate_sparse_fixtures(100, random_ids=True) + generate_sparse_fixtures(
         100, random_ids=False
     )
 
-    random.shuffle(fixture_records)
+    random.shuffle(fixture_points)
 
     scroller = TestSimpleScroller()
 
     local_client = init_local()
-    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, scroller.scroll_all)

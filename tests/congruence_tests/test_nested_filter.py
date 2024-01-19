@@ -15,13 +15,13 @@ def test_nested_query():
     # fix random seed
     random.seed(42)
 
-    fixture_records = generate_fixtures(num=20)
+    fixture_points = generate_fixtures(num=20)
 
     local_client = init_local()
-    init_client(local_client, fixture_records)
+    init_client(local_client, fixture_points)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records)
+    init_client(remote_client, fixture_points)
 
     filter_ = models.Filter(
         **{

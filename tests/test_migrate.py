@@ -7,7 +7,8 @@ from qdrant_client import QdrantClient, models
 from tests.congruence_tests.test_common import (
     compare_collections,
     generate_fixtures,
-    initialize_fixture_collection, generate_sparse_fixtures,
+    generate_sparse_fixtures,
+    initialize_fixture_collection,
 )
 
 VECTOR_NUMBER = 1000
@@ -56,20 +57,20 @@ def test_single_vector_collection(source_client, dest_client, request) -> None:
         dest_client: fixture
         request: pytest internal object to get launch fixtures from parametrize
     """
-    source_client = request.getfixturevalue(source_client)
-    dest_client = request.getfixturevalue(dest_client)
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
     vectors_config = models.VectorParams(size=10, distance=models.Distance.COSINE)
     collection_name = "single_vector_collection"
     initialize_fixture_collection(
         source_client, collection_name=collection_name, vectors_config=vectors_config
     )
-    dense_records = generate_fixtures(VECTOR_NUMBER, vectors_sizes=vectors_config.size)
+    dense_points = generate_fixtures(VECTOR_NUMBER, vectors_sizes=vectors_config.size)
     # TODO(sparse)
-    # sparse_records = generate_sparse_fixtures(VECTOR_NUMBER)
-    records = dense_records# + sparse_records
-    source_client.upload_records(collection_name, records, wait=True)
+    # sparse_points = generate_sparse_fixtures(VECTOR_NUMBER)
+    points = dense_points  # + sparse_points
+    source_client.upload_points(collection_name, points, wait=True)
     source_client.migrate(dest_client)
-    dest_client.upload_records(collection_name, records, wait=True)
+    dest_client.upload_points(collection_name, points, wait=True)
     compare_collections(
         source_client,
         dest_client,
@@ -94,13 +95,13 @@ def test_multiple_vectors_collection(source_client, dest_client, request) -> Non
         dest_client: fixture
         request: pytest internal object to get launch fixtures from parametrize
     """
-    source_client = request.getfixturevalue(source_client)
-    dest_client = request.getfixturevalue(dest_client)
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
     collection_name = "multiple_vectors_collection"
     initialize_fixture_collection(source_client, collection_name="multiple_vectors_collection")
-    records = generate_fixtures(VECTOR_NUMBER)
+    points = generate_fixtures(VECTOR_NUMBER)
 
-    source_client.upload_records(collection_name, records, wait=True)
+    source_client.upload_points(collection_name, points, wait=True)
     source_client.migrate(dest_client)
     compare_collections(
         source_client,
@@ -128,14 +129,14 @@ def test_migrate_all_collections(source_client, dest_client, request) -> None:
     """
     vector_number = 100
     collection_names = ["collection_1", "collection_2", "collection_3"]
-    source_client = request.getfixturevalue(source_client)
-    dest_client = request.getfixturevalue(dest_client)
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
     for collection_name in collection_names:
         initialize_fixture_collection(source_client, collection_name=collection_name)
-        records = generate_fixtures(vector_number)
-        source_client.upload_records(
+        points = generate_fixtures(vector_number)
+        source_client.upload_points(
             collection_name,
-            records,
+            points,
             wait=True,
         )
 
@@ -168,14 +169,14 @@ def test_migrate_particular_collections(source_client, dest_client, request) -> 
     """
     vector_number = 100
     collection_names = ["collection_1", "collection_2", "collection_3"]
-    source_client = request.getfixturevalue(source_client)
-    dest_client = request.getfixturevalue(dest_client)
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
     for collection_name in collection_names:
         initialize_fixture_collection(source_client, collection_name=collection_name)
-        records = generate_fixtures(vector_number)
-        source_client.upload_records(
+        points = generate_fixtures(vector_number)
+        source_client.upload_points(
             collection_name,
-            records,
+            points,
             wait=True,
         )
 
@@ -211,18 +212,18 @@ def test_action_on_collision(source_client, dest_client, request) -> None:
         request: pytest internal object to get launch fixtures from parametrize
     """
     collection_name = "test_collection"
-    source_client = request.getfixturevalue(source_client)
-    dest_client = request.getfixturevalue(dest_client)
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
     initialize_fixture_collection(source_client, collection_name=collection_name)
     initialize_fixture_collection(dest_client, collection_name=collection_name)
 
     with pytest.raises(ValueError):
         source_client.migrate(dest_client, recreate_on_collision=False)
 
-    records = generate_fixtures(VECTOR_NUMBER)
-    source_client.upload_records(
+    points = generate_fixtures(VECTOR_NUMBER)
+    source_client.upload_points(
         collection_name,
-        records,
+        points,
         wait=True,
     )
     source_client.migrate(dest_client, recreate_on_collision=True)

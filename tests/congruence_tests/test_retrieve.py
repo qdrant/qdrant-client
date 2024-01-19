@@ -4,17 +4,22 @@ from qdrant_client.http.models import PayloadSelectorExclude, PayloadSelectorInc
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
-    generate_fixtures, generate_sparse_fixtures, init_local, sparse_vectors_config, init_client, init_remote,
+    generate_fixtures,
+    generate_sparse_fixtures,
+    init_client,
+    init_local,
+    init_remote,
+    sparse_vectors_config,
 )
 
 
 def test_retrieve(local_client, remote_client) -> None:
     num_vectors = 1000
-    fixture_records = generate_fixtures(num_vectors)
-    keys = list(fixture_records[0].payload.keys())
+    fixture_points = generate_fixtures(num_vectors)
+    keys = list(fixture_points[0].payload.keys())
 
-    local_client.upload_records(COLLECTION_NAME, fixture_records)
-    remote_client.upload_records(COLLECTION_NAME, fixture_records, wait=True)
+    local_client.upload_points(COLLECTION_NAME, fixture_points)
+    remote_client.upload_points(COLLECTION_NAME, fixture_points, wait=True)
 
     id_ = random.randint(0, num_vectors)
 
@@ -70,18 +75,18 @@ def test_retrieve(local_client, remote_client) -> None:
 
 def test_sparse_retrieve() -> None:
     num_vectors = 1000
-    fixture_records = generate_sparse_fixtures(num_vectors)
+    fixture_points = generate_sparse_fixtures(num_vectors)
 
     local_client = init_local()
-    init_client(local_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_records, sparse_vectors_config=sparse_vectors_config)
+    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
-    keys = list(fixture_records[0].payload.keys())
+    keys = list(fixture_points[0].payload.keys())
 
-    local_client.upload_records(COLLECTION_NAME, fixture_records)
-    remote_client.upload_records(COLLECTION_NAME, fixture_records, wait=True)
+    local_client.upload_points(COLLECTION_NAME, fixture_points)
+    remote_client.upload_points(COLLECTION_NAME, fixture_points, wait=True)
 
     id_ = random.randint(0, num_vectors)
 
@@ -105,7 +110,10 @@ def test_sparse_retrieve() -> None:
         local_client,
         remote_client,
         lambda c: c.retrieve(
-            COLLECTION_NAME, [id_], with_vectors=["sparse-image", "sparse-code"], with_payload=False
+            COLLECTION_NAME,
+            [id_],
+            with_vectors=["sparse-image", "sparse-code"],
+            with_payload=False,
         ),
     )
 
