@@ -1757,7 +1757,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             max_retries=max_retries,
             wait=wait,
             shard_key_selector=shard_key_selector,
-            **kwargs,
         )
 
     async def upload_points(
@@ -1859,7 +1858,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             max_retries=max_retries,
             wait=wait,
             shard_key_selector=shard_key_selector,
-            **kwargs,
         )
 
     async def create_payload_index(
