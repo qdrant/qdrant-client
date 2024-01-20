@@ -102,7 +102,7 @@ class QdrantRemote(QdrantBase):
             self._port = port
 
         self._timeout = (
-            math.ceil(timeout) if timeout is not None else None
+            math.ceil(timeout) if isinstance(timeout, float) else None
         )  # it has been changed from float to int.
         # convert it to the closest greater or equal int value (e.g. 0.5 -> 1)
         self._api_key = api_key
