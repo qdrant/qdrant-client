@@ -101,10 +101,10 @@ class QdrantRemote(QdrantBase):
             self._host = host or "localhost"
             self._port = port
 
-        self._timeout = (
-            math.ceil(timeout) if isinstance(timeout, float) else None
-        )  # it has been changed from float to int.
+        # timeout has been changed from float to int.
         # convert it to the closest greater or equal int value (e.g. 0.5 -> 1)
+        self._timeout = math.ceil if isinstance(timeout, float) else timeout  # type: ignore
+
         self._api_key = api_key
 
         limits = kwargs.pop("limits", None)
