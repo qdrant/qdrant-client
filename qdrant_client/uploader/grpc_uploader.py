@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
+from uuid import uuid4
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
@@ -19,9 +20,16 @@ def upload_batch_grpc(
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
+    def get_grpc_id(id_):
+        if isinstance(id_, PointId):
+            return id_
+        if id_ is None:
+            id_ = str(uuid4())
+        return RestToGrpc.convert_extended_point_id(id_)
+
     points = [
         PointStruct(
-            id=RestToGrpc.convert_extended_point_id(idx) if not isinstance(idx, PointId) else idx,
+            id=get_grpc_id(idx),
             vectors=RestToGrpc.convert_vector_struct(vector),
             payload=payload_to_grpc(payload or {}),
         )

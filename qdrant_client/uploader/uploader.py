@@ -58,9 +58,10 @@ class BaseUploader(Worker, ABC):
         batch_size: int,
     ) -> Iterable:
         if ids is None:
-            ids = uuid_generator()
+            ids_batches = (None for _ in range(batch_size) for _ in count())
+        else:
+            ids_batches = iter_batch(ids, batch_size)
 
-        ids_batches = iter_batch(ids, batch_size)
         if payload is None:
             payload_batches: Union[Generator, Iterable] = (
                 (None for _ in range(batch_size)) for _ in count()

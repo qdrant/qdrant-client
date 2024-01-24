@@ -1,5 +1,6 @@
 import logging
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
+from uuid import uuid4
 
 import numpy as np
 
@@ -20,7 +21,7 @@ def upload_batch(
 
     points = [
         PointStruct(
-            id=idx,
+            id=idx if idx is not None else str(uuid4()),
             vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
             payload=payload,
         )
