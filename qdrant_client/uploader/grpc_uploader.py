@@ -6,7 +6,7 @@ from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
 from qdrant_client.grpc import PointId, PointsStub, PointStruct
-from qdrant_client.http.models import Batch, ShardKeySelector
+from qdrant_client.http.models import Batch, ExtendedPointId, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -20,7 +20,7 @@ def upload_batch_grpc(
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
-    def get_grpc_id(id_):
+    def get_grpc_id(id_: Optional[Union[PointId, ExtendedPointId]]) -> PointId:
         if isinstance(id_, PointId):
             return id_
         if id_ is None:

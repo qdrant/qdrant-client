@@ -24,7 +24,7 @@ def iter_batch(iterable: Union[Iterable, Generator], size: int) -> Iterable:
         yield b
 
 
-def uuid_generator() -> Generator[str, None, None]:
+def uuid_generator() -> Iterable[str]:
     while True:
         yield str(uuid4())
 
@@ -58,7 +58,9 @@ class BaseUploader(Worker, ABC):
         batch_size: int,
     ) -> Iterable:
         if ids is None:
-            ids_batches = (None for _ in range(batch_size) for _ in count())
+            ids_batches: Union[Generator, Iterable] = (
+                None for _ in range(batch_size) for _ in count()
+            )
         else:
             ids_batches = iter_batch(ids, batch_size)
 
