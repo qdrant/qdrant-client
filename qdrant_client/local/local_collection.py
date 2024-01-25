@@ -47,10 +47,12 @@ else:
 
     def to_jsonable_python(x: Any) -> Any:
         try:
-            json.dumps(x)
+            json.dumps(x, allow_nan=False)
             return x
         except Exception:
-            return json.loads(json.dumps(x, default=lambda y: ENCODERS_BY_TYPE[type(y)](y)))
+            return json.loads(
+                json.dumps(x, allow_nan=False, default=lambda y: ENCODERS_BY_TYPE[type(y)](y))
+            )
 
 
 class LocalCollection:
