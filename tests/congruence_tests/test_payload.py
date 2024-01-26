@@ -144,7 +144,7 @@ def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient)
     compare_collections(local_client, remote_client, NUM_VECTORS)  # sanity check
 
 
-def test_upsert_payload():
+def test_not_jsonable_payload():
     import datetime
     import random
     import uuid
@@ -185,5 +185,49 @@ def test_upsert_payload():
     for point in points:  # for better debugging
         local_client.upsert(COLLECTION_NAME, [point])
         remote_client.upsert(COLLECTION_NAME, [point])
+
+    compare_collections(local_client, remote_client, len(points))
+
+    local_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+    remote_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+
+    point_ids = []
+    for point in points:
+        point.payload = None
+        point_ids.append(point.id)
+        local_client.upsert(COLLECTION_NAME, [point])
+        remote_client.upsert(COLLECTION_NAME, [point])
+
+    for point_id, payload in zip(point_ids, payloads):
+        local_client.set_payload(
+            COLLECTION_NAME,
+            payload,
+            models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+        )
+        remote_client.set_payload(
+            COLLECTION_NAME,
+            payload,
+            models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+        )
+
+    compare_collections(local_client, remote_client, len(points))
+
+    for point_id, payload in zip(point_ids[::-1], payloads):
+        local_client.overwrite_payload(
+            COLLECTION_NAME,
+            payload,
+            models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+        )
+        remote_client.overwrite_payload(
+            COLLECTION_NAME,
+            payload,
+            models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+        )
 
     compare_collections(local_client, remote_client, len(points))
