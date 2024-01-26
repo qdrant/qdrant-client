@@ -41,18 +41,20 @@ EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.htm
 PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
 
 if PYDANTIC_V2:
-    from pydantic_core import to_jsonable_python
+    from pydantic_core import to_jsonable_python as _to_jsonable_python
 else:
     from pydantic.json import ENCODERS_BY_TYPE
 
-    def to_jsonable_python(x: Any) -> Any:
-        try:
-            json.dumps(x, allow_nan=False)
-            return x
-        except Exception:
-            return json.loads(
-                json.dumps(x, allow_nan=False, default=lambda y: ENCODERS_BY_TYPE[type(y)](y))
-            )
+    def _to_jsonable_python(x: Any) -> Any:
+        return ENCODERS_BY_TYPE[type(x)](x)
+
+
+def to_jsonable_python(x: Any) -> Any:
+    try:
+        json.dumps(x, allow_nan=False)
+        return x
+    except Exception:
+        return json.loads(json.dumps(x, allow_nan=False, default=_to_jsonable_python))
 
 
 class LocalCollection:
@@ -117,7 +119,7 @@ class LocalCollection:
                 self.ids_inv.append(point.id)
 
                 # payload tracker
-                self.payload.append(point.payload or {})
+                self.payload.append(to_jsonable_python(point.payload) or {})
 
                 # persisted named vectors
                 loaded_vector = point.vector
@@ -1235,10 +1237,12 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
-            self.payload[idx] = {
-                **(self.payload[idx] or {}),
-                **payload,
-            }
+            self.payload[idx] = to_jsonable_python(
+                {
+                    **(self.payload[idx] or {}),
+                    **payload,
+                }
+            )
             self._persist_by_id(point_id)
 
     def overwrite_payload(
@@ -1254,7 +1258,7 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
-            self.payload[idx] = payload or {}
+            self.payload[idx] = to_jsonable_python(payload) or {}
             self._persist_by_id(point_id)
 
     def delete_payload(
