@@ -223,7 +223,7 @@ def get_channel(
             creds = grpc.ssl_channel_credentials()
 
         # finally pass in the combined credentials when creating a channel
-        return grpc.secure_channel(f"{host}:{port}", creds, options)
+        return grpc.secure_channel(f"{host}:{port}", creds, _options)
     else:
         if metadata:
             metadata_interceptor = header_adder_interceptor(metadata)
@@ -268,7 +268,7 @@ def get_async_channel(
         if metadata:
             metadata_interceptor = header_adder_async_interceptor(metadata)
             return grpc.aio.insecure_channel(
-                f"{host}:{port}", options, interceptors=[metadata_interceptor]
+                f"{host}:{port}", _options, interceptors=[metadata_interceptor]
             )
         else:
             return grpc.aio.insecure_channel(f"{host}:{port}", _options)
