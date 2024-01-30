@@ -13,6 +13,7 @@ from qdrant_client.models import (
 qdrant_client = QdrantClient(timeout=30)
 qdrant_client.clear_payload("collection", [123])
 qdrant_client.count("collection", rest_models.Filter())
+qdrant_client.close(grpc_grace=1.5)
 qdrant_client.create_full_snapshot()
 qdrant_client.create_payload_index("collection", "asd", 3)
 qdrant_client.delete("collection", [123])
@@ -246,3 +247,35 @@ qdrant_client.recommend_groups(
     rest_models.LookupLocation(collection="start"),
     None,
 )
+
+
+qdrant_client.batch_update_points(
+    collection_name="batchcollection",
+    update_operations=[
+        rest_models.UpsertOperation(
+            upsert=rest_models.PointsList(
+                points=[rest_models.PointStruct(vector=[0.1, 0.2], id=3, payload={})]
+            )
+        )
+    ],
+)
+qdrant_client.create_snapshot(collection_name="createsnapshot", wait=False)
+qdrant_client.list_shard_snapshots(collection_name="listshardsnapshots", shard_id=3)
+qdrant_client.create_shard_snapshot(collection_name="createshardsnapshot", shard_id=3)
+qdrant_client.delete_shard_snapshot(
+    collection_name="deleteshardsnapshot", shard_id=3, snapshot_name="snapshot_id", wait=False
+)
+qdrant_client.recover_shard_snapshot(
+    collection_name="recovershardsnapshot",
+    shard_id=3,
+    location="nowhere",
+    priority=rest_models.SnapshotPriority.NO_SYNC,
+)
+qdrant_client.create_shard_key(
+    collection_name="qwerty",
+    shard_key="new_key",
+    shards_number=3,
+    replication_factor=2,
+    placement=[23],
+)
+qdrant_client.delete_shard_key(collection_name="zcxzc", shard_key="broken_key")
