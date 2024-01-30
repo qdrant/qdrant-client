@@ -1,4 +1,5 @@
 import logging
+from itertools import count
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
 from uuid import uuid4
 
@@ -19,9 +20,12 @@ def upload_batch(
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
+    ids_batch = (str(uuid4()) for _ in count()) if ids_batch is None else ids_batch
+    payload_batch = (None for _ in count()) if payload_batch is None else payload_batch
+
     points = [
         PointStruct(
-            id=idx if idx is not None else str(uuid4()),
+            id=idx,
             vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
             payload=payload,
         )

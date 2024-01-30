@@ -1,4 +1,5 @@
 import logging
+from itertools import count
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
 from uuid import uuid4
 
@@ -6,7 +7,7 @@ from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
 from qdrant_client.grpc import PointId, PointsStub, PointStruct
-from qdrant_client.http.models import Batch, ExtendedPointId, ShardKeySelector
+from qdrant_client.http.models import Batch, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
 
 
@@ -20,16 +21,12 @@ def upload_batch_grpc(
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
-    def get_grpc_id(id_: Optional[Union[PointId, ExtendedPointId]]) -> PointId:
-        if isinstance(id_, PointId):
-            return id_
-        if id_ is None:
-            id_ = str(uuid4())
-        return RestToGrpc.convert_extended_point_id(id_)
+    ids_batch = (PointId(uuid=str(uuid4())) for _ in count()) if ids_batch is None else ids_batch
+    payload_batch = (None for _ in count()) if payload_batch is None else payload_batch
 
     points = [
         PointStruct(
-            id=get_grpc_id(idx),
+            id=RestToGrpc.convert_extended_point_id(idx) if not isinstance(idx, PointId) else idx,
             vectors=RestToGrpc.convert_vector_struct(vector),
             payload=payload_to_grpc(payload or {}),
         )
