@@ -4,6 +4,8 @@ from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
     generate_fixtures,
+    init_local,
+    init_remote,
 )
 
 NUM_VECTORS = 100
@@ -140,3 +142,92 @@ def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient)
     # endregion
 
     compare_collections(local_client, remote_client, NUM_VECTORS)  # sanity check
+
+
+def test_not_jsonable_payload():
+    import datetime
+    import random
+    import uuid
+
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vector_size = 2
+    vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
+    local_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+    remote_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+
+    # subset of types from pydantic.json.ENCODERS_BY_TYPE (pydantic v1)
+
+    payloads = [
+        {"bytes": b"123"},
+        {"date": datetime.date(2021, 1, 1)},
+        {"datetime": datetime.datetime(2021, 1, 1, 1, 1, 1)},
+        {"time": datetime.time(1, 1, 1)},
+        {"timedelta": datetime.timedelta(seconds=1)},
+        {"decimal": 1.0},
+        {"frozenset": frozenset([1, 2])},
+        {"set": {1, 2}},
+        {"uuid": uuid.uuid4()},
+    ]
+
+    points = [
+        models.PointStruct(id=i, vector=[random.random(), random.random()], payload=payload)
+        for i, payload in enumerate(payloads)
+    ]
+
+    for point in points:  # for better debugging
+        local_client.upsert(COLLECTION_NAME, [point])
+        remote_client.upsert(COLLECTION_NAME, [point])
+
+    compare_collections(local_client, remote_client, len(points))
+
+    local_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+    remote_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+
+    point_ids = []
+    for point in points:
+        point.payload = None
+        point_ids.append(point.id)
+        local_client.upsert(COLLECTION_NAME, [point])
+        remote_client.upsert(COLLECTION_NAME, [point])
+
+    for point_id, payload in zip(point_ids, payloads):
+        local_client.set_payload(
+            COLLECTION_NAME,
+            payload,
+            models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+        )
+        remote_client.set_payload(
+            COLLECTION_NAME,
+            payload,
+            models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+        )
+
+    compare_collections(local_client, remote_client, len(points))
+
+    for point_id, payload in zip(point_ids[::-1], payloads):
+        local_client.overwrite_payload(
+            COLLECTION_NAME,
+            payload,
+            models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+        )
+        remote_client.overwrite_payload(
+            COLLECTION_NAME,
+            payload,
+            models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+        )
+
+    compare_collections(local_client, remote_client, len(points))
