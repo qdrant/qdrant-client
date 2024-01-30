@@ -4,6 +4,7 @@ from collections import OrderedDict, defaultdict
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args
 
 import numpy as np
+from pydantic.version import VERSION as PYDANTIC_VERSION
 
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
@@ -37,6 +38,23 @@ from qdrant_client.local.sparse import (
 DEFAULT_VECTOR_NAME = ""
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
+PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
+
+if PYDANTIC_V2:
+    from pydantic_core import to_jsonable_python as _to_jsonable_python
+else:
+    from pydantic.json import ENCODERS_BY_TYPE
+
+    def _to_jsonable_python(x: Any) -> Any:
+        return ENCODERS_BY_TYPE[type(x)](x)
+
+
+def to_jsonable_python(x: Any) -> Any:
+    try:
+        json.dumps(x, allow_nan=False)
+        return x
+    except Exception:
+        return json.loads(json.dumps(x, allow_nan=False, default=_to_jsonable_python))
 
 
 class LocalCollection:
@@ -101,7 +119,7 @@ class LocalCollection:
                 self.ids_inv.append(point.id)
 
                 # payload tracker
-                self.payload.append(point.payload or {})
+                self.payload.append(to_jsonable_python(point.payload) or {})
 
                 # persisted named vectors
                 loaded_vector = point.vector
@@ -957,11 +975,7 @@ class LocalCollection:
 
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
-        self.payload[idx] = (
-            point.payload
-            if point.payload is not None and json.dumps(point.payload, allow_nan=False)
-            else {}
-        )
+        self.payload[idx] = to_jsonable_python(point.payload) if point.payload is not None else {}
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
@@ -996,11 +1010,8 @@ class LocalCollection:
         idx = len(self.ids)
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
-        self.payload.append(
-            point.payload
-            if point.payload is not None and json.dumps(point.payload, allow_nan=False)
-            else {}
-        )
+
+        self.payload.append(to_jsonable_python(point.payload) if point.payload is not None else {})
         assert len(self.payload) == len(self.ids_inv), "Payload and ids_inv must be the same size"
         self.deleted = np.append(self.deleted, 0)
 
@@ -1226,10 +1237,12 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
-            self.payload[idx] = {
-                **(self.payload[idx] or {}),
-                **payload,
-            }
+            self.payload[idx] = to_jsonable_python(
+                {
+                    **(self.payload[idx] or {}),
+                    **payload,
+                }
+            )
             self._persist_by_id(point_id)
 
     def overwrite_payload(
@@ -1245,7 +1258,7 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
-            self.payload[idx] = payload or {}
+            self.payload[idx] = to_jsonable_python(payload) or {}
             self._persist_by_id(point_id)
 
     def delete_payload(
