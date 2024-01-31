@@ -168,7 +168,8 @@ def test_client_init():
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_records_upload(prefer_grpc):
+@pytest.mark.parametrize("parallel", [1, 2])
+def test_records_upload(prefer_grpc, parallel):
     import warnings
 
     warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -186,7 +187,7 @@ def test_records_upload(prefer_grpc):
         timeout=TIMEOUT,
     )
 
-    client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=2)
+    client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=parallel)
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
     # Let's give it a second to actually add all points to a collection.
@@ -212,9 +213,26 @@ def test_records_upload(prefer_grpc):
     assert result_count.count < 900
     assert result_count.count > 100
 
+    records = (Record(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(NUM_VECTORS))
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    client.upload_records(
+        collection_name=COLLECTION_NAME, records=records, parallel=parallel, wait=True
+    )
+
+    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+
+    assert collection_info.points_count == NUM_VECTORS
+
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_point_upload(prefer_grpc):
+@pytest.mark.parametrize("parallel", [1, 2])
+def test_point_upload(prefer_grpc, parallel):
     points = (
         PointStruct(
             id=idx, vector=np.random.rand(DIM).tolist(), payload=one_random_payload_please(idx)
@@ -230,7 +248,7 @@ def test_point_upload(prefer_grpc):
         timeout=TIMEOUT,
     )
 
-    client.upload_points(collection_name=COLLECTION_NAME, points=points, parallel=2)
+    client.upload_points(collection_name=COLLECTION_NAME, points=points, parallel=parallel)
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
     # Let's give it a second to actually add all points to a collection.
@@ -255,6 +273,75 @@ def test_point_upload(prefer_grpc):
 
     assert result_count.count < 900
     assert result_count.count > 100
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    points = (
+        PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(NUM_VECTORS)
+    )
+
+    client.upload_points(
+        collection_name=COLLECTION_NAME, points=points, parallel=parallel, wait=True
+    )
+
+    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+
+    assert collection_info.points_count == NUM_VECTORS
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+@pytest.mark.parametrize("parallel", [1, 2])
+def test_upload_collection(prefer_grpc, parallel):
+    size = 3
+    batch_size = 2
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=size, distance=Distance.DOT),
+        timeout=TIMEOUT,
+    )
+    vectors = [
+        [1.0, 2.0, 3.0],
+        [4.0, 5.0, 6.0],
+        [7.0, 8.0, 9.0],
+        [10.0, 11.0, 12.0],
+        [13.0, 14.0, 15.0],
+    ]
+    payload = [{"a": 2}, {"b": 3}, {"c": 4}, {"d": 5}, {"e": 6}]
+    ids = [1, 2, 3, 4, 5]
+
+    client.upload_collection(
+        collection_name=COLLECTION_NAME,
+        vectors=vectors,
+        parallel=parallel,
+        wait=True,
+        batch_size=batch_size,
+    )
+
+    assert client.get_collection(collection_name=COLLECTION_NAME).points_count == 5
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=VectorParams(size=size, distance=Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    client.upload_collection(
+        collection_name=COLLECTION_NAME,
+        vectors=vectors,
+        payload=payload,
+        ids=ids,
+        parallel=parallel,
+        wait=True,
+        batch_size=batch_size,
+    )
+
+    assert client.get_collection(collection_name=COLLECTION_NAME).points_count == 5
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
