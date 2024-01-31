@@ -1,5 +1,7 @@
 import logging
+from itertools import count
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
+from uuid import uuid4
 
 from qdrant_client import grpc as grpc
 from qdrant_client.connection import get_channel
@@ -18,6 +20,9 @@ def upload_batch_grpc(
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
+
+    ids_batch = (PointId(uuid=str(uuid4())) for _ in count()) if ids_batch is None else ids_batch
+    payload_batch = (None for _ in count()) if payload_batch is None else payload_batch
 
     points = [
         PointStruct(
