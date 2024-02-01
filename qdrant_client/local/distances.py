@@ -148,19 +148,19 @@ def calculate_distance_core(
 
 
 def fast_sigmoid(x: np.float32) -> np.float32:
-    if np.isfinite(x):
-        return x / (1.0 + abs(x))
-    else:
+    if not np.isfinite(x):
         # To avoid NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
         return x
+
+    return x / (1.0 + abs(x))
 
 
 def scaled_fast_sigmoid(x: np.float32) -> np.float32:
-    if np.isfinite(x):
-        return 0.5 * (x / (1.0 + abs(x)) + 1.0)
-    else:
+    if not np.isfinite(x):
         # To avoid NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
         return x
+
+    return 0.5 * (x / (1.0 + abs(x)) + 1.0)
 
 
 def calculate_recommend_best_scores(
