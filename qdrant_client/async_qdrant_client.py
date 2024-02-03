@@ -128,12 +128,14 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             except ImportError:
                 self._is_fastembed_installed = False
 
-    async def close(self, **kwargs: Any) -> None:
-        """
-        Closes the connection to Qdrant
+    async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
+        """Closes the connection to Qdrant
+
+        Args:
+            grpc_grace: Grace period for gRPC connection close. Default: None
         """
         if hasattr(self, "_client"):
-            await self._client.close(**kwargs)
+            await self._client.close(grpc_grace=grpc_grace, **kwargs)
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
