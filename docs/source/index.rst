@@ -34,6 +34,8 @@ Create a new collection
 
 .. code-block:: python
 
+   from qdrant_client.models import VectorParams, Distance
+
    client.recreate_collection(
       collection_name="my_collection",
       vectors_config=VectorParams(size=100, distance=Distance.COSINE),
