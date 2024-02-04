@@ -62,12 +62,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: Optional[int] = None,
         host: Optional[str] = None,
         grpc_options: Optional[Dict[str, Any]] = None,
+        grpc_compression: Optional[grpc.Compression] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._grpc_options = grpc_options
+        self._grpc_compression = grpc_compression
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
         self._prefix = prefix or ""
@@ -170,6 +172,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ssl=self._https,
                 metadata=self._grpc_headers,
                 options=self._grpc_options,
+                compression=self._grpc_compression,
             )
 
     def _init_grpc_points_client(self) -> None:
