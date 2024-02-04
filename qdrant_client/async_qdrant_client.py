@@ -96,6 +96,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             raise ValueError(
                 "Only one of <location>, <url>, <host> or <path> should be specified."
             )
+        if grpc_compression is not None and not isinstance(grpc_compression, grpc.Compression):
+            raise TypeError(
+                f"Expected 'grpc_compression' to be of type grpc.Compression or None, but got {type(grpc_compression).__name__}"
+            )
         if location == ":memory:":
             self._client = AsyncQdrantLocal(
                 location=location, force_disable_check_same_thread=force_disable_check_same_thread
