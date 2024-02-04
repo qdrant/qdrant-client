@@ -87,6 +87,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         path: Optional[str] = None,
         force_disable_check_same_thread: bool = False,
         grpc_options: Optional[Dict[str, Any]] = None,
+        grpc_compression: Optional[grpc.Compression] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -117,6 +118,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 timeout=timeout,
                 host=host,
                 grpc_options=grpc_options,
+                grpc_compression=grpc_compression,
                 **kwargs,
             )
         self._is_fastembed_installed: Optional[bool] = None
