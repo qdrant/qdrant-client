@@ -60,7 +60,7 @@ class _ServiceApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2002,
+            type_=m.InlineResponse2003,
             method="GET",
             url="/locks",
             headers=headers if headers else None,
@@ -126,7 +126,7 @@ class _ServiceApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2002, method="POST", url="/locks", headers=headers if headers else None, content=body
+            type_=m.InlineResponse2003, method="POST", url="/locks", headers=headers if headers else None, content=body
         )
 
     def _build_for_readyz(
@@ -143,6 +143,20 @@ class _ServiceApi:
             headers=headers if headers else None,
         )
 
+    def _build_for_root(
+        self,
+    ):
+        """
+        Returns information about the running Qdrant instance like version and commit id
+        """
+        headers = {}
+        return self.api_client.request(
+            type_=m.InlineResponse2001,
+            method="GET",
+            url="/",
+            headers=headers if headers else None,
+        )
+
     def _build_for_telemetry(
         self,
         anonymize: bool = None,
@@ -156,7 +170,7 @@ class _ServiceApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2001,
+            type_=m.InlineResponse2002,
             method="GET",
             url="/telemetry",
             headers=headers if headers else None,
@@ -167,7 +181,7 @@ class _ServiceApi:
 class AsyncServiceApi(_ServiceApi):
     async def get_locks(
         self,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Get lock options. If write is locked, all write operations and collection creation are forbidden
         """
@@ -203,7 +217,7 @@ class AsyncServiceApi(_ServiceApi):
     async def post_locks(
         self,
         locks_option: m.LocksOption = None,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
         """
@@ -219,10 +233,18 @@ class AsyncServiceApi(_ServiceApi):
         """
         return await self._build_for_readyz()
 
+    async def root(
+        self,
+    ) -> m.InlineResponse2001:
+        """
+        Returns information about the running Qdrant instance like version and commit id
+        """
+        return await self._build_for_root()
+
     async def telemetry(
         self,
         anonymize: bool = None,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
@@ -234,7 +256,7 @@ class AsyncServiceApi(_ServiceApi):
 class SyncServiceApi(_ServiceApi):
     def get_locks(
         self,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Get lock options. If write is locked, all write operations and collection creation are forbidden
         """
@@ -270,7 +292,7 @@ class SyncServiceApi(_ServiceApi):
     def post_locks(
         self,
         locks_option: m.LocksOption = None,
-    ) -> m.InlineResponse2002:
+    ) -> m.InlineResponse2003:
         """
         Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
         """
@@ -286,10 +308,18 @@ class SyncServiceApi(_ServiceApi):
         """
         return self._build_for_readyz()
 
+    def root(
+        self,
+    ) -> m.InlineResponse2001:
+        """
+        Returns information about the running Qdrant instance like version and commit id
+        """
+        return self._build_for_root()
+
     def telemetry(
         self,
         anonymize: bool = None,
-    ) -> m.InlineResponse2001:
+    ) -> m.InlineResponse2002:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
