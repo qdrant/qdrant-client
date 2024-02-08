@@ -1955,11 +1955,13 @@ class RestToGrpc:
     @classmethod
     def convert_named_vector_struct(
         cls, model: rest.NamedVectorStruct
-    ) -> Tuple[List[float], Optional[str]]:
+    ) -> Tuple[List[float], Optional[grpc.SparseIndices], Optional[str]]:
         if isinstance(model, list):
-            return model, None
+            return model, None, None
         elif isinstance(model, rest.NamedVector):
-            return model.vector, model.name
+            return model.vector, None, model.name
+        elif isinstance(model, rest.NamedSparseVector):
+            return model.vector.values, grpc.SparseIndices(data=model.vector.indices), model.name
         else:
             raise ValueError(f"invalid NamedVectorStruct model: {model}")  # pragma: no cover
 
@@ -1967,11 +1969,12 @@ class RestToGrpc:
     def convert_search_request(
         cls, model: rest.SearchRequest, collection_name: str
     ) -> grpc.SearchPoints:
-        vector, name = cls.convert_named_vector_struct(model.vector)
+        vector, sparse_indices, name = cls.convert_named_vector_struct(model.vector)
 
         return grpc.SearchPoints(
             collection_name=collection_name,
             vector=vector,
+            sparse_indices=sparse_indices,
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
             limit=model.limit,
             with_payload=cls.convert_with_payload_interface(model.with_payload)

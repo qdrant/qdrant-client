@@ -1264,6 +1264,92 @@ def test_sparse_vectors(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_sparse_vectors_batch(prefer_grpc):
+    version = os.getenv("QDRANT_VERSION")
+    if version is not None and version < "v1.7.0":
+        pytest.skip("Sparse vectors are supported since v1.7.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config={},
+        sparse_vectors_config={
+            "text": models.SparseVectorParams(
+                index=models.SparseIndexParams(
+                    on_disk=False,
+                    full_scan_threshold=100,
+                )
+            )
+        },
+    )
+
+    client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            models.PointStruct(
+                id=1,
+                vector={
+                    "text": models.SparseVector(
+                        indices=[1, 2, 3],
+                        values=[1.0, 2.0, 3.0],
+                    )
+                },
+            ),
+            models.PointStruct(
+                id=2,
+                vector={
+                    "text": models.SparseVector(
+                        indices=[3, 4, 5],
+                        values=[1.0, 2.0, 3.0],
+                    )
+                },
+            ),
+            models.PointStruct(
+                id=3,
+                vector={
+                    "text": models.SparseVector(
+                        indices=[5, 6, 7],
+                        values=[1.0, 2.0, 3.0],
+                    )
+                },
+            ),
+        ],
+    )
+
+    request = models.SearchRequest(
+        vector=models.NamedSparseVector(
+            name="text",
+            vector=models.SparseVector(
+                indices=[1, 7],
+                values=[2.0, 1.0],
+            ),
+        ),
+        limit=3,
+        with_vector=["text"],
+    )
+
+    results = client.search_batch(
+        collection_name=COLLECTION_NAME,
+        requests=[request],
+    )
+
+    result = results[0]
+
+    assert len(result) == 2
+    assert result[0].id == 3
+    assert result[1].id == 1
+
+    assert result[0].score == 3.0
+    assert result[1].score == 2.0
+
+    assert result[0].vector["text"].indices == [5, 6, 7]
+    assert result[0].vector["text"].values == [1.0, 2.0, 3.0]
+    assert result[1].vector["text"].indices == [1, 2, 3]
+    assert result[1].vector["text"].values == [1.0, 2.0, 3.0]
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_vector_update(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
