@@ -2,6 +2,7 @@ from enum import Enum
 from typing import List, Optional, Union
 
 import numpy as np
+from numpy.lib.ufunclike import isneginf
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
@@ -148,19 +149,15 @@ def calculate_distance_core(
 
 
 def fast_sigmoid(x: np.float32) -> np.float32:
-    if not np.isfinite(x):
-        # To avoid NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
-        return x
+    if np.isnan(x):
+        # To avoid divisions on NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
+        return x  # NaN
 
-    return x / (1.0 + abs(x))
+    return x / np.add(1.0, abs(x))
 
 
 def scaled_fast_sigmoid(x: np.float32) -> np.float32:
-    if not np.isfinite(x):
-        # To avoid NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
-        return x
-
-    return 0.5 * (x / (1.0 + abs(x)) + 1.0)
+    return 0.5 * (np.add(fast_sigmoid(x), 1.0))
 
 
 def calculate_recommend_best_scores(
