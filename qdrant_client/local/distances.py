@@ -2,7 +2,6 @@ from enum import Enum
 from typing import List, Optional, Union
 
 import numpy as np
-from numpy.lib.ufunclike import isneginf
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
