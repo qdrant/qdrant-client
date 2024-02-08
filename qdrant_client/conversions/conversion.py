@@ -1955,13 +1955,13 @@ class RestToGrpc:
     @classmethod
     def convert_named_vector_struct(
         cls, model: rest.NamedVectorStruct
-    ) -> Tuple[List[float], Optional[List[int]], Optional[str]]:
+    ) -> Tuple[List[float], Optional[grpc.SparseIndices], Optional[str]]:
         if isinstance(model, list):
             return model, None, None
         elif isinstance(model, rest.NamedVector):
             return model.vector, None, model.name
         elif isinstance(model, rest.NamedSparseVector):
-            return model.vector.values, model.vector.indices, model.name
+            return model.vector.values, grpc.SparseIndices(data=model.vector.indices), model.name
         else:
             raise ValueError(f"invalid NamedVectorStruct model: {model}")  # pragma: no cover
 
