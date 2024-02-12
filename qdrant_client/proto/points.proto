@@ -3,8 +3,9 @@ syntax = "proto3";
 package qdrant;
 option csharp_namespace = "Qdrant.Client.Grpc";
 
-import "json_with_int.proto";
 import "collections.proto";
+import "google/protobuf/timestamp.proto";
+import "json_with_int.proto";
 
 
 enum WriteOrderingType {
@@ -145,6 +146,7 @@ enum FieldType {
   FieldTypeGeo = 3;
   FieldTypeText = 4;
   FieldTypeBool = 5;
+  FieldTypeDatetime = 6;
 }
 
 message CreateFieldIndexCollection {
@@ -204,12 +206,12 @@ message WithVectorsSelector {
 message QuantizationSearchParams {
   /*
   If set to true, search will ignore quantized vector data
-   */
+  */
   optional bool ignore = 1;
 
   /*
   If true, use original vectors to re-score top-k results. If ignored, qdrant decides automatically does rescore enabled or not.
-   */
+  */
   optional bool rescore = 2;
 
   /*
@@ -220,7 +222,7 @@ message QuantizationSearchParams {
 
   For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be pre-selected using quantized index,
   and then top-100 will be returned after re-scoring.
-   */
+  */
   optional double oversampling = 3;
 }
 
@@ -228,7 +230,7 @@ message SearchParams {
   /*
   Params relevant to HNSW index. Size of the beam in a beam-search.
   Larger the value - more accurate the result, more time required for search.
-   */
+  */
   optional uint64 hnsw_ef = 1;
 
   /*
@@ -237,14 +239,14 @@ message SearchParams {
   optional bool exact = 2;
 
   /*
-  If set to true, search will ignore quantized vector data 
+  If set to true, search will ignore quantized vector data
   */
   optional QuantizationSearchParams quantization = 3;
   /*
   If enabled, the engine will only perform search among indexed or small segments.
   Using this option prevents slow searches in case of delayed index, but does not
   guarantee that all uploaded vectors will be included in search results
-   */
+  */
   optional bool indexed_only = 4;
 }
 
@@ -299,6 +301,26 @@ message SearchPointGroups {
   optional SparseIndices sparse_indices = 16;
 }
 
+enum Direction {
+  Asc = 0;
+  Desc = 1;
+}
+
+message StartFrom {
+  oneof value {
+    double float = 1;
+    int64 integer = 2;
+    google.protobuf.Timestamp timestamp = 3;
+    string datetime = 4;
+  }
+}
+
+message OrderBy {
+  string key = 1; // Payload key to order by
+  optional Direction direction = 2; // Ascending or descending order
+  optional StartFrom start_from = 3; // Start from this value
+}
+
 message ScrollPoints {
   string collection_name = 1;
   Filter filter = 2; // Filter conditions - return only those points that satisfy the specified conditions
@@ -309,16 +331,17 @@ message ScrollPoints {
   optional WithVectorsSelector with_vectors = 7; // Options for specifying which vectors to include into response
   optional ReadConsistency read_consistency = 8; // Options for specifying read consistency guarantees
   optional ShardKeySelector shard_key_selector = 9; // Specify in which shards to look for the points, if not specified - look in all shards
+  optional OrderBy order_by = 10; // Order the records by a payload field
 }
 
 // How to use positive and negative vectors to find the results, default is `AverageVector`:
 enum RecommendStrategy {
-  // Average positive and negative vectors and create a single query with the formula 
+  // Average positive and negative vectors and create a single query with the formula
   // `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.
   AverageVector = 0;
 
-  // Uses custom search objective. Each candidate is compared against all 
-  // examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. 
+  // Uses custom search objective. Each candidate is compared against all
+  // examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`.
   // If the `max_neg_score` is chosen then it is squared and negated.
   BestScore = 1;
 }
@@ -384,7 +407,7 @@ message RecommendPointGroups {
 message TargetVector {
   oneof target {
     VectorExample single = 1;
-    
+
     // leaving extensibility for possibly adding multi-target
   }
 }
@@ -530,7 +553,7 @@ message GroupId {
 
 message PointGroup {
   GroupId id = 1; // Group id
-  repeated ScoredPoint hits = 2; // Points in the group 
+  repeated ScoredPoint hits = 2; // Points in the group
   RetrievedPoint lookup = 3; // Point(s) from the lookup collection that matches the group id
 }
 
@@ -623,6 +646,12 @@ message Filter {
   repeated Condition should = 1; // At least one of those conditions should match
   repeated Condition must = 2; // All conditions must match
   repeated Condition must_not = 3; // All conditions must NOT match
+  optional MinShould min_should = 4; // At least minimum amount of given conditions should match
+}
+
+message MinShould {
+  repeated Condition conditions = 1;
+  uint64 min_count = 2;
 }
 
 message Condition {
@@ -661,6 +690,7 @@ message FieldCondition {
   GeoRadius geo_radius = 5; // Check if geo point is within a given radius
   ValuesCount values_count = 6; // Check number of values for a specific field
   GeoPolygon geo_polygon = 7; // Check if geo point is within a given polygon
+  DatetimeRange datetime_range = 8; // Check if datetime is within a given range
 }
 
 message Match {
@@ -689,6 +719,13 @@ message Range {
   optional double gt = 2;
   optional double gte = 3;
   optional double lte = 4;
+}
+
+message DatetimeRange {
+  optional google.protobuf.Timestamp lt = 1;
+  optional google.protobuf.Timestamp gt = 2;
+  optional google.protobuf.Timestamp gte = 3;
+  optional google.protobuf.Timestamp lte = 4;
 }
 
 message GeoBoundingBox {
