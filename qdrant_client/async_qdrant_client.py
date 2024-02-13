@@ -822,6 +822,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         collection_name: str,
         scroll_filter: Optional[types.Filter] = None,
         limit: int = 10,
+        order_by: Optional[types.OrderBy] = None,
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
@@ -838,6 +839,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name: Name of the collection
             scroll_filter: If provided - only returns points matching filtering conditions
             limit: How many points to return
+            order_by: Order the records by a payload key. If `None` - order by id
             offset: If provided - skip points with ids less than given `offset`
             with_payload:
                 - Specify which stored payload should be attached to the result.
@@ -870,6 +872,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name=collection_name,
             scroll_filter=scroll_filter,
             limit=limit,
+            order_by=order_by,
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,

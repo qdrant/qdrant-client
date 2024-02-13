@@ -948,6 +948,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         scroll_filter: Optional[types.Filter] = None,
         limit: int = 10,
+        order_by: Optional[types.OrderBy] = None,
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
@@ -968,10 +969,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if isinstance(order_by, models.OrderBy):
+                order_by = RestToGrpc.convert_order_by(order_by)
             res: grpc.ScrollResponse = await self.grpc_points.Scroll(
                 grpc.ScrollPoints(
                     collection_name=collection_name,
                     filter=scroll_filter,
+                    order_by=order_by,
                     offset=offset,
                     with_vectors=with_vectors,
                     with_payload=with_payload,
@@ -1001,6 +1005,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     scroll_request=models.ScrollRequest(
                         filter=scroll_filter,
                         limit=limit,
+                        order_by=order_by,
                         offset=offset,
                         with_payload=with_payload,
                         with_vector=with_vectors,
