@@ -1852,6 +1852,36 @@ class RestToGrpc:
         raise ValueError(f"invalid WithPayloadInterface model: {model}")  # pragma: no cover
 
     @classmethod
+    def convert_start_from(cls, model: rest.StartFrom) -> grpc.StartFrom:
+        if isinstance(model, float):
+            return grpc.StartFrom(float=model)
+        if isinstance(model, datetime):
+            dt = model.isoformat()
+            return grpc.StartFrom(datetime=dt)
+
+        raise ValueError(f"invalid StartFrom model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_direction(cls, model: rest.Direction) -> grpc.Direction:
+        if model == rest.Direction.ASC:
+            return grpc.Direction.Asc
+        if model == rest.Direction.DESC:
+            return grpc.Direction.Desc
+        raise ValueError(f"invalid Direction model: {model}")
+
+    @classmethod
+    def convert_order_by(cls, model: rest.OrderBy) -> grpc.OrderBy:
+        return grpc.OrderBy(
+            key=model.key,
+            direction=cls.convert_direction(model.direction)
+            if model.direction is not None
+            else None,
+            start_from=cls.convert_start_from(model.start_from)
+            if model.start_from is not None
+            else None,
+        )
+
+    @classmethod
     def convert_record(cls, model: rest.Record) -> grpc.RetrievedPoint:
         return grpc.RetrievedPoint(
             id=cls.convert_extended_point_id(model.id),
