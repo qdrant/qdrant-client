@@ -2328,8 +2328,8 @@ SparseIndexType = Union[
     SparseIndexTypeOneOf2,
 ]
 StartFrom = Union[
-    datetime,
     StrictFloat,
+    datetime,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
