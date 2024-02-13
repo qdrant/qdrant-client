@@ -291,6 +291,6 @@ def init_local(storage: Optional[str] = None) -> QdrantClient:
     return client
 
 
-def init_remote() -> QdrantClient:
-    client = QdrantClient(host="localhost", port=6333, timeout=30)
+def init_remote(prefer_grpc: bool = False) -> QdrantClient:
+    client = QdrantClient(host="localhost", port=6333, timeout=30, prefer_grpc=prefer_grpc)
     return client
