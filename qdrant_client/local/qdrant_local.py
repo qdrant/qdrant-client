@@ -412,6 +412,7 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         scroll_filter: Optional[types.Filter] = None,
         limit: int = 10,
+        order_by: Optional[types.OrderBy] = None,
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
@@ -421,6 +422,7 @@ class QdrantLocal(QdrantBase):
         return collection.scroll(
             scroll_filter=scroll_filter,
             limit=limit,
+            order_by=order_by,
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
