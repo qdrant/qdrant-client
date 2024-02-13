@@ -34,6 +34,9 @@ def to_ordering_value(value: Optional[Any]) -> Optional[OrderingValue]:
     if isinstance(value, (int, float)):
         return OrderingValue(value)
 
+    if isinstance(value, datetime):
+        return OrderingValue(datetime_to_microseconds(value))
+
     if isinstance(value, str):
         # dateutil parser also parses "now", but qdrant core does not
         if value == "now":

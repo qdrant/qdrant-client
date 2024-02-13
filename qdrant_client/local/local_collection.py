@@ -1029,7 +1029,7 @@ class LocalCollection:
             for value in payload_values:
                 ordering_value = to_ordering_value(value)
                 if ordering_value is not None:
-                    value_and_ids.append((value, id))
+                    value_and_ids.append((ordering_value, id))
 
         direction = order_by.direction if order_by.direction is not None else models.Direction.ASC
 
@@ -1052,10 +1052,12 @@ class LocalCollection:
 
         for value, (external_id, internal_id) in value_and_ids:
             if start_from is not None:
-                if direction == models.Direction.ASC and value <= start_from:
-                    continue
-                elif direction == models.Direction.DESC and value >= start_from:
-                    continue
+                if direction == models.Direction.ASC:
+                    if value < start_from:
+                        continue
+                elif direction == models.Direction.DESC:
+                    if value > start_from:
+                        continue
 
             if len(result) >= limit:
                 break
