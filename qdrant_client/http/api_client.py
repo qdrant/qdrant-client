@@ -181,7 +181,7 @@ class AsyncApiClient:
     def add_middleware(self, middleware: AsyncMiddlewareT) -> None:
         current_middleware = self.middleware
 
-        async def new_middleware(request: Request, call_next: Send) -> Response:
+        async def new_middleware(request: Request, call_next: SendAsync) -> Response:
             async def inner_send(request: Request) -> Response:
                 return await current_middleware(request, call_next)
 
