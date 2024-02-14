@@ -1,5 +1,8 @@
+import datetime
 import random
 import uuid
+
+from qdrant_client.local.order_by import MICROS_PER_SECOND
 
 random_words = [
     "cat",
@@ -162,6 +165,11 @@ def one_random_payload_please(idx):
         "text_data": uuid.uuid4().hex,
         "rand_digit": random.randint(0, 9),
         "rand_number": round(random.random(), 5),
+        "rand_datetime": datetime.datetime.fromtimestamp(
+            # random date between 1999 and 2000, with microseconds
+            random.randint(915159600000000, 946695600000000)
+            / MICROS_PER_SECOND,
+        ).isoformat(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
         "words": f"{random_real_word()} {random_real_word()}",
         "nested": {

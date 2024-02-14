@@ -12,14 +12,12 @@ from tests.congruence_tests.test_common import (
 )
 
 
-def scroll_all(client: QdrantBase) -> List[models.Record]:
+def scroll_all_with_key(client: QdrantBase, key: str) -> List[models.Record]:
     all_records = []
 
     last_seen_value = None
 
     last_value_ids = []
-
-    key = "rand_number"
 
     while True:
         records, _next_page = client.scroll(
@@ -47,6 +45,14 @@ def scroll_all(client: QdrantBase) -> List[models.Record]:
     return all_records
 
 
+def scroll_all_floats(client: QdrantBase) -> List[models.Record]:
+    return scroll_all_with_key(client, "rand_number")
+
+
+def scroll_all_datetimes(client: QdrantBase) -> List[models.Record]:
+    return scroll_all_with_key(client, "rand_datetime")
+
+
 def test_simple_scroll() -> None:
     fixture_points = generate_fixtures(200)
 
@@ -58,8 +64,14 @@ def test_simple_scroll() -> None:
     http_client.create_payload_index(
         COLLECTION_NAME, "rand_number", models.PayloadSchemaType.FLOAT, wait=True
     )
+    http_client.create_payload_index(
+        COLLECTION_NAME, "rand_datetime", models.PayloadSchemaType.DATETIME, wait=True
+    )
 
     grpc_client = init_remote(prefer_grpc=True)
 
-    compare_client_results(grpc_client, http_client, scroll_all)
-    compare_client_results(local_client, http_client, scroll_all)
+    compare_client_results(grpc_client, http_client, scroll_all_floats)
+    compare_client_results(local_client, http_client, scroll_all_floats)
+
+    compare_client_results(grpc_client, http_client, scroll_all_datetimes)
+    compare_client_results(local_client, http_client, scroll_all_datetimes)
