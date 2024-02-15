@@ -19,13 +19,11 @@ from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 
 try:
-    from fastembed.embedding import DefaultEmbedding
+    from fastembed import TextEmbedding
 except ImportError:
-    DefaultEmbedding = None
+    TextEmbedding = None
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
-    "BAAI/bge-base-en": (768, models.Distance.COSINE),
     "sentence-transformers/all-MiniLM-L6-v2": (384, models.Distance.COSINE),
-    "BAAI/bge-small-en": (384, models.Distance.COSINE),
     "BAAI/bge-small-en-v1.5": (384, models.Distance.COSINE),
     "BAAI/bge-base-en-v1.5": (768, models.Distance.COSINE),
     "intfloat/multilingual-e5-large": (1024, models.Distance.COSINE),
@@ -33,8 +31,8 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
 
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
-    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
-    embedding_models: Dict[str, "DefaultEmbedding"] = {}
+    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+    embedding_models: Dict[str, "TextEmbedding"] = {}
 
     def __init__(self, **kwargs: Any):
         self.embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
@@ -76,7 +74,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     @staticmethod
     def _import_fastembed() -> None:
         try:
-            from fastembed.embedding import DefaultEmbedding
+            from fastembed import TextEmbedding
         except ImportError:
             raise ImportError(
                 "fastembed is not installed. Please install it to enable fast vector indexing with `pip install fastembed`."
@@ -98,7 +96,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         **kwargs: Any,
-    ) -> "DefaultEmbedding":
+    ) -> "TextEmbedding":
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
@@ -106,7 +104,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
         cls._import_fastembed()
-        cls.embedding_models[model_name] = DefaultEmbedding(
+        cls.embedding_models[model_name] = TextEmbedding(
             model_name=model_name,
             max_length=max_length,
             cache_dir=cache_dir,
@@ -124,7 +122,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         parallel: Optional[int] = None,
     ) -> Iterable[Tuple[str, List[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
-        (documents_a, documents_b) = tee(documents, 2)
+        documents_a, documents_b = tee(documents, 2)
         if embed_type == "passage":
             vectors_iter = embedding_model.passage_embed(
                 documents_a, batch_size=batch_size, parallel=parallel
@@ -205,7 +203,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Configuration for `vectors_config` argument in `create_collection` method.
         """
         vector_field_name = self.get_vector_field_name()
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         return {
             vector_field_name: models.VectorParams(
                 size=embeddings_size,
@@ -264,7 +262,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             embed_type="passage",
             parallel=parallel,
         )
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         vector_field_name = self.get_vector_field_name()
         try:
             collection_info = await self.get_collection(collection_name=collection_name)
