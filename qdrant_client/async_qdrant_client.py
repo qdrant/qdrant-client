@@ -122,7 +122,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self._is_fastembed_installed: Optional[bool] = None
         if self._is_fastembed_installed is None:
             try:
-                from fastembed.embedding import DefaultEmbedding
+                from fastembed import TextEmbedding
 
                 self._is_fastembed_installed = True
             except ImportError:

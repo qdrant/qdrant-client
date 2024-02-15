@@ -122,7 +122,7 @@ class QdrantClient(QdrantFastembedMixin):
         # if fastembed is installed, set to true else False
         if self._is_fastembed_installed is None:
             try:
-                from fastembed.embedding import DefaultEmbedding  # noqa: F401
+                from fastembed import TextEmbedding  # noqa: F401
 
                 self._is_fastembed_installed = True
             except ImportError:

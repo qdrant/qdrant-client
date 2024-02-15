@@ -8,14 +8,12 @@ from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 
 try:
-    from fastembed.embedding import DefaultEmbedding
+    from fastembed import TextEmbedding
 except ImportError:
-    DefaultEmbedding = None
+    TextEmbedding = None
 
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
-    "BAAI/bge-base-en": (768, models.Distance.COSINE),
     "sentence-transformers/all-MiniLM-L6-v2": (384, models.Distance.COSINE),
-    "BAAI/bge-small-en": (384, models.Distance.COSINE),
     "BAAI/bge-small-en-v1.5": (384, models.Distance.COSINE),
     "BAAI/bge-base-en-v1.5": (768, models.Distance.COSINE),
     "intfloat/multilingual-e5-large": (1024, models.Distance.COSINE),
@@ -25,7 +23,7 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
-    embedding_models: Dict[str, "DefaultEmbedding"] = {}
+    embedding_models: Dict[str, "TextEmbedding"] = {}
 
     def __init__(self, **kwargs: Any):
         self.embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
@@ -67,7 +65,7 @@ class QdrantFastembedMixin(QdrantBase):
     @staticmethod
     def _import_fastembed() -> None:
         try:
-            from fastembed.embedding import DefaultEmbedding
+            from fastembed import TextEmbedding  # noqa: F401
         except ImportError:
             # If it's not, ask the user to install it
             raise ImportError(
@@ -92,7 +90,7 @@ class QdrantFastembedMixin(QdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         **kwargs: Any,
-    ) -> "DefaultEmbedding":  # -> Embedding: # noqa: F821
+    ) -> "TextEmbedding":  # -> Embedding: # noqa: F821
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
 
@@ -103,7 +101,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         cls._import_fastembed()
 
-        cls.embedding_models[model_name] = DefaultEmbedding(
+        cls.embedding_models[model_name] = TextEmbedding(
             model_name=model_name,
             max_length=max_length,
             cache_dir=cache_dir,
