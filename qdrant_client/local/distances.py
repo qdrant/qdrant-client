@@ -147,16 +147,12 @@ def calculate_distance_core(
         return calculate_distance(query, vectors, distance_type)
 
 
-def fast_sigmoid(x: np.float32) -> np.float32:
-    if np.isnan(x):
-        # To avoid divisions on NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
-        return x  # NaN
-
-    return x / np.add(1.0, abs(x))
-
-
 def scaled_fast_sigmoid(x: np.float32) -> np.float32:
-    return 0.5 * (np.add(fast_sigmoid(x), 1.0))
+    if np.isfinite(x):
+        return 0.5 * (x / (1.0 + abs(x)) + 1.0)
+    else:
+        # To avoid NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
+        return x
 
 
 def calculate_recommend_best_scores(
@@ -238,9 +234,7 @@ def calculate_context_scores(
         neg = calculate_distance_core(pair.negative, vectors, distance_type)
 
         difference = pos - neg - EPSILON
-        pair_scores = np.fromiter(
-            (fast_sigmoid(xi) for xi in np.minimum(difference, 0.0)), np.float32
-        )
+        pair_scores = np.minimum(difference, 0.0)
         overall_scores += pair_scores
 
     return overall_scores
