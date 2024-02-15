@@ -23,7 +23,7 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
 
 
 class QdrantFastembedMixin(QdrantBase):
-    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
+    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 
     embedding_models: Dict[str, "DefaultEmbedding"] = {}
 
