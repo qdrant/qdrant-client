@@ -904,6 +904,17 @@ class IntegerIndexType(str, Enum):
     INTEGER = "integer"
 
 
+class IntegerRange(BaseModel, extra="forbid"):
+    """
+    Range filter request
+    """
+
+    lt: Optional[int] = Field(default=None, description="point.key &lt; range.lt")
+    gt: Optional[int] = Field(default=None, description="point.key &gt; range.gt")
+    gte: Optional[int] = Field(default=None, description="point.key &gt;= range.gte")
+    lte: Optional[int] = Field(default=None, description="point.key &lt;= range.lte")
+
+
 class IsEmptyCondition(BaseModel, extra="forbid"):
     """
     Select points with empty payload for a specified field
@@ -2304,6 +2315,7 @@ QuantizationConfigDiff = Union[
     Disabled,
 ]
 RangeInterface = Union[
+    IntegerRange,
     Range,
     DatetimeRange,
 ]
@@ -2328,6 +2340,7 @@ SparseIndexType = Union[
     SparseIndexTypeOneOf2,
 ]
 StartFrom = Union[
+    StrictInt,
     StrictFloat,
     datetime,
 ]
