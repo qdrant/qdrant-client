@@ -167,6 +167,31 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_integer_range(cls, model: grpc.IntegerRange) -> rest.IntegerRange:
+        return rest.IntegerRange(
+            gt=model.gt if model.HasField("gt") else None,
+            gte=model.gte if model.HasField("gte") else None,
+            lt=model.lt if model.HasField("lt") else None,
+            lte=model.lte if model.HasField("lte") else None,
+        )
+
+    @classmethod
+    def convert_timestamp(
+        cls, model: grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp
+    ) -> datetime:
+        seconds_with_micros = model.seconds + (model.nanos / 1e9)
+        return datetime.fromtimestamp(seconds_with_micros)
+
+    @classmethod
+    def convert_datetime_range(cls, model: grpc.DatetimeRange) -> rest.DatetimeRange:
+        return rest.DatetimeRange(
+            gt=cls.convert_timestamp(model.gt) if model.HasField("gt") else None,
+            gte=cls.convert_timestamp(model.gte) if model.HasField("gte") else None,
+            lt=cls.convert_timestamp(model.lt) if model.HasField("lt") else None,
+            lte=cls.convert_timestamp(model.lte) if model.HasField("lte") else None,
+        )
+
+    @classmethod
     def convert_geo_radius(cls, model: grpc.GeoRadius) -> rest.GeoRadius:
         return rest.GeoRadius(center=cls.convert_geo_point(model.center), radius=model.radius)
 
@@ -468,7 +493,14 @@ class GrpcToRest:
             cls.convert_geo_radius(model.geo_radius) if model.HasField("geo_radius") else None
         )
         match = cls.convert_match(model.match) if model.HasField("match") else None
-        range_ = cls.convert_range(model.range) if model.HasField("range") else None
+
+        range_: Optional[rest.RangeInterface] = None
+        if model.HasField("range"):
+            range_ = cls.convert_range(model.range)
+        elif model.HasField("integer_range"):
+            range_ = cls.convert_integer_range(model.integer_range)
+        elif model.HasField("datetime_range"):
+            range_ = cls.convert_datetime_range(model.datetime_range)
         values_count = (
             cls.convert_values_count(model.values_count)
             if model.HasField("values_count")
@@ -1327,6 +1359,32 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_integer_range(cls, model: rest.IntegerRange) -> grpc.IntegerRange:
+        return grpc.IntegerRange(
+            lt=model.lt,
+            gt=model.gt,
+            gte=model.gte,
+            lte=model.lte,
+        )
+
+    @classmethod
+    def convert_datetime(
+        cls, model: datetime
+    ) -> grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp:
+        seconds = model.timestamp() // 1
+        nanos = (model.timestamp() % 1) * 1e9
+        return grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp(seconds, nanos)
+
+    @classmethod
+    def convert_datetime_range(cls, model: rest.DatetimeRange) -> grpc.DatetimeRange:
+        return grpc.DatetimeRange(
+            lt=cls.convert_datetime(model.lt) if model.lt is not None else None,
+            gt=cls.convert_datetime(model.gt) if model.gt is not None else None,
+            gte=cls.convert_datetime(model.gte) if model.gte is not None else None,
+            lte=cls.convert_datetime(model.lte) if model.lte is not None else None,
+        )
+
+    @classmethod
     def convert_geo_radius(cls, model: rest.GeoRadius) -> grpc.GeoRadius:
         return grpc.GeoRadius(center=cls.convert_geo_point(model.center), radius=model.radius)
 
@@ -1529,7 +1587,16 @@ class RestToGrpc:
         if model.match:
             return grpc.FieldCondition(key=model.key, match=cls.convert_match(model.match))
         if model.range:
-            return grpc.FieldCondition(key=model.key, range=cls.convert_range(model.range))
+            if isinstance(model.range, rest.Range):
+                return grpc.FieldCondition(key=model.key, range=cls.convert_range(model.range))
+            if isinstance(model.range, rest.IntegerRange):
+                return grpc.FieldCondition(
+                    key=model.key, integer_range=cls.convert_integer_range(model.range)
+                )
+            if isinstance(model.range, rest.DatetimeRange):
+                return grpc.FieldCondition(
+                    key=model.key, datetime_range=cls.convert_datetime_range(model.range)
+                )
         if model.geo_bounding_box:
             return grpc.FieldCondition(
                 key=model.key,
@@ -1853,10 +1920,12 @@ class RestToGrpc:
 
     @classmethod
     def convert_start_from(cls, model: rest.StartFrom) -> grpc.StartFrom:
+        if isinstance(model, int):
+            return grpc.StartFrom(integer=model)
         if isinstance(model, float):
             return grpc.StartFrom(float=model)
         if isinstance(model, datetime):
-            dt = model.isoformat()
+            dt = model.isoformat() + "Z"
             return grpc.StartFrom(datetime=dt)
 
         raise ValueError(f"invalid StartFrom model: {model}")  # pragma: no cover

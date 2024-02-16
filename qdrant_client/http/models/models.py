@@ -2315,8 +2315,8 @@ QuantizationConfigDiff = Union[
     Disabled,
 ]
 RangeInterface = Union[
-    IntegerRange,
     Range,
+    IntegerRange,
     DatetimeRange,
 ]
 ReadConsistency = Union[
