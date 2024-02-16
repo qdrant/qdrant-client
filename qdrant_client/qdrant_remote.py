@@ -52,14 +52,12 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         host: Optional[str] = None,
         grpc_options: Optional[Dict[str, Any]] = None,
-        grpc_compression: Optional[grpc.Compression] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
         self._grpc_options = grpc_options
-        self._grpc_compression = grpc_compression
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
 
@@ -127,6 +125,14 @@ class QdrantRemote(QdrantBase):
 
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
+
+        # GRPC Channel-Level Compression
+        grpc_compression = kwargs.pop("grpc_compression", None)
+        if grpc_compression is not None and not isinstance(grpc_compression, grpc.Compression):
+            raise TypeError(
+                f"Expected 'grpc_compression' to be of type grpc.Compression or None, but got {type(grpc_compression).__name__}"
+            )
+        self._grpc_compression = grpc_compression
 
         address = f"{self._host}:{self._port}" if self._port is not None else self._host
         self.rest_uri = f"{self._scheme}://{address}{self._prefix}"

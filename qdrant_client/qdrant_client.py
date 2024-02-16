@@ -77,7 +77,6 @@ class QdrantClient(QdrantFastembedMixin):
         path: Optional[str] = None,
         force_disable_check_same_thread: bool = False,
         grpc_options: Optional[Dict[str, Any]] = None,
-        grpc_compression: Optional[grpc.Compression] = None,
         **kwargs: Any,
     ):
         super().__init__(
@@ -91,10 +90,6 @@ class QdrantClient(QdrantFastembedMixin):
         if sum([param is not None for param in (location, url, host, path)]) > 1:
             raise ValueError(
                 "Only one of <location>, <url>, <host> or <path> should be specified."
-            )
-        if grpc_compression is not None and not isinstance(grpc_compression, grpc.Compression):
-            raise TypeError(
-                f"Expected 'grpc_compression' to be of type grpc.Compression or None, but got {type(grpc_compression).__name__}"
             )
 
         if location == ":memory:":
@@ -121,7 +116,6 @@ class QdrantClient(QdrantFastembedMixin):
                 timeout=timeout,
                 host=host,
                 grpc_options=grpc_options,
-                grpc_compression=grpc_compression,
                 **kwargs,
             )
         self._is_fastembed_installed: Optional[bool] = None
