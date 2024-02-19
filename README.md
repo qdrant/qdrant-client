@@ -176,6 +176,28 @@ client.upsert(
 )
 ```
 
+To optimize performance, Qdrant supports batch loading of points. I.e., you can load several points into the service in one API call.
+
+Create points with batch:
+
+```python
+import numpy as np
+from qdrant_client.models import Batch
+
+vectors = np.random.rand(100, 100)
+client.upsert(
+    collection_name="my_collection",
+    points=Batch(
+        ids=list(range(100)),
+        payloads=[
+            {"color": "red", "rand_number": idx % 10}
+            for idx in range(100)
+        ],
+        vectors=vectors.tolist(),
+    ),
+)
+```
+
 Search for similar vectors
 
 ```python
