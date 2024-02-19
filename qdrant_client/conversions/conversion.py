@@ -489,9 +489,11 @@ class GrpcToRest:
             if model.HasField("geo_bounding_box")
             else None
         )
+
         geo_radius = (
             cls.convert_geo_radius(model.geo_radius) if model.HasField("geo_radius") else None
         )
+
         match = cls.convert_match(model.match) if model.HasField("match") else None
 
         range_: Optional[rest.RangeInterface] = None
@@ -501,11 +503,13 @@ class GrpcToRest:
             range_ = cls.convert_integer_range(model.integer_range)
         elif model.HasField("datetime_range"):
             range_ = cls.convert_datetime_range(model.datetime_range)
+
         values_count = (
             cls.convert_values_count(model.values_count)
             if model.HasField("values_count")
             else None
         )
+
         return rest.FieldCondition(
             key=model.key,
             geo_bounding_box=geo_bounding_box,
@@ -1371,9 +1375,11 @@ class RestToGrpc:
     def convert_datetime(
         cls, model: datetime
     ) -> grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp:
-        seconds = model.timestamp() // 1
-        nanos = (model.timestamp() % 1) * 1e9
-        return grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp(seconds, nanos)
+        seconds = int(model.timestamp())
+        # Avoid precision loss by converting to string and extracting microseconds
+        # Microseconds is the smallest unit of time in Qdrant
+        nanos = int(str(model.timestamp()).split(".")[1][:6]) * 1000
+        return grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp(seconds=seconds, nanos=nanos)
 
     @classmethod
     def convert_datetime_range(cls, model: rest.DatetimeRange) -> grpc.DatetimeRange:

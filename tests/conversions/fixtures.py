@@ -54,7 +54,28 @@ range_ = grpc.Range(
     gte=4.0,
 )
 
+integer_range = grpc.IntegerRange(
+    lt=1,
+    lte=2,
+    gt=3,
+    gte=4,
+)
+
+timestamp = Timestamp(seconds=12345678, nanos=123456000)
+
+datetime_range = grpc.DatetimeRange(
+    lt=timestamp,
+    lte=timestamp,
+    gt=timestamp,
+    gte=timestamp,
+)
+
+
 field_condition_range = grpc.FieldCondition(key="match_field", range=range_)
+field_condition_integer_range = grpc.FieldCondition(key="match_field", integer_range=integer_range)
+field_condition_datetime_range = grpc.FieldCondition(
+    key="match_field", datetime_range=datetime_range
+)
 
 geo_point = grpc.GeoPoint(lon=12.123, lat=78.212)
 
@@ -847,10 +868,15 @@ fixtures = {
     "FieldCondition": [
         field_condition_match,
         field_condition_range,
+        field_condition_integer_range,
+        field_condition_datetime_range,
         field_condition_geo_radius,
         field_condition_geo_bounding_box,
         field_condition_values_count,
     ],
+    "Range": [range_],
+    "IntegerRange": [integer_range],
+    "DatetimeRange": [datetime_range],
     "GeoRadius": [geo_radius],
     "UpdateResult": [update_result, update_result_completed],
     "IsEmptyCondition": [is_empty],
