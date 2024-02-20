@@ -564,13 +564,13 @@ tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipyth
 
 [[package]]
 name = "fastembed"
-version = "0.2.1"
+version = "0.2.2"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 optional = true
 python-versions = ">=3.8.0,<3.13"
 files = [
-    {file = "fastembed-0.2.1-py3-none-any.whl", hash = "sha256:7e3d71e449a54e1c47bd502246ee9367259002691caba5d3c25b9ebb47d1f621"},
-    {file = "fastembed-0.2.1.tar.gz", hash = "sha256:694ee6db284e931382cfa26cd98a80ace37921fc1a8183cf00cb7b8eb06d52bd"},
+    {file = "fastembed-0.2.2-py3-none-any.whl", hash = "sha256:06681dbbbe49211e82c3a7314253937ba91ef090b61104484b0b4b15a274c70b"},
+    {file = "fastembed-0.2.2.tar.gz", hash = "sha256:2430bcd0022d50f858a9d5ff13d66a47c6799f48dae47a41cb8573c67d9388bd"},
 ]
 
 [package.dependencies]
@@ -3053,4 +3053,4 @@ fastembed = ["fastembed"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8"
-content-hash = "df63a828efe81d064d9ba7a7c4d9775d868146fa163f50c7616b7d31e2244f77"
+content-hash = "2134572fdebcad549e86bf2fa23ad8a548462e3ea80c8606ad98a462debb03cb"
