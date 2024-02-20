@@ -43,7 +43,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         super().__init__(**kwargs)
 
     @property
-    async def embedding_model_name(self) -> str:
+    def embedding_model_name(self) -> str:
         if self._embedding_model_name is None:
             self._embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
             warnings.warn(
