@@ -1,4 +1,5 @@
 import uuid
+import warnings
 from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
@@ -12,27 +13,48 @@ try:
 except ImportError:
     TextEmbedding = None
 
+
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
+    "BAAI/bge-base-en": (768, models.Distance.COSINE),
     "sentence-transformers/all-MiniLM-L6-v2": (384, models.Distance.COSINE),
+    "BAAI/bge-small-en": (384, models.Distance.COSINE),
     "BAAI/bge-small-en-v1.5": (384, models.Distance.COSINE),
     "BAAI/bge-base-en-v1.5": (768, models.Distance.COSINE),
     "intfloat/multilingual-e5-large": (1024, models.Distance.COSINE),
 }
 
+_DEPRECATED_MODELS = {
+    "BAAI/bge-base-en",
+    "BAAI/bge-small-en",
+}
+
 
 class QdrantFastembedMixin(QdrantBase):
-    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
+    DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
 
     embedding_models: Dict[str, "TextEmbedding"] = {}
 
     def __init__(self, **kwargs: Any):
-        self.embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
+        self._embedding_model_name: Optional[str] = None
         super().__init__(**kwargs)
+
+    @property
+    def embedding_model_name(self) -> str:
+        if self._embedding_model_name is None:
+            self._embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
+            warnings.warn(
+                f"Usage of the default model <{self.DEFAULT_EMBEDDING_MODEL}> is deprecated. "
+                f"Default model will be set to <BAAI/bge-small-en-v1.5> in `qdrant-client==1.9.0`"
+                "Please specify the model explicitly with `set_model` method.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return self._embedding_model_name
 
     def set_model(
         self,
         embedding_model_name: str,
-        max_length: int = 512,
+        max_length: Optional[int] = None,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         **kwargs: Any,
@@ -41,7 +63,7 @@ class QdrantFastembedMixin(QdrantBase):
         Set embedding model to use for encoding documents and queries.
         Args:
             embedding_model_name: One of the supported embedding models. See `SUPPORTED_EMBEDDING_MODELS` for details.
-            max_length (int, optional): The maximum number of tokens. Defaults to 512. Unknown behavior for values > 512.
+            max_length (int, optional): Deprecated. Defaults to None.
             cache_dir (str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
@@ -53,14 +75,29 @@ class QdrantFastembedMixin(QdrantBase):
         Returns:
             None
         """
+
+        if embedding_model_name in _DEPRECATED_MODELS:
+            warnings.warn(
+                f"Usage of {embedding_model_name} is deprecated. It will be removed in `qdrant-client==1.9.0`",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        if max_length is not None:
+            warnings.warn(
+                "max_length parameter is deprecated and will be removed in the future. "
+                "It's not used by fastembed models.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         self._get_or_init_model(
             model_name=embedding_model_name,
-            max_length=max_length,
             cache_dir=cache_dir,
             threads=threads,
             **kwargs,
         )
-        self.embedding_model_name = embedding_model_name
+        self._embedding_model_name = embedding_model_name
 
     @staticmethod
     def _import_fastembed() -> None:
@@ -86,11 +123,10 @@ class QdrantFastembedMixin(QdrantBase):
     def _get_or_init_model(
         cls,
         model_name: str,
-        max_length: int = 512,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         **kwargs: Any,
-    ) -> "TextEmbedding":  # -> Embedding: # noqa: F821
+    ) -> "TextEmbedding":
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
 
@@ -103,7 +139,6 @@ class QdrantFastembedMixin(QdrantBase):
 
         cls.embedding_models[model_name] = TextEmbedding(
             model_name=model_name,
-            max_length=max_length,
             cache_dir=cache_dir,
             threads=threads,
             **kwargs,
