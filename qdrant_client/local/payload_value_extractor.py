@@ -1,7 +1,7 @@
 from typing import Any, List, Optional
 
 
-def value_by_key(payload: dict[str, Any], key: str, flat: bool = True) -> Optional[List[Any]]:
+def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[Any]]:
     """
     Get value from payload by key.
     Args:
