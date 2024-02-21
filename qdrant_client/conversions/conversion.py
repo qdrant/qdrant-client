@@ -167,15 +167,6 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_integer_range(cls, model: grpc.IntegerRange) -> rest.IntegerRange:
-        return rest.IntegerRange(
-            gt=model.gt if model.HasField("gt") else None,
-            gte=model.gte if model.HasField("gte") else None,
-            lt=model.lt if model.HasField("lt") else None,
-            lte=model.lte if model.HasField("lte") else None,
-        )
-
-    @classmethod
     def convert_timestamp(
         cls, model: grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp
     ) -> datetime:
@@ -499,8 +490,6 @@ class GrpcToRest:
         range_: Optional[rest.RangeInterface] = None
         if model.HasField("range"):
             range_ = cls.convert_range(model.range)
-        elif model.HasField("integer_range"):
-            range_ = cls.convert_integer_range(model.integer_range)
         elif model.HasField("datetime_range"):
             range_ = cls.convert_datetime_range(model.datetime_range)
 
@@ -1363,15 +1352,6 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_integer_range(cls, model: rest.IntegerRange) -> grpc.IntegerRange:
-        return grpc.IntegerRange(
-            lt=model.lt,
-            gt=model.gt,
-            gte=model.gte,
-            lte=model.lte,
-        )
-
-    @classmethod
     def convert_datetime(
         cls, model: datetime
     ) -> grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp:
@@ -1595,10 +1575,6 @@ class RestToGrpc:
         if model.range:
             if isinstance(model.range, rest.Range):
                 return grpc.FieldCondition(key=model.key, range=cls.convert_range(model.range))
-            if isinstance(model.range, rest.IntegerRange):
-                return grpc.FieldCondition(
-                    key=model.key, integer_range=cls.convert_integer_range(model.range)
-                )
             if isinstance(model.range, rest.DatetimeRange):
                 return grpc.FieldCondition(
                     key=model.key, datetime_range=cls.convert_datetime_range(model.range)

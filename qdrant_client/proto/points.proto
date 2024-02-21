@@ -119,6 +119,7 @@ message SetPayloadPoints {
   optional PointsSelector points_selector = 5; // Affected points
   optional WriteOrdering ordering = 6; // Write ordering guarantees
   optional ShardKeySelector shard_key_selector = 7; // Option for custom sharding to specify used shard keys
+  optional string key = 8; // Option for indicate property of payload
 }
 
 message DeletePayloadPoints {
@@ -465,6 +466,7 @@ message PointsUpdateOperation {
       map<string, Value> payload = 1;
       optional PointsSelector points_selector = 2; // Affected points
       optional ShardKeySelector shard_key_selector = 3; // Option for custom sharding to specify used shard keys
+      optional string key = 4; // Option for indicate property of payload
   }
   message DeletePayload {
       repeated string keys = 1;
@@ -691,7 +693,6 @@ message FieldCondition {
   ValuesCount values_count = 6; // Check number of values for a specific field
   GeoPolygon geo_polygon = 7; // Check if geo point is within a given polygon
   DatetimeRange datetime_range = 8; // Check if datetime is within a given range
-  IntegerRange integer_range = 9; // Check if integer is within a given range
 }
 
 message Match {
@@ -720,13 +721,6 @@ message Range {
   optional double gt = 2;
   optional double gte = 3;
   optional double lte = 4;
-}
-
-message IntegerRange {
-  optional int64 lt = 1;
-  optional int64 gt = 2;
-  optional int64 gte = 3;
-  optional int64 lte = 4;
 }
 
 message DatetimeRange {
