@@ -23,14 +23,14 @@ try:
     from fastembed import TextEmbedding
 except ImportError:
     TextEmbedding = None
-SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = {
-    "BAAI/bge-base-en": (768, models.Distance.COSINE),
-    "sentence-transformers/all-MiniLM-L6-v2": (384, models.Distance.COSINE),
-    "BAAI/bge-small-en": (384, models.Distance.COSINE),
-    "BAAI/bge-small-en-v1.5": (384, models.Distance.COSINE),
-    "BAAI/bge-base-en-v1.5": (768, models.Distance.COSINE),
-    "intfloat/multilingual-e5-large": (1024, models.Distance.COSINE),
-}
+SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+    {
+        model["model"]: (model["dim"], models.Distance.COSINE)
+        for model in TextEmbedding.list_supported_models()
+    }
+    if TextEmbedding
+    else {}
+)
 _DEPRECATED_MODELS = {"BAAI/bge-base-en", "BAAI/bge-small-en"}
 
 
