@@ -1153,8 +1153,8 @@ class QdrantRemote(QdrantBase):
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
-            if isinstance(order_by, models.OrderBy):
-                order_by = RestToGrpc.convert_order_by(order_by)
+            if isinstance(order_by, get_args_subscribed(models.OrderByInterface)):
+                order_by = RestToGrpc.convert_order_by_interface(order_by)
 
             res: grpc.ScrollResponse = self.grpc_points.Scroll(
                 grpc.ScrollPoints(

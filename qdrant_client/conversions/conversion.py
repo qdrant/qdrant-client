@@ -1968,6 +1968,17 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_order_by_interface(
+        cls, model: rest.OrderByInterface
+    ) -> grpc.OrderBy:  # pragma: no cover
+        # using no cover because there is no OrderByInterface in grpc
+        if isinstance(model, str):
+            return grpc.OrderBy(key=model)
+        if isinstance(model, rest.OrderBy):
+            return cls.convert_order_by(model)
+        raise ValueError(f"invalid OrderByInterface model: {model}")
+
+    @classmethod
     def convert_record(cls, model: rest.Record) -> grpc.RetrievedPoint:
         return grpc.RetrievedPoint(
             id=cls.convert_extended_point_id(model.id),

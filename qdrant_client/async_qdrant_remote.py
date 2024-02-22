@@ -969,8 +969,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
-            if isinstance(order_by, models.OrderBy):
-                order_by = RestToGrpc.convert_order_by(order_by)
+            if isinstance(order_by, get_args_subscribed(models.OrderByInterface)):
+                order_by = RestToGrpc.convert_order_by_interface(order_by)
             res: grpc.ScrollResponse = await self.grpc_points.Scroll(
                 grpc.ScrollPoints(
                     collection_name=collection_name,

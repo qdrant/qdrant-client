@@ -1019,6 +1019,8 @@ class LocalCollection:
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         if isinstance(order_by, grpc.OrderBy):
             order_by = GrpcToRest.convert_order_by(order_by)
+        if isinstance(order_by, str):
+            order_by = models.OrderBy(key=order_by)
 
         value_and_ids: List[Tuple[OrderingValue, Tuple[ExtendedPointId, int]]] = []
 
