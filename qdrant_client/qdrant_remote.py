@@ -1183,6 +1183,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(scroll_filter, grpc.Filter):
                 scroll_filter = GrpcToRest.convert_filter(model=scroll_filter)
 
+            if isinstance(order_by, grpc.OrderBy):
+                order_by = GrpcToRest.convert_order_by(order_by)
+
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 

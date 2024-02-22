@@ -843,6 +843,29 @@ delete_vectors_operation_2 = grpc.PointsUpdateOperation(
 sharding_method_1 = grpc.Auto
 sharding_method_2 = grpc.Custom
 
+float_start_from = grpc.StartFrom(
+    float=1.0,
+)
+
+integer_start_from = grpc.StartFrom(
+    integer=1,
+)
+
+timestamp_start_from = grpc.StartFrom(
+    timestamp=timestamp,
+)
+
+datetime_start_from = grpc.StartFrom(
+    datetime=datetime.datetime.now().isoformat(),
+)
+
+
+order_by = grpc.OrderBy(
+    key="my_field",
+    direction=grpc.Desc,
+    start_from=float_start_from,
+)
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -957,6 +980,8 @@ fixtures = {
     "SparseVectorConfig": [sparse_vector_config],
     "ShardKeySelector": [shard_key_selector, shard_key_selector_2],
     "ShardingMethod": [sharding_method_1, sharding_method_2],
+    "OrderBy": [order_by],
+    "StartFrom": [float_start_from, integer_start_from, datetime_start_from, timestamp_start_from],
 }
 
 

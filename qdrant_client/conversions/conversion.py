@@ -1319,6 +1319,38 @@ class GrpcToRest:
             return rest.ShardingMethod.CUSTOM
         raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover
 
+    @classmethod
+    def convert_direction(cls, model: grpc.Direction) -> rest.Direction:
+        if model == grpc.Asc:
+            return rest.Direction.ASC
+        if model == grpc.Desc:
+            return rest.Direction.DESC
+        raise ValueError(f"invalid Direction model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_start_from(cls, model: grpc.StartFrom) -> rest.StartFrom:
+        if model.HasField("float"):
+            return model.float
+        if model.HasField("integer"):
+            return model.integer
+        if model.HasField("timestamp"):
+            dt = cls.convert_timestamp(model.timestamp)
+            return dt
+        if model.HasField("datetime"):
+            return model.datetime
+
+    @classmethod
+    def convert_order_by(cls, model: grpc.OrderBy) -> rest.OrderBy:
+        return rest.OrderBy(
+            key=model.key,
+            direction=cls.convert_direction(model.direction)
+            if model.HasField("direction")
+            else None,
+            start_from=cls.convert_start_from(model.start_from)
+            if model.HasField("start_from")
+            else None,
+        )
+
 
 # ----------------------------------------
 #
@@ -1907,8 +1939,11 @@ class RestToGrpc:
         if isinstance(model, float):
             return grpc.StartFrom(float=model)
         if isinstance(model, datetime):
-            dt = model.isoformat() + "Z"
-            return grpc.StartFrom(datetime=dt)
+            ts = cls.convert_datetime(model)
+            return grpc.StartFrom(timestamp=ts)
+        if isinstance(model, str):
+            # Pydantic also accepts strings as datetime if they are correctly formatted
+            return grpc.StartFrom(datetime=model)
 
         raise ValueError(f"invalid StartFrom model: {model}")  # pragma: no cover
 

@@ -1017,6 +1017,9 @@ class LocalCollection:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+        if isinstance(order_by, grpc.OrderBy):
+            order_by = GrpcToRest.convert_order_by(order_by)
+
         value_and_ids: List[Tuple[OrderingValue, Tuple[ExtendedPointId, int]]] = []
 
         for id in self.ids.items():
