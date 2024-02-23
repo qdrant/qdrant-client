@@ -2327,7 +2327,6 @@ SparseIndexType = Union[
     SparseIndexTypeOneOf2,
 ]
 StartFrom = Union[
-    StrictInt,
     StrictFloat,
     datetime,
 ]

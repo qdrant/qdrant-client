@@ -1,26 +1,11 @@
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, get_args
 
-from dateutil.parser import parse
+from qdrant_client.local.datetime import parse
 
 MICROS_PER_SECOND = 1_000_000
 
-
-class OrderingValue:
-    def __init__(self, value: Union[int, float]):
-        self.value = value
-
-    def __lt__(self, other: "OrderingValue") -> bool:
-        return self.value < other.value
-
-    def __gt__(self, other: "OrderingValue") -> bool:
-        return self.value > other.value
-
-    def __ge__(self, other: "OrderingValue") -> bool:
-        return self.value >= other.value
-
-    def __le__(self, other: "OrderingValue") -> bool:
-        return self.value <= other.value
+OrderingValue = Union[int, float]
 
 
 def datetime_to_microseconds(dt: datetime) -> int:
@@ -31,22 +16,15 @@ def to_ordering_value(value: Optional[Any]) -> Optional[OrderingValue]:
     if value is None:
         return None
 
-    if isinstance(value, (int, float)):
-        return OrderingValue(value)
+    if isinstance(value, get_args(OrderingValue)):
+        return value
 
     if isinstance(value, datetime):
-        return OrderingValue(datetime_to_microseconds(value))
+        return datetime_to_microseconds(value)
 
     if isinstance(value, str):
-        # dateutil parser also parses "now", but qdrant core does not
-        if value == "now":
-            return None
-
-        try:
-            dt = parse(value)
-            return OrderingValue(datetime_to_microseconds(dt))
-        except:
-            # ignore unparsable datetime
-            pass
+        dt = parse(value)
+        if dt is not None:
+            return datetime_to_microseconds(dt)
 
     return None
