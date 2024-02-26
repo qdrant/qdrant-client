@@ -1,9 +1,8 @@
 import pytest
-from grpc import Compression as GRPCCompression
+from grpc import Compression
 
 from qdrant_client import QdrantClient
 from qdrant_client.async_qdrant_client import AsyncQdrantClient
-from qdrant_client.grpc import Compression
 from tests.congruence_tests.test_common import generate_fixtures, init_client
 
 
@@ -49,20 +48,12 @@ def test_compression_none():
 def test_compression_deflate():
     """
     Deflate algorithm is not supported by RUST GRPC Server
-    grpc.Compression provides Deflate option
-    qdrant.grpc.Compression is tailored to exclude Deflate option
-    Trying Deflate compression should raise particular errors
+    Trying Deflate compression should raise ValueError
     """
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(ValueError):
         # creates a grpc client with invalid enum attribute
         client = QdrantClient(prefer_grpc=True, grpc_compression=Compression.Deflate, timeout=30)
-
-    with pytest.raises(TypeError):
-        # creates a grpc client with grpc enum not that is excluded in qdrant.grpc enum
-        client = QdrantClient(
-            prefer_grpc=True, grpc_compression=GRPCCompression.Deflate, timeout=30
-        )
 
     # Anticipated Errors were successfully raised
 
