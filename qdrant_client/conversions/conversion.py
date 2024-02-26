@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass
 
-from qdrant_client import grpc as grpc
+from qdrant_client import grpc
 from qdrant_client.grpc import ListValue, NullValue, SparseIndices, Struct, Value
 from qdrant_client.http.models import SparseVector
 from qdrant_client.http.models import models as rest
@@ -167,9 +167,8 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_timestamp(
-        cls, model: grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp
-    ) -> datetime:
+    def convert_timestamp(cls, model: Timestamp) -> datetime:
+        breakpoint()
         seconds_with_micros = model.seconds + (model.nanos / 1e9)
         return datetime.fromtimestamp(seconds_with_micros)
 
@@ -1384,14 +1383,13 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_datetime(
-        cls, model: datetime
-    ) -> grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp:
+    def convert_datetime(cls, model: datetime) -> Timestamp:
+        breakpoint()
         seconds = int(model.timestamp())
         # Avoid precision loss by converting to string and extracting microseconds
         # Microseconds is the smallest unit of time in Qdrant
         nanos = int(str(model.timestamp()).split(".")[1][:6]) * 1000
-        return grpc.google_dot_protobuf_dot_timestamp__pb2.Timestamp(seconds=seconds, nanos=nanos)
+        return Timestamp(seconds=seconds, nanos=nanos)
 
     @classmethod
     def convert_datetime_range(cls, model: rest.DatetimeRange) -> grpc.DatetimeRange:

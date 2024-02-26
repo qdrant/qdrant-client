@@ -899,7 +899,6 @@ fixtures = {
     "GeoPoint": [geo_point],
     "WalConfigDiff": [wal_config],
     "HnswConfigDiff": [hnsw_config, hnsw_config_2],
-    "Range": [range_],
     "UpdateCollection": [update_collection, update_collection_2, update_collection_3],
     "Condition": [
         condition_field_match,

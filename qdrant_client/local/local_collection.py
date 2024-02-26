@@ -1022,11 +1022,11 @@ class LocalCollection:
         if isinstance(order_by, str):
             order_by = models.OrderBy(key=order_by)
 
-        value_and_ids: List[Tuple[OrderingValue, Tuple[ExtendedPointId, int]]] = []
+        value_and_ids: List[Tuple[OrderingValue, ExtendedPointId, int]] = []
 
-        for id in self.ids.items():
+        for external_id, internal_id in self.ids.items():
             # get order-by values for id
-            payload_values = value_by_key(self.payload[id[1]], order_by.key)
+            payload_values = value_by_key(self.payload[internal_id], order_by.key)
             if payload_values is None:
                 continue
 
@@ -1034,7 +1034,7 @@ class LocalCollection:
             for value in payload_values:
                 ordering_value = to_ordering_value(value)
                 if ordering_value is not None:
-                    value_and_ids.append((ordering_value, id))
+                    value_and_ids.append((ordering_value, external_id, internal_id))
 
         direction = order_by.direction if order_by.direction is not None else models.Direction.ASC
 
@@ -1055,7 +1055,7 @@ class LocalCollection:
 
         start_from = to_ordering_value(order_by.start_from)
 
-        for value, (external_id, internal_id) in value_and_ids:
+        for value, external_id, internal_id in value_and_ids:
             if start_from is not None:
                 if direction == models.Direction.ASC:
                     if value < start_from:

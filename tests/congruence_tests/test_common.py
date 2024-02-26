@@ -229,7 +229,7 @@ def compare_client_results(
             assert offset1 == offset2, f"offset1 = {offset1}, offset2 = {offset2}"
 
     if isinstance(res1, list):
-        if kwargs.get("is_context_search") == True:
+        if kwargs.get("is_context_search") is True:
             # context search can have many points with the same 0.0 score
             sorted_1 = sorted(res1, key=lambda x: (x.id))
             sorted_2 = sorted(res2, key=lambda x: (x.id))

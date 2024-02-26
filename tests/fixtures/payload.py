@@ -1,6 +1,7 @@
 import random
 import uuid
 from datetime import datetime, timedelta
+from typing import Any, Dict
 
 random_words = [
     "cat",
@@ -167,7 +168,7 @@ def random_city():
     return {"name": name, "geo": geo_points[name]}
 
 
-def one_random_payload_please(idx):
+def one_random_payload_please(idx: int) -> Dict[str, Any]:
     payload = {
         "id": idx + 100,
         "id_str": [str(random.randint(1, 30)).zfill(2) for _ in range(random.randint(0, 5))],
@@ -206,6 +207,6 @@ def one_random_payload_please(idx):
     return payload
 
 
-def random_payload(num_vectors):
+def random_payload(num_vectors: int):
     for i in range(num_vectors):
         yield one_random_payload_please(i)
