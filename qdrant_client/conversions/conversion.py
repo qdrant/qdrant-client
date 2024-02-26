@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, get_args
 
 from google.protobuf.json_format import MessageToDict
@@ -168,8 +168,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_timestamp(cls, model: Timestamp) -> datetime:
-        seconds_with_micros = model.seconds + (model.nanos / 1e9)
-        return datetime.fromtimestamp(seconds_with_micros)
+        return model.ToDatetime(tzinfo=timezone.utc)
 
     @classmethod
     def convert_datetime_range(cls, model: grpc.DatetimeRange) -> rest.DatetimeRange:
@@ -1383,11 +1382,9 @@ class RestToGrpc:
 
     @classmethod
     def convert_datetime(cls, model: datetime) -> Timestamp:
-        seconds = int(model.timestamp())
-        # Avoid precision loss by converting to string and extracting microseconds
-        # Microseconds is the smallest unit of time in Qdrant
-        nanos = int(str(model.timestamp()).split(".")[1][:6]) * 1000
-        return Timestamp(seconds=seconds, nanos=nanos)
+        ts = Timestamp()
+        ts.FromDatetime(model)
+        return ts
 
     @classmethod
     def convert_datetime_range(cls, model: rest.DatetimeRange) -> grpc.DatetimeRange:
@@ -1936,7 +1933,7 @@ class RestToGrpc:
             return grpc.StartFrom(float=model)
         if isinstance(model, datetime):
             ts = cls.convert_datetime(model)
-            return grpc.StartFrom(datetime=model.isoformat())
+            return grpc.StartFrom(timestamp=cls.convert_datetime(model))
         if isinstance(model, str):
             # Pydantic also accepts strings as datetime if they are correctly formatted
             return grpc.StartFrom(datetime=model)

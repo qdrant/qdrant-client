@@ -149,13 +149,13 @@ geo_points = {
 
 
 start_datetime = datetime(2000, 1, 1)
-end_datetime = datetime(2000, 12, 31)
+end_datetime = datetime(2001, 1, 31)
 
 
 def random_datetime() -> datetime:
     return start_datetime + timedelta(
         seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
-        milliseconds=random.randint(0, 999),
+        microseconds=random.randint(0, 999999),
     )
 
 

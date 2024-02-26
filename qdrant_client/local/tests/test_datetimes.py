@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 from qdrant_client.local.datetime import parse
 
 
@@ -31,3 +32,23 @@ from qdrant_client.local.datetime import parse
 )
 def test_parse_dates(date_str: str, expected: datetime):
     assert parse(date_str) == expected
+
+
+@pytest.mark.parametrize(
+    "dt",
+    [
+        datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+        datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(hours=5))),
+        datetime(2021, 1, 1, 0, 0, 0),
+        datetime.utcnow(),
+        datetime.now(),
+    ],
+)
+def test_datetime_to_timestamp(dt: datetime):
+    rest_to_grpc = RestToGrpc.convert_datetime(dt)
+    grpc_to_rest = GrpcToRest.convert_timestamp(rest_to_grpc)
+
+    print(f"dt: {dt}, rest_to_grpc: {rest_to_grpc}, grpc_to_rest: {grpc_to_rest}")
+    assert (
+        dt.utctimetuple() == grpc_to_rest.utctimetuple()
+    ), f"Failed for {dt}, should be equal to {grpc_to_rest}"

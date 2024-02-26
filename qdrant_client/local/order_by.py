@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional, Union, get_args
 
 from qdrant_client.local.datetime import parse
@@ -9,6 +9,9 @@ OrderingValue = Union[int, float]
 
 
 def datetime_to_microseconds(dt: datetime) -> int:
+    if dt.tzinfo is None:
+        # Assume UTC if no timezone is provided
+        dt.replace(tzinfo=timezone.utc)
     return int(dt.timestamp() * MICROS_PER_SECOND)
 
 
