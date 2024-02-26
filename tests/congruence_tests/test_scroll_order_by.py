@@ -20,13 +20,15 @@ def scroll_all_with_key(client: QdrantBase, key: str) -> List[models.Record]:
     last_value_ids = []
 
     while True:
-        records, _next_page = client.scroll(
+        records, next_page = client.scroll(
             collection_name=COLLECTION_NAME,
             limit=20,
             order_by=models.OrderBy(**{"key": key, "start_from": last_seen_value}),
             scroll_filter=models.Filter(**{"must_not": [{"has_id": last_value_ids}]}),
             with_payload=True,
         )
+
+        assert next_page is None
 
         if len(records) == 0:
             break
@@ -42,7 +44,34 @@ def scroll_all_with_key(client: QdrantBase, key: str) -> List[models.Record]:
 
         all_records.extend(records)
 
-    return all_records
+    # order_by does not guarantee secondary ordering by id,
+    # so let's sort all the consecutive same-value records by ID to be able to compare results
+    return subsorted_by_id(all_records, key)
+
+
+def subsorted_by_id(all_records: List[models.Record], key: str) -> List[models.Record]:
+    resorted_records = []
+    same_value_batch = []
+    same_value = None
+
+    for record in all_records:
+        if same_value is None:
+            same_value = record.payload[key]
+        if record.payload[key] != same_value:
+            resorted_records.extend(sorted(same_value_batch, key=lambda r: r.id))
+            same_value_batch = []
+            same_value = record.payload[key]
+        same_value_batch.append(record)
+
+    resorted_records.extend(sorted(same_value_batch, key=lambda r: r.id))
+
+    assert len(resorted_records) == len(all_records)
+
+    return resorted_records
+
+
+def scroll_all_integers(client: QdrantBase) -> List[models.Record]:
+    return scroll_all_with_key(client, "rand_digit")
 
 
 def scroll_all_floats(client: QdrantBase) -> List[models.Record]:
@@ -62,6 +91,9 @@ def test_simple_scroll() -> None:
     http_client = init_remote()
     init_client(http_client, fixture_points)
     http_client.create_payload_index(
+        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+    )
+    http_client.create_payload_index(
         COLLECTION_NAME, "rand_number", models.PayloadSchemaType.FLOAT, wait=True
     )
     http_client.create_payload_index(
@@ -69,6 +101,10 @@ def test_simple_scroll() -> None:
     )
 
     grpc_client = init_remote(prefer_grpc=True)
+
+    # integers test the case of same-value records, since we generate only 10 different values
+    compare_client_results(grpc_client, http_client, scroll_all_integers)
+    compare_client_results(local_client, http_client, scroll_all_integers)
 
     compare_client_results(grpc_client, http_client, scroll_all_floats)
     compare_client_results(local_client, http_client, scroll_all_floats)

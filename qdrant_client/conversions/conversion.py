@@ -168,7 +168,6 @@ class GrpcToRest:
 
     @classmethod
     def convert_timestamp(cls, model: Timestamp) -> datetime:
-        breakpoint()
         seconds_with_micros = model.seconds + (model.nanos / 1e9)
         return datetime.fromtimestamp(seconds_with_micros)
 
@@ -1384,7 +1383,6 @@ class RestToGrpc:
 
     @classmethod
     def convert_datetime(cls, model: datetime) -> Timestamp:
-        breakpoint()
         seconds = int(model.timestamp())
         # Avoid precision loss by converting to string and extracting microseconds
         # Microseconds is the smallest unit of time in Qdrant
@@ -1938,7 +1936,7 @@ class RestToGrpc:
             return grpc.StartFrom(float=model)
         if isinstance(model, datetime):
             ts = cls.convert_datetime(model)
-            return grpc.StartFrom(timestamp=ts)
+            return grpc.StartFrom(datetime=model.isoformat())
         if isinstance(model, str):
             # Pydantic also accepts strings as datetime if they are correctly formatted
             return grpc.StartFrom(datetime=model)
