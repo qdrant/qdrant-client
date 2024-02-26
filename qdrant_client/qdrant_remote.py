@@ -128,7 +128,7 @@ class QdrantRemote(QdrantBase):
             self._grpc_headers.append(("api-key", api_key))
 
         # GRPC Channel-Level Compression
-        grpc_compression = kwargs.pop("grpc_compression", None)
+        grpc_compression: Optional[grpc.Compression] = kwargs.pop("grpc_compression", None)
         if grpc_compression is not None and not isinstance(grpc_compression, Compression):
             raise TypeError(
                 f"Expected 'grpc_compression' to be of type grpc.Compression or None, but got {type(grpc_compression).__name__}"
