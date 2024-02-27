@@ -6,6 +6,7 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
+from qdrant_client.http.models import VectorParams
 
 try:
     from fastembed.embedding import DefaultEmbedding
@@ -285,7 +286,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         # Check if collection has compatible vector params
         assert isinstance(
-            collection_info.config.params.vectors, dict
+            collection_info.config.params.vectors, VectorParams
         ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
 
         assert (

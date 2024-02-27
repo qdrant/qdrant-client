@@ -17,6 +17,7 @@ from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
+from qdrant_client.http.models import VectorParams
 
 try:
     from fastembed.embedding import DefaultEmbedding
@@ -124,7 +125,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         parallel: Optional[int] = None,
     ) -> Iterable[Tuple[str, List[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
-        (documents_a, documents_b) = tee(documents, 2)
+        documents_a, documents_b = tee(documents, 2)
         if embed_type == "passage":
             vectors_iter = embedding_model.passage_embed(
                 documents_a, batch_size=batch_size, parallel=parallel
@@ -205,7 +206,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Configuration for `vectors_config` argument in `create_collection` method.
         """
         vector_field_name = self.get_vector_field_name()
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         return {
             vector_field_name: models.VectorParams(
                 size=embeddings_size,
@@ -264,7 +265,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             embed_type="passage",
             parallel=parallel,
         )
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         vector_field_name = self.get_vector_field_name()
         try:
             collection_info = await self.get_collection(collection_name=collection_name)
@@ -274,7 +275,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
             collection_info = await self.get_collection(collection_name=collection_name)
         assert isinstance(
-            collection_info.config.params.vectors, dict
+            collection_info.config.params.vectors, VectorParams
         ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
         assert (
             vector_field_name in collection_info.config.params.vectors
