@@ -1933,7 +1933,7 @@ class RestToGrpc:
             return grpc.StartFrom(float=model)
         if isinstance(model, datetime):
             ts = cls.convert_datetime(model)
-            return grpc.StartFrom(timestamp=cls.convert_datetime(model))
+            return grpc.StartFrom(timestamp=ts)
         if isinstance(model, str):
             # Pydantic also accepts strings as datetime if they are correctly formatted
             return grpc.StartFrom(datetime=model)
