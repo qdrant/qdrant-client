@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Optional, Union, get_args
 
-from qdrant_client.local.datetime import parse
+from qdrant_client.local.datetime_utils import parse
 
 MICROS_PER_SECOND = 1_000_000
 

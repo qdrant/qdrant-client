@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
-from qdrant_client.local.datetime import parse
+from qdrant_client.local.datetime_utils import parse
 
 
 @pytest.mark.parametrize(  # type: ignore
