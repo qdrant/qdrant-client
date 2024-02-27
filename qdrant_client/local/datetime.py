@@ -1,9 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-# These are the formats that should work with just datetime.strptime,
-# but it does not handle a variable number of digits in the microseconds section,
-# so we have to handle it manually to match what the qdrant core does.
+# These are the formats accepted by qdrant core
 available_formats = [
     "%Y-%m-%dT%H:%M:%S.%f%:z",
     "%Y-%m-%d %H:%M:%S.%f%:z",
