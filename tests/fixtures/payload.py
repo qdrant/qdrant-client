@@ -1,6 +1,6 @@
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
 from qdrant_client.local import datetime_utils
@@ -160,9 +160,13 @@ def random_datetime_str() -> str:
         microseconds=random.randint(0, 999999),
     )
 
-    format = random.choice(datetime_utils.available_formats)
-
-    return random_datetime.strftime(format)
+    fmt = random.choice(datetime_utils.available_formats)
+    if "z" in fmt:
+        random_datetime = random_datetime.replace(
+            tzinfo=timezone(offset=timedelta(hours=random.randint(-12, 12)))
+        )
+    dt_str = random_datetime.strftime(fmt)
+    return dt_str
 
 
 def random_real_word():

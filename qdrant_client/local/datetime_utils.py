@@ -1,14 +1,14 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 # These are the formats accepted by qdrant core
 available_formats = [
     "%Y-%m-%dT%H:%M:%S.%f%z",
     "%Y-%m-%d %H:%M:%S.%f%z",
-    "%Y-%m-%dT%H:%M:%S.%f",
-    "%Y-%m-%d %H:%M:%S.%f",
     "%Y-%m-%dT%H:%M:%S%z",
     "%Y-%m-%d %H:%M:%S%z",
+    "%Y-%m-%dT%H:%M:%S.%f",
+    "%Y-%m-%d %H:%M:%S.%f",
     "%Y-%m-%dT%H:%M:%S",
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%d %H:%M",
@@ -25,9 +25,15 @@ def parse(date_str: str) -> Optional[datetime]:
     Returns:
         Optional[datetime]: the datetime if the string is valid, otherwise None
     """
+
     for fmt in available_formats:
         try:
-            return datetime.strptime(date_str, fmt)
+            dt = datetime.strptime(date_str, fmt)
+            if dt.tzinfo is None:
+                # Assume UTC if no timezone is provided
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except ValueError:
             pass
+
     return None

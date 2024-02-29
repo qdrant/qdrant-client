@@ -9,9 +9,6 @@ OrderingValue = Union[int, float]
 
 
 def datetime_to_microseconds(dt: datetime) -> int:
-    if dt.tzinfo is None:
-        # Assume UTC if no timezone is provided
-        dt.replace(tzinfo=timezone.utc)
     return int(dt.timestamp() * MICROS_PER_SECOND)
 
 
