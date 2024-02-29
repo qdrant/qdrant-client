@@ -1326,10 +1326,10 @@ class GrpcToRest:
 
     @classmethod
     def convert_start_from(cls, model: grpc.StartFrom) -> rest.StartFrom:
-        if model.HasField("float"):
-            return model.float
         if model.HasField("integer"):
             return model.integer
+        if model.HasField("float"):
+            return model.float
         if model.HasField("timestamp"):
             dt = cls.convert_timestamp(model.timestamp)
             return dt
