@@ -3,8 +3,6 @@ from typing import Optional
 
 # These are the formats accepted by qdrant core
 available_formats = [
-    "%Y-%m-%dT%H:%M:%S.%f%:z",
-    "%Y-%m-%d %H:%M:%S.%f%:z",
     "%Y-%m-%dT%H:%M:%S.%f%z",
     "%Y-%m-%d %H:%M:%S.%f%z",
     "%Y-%m-%dT%H:%M:%S.%f",
