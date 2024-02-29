@@ -3,6 +3,8 @@ import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict
 
+from qdrant_client.local import datetime_utils
+
 random_words = [
     "cat",
     "dog",
@@ -152,11 +154,15 @@ start_datetime = datetime(2000, 1, 1)
 end_datetime = datetime(2001, 1, 31)
 
 
-def random_datetime() -> datetime:
-    return start_datetime + timedelta(
+def random_datetime_str() -> str:
+    random_datetime = start_datetime + timedelta(
         seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
         microseconds=random.randint(0, 999999),
     )
+
+    format = random.choice(datetime_utils.available_formats)
+
+    return random_datetime.strftime(format)
 
 
 def random_real_word():
@@ -175,7 +181,7 @@ def one_random_payload_please(idx: int) -> Dict[str, Any]:
         "text_data": uuid.uuid4().hex,
         "rand_digit": random.randint(0, 9),
         "rand_number": round(random.random(), 5),
-        "rand_datetime": random_datetime().isoformat(),
+        "rand_datetime": random_datetime_str(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
         "words": f"{random_real_word()} {random_real_word()}",
         "nested": {

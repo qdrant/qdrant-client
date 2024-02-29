@@ -2,6 +2,7 @@ from typing import List
 
 from qdrant_client import models
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.local import datetime_utils
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -20,10 +21,15 @@ def scroll_all_with_key(client: QdrantBase, key: str) -> List[models.Record]:
     last_value_ids = []
 
     while True:
+        if isinstance(last_seen_value, str):
+            start_from = datetime_utils.parse(last_seen_value)
+        else:
+            start_from = last_seen_value
+
         records, next_page = client.scroll(
             collection_name=COLLECTION_NAME,
             limit=20,
-            order_by=models.OrderBy(**{"key": key, "start_from": last_seen_value}),
+            order_by=models.OrderBy(**{"key": key, "start_from": start_from}),
             scroll_filter=models.Filter(**{"must_not": [{"has_id": last_value_ids}]}),
             with_payload=True,
         )
