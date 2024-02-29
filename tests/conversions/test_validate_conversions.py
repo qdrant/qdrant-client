@@ -1,8 +1,10 @@
 import inspect
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 from inspect import getmembers
 
+import pytest
 from google.protobuf.json_format import MessageToDict
 
 from tests.conversions.fixtures import fixtures as class_fixtures
@@ -170,32 +172,50 @@ def test_sparse_vector_batch_conversion():
     from qdrant_client import grpc
     from qdrant_client.conversions.conversion import RestToGrpc
     from qdrant_client.grpc import SparseIndices
-
     from qdrant_client.http.models import SparseVector
 
-    batch = {
-        "image": [SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30])]
-    }
+    batch = {"image": [SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30])]}
     res = RestToGrpc.convert_batch_vector_struct(batch, 1)
     assert len(res) == 1
     assert res == [
-        grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1.5, 2.4, 8.1], indices=SparseIndices(data=[10, 20, 30]))})),
+        grpc.Vectors(
+            vectors=grpc.NamedVectors(
+                vectors={
+                    "image": grpc.Vector(
+                        data=[1.5, 2.4, 8.1], indices=SparseIndices(data=[10, 20, 30])
+                    )
+                }
+            )
+        ),
     ]
 
     batch = {
-        "image":
-            [
-                SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30]),
-                SparseVector(values=[7.8, 3.2, 9.5], indices=[100, 200, 300])
-            ]
+        "image": [
+            SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30]),
+            SparseVector(values=[7.8, 3.2, 9.5], indices=[100, 200, 300]),
+        ]
     }
     res = RestToGrpc.convert_batch_vector_struct(batch, 2)
     assert len(res) == 2
     assert res == [
-        grpc.Vectors(vectors=grpc.NamedVectors(vectors={
-            "image": grpc.Vector(data=[1.5, 2.4, 8.1], indices=SparseIndices(data=[10, 20, 30]))})),
-        grpc.Vectors(vectors=grpc.NamedVectors(vectors={
-            "image": grpc.Vector(data=[7.8, 3.2, 9.5], indices=SparseIndices(data=[100, 200, 300]))})),
+        grpc.Vectors(
+            vectors=grpc.NamedVectors(
+                vectors={
+                    "image": grpc.Vector(
+                        data=[1.5, 2.4, 8.1], indices=SparseIndices(data=[10, 20, 30])
+                    )
+                }
+            )
+        ),
+        grpc.Vectors(
+            vectors=grpc.NamedVectors(
+                vectors={
+                    "image": grpc.Vector(
+                        data=[7.8, 3.2, 9.5], indices=SparseIndices(data=[100, 200, 300])
+                    )
+                }
+            )
+        ),
     ]
 
 
@@ -224,3 +244,25 @@ def test_init_from_conversion():
     init_from = "collection_name"
     recovered = RestToGrpc.convert_init_from(GrpcToRest.convert_init_from(init_from))
     assert init_from == recovered
+
+
+@pytest.mark.parametrize(
+    "dt",
+    [
+        datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+        datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(hours=5))),
+        datetime(2021, 1, 1, 0, 0, 0),
+        datetime.utcnow(),
+        datetime.now(),
+    ],
+)
+def test_datetime_to_timestamp_conversions(dt: datetime):
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_to_grpc = RestToGrpc.convert_datetime(dt)
+    grpc_to_rest = GrpcToRest.convert_timestamp(rest_to_grpc)
+
+    print(f"dt: {dt}, rest_to_grpc: {rest_to_grpc}, grpc_to_rest: {grpc_to_rest}")
+    assert (
+        dt.utctimetuple() == grpc_to_rest.utctimetuple()
+    ), f"Failed for {dt}, should be equal to {grpc_to_rest}"
