@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, get_args
 
 from google.protobuf.json_format import MessageToDict
@@ -51,6 +51,8 @@ def json_to_value(payload: Any) -> Value:
         return Value(
             struct_value=Struct(fields=dict((k, json_to_value(v)) for k, v in payload.items()))
         )
+    if isinstance(payload, datetime) or isinstance(payload, date):
+        return Value(string_value=payload.isoformat())
     raise ValueError(f"Not supported json value: {payload}")  # pragma: no cover
 
 

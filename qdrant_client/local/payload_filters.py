@@ -3,6 +3,7 @@ from typing import Any, List, Optional
 import numpy as np
 
 from qdrant_client.http import models
+from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import boolean_point_in_polygon, geo_distance
 from qdrant_client.local.payload_value_extractor import value_by_key
 
@@ -86,18 +87,40 @@ def check_geo_polygon(condition: models.GeoPolygon, values: Any) -> bool:
     return False
 
 
+def check_range_interface(condition: models.RangeInterface, value: Any) -> bool:
+    if isinstance(condition, models.Range):
+        return check_range(condition, value)
+    if isinstance(condition, models.DatetimeRange):
+        return check_datetime_range(condition, value)
+    return False
+
+
 def check_range(condition: models.Range, value: Any) -> bool:
     if not isinstance(value, (int, float)):
         return False
-    if condition.lt is not None and value >= condition.lt:
+    return (
+        (condition.lt is None or value < condition.lt)
+        and (condition.lte is None or value <= condition.lte)
+        and (condition.gt is None or value > condition.gt)
+        and (condition.gte is None or value >= condition.gte)
+    )
+
+
+def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
+    if not isinstance(value, str):
         return False
-    if condition.lte is not None and value > condition.lte:
+
+    dt = datetime_utils.parse(value)
+
+    if dt is None:
         return False
-    if condition.gt is not None and value <= condition.gt:
-        return False
-    if condition.gte is not None and value < condition.gte:
-        return False
-    return True
+
+    return (
+        (condition.lt is None or dt < condition.lt)
+        and (condition.lte is None or dt <= condition.lte)
+        and (condition.gt is None or dt > condition.gt)
+        and (condition.gte is None or dt >= condition.gte)
+    )
 
 
 def check_match(condition: models.Match, value: Any) -> bool:
@@ -145,7 +168,7 @@ def check_condition(
         if condition.range is not None:
             if values is None:
                 return False
-            return any(check_range(condition.range, v) for v in values)
+            return any(check_range_interface(condition.range, v) for v in values)
         if condition.geo_bounding_box is not None:
             if values is None:
                 return False
