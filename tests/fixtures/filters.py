@@ -1,4 +1,5 @@
 import random
+from datetime import datetime, timedelta, timezone
 
 from qdrant_client.http import models
 from tests.fixtures.payload import geo_points, random_real_word
@@ -186,6 +187,37 @@ def range_field_condition() -> models.FieldCondition:
     )
 
 
+def datetime_range_field_condition() -> models.FieldCondition:
+    field = "rand_datetime"
+
+    start_datetime = datetime(2000, 1, 1)
+    end_datetime = datetime(2001, 1, 31)
+
+    def random_datetime() -> datetime:
+        dt = start_datetime + timedelta(
+            seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
+            microseconds=random.randint(0, 999999),
+        )
+        return dt.replace(tzinfo=timezone(offset=timedelta(hours=random.randint(-12, 12))))
+
+    lt = random_datetime()
+    gt = random_datetime()
+
+    rand_1 = random.random()
+    rand_2 = random.random()
+
+    if rand_1 > rand_2:
+        if rand_1 > 0.5:
+            lt = None
+        else:
+            gt = None
+
+    return models.FieldCondition(
+        key=field,
+        range=models.DatetimeRange(lt=lt, gt=gt),
+    )
+
+
 def geo_bounding_box_field_condition() -> models.FieldCondition:
     field = "city.geo"
     random_top_left = {"lat": random.random() * 180 - 90, "lon": random.random() * 360 - 180}
@@ -239,6 +271,7 @@ def one_random_condition_please() -> models.Condition:
             match_any_field_condition,
             match_except_field_condition,
             range_field_condition,
+            datetime_range_field_condition,
             geo_bounding_box_field_condition,
             geo_radius_field_condition,
             values_count_field_condition,
