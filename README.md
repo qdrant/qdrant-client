@@ -163,6 +163,9 @@ import numpy as np
 from qdrant_client.models import PointStruct
 
 vectors = np.random.rand(100, 100)
+# NOTE: consider splitting the data into chunks to avoid hitting the server's payload size limit
+# or use `upload_collection` or `upload_points` methods which handle this for you
+# WARNING: uploading points one-by-one is not recommended due to requests overhead
 client.upsert(
     collection_name="my_collection",
     points=[
