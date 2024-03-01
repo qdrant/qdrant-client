@@ -903,6 +903,7 @@ class IntegerIndexParams(BaseModel, extra="forbid"):
 class IntegerIndexType(str, Enum):
     INTEGER = "integer"
 
+
 class IsEmptyCondition(BaseModel, extra="forbid"):
     """
     Select points with empty payload for a specified field
@@ -1049,9 +1050,16 @@ class NestedCondition(BaseModel, extra="forbid"):
 class OperationDurationStatistics(BaseModel):
     count: int = Field(..., description="")
     fail_count: Optional[int] = Field(default=None, description="")
-    avg_duration_micros: Optional[float] = Field(default=None, description="")
-    min_duration_micros: Optional[float] = Field(default=None, description="")
-    max_duration_micros: Optional[float] = Field(default=None, description="")
+    avg_duration_micros: Optional[float] = Field(
+        default=None, description="The average time taken by 128 latest operations, calculated as a weighted mean."
+    )
+    min_duration_micros: Optional[float] = Field(
+        default=None, description="The minimum duration of the operations across all the measurements."
+    )
+    max_duration_micros: Optional[float] = Field(
+        default=None, description="The maximum duration of the operations across all the measurements."
+    )
+    total_duration_micros: int = Field(..., description="The total duration of all operations in microseconds.")
     last_responded: Optional[datetime] = Field(default=None, description="")
 
 
@@ -1514,6 +1522,7 @@ class ReplicaState(str, Enum):
     INITIALIZING = "Initializing"
     LISTENER = "Listener"
     PARTIALSNAPSHOT = "PartialSnapshot"
+    RECOVERY = "Recovery"
 
 
 class ReplicateShardOperation(BaseModel, extra="forbid"):
@@ -1523,6 +1532,17 @@ class ReplicateShardOperation(BaseModel, extra="forbid"):
 class RequestsTelemetry(BaseModel):
     rest: "WebApiTelemetry" = Field(..., description="")
     grpc: "GrpcTelemetry" = Field(..., description="")
+
+
+class RestartTransfer(BaseModel, extra="forbid"):
+    shard_id: int = Field(..., description="")
+    from_peer_id: int = Field(..., description="")
+    to_peer_id: int = Field(..., description="")
+    method: "ShardTransferMethod" = Field(..., description="")
+
+
+class RestartTransferOperation(BaseModel, extra="forbid"):
+    restart_transfer: "RestartTransfer" = Field(..., description="")
 
 
 class RunningEnvironmentTelemetry(BaseModel):
@@ -1747,6 +1767,9 @@ class SetPayload(BaseModel, extra="forbid"):
     shard_key: Optional["ShardKeySelector"] = Field(
         default=None, description="This data structure is used in API interface and applied across multiple shards"
     )
+    key: Optional[str] = Field(
+        default=None, description="Assigns payload to each point that satisfy this path of property"
+    )
 
 
 class SetPayloadOperation(BaseModel, extra="forbid"):
@@ -1763,13 +1786,16 @@ class ShardSnapshotRecover(BaseModel, extra="forbid"):
 
 class ShardTransferInfo(BaseModel):
     shard_id: int = Field(..., description="")
-    from_: int = Field(..., description="", alias="from")
-    to: int = Field(..., description="")
+    from_: int = Field(..., description="Source peer id", alias="from")
+    to: int = Field(..., description="Destination peer id")
     sync: bool = Field(
         ...,
         description="If `true` transfer is a synchronization of a replicas If `false` transfer is a moving of a shard from one peer to another",
     )
     method: Optional["ShardTransferMethod"] = Field(default=None, description="")
+    comment: Optional[str] = Field(
+        default=None, description="A human-readable report of the transfer progress. Available only on the source peer."
+    )
 
 
 class ShardTransferMethodOneOf(str, Enum):
@@ -2208,8 +2234,8 @@ AliasOperations = Union[
     RenameAliasOperation,
 ]
 AnyVariants = Union[
-    List[StrictInt],
     List[StrictStr],
+    List[StrictInt],
 ]
 ClusterOperations = Union[
     MoveShardOperation,
@@ -2218,6 +2244,7 @@ ClusterOperations = Union[
     DropReplicaOperation,
     CreateShardingKeyOperation,
     DropShardingKeyOperation,
+    RestartTransferOperation,
 ]
 ClusterStatus = Union[
     ClusterStatusOneOf,
@@ -2245,8 +2272,8 @@ ExtendedPointId = Union[
     StrictStr,
 ]
 GroupId = Union[
-    StrictInt,
     StrictStr,
+    StrictInt,
 ]
 Indexes = Union[
     IndexesOneOf,
@@ -2259,17 +2286,17 @@ Match = Union[
     MatchExcept,
 ]
 NamedVectorStruct = Union[
-    NamedSparseVector,
-    NamedVector,
     List[StrictFloat],
+    NamedVector,
+    NamedSparseVector,
 ]
 OptimizersStatus = Union[
     OptimizersStatusOneOf,
     OptimizersStatusOneOf1,
 ]
 OrderByInterface = Union[
-    OrderBy,
     StrictStr,
+    OrderBy,
 ]
 PayloadSchemaParams = Union[
     TextIndexParams,
@@ -2307,12 +2334,12 @@ RangeInterface = Union[
     DatetimeRange,
 ]
 ReadConsistency = Union[
-    ReadConsistencyType,
     StrictInt,
+    ReadConsistencyType,
 ]
 ShardKey = Union[
-    StrictInt,
     StrictStr,
+    StrictInt,
 ]
 ShardSnapshotLocation = Union[
     StrictStr,
@@ -2350,13 +2377,13 @@ UsingVector = Union[
     StrictStr,
 ]
 ValueVariants = Union[
-    StrictBool,
-    StrictInt,
     StrictStr,
+    StrictInt,
+    StrictBool,
 ]
 Vector = Union[
-    SparseVector,
     List[StrictFloat],
+    SparseVector,
 ]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,
@@ -2368,12 +2395,12 @@ VectorsConfig = Union[
     Dict[StrictStr, VectorParams],
 ]
 WithLookupInterface = Union[
-    WithLookup,
     StrictStr,
+    WithLookup,
 ]
 WithVector = Union[
-    List[StrictStr],
     StrictBool,
+    List[StrictStr],
 ]
 BatchVectorStruct = Union[
     List[List[StrictFloat]],
@@ -2385,8 +2412,8 @@ PayloadFieldSchema = Union[
 ]
 RecommendExample = Union[
     ExtendedPointId,
-    SparseVector,
     List[StrictFloat],
+    SparseVector,
 ]
 ShardKeySelector = Union[
     ShardKey,
@@ -2397,7 +2424,7 @@ VectorStruct = Union[
     Dict[StrictStr, Vector],
 ]
 WithPayloadInterface = Union[
-    PayloadSelector,
-    List[StrictStr],
     StrictBool,
+    List[StrictStr],
+    PayloadSelector,
 ]
