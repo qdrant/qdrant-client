@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, get_args
 
 from google.protobuf.json_format import MessageToDict
@@ -12,7 +12,7 @@ try:
 except ImportError:
     pass
 
-from qdrant_client import grpc as grpc
+from qdrant_client import grpc
 from qdrant_client.grpc import ListValue, NullValue, SparseIndices, Struct, Value
 from qdrant_client.http.models import SparseVector
 from qdrant_client.http.models import models as rest
@@ -164,6 +164,19 @@ class GrpcToRest:
             gte=model.gte if model.HasField("gte") else None,
             lt=model.lt if model.HasField("lt") else None,
             lte=model.lte if model.HasField("lte") else None,
+        )
+
+    @classmethod
+    def convert_timestamp(cls, model: Timestamp) -> datetime:
+        return model.ToDatetime(tzinfo=timezone.utc)
+
+    @classmethod
+    def convert_datetime_range(cls, model: grpc.DatetimeRange) -> rest.DatetimeRange:
+        return rest.DatetimeRange(
+            gt=cls.convert_timestamp(model.gt) if model.HasField("gt") else None,
+            gte=cls.convert_timestamp(model.gte) if model.HasField("gte") else None,
+            lt=cls.convert_timestamp(model.lt) if model.HasField("lt") else None,
+            lte=cls.convert_timestamp(model.lte) if model.HasField("lte") else None,
         )
 
     @classmethod
@@ -464,16 +477,25 @@ class GrpcToRest:
             if model.HasField("geo_bounding_box")
             else None
         )
+
         geo_radius = (
             cls.convert_geo_radius(model.geo_radius) if model.HasField("geo_radius") else None
         )
+
         match = cls.convert_match(model.match) if model.HasField("match") else None
-        range_ = cls.convert_range(model.range) if model.HasField("range") else None
+
+        range_: Optional[rest.RangeInterface] = None
+        if model.HasField("range"):
+            range_ = cls.convert_range(model.range)
+        elif model.HasField("datetime_range"):
+            range_ = cls.convert_datetime_range(model.datetime_range)
+
         values_count = (
             cls.convert_values_count(model.values_count)
             if model.HasField("values_count")
             else None
         )
+
         return rest.FieldCondition(
             key=model.key,
             geo_bounding_box=geo_bounding_box,
@@ -1294,6 +1316,38 @@ class GrpcToRest:
             return rest.ShardingMethod.CUSTOM
         raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover
 
+    @classmethod
+    def convert_direction(cls, model: grpc.Direction) -> rest.Direction:
+        if model == grpc.Asc:
+            return rest.Direction.ASC
+        if model == grpc.Desc:
+            return rest.Direction.DESC
+        raise ValueError(f"invalid Direction model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_start_from(cls, model: grpc.StartFrom) -> rest.StartFrom:
+        if model.HasField("integer"):
+            return model.integer
+        if model.HasField("float"):
+            return model.float
+        if model.HasField("timestamp"):
+            dt = cls.convert_timestamp(model.timestamp)
+            return dt
+        if model.HasField("datetime"):
+            return model.datetime
+
+    @classmethod
+    def convert_order_by(cls, model: grpc.OrderBy) -> rest.OrderBy:
+        return rest.OrderBy(
+            key=model.key,
+            direction=cls.convert_direction(model.direction)
+            if model.HasField("direction")
+            else None,
+            start_from=cls.convert_start_from(model.start_from)
+            if model.HasField("start_from")
+            else None,
+        )
+
 
 # ----------------------------------------
 #
@@ -1324,6 +1378,21 @@ class RestToGrpc:
             gt=model.gt,
             gte=model.gte,
             lte=model.lte,
+        )
+
+    @classmethod
+    def convert_datetime(cls, model: datetime) -> Timestamp:
+        ts = Timestamp()
+        ts.FromDatetime(model)
+        return ts
+
+    @classmethod
+    def convert_datetime_range(cls, model: rest.DatetimeRange) -> grpc.DatetimeRange:
+        return grpc.DatetimeRange(
+            lt=cls.convert_datetime(model.lt) if model.lt is not None else None,
+            gt=cls.convert_datetime(model.gt) if model.gt is not None else None,
+            gte=cls.convert_datetime(model.gte) if model.gte is not None else None,
+            lte=cls.convert_datetime(model.lte) if model.lte is not None else None,
         )
 
     @classmethod
@@ -1529,7 +1598,12 @@ class RestToGrpc:
         if model.match:
             return grpc.FieldCondition(key=model.key, match=cls.convert_match(model.match))
         if model.range:
-            return grpc.FieldCondition(key=model.key, range=cls.convert_range(model.range))
+            if isinstance(model.range, rest.Range):
+                return grpc.FieldCondition(key=model.key, range=cls.convert_range(model.range))
+            if isinstance(model.range, rest.DatetimeRange):
+                return grpc.FieldCondition(
+                    key=model.key, datetime_range=cls.convert_datetime_range(model.range)
+                )
         if model.geo_bounding_box:
             return grpc.FieldCondition(
                 key=model.key,
@@ -1850,6 +1924,52 @@ class RestToGrpc:
             return cls.convert_payload_selector(model)
 
         raise ValueError(f"invalid WithPayloadInterface model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_start_from(cls, model: rest.StartFrom) -> grpc.StartFrom:
+        if isinstance(model, int):
+            return grpc.StartFrom(integer=model)
+        if isinstance(model, float):
+            return grpc.StartFrom(float=model)
+        if isinstance(model, datetime):
+            ts = cls.convert_datetime(model)
+            return grpc.StartFrom(timestamp=ts)
+        if isinstance(model, str):
+            # Pydantic also accepts strings as datetime if they are correctly formatted
+            return grpc.StartFrom(datetime=model)
+
+        raise ValueError(f"invalid StartFrom model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_direction(cls, model: rest.Direction) -> grpc.Direction:
+        if model == rest.Direction.ASC:
+            return grpc.Direction.Asc
+        if model == rest.Direction.DESC:
+            return grpc.Direction.Desc
+        raise ValueError(f"invalid Direction model: {model}")
+
+    @classmethod
+    def convert_order_by(cls, model: rest.OrderBy) -> grpc.OrderBy:
+        return grpc.OrderBy(
+            key=model.key,
+            direction=cls.convert_direction(model.direction)
+            if model.direction is not None
+            else None,
+            start_from=cls.convert_start_from(model.start_from)
+            if model.start_from is not None
+            else None,
+        )
+
+    @classmethod
+    def convert_order_by_interface(
+        cls, model: rest.OrderByInterface
+    ) -> grpc.OrderBy:  # pragma: no cover
+        # using no cover because there is no OrderByInterface in grpc
+        if isinstance(model, str):
+            return grpc.OrderBy(key=model)
+        if isinstance(model, rest.OrderBy):
+            return cls.convert_order_by(model)
+        raise ValueError(f"invalid OrderByInterface model: {model}")
 
     @classmethod
     def convert_record(cls, model: rest.Record) -> grpc.RetrievedPoint:

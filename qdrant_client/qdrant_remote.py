@@ -1126,6 +1126,7 @@ class QdrantRemote(QdrantBase):
         collection_name: str,
         scroll_filter: Optional[types.Filter] = None,
         limit: int = 10,
+        order_by: Optional[types.OrderBy] = None,
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
@@ -1152,10 +1153,14 @@ class QdrantRemote(QdrantBase):
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
+            if isinstance(order_by, get_args_subscribed(models.OrderByInterface)):
+                order_by = RestToGrpc.convert_order_by_interface(order_by)
+
             res: grpc.ScrollResponse = self.grpc_points.Scroll(
                 grpc.ScrollPoints(
                     collection_name=collection_name,
                     filter=scroll_filter,
+                    order_by=order_by,
                     offset=offset,
                     with_vectors=with_vectors,
                     with_payload=with_payload,
@@ -1178,6 +1183,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(scroll_filter, grpc.Filter):
                 scroll_filter = GrpcToRest.convert_filter(model=scroll_filter)
 
+            if isinstance(order_by, grpc.OrderBy):
+                order_by = GrpcToRest.convert_order_by(order_by)
+
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
@@ -1189,6 +1197,7 @@ class QdrantRemote(QdrantBase):
                 scroll_request=models.ScrollRequest(
                     filter=scroll_filter,
                     limit=limit,
+                    order_by=order_by,
                     offset=offset,
                     with_payload=with_payload,
                     with_vector=with_vectors,
