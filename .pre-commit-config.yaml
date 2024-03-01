@@ -14,15 +14,15 @@ repos:
       - id: check-added-large-files
 
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 23.12.1
     hooks:
       - id: black
         name: "Black: The uncompromising Python code formatter"
         args: ["--line-length", "99"]
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
         name: "Sort Imports"
-        args: ["--profile", "black"]
+        args: ["--profile", "black", "--py", "310"]
