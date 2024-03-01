@@ -7,16 +7,16 @@ import "google/protobuf/timestamp.proto";
 
 service Snapshots {
   /*
- Create collection snapshot
+  Create collection snapshot
   */
   rpc Create (CreateSnapshotRequest) returns (CreateSnapshotResponse) {}
   /*
   List collection snapshots
-   */
+  */
   rpc List (ListSnapshotsRequest) returns (ListSnapshotsResponse) {}
   /*
   Delete collection snapshot
-   */
+  */
   rpc Delete (DeleteSnapshotRequest) returns (DeleteSnapshotResponse) {}
   /*
   Create full storage snapshot
@@ -24,11 +24,11 @@ service Snapshots {
   rpc CreateFull (CreateFullSnapshotRequest) returns (CreateSnapshotResponse) {}
   /*
   List full storage snapshots
-   */
+  */
   rpc ListFull (ListFullSnapshotsRequest) returns (ListSnapshotsResponse) {}
   /*
   Delete full storage snapshot
-   */
+  */
   rpc DeleteFull (DeleteFullSnapshotRequest) returns (DeleteSnapshotResponse) {}
 }
 
@@ -57,6 +57,7 @@ message SnapshotDescription {
   string name = 1; // Name of the snapshot
   google.protobuf.Timestamp creation_time = 2; // Creation time of the snapshot
   int64 size = 3; // Size of the snapshot in bytes
+  optional string checksum = 4; // SHA256 digest of the snapshot file
 }
 
 message CreateSnapshotResponse {
