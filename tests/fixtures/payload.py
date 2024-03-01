@@ -1,5 +1,9 @@
 import random
 import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict
+
+from qdrant_client.local import datetime_utils
 
 random_words = [
     "cat",
@@ -146,6 +150,25 @@ geo_points = {
 }
 
 
+start_datetime = datetime(2000, 1, 1)
+end_datetime = datetime(2001, 1, 31)
+
+
+def random_datetime_str() -> str:
+    random_datetime = start_datetime + timedelta(
+        seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
+        microseconds=random.randint(0, 999999),
+    )
+
+    fmt = random.choice(datetime_utils.available_formats)
+    if "z" in fmt:
+        random_datetime = random_datetime.replace(
+            tzinfo=timezone(offset=timedelta(hours=random.randint(-12, 12)))
+        )
+    dt_str = random_datetime.strftime(fmt)
+    return dt_str
+
+
 def random_real_word():
     return random.choice(random_words)
 
@@ -155,13 +178,14 @@ def random_city():
     return {"name": name, "geo": geo_points[name]}
 
 
-def one_random_payload_please(idx):
+def one_random_payload_please(idx: int) -> Dict[str, Any]:
     payload = {
         "id": idx + 100,
         "id_str": [str(random.randint(1, 30)).zfill(2) for _ in range(random.randint(0, 5))],
         "text_data": uuid.uuid4().hex,
         "rand_digit": random.randint(0, 9),
         "rand_number": round(random.random(), 5),
+        "rand_datetime": random_datetime_str(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
         "words": f"{random_real_word()} {random_real_word()}",
         "nested": {
@@ -193,6 +217,6 @@ def one_random_payload_please(idx):
     return payload
 
 
-def random_payload(num_vectors):
+def random_payload(num_vectors: int):
     for i in range(num_vectors):
         yield one_random_payload_please(i)

@@ -1448,7 +1448,7 @@ def test_conditional_payload_update(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_conditional_payload_update(prefer_grpc):
+def test_conditional_payload_update_2(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     client.recreate_collection(

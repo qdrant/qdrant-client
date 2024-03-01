@@ -54,7 +54,19 @@ range_ = grpc.Range(
     gte=4.0,
 )
 
+timestamp = Timestamp(seconds=12345678, nanos=123456000)
+
+datetime_range = grpc.DatetimeRange(
+    lt=timestamp,
+    lte=timestamp,
+    gt=timestamp,
+    gte=timestamp,
+)
+
 field_condition_range = grpc.FieldCondition(key="match_field", range=range_)
+field_condition_datetime_range = grpc.FieldCondition(
+    key="match_field", datetime_range=datetime_range
+)
 
 geo_point = grpc.GeoPoint(lon=12.123, lat=78.212)
 
@@ -831,6 +843,32 @@ delete_vectors_operation_2 = grpc.PointsUpdateOperation(
 sharding_method_1 = grpc.Auto
 sharding_method_2 = grpc.Custom
 
+float_start_from = grpc.StartFrom(
+    float=1.0,
+)
+
+integer_start_from = grpc.StartFrom(
+    integer=1,
+)
+
+timestamp_start_from = grpc.StartFrom(
+    timestamp=timestamp,
+)
+
+datetime_start_from = grpc.StartFrom(
+    datetime=datetime.datetime.now().isoformat(),
+)
+
+direction_asc = grpc.Asc
+direction_desc = grpc.Desc
+
+order_by = grpc.OrderBy(
+    key="my_field",
+    direction=direction_asc,
+    start_from=float_start_from,
+)
+
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -847,10 +885,13 @@ fixtures = {
     "FieldCondition": [
         field_condition_match,
         field_condition_range,
+        field_condition_datetime_range,
         field_condition_geo_radius,
         field_condition_geo_bounding_box,
         field_condition_values_count,
     ],
+    "Range": [range_],
+    "DatetimeRange": [datetime_range],
     "GeoRadius": [geo_radius],
     "UpdateResult": [update_result, update_result_completed],
     "IsEmptyCondition": [is_empty],
@@ -861,7 +902,6 @@ fixtures = {
     "GeoPoint": [geo_point],
     "WalConfigDiff": [wal_config],
     "HnswConfigDiff": [hnsw_config, hnsw_config_2],
-    "Range": [range_],
     "UpdateCollection": [update_collection, update_collection_2, update_collection_3],
     "Condition": [
         condition_field_match,
@@ -942,6 +982,9 @@ fixtures = {
     "SparseVectorConfig": [sparse_vector_config],
     "ShardKeySelector": [shard_key_selector, shard_key_selector_2],
     "ShardingMethod": [sharding_method_1, sharding_method_2],
+    "StartFrom": [float_start_from, integer_start_from, datetime_start_from, timestamp_start_from],
+    "Direction": [direction_asc, direction_desc],
+    "OrderBy": [order_by],
 }
 
 

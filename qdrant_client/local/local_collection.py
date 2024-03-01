@@ -25,6 +25,7 @@ from qdrant_client.local.distances import (
     calculate_recommend_best_scores,
     distance_to_order,
 )
+from qdrant_client.local.order_by import OrderingValue, to_ordering_value
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
@@ -811,9 +812,11 @@ class LocalCollection:
 
         context = context if context is not None else []
         context = [
-            GrpcToRest.convert_context_example_pair(pair)
-            if isinstance(pair, grpc.ContextExamplePair)
-            else pair
+            (
+                GrpcToRest.convert_context_example_pair(pair)
+                if isinstance(pair, grpc.ContextExamplePair)
+                else pair
+            )
             for pair in context
         ]
 
@@ -922,6 +925,7 @@ class LocalCollection:
         self,
         scroll_filter: Optional[types.Filter] = None,
         limit: int = 10,
+        order_by: Optional[types.OrderBy] = None,
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
@@ -929,6 +933,47 @@ class LocalCollection:
         if len(self.ids) == 0:
             return [], None
 
+        if order_by is None:
+            # order by id (default)
+            return self._scroll_by_id(
+                scroll_filter=scroll_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+            )
+
+        # order by value
+        if offset is not None:
+            raise ValueError(
+                "Offset is not supported in conjunction with `order_by` scroll parameter"
+            )
+
+        return self._scroll_by_value(
+            order_by=order_by,
+            scroll_filter=scroll_filter,
+            limit=limit,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+        )
+
+    def count(self, count_filter: Optional[types.Filter] = None) -> models.CountResult:
+        payload_mask = calculate_payload_mask(
+            payloads=self.payload,
+            payload_filter=count_filter,
+            ids_inv=self.ids_inv,
+        )
+        mask = payload_mask & ~self.deleted
+        return models.CountResult(count=np.count_nonzero(mask))
+
+    def _scroll_by_id(
+        self,
+        scroll_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        offset: Optional[types.PointId] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         sorted_ids = sorted(self.ids.items(), key=lambda x: self._universal_id(x[0]))
 
         result: List[types.Record] = []
@@ -964,14 +1009,76 @@ class LocalCollection:
         else:
             return result, None
 
-    def count(self, count_filter: Optional[types.Filter] = None) -> models.CountResult:
+    def _scroll_by_value(
+        self,
+        order_by: types.OrderBy,
+        scroll_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+        if isinstance(order_by, grpc.OrderBy):
+            order_by = GrpcToRest.convert_order_by(order_by)
+        if isinstance(order_by, str):
+            order_by = models.OrderBy(key=order_by)
+
+        value_and_ids: List[Tuple[OrderingValue, ExtendedPointId, int]] = []
+
+        for external_id, internal_id in self.ids.items():
+            # get order-by values for id
+            payload_values = value_by_key(self.payload[internal_id], order_by.key)
+            if payload_values is None:
+                continue
+
+            # replicate id for each value it has
+            for value in payload_values:
+                ordering_value = to_ordering_value(value)
+                if ordering_value is not None:
+                    value_and_ids.append((ordering_value, external_id, internal_id))
+
+        direction = order_by.direction if order_by.direction is not None else models.Direction.ASC
+
+        should_reverse = direction == models.Direction.DESC
+
+        # sort by value only
+        value_and_ids.sort(key=lambda x: x[0], reverse=should_reverse)
+
         payload_mask = calculate_payload_mask(
             payloads=self.payload,
-            payload_filter=count_filter,
+            payload_filter=scroll_filter,
             ids_inv=self.ids_inv,
         )
+
         mask = payload_mask & ~self.deleted
-        return models.CountResult(count=np.count_nonzero(mask))
+
+        result: List[types.Record] = []
+
+        start_from = to_ordering_value(order_by.start_from)
+
+        for value, external_id, internal_id in value_and_ids:
+            if start_from is not None:
+                if direction == models.Direction.ASC:
+                    if value < start_from:
+                        continue
+                elif direction == models.Direction.DESC:
+                    if value > start_from:
+                        continue
+
+            if len(result) >= limit:
+                break
+
+            if not mask[internal_id]:
+                continue
+
+            result.append(
+                models.Record(
+                    id=external_id,
+                    payload=self._get_payload(internal_id, with_payload),
+                    vector=self._get_vectors(internal_id, with_vectors),
+                )
+            )
+
+        return result, None
 
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]

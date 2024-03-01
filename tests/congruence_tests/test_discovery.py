@@ -52,7 +52,7 @@ def http_client(fixture_points, secondary_collection_points) -> QdrantClient:
 
 @pytest.fixture(scope="module", autouse=True)
 def grpc_client(fixture_points, secondary_collection_points) -> QdrantClient:
-    client = QdrantClient(host="localhost", port=6333, timeout=30, prefer_grpc=True)
+    client = init_remote(prefer_grpc=True)
     return client
 
 
