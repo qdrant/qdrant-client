@@ -86,6 +86,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if self._flock_file is not None:
             try:
                 portalocker.unlock(self._flock_file)
+                self._flock_file.close()
             except TypeError:
                 pass
 
