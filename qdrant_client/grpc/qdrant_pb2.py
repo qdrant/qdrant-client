@@ -17,7 +17,7 @@ from . import points_service_pb2 as points__service__pb2
 from . import snapshots_service_pb2 as snapshots__service__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cqdrant.proto\x12\x06qdrant\x1a\x19\x63ollections_service.proto\x1a\x14points_service.proto\x1a\x17snapshots_service.proto\"\x14\n\x12HealthCheckRequest\"2\n\x10HealthCheckReply\x12\r\n\x05title\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t2O\n\x06Qdrant\x12\x45\n\x0bHealthCheck\x12\x1a.qdrant.HealthCheckRequest\x1a\x18.qdrant.HealthCheckReply\"\x00\x42\x15\xaa\x02\x12Qdrant.Client.Grpcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cqdrant.proto\x12\x06qdrant\x1a\x19\x63ollections_service.proto\x1a\x14points_service.proto\x1a\x17snapshots_service.proto\"\x14\n\x12HealthCheckRequest\"R\n\x10HealthCheckReply\x12\r\n\x05title\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x13\n\x06\x63ommit\x18\x03 \x01(\tH\x00\x88\x01\x01\x42\t\n\x07_commit2O\n\x06Qdrant\x12\x45\n\x0bHealthCheck\x12\x1a.qdrant.HealthCheckRequest\x1a\x18.qdrant.HealthCheckReply\"\x00\x42\x15\xaa\x02\x12Qdrant.Client.Grpcb\x06proto3')
 
 
 
@@ -45,7 +45,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _HEALTHCHECKREQUEST._serialized_start=98
   _HEALTHCHECKREQUEST._serialized_end=118
   _HEALTHCHECKREPLY._serialized_start=120
-  _HEALTHCHECKREPLY._serialized_end=170
-  _QDRANT._serialized_start=172
-  _QDRANT._serialized_end=251
+  _HEALTHCHECKREPLY._serialized_end=202
+  _QDRANT._serialized_start=204
+  _QDRANT._serialized_end=283
 # @@protoc_insertion_point(module_scope)
