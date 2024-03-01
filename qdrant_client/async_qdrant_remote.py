@@ -1782,6 +1782,20 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         assert result is not None, "Get collection returned None"
         return result
 
+    async def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
+        if self._prefer_grpc:
+            return (
+                await self.grpc_collections.CollectionExists(
+                    grpc.CollectionExistsRequest(collection_name=collection_name),
+                    timeout=self._timeout,
+                )
+            ).result.exists
+        result: Optional[models.CollectionExistence] = (
+            await self.http.collections_api.collection_exists(collection_name=collection_name)
+        ).result
+        assert result is not None, "Collection exists returned None"
+        return result.exists
+
     async def update_collection(
         self,
         collection_name: str,

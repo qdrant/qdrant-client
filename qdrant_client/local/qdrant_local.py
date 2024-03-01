@@ -599,6 +599,13 @@ class QdrantLocal(QdrantBase):
         collection = self._get_collection(collection_name)
         return collection.info()
 
+    def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
+        try:
+            self._get_collection(collection_name)
+            return True
+        except ValueError:
+            return False
+
     def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
         _collection = self._get_collection(collection_name)
         return False

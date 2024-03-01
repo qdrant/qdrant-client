@@ -251,6 +251,9 @@ class AsyncQdrantBase:
     async def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         raise NotImplementedError()
 
+    async def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
+        raise NotImplementedError()
+
     async def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
         raise NotImplementedError()
 
