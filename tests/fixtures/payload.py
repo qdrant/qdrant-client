@@ -1,7 +1,7 @@
 import random
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from qdrant_client.local import datetime_utils
 
@@ -154,7 +154,7 @@ start_datetime = datetime(2000, 1, 1)
 end_datetime = datetime(2001, 1, 31)
 
 
-def random_datetime_str() -> str:
+def random_datetime() -> Union[str, datetime]:
     random_datetime = start_datetime + timedelta(
         seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
         microseconds=random.randint(0, 999999),
@@ -165,6 +165,10 @@ def random_datetime_str() -> str:
         random_datetime = random_datetime.replace(
             tzinfo=timezone(offset=timedelta(hours=random.randint(-12, 12)))
         )
+
+    if random.random() < 0.1:
+        return random_datetime
+
     dt_str = random_datetime.strftime(fmt)
     return dt_str
 
@@ -185,7 +189,7 @@ def one_random_payload_please(idx: int) -> Dict[str, Any]:
         "text_data": uuid.uuid4().hex,
         "rand_digit": random.randint(0, 9),
         "rand_number": round(random.random(), 5),
-        "rand_datetime": random_datetime_str(),
+        "rand_datetime": random_datetime(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
         "words": f"{random_real_word()} {random_real_word()}",
         "nested": {
