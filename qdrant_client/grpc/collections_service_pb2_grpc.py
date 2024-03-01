@@ -59,6 +59,11 @@ class CollectionsStub(object):
                 request_serializer=collections__pb2.CollectionClusterInfoRequest.SerializeToString,
                 response_deserializer=collections__pb2.CollectionClusterInfoResponse.FromString,
                 )
+        self.CollectionExists = channel.unary_unary(
+                '/qdrant.Collections/CollectionExists',
+                request_serializer=collections__pb2.CollectionExistsRequest.SerializeToString,
+                response_deserializer=collections__pb2.CollectionExistsResponse.FromString,
+                )
         self.UpdateCollectionClusterSetup = channel.unary_unary(
                 '/qdrant.Collections/UpdateCollectionClusterSetup',
                 request_serializer=collections__pb2.UpdateCollectionClusterSetupRequest.SerializeToString,
@@ -151,6 +156,14 @@ class CollectionsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CollectionExists(self, request, context):
+        """
+        Check the existence of a collection
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def UpdateCollectionClusterSetup(self, request, context):
         """
         Update cluster setup for a collection
@@ -222,6 +235,11 @@ def add_CollectionsServicer_to_server(servicer, server):
                     servicer.CollectionClusterInfo,
                     request_deserializer=collections__pb2.CollectionClusterInfoRequest.FromString,
                     response_serializer=collections__pb2.CollectionClusterInfoResponse.SerializeToString,
+            ),
+            'CollectionExists': grpc.unary_unary_rpc_method_handler(
+                    servicer.CollectionExists,
+                    request_deserializer=collections__pb2.CollectionExistsRequest.FromString,
+                    response_serializer=collections__pb2.CollectionExistsResponse.SerializeToString,
             ),
             'UpdateCollectionClusterSetup': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateCollectionClusterSetup,
@@ -398,6 +416,23 @@ class Collections(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/CollectionClusterInfo',
             collections__pb2.CollectionClusterInfoRequest.SerializeToString,
             collections__pb2.CollectionClusterInfoResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CollectionExists(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Collections/CollectionExists',
+            collections__pb2.CollectionExistsRequest.SerializeToString,
+            collections__pb2.CollectionExistsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
