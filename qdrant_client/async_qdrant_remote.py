@@ -29,6 +29,7 @@ from typing import (
 
 import httpx
 import numpy as np
+from grpc import Compression
 from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
@@ -111,6 +112,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 warnings.warn("Api key is used with unsecure connection.")
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
+        grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
+        if grpc_compression is not None and (not isinstance(grpc_compression, Compression)):
+            raise TypeError(
+                f"Expected 'grpc_compression' to be of type grpc.Compression or None, but got {type(grpc_compression)}"
+            )
+        if grpc_compression == Compression.Deflate:
+            raise ValueError(
+                "grpc.Compression.Deflate is not supported. Try grpc.Compression.Gzip or grpc.Compression.NoCompression"
+            )
+        self._grpc_compression = grpc_compression
         address = f"{self._host}:{self._port}" if self._port is not None else self._host
         self.rest_uri = f"{self._scheme}://{address}{self._prefix}"
         self._rest_args = {"headers": self._rest_headers, "http2": http2, **kwargs}
@@ -170,6 +181,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ssl=self._https,
                 metadata=self._grpc_headers,
                 options=self._grpc_options,
+                compression=self._grpc_compression,
             )
 
     def _init_grpc_points_client(self) -> None:
