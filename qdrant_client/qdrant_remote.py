@@ -135,7 +135,7 @@ class QdrantRemote(QdrantBase):
             )
         if grpc_compression == Compression.Deflate:
             raise ValueError(
-                "grpc.Compression.Defalte is not supported. Try grpc.Compression.Gzip or grpc.Compression.NoCompression"
+                "grpc.Compression.Deflate is not supported. Try grpc.Compression.Gzip or grpc.Compression.NoCompression"
             )
         self._grpc_compression = grpc_compression
 
