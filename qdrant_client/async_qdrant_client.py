@@ -22,7 +22,7 @@ from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
 
 
 class AsyncQdrantClient(AsyncQdrantFastembedMixin):
-    """Entry point to communicate with Qdrant service via REST or gPRC API.
+    """Entry point to communicate with Qdrant service via REST or gRPC API.
 
     It combines interface classes and endpoint implementation.
     Additionally, it provides custom implementations for frequently used methods like initial collection upload.
