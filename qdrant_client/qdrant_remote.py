@@ -131,7 +131,8 @@ class QdrantRemote(QdrantBase):
         grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
         if grpc_compression is not None and not isinstance(grpc_compression, Compression):
             raise TypeError(
-                f"Expected 'grpc_compression' to be of type grpc.Compression or None, but got {type(grpc_compression).__name__}"
+                f"Expected 'grpc_compression' to be of type "
+                f"grpc.Compression or None, but got {type(grpc_compression)}"
             )
         if grpc_compression == Compression.Deflate:
             raise ValueError(
