@@ -71,3 +71,6 @@ markers = [
     "fastembed: marks tests that require the fastembed package (deselect with '-m \"not fastembed\"')",
     "no_fastembed: marks tests that do not require the fastembed package (deselect with '-m \"not no_fastembed\"')"
 ]
+
+[tool.isort]
+known_third_party = "grpc"
