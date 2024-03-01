@@ -336,6 +336,7 @@ class _SnapshotsApi:
         self,
         collection_name: str,
         wait: bool = None,
+        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ):
         """
@@ -348,6 +349,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+        if checksum is not None:
+            query_params["checksum"] = str(checksum)
 
         headers = {}
         body = jsonable_encoder(snapshot_recover)
@@ -408,6 +411,7 @@ class _SnapshotsApi:
         collection_name: str,
         shard_id: int,
         wait: bool = None,
+        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ):
         """
@@ -421,6 +425,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+        if checksum is not None:
+            query_params["checksum"] = str(checksum)
 
         headers = {}
         body = jsonable_encoder(shard_snapshot_recover)
@@ -639,6 +645,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ) -> m.InlineResponse20010:
         """
@@ -647,6 +654,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         return await self._build_for_recover_from_snapshot(
             collection_name=collection_name,
             wait=wait,
+            checksum=checksum,
             snapshot_recover=snapshot_recover,
         )
 
@@ -674,6 +682,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
+        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ) -> m.InlineResponse20010:
         """
@@ -683,6 +692,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
             collection_name=collection_name,
             shard_id=shard_id,
             wait=wait,
+            checksum=checksum,
             shard_snapshot_recover=shard_snapshot_recover,
         )
 
@@ -868,6 +878,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         wait: bool = None,
+        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ) -> m.InlineResponse20010:
         """
@@ -876,6 +887,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         return self._build_for_recover_from_snapshot(
             collection_name=collection_name,
             wait=wait,
+            checksum=checksum,
             snapshot_recover=snapshot_recover,
         )
 
@@ -903,6 +915,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
+        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ) -> m.InlineResponse20010:
         """
@@ -912,6 +925,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
             collection_name=collection_name,
             shard_id=shard_id,
             wait=wait,
+            checksum=checksum,
             shard_snapshot_recover=shard_snapshot_recover,
         )
 
