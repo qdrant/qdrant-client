@@ -425,7 +425,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         timeout=TIMEOUT,
     )
 
-    if version is None or (version >= "1.8.0" or version == "dev"):
+    if version is None or (version >= "v1.8.0" or version == "dev"):
         assert client.collection_exists(collection_name=COLLECTION_NAME)
         assert not client.collection_exists(collection_name="non_existing_collection")
 
