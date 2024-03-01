@@ -196,7 +196,7 @@ def check_min_should(
     payload: dict,
     point_id: models.ExtendedPointId,
     min_count: int,
-):
+) -> bool:
     return (
         sum(check_condition(condition, payload, point_id) for condition in conditions) >= min_count
     )
