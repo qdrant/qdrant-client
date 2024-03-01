@@ -41,8 +41,8 @@ coverage = "^6.3.3"
 pytest-asyncio = "^0.21.0"
 pytest-timeout = "^2.1.0"
 autoflake = "^2.2.1"
-isort = "^5.12.0"
-black = "^23.9.1"
+isort = "^5.13.0"
+black = "^23.12.1"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^4.5.0"
@@ -71,3 +71,6 @@ markers = [
     "fastembed: marks tests that require the fastembed package (deselect with '-m \"not fastembed\"')",
     "no_fastembed: marks tests that do not require the fastembed package (deselect with '-m \"not no_fastembed\"')"
 ]
+
+[tool.isort]
+known_third_party = "grpc"

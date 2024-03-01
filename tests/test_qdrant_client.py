@@ -7,7 +7,7 @@ from typing import List
 
 import numpy as np
 import pytest
-from grpc import RpcError
+from grpc import Compression, RpcError
 
 from qdrant_client import QdrantClient, models
 from qdrant_client._pydantic_compat import to_dict
@@ -48,6 +48,7 @@ from qdrant_client.models import (
 )
 from qdrant_client.qdrant_remote import QdrantRemote
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
+from tests.congruence_tests.test_common import generate_fixtures, init_client
 from tests.fixtures.payload import (
     one_random_payload_please,
     random_payload,
@@ -1728,6 +1729,21 @@ def test_grpc_options():
             "grpc_collection",
             vectors_config=models.VectorParams(size=100, distance=models.Distance.COSINE),
         )
+
+
+def test_grpc_compression():
+    client = QdrantClient(prefer_grpc=True, grpc_compression=Compression.Gzip)
+    client.get_collections()
+
+    client = QdrantClient(prefer_grpc=True, grpc_compression=Compression.NoCompression)
+    client.get_collections()
+
+    with pytest.raises(ValueError):
+        # creates a grpc client with not supported Compression type
+        QdrantClient(prefer_grpc=True, grpc_compression=Compression.Deflate)
+
+    with pytest.raises(TypeError):
+        QdrantClient(prefer_grpc=True, grpc_compression="gzip")
 
 
 if __name__ == "__main__":
