@@ -90,8 +90,8 @@ def payload_to_grpc(payload: Dict[str, Any]) -> Dict[str, Value]:
     return dict((key, json_to_value(val)) for key, val in payload.items())
 
 
-def grpc_to_payload(grpc: Dict[str, Value]) -> Dict[str, Any]:
-    return dict((key, value_to_json(val)) for key, val in grpc.items())
+def grpc_to_payload(grpc_: Dict[str, Value]) -> Dict[str, Any]:
+    return dict((key, value_to_json(val)) for key, val in grpc_.items())
 
 
 def grpc_payload_schema_to_field_type(model: grpc.PayloadSchemaType) -> grpc.FieldType:
