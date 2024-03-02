@@ -559,8 +559,42 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         with_payload=True,
         limit=5,
     )
-
     assert hits_should == hits_match_any
+
+    if version is None or (version >= "v1.8.0" or version == "dev"):
+        hits_min_should = client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_vector,
+            query_filter=Filter(
+                min_should=models.MinShould(
+                    conditions=[
+                        FieldCondition(key="id_str", match=MatchValue(value="11")),
+                        FieldCondition(key="rand_digit", match=MatchAny(any=list(range(10)))),
+                        FieldCondition(key="id", match=MatchAny(any=list(range(100, 150)))),
+                    ],
+                    min_count=2,
+                )
+            ),
+            with_payload=True,
+            limit=5,
+        )
+        assert len(hits_min_should) > 0
+
+        hits_min_should_empty = client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=query_vector,
+            query_filter=Filter(
+                min_should=models.MinShould(
+                    conditions=[
+                        FieldCondition(key="id_str", match=MatchValue(value="11")),
+                    ],
+                    min_count=2,
+                )
+            ),
+            with_payload=True,
+            limit=5,
+        )
+        assert len(hits_min_should_empty) == 0
 
     # Let's now query same vector with filter condition
     hits = client.search(

@@ -292,6 +292,7 @@ def one_random_filter_please() -> models.Filter:
             two_should_filter,
             two_must_not_filter,
             should_must_filter,
+            min_should_filter,
         ]
     )()
 
@@ -302,6 +303,18 @@ def must_filter() -> models.Filter:
 
 def should_filter() -> models.Filter:
     return models.Filter(should=[one_random_condition_please()])
+
+
+def min_should_filter() -> models.Filter:
+    min_count = random.randint(1, 3)
+    upper_bound = max(min_count + 1, min_count * 2)
+    num_conditions = random.randint(min_count, upper_bound)
+    return models.Filter(
+        min_should=models.MinShould(
+            conditions=[one_random_condition_please() for _ in range(num_conditions)],
+            min_count=min_count,
+        )
+    )
 
 
 def must_not_filter() -> models.Filter:

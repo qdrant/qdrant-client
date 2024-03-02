@@ -214,6 +214,17 @@ def check_should(
     return any(check_condition(condition, payload, point_id) for condition in conditions)
 
 
+def check_min_should(
+    conditions: List[models.Condition],
+    payload: dict,
+    point_id: models.ExtendedPointId,
+    min_count: int,
+) -> bool:
+    return (
+        sum(check_condition(condition, payload, point_id) for condition in conditions) >= min_count
+    )
+
+
 def check_filter(
     payload_filter: models.Filter, payload: dict, point_id: models.ExtendedPointId
 ) -> bool:
@@ -225,6 +236,14 @@ def check_filter(
             return False
     if payload_filter.should is not None:
         if not check_should(payload_filter.should, payload, point_id):
+            return False
+    if payload_filter.min_should is not None:
+        if not check_min_should(
+            payload_filter.min_should.conditions,
+            payload,
+            point_id,
+            payload_filter.min_should.min_count,
+        ):
             return False
     return True
 
