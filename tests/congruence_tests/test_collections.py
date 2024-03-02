@@ -52,6 +52,22 @@ def test_get_collection():
     )
 
 
+def test_collection_exists():
+    remote_client = init_remote()
+    local_client = init_local()
+
+    assert not remote_client.collection_exists(COLLECTION_NAME + "_not_exists")
+    assert not local_client.collection_exists(COLLECTION_NAME + "_not_exists")
+
+    vector_params = models.VectorParams(size=2, distance=models.Distance.COSINE)
+
+    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+
+    assert remote_client.collection_exists(COLLECTION_NAME)
+    assert local_client.collection_exists(COLLECTION_NAME)
+
+
 def test_init_from():
     vector_size = 2
 

@@ -1534,6 +1534,19 @@ class QdrantClient(QdrantFastembedMixin):
 
         return self._client.get_collection(collection_name=collection_name, **kwargs)
 
+    def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
+        """Check whether collection already exists
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            True if collection exists, False if not
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.collection_exists(collection_name=collection_name, **kwargs)
+
     def update_collection(
         self,
         collection_name: str,

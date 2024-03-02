@@ -355,9 +355,11 @@ class QdrantRemote(QdrantBase):
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_search_request(r, collection_name)
-                if isinstance(r, models.SearchRequest)
-                else r
+                (
+                    RestToGrpc.convert_search_request(r, collection_name)
+                    if isinstance(r, models.SearchRequest)
+                    else r
+                )
                 for r in requests
             ]
 
@@ -655,9 +657,11 @@ class QdrantRemote(QdrantBase):
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_recommend_request(r, collection_name)
-                if isinstance(r, models.RecommendRequest)
-                else r
+                (
+                    RestToGrpc.convert_recommend_request(r, collection_name)
+                    if isinstance(r, models.RecommendRequest)
+                    else r
+                )
                 for r in requests
             ]
 
@@ -679,9 +683,11 @@ class QdrantRemote(QdrantBase):
             ]
         else:
             requests = [
-                GrpcToRest.convert_recommend_points(r)
-                if isinstance(r, grpc.RecommendPoints)
-                else r
+                (
+                    GrpcToRest.convert_recommend_points(r)
+                    if isinstance(r, grpc.RecommendPoints)
+                    else r
+                )
                 for r in requests
             ]
             http_res: List[List[models.ScoredPoint]] = self.http.points_api.recommend_batch_points(
@@ -775,16 +781,20 @@ class QdrantRemote(QdrantBase):
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
             positive = [
-                GrpcToRest.convert_point_id(example)
-                if isinstance(example, grpc.PointId)
-                else example
+                (
+                    GrpcToRest.convert_point_id(example)
+                    if isinstance(example, grpc.PointId)
+                    else example
+                )
                 for example in positive
             ]
 
             negative = [
-                GrpcToRest.convert_point_id(example)
-                if isinstance(example, grpc.PointId)
-                else example
+                (
+                    GrpcToRest.convert_point_id(example)
+                    if isinstance(example, grpc.PointId)
+                    else example
+                )
                 for example in negative
             ]
 
@@ -918,16 +928,20 @@ class QdrantRemote(QdrantBase):
                 with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
 
             positive = [
-                GrpcToRest.convert_point_id(point_id)
-                if isinstance(point_id, grpc.PointId)
-                else point_id
+                (
+                    GrpcToRest.convert_point_id(point_id)
+                    if isinstance(point_id, grpc.PointId)
+                    else point_id
+                )
                 for point_id in positive
             ]
 
             negative = [
-                GrpcToRest.convert_point_id(point_id)
-                if isinstance(point_id, grpc.PointId)
-                else point_id
+                (
+                    GrpcToRest.convert_point_id(point_id)
+                    if isinstance(point_id, grpc.PointId)
+                    else point_id
+                )
                 for point_id in negative
             ]
 
@@ -1000,9 +1014,11 @@ class QdrantRemote(QdrantBase):
             )
 
             context = [
-                RestToGrpc.convert_context_example_pair(pair)
-                if isinstance(pair, models.ContextExamplePair)
-                else pair
+                (
+                    RestToGrpc.convert_context_example_pair(pair)
+                    if isinstance(pair, models.ContextExamplePair)
+                    else pair
+                )
                 for pair in context
             ]
 
@@ -1056,9 +1072,11 @@ class QdrantRemote(QdrantBase):
             )
 
             context = [
-                GrpcToRest.convert_context_example_pair(pair)
-                if isinstance(pair, grpc.ContextExamplePair)
-                else pair
+                (
+                    GrpcToRest.convert_context_example_pair(pair)
+                    if isinstance(pair, grpc.ContextExamplePair)
+                    else pair
+                )
                 for pair in context
             ]
 
@@ -1105,9 +1123,11 @@ class QdrantRemote(QdrantBase):
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_discover_request(r, collection_name)
-                if isinstance(r, models.DiscoverRequest)
-                else r
+                (
+                    RestToGrpc.convert_discover_request(r, collection_name)
+                    if isinstance(r, models.DiscoverRequest)
+                    else r
+                )
                 for r in requests
             ]
 
@@ -1187,11 +1207,11 @@ class QdrantRemote(QdrantBase):
                 timeout=self._timeout,
             )
 
-            return [
-                GrpcToRest.convert_retrieved_point(point) for point in res.result
-            ], GrpcToRest.convert_point_id(res.next_page_offset) if res.HasField(
-                "next_page_offset"
-            ) else None
+            return [GrpcToRest.convert_retrieved_point(point) for point in res.result], (
+                GrpcToRest.convert_point_id(res.next_page_offset)
+                if res.HasField("next_page_offset")
+                else None
+            )
         else:
             if isinstance(offset, grpc.PointId):
                 offset = GrpcToRest.convert_point_id(offset)
@@ -1282,17 +1302,21 @@ class QdrantRemote(QdrantBase):
                     grpc.PointStruct(
                         id=RestToGrpc.convert_extended_point_id(points.ids[idx]),
                         vectors=vectors_batch[idx],
-                        payload=RestToGrpc.convert_payload(points.payloads[idx])
-                        if points.payloads is not None
-                        else None,
+                        payload=(
+                            RestToGrpc.convert_payload(points.payloads[idx])
+                            if points.payloads is not None
+                            else None
+                        ),
                     )
                     for idx in range(len(points.ids))
                 ]
             if isinstance(points, list):
                 points = [
-                    RestToGrpc.convert_point_struct(point)
-                    if isinstance(point, models.PointStruct)
-                    else point
+                    (
+                        RestToGrpc.convert_point_struct(point)
+                        if isinstance(point, models.PointStruct)
+                        else point
+                    )
                     for point in points
                 ]
 
@@ -1318,9 +1342,11 @@ class QdrantRemote(QdrantBase):
         else:
             if isinstance(points, list):
                 points = [
-                    GrpcToRest.convert_point_struct(point)
-                    if isinstance(point, grpc.PointStruct)
-                    else point
+                    (
+                        GrpcToRest.convert_point_struct(point)
+                        if isinstance(point, grpc.PointStruct)
+                        else point
+                    )
                     for point in points
                 ]
 
@@ -1444,9 +1470,11 @@ class QdrantRemote(QdrantBase):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
 
             ids = [
-                RestToGrpc.convert_extended_point_id(idx)
-                if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
-                else idx
+                (
+                    RestToGrpc.convert_extended_point_id(idx)
+                    if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
+                    else idx
+                )
                 for idx in ids
             ]
 
@@ -1505,9 +1533,11 @@ class QdrantRemote(QdrantBase):
             points_selector = grpc.PointsSelector(
                 points=grpc.PointsIdsList(
                     ids=[
-                        RestToGrpc.convert_extended_point_id(idx)
-                        if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
-                        else idx
+                        (
+                            RestToGrpc.convert_extended_point_id(idx)
+                            if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
+                            else idx
+                        )
                         for idx in points
                     ]
                 )
@@ -1893,9 +1923,11 @@ class QdrantRemote(QdrantBase):
     ) -> bool:
         if self._prefer_grpc:
             change_aliases_operation = [
-                RestToGrpc.convert_alias_operations(operation)
-                if not isinstance(operation, grpc.AliasOperations)
-                else operation
+                (
+                    RestToGrpc.convert_alias_operations(operation)
+                    if not isinstance(operation, grpc.AliasOperations)
+                    else operation
+                )
                 for operation in change_aliases_operations
             ]
             return self.grpc_collections.UpdateAliases(
@@ -1907,9 +1939,11 @@ class QdrantRemote(QdrantBase):
             ).result
 
         change_aliases_operation = [
-            GrpcToRest.convert_alias_operations(operation)
-            if isinstance(operation, grpc.AliasOperations)
-            else operation
+            (
+                GrpcToRest.convert_alias_operations(operation)
+                if isinstance(operation, grpc.AliasOperations)
+                else operation
+            )
             for operation in change_aliases_operations
         ]
         result: Optional[bool] = self.http.collections_api.update_aliases(
@@ -1990,6 +2024,19 @@ class QdrantRemote(QdrantBase):
         ).result
         assert result is not None, "Get collection returned None"
         return result
+
+    def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
+        if self._prefer_grpc:
+            return self.grpc_collections.CollectionExists(
+                grpc.CollectionExistsRequest(collection_name=collection_name),
+                timeout=self._timeout,
+            ).result.exists
+
+        result: Optional[models.CollectionExistence] = self.http.collections_api.collection_exists(
+            collection_name=collection_name
+        ).result
+        assert result is not None, "Collection exists returned None"
+        return result.exists
 
     def update_collection(
         self,
