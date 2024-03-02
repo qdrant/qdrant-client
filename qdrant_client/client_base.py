@@ -263,6 +263,9 @@ class QdrantBase:
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         raise NotImplementedError()
 
+    def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
+        raise NotImplementedError()
+
     def update_collection(
         self,
         collection_name: str,

@@ -48,7 +48,6 @@ from qdrant_client.models import (
 )
 from qdrant_client.qdrant_remote import QdrantRemote
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
-from tests.congruence_tests.test_common import generate_fixtures, init_client
 from tests.fixtures.payload import (
     one_random_payload_please,
     random_payload,
@@ -402,6 +401,8 @@ def test_multiple_vectors(prefer_grpc):
 @pytest.mark.parametrize("numpy_upload", [False, True])
 @pytest.mark.parametrize("local_mode", [False, True])
 def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
+    version = os.getenv("QDRANT_VERSION")
+
     vectors_path = create_random_vectors()
 
     if numpy_upload:
@@ -423,6 +424,10 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
+
+    if version is None or (version >= "v1.8.0" or version == "dev"):
+        assert client.collection_exists(collection_name=COLLECTION_NAME)
+        assert not client.collection_exists(collection_name="non_existing_collection")
 
     # Call Qdrant API to retrieve list of existing collections
     collections = client.get_collections().collections
@@ -473,8 +478,6 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
             )
         ]
     )
-
-    version = os.getenv("QDRANT_VERSION")
 
     collection_aliases = client.get_collection_aliases(COLLECTION_NAME)
 
