@@ -130,6 +130,15 @@ filter_ = grpc.Filter(
     must_not=[
         grpc.Condition(filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)]))
     ],
+    min_should=grpc.MinShould(
+        conditions=[
+            condition_has_id,
+            condition_is_empty,
+            condition_except_keywords,
+            condition_except_integers,
+        ],
+        min_count=3,
+    ),
 )
 
 vector_param = grpc.VectorParams(
