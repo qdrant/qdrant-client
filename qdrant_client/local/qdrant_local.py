@@ -73,13 +73,14 @@ class QdrantLocal(QdrantBase):
                     f"Collection appears to be None before closing. The existing collections are: "
                     f"{list(self.collections.keys())}"
                 )
-        if self._flock_file is not None:
-            try:
+
+        try:
+            if self._flock_file is not None and not self._flock_file.closed:
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
-            except TypeError:  # sometimes portalocker module can be garbage collected before
-                # QdrantLocal instance
-                pass
+        except TypeError:  # sometimes portalocker module can be garbage collected before
+            # QdrantLocal instance
+            pass
 
     def _load(self) -> None:
         if not self.persistent:
