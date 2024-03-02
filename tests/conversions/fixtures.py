@@ -138,7 +138,7 @@ filter_ = grpc.Filter(
                 condition_except_keywords,
                 condition_except_integers,
             ],
-            min_should=3,
+            min_count=3,
         ),
     ],
 )
