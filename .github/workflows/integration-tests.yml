@@ -57,7 +57,7 @@ jobs:
         shell: bash
       - name: Fastembed not installed tests
         run: |
-          pip3 uninstall fastembed
+          pip3 uninstall fastembed -y
           pytest tests/test_fastembed.py
         shell: bash
       - name: Check conversion coverage
