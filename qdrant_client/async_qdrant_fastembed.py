@@ -44,9 +44,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         try:
             from fastembed import TextEmbedding
 
-            QdrantFastembedMixin._FASTEMBED_INSTALLED = True
+            self.__class__._FASTEMBED_INSTALLED = True
         except ImportError:
-            QdrantFastembedMixin._FASTEMBED_INSTALLED = False
+            self.__class__._FASTEMBED_INSTALLED = False
         super().__init__(**kwargs)
 
     @property
