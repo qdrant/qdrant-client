@@ -34,8 +34,17 @@ class QdrantFastembedMixin(QdrantBase):
 
     embedding_models: Dict[str, "TextEmbedding"] = {}
 
+    _FASTEMBED_INSTALLED: bool
+
     def __init__(self, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
+        try:
+            from fastembed import TextEmbedding  # noqa: F401
+
+            QdrantFastembedMixin._FASTEMBED_INSTALLED = True
+        except ImportError:
+            QdrantFastembedMixin._FASTEMBED_INSTALLED = False
+
         super().__init__(**kwargs)
 
     @property
@@ -99,19 +108,21 @@ class QdrantFastembedMixin(QdrantBase):
         )
         self._embedding_model_name = embedding_model_name
 
-    @staticmethod
-    def _import_fastembed() -> None:
-        try:
-            from fastembed import TextEmbedding  # noqa: F401
-        except ImportError:
-            # If it's not, ask the user to install it
-            raise ImportError(
-                "fastembed is not installed."
-                " Please install it to enable fast vector indexing with `pip install fastembed`."
-            )
+    @classmethod
+    def _import_fastembed(cls) -> None:
+        if cls._FASTEMBED_INSTALLED:
+            return
+
+        # If it's not, ask the user to install it
+        raise ImportError(
+            "fastembed is not installed."
+            " Please install it to enable fast vector indexing with `pip install fastembed`."
+        )
 
     @classmethod
     def _get_model_params(cls, model_name: str) -> Tuple[int, models.Distance]:
+        cls._import_fastembed()
+
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
@@ -130,12 +141,12 @@ class QdrantFastembedMixin(QdrantBase):
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
 
+        cls._import_fastembed()
+
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
-
-        cls._import_fastembed()
 
         cls.embedding_models[model_name] = TextEmbedding(
             model_name=model_name,

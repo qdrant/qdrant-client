@@ -16,7 +16,7 @@ def test_add_without_query(
             "Qdrant also has Llama Index integrations",
         ]
 
-    if not local_client._is_fastembed_installed:
+    if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
     local_client.add(collection_name=collection_name, documents=docs)
@@ -42,7 +42,7 @@ def test_no_install(
         }
 
     # When FastEmbed is not installed, the add method should raise an ImportError
-    if local_client._is_fastembed_installed:
+    if local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is installed, skipping test")
     else:
         with pytest.raises(ImportError):
@@ -67,7 +67,7 @@ def test_query(
             "ids": [42, 2],
         }
 
-    if not local_client._is_fastembed_installed:
+    if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
     local_client.add(
@@ -99,7 +99,7 @@ def test_set_model(
             "You can just add documents and query them to do semantic search",
         ]
 
-    if not local_client._is_fastembed_installed:
+    if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
     embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
