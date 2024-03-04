@@ -55,6 +55,11 @@ jobs:
           export RUNNER_OS=${{ runner.os }}
           QDRANT_VERSION='v1.7.4' ./tests/integration-tests.sh
         shell: bash
+      - name: Run fastembed tests without fastembed
+        run: |
+          pip3 uninstall fastembed -y
+          pytest tests/test_fastembed.py
+        shell: bash
       - name: Check conversion coverage
         run: |
           export RUNNER_OS=${{ runner.os }}
