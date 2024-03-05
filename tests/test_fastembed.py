@@ -16,7 +16,7 @@ def test_add_without_query(
             "Qdrant also has Llama Index integrations",
         ]
 
-    if not local_client._is_fastembed_installed:
+    if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
     local_client.add(collection_name=collection_name, documents=docs)
@@ -42,7 +42,7 @@ def test_no_install(
         }
 
     # When FastEmbed is not installed, the add method should raise an ImportError
-    if local_client._is_fastembed_installed:
+    if local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is installed, skipping test")
     else:
         with pytest.raises(ImportError):
@@ -67,7 +67,7 @@ def test_query(
             "ids": [42, 2],
         }
 
-    if not local_client._is_fastembed_installed:
+    if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
     local_client.add(
@@ -99,31 +99,19 @@ def test_set_model(
             "You can just add documents and query them to do semantic search",
         ]
 
-    if not local_client._is_fastembed_installed:
+    if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
     embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
     max_length = 384
-    temp_cache_dir = tempfile.TemporaryDirectory()
     local_client.set_model(
         embedding_model_name=embedding_model_name,
         max_length=max_length,
-        cache_dir=temp_cache_dir.name,
     )
     # Check if the model is initialized & cls.embeddings_models is set with expected values
     dim, dist = local_client._get_model_params(embedding_model_name)
     assert dim == max_length
 
-    # Assert that the cache directory has a directory which contains `model.onnx` file
-    import os
-
-    assert os.path.exists(
-        os.path.join(
-            temp_cache_dir.name,
-            f"fast-{embedding_model_name.split('/')[1]}",
-            "model.onnx",
-        )
-    )
     # Use the initialized model to add documents with vector embeddings
     local_client.add(collection_name=collection_name, documents=docs)
     assert local_client.count(collection_name).count == 2

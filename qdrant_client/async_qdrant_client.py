@@ -119,14 +119,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 grpc_options=grpc_options,
                 **kwargs,
             )
-        self._is_fastembed_installed: Optional[bool] = None
-        if self._is_fastembed_installed is None:
-            try:
-                from fastembed.embedding import DefaultEmbedding
-
-                self._is_fastembed_installed = True
-            except ImportError:
-                self._is_fastembed_installed = False
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
