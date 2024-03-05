@@ -31,7 +31,6 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     if TextEmbedding
     else {}
 )
-_DEPRECATED_MODELS = {"BAAI/bge-base-en", "BAAI/bge-small-en"}
 
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
@@ -53,11 +52,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     def embedding_model_name(self) -> str:
         if self._embedding_model_name is None:
             self._embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
-            warnings.warn(
-                f"Usage of the default model <{self.DEFAULT_EMBEDDING_MODEL}> is deprecated. Default model will be set to <BAAI/bge-small-en-v1.5> in `qdrant-client==1.9.0`Please specify the model explicitly with `set_model` method.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
         return self._embedding_model_name
 
     def set_model(
@@ -84,12 +78,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Returns:
             None
         """
-        if embedding_model_name in _DEPRECATED_MODELS:
-            warnings.warn(
-                f"Usage of {embedding_model_name} is deprecated. It will be removed in `qdrant-client==1.9.0`",
-                DeprecationWarning,
-                stacklevel=2,
-            )
         if max_length is not None:
             warnings.warn(
                 "max_length parameter is deprecated and will be removed in the future. It's not used by fastembed models.",
