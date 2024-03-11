@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[Any]]:
@@ -61,6 +61,50 @@ def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[An
 
     _get_value(payload, keys)
     return result if result else None
+
+
+def set_value_by_key(payload: Dict[str, Any], new_value: Dict[str, Any], key: str) -> None:
+    keys = key.split(".")
+
+    def _set_value(data: Any, k_list: List[str], new_value: Dict[str, Any]) -> None:
+        if not k_list:
+            return
+
+        k = k_list.pop(0)
+
+        if k.endswith("]"):
+            k, index = k.split("[")
+            if k not in data:
+                data[k] = []
+                return
+
+            data = data.get(k)
+
+            if not isinstance(data, list):
+                return
+
+            index = index.strip("]")
+            if index == "":
+                for item in data:
+                    if isinstance(item, dict) and len(k_list) == 0:
+                        item.update(new_value)
+                    else:
+                        _set_value(item, k_list.copy(), new_value)
+            else:
+                i = int(index)
+                if i < len(data):
+                    if isinstance(data[i], dict) and len(k_list) == 0:
+                        data[i].update(new_value)
+                    else:
+                        _set_value(data[i], k_list.copy(), new_value)
+        else:
+            if len(k_list) == 0:
+                data[k] = new_value
+                return
+            if k in data:
+                _set_value(data[k], k_list.copy(), new_value)
+
+    _set_value(payload, keys, new_value)
 
 
 def test_value_by_key() -> None:

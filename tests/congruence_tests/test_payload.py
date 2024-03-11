@@ -231,3 +231,157 @@ def test_not_jsonable_payload():
         )
 
     compare_collections(local_client, remote_client, len(points))
+
+
+def test_set_payload_with_key():
+    import numpy as np
+
+    from qdrant_client.models import PointStruct
+
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vector_size = 2
+    vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
+
+    local_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+    remote_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+
+    vector = np.random.rand(vector_size).tolist()
+    local_client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(
+                id=9999,
+                payload={"nest": [{"a": "100", "b": "200"}]},
+                vector=vector,
+            ),
+        ],
+        wait=True,
+    )
+    remote_client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(
+                id=9999,
+                payload={"nest": [{"a": "100", "b": "200"}]},
+                vector=vector,
+            ),
+        ],
+        wait=True,
+    )
+
+    payload = {"a": "101"}
+    key = "nest[0]"
+    local_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload=payload,
+        points=[9999],
+        key=key,
+    )
+    remote_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload=payload,
+        points=[9999],
+        key=key,
+    )
+    compare_collections(local_client, remote_client, 1)
+
+    key = "nest[0]"
+    local_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"c": "303"},
+        points=[9999],
+        key=key,
+    )
+    remote_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"c": "303"},
+        points=[9999],
+        key=key,
+    )
+    compare_collections(local_client, remote_client, 1)
+
+    key = "nest[1]"
+    local_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"d": "404"},
+        points=[9999],
+        key=key,
+    )
+    local_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"d": "404"},
+        points=[9999],
+        key=key,
+    )
+    compare_collections(local_client, remote_client, 1)
+
+    key = "nest[].nest"
+    local_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"d": "404"},
+        points=[9999],
+        key=key,
+    )
+    remote_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"d": "404"},
+        points=[9999],
+        key=key,
+    )
+    compare_collections(local_client, remote_client, 1)
+
+    local_client.overwrite_payload(
+        collection_name=COLLECTION_NAME,
+        payload=payload,
+        points=[9999],
+    )
+    remote_client.overwrite_payload(
+        collection_name=COLLECTION_NAME,
+        payload=payload,
+        points=[9999],
+    )
+    local_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"c": "405"},
+        points=[9999],
+        key="nest[]",
+    )
+    remote_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload={"c": "405"},
+        points=[9999],
+        key="nest[]",
+    )
+    compare_collections(local_client, remote_client, 1)
+
+    local_client.overwrite_payload(
+        collection_name=COLLECTION_NAME,
+        payload={},
+        points=[9999],
+    )
+    remote_client.overwrite_payload(
+        collection_name=COLLECTION_NAME,
+        payload={},
+        points=[9999],
+    )
+    local_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload=payload,
+        points=[9999],
+        key=key,
+    )
+    remote_client.set_payload(
+        collection_name=COLLECTION_NAME,
+        payload=payload,
+        points=[9999],
+        key=key,
+    )
+    compare_collections(local_client, remote_client, 1)

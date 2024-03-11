@@ -1686,6 +1686,7 @@ class QdrantRemote(QdrantBase):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
@@ -1710,6 +1711,7 @@ class QdrantRemote(QdrantBase):
                         points_selector=points_selector,
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
+                        key=key,
                     ),
                     timeout=self._timeout,
                 ).result
@@ -1725,6 +1727,7 @@ class QdrantRemote(QdrantBase):
                     points=_points,
                     filter=_filter,
                     shard_key=shard_key_selector,
+                    key=key,
                 ),
             ).result
             assert result is not None, "Set payload returned None"

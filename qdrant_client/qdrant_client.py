@@ -1195,6 +1195,7 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
@@ -1240,6 +1241,9 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            key:
+                Assigns payload to each point that satisfy this path of property
+
         Returns:
             Operation result
         """
@@ -1252,6 +1256,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            key=key,
             **kwargs,
         )
 
