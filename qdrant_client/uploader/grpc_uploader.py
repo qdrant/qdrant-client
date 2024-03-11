@@ -45,6 +45,7 @@ def upload_batch_grpc(
                     else None,
                 )
             )
+            break
         except Exception as e:
             logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
 

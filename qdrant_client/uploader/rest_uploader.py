@@ -39,6 +39,7 @@ def upload_batch(
                 point_insert_operations=PointsList(points=points, shard_key=shard_key_selector),
                 wait=wait,
             )
+            break
         except Exception as e:
             logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
 
