@@ -59,7 +59,6 @@ class _SnapshotsApi:
         """
         Create new snapshot of the whole storage
         """
-        kwargs = {}
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
@@ -71,7 +70,6 @@ class _SnapshotsApi:
             url="/snapshots",
             headers=headers if headers else None,
             params=query_params,
-            **kwargs,
         )
 
     def _build_for_create_shard_snapshot(
@@ -83,7 +81,6 @@ class _SnapshotsApi:
         """
         Create new snapshot of a shard for a collection
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -101,7 +98,6 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            **kwargs,
         )
 
     def _build_for_create_snapshot(
@@ -112,7 +108,6 @@ class _SnapshotsApi:
         """
         Create new snapshot for a collection
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -129,7 +124,6 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            **kwargs,
         )
 
     def _build_for_delete_full_snapshot(
@@ -140,7 +134,6 @@ class _SnapshotsApi:
         """
         Delete snapshot of the whole storage
         """
-        kwargs = {}
         path_params = {
             "snapshot_name": str(snapshot_name),
         }
@@ -157,7 +150,6 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            **kwargs,
         )
 
     def _build_for_delete_shard_snapshot(
@@ -170,7 +162,6 @@ class _SnapshotsApi:
         """
         Delete snapshot of a shard for a collection
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -189,7 +180,6 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            **kwargs,
         )
 
     def _build_for_delete_snapshot(
@@ -201,7 +191,6 @@ class _SnapshotsApi:
         """
         Delete snapshot for a collection
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "snapshot_name": str(snapshot_name),
@@ -219,7 +208,6 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            **kwargs,
         )
 
     def _build_for_get_full_snapshot(
@@ -229,7 +217,6 @@ class _SnapshotsApi:
         """
         Download specified snapshot of the whole storage as a file
         """
-        kwargs = {}
         path_params = {
             "snapshot_name": str(snapshot_name),
         }
@@ -241,7 +228,6 @@ class _SnapshotsApi:
             url="/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
-            **kwargs,
         )
 
     def _build_for_get_shard_snapshot(
@@ -253,7 +239,6 @@ class _SnapshotsApi:
         """
         Download specified snapshot of a shard from a collection as a file
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -267,7 +252,6 @@ class _SnapshotsApi:
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
-            **kwargs,
         )
 
     def _build_for_get_snapshot(
@@ -278,7 +262,6 @@ class _SnapshotsApi:
         """
         Download specified snapshot from a collection as a file
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "snapshot_name": str(snapshot_name),
@@ -291,7 +274,6 @@ class _SnapshotsApi:
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
-            **kwargs,
         )
 
     def _build_for_list_full_snapshots(
@@ -300,10 +282,12 @@ class _SnapshotsApi:
         """
         Get list of snapshots of the whole storage
         """
-        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011, method="GET", url="/snapshots", headers=headers if headers else None, **kwargs
+            type_=m.InlineResponse20011,
+            method="GET",
+            url="/snapshots",
+            headers=headers if headers else None,
         )
 
     def _build_for_list_shard_snapshots(
@@ -314,7 +298,6 @@ class _SnapshotsApi:
         """
         Get list of snapshots for a shard of a collection
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -327,7 +310,6 @@ class _SnapshotsApi:
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
             path_params=path_params,
-            **kwargs,
         )
 
     def _build_for_list_snapshots(
@@ -337,7 +319,6 @@ class _SnapshotsApi:
         """
         Get list of snapshots for a collection
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -349,7 +330,6 @@ class _SnapshotsApi:
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
             path_params=path_params,
-            **kwargs,
         )
 
     def _build_for_recover_from_snapshot(
@@ -361,7 +341,6 @@ class _SnapshotsApi:
         """
         Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -382,7 +361,6 @@ class _SnapshotsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_recover_from_uploaded_snapshot(
@@ -396,7 +374,6 @@ class _SnapshotsApi:
         """
         Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -423,7 +400,7 @@ class _SnapshotsApi:
             path_params=path_params,
             params=query_params,
             data=data,
-            files=files**kwargs,
+            files=files,
         )
 
     def _build_for_recover_shard_from_snapshot(
@@ -436,7 +413,6 @@ class _SnapshotsApi:
         """
         Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -458,7 +434,6 @@ class _SnapshotsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_recover_shard_from_uploaded_snapshot(
@@ -473,7 +448,6 @@ class _SnapshotsApi:
         """
         Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -501,7 +475,7 @@ class _SnapshotsApi:
             path_params=path_params,
             params=query_params,
             data=data,
-            files=files**kwargs,
+            files=files,
         )
 
 

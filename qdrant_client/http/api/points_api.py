@@ -62,7 +62,6 @@ class _PointsApi:
         """
         Apply a series of update operations for points, vectors and payloads
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -85,7 +84,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_clear_payload(
@@ -98,7 +96,6 @@ class _PointsApi:
         """
         Remove all payload for specified points
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -121,7 +118,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_count_points(
@@ -132,7 +128,6 @@ class _PointsApi:
         """
         Count points which matches given filtering condition
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -148,7 +143,6 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_delete_payload(
@@ -161,7 +155,6 @@ class _PointsApi:
         """
         Delete specified key payload for points
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -184,7 +177,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_delete_points(
@@ -197,7 +189,6 @@ class _PointsApi:
         """
         Delete points
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -220,7 +211,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_delete_vectors(
@@ -233,7 +223,6 @@ class _PointsApi:
         """
         Delete named vectors from the given points.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -256,7 +245,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_discover_batch_points(
@@ -269,7 +257,6 @@ class _PointsApi:
         """
         Look for points based on target and/or positive and negative example pairs, in batch.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -292,7 +279,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_discover_points(
@@ -305,7 +291,6 @@ class _PointsApi:
         """
         Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -328,7 +313,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_get_point(
@@ -340,7 +324,6 @@ class _PointsApi:
         """
         Retrieve full information of single point by id
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "id": str(id),
@@ -358,7 +341,6 @@ class _PointsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
-            **kwargs,
         )
 
     def _build_for_get_points(
@@ -370,7 +352,6 @@ class _PointsApi:
         """
         Retrieve multiple points by specified IDs
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -391,7 +372,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_overwrite_payload(
@@ -404,7 +384,6 @@ class _PointsApi:
         """
         Replace full payload of points with new one
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -427,7 +406,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_recommend_batch_points(
@@ -440,7 +418,6 @@ class _PointsApi:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -463,7 +440,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_recommend_point_groups(
@@ -476,7 +452,6 @@ class _PointsApi:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given payload field.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -499,7 +474,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_recommend_points(
@@ -512,7 +486,6 @@ class _PointsApi:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -535,7 +508,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_scroll_points(
@@ -547,7 +519,6 @@ class _PointsApi:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -568,7 +539,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_search_batch_points(
@@ -581,7 +551,6 @@ class _PointsApi:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -604,7 +573,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_search_point_groups(
@@ -617,7 +585,6 @@ class _PointsApi:
         """
         Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given payload field
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -640,7 +607,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_search_points(
@@ -653,7 +619,6 @@ class _PointsApi:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -676,7 +641,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_set_payload(
@@ -689,7 +653,6 @@ class _PointsApi:
         """
         Set payload values for points
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -712,7 +675,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_update_vectors(
@@ -725,7 +687,6 @@ class _PointsApi:
         """
         Update specified named vectors on points, keep unspecified vectors intact.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -748,7 +709,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
     def _build_for_upsert_points(
@@ -761,7 +721,6 @@ class _PointsApi:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
-        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -784,7 +743,6 @@ class _PointsApi:
             path_params=path_params,
             params=query_params,
             content=body,
-            **kwargs,
         )
 
 
