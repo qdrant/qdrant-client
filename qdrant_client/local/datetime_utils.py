@@ -36,6 +36,7 @@ def parse(date_str: str) -> Optional[datetime]:
                 return dt
             except ValueError:
                 pass
+        return None
 
     parsed_dt = parse_available_formats(date_str)
     if parsed_dt is not None:
