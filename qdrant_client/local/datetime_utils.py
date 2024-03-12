@@ -28,7 +28,11 @@ def parse(date_str: str) -> Optional[datetime]:
 
     for fmt in available_formats:
         try:
-            return datetime.strptime(date_str, fmt)
+            dt = datetime.strptime(date_str, fmt)
+            if dt.tzinfo is None:
+                # Assume UTC if no timezone is provided
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
         except ValueError:
             pass
 
