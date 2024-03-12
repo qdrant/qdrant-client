@@ -166,8 +166,8 @@ def test_value_by_key() -> None:
 
 def test_set_value_by_key() -> None:
     # Test case 1: Simple update at the root level
-    payload = {"a": 1, "b": 2}
-    new_value = {"c": 3}
+    payload: Dict[str, Any] = {"a": 1, "b": 2}
+    new_value: Dict[str, Any] = {"c": 3}
     set_value_by_key(payload, new_value, "c")
     assert payload == {"a": 1, "b": 2, "c": {"c": 3}}
 
