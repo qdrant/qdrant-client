@@ -113,8 +113,6 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(create_collection)
@@ -149,12 +147,8 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(create_field_index)
@@ -185,8 +179,6 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(create_sharding_key)
@@ -221,8 +213,6 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -251,8 +241,6 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -281,8 +269,6 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -314,12 +300,8 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -346,8 +328,6 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(drop_sharding_key)
@@ -384,8 +364,6 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -416,8 +394,6 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -611,8 +587,6 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(snapshot_recover)
@@ -648,16 +622,10 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if priority is not None:
             query_params["priority"] = str(priority)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if checksum is not None:
             query_params["checksum"] = str(checksum)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
@@ -695,8 +663,6 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(shard_snapshot_recover)
@@ -734,16 +700,10 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if priority is not None:
             query_params["priority"] = str(priority)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if checksum is not None:
             query_params["checksum"] = str(checksum)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
@@ -771,8 +731,6 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(change_aliases_operation)
@@ -805,8 +763,6 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(update_collection)
@@ -837,8 +793,6 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(cluster_operations)

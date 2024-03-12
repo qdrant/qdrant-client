@@ -100,8 +100,6 @@ class _ClusterApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(create_sharding_key)
@@ -132,8 +130,6 @@ class _ClusterApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(drop_sharding_key)
@@ -179,8 +175,6 @@ class _ClusterApi:
         query_params = {}
         if force is not None:
             query_params["force"] = str(force).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -207,8 +201,6 @@ class _ClusterApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(cluster_operations)

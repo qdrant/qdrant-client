@@ -63,8 +63,6 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -94,8 +92,6 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -124,8 +120,6 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -154,8 +148,6 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -188,8 +180,6 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -220,8 +210,6 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -381,8 +369,6 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(snapshot_recover)
@@ -418,16 +404,10 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if priority is not None:
             query_params["priority"] = str(priority)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if checksum is not None:
             query_params["checksum"] = str(checksum)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
@@ -465,8 +445,6 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(shard_snapshot_recover)
@@ -504,16 +482,10 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if priority is not None:
             query_params["priority"] = str(priority)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if checksum is not None:
             query_params["checksum"] = str(checksum)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841

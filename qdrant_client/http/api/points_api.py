@@ -70,12 +70,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(update_operations)
@@ -110,12 +106,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(points_selector)
@@ -177,12 +169,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(delete_payload)
@@ -217,12 +205,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(points_selector)
@@ -257,12 +241,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(delete_vectors)
@@ -297,12 +277,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(discover_request_batch)
@@ -337,12 +313,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(discover_request)
@@ -377,8 +349,6 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -408,8 +378,6 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(point_request)
@@ -444,12 +412,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(set_payload)
@@ -484,12 +448,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(recommend_request_batch)
@@ -524,12 +484,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(recommend_groups_request)
@@ -564,12 +520,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(recommend_request)
@@ -603,8 +555,6 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(scroll_request)
@@ -639,12 +589,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(search_request_batch)
@@ -679,12 +625,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(search_groups_request)
@@ -719,12 +661,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if timeout is not None:
             query_params["timeout"] = str(timeout)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(search_request)
@@ -759,12 +697,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(set_payload)
@@ -799,12 +733,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(update_vectors)
@@ -839,12 +769,8 @@ class _PointsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(point_insert_operations)

@@ -99,8 +99,6 @@ class _ServiceApi:
         query_params = {}
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -163,8 +161,6 @@ class _ServiceApi:
         query_params = {}
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
-            if "timeout" in query_params:
-                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
