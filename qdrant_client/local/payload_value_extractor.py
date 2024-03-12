@@ -164,7 +164,7 @@ def test_value_by_key() -> None:
     # endregion
 
 
-def test_set_value_by_key():
+def test_set_value_by_key() -> None:
     # Test case 1: Simple update at the root level
     payload = {"a": 1, "b": 2}
     new_value = {"c": 3}
