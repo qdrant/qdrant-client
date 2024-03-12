@@ -99,7 +99,10 @@ def set_value_by_key(payload: Dict[str, Any], new_value: Dict[str, Any], key: st
                         _set_value(data[i], k_list.copy(), new_value)
         else:
             if len(k_list) == 0:
-                data[k] = new_value
+                if k in data and isinstance(data[k], dict):
+                    data[k].update(new_value)
+                else:
+                    data[k] = new_value
                 return
             if k in data:
                 _set_value(data[k], k_list.copy(), new_value)
@@ -159,3 +162,77 @@ def test_value_by_key() -> None:
     assert value_by_key(payload, "nested[].empty", flat=False) == [[], [], None]
     assert value_by_key(payload, "the_null", flat=False) == [None]
     # endregion
+
+
+def test_set_value_by_key():
+    # Test case 1: Simple update at the root level
+    payload = {"a": 1, "b": 2}
+    new_value = {"c": 3}
+    set_value_by_key(payload, new_value, "c")
+    assert payload == {"a": 1, "b": 2, "c": {"c": 3}}
+
+    # Test case 2: Nested update
+    payload = {"a": {"b": {"c": 1}}}
+    new_value = {"d": 2}
+    set_value_by_key(payload, new_value, "a.b.d")
+    assert payload == {"a": {"b": {"c": 1, "d": {"d": 2}}}}
+
+    # Test case 3: Nested update with existing key
+    payload = {"a": {"b": {"c": 1}}}
+    new_value = {"c": 2}
+    set_value_by_key(payload, new_value, "a.b")
+    assert payload == {"a": {"b": {"c": 2}}}
+
+    # Test case 4: Nested update with existing key and array index
+    payload = {"a": [{"b": 1}, {"b": 2}]}
+    new_value = {"c": 3}
+    set_value_by_key(payload, new_value, "a[1]")
+    assert payload == {"a": [{"b": 1}, {"b": 2, "c": 3}]}
+
+    # Test case 5: Nested update with non-existing key and array index
+    payload = {"a": []}
+    new_value = {"b": {"c": 1}}
+    set_value_by_key(payload, new_value, "a[0]")
+    assert payload == {"a": []}
+
+    # Test case 6: Deeply nested update
+    payload = {"a": {"b": {"c": {"d": {"e": 1}}}}}
+    new_value = {"f": 2}
+    set_value_by_key(payload, new_value, "a.b.c.d")
+    assert payload == {"a": {"b": {"c": {"d": {"e": 1, "f": 2}}}}}
+
+    # Test case 7: Update with a nested new_value
+    payload = {"a": {"b": {"c": 1}}}
+    new_value = {"d": {"e": 2}}
+    set_value_by_key(payload, new_value, "a.b.c")
+    assert payload == {"a": {"b": {"c": {"d": {"e": 2}}}}}
+
+    # Test case 8: Update with an empty payload
+    payload = {}
+    new_value = {"a": 1}
+    set_value_by_key(payload, new_value, "a")
+    assert payload == {"a": {"a": 1}}
+
+    # Test case 9: Update with an array index that is out of range
+    payload = {"a": [{"b": 1}]}
+    new_value = {"c": 2}
+    set_value_by_key(payload, new_value, "a[1]")
+    assert payload == {"a": [{"b": 1}]}
+
+    # Test case 10: Update with nested array index
+    payload = {"a": {"b": [{"c": 1}, {"c": 2}]}}
+    new_value = {"d": 3}
+    set_value_by_key(payload, new_value, "a.b[0].c")
+    assert payload == {"a": {"b": [{"c": {"d": 3}}, {"c": 2}]}}
+
+    # Test case 11: Update with a complex nested structure
+    payload = {"a": {"b": {"c": [{"d": 1}]}}}
+    new_value = {"e": {"f": 2}}
+    set_value_by_key(payload, new_value, "a.b.c[0].d")
+    assert payload == {"a": {"b": {"c": [{"d": {"e": {"f": 2}}}]}}}
+
+    # Test case 12: Update with an array index using negative indexing
+    payload = {"a": [{"b": 1}, {"b": 2}]}
+    new_value = {"c": 3}
+    set_value_by_key(payload, new_value, "a[-1]")
+    assert payload == {"a": [{"b": 1}, {"b": 2, "c": 3}]}

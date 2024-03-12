@@ -254,134 +254,74 @@ def test_set_payload_with_key():
     )
 
     vector = np.random.rand(vector_size).tolist()
-    local_client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=[
-            PointStruct(
-                id=9999,
-                payload={"nest": [{"a": "100", "b": "200"}]},
-                vector=vector,
-            ),
-        ],
-        wait=True,
-    )
-    remote_client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=[
-            PointStruct(
-                id=9999,
-                payload={"nest": [{"a": "100", "b": "200"}]},
-                vector=vector,
-            ),
-        ],
-        wait=True,
-    )
 
-    payload = {"a": "101"}
-    key = "nest[0]"
-    local_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload=payload,
-        points=[9999],
-        key=key,
-    )
-    remote_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload=payload,
-        points=[9999],
-        key=key,
-    )
-    compare_collections(local_client, remote_client, 1)
+    def set_payload(payload, new_payload, key):
+        local_client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=[
+                PointStruct(
+                    id=9999,
+                    payload=payload,
+                    vector=vector,
+                ),
+            ],
+            wait=True,
+        )
+        remote_client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=[
+                PointStruct(
+                    id=9999,
+                    payload=payload,
+                    vector=vector,
+                ),
+            ],
+            wait=True,
+        )
 
+        local_client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=new_payload,
+            points=[9999],
+            key=key,
+        )
+        remote_client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=new_payload,
+            points=[9999],
+            key=key,
+        )
+        compare_collections(local_client, remote_client, 1)
+
+    payload = {"nest": [{"a": "100", "b": "200"}]}
+    new_payload = {"a": "101"}
     key = "nest[0]"
-    local_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={"c": "303"},
-        points=[9999],
-        key=key,
-    )
-    remote_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={"c": "303"},
-        points=[9999],
-        key=key,
-    )
-    compare_collections(local_client, remote_client, 1)
+    set_payload(payload, new_payload, key)
 
     key = "nest[1]"
-    local_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={"d": "404"},
-        points=[9999],
-        key=key,
-    )
-    local_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={"d": "404"},
-        points=[9999],
-        key=key,
-    )
-    compare_collections(local_client, remote_client, 1)
+    new_payload = {"d": "404"}
+    set_payload(payload, new_payload, key)
 
     key = "nest[].nest"
-    local_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={"d": "404"},
-        points=[9999],
-        key=key,
-    )
-    remote_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={"d": "404"},
-        points=[9999],
-        key=key,
-    )
-    compare_collections(local_client, remote_client, 1)
+    set_payload(payload, new_payload, key)
 
-    local_client.overwrite_payload(
-        collection_name=COLLECTION_NAME,
-        payload=payload,
-        points=[9999],
-    )
-    remote_client.overwrite_payload(
-        collection_name=COLLECTION_NAME,
-        payload=payload,
-        points=[9999],
-    )
-    local_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={"c": "405"},
-        points=[9999],
-        key="nest[]",
-    )
-    remote_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload={"c": "405"},
-        points=[9999],
-        key="nest[]",
-    )
-    compare_collections(local_client, remote_client, 1)
+    key = "nest[]"
+    set_payload(payload, new_payload, key)
 
-    local_client.overwrite_payload(
-        collection_name=COLLECTION_NAME,
-        payload={},
-        points=[9999],
-    )
-    remote_client.overwrite_payload(
-        collection_name=COLLECTION_NAME,
-        payload={},
-        points=[9999],
-    )
-    local_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload=payload,
-        points=[9999],
-        key=key,
-    )
-    remote_client.set_payload(
-        collection_name=COLLECTION_NAME,
-        payload=payload,
-        points=[9999],
-        key=key,
-    )
-    compare_collections(local_client, remote_client, 1)
+    payload = {}
+    set_payload(payload, new_payload, key)
+
+    payload = {"nest": [{"a": [], "b": "200"}]}
+    new_payload = {"a": "101"}
+    key = "nest[0].a[]"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": []}
+    new_payload = {"b": {"c": 1}}
+    key = "a[0]"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": {"b": {"c": {"d": {"e": 1}}}}}
+    new_payload = {"f": 2}
+    key = "a.b.c.d"
+    set_payload(payload, new_payload, key)
