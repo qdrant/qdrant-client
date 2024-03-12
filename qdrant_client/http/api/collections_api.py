@@ -59,6 +59,7 @@ class _CollectionsApi:
         """
         Get cluster information for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -70,6 +71,7 @@ class _CollectionsApi:
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_collection_exists(
@@ -79,6 +81,7 @@ class _CollectionsApi:
         """
         Returns \"true\" if the given collection name exists, and \"false\" otherwise
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -90,6 +93,7 @@ class _CollectionsApi:
             url="/collections/{collection_name}/exists",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_create_collection(
@@ -101,6 +105,7 @@ class _CollectionsApi:
         """
         Create new collection with given parameters
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -108,6 +113,8 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(create_collection)
@@ -121,6 +128,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_create_field_index(
@@ -133,6 +141,7 @@ class _CollectionsApi:
         """
         Create index for field in collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -140,8 +149,12 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(create_field_index)
@@ -155,6 +168,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_create_shard_key(
@@ -163,6 +177,7 @@ class _CollectionsApi:
         timeout: int = None,
         create_sharding_key: m.CreateShardingKey = None,
     ):
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -170,6 +185,8 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(create_sharding_key)
@@ -183,6 +200,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_create_shard_snapshot(
@@ -194,6 +212,7 @@ class _CollectionsApi:
         """
         Create new snapshot of a shard for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -202,6 +221,8 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -211,6 +232,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_create_snapshot(
@@ -221,6 +243,7 @@ class _CollectionsApi:
         """
         Create new snapshot for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -228,6 +251,8 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -237,6 +262,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_delete_collection(
@@ -247,6 +273,7 @@ class _CollectionsApi:
         """
         Drop collection and all associated data
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -254,6 +281,8 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -263,6 +292,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_delete_field_index(
@@ -275,6 +305,7 @@ class _CollectionsApi:
         """
         Delete field index for collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "field_name": str(field_name),
@@ -283,8 +314,12 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if ordering is not None:
             query_params["ordering"] = str(ordering)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -294,6 +329,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_delete_shard_key(
@@ -302,6 +338,7 @@ class _CollectionsApi:
         timeout: int = None,
         drop_sharding_key: m.DropShardingKey = None,
     ):
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -309,6 +346,8 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(drop_sharding_key)
@@ -322,6 +361,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_delete_shard_snapshot(
@@ -334,6 +374,7 @@ class _CollectionsApi:
         """
         Delete snapshot of a shard for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -343,6 +384,8 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -352,6 +395,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_delete_snapshot(
@@ -363,6 +407,7 @@ class _CollectionsApi:
         """
         Delete snapshot for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "snapshot_name": str(snapshot_name),
@@ -371,6 +416,8 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -380,6 +427,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_get_collection(
@@ -389,6 +437,7 @@ class _CollectionsApi:
         """
         Get detailed information about specified existing collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -400,6 +449,7 @@ class _CollectionsApi:
             url="/collections/{collection_name}",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_get_collection_aliases(
@@ -409,6 +459,7 @@ class _CollectionsApi:
         """
         Get list of all aliases for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -420,6 +471,7 @@ class _CollectionsApi:
             url="/collections/{collection_name}/aliases",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_get_collections(
@@ -428,12 +480,10 @@ class _CollectionsApi:
         """
         Get list name of all existing collections
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2005,
-            method="GET",
-            url="/collections",
-            headers=headers if headers else None,
+            type_=m.InlineResponse2005, method="GET", url="/collections", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_get_collections_aliases(
@@ -442,12 +492,10 @@ class _CollectionsApi:
         """
         Get list of all existing collections aliases
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20010,
-            method="GET",
-            url="/aliases",
-            headers=headers if headers else None,
+            type_=m.InlineResponse20010, method="GET", url="/aliases", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_get_shard_snapshot(
@@ -459,6 +507,7 @@ class _CollectionsApi:
         """
         Download specified snapshot of a shard from a collection as a file
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -472,6 +521,7 @@ class _CollectionsApi:
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_get_snapshot(
@@ -482,6 +532,7 @@ class _CollectionsApi:
         """
         Download specified snapshot from a collection as a file
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "snapshot_name": str(snapshot_name),
@@ -494,6 +545,7 @@ class _CollectionsApi:
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_list_shard_snapshots(
@@ -504,6 +556,7 @@ class _CollectionsApi:
         """
         Get list of snapshots for a shard of a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -516,6 +569,7 @@ class _CollectionsApi:
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_list_snapshots(
@@ -525,6 +579,7 @@ class _CollectionsApi:
         """
         Get list of snapshots for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -536,18 +591,19 @@ class _CollectionsApi:
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_recover_from_snapshot(
         self,
         collection_name: str,
         wait: bool = None,
-        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ):
         """
         Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -555,8 +611,8 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-        if checksum is not None:
-            query_params["checksum"] = str(checksum)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(snapshot_recover)
@@ -570,6 +626,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_recover_from_uploaded_snapshot(
@@ -583,6 +640,7 @@ class _CollectionsApi:
         """
         Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -590,10 +648,16 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if priority is not None:
             query_params["priority"] = str(priority)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if checksum is not None:
             query_params["checksum"] = str(checksum)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
@@ -609,7 +673,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             data=data,
-            files=files,
+            files=files**kwargs,
         )
 
     def _build_for_recover_shard_from_snapshot(
@@ -617,12 +681,12 @@ class _CollectionsApi:
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ):
         """
         Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -631,8 +695,8 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-        if checksum is not None:
-            query_params["checksum"] = str(checksum)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(shard_snapshot_recover)
@@ -646,6 +710,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_recover_shard_from_uploaded_snapshot(
@@ -660,6 +725,7 @@ class _CollectionsApi:
         """
         Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -668,10 +734,16 @@ class _CollectionsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if priority is not None:
             query_params["priority"] = str(priority)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if checksum is not None:
             query_params["checksum"] = str(checksum)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
@@ -687,7 +759,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             data=data,
-            files=files,
+            files=files**kwargs,
         )
 
     def _build_for_update_aliases(
@@ -695,9 +767,12 @@ class _CollectionsApi:
         timeout: int = None,
         change_aliases_operation: m.ChangeAliasesOperation = None,
     ):
+        kwargs = {}
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(change_aliases_operation)
@@ -710,6 +785,7 @@ class _CollectionsApi:
             headers=headers if headers else None,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_update_collection(
@@ -721,6 +797,7 @@ class _CollectionsApi:
         """
         Update parameters of the existing collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -728,6 +805,8 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(update_collection)
@@ -741,6 +820,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_update_collection_cluster(
@@ -749,6 +829,7 @@ class _CollectionsApi:
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
     ):
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -756,6 +837,8 @@ class _CollectionsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(cluster_operations)
@@ -769,6 +852,7 @@ class _CollectionsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
 
@@ -1035,7 +1119,6 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         wait: bool = None,
-        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ) -> m.InlineResponse200:
         """
@@ -1044,7 +1127,6 @@ class AsyncCollectionsApi(_CollectionsApi):
         return await self._build_for_recover_from_snapshot(
             collection_name=collection_name,
             wait=wait,
-            checksum=checksum,
             snapshot_recover=snapshot_recover,
         )
 
@@ -1072,7 +1154,6 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ) -> m.InlineResponse200:
         """
@@ -1082,7 +1163,6 @@ class AsyncCollectionsApi(_CollectionsApi):
             collection_name=collection_name,
             shard_id=shard_id,
             wait=wait,
-            checksum=checksum,
             shard_snapshot_recover=shard_snapshot_recover,
         )
 
@@ -1408,7 +1488,6 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         wait: bool = None,
-        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ) -> m.InlineResponse200:
         """
@@ -1417,7 +1496,6 @@ class SyncCollectionsApi(_CollectionsApi):
         return self._build_for_recover_from_snapshot(
             collection_name=collection_name,
             wait=wait,
-            checksum=checksum,
             snapshot_recover=snapshot_recover,
         )
 
@@ -1445,7 +1523,6 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ) -> m.InlineResponse200:
         """
@@ -1455,7 +1532,6 @@ class SyncCollectionsApi(_CollectionsApi):
             collection_name=collection_name,
             shard_id=shard_id,
             wait=wait,
-            checksum=checksum,
             shard_snapshot_recover=shard_snapshot_recover,
         )
 

@@ -59,9 +59,12 @@ class _SnapshotsApi:
         """
         Create new snapshot of the whole storage
         """
+        kwargs = {}
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -70,6 +73,7 @@ class _SnapshotsApi:
             url="/snapshots",
             headers=headers if headers else None,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_create_shard_snapshot(
@@ -81,6 +85,7 @@ class _SnapshotsApi:
         """
         Create new snapshot of a shard for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -89,6 +94,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -98,6 +105,7 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_create_snapshot(
@@ -108,6 +116,7 @@ class _SnapshotsApi:
         """
         Create new snapshot for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -115,6 +124,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -124,6 +135,7 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_delete_full_snapshot(
@@ -134,6 +146,7 @@ class _SnapshotsApi:
         """
         Delete snapshot of the whole storage
         """
+        kwargs = {}
         path_params = {
             "snapshot_name": str(snapshot_name),
         }
@@ -141,6 +154,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -150,6 +165,7 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_delete_shard_snapshot(
@@ -162,6 +178,7 @@ class _SnapshotsApi:
         """
         Delete snapshot of a shard for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -171,6 +188,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -180,6 +199,7 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_delete_snapshot(
@@ -191,6 +211,7 @@ class _SnapshotsApi:
         """
         Delete snapshot for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "snapshot_name": str(snapshot_name),
@@ -199,6 +220,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -208,6 +231,7 @@ class _SnapshotsApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_get_full_snapshot(
@@ -217,6 +241,7 @@ class _SnapshotsApi:
         """
         Download specified snapshot of the whole storage as a file
         """
+        kwargs = {}
         path_params = {
             "snapshot_name": str(snapshot_name),
         }
@@ -228,6 +253,7 @@ class _SnapshotsApi:
             url="/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_get_shard_snapshot(
@@ -239,6 +265,7 @@ class _SnapshotsApi:
         """
         Download specified snapshot of a shard from a collection as a file
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -252,6 +279,7 @@ class _SnapshotsApi:
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_get_snapshot(
@@ -262,6 +290,7 @@ class _SnapshotsApi:
         """
         Download specified snapshot from a collection as a file
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "snapshot_name": str(snapshot_name),
@@ -274,6 +303,7 @@ class _SnapshotsApi:
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_list_full_snapshots(
@@ -282,12 +312,10 @@ class _SnapshotsApi:
         """
         Get list of snapshots of the whole storage
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
-            method="GET",
-            url="/snapshots",
-            headers=headers if headers else None,
+            type_=m.InlineResponse20011, method="GET", url="/snapshots", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_list_shard_snapshots(
@@ -298,6 +326,7 @@ class _SnapshotsApi:
         """
         Get list of snapshots for a shard of a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -310,6 +339,7 @@ class _SnapshotsApi:
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_list_snapshots(
@@ -319,6 +349,7 @@ class _SnapshotsApi:
         """
         Get list of snapshots for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -330,18 +361,19 @@ class _SnapshotsApi:
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_recover_from_snapshot(
         self,
         collection_name: str,
         wait: bool = None,
-        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ):
         """
         Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -349,8 +381,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-        if checksum is not None:
-            query_params["checksum"] = str(checksum)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(snapshot_recover)
@@ -364,6 +396,7 @@ class _SnapshotsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_recover_from_uploaded_snapshot(
@@ -377,6 +410,7 @@ class _SnapshotsApi:
         """
         Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -384,10 +418,16 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if priority is not None:
             query_params["priority"] = str(priority)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if checksum is not None:
             query_params["checksum"] = str(checksum)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
@@ -403,7 +443,7 @@ class _SnapshotsApi:
             path_params=path_params,
             params=query_params,
             data=data,
-            files=files,
+            files=files**kwargs,
         )
 
     def _build_for_recover_shard_from_snapshot(
@@ -411,12 +451,12 @@ class _SnapshotsApi:
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ):
         """
         Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -425,8 +465,8 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
-        if checksum is not None:
-            query_params["checksum"] = str(checksum)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(shard_snapshot_recover)
@@ -440,6 +480,7 @@ class _SnapshotsApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_recover_shard_from_uploaded_snapshot(
@@ -454,6 +495,7 @@ class _SnapshotsApi:
         """
         Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
             "shard_id": str(shard_id),
@@ -462,10 +504,16 @@ class _SnapshotsApi:
         query_params = {}
         if wait is not None:
             query_params["wait"] = str(wait).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if priority is not None:
             query_params["priority"] = str(priority)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
         if checksum is not None:
             query_params["checksum"] = str(checksum)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         files: Dict[str, IO[Any]] = {}  # noqa F841
@@ -481,7 +529,7 @@ class _SnapshotsApi:
             path_params=path_params,
             params=query_params,
             data=data,
-            files=files,
+            files=files**kwargs,
         )
 
 
@@ -645,7 +693,6 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         wait: bool = None,
-        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ) -> m.InlineResponse200:
         """
@@ -654,7 +701,6 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         return await self._build_for_recover_from_snapshot(
             collection_name=collection_name,
             wait=wait,
-            checksum=checksum,
             snapshot_recover=snapshot_recover,
         )
 
@@ -682,7 +728,6 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ) -> m.InlineResponse200:
         """
@@ -692,7 +737,6 @@ class AsyncSnapshotsApi(_SnapshotsApi):
             collection_name=collection_name,
             shard_id=shard_id,
             wait=wait,
-            checksum=checksum,
             shard_snapshot_recover=shard_snapshot_recover,
         )
 
@@ -878,7 +922,6 @@ class SyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         wait: bool = None,
-        checksum: str = None,
         snapshot_recover: m.SnapshotRecover = None,
     ) -> m.InlineResponse200:
         """
@@ -887,7 +930,6 @@ class SyncSnapshotsApi(_SnapshotsApi):
         return self._build_for_recover_from_snapshot(
             collection_name=collection_name,
             wait=wait,
-            checksum=checksum,
             snapshot_recover=snapshot_recover,
         )
 
@@ -915,7 +957,6 @@ class SyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-        checksum: str = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
     ) -> m.InlineResponse200:
         """
@@ -925,7 +966,6 @@ class SyncSnapshotsApi(_SnapshotsApi):
             collection_name=collection_name,
             shard_id=shard_id,
             wait=wait,
-            checksum=checksum,
             shard_snapshot_recover=shard_snapshot_recover,
         )
 

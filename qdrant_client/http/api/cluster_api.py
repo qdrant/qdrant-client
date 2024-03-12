@@ -58,12 +58,10 @@ class _ClusterApi:
         """
         Get information about the current state and composition of the cluster
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2004,
-            method="GET",
-            url="/cluster",
-            headers=headers if headers else None,
+            type_=m.InlineResponse2004, method="GET", url="/cluster", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_collection_cluster_info(
@@ -73,6 +71,7 @@ class _ClusterApi:
         """
         Get cluster information for a collection
         """
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -84,6 +83,7 @@ class _ClusterApi:
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
             path_params=path_params,
+            **kwargs,
         )
 
     def _build_for_create_shard_key(
@@ -92,6 +92,7 @@ class _ClusterApi:
         timeout: int = None,
         create_sharding_key: m.CreateShardingKey = None,
     ):
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -99,6 +100,8 @@ class _ClusterApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(create_sharding_key)
@@ -112,6 +115,7 @@ class _ClusterApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_delete_shard_key(
@@ -120,6 +124,7 @@ class _ClusterApi:
         timeout: int = None,
         drop_sharding_key: m.DropShardingKey = None,
     ):
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -127,6 +132,8 @@ class _ClusterApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(drop_sharding_key)
@@ -140,17 +147,20 @@ class _ClusterApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
     def _build_for_recover_current_peer(
         self,
     ):
+        kwargs = {}
         headers = {}
         return self.api_client.request(
             type_=m.InlineResponse200,
             method="POST",
             url="/cluster/recover",
             headers=headers if headers else None,
+            **kwargs,
         )
 
     def _build_for_remove_peer(
@@ -161,6 +171,7 @@ class _ClusterApi:
         """
         Tries to remove peer from the cluster. Will return an error if peer has shards on it.
         """
+        kwargs = {}
         path_params = {
             "peer_id": str(peer_id),
         }
@@ -168,6 +179,8 @@ class _ClusterApi:
         query_params = {}
         if force is not None:
             query_params["force"] = str(force).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -177,6 +190,7 @@ class _ClusterApi:
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
+            **kwargs,
         )
 
     def _build_for_update_collection_cluster(
@@ -185,6 +199,7 @@ class _ClusterApi:
         timeout: int = None,
         cluster_operations: m.ClusterOperations = None,
     ):
+        kwargs = {}
         path_params = {
             "collection_name": str(collection_name),
         }
@@ -192,6 +207,8 @@ class _ClusterApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         body = jsonable_encoder(cluster_operations)
@@ -205,6 +222,7 @@ class _ClusterApi:
             path_params=path_params,
             params=query_params,
             content=body,
+            **kwargs,
         )
 
 

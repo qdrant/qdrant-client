@@ -58,12 +58,10 @@ class _ServiceApi:
         """
         Get lock options. If write is locked, all write operations and collection creation are forbidden
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2003,
-            method="GET",
-            url="/locks",
-            headers=headers if headers else None,
+            type_=m.InlineResponse2003, method="GET", url="/locks", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_healthz(
@@ -72,12 +70,10 @@ class _ServiceApi:
         """
         An endpoint for health checking used in Kubernetes.
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=str,
-            method="GET",
-            url="/healthz",
-            headers=headers if headers else None,
+            type_=str, method="GET", url="/healthz", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_livez(
@@ -86,12 +82,10 @@ class _ServiceApi:
         """
         An endpoint for health checking used in Kubernetes.
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=str,
-            method="GET",
-            url="/livez",
-            headers=headers if headers else None,
+            type_=str, method="GET", url="/livez", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_metrics(
@@ -101,17 +95,16 @@ class _ServiceApi:
         """
         Collect metrics data including app info, collections info, cluster info and statistics
         """
+        kwargs = {}
         query_params = {}
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
-            type_=str,
-            method="GET",
-            url="/metrics",
-            headers=headers if headers else None,
-            params=query_params,
+            type_=str, method="GET", url="/metrics", headers=headers if headers else None, params=query_params, **kwargs
         )
 
     def _build_for_post_locks(
@@ -121,12 +114,18 @@ class _ServiceApi:
         """
         Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
         """
+        kwargs = {}
         headers = {}
         body = jsonable_encoder(locks_option)
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2003, method="POST", url="/locks", headers=headers if headers else None, content=body
+            type_=m.InlineResponse2003,
+            method="POST",
+            url="/locks",
+            headers=headers if headers else None,
+            content=body,
+            **kwargs,
         )
 
     def _build_for_readyz(
@@ -135,12 +134,10 @@ class _ServiceApi:
         """
         An endpoint for health checking used in Kubernetes.
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=str,
-            method="GET",
-            url="/readyz",
-            headers=headers if headers else None,
+            type_=str, method="GET", url="/readyz", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_root(
@@ -149,12 +146,10 @@ class _ServiceApi:
         """
         Returns information about the running Qdrant instance like version and commit id
         """
+        kwargs = {}
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2001,
-            method="GET",
-            url="/",
-            headers=headers if headers else None,
+            type_=m.InlineResponse2001, method="GET", url="/", headers=headers if headers else None, **kwargs
         )
 
     def _build_for_telemetry(
@@ -164,9 +159,12 @@ class _ServiceApi:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
+        kwargs = {}
         query_params = {}
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
+            if "timeout" in query_params:
+                kwargs["timeout"] = int(query_params["timeout"])
 
         headers = {}
         return self.api_client.request(
@@ -175,6 +173,7 @@ class _ServiceApi:
             url="/telemetry",
             headers=headers if headers else None,
             params=query_params,
+            **kwargs,
         )
 
 
