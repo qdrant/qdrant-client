@@ -39,13 +39,17 @@ from qdrant_client.local.datetime_utils import parse
             datetime(2021, 1, 1, 0, 0, 0, 9, tzinfo=timezone(timedelta(minutes=30))),
         ),
         # this is accepted in core but not here, there is no specifier for only-hour offset
-        # (
-        #     "2021-01-01 00:00:00.000+01",
-        #     datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(hours=10))),
-        # ),
+        (
+            "2021-01-01 00:00:00.000+01",
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(hours=1))),
+        ),
+        (
+            "2021-01-01 00:00:00.000-10",
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(hours=-10))),
+        ),
         (
             "2021-01-01 00:00:00-03:00",
-            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(days=-1, seconds=75600))),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone(timedelta(hours=-3))),
         ),
     ],
 )
