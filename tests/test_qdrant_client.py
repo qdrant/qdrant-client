@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 from grpc import Compression, RpcError
 
+import qdrant_client.http.exceptions
 from qdrant_client import QdrantClient, models
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.conversions.common_types import PointVectors, Record
@@ -1752,6 +1753,26 @@ def test_client_close():
         )
         local_client_persist_2.close()
     # endregion local
+
+
+def test_timeout_propagation():
+    import time
+
+    from httpx import Timeout
+
+    client = QdrantClient()
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
+    with pytest.raises(
+        qdrant_client.http.exceptions.ResponseHandlingException, match=r"timed out"
+    ):
+        # timeout is Optional[int]
+        # if we set it to 0 - recreate_collection raises operation is in progress instead of timed out
+        client.http.client._client._timeout = Timeout(0.01)
+        client.recreate_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+    time.sleep(0.5)
+    client.recreate_collection(
+        collection_name=COLLECTION_NAME, vectors_config=vectors_config, timeout=10
+    )
 
 
 def test_grpc_options():
