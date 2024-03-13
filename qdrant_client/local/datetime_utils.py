@@ -26,10 +26,10 @@ def parse(date_str: str) -> Optional[datetime]:
         Optional[datetime]: the datetime if the string is valid, otherwise None
     """
 
-    def parse_available_formats(date_str: str) -> Optional[datetime]:
+    def parse_available_formats(datetime_str: str) -> Optional[datetime]:
         for fmt in available_formats:
             try:
-                dt = datetime.strptime(date_str, fmt)
+                dt = datetime.strptime(datetime_str, fmt)
                 if dt.tzinfo is None:
                     # Assume UTC if no timezone is provided
                     dt = dt.replace(tzinfo=timezone.utc)
@@ -42,16 +42,9 @@ def parse(date_str: str) -> Optional[datetime]:
     if parsed_dt is not None:
         return parsed_dt
 
-    if "+" in date_str:
-        dt_str, tz_str = date_str.split("+")
-        tz_offset = int(tz_str.lower().replace("z", ""))
-    elif "-" in date_str[-4:]:
-        dt_str, tz_str = date_str.rsplit("-", 1)
-        tz_offset = -int(tz_str.lower().replace("z", ""))
-    else:
-        return None
-
-    parsed_dt = parse_available_formats(dt_str)
-    if parsed_dt is not None:
-        parsed_dt = parsed_dt.replace(tzinfo=timezone(timedelta(hours=tz_offset)))
-    return parsed_dt
+    # Python can't parse timezones containing only hours (+HH), but it can parse timezones with hours and minutes
+    # So we add :00 to the assumed timezone and try parsing it again
+    # dt examples to handle:
+    # "2021-01-01 00:00:00.000+01"
+    # "2021-01-01 00:00:00.000-10"
+    return parse_available_formats(date_str + ":00")
