@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Any, List, Optional
 
 import numpy as np
@@ -107,6 +108,13 @@ def check_range(condition: models.Range, value: Any) -> bool:
 
 
 def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
+    def make_condition_tz_aware(dt: Optional[datetime]) -> Optional[datetime]:
+        if dt is None or dt.tzinfo is not None:
+            return dt
+
+        # Assume UTC if no timezone is provided
+        return dt.replace(tzinfo=timezone.utc)
+
     if not isinstance(value, str):
         return False
 
@@ -114,6 +122,11 @@ def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
 
     if dt is None:
         return False
+
+    condition.lt = make_condition_tz_aware(condition.lt)
+    condition.lte = make_condition_tz_aware(condition.lte)
+    condition.gt = make_condition_tz_aware(condition.gt)
+    condition.gte = make_condition_tz_aware(condition.gte)
 
     return (
         (condition.lt is None or dt < condition.lt)
