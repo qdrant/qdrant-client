@@ -319,7 +319,7 @@ def set_value_by_key(payload: dict, key: str, value: Any) -> None:
                     if prev_key.item_type == JsonPathItemType.KEY:
                         prev_data[prev_key.key] = []
                     else:
-                        prev_data[prev_key.index] = [value]
+                        prev_data[prev_key.index] = []
                     return
                 else:
                     if prev_key.item_type == JsonPathItemType.KEY:
@@ -852,6 +852,12 @@ def test_set_value_by_key() -> None:
     payload = {"a": {"c": [1]}}
     new_value = {"a": 1}
     key = "a.c[][][0]"
+    set_value_by_key(payload, key, new_value)
+    assert payload == {"a": {"c": [[]]}}, payload
+
+    payload = {"a": {"c": [{"d": 1}]}}
+    new_value = {"a": 1}
+    key = "a.c[][]"
     set_value_by_key(payload, key, new_value)
     assert payload == {"a": {"c": [[]]}}, payload
     # endregion

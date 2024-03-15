@@ -1349,7 +1349,9 @@ class LocalCollection:
                 self.payload[idx] = {**self.payload[idx], **to_jsonable_python(payload)}
             else:
                 if self.payload[idx] is not None:
-                    set_value_by_key(self.payload[idx], to_jsonable_python(payload), key)
+                    set_value_by_key(
+                        payload=self.payload[idx], value=to_jsonable_python(payload), key=key
+                    )
 
             self._persist_by_id(point_id)
 
