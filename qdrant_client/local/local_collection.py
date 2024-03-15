@@ -27,7 +27,8 @@ from qdrant_client.local.distances import (
 )
 from qdrant_client.local.order_by import OrderingValue, to_ordering_value
 from qdrant_client.local.payload_filters import calculate_payload_mask
-from qdrant_client.local.payload_value_extractor import set_value_by_key, value_by_key
+from qdrant_client.local.payload_value_extractor import value_by_key
+from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
     calculate_distance_sparse,
