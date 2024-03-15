@@ -54,7 +54,7 @@ class Setter:
         value: Dict[str, Any],
         prev_data: Any,
         prev_key: Optional[JsonPathItem],
-    ):
+    ) -> None:
         if isinstance(data, cls.TYPE):
             cls._set_compatible_types(
                 data=data, current_key=current_key, k_list=k_list, value=value
