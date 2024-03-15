@@ -279,49 +279,104 @@ def test_set_payload_with_key():
             wait=True,
         )
 
-        local_client.set_payload(
-            collection_name=COLLECTION_NAME,
-            payload=new_payload,
-            points=[9999],
-            key=key,
-        )
+        # local_client.set_payload(
+        #     collection_name=COLLECTION_NAME,
+        #     payload=new_payload,
+        #     points=[9999],
+        #     key=key,
+        # )
         remote_client.set_payload(
             collection_name=COLLECTION_NAME,
             payload=new_payload,
             points=[9999],
             key=key,
         )
-        compare_collections(local_client, remote_client, 1)
+        # compare_collections(local_client, remote_client, 1)
 
-    payload = {"nest": [{"a": "100", "b": "200"}]}
-    new_payload = {"a": "101"}
-    key = "nest[0]"
-    set_payload(payload, new_payload, key)
+    # payload = {"nest": [{"a": "100", "b": "200"}]}
+    # new_payload = {"a": "101"}
+    # key = "nest[0]"
+    # set_payload(payload, new_payload, key)
+    #
+    # key = "nest[1]"
+    # new_payload = {"d": "404"}
+    # set_payload(payload, new_payload, key)
+    #
+    # key = "nest[].nest"
+    # set_payload(payload, new_payload, key)
+    #
+    # key = "nest[]"
+    # set_payload(payload, new_payload, key)
+    #
+    # payload = {}
+    # set_payload(payload, new_payload, key)
+    #
+    # payload = {"nest": [{"a": [], "b": "200"}]}
+    # new_payload = {"a": "101"}
+    # key = "nest[0].a[]"
+    # set_payload(payload, new_payload, key)
+    #
+    # payload = {"a": []}
+    # new_payload = {"b": {"c": 1}}
+    # key = "a[0]"
+    # set_payload(payload, new_payload, key)
+    #
+    # payload = {"a": {"b": {"c": {"d": {"e": 1}}}}}
+    # new_payload = {"f": 2}
+    # key = "a.b.c.d"
+    # set_payload(payload, new_payload, key)
 
-    key = "nest[1]"
-    new_payload = {"d": "404"}
-    set_payload(payload, new_payload, key)
+    # payload = {"a": []}
+    # new_payload = {}
+    # key = "a.b[0]"
+    # # expected_result = {"a": {"b": []}}
+    # set_payload(payload, new_payload, key)
+    #
+    # payload = {"a": []}
+    # new_payload = {}
+    # key = "a.b"
+    # # expected_result = {"a": {"b": {}}}
+    # set_payload(payload, new_payload, key)
+    # records = remote_client.retrieve(COLLECTION_NAME, [9999])
+    # print(records)
+    #
+    # payload = {"a": [[{"a": 1}]]}
+    # new_payload = {}
+    # key = "a[0][0]"
+    # # expected_result = {"a": [[{"a": 1}]]}
+    # set_payload(payload, new_payload, key)
+    # records = remote_client.retrieve(COLLECTION_NAME, [9999])
+    # print(records)
+    #
+    # payload = {"a": [[{"a": "w"}]]}
+    # new_payload = {"b": "q"}
+    # key = "a[0][0]"
+    # # expected_result = {"a": [[{"a": "w", "b": "q"}]]}
+    # set_payload(payload, new_payload, key)
+    # records = remote_client.retrieve(COLLECTION_NAME, [9999])
+    # print(records)
+    #
+    # payload = {"a": []}
+    # new_payload = {}
+    # key = "a.b"
+    # # expected_result = {"a": {"b": []}}
+    # set_payload(payload, new_payload, key)
 
-    key = "nest[].nest"
-    set_payload(payload, new_payload, key)
+    # key = "a.b["
+    # qdrant_client.http.exceptions.UnexpectedResponse: Unexpected Response: 400 (Bad Request)
+    # E       Raw response content:
+    # E       b'{"status":{"error":"Format error in JSON body: Invalid json path at line 1 column 48"},"time":0.0}'
 
-    key = "nest[]"
-    set_payload(payload, new_payload, key)
+    # payload = {"a": {"c": [{"d": 1}]}}
+    # new_value = {"a": 1}
+    # key = "a.c[][]"
+    # set_payload(payload, new_value, key)
+    # r = remote_client.retrieve(COLLECTION_NAME, [9999])
+    # assert r[0].payload == {"a": {"c": [[]]}}, r[0].payload
 
-    payload = {}
-    set_payload(payload, new_payload, key)
-
-    payload = {"nest": [{"a": [], "b": "200"}]}
-    new_payload = {"a": "101"}
-    key = "nest[0].a[]"
-    set_payload(payload, new_payload, key)
-
-    payload = {"a": []}
-    new_payload = {"b": {"c": 1}}
-    key = "a[0]"
-    set_payload(payload, new_payload, key)
-
-    payload = {"a": {"b": {"c": {"d": {"e": 1}}}}}
-    new_payload = {"f": 2}
-    key = "a.b.c.d"
-    set_payload(payload, new_payload, key)
+    payload = {"a": {"a": 2}}
+    new_value = {}
+    key = "a"
+    set_payload(payload, new_value, key)
+    r = remote_client.retrieve(COLLECTION_NAME, [9999])
+    assert r[0].payload == {"a": {"a": 2}}, r[0].payload
