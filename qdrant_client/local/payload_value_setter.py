@@ -8,6 +8,19 @@ from qdrant_client.local.json_path_parser import (
 
 
 def set_value_by_key(payload: dict, key: str, value: Any) -> None:
+    """
+    Set value in payload by key.
+    Args:
+        payload: arbitrary json-like object
+        key:
+            Key or path to value in payload.
+            Examples:
+                - "name"
+                - "address.city"
+                - "location[].name"
+                - "location[0].name"
+        value: value to set
+    """
     keys = parse_json_path(key)
     Setter.add_setter(JsonPathItemType.KEY, KeySetter)
     Setter.add_setter(JsonPathItemType.INDEX, IndexSetter)
