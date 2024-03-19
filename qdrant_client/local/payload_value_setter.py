@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type
 
 from qdrant_client.local.json_path_parser import (
     JsonPathItem,
@@ -7,25 +7,32 @@ from qdrant_client.local.json_path_parser import (
 )
 
 
-def set_value_by_key(payload: dict, key: str, value: Any) -> None:
+def set_value_by_key(payload: dict, keys: List[JsonPathItem], value: Any) -> None:
     """
     Set value in payload by key.
     Args:
         payload: arbitrary json-like object
-        key:
-            Key or path to value in payload.
-            Examples:
-                - "name"
-                - "address.city"
-                - "location[].name"
-                - "location[0].name"
+        keys:
+            list of json path items, e.g.:
+            [
+                JsonPathItem(item_type=<JsonPathItemType.KEY: 'key'>, value='a'),
+                JsonPathItem(item_type=<JsonPathItemType.INDEX: 'index'>, value=0),
+                JsonPathItem(item_type=<JsonPathItemType.INDEX: 'index'>, value=1),
+                JsonPathItem(item_type=<JsonPathItemType.KEY: 'key'>, value='b')
+            ]
+
+            The original keys could look like this:
+              - "name"
+              - "address.city"
+              - "location[].name"
+              - "location[0].name"
+
         value: value to set
     """
-    keys = parse_json_path(key)
     Setter.add_setter(JsonPathItemType.KEY, KeySetter)
     Setter.add_setter(JsonPathItemType.INDEX, IndexSetter)
     Setter.add_setter(JsonPathItemType.WILDCARD_INDEX, WildcardIndexSetter)
-    Setter.set(payload, keys, value, None, None)
+    Setter.set(payload, keys.copy(), value, None, None)
 
 
 class Setter:
@@ -248,199 +255,199 @@ def test_set_value_by_key() -> None:
     payload: Dict[str, Any] = {}
     new_value: Dict[str, Any] = {}
     key = "a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {}}, payload
 
     payload = {"a": {"a": 2}}
     new_value = {}
     key = "a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"a": 2}}, payload
 
     payload = {"a": {"a": 2}}
     new_value = {"b": 3}
     key = "a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"a": 2, "b": 3}}, payload
 
     payload = {"a": {"a": 2}}
     new_value = {"a": 3}
     key = "a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"a": 3}}, payload
 
     payload = {"a": {"a": 2}}
     new_value = {"a": 3}
     key = "a.a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"a": {"a": 3}}}, payload
 
     payload = {"a": {"a": {"a": 1}}}
     new_value = {"b": 2}
     key = "a.a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"a": {"a": 1, "b": 2}}}, payload
 
     payload = {"a": {"a": {"a": 1}}}
     new_value = {"a": 2}
     key = "a.a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"a": {"a": 2}}}, payload
 
     payload = {"a": []}
     new_value = {"b": 2}
     key = "a[0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": []}, payload
 
     payload = {"a": [{}]}
     new_value = {"b": 2}
     key = "a[0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [{"b": 2}]}, payload
 
     payload = {"a": [{"a": 1}]}
     new_value = {"b": 2}
     key = "a[0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [{"a": 1, "b": 2}]}, payload
 
     payload = {"a": [[]]}
     new_value = {"b": 2}
     key = "a[0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [{"b": 2}]}, payload
 
     payload = {"a": [[]]}
     new_value = {"b": 2}
     key = "a[1]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [[]]}, payload
 
     payload = {"a": [{"a": []}]}
     new_value = {"b": 2}
     key = "a[0].a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [{"a": {"b": 2}}]}, payload
 
     payload = {"a": [{"a": []}]}
     new_value = {"b": 2}
     key = "a[].a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [{"a": {"b": 2}}]}, payload
 
     payload = {"a": [{"a": []}, {"a": []}]}
     new_value = {"b": 2}
     key = "a[].a"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [{"a": {"b": 2}}, {"a": {"b": 2}}]}, payload
 
     payload = {"a": 1, "b": 2}
     new_value = {"c": 3}
     key = "c"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": 1, "b": 2, "c": {"c": 3}}, payload
 
     payload = {"a": {"b": {"c": 1}}}
     new_value = {"d": 2}
     key = "a.b.d"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": {"c": 1, "d": {"d": 2}}}}, payload
 
     payload = {"a": {"b": {"c": 1}}}
     new_value = {"c": 2}
     key = "a.b"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": {"c": 2}}}, payload
 
     payload = {"a": [{"b": 1}, {"b": 2}]}
     new_value = {"c": 3}
     key = "a[1]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [{"b": 1}, {"b": 2, "c": 3}]}, payload
 
     payload = {"a": []}
     new_value = {"b": {"c": 1}}
     key = "a[0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": []}, payload
 
     payload = {"a": {"b": {"c": {"d": {"e": 1}}}}}
     new_value = {"f": 2}
     key = "a.b.c.d"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": {"c": {"d": {"e": 1, "f": 2}}}}}, payload
 
     payload = {"a": {"b": {"c": 1}}}
     new_value = {"d": {"e": 2}}
     key = "a.b.c"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": {"c": {"d": {"e": 2}}}}}, payload
 
     payload = {"a": [{"b": 1}]}
     new_value = {"c": 2}
     key = "a[1]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [{"b": 1}]}, payload
 
     payload = {"a": {"b": [{"c": 1}, {"c": 2}]}}
     new_value = {"d": 3}
     key = "a.b[0].c"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": [{"c": {"d": 3}}, {"c": 2}]}}, payload
 
     payload = {"a": {"b": {"c": [{"d": 1}]}}}
     new_value = {"e": {"f": 2}}
     key = "a.b.c[0].d"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": {"c": [{"d": {"e": {"f": 2}}}]}}}, payload
 
     payload = {"a": [[{"b": 1}], [{"b": 2}]]}
     new_value = {"c": 3}
     key = "a[0][0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [[{"b": 1, "c": 3}], [{"b": 2}]]}, payload
 
     payload = {"a": [[{"b": 1}], [{"b": 2}]]}
     new_value = {"c": 3}
     key = "a[1][0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [[{"b": 1}], [{"b": 2, "c": 3}]]}, payload
 
     payload = {"a": [[{"b": 1}], [{"b": 2}]]}
     new_value = {"c": 3}
     key = "a[1][1]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [[{"b": 1}], [{"b": 2}]]}, payload
 
     payload = {"a": [[{"b": 1}], [{"b": 2}]]}
     new_value = {"c": 3}
     key = "a[][0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [[{"b": 1, "c": 3}], [{"b": 2, "c": 3}]]}, payload
 
     payload = {"a": [[{"b": 1}], [{"b": 2}]]}
     new_value = {"c": 3}
     key = "a[][]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": [[{"b": 1, "c": 3}], [{"b": 2, "c": 3}]]}, payload
 
     payload = {"a": []}
     new_value = {"c": 3}
     key = 'a."b.c"'
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b.c": {"c": 3}}}, payload
 
     payload = {"a": {"c": [1]}}
     new_value = {"a": 1}
     key = "a.c[0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"c": [{"a": 1}]}}, payload
 
     payload = {"a": {"c": [1]}}
     new_value = {"a": 1}
     key = "a.c[0].d"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"c": [{"d": {"a": 1}}]}}, payload
 
     # endregion
@@ -451,7 +458,7 @@ def test_set_value_by_key() -> None:
         payload = {"a": []}
         new_value = {"c": 3}
         key = "a.'b.c'"
-        set_value_by_key(payload, key, new_value)
+        set_value_by_key(payload, parse_json_path(key), new_value)
         assert False, f"Should've raised an exception due to the key with incorrect quotes: {key}"
     except Exception:
         assert True
@@ -460,7 +467,7 @@ def test_set_value_by_key() -> None:
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a[-1]"
-        set_value_by_key(payload, key, new_value)
+        set_value_by_key(payload, parse_json_path(key), new_value)
         assert False, "Negative indexation is not supported"
     except Exception:
         assert True
@@ -469,7 +476,7 @@ def test_set_value_by_key() -> None:
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a["
-        set_value_by_key(payload, key, new_value)
+        set_value_by_key(payload, parse_json_path(key), new_value)
         assert False, f"Should've raised an exception due to the incorrect key: {key}"
     except Exception:
         assert True
@@ -478,7 +485,7 @@ def test_set_value_by_key() -> None:
         payload = {"a": [{"b": 1}, {"b": 2}]}
         new_value = {"c": 3}
         key = "a]"
-        set_value_by_key(payload, key, new_value)
+        set_value_by_key(payload, parse_json_path(key), new_value)
         assert False, f"Should've raise an exception due to the incorrect key: {key}"
     except Exception:
         assert True
@@ -489,48 +496,48 @@ def test_set_value_by_key() -> None:
     payload = {"a": []}
     new_value = {}
     key = "a.b[0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": []}}, payload
 
     payload = {"a": []}
     new_value = {}
     key = "a.b"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": {}}}, payload
 
     payload = {"a": []}
     new_value = {"c": 2}
     key = "a.b"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": {"c": 2}}}, payload
 
     payload = {"a": [[{"a": 1}]]}
     new_value = {"a": 2}
     key = "a.b[0][0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"b": []}}, payload
 
     payload = {"a": {"c": 2}}
     new_value = {"a": 1}
     key = "a[]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": []}, payload
 
     payload = {"a": {"c": 2}}
     new_value = {"a": 1}
     key = "a[].b"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": []}, payload
 
     payload = {"a": {"c": [1]}}
     new_value = {"a": 1}
     key = "a.c[][][0]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"c": [[]]}}, payload
 
     payload = {"a": {"c": [{"d": 1}]}}
     new_value = {"a": 1}
     key = "a.c[][]"
-    set_value_by_key(payload, key, new_value)
+    set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"c": [[]]}}, payload
     # endregion

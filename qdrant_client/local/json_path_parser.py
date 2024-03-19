@@ -80,14 +80,14 @@ def trunk_sep(path: str) -> str:
 
 
 def match_quote(path: str) -> Tuple[Optional[JsonPathItem], str]:
-    if '"' not in path or not path.startswith('"'):
+    if not path.startswith('"'):
         return None, path
-
-    if path.count('"') % 2 != 0:
-        raise ValueError("Invalid path")
 
     left_quote_pos = 0
     right_quote_pos = path.find('"', 1)
+
+    if path.count('"') < 2:
+        raise ValueError("Invalid path")
 
     if left_quote_pos == (right_quote_pos + 1):
         raise ValueError("Invalid path")
@@ -101,15 +101,18 @@ def match_quote(path: str) -> Tuple[Optional[JsonPathItem], str]:
 
 
 def match_key(path: str) -> Tuple[Optional[JsonPathItem], str]:
-    key = []
+    char_counter = 0
     for char in path:
         if not char.isalnum() and char not in ["_", "-"]:
             break
-        key.append(char)
-    if not key:
+        char_counter += 1
+    if char_counter == 0:
         return None, path
 
-    return JsonPathItem(item_type=JsonPathItemType.KEY, key="".join(key)), path[len(key) :]
+    return (
+        JsonPathItem(item_type=JsonPathItemType.KEY, key=path[:char_counter]),
+        path[char_counter:],
+    )
 
 
 def match_brackets(rest: str) -> Tuple[List[JsonPathItem], str]:
@@ -132,6 +135,9 @@ def _match_brackets(path: str) -> Tuple[Optional[JsonPathItem], str]:
 
     left_bracket_pos = 0
     right_bracket_pos = path.find("]", left_bracket_pos + 1)
+
+    if right_bracket_pos == -1:
+        raise ValueError("Invalid path")
 
     if right_bracket_pos == (left_bracket_pos + 1):
         return (
