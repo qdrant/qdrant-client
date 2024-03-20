@@ -53,16 +53,25 @@ def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[An
                         result.append(data[current_key.index])
 
         elif current_key.item_type == JsonPathItemType.KEY:
+            if not isinstance(data, dict):
+                return
+
             if current_key.key in data:
                 _get_value(data[current_key.key], k_list.copy())
 
         elif current_key.item_type == JsonPathItemType.INDEX:
             assert current_key.index is not None
 
+            if not isinstance(data, list):
+                return
+
             if current_key.index < len(data):
                 _get_value(data[current_key.index], k_list.copy())
 
         elif current_key.item_type == JsonPathItemType.WILDCARD_INDEX:
+            if not isinstance(data, list):
+                return
+
             for item in data:
                 _get_value(item, k_list.copy())
 
@@ -73,6 +82,7 @@ def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[An
 def test_value_by_key() -> None:
     payload = {
         "name": "John",
+        "age": 25,
         "counts": [1, 2, 3],
         "address": {
             "city": "New York",
@@ -121,7 +131,7 @@ def test_value_by_key() -> None:
     assert value_by_key(payload, "location[0]", flat=False) == [
         {"name": "home", "counts": [1, 2, 3]}
     ]
-    assert value_by_key(payload, "not_exits", flat=False) is None
+    assert value_by_key(payload, "not_exist", flat=False) is None
     assert value_by_key(payload, "address", flat=False) == [{"city": "New York"}]
     assert value_by_key(payload, "address.city[0]", flat=False) is None
     assert value_by_key(payload, "counts", flat=False) == [[1, 2, 3]]
@@ -131,4 +141,6 @@ def test_value_by_key() -> None:
     ]
     assert value_by_key(payload, "nested[].empty", flat=False) == [[], [], None]
     assert value_by_key(payload, "the_null", flat=False) == [None]
+
+    assert value_by_key(payload, "age.nested.not_exist") is None
     # endregion
