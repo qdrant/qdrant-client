@@ -182,6 +182,11 @@ def random_city():
     return {"name": name, "geo": geo_points[name]}
 
 
+def random_signed_int():
+    number = random.randint(-10, 10)
+    return number
+
+
 def one_random_payload_please(idx: int) -> Dict[str, Any]:
     payload = {
         "id": idx + 100,
@@ -189,6 +194,7 @@ def one_random_payload_please(idx: int) -> Dict[str, Any]:
         "text_data": uuid.uuid4().hex,
         "rand_digit": random.randint(0, 9),
         "rand_number": round(random.random(), 5),
+        "rand_signed_int": random_signed_int(),
         "rand_datetime": random_datetime(),
         "text_array": [uuid.uuid4().hex, uuid.uuid4().hex],
         "words": f"{random_real_word()} {random_real_word()}",
@@ -205,6 +211,10 @@ def one_random_payload_please(idx: int) -> Dict[str, Any]:
                 for _ in range(random.randint(0, 5))
             ],
         },
+        "nested_array": [
+            [random_signed_int() for _ in range(random.randint(0, 5))]
+            for _ in range(random.randint(0, 5))
+        ],
         "two_words": [random_real_word(), random_real_word()],
         "city": random_city(),
     }
