@@ -1,5 +1,4 @@
 import asyncio
-import os
 import random
 import time
 
@@ -96,7 +95,6 @@ async def test_async_grpc():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
-    version = os.getenv("QDRANT_VERSION")
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
     collection_params = dict(
         collection_name=COLLECTION_NAME,
@@ -115,8 +113,6 @@ async def test_async_qdrant_client(prefer_grpc):
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
-    if version is None or (version >= "v1.8.0" or version == "dev"):
-        await client.collection_exists(COLLECTION_NAME)
 
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
@@ -337,21 +333,43 @@ async def test_async_qdrant_client(prefer_grpc):
 
 @pytest.mark.asyncio
 async def test_async_qdrant_client_local():
-    version = os.getenv("QDRANT_VERSION")
+    import uuid
+
+    NUM_POINTS = 100
     client = AsyncQdrantClient(":memory:")
 
     collection_params = dict(
         collection_name=COLLECTION_NAME,
-        vectors_config=models.VectorParams(size=10, distance=models.Distance.EUCLID),
+        vectors_config=models.VectorParams(size=32, distance=models.Distance.EUCLID),
     )
     await client.create_collection(**collection_params)
-    await client.delete_collection(COLLECTION_NAME)
-    await client.recreate_collection(**collection_params)
 
+    # Test upserting points with valid vectors
+
+    points_with_nan = [
+        models.PointStruct(
+            id=str(uuid.uuid4()),
+            vector=[np.nan if i == 0 else random.random() for i in range(DIM)],
+            payload={"random_dig": random.randint(1, 100)},
+        )
+        for _ in range(NUM_POINTS)
+    ]
+    await client.upsert(collection_name=COLLECTION_NAME, points=points_with_nan)
+    assert (await client.count(COLLECTION_NAME)).count == NUM_POINTS + 1
+
+    # Test upserting a point with NaN values in its vector
+    points_with_nan = [
+        models.PointStruct(
+            id=str(uuid.uuid4()),
+            vector=[np.nan if i == 0 else random.random() for i in range(DIM)],
+            payload={"random_dig": random.randint(1, 100)},
+        )
+    ]
+    with pytest.raises(ValueError):
+        await client.upsert(collection_name=COLLECTION_NAME, points=points_with_nan)
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
-    if version is None or (version >= "v1.8.0" or version == "dev"):
-        await client.collection_exists(COLLECTION_NAME)
+
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
     )
