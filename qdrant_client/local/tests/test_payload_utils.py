@@ -23,6 +23,14 @@ def test_parse_json_path() -> None:
         JsonPathItem(item_type=JsonPathItemType.KEY, key="b"),
     ]
 
+    jp_key = 'a."a[b]".c'
+    keys = parse_json_path(jp_key)
+    assert keys == [
+        JsonPathItem(item_type=JsonPathItemType.KEY, key="a"),
+        JsonPathItem(item_type=JsonPathItemType.KEY, key="a[b]"),
+        JsonPathItem(item_type=JsonPathItemType.KEY, key="c"),
+    ]
+
     jp_key = "a[0]"
     keys = parse_json_path(jp_key)
     assert keys == [

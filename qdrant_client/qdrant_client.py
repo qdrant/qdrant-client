@@ -1241,7 +1241,7 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
-            key: JSONPath to the nested field in the payload to modify. If not specified - modify the root of the
+            key: Path to the nested field in the payload to modify. If not specified - modify the root of the
                 payload. E.g.:
 
                 PointStruct(

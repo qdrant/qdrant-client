@@ -29,9 +29,6 @@ def set_value_by_key(payload: dict, keys: List[JsonPathItem], value: Any) -> Non
 
         value: value to set
     """
-    Setter.add_setter(JsonPathItemType.KEY, KeySetter)
-    Setter.add_setter(JsonPathItemType.INDEX, IndexSetter)
-    Setter.add_setter(JsonPathItemType.WILDCARD_INDEX, WildcardIndexSetter)
     Setter.set(payload, keys.copy(), value, None, None)
 
 
@@ -247,3 +244,8 @@ class WildcardIndexSetter(_ListSetter):
                     data,
                     JsonPathItem(item_type=JsonPathItemType.INDEX, index=i),
                 )
+
+
+Setter.add_setter(JsonPathItemType.KEY, KeySetter)
+Setter.add_setter(JsonPathItemType.INDEX, IndexSetter)
+Setter.add_setter(JsonPathItemType.WILDCARD_INDEX, WildcardIndexSetter)
