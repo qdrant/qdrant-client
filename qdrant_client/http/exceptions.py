@@ -1,7 +1,7 @@
 import json
 from typing import Any, Dict, Optional
 
-from httpx import Headers, Response
+from httpx import Headers, Response, URL
 
 MAX_CONTENT = 200
 
@@ -11,11 +11,19 @@ class ApiException(Exception):
 
 
 class UnexpectedResponse(ApiException):
-    def __init__(self, status_code: Optional[int], reason_phrase: str, content: bytes, headers: Headers) -> None:
+    def __init__(
+        self,
+        status_code: Optional[int],
+        url: Optional[URL],
+        reason_phrase: str,
+        content: bytes,
+        headers: Headers,
+    ) -> None:
         self.status_code = status_code
         self.reason_phrase = reason_phrase
         self.content = content
         self.headers = headers
+        self.url = url
 
     @staticmethod
     def for_response(response: Response) -> "ApiException":
@@ -24,16 +32,21 @@ class UnexpectedResponse(ApiException):
             reason_phrase=response.reason_phrase,
             content=response.content,
             headers=response.headers,
+            url=response.request.url,
         )
 
     def __str__(self) -> str:
         status_code_str = f"{self.status_code}" if self.status_code is not None else ""
         if self.reason_phrase == "" and self.status_code is not None:
-            reason_phrase_str = "(Unrecognized Status Code)"
+            reason_phrase_str = f"(Unrecognized Status Code), URL: {str(self.url)}"
         else:
-            reason_phrase_str = f"({self.reason_phrase})"
+            reason_phrase_str = f"({self.reason_phrase}), URL: {str(self.url)}"
         status_str = f"{status_code_str} {reason_phrase_str}".strip()
-        short_content = self.content if len(self.content) <= MAX_CONTENT else self.content[: MAX_CONTENT - 3] + b" ..."
+        short_content = (
+            self.content
+            if len(self.content) <= MAX_CONTENT
+            else self.content[: MAX_CONTENT - 3] + b" ..."
+        )
         raw_content_str = f"Raw response content:\n{short_content!r}"
         return f"Unexpected Response: {status_str}\n{raw_content_str}"
 
