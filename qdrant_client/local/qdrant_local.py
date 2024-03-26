@@ -73,12 +73,15 @@ class QdrantLocal(QdrantBase):
                     f"Collection appears to be None before closing. The existing collections are: "
                     f"{list(self.collections.keys())}"
                 )
-        if self._flock_file is not None:
-            try:
+
+        try:
+            if self._flock_file is not None and not self._flock_file.closed:
+
                 portalocker.unlock(self._flock_file)
-            except TypeError:  # sometimes portalocker module can be garbage collected before
-                # QdrantLocal instance
-                pass
+                self._flock_file.close()
+        except TypeError:  # sometimes portalocker module can be garbage collected before
+            # QdrantLocal instance
+            pass
 
     def _load(self) -> None:
         if not self.persistent:
@@ -253,14 +256,12 @@ class QdrantLocal(QdrantBase):
                 with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
                 using=request.using,
-                lookup_from_collection=(
-                    self._get_collection(request.lookup_from.collection)
-                    if request.lookup_from
-                    else None
-                ),
-                lookup_from_vector_name=(
-                    request.lookup_from.vector if request.lookup_from else None
-                ),
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
                 strategy=request.strategy,
             )
             for request in requests
@@ -294,9 +295,9 @@ class QdrantLocal(QdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             strategy=strategy,
         )
@@ -375,9 +376,9 @@ class QdrantLocal(QdrantBase):
             with_payload=with_payload,
             with_vectors=with_vectors,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
         )
 
@@ -399,14 +400,12 @@ class QdrantLocal(QdrantBase):
                 with_payload=request.with_payload,
                 with_vectors=request.with_vector,
                 using=request.using,
-                lookup_from_collection=(
-                    self._get_collection(request.lookup_from.collection)
-                    if request.lookup_from
-                    else None
-                ),
-                lookup_from_vector_name=(
-                    request.lookup_from.vector if request.lookup_from else None
-                ),
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
             )
             for request in requests
         ]
@@ -447,12 +446,11 @@ class QdrantLocal(QdrantBase):
         # Check for NaN in vectors
         # Check for NaN in vectors
         for point in points:
-            for vector in point.vector():
-                if isinstance(vector, np.ndarray) and np.isnan(vector).any():
-                    raise ValueError(
-                        f"Point with ID {point.id} contains NaN values in its vector."
-                    )
-        collection.upsert(points)
+            if any(np.isnan(vector) for vector in point.vector.values()):
+                raise ValueError(
+                    f"Point with ID {point.id} contains NaN values in its vector."
+                )
+        collection.update_vectors(points)
         return self._default_update_result()
 
     def update_vectors(
@@ -709,51 +707,41 @@ class QdrantLocal(QdrantBase):
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
     ) -> None:
         # upload_records in local mode behaves like upload_records with wait=True in server mode
+
         self._upload_points(collection_name, records)
 
     def _upload_points(
-        self,
-        collection_name: str,
-        points: Iterable[Union[types.PointStruct, types.Record]],
+            self,
+            collection_name: str,
+            points: Iterable[Union[types.PointStruct, types.Record]],
     ) -> None:
         collection = self._get_collection(collection_name)
-        # Prepare points for upsertion, checking for NaN in vectors
+        # Initialize the list for prepared points
         prepared_points = []
+        # Flag to indicate if any point contains NaN values
+        contains_nan = False
+
+        # Prepare points for upsertion, checking for NaN in vectors
         for point in points:
-            # Ensure the vector is not None before checking for NaN
-            if point.vector:
-                # Flatten the vector values if it's a dictionary of vectors, or use as-is if it's a single vector
-                vector_values = (
-                    np.concatenate([v for v in point.vector.values()])
-                    if isinstance(point.vector, dict)
-                    else point.vector
-                )
-
-                # Check for NaN values
-                if np.isnan(vector_values).any():
-                    raise ValueError(
-                        f"Point with ID {point.id} contains NaN values in its vector."
+            if np.isnan(np.array(point.vector)).any():
+                contains_nan = True
+                break  # Break the loop at the first occurrence of NaN
+            else:
+                # If no NaN values, add the point to the list of prepared points
+                prepared_points.append(
+                    rest_models.PointStruct(
+                        id=point.id,
+                        vector=point.vector or {},
+                        payload=point.payload or {},
                     )
-
-            # If no NaN values, add the point to the list of prepared points
-            prepared_points.append(
-                rest_models.PointStruct(
-                    id=point.id,
-                    vector=point.vector or {},
-                    payload=point.payload or {},
                 )
-            )
 
-        collection.upsert(
-            [
-                rest_models.PointStruct(
-                    id=point.id,
-                    vector=point.vector or {},
-                    payload=point.payload or {},
-                )
-                for point in points
-            ]
-        )
+        # Raise an error if any point contains NaN values
+        if contains_nan:
+            raise ValueError("Point vector contains NaN values")
+
+        # Upsert the prepared points into the collection
+        collection.upsert(prepared_points)
 
     def upload_collection(
         self,
@@ -930,3 +918,7 @@ class QdrantLocal(QdrantBase):
         raise NotImplementedError(
             "Sharding is not supported in the local Qdrant. Please use server Qdrant if you need sharding."
         )
+
+
+
+

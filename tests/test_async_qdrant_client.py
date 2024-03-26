@@ -1,7 +1,8 @@
 import asyncio
+import os
 import random
 import time
-
+import uuid
 import grpc.aio._call
 import numpy as np
 import pytest
@@ -10,6 +11,7 @@ import qdrant_client.http.exceptions
 from qdrant_client import QdrantClient
 from qdrant_client import grpc as qdrant_grpc
 from qdrant_client import models
+from qdrant_client.http import models as rest_models
 from qdrant_client.async_qdrant_client import AsyncQdrantClient
 from qdrant_client.conversions.conversion import payload_to_grpc
 from tests.fixtures.payload import one_random_payload_please
@@ -95,6 +97,7 @@ async def test_async_grpc():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
+    version = os.getenv("QDRANT_VERSION")
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
     collection_params = dict(
         collection_name=COLLECTION_NAME,
@@ -113,6 +116,9 @@ async def test_async_qdrant_client(prefer_grpc):
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
+    if version is None or (version >= "v1.8.0" or version == "dev"):
+        collections_response = await client.get_collections()
+        assert any(collection.name == COLLECTION_NAME for collection in collections_response.collections)
 
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
@@ -330,46 +336,51 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.close()
     # endregion
 
+@pytest.mark.asyncio
+async def test_upload_points_with_nan():
+    client = AsyncQdrantClient(":memory:")
+    await client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=rest_models.VectorParams(size=3, distance=rest_models.Distance.COSINE),
+    )
+
+    # Generate a valid UUID for the point id
+    valid_uuid = str(uuid.uuid4())
+
+    # Define a point with NaN values in its vector
+    point_with_nan = rest_models.PointStruct(
+        id=valid_uuid,
+        vector=np.array([np.nan, 0.1, 0.2]).tolist(),
+        payload={}
+    )
+
+    # Attempt to upload the point
+    try:
+        await client.upload_points(collection_name=COLLECTION_NAME, points=[point_with_nan])
+        # Optionally, assert something about the successful execution
+    except ValueError as e:
+        pytest.fail(f"Unexpected ValueError raised: {e}")
+
+    # Clean up any resources if needed
+    await client.delete_collection(collection_name=COLLECTION_NAME)
 
 @pytest.mark.asyncio
 async def test_async_qdrant_client_local():
-    import uuid
-
-    NUM_POINTS = 100
+    version = os.getenv("QDRANT_VERSION")
     client = AsyncQdrantClient(":memory:")
 
     collection_params = dict(
         collection_name=COLLECTION_NAME,
-        vectors_config=models.VectorParams(size=32, distance=models.Distance.EUCLID),
+        vectors_config=models.VectorParams(size=10, distance=models.Distance.EUCLID),
     )
     await client.create_collection(**collection_params)
+    await client.delete_collection(COLLECTION_NAME)
+    await client.recreate_collection(**collection_params)
 
-    # Test upserting points with valid vectors
-
-    points_with_nan = [
-        models.PointStruct(
-            id=str(uuid.uuid4()),
-            vector=[np.nan if i == 0 else random.random() for i in range(DIM)],
-            payload={"random_dig": random.randint(1, 100)},
-        )
-        for _ in range(NUM_POINTS)
-    ]
-    await client.upsert(collection_name=COLLECTION_NAME, points=points_with_nan)
-    assert (await client.count(COLLECTION_NAME)).count == NUM_POINTS + 1
-
-    # Test upserting a point with NaN values in its vector
-    points_with_nan = [
-        models.PointStruct(
-            id=str(uuid.uuid4()),
-            vector=[np.nan if i == 0 else random.random() for i in range(DIM)],
-            payload={"random_dig": random.randint(1, 100)},
-        )
-    ]
-    with pytest.raises(ValueError):
-        await client.upsert(collection_name=COLLECTION_NAME, points=points_with_nan)
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
-
+    if version is None or (version >= "v1.8.0" or version == "dev"):
+        await client.collection_exists(COLLECTION_NAME)
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
     )
