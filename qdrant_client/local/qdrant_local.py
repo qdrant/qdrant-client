@@ -57,9 +57,8 @@ class QdrantLocal(QdrantBase):
     If you need more speed or size, use Qdrant server.
     """
 
-    def __init__(
-        self, location: str, force_disable_check_same_thread: bool = False
-    ) -> None:
+    def __init__(self, location: str, force_disable_check_same_thread: bool = False) -> None:
+
         """
         Initialize local Qdrant.
 
@@ -95,9 +94,7 @@ class QdrantLocal(QdrantBase):
             if self._flock_file is not None and not self._flock_file.closed:
                 portalocker.unlock(self._flock_file)
                 self._flock_file.close()
-        except (
-            TypeError
-        ):  # sometimes portalocker module can be garbage collected before
+        except TypeError:  # sometimes portalocker module can be garbage collected before
             # QdrantLocal instance
             pass
 
@@ -274,14 +271,13 @@ class QdrantLocal(QdrantBase):
                 with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
                 using=request.using,
-                lookup_from_collection=(
-                    self._get_collection(request.lookup_from.collection)
-                    if request.lookup_from
-                    else None
-                ),
-                lookup_from_vector_name=(
-                    request.lookup_from.vector if request.lookup_from else None
-                ),
+lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
+
                 strategy=request.strategy,
             )
             for request in requests
@@ -315,9 +311,10 @@ class QdrantLocal(QdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
+
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             strategy=strategy,
         )
@@ -360,9 +357,10 @@ class QdrantLocal(QdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
+
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
@@ -396,9 +394,9 @@ class QdrantLocal(QdrantBase):
             with_payload=with_payload,
             with_vectors=with_vectors,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
         )
 
@@ -420,14 +418,12 @@ class QdrantLocal(QdrantBase):
                 with_payload=request.with_payload,
                 with_vectors=request.with_vector,
                 using=request.using,
-                lookup_from_collection=(
-                    self._get_collection(request.lookup_from.collection)
-                    if request.lookup_from
-                    else None
-                ),
-                lookup_from_vector_name=(
-                    request.lookup_from.vector if request.lookup_from else None
-                ),
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
             )
             for request in requests
         ]
@@ -586,9 +582,10 @@ class QdrantLocal(QdrantBase):
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
                 self._get_collection(operation.create_alias.collection_name)
-                self.aliases[operation.create_alias.alias_name] = (
-                    operation.create_alias.collection_name
-                )
+                self.aliases[
+                    operation.create_alias.alias_name
+                ] = operation.create_alias.collection_name
+                
             elif isinstance(operation, rest_models.DeleteAliasOperation):
                 self.aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
@@ -633,9 +630,8 @@ class QdrantLocal(QdrantBase):
             ]
         )
 
-    def get_collection(
-        self, collection_name: str, **kwargs: Any
-    ) -> types.CollectionInfo:
+    def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
+
         collection = self._get_collection(collection_name)
         return collection.info()
 
@@ -704,13 +700,7 @@ class QdrantLocal(QdrantBase):
 
         if src_collection and from_collection_name:
             batch_size = 100
-            records, next_offset = self.scroll(
-                from_collection_name, limit=2, with_vectors=True
-            )
-            from_collection_name, offset = next_offset, limit = (
-                batch_size,
-                with_vectors,
-            ) = True
+            records, next_offset = self.scroll(from_collection_name, limit=2, with_vectors=True)
             self.upload_records(
                 collection_name, records
             )  # it is not crucial to replace upload_records here
