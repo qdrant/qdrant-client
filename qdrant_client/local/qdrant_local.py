@@ -609,7 +609,14 @@ class QdrantLocal(QdrantBase):
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         collection = self._get_collection(collection_name)
         return collection.info()
-
+    
+    def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
+        try:
+            self._get_collection(collection_name)
+            return True
+        except ValueError:
+            return False
+        
     def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
         _collection = self._get_collection(collection_name)
         return False
@@ -675,11 +682,7 @@ class QdrantLocal(QdrantBase):
             # since it is an internal usage, and we don't have custom shard keys in qdrant local
             while next_offset is not None:
                 records, next_offset = self.scroll(
-                    from_collection_name,
-                    offset=next_offset,
-                    limit=batch_size,
-                    with_vectors=True,
-                )
+              from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True)
                 self.upload_records(collection_name, records)
 
         self._save()
@@ -710,7 +713,7 @@ class QdrantLocal(QdrantBase):
 
         self._upload_points(collection_name, records)
 
-    def _upload_points(
+    def _upload_points_with_NaN(
             self,
             collection_name: str,
             points: Iterable[Union[types.PointStruct, types.Record]],
@@ -742,7 +745,8 @@ class QdrantLocal(QdrantBase):
 
         # Upsert the prepared points into the collection
         collection.upsert(prepared_points)
-
+    
+    
     def upload_collection(
         self,
         collection_name: str,
