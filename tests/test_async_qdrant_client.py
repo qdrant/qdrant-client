@@ -2,7 +2,7 @@ import asyncio
 import os
 import random
 import time
-
+import uuid
 import grpc.aio._call
 import numpy as np
 import pytest
@@ -11,6 +11,7 @@ import qdrant_client.http.exceptions
 from qdrant_client import QdrantClient
 from qdrant_client import grpc as qdrant_grpc
 from qdrant_client import models
+from qdrant_client.http import models as rest_models
 from qdrant_client.async_qdrant_client import AsyncQdrantClient
 from qdrant_client.conversions.conversion import payload_to_grpc
 from tests.fixtures.payload import one_random_payload_please
@@ -19,6 +20,9 @@ NUM_VECTORS = 100
 NUM_QUERIES = 100
 DIM = 32
 COLLECTION_NAME = "async_test_collection"
+
+
+
 
 
 @pytest.mark.asyncio
@@ -93,6 +97,7 @@ async def test_async_grpc():
     client.close()
 
 
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
@@ -116,7 +121,8 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
     if version is None or (version >= "v1.8.0" or version == "dev"):
-        await client.collection_exists(COLLECTION_NAME)
+        collections_response = await client.get_collections()
+        assert any(collection.name == COLLECTION_NAME for collection in collections_response.collections)
 
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
@@ -334,6 +340,30 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.close()
     # endregion
 
+@pytest.mark.asyncio
+async def test_upload_points_with_nan():
+    client = AsyncQdrantClient(":memory:")
+    await client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=rest_models.VectorParams(size=3, distance=rest_models.Distance.COSINE),
+    )
+
+    # Generate a valid UUID for the point id
+    valid_uuid = str(uuid.uuid4())
+
+    # Define a point with NaN values in its vector
+    point_with_nan = rest_models.PointStruct(
+        id=valid_uuid,
+        vector=np.array([np.nan, 0.1, 0.2]).tolist(),
+        payload={}
+    )
+
+    # Attempt to upload the point with NaN values
+    await client.upload_points(collection_name=COLLECTION_NAME, points=[point_with_nan])
+
+
+    # Clean up any resources if needed
+    await client.delete_collection(collection_name=COLLECTION_NAME)
 
 @pytest.mark.asyncio
 async def test_async_qdrant_client_local():
