@@ -10,8 +10,10 @@ from qdrant_client.http import models
 
 try:
     from fastembed import TextEmbedding
+    from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 except ImportError:
     TextEmbedding = None
+    SparseTextEmbedding = None
 
 
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
@@ -23,18 +25,27 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     else {}
 )
 
+SUPPORTED_SPARSE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+    {model["model"]: model for model in SparseTextEmbedding.list_supported_models()}
+    if SparseTextEmbedding
+    else {}
+)
+
 
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
 
     embedding_models: Dict[str, "TextEmbedding"] = {}
+    sparse_embedding_models: Dict[str, "SparseTextEmbedding"] = {}
 
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
+        self._sparse_embedding_model_name: Optional[str] = None
         try:
             from fastembed import TextEmbedding  # noqa: F401
+            from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
 
             self.__class__._FASTEMBED_INSTALLED = True
         except ImportError:
@@ -89,6 +100,34 @@ class QdrantFastembedMixin(QdrantBase):
         )
         self._embedding_model_name = embedding_model_name
 
+    def set_sparse_model(
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+    ):
+        """
+        Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
+        Args:
+            model_name: One of the supported sparse embedding models. See `SUPPORTED_SPARSE_EMBEDDING_MODELS` for details.
+            cache_dir (str, optional): The path to the cache directory.
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                                       Defaults to `fastembed_cache` in the system's temp directory.
+            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+        Raises:
+            ValueError: If embedding model is not supported.
+            ImportError: If fastembed is not installed.
+
+        Returns:
+            None
+        """
+        self._get_or_init_sparse_model(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+        )
+        self._sparse_embedding_model_name = model_name
+
     @classmethod
     def _import_fastembed(cls) -> None:
         if cls._FASTEMBED_INSTALLED:
@@ -137,6 +176,32 @@ class QdrantFastembedMixin(QdrantBase):
         )
         return cls.embedding_models[model_name]
 
+    @classmethod
+    def _get_or_init_sparse_model(
+        cls,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        **kwargs: Any,
+    ) -> "SparseTextEmbedding":
+        if model_name in cls.sparse_embedding_models:
+            return cls.sparse_embedding_models[model_name]
+
+        cls._import_fastembed()
+
+        if model_name not in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_SPARSE_EMBEDDING_MODELS}"
+            )
+
+        cls.sparse_embedding_models[model_name] = SparseTextEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            **kwargs,
+        )
+        return cls.sparse_embedding_models[model_name]
+
     def _embed_documents(
         self,
         documents: Iterable[str],
@@ -165,6 +230,26 @@ class QdrantFastembedMixin(QdrantBase):
         for vector, doc in zip(vectors_iter, documents_b):
             yield doc, vector.tolist()
 
+    def _sparse_embed_documents(
+        self,
+        documents: Iterable[str],
+        embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
+        batch_size: int = 32,
+        parallel: Optional[int] = None,
+    ) -> Iterable[Tuple[str, types.SparseVector]]:
+        sparse_embedding_model = self._get_or_init_sparse_model(model_name=embedding_model_name)
+        documents_a, documents_b = tee(documents, 2)
+
+        vectors_iter = sparse_embedding_model.embed(
+            documents_a, batch_size=batch_size, parallel=parallel
+        )
+
+        for sparse_vector, doc in zip(vectors_iter, documents_b):
+            yield doc, types.SparseVector(
+                indices=sparse_vector.indices.tolist(),
+                values=sparse_vector.values.tolist(),
+            )
+
     def get_vector_field_name(self) -> str:
         """
         Returns name of the vector field in qdrant collection, used by current fastembed model.
@@ -173,6 +258,17 @@ class QdrantFastembedMixin(QdrantBase):
         """
         model_name = self.embedding_model_name.split("/")[-1].lower()
         return f"fast-{model_name}"
+
+    def get_sparse_vector_field_name(self) -> Optional[str]:
+        """
+        Returns name of the vector field in qdrant collection, used by current fastembed model.
+        Returns:
+            Name of the vector field.
+        """
+        if self._sparse_embedding_model_name is not None:
+            model_name = self._sparse_embedding_model_name.split("/")[-1].lower()
+            return f"fast-sparse-{model_name}"
+        return None
 
     def _scored_points_to_query_responses(
         self,
@@ -215,6 +311,35 @@ class QdrantFastembedMixin(QdrantBase):
             payload = {"document": doc, **meta}
             yield models.PointStruct(id=idx, payload=payload, vector={vector_name: vector})
 
+    def _validate_collection_info(self, collection_info: models.CollectionInfo) -> None:
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
+        vector_field_name = self.get_vector_field_name()
+
+        # Check if collection has compatible vector params
+        assert isinstance(
+            collection_info.config.params.vectors, dict
+        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
+
+        assert (
+            vector_field_name in collection_info.config.params.vectors
+        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}, expected {vector_field_name}"
+
+        vector_params = collection_info.config.params.vectors[vector_field_name]
+
+        assert (
+            embeddings_size == vector_params.size
+        ), f"Embedding size mismatch: {embeddings_size} != {vector_params.size}"
+
+        assert (
+            distance == vector_params.distance
+        ), f"Distance mismatch: {distance} != {vector_params.distance}"
+
+        sparse_vector_field_name = self.get_sparse_vector_field_name()
+        if sparse_vector_field_name is not None:
+            assert (
+                sparse_vector_field_name in collection_info.config.params.sparse_vectors
+            ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
+
     def get_fastembed_vector_params(
         self,
         on_disk: Optional[bool] = None,
@@ -241,6 +366,30 @@ class QdrantFastembedMixin(QdrantBase):
                 on_disk=on_disk,
                 quantization_config=quantization_config,
                 hnsw_config=hnsw_config,
+            )
+        }
+
+    def get_fastembed_sparse_vector_params(
+        self,
+        on_disk: Optional[bool] = None,
+    ) -> Optional[Dict[str, models.SparseVectorParams]]:
+        """
+        Generates vector configuration, compatible with fastembed sparse models.
+
+        Args:
+            on_disk: if True, vectors will be stored on disk. If None, default value will be used.
+
+        Returns:
+            Configuration for `vectors_config` argument in `create_collection` method.
+        """
+        vector_field_name = self.get_sparse_vector_field_name()
+        if vector_field_name is None:
+            return None
+        return {
+            vector_field_name: models.SparseVectorParams(
+                index=models.SparseIndexParams(
+                    on_disk=on_disk,
+                )
             )
         }
 
@@ -295,9 +444,6 @@ class QdrantFastembedMixin(QdrantBase):
             parallel=parallel,
         )
 
-        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
-        vector_field_name = self.get_vector_field_name()
-
         # Check if collection by same name exists, if not, create it
         try:
             collection_info = self.get_collection(collection_name=collection_name)
@@ -305,27 +451,11 @@ class QdrantFastembedMixin(QdrantBase):
             self.create_collection(
                 collection_name=collection_name,
                 vectors_config=self.get_fastembed_vector_params(),
+                sparse_vectors_config=self.get_fastembed_sparse_vector_params(),
             )
             collection_info = self.get_collection(collection_name=collection_name)
 
-        # Check if collection has compatible vector params
-        assert isinstance(
-            collection_info.config.params.vectors, dict
-        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
-
-        assert (
-            vector_field_name in collection_info.config.params.vectors
-        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}, expected {vector_field_name}"
-
-        vector_params = collection_info.config.params.vectors[vector_field_name]
-
-        assert (
-            embeddings_size == vector_params.size
-        ), f"Embedding size mismatch: {embeddings_size} != {vector_params.size}"
-
-        assert (
-            distance == vector_params.distance
-        ), f"Distance mismatch: {distance} != {vector_params.distance}"
+        self._validate_collection_info(collection_info)
 
         inserted_ids: list = []
 
