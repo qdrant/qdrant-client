@@ -1,8 +1,8 @@
-from qdrant_client import models
+from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 
 
-def test_reciprocal_rank_fusion():
+def test_reciprocal_rank_fusion() -> None:
     responses = [
         [
             models.ScoredPoint(id="1", score=0.1, version=1),

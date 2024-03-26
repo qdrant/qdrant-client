@@ -1,6 +1,6 @@
-from typing import List
+from typing import Dict, List
 
-from qdrant_client import models
+from qdrant_client.http import models
 
 
 def reciprocal_rank_fusion(
@@ -12,7 +12,7 @@ def reciprocal_rank_fusion(
         )
         return 1 / (ranking_constant + pos)
 
-    scores = {}
+    scores: Dict[models.ExtendedPointId, float] = {}
     point_pile = {}
     for response in responses:
         for i, scored_point in enumerate(response):

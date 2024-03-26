@@ -61,7 +61,7 @@ class QdrantFastembedMixin(QdrantBase):
         return self._embedding_model_name
 
     @property
-    def sparse_embedding_model_name(self) -> str:
+    def sparse_embedding_model_name(self) -> Optional[str]:
         return self._sparse_embedding_model_name
 
     def set_model(
@@ -110,7 +110,7 @@ class QdrantFastembedMixin(QdrantBase):
         model_name: Optional[str],
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-    ):
+    ) -> None:
         """
         Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
         Args:
@@ -335,10 +335,10 @@ class QdrantFastembedMixin(QdrantBase):
         ):
             ids_accumulator.append(idx)
             payload = {"document": doc, **meta}
-            vector = {vector_name: vector}
-            if sparse_vector is not None:
-                vector.update({sparse_vector_name: sparse_vector})
-            yield models.PointStruct(id=idx, payload=payload, vector=vector)
+            point_vector: Dict[str, models.Vector] = {vector_name: vector}
+            if sparse_vector_name is not None and sparse_vector is not None:
+                point_vector[sparse_vector_name] = sparse_vector
+            yield models.PointStruct(id=idx, payload=payload, vector=point_vector)
 
     def _validate_collection_info(self, collection_info: models.CollectionInfo) -> None:
         embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
@@ -474,7 +474,7 @@ class QdrantFastembedMixin(QdrantBase):
         )
 
         encoded_sparse_docs = None
-        if self._sparse_embedding_model_name is not None:
+        if self.sparse_embedding_model_name is not None:
             encoded_sparse_docs = self._sparse_embed_documents(
                 documents=documents,
                 embedding_model_name=self.sparse_embedding_model_name,
@@ -645,36 +645,41 @@ class QdrantFastembedMixin(QdrantBase):
 
             requests.append(request)
 
-        if self.sparse_embedding_model_name is not None:
-            sparse_embedding_model_inst = self._get_or_init_sparse_model(
-                model_name=self.sparse_embedding_model_name
+        if self.sparse_embedding_model_name is None:
+            responses = self.search_batch(
+                collection_name=collection_name,
+                requests=requests,
             )
-            sparse_query_vectors = list(sparse_embedding_model_inst.embed(documents=query_texts))
-            for sparse_vector in sparse_query_vectors:
-                request = models.SearchRequest(
-                    vector=models.NamedSparseVector(
-                        name=self.get_sparse_vector_field_name(),
-                        vector=sparse_vector,
-                    ),
-                    filter=query_filter,
-                    limit=limit,
-                    with_payload=True,
-                    **kwargs,
-                )
+            return [self._scored_points_to_query_responses(response) for response in responses]
 
-                requests.append(request)
+        sparse_embedding_model_inst = self._get_or_init_sparse_model(
+            model_name=self.sparse_embedding_model_name
+        )
+        sparse_query_vectors = list(sparse_embedding_model_inst.embed(documents=query_texts))
+        for sparse_vector in sparse_query_vectors:
+            request = models.SearchRequest(
+                vector=models.NamedSparseVector(
+                    name=self.get_sparse_vector_field_name(),
+                    vector=sparse_vector,
+                ),
+                filter=query_filter,
+                limit=limit,
+                with_payload=True,
+                **kwargs,
+            )
+
+            requests.append(request)
 
         responses = self.search_batch(
             collection_name=collection_name,
             requests=requests,
         )
 
-        if self.sparse_embedding_model_name is not None:
-            dense_responses = responses[: len(query_texts)]
-            sparse_responses = responses[len(query_texts) :]
-            responses = [
-                reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
-                for dense_response, sparse_response in zip(dense_responses, sparse_responses)
-            ]
+        dense_responses = responses[: len(query_texts)]
+        sparse_responses = responses[len(query_texts) :]
+        responses = [
+            reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
+            for dense_response, sparse_response in zip(dense_responses, sparse_responses)
+        ]
 
         return [self._scored_points_to_query_responses(response) for response in responses]
