@@ -713,10 +713,11 @@ class QdrantLocal(QdrantBase):
 
         self._upload_points(collection_name, records)
 
-    def _upload_points_with_NaN(
-            self,
-            collection_name: str,
-            points: Iterable[Union[types.PointStruct, types.Record]],
+    
+    def _upload_points(
+        self,
+        collection_name: str,
+        points: Iterable[Union[types.PointStruct, types.Record]],
     ) -> None:
         collection = self._get_collection(collection_name)
         # Initialize the list for prepared points
