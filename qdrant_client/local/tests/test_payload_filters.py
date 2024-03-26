@@ -140,7 +140,7 @@ def test_nested_payload_filters():
 
     res = check_filter(query, payload, 0)
     assert res is False
-    
+
 
 def test_geo_polygon_filter_query():
     payload = {

@@ -1443,6 +1443,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
@@ -1465,6 +1466,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             points_selector=points_selector,
                             ordering=ordering,
                             shard_key_selector=shard_key_selector,
+                            key=key,
                         ),
                         timeout=self._timeout,
                     )
@@ -1482,6 +1484,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         points=_points,
                         filter=_filter,
                         shard_key=shard_key_selector,
+                        key=key,
                     ),
                 )
             ).result
