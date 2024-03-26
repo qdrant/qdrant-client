@@ -7,6 +7,7 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
+from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 
 try:
     from fastembed import TextEmbedding
@@ -59,6 +60,10 @@ class QdrantFastembedMixin(QdrantBase):
             self._embedding_model_name = self.DEFAULT_EMBEDDING_MODEL
         return self._embedding_model_name
 
+    @property
+    def sparse_embedding_model_name(self) -> str:
+        return self._sparse_embedding_model_name
+
     def set_model(
         self,
         embedding_model_name: str,
@@ -102,7 +107,7 @@ class QdrantFastembedMixin(QdrantBase):
 
     def set_sparse_model(
         self,
-        model_name: str,
+        model_name: Optional[str],
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
     ):
@@ -110,6 +115,7 @@ class QdrantFastembedMixin(QdrantBase):
         Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
         Args:
             model_name: One of the supported sparse embedding models. See `SUPPORTED_SPARSE_EMBEDDING_MODELS` for details.
+                        If None, sparse embeddings will not be used.
             cache_dir (str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
@@ -121,11 +127,12 @@ class QdrantFastembedMixin(QdrantBase):
         Returns:
             None
         """
-        self._get_or_init_sparse_model(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-        )
+        if model_name is not None:
+            self._get_or_init_sparse_model(
+                model_name=model_name,
+                cache_dir=cache_dir,
+                threads=threads,
+            )
         self._sparse_embedding_model_name = model_name
 
     @classmethod
@@ -236,16 +243,15 @@ class QdrantFastembedMixin(QdrantBase):
         embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
         batch_size: int = 32,
         parallel: Optional[int] = None,
-    ) -> Iterable[Tuple[str, types.SparseVector]]:
+    ) -> Iterable[types.SparseVector]:
         sparse_embedding_model = self._get_or_init_sparse_model(model_name=embedding_model_name)
-        documents_a, documents_b = tee(documents, 2)
 
         vectors_iter = sparse_embedding_model.embed(
-            documents_a, batch_size=batch_size, parallel=parallel
+            documents, batch_size=batch_size, parallel=parallel
         )
 
-        for sparse_vector, doc in zip(vectors_iter, documents_b):
-            yield doc, types.SparseVector(
+        for sparse_vector in vectors_iter:
+            yield types.SparseVector(
                 indices=sparse_vector.indices.tolist(),
                 values=sparse_vector.values.tolist(),
             )
@@ -275,15 +281,28 @@ class QdrantFastembedMixin(QdrantBase):
         scored_points: List[types.ScoredPoint],
     ) -> List[QueryResponse]:
         response = []
+        vector_field_name = self.get_vector_field_name()
+        sparse_vector_field_name = self.get_sparse_vector_field_name()
+
         for scored_point in scored_points:
-            embedding = None
-            if scored_point.vector is not None:
-                embedding = scored_point.vector.get(self.get_vector_field_name(), None)
+            embedding = (
+                scored_point.vector.get(vector_field_name, None)
+                if isinstance(scored_point.vector, Dict)
+                else None
+            )
+            sparse_embedding = None
+            if sparse_vector_field_name is not None:
+                sparse_embedding = (
+                    scored_point.vector.get(sparse_vector_field_name, None)
+                    if isinstance(scored_point.vector, Dict)
+                    else None
+                )
 
             response.append(
                 QueryResponse(
                     id=scored_point.id,
                     embedding=embedding,
+                    sparse_embedding=sparse_embedding,
                     metadata=scored_point.payload,
                     document=scored_point.payload.get("document", ""),
                     score=scored_point.score,
@@ -297,6 +316,7 @@ class QdrantFastembedMixin(QdrantBase):
         metadata: Optional[Iterable[Dict[str, Any]]],
         encoded_docs: Iterable[Tuple[str, List[float]]],
         ids_accumulator: list,
+        sparse_vectors: Optional[Iterable[types.SparseVector]] = None,
     ) -> Iterable[models.PointStruct]:
         if ids is None:
             ids = iter(lambda: uuid.uuid4().hex, None)
@@ -304,12 +324,21 @@ class QdrantFastembedMixin(QdrantBase):
         if metadata is None:
             metadata = iter(lambda: {}, None)
 
-        vector_name = self.get_vector_field_name()
+        if sparse_vectors is None:
+            sparse_vectors = iter(lambda: None, True)
 
-        for idx, meta, (doc, vector) in zip(ids, metadata, encoded_docs):
+        vector_name = self.get_vector_field_name()
+        sparse_vector_name = self.get_sparse_vector_field_name()
+
+        for idx, meta, (doc, vector), sparse_vector in zip(
+            ids, metadata, encoded_docs, sparse_vectors
+        ):
             ids_accumulator.append(idx)
             payload = {"document": doc, **meta}
-            yield models.PointStruct(id=idx, payload=payload, vector={vector_name: vector})
+            vector = {vector_name: vector}
+            if sparse_vector is not None:
+                vector.update({sparse_vector_name: sparse_vector})
+            yield models.PointStruct(id=idx, payload=payload, vector=vector)
 
     def _validate_collection_info(self, collection_info: models.CollectionInfo) -> None:
         embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
@@ -444,6 +473,15 @@ class QdrantFastembedMixin(QdrantBase):
             parallel=parallel,
         )
 
+        encoded_sparse_docs = None
+        if self._sparse_embedding_model_name is not None:
+            encoded_sparse_docs = self._sparse_embed_documents(
+                documents=documents,
+                embedding_model_name=self.sparse_embedding_model_name,
+                batch_size=batch_size,
+                parallel=parallel,
+            )
+
         # Check if collection by same name exists, if not, create it
         try:
             collection_info = self.get_collection(collection_name=collection_name)
@@ -464,6 +502,7 @@ class QdrantFastembedMixin(QdrantBase):
             metadata=metadata,
             encoded_docs=encoded_docs,
             ids_accumulator=inserted_ids,
+            sparse_vectors=encoded_sparse_docs,
         )
 
         self.upload_points(
@@ -509,17 +548,57 @@ class QdrantFastembedMixin(QdrantBase):
         embeddings = list(embedding_model_inst.query_embed(query=query_text))
         query_vector = embeddings[0]
 
-        return self._scored_points_to_query_responses(
-            self.search(
-                collection_name=collection_name,
-                query_vector=models.NamedVector(
-                    name=self.get_vector_field_name(), vector=query_vector.tolist()
-                ),
-                query_filter=query_filter,
-                limit=limit,
-                with_payload=True,
-                **kwargs,
+        sparse_query_vector = None
+        if self.sparse_embedding_model_name is not None:
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(
+                model_name=self.sparse_embedding_model_name
             )
+            sparse_vector = list(sparse_embedding_model_inst.embed(documents=query_text))[0]
+            sparse_query_vector = models.SparseVector(
+                indices=sparse_vector.indices.tolist(),
+                values=sparse_vector.values.tolist(),
+            )
+
+        if sparse_query_vector is None:
+            return self._scored_points_to_query_responses(
+                self.search(
+                    collection_name=collection_name,
+                    query_vector=models.NamedVector(
+                        name=self.get_vector_field_name(), vector=query_vector.tolist()
+                    ),
+                    query_filter=query_filter,
+                    limit=limit,
+                    with_payload=True,
+                    **kwargs,
+                )
+            )
+
+        dense_request = models.SearchRequest(
+            vector=models.NamedVector(
+                name=self.get_vector_field_name(),
+                vector=query_vector.tolist(),
+            ),
+            filter=query_filter,
+            limit=limit,
+            with_payload=True,
+            **kwargs,
+        )
+        sparse_request = models.SearchRequest(
+            vector=models.NamedSparseVector(
+                name=self.get_sparse_vector_field_name(),
+                vector=sparse_query_vector,
+            ),
+            filter=query_filter,
+            limit=limit,
+            with_payload=True,
+            **kwargs,
+        )
+
+        dense_request_response, sparse_request_response = self.search_batch(
+            collection_name=collection_name, requests=[dense_request, sparse_request]
+        )
+        return self._scored_points_to_query_responses(
+            reciprocal_rank_fusion(dense_request_response, sparse_request_response)
         )
 
     def query_batch(
@@ -551,10 +630,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        query_vectors = [
-            list(embedding_model_inst.query_embed(query=query_text))[0]
-            for query_text in query_texts
-        ]
+        query_vectors = list(embedding_model_inst.query_embed(query=query_texts))
         requests = []
         for vector in query_vectors:
             request = models.SearchRequest(
@@ -569,10 +645,36 @@ class QdrantFastembedMixin(QdrantBase):
 
             requests.append(request)
 
-        return [
-            self._scored_points_to_query_responses(response)
-            for response in self.search_batch(
-                collection_name=collection_name,
-                requests=requests,
+        if self.sparse_embedding_model_name is not None:
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(
+                model_name=self.sparse_embedding_model_name
             )
-        ]
+            sparse_query_vectors = list(sparse_embedding_model_inst.embed(documents=query_texts))
+            for sparse_vector in sparse_query_vectors:
+                request = models.SearchRequest(
+                    vector=models.NamedSparseVector(
+                        name=self.get_sparse_vector_field_name(),
+                        vector=sparse_vector,
+                    ),
+                    filter=query_filter,
+                    limit=limit,
+                    with_payload=True,
+                    **kwargs,
+                )
+
+                requests.append(request)
+
+        responses = self.search_batch(
+            collection_name=collection_name,
+            requests=requests,
+        )
+
+        if self.sparse_embedding_model_name is not None:
+            dense_responses = responses[: len(query_texts)]
+            sparse_responses = responses[len(query_texts) :]
+            responses = [
+                reciprocal_rank_fusion([dense_response, sparse_response])
+                for dense_response, sparse_response in zip(dense_responses, sparse_responses)
+            ]
+
+        return [self._scored_points_to_query_responses(response) for response in responses]
