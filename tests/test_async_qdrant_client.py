@@ -22,9 +22,6 @@ DIM = 32
 COLLECTION_NAME = "async_test_collection"
 
 
-
-
-
 @pytest.mark.asyncio
 async def test_async_grpc():
     points = (
@@ -54,7 +51,9 @@ async def test_async_grpc():
         qdrant_grpc.CreateCollection(
             collection_name=COLLECTION_NAME,
             vectors_config=qdrant_grpc.VectorsConfig(
-                params=qdrant_grpc.VectorParams(size=DIM, distance=qdrant_grpc.Distance.Cosine)
+                params=qdrant_grpc.VectorParams(
+                    size=DIM, distance=qdrant_grpc.Distance.Cosine
+                )
             ),
         )
     )
@@ -87,7 +86,9 @@ async def test_async_grpc():
             )
         )
         search_queries.append(search_query)
-    results = await asyncio.gather(*search_queries)  # All queries are running in parallel now
+    results = await asyncio.gather(
+        *search_queries
+    )  # All queries are running in parallel now
 
     assert len(results) == NUM_QUERIES
 
@@ -95,7 +96,6 @@ async def test_async_grpc():
         assert len(result.result) == 10
 
     client.close()
-
 
 
 @pytest.mark.asyncio
@@ -122,7 +122,10 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.get_collections()
     if version is None or (version >= "v1.8.0" or version == "dev"):
         collections_response = await client.get_collections()
-        assert any(collection.name == COLLECTION_NAME for collection in collections_response.collections)
+        assert any(
+            collection.name == COLLECTION_NAME
+            for collection in collections_response.collections
+        )
 
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
@@ -142,7 +145,9 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.get_collection_aliases(COLLECTION_NAME)
     await client.update_collection_aliases(
         change_aliases_operations=[
-            models.DeleteAliasOperation(delete_alias=models.DeleteAlias(alias_name=alias_name))
+            models.DeleteAliasOperation(
+                delete_alias=models.DeleteAlias(alias_name=alias_name)
+            )
         ]
     )
     assert (await client.get_aliases()).aliases == []
@@ -233,14 +238,19 @@ async def test_async_qdrant_client(prefer_grpc):
     assert "random_dig" in (await client.get_collection(COLLECTION_NAME)).payload_schema
 
     await client.delete_payload_index(COLLECTION_NAME, field_name="random_dig")
-    assert "random_dig" not in (await client.get_collection(COLLECTION_NAME)).payload_schema
+    assert (
+        "random_dig"
+        not in (await client.get_collection(COLLECTION_NAME)).payload_schema
+    )
 
     assert not (await client.lock_storage(reason="test")).write
     assert (await client.get_locks()).write
     assert (await client.unlock_storage()).write
     assert not (await client.get_locks()).write
 
-    assert isinstance(await client.create_snapshot(COLLECTION_NAME), models.SnapshotDescription)
+    assert isinstance(
+        await client.create_snapshot(COLLECTION_NAME), models.SnapshotDescription
+    )
     snapshots = await client.list_snapshots(COLLECTION_NAME)
     assert len(snapshots) == 1
 
@@ -296,9 +306,9 @@ async def test_async_qdrant_client(prefer_grpc):
         COLLECTION_NAME,
         points=[models.PointVectors(id=0, vector=[1.0] * 10)],
     )
-    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_vectors=True))[0].vector == [
-        1.0
-    ] * 10
+    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_vectors=True))[
+        0
+    ].vector == [1.0] * 10
 
     await client.delete(COLLECTION_NAME, points_selector=[0])
     assert (await client.count(COLLECTION_NAME)).count == 99
@@ -307,16 +317,20 @@ async def test_async_qdrant_client(prefer_grpc):
         COLLECTION_NAME,
         update_operations=[
             models.UpsertOperation(
-                upsert=models.PointsList(points=[models.PointStruct(id=0, vector=[1.0] * 10)])
+                upsert=models.PointsList(
+                    points=[models.PointStruct(id=0, vector=[1.0] * 10)]
+                )
             )
         ],
     )
     assert (await client.count(COLLECTION_NAME)).count == 100
 
-    await client.set_payload(COLLECTION_NAME, payload={"added_payload": "zero"}, points=[0])
-    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
-        0
-    ].payload == {"added_payload": "zero"}
+    await client.set_payload(
+        COLLECTION_NAME, payload={"added_payload": "zero"}, points=[0]
+    )
+    assert (
+        await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"])
+    )[0].payload == {"added_payload": "zero"}
     await client.overwrite_payload(
         COLLECTION_NAME, payload={"overwritten": True, "rand_digit": 2023}, points=[1]
     )
@@ -326,9 +340,9 @@ async def test_async_qdrant_client(prefer_grpc):
     }
 
     await client.delete_payload(COLLECTION_NAME, keys=["added_payload"], points=[0])
-    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
-        0
-    ].payload == {}
+    assert (
+        await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"])
+    )[0].payload == {}
     await client.clear_payload(COLLECTION_NAME, points_selector=[1])
     assert (await client.retrieve(COLLECTION_NAME, ids=[1]))[0].payload == {}
 
@@ -336,16 +350,21 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.delete_collection(COLLECTION_NAME)
     collections = await client.get_collections()
 
-    assert all(collection.name != COLLECTION_NAME for collection in collections.collections)
+    assert all(
+        collection.name != COLLECTION_NAME for collection in collections.collections
+    )
     await client.close()
     # endregion
+
 
 @pytest.mark.asyncio
 async def test_upload_points_with_nan():
     client = AsyncQdrantClient(":memory:")
     await client.create_collection(
         collection_name=COLLECTION_NAME,
-        vectors_config=rest_models.VectorParams(size=3, distance=rest_models.Distance.COSINE),
+        vectors_config=rest_models.VectorParams(
+            size=3, distance=rest_models.Distance.COSINE
+        ),
     )
 
     # Generate a valid UUID for the point id
@@ -353,17 +372,15 @@ async def test_upload_points_with_nan():
 
     # Define a point with NaN values in its vector
     point_with_nan = rest_models.PointStruct(
-        id=valid_uuid,
-        vector=np.array([np.nan, 0.1, 0.2]).tolist(),
-        payload={}
+        id=valid_uuid, vector=np.array([np.nan, 0.1, 0.2]).tolist(), payload={}
     )
 
     # Attempt to upload the point with NaN values
     await client.upload_points(collection_name=COLLECTION_NAME, points=[point_with_nan])
 
-
     # Clean up any resources if needed
     await client.delete_collection(collection_name=COLLECTION_NAME)
+
 
 @pytest.mark.asyncio
 async def test_async_qdrant_client_local():
@@ -400,7 +417,9 @@ async def test_async_qdrant_client_local():
     await client.get_collection_aliases(COLLECTION_NAME)
     await client.update_collection_aliases(
         change_aliases_operations=[
-            models.DeleteAliasOperation(delete_alias=models.DeleteAlias(alias_name=alias_name))
+            models.DeleteAliasOperation(
+                delete_alias=models.DeleteAlias(alias_name=alias_name)
+            )
         ]
     )
     assert await client.get_aliases()
@@ -505,9 +524,9 @@ async def test_async_qdrant_client_local():
         COLLECTION_NAME,
         points=[models.PointVectors(id=0, vector=[1.0] * 10)],
     )
-    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_vectors=True))[0].vector == [
-        1.0
-    ] * 10
+    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_vectors=True))[
+        0
+    ].vector == [1.0] * 10
 
     await client.delete(COLLECTION_NAME, points_selector=[0])
     assert (await client.count(COLLECTION_NAME)).count == 99
@@ -516,16 +535,20 @@ async def test_async_qdrant_client_local():
         COLLECTION_NAME,
         update_operations=[
             models.UpsertOperation(
-                upsert=models.PointsList(points=[models.PointStruct(id=0, vector=[1.0] * 10)])
+                upsert=models.PointsList(
+                    points=[models.PointStruct(id=0, vector=[1.0] * 10)]
+                )
             )
         ],
     )
     assert (await client.count(COLLECTION_NAME)).count == 100
 
-    await client.set_payload(COLLECTION_NAME, payload={"added_payload": "zero"}, points=[0])
-    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
-        0
-    ].payload == {"added_payload": "zero"}
+    await client.set_payload(
+        COLLECTION_NAME, payload={"added_payload": "zero"}, points=[0]
+    )
+    assert (
+        await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"])
+    )[0].payload == {"added_payload": "zero"}
     await client.overwrite_payload(
         COLLECTION_NAME, payload={"overwritten": True, "rand_digit": 2023}, points=[1]
     )
@@ -535,9 +558,9 @@ async def test_async_qdrant_client_local():
     }
 
     await client.delete_payload(COLLECTION_NAME, keys=["added_payload"], points=[0])
-    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
-        0
-    ].payload == {}
+    assert (
+        await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"])
+    )[0].payload == {}
     await client.clear_payload(COLLECTION_NAME, points_selector=[1])
     assert (await client.retrieve(COLLECTION_NAME, ids=[1]))[0].payload == {}
 
@@ -545,6 +568,8 @@ async def test_async_qdrant_client_local():
     await client.delete_collection(COLLECTION_NAME)
     collections = await client.get_collections()
 
-    assert all(collection.name != COLLECTION_NAME for collection in collections.collections)
+    assert all(
+        collection.name != COLLECTION_NAME for collection in collections.collections
+    )
     await client.close()
     # endregion
