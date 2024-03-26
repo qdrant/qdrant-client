@@ -112,11 +112,21 @@ def test_hybrid_query():
         ids=docs["ids"],
     )
 
-    search_result = local_client.query(
+    hybrid_search_result = local_client.query(
         collection_name=collection_name, query_text="This is a query document"
     )
 
-    assert len(search_result) > 0
+    assert len(hybrid_search_result) > 0
+
+    local_client.set_sparse_model(None)
+    dense_search_result = local_client.query(
+        collection_name=collection_name, query_text="This is a query document"
+    )
+    assert len(dense_search_result) > 0
+
+    assert (
+        hybrid_search_result[0].score != dense_search_result[0].score
+    )  # hybrid search has score from fusion
 
 
 def test_set_model(
@@ -124,8 +134,6 @@ def test_set_model(
     collection_name: str = "demo_collection",
     docs: List[str] = None,
 ):
-    import tempfile
-
     if docs is None:
         docs = [
             "Qdrant has native Fastembed integration",
