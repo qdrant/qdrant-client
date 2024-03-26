@@ -498,10 +498,11 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.set_payload(payload=payload, selector=points)
+        collection.set_payload(payload=payload, selector=points, key=key)
         return self._default_update_result()
 
     def overwrite_payload(

@@ -25,9 +25,11 @@ from qdrant_client.local.distances import (
     calculate_recommend_best_scores,
     distance_to_order,
 )
+from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import OrderingValue, to_ordering_value
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
+from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
     calculate_distance_sparse,
@@ -1340,16 +1342,21 @@ class LocalCollection:
             models.FilterSelector,
             models.PointIdsList,
         ],
+        key: Optional[str] = None,
     ) -> None:
         ids = self._selector_to_ids(selector)
+        jsonable_payload = to_jsonable_python(payload)
+
+        keys: Optional[List[JsonPathItem]] = parse_json_path(key) if key is not None else None
+
         for point_id in ids:
             idx = self.ids[point_id]
-            self.payload[idx] = to_jsonable_python(
-                {
-                    **(self.payload[idx] or {}),
-                    **payload,
-                }
-            )
+            if keys is None:
+                self.payload[idx] = {**self.payload[idx], **jsonable_payload}
+            else:
+                if self.payload[idx] is not None:
+                    set_value_by_key(payload=self.payload[idx], value=jsonable_payload, keys=keys)
+
             self._persist_by_id(point_id)
 
     def overwrite_payload(

@@ -1,5 +1,8 @@
+import pytest
+
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
@@ -231,3 +234,189 @@ def test_not_jsonable_payload():
         )
 
     compare_collections(local_client, remote_client, len(points))
+
+
+def test_set_payload_with_key():
+    import numpy as np
+
+    from qdrant_client.models import PointStruct
+
+    local_client = init_local()
+    remote_client = init_remote()
+
+    vector_size = 2
+    vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
+
+    local_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+    remote_client.recreate_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
+
+    vector = np.random.rand(vector_size).tolist()
+
+    def set_payload(payload, new_payload, key):
+        local_client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=[
+                PointStruct(
+                    id=9999,
+                    payload=payload,
+                    vector=vector,
+                ),
+            ],
+            wait=True,
+        )
+        remote_client.upsert(
+            collection_name=COLLECTION_NAME,
+            points=[
+                PointStruct(
+                    id=9999,
+                    payload=payload,
+                    vector=vector,
+                ),
+            ],
+            wait=True,
+        )
+
+        local_client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=new_payload,
+            points=[9999],
+            key=key,
+        )
+        remote_client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=new_payload,
+            points=[9999],
+            key=key,
+        )
+        compare_collections(local_client, remote_client, 1)
+
+    payload = {"nest": [{"a": "100", "b": "200"}]}
+    new_payload = {"a": "101"}
+    key = "nest[0]"
+    set_payload(payload, new_payload, key)
+
+    key = "nest[1]"
+    new_payload = {"d": "404"}
+    set_payload(payload, new_payload, key)
+
+    key = "nest[].nest"
+    set_payload(payload, new_payload, key)
+
+    key = "nest[]"
+    set_payload(payload, new_payload, key)
+
+    payload = {}
+    set_payload(payload, new_payload, key)
+
+    payload = {"nest": [{"a": [], "b": "200"}]}
+    new_payload = {"a": "101"}
+    key = "nest[0].a[]"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": []}
+    new_payload = {"b": {"c": 1}}
+    key = "a[0]"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": {"b": {"c": {"d": {"e": 1}}}}}
+    new_payload = {"f": 2}
+    key = "a.b.c.d"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": []}
+    new_payload = {}
+    key = "a.b[0]"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": []}
+    new_payload = {}
+    key = "a.b"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": [[{"a": 1}]]}
+    new_payload = {}
+    key = "a[0][0]"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": [[{"a": "w"}]]}
+    new_payload = {"b": "q"}
+    key = "a[0][0]"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": []}
+    new_payload = {}
+    key = "a.b"
+    set_payload(payload, new_payload, key)
+
+    payload = {"a": {"c": [{"d": 1}]}}
+    new_payload = {"a": 1}
+    key = "a.c[][]"
+    set_payload(payload, new_payload, key)
+
+    payload = {"": "xc"}
+    new_payload = {"": "bbb"}
+    key = ""
+    local_client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(
+                id=9999,
+                payload=payload,
+                vector=vector,
+            ),
+        ],
+        wait=True,
+    )
+    remote_client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(
+                id=9999,
+                payload=payload,
+                vector=vector,
+            ),
+        ],
+        wait=True,
+    )
+
+    with pytest.raises(ValueError):
+        local_client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=new_payload,
+            points=[9999],
+            key=key,
+        )
+    with pytest.raises(UnexpectedResponse):
+        remote_client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=new_payload,
+            points=[9999],
+            key=key,
+        )
+
+    filter_ = models.Filter(
+        must=[models.FieldCondition(key="", match=models.MatchValue(value="xc"))]
+    )
+    with pytest.raises(ValueError):
+        local_client.set_payload(
+            collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
+        )
+
+    with pytest.raises(UnexpectedResponse):
+        remote_client.set_payload(
+            collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
+        )
+
+    filter_ = models.Filter(
+        must=[models.FieldCondition(key='""', match=models.MatchValue(value="xc"))]
+    )
+
+    remote_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
+    local_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
+    compare_collections(local_client, remote_client, 1)

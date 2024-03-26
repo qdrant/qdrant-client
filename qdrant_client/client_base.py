@@ -204,6 +204,7 @@ class QdrantBase:
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         raise NotImplementedError()

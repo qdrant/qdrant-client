@@ -1152,6 +1152,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
@@ -1197,6 +1198,39 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            key: Path to the nested field in the payload to modify. If not specified - modify the root of the
+                payload. E.g.:
+
+                PointStruct(
+                    id=42,
+                    vector=[...],
+                    payload={
+                        "recipe": {
+                            "fruits": {"apple": "100g"}
+                        }
+                    }
+                )
+
+                qdrant_client.set_payload(
+                    ...,
+                    payload = {"cinnamon": "2g"},
+                    key = "recipe.fruits",
+                    points=[42]
+                )
+
+                PointStruct(
+                    id=42,
+                    vector=[...],
+                    payload={
+                        "recipe": {
+                            "fruits": {
+                                "apple": "100g",
+                                "cinnamon": "2g"
+                            }
+                        }
+                    }
+                )
+
         Returns:
             Operation result
         """
@@ -1208,6 +1242,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            key=key,
             **kwargs,
         )
 
