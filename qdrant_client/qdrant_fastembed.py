@@ -598,7 +598,7 @@ class QdrantFastembedMixin(QdrantBase):
             collection_name=collection_name, requests=[dense_request, sparse_request]
         )
         return self._scored_points_to_query_responses(
-            reciprocal_rank_fusion(dense_request_response, sparse_request_response)
+            reciprocal_rank_fusion([dense_request_response, sparse_request_response], limit=limit)
         )
 
     def query_batch(
@@ -673,7 +673,7 @@ class QdrantFastembedMixin(QdrantBase):
             dense_responses = responses[: len(query_texts)]
             sparse_responses = responses[len(query_texts) :]
             responses = [
-                reciprocal_rank_fusion([dense_response, sparse_response])
+                reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
                 for dense_response, sparse_response in zip(dense_responses, sparse_responses)
             ]
 

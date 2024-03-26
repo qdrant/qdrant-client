@@ -86,6 +86,39 @@ def test_query(
     assert len(search_result) > 0
 
 
+def test_hybrid_query():
+    local_client = QdrantClient(":memory:")
+
+    collection_name = "hybrid_collection"
+
+    docs = {
+        "documents": [
+            "Qdrant has Langchain integrations",
+            "Qdrant also has Llama Index integrations",
+        ],
+        "metadatas": [{"source": "Langchain-docs"}, {"source": "LlamaIndex-docs"}],
+        "ids": [42, 2],
+    }
+
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping test")
+
+    local_client.set_sparse_model(model_name="prithvida/Splade_PP_en_v1")
+
+    local_client.add(
+        collection_name=collection_name,
+        documents=docs["documents"],
+        metadata=docs["metadatas"],
+        ids=docs["ids"],
+    )
+
+    search_result = local_client.query(
+        collection_name=collection_name, query_text="This is a query document"
+    )
+
+    assert len(search_result) > 0
+
+
 def test_set_model(
     local_client: QdrantClient = QdrantClient(":memory:"),
     collection_name: str = "demo_collection",
