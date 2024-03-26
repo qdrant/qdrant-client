@@ -427,6 +427,7 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         scroll_filter: Optional[types.Filter] = None,
         limit: int = 10,
+        order_by: Optional[types.OrderBy] = None,
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
@@ -436,6 +437,7 @@ class QdrantLocal(QdrantBase):
         return collection.scroll(
             scroll_filter=scroll_filter,
             limit=limit,
+            order_by=order_by,
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
@@ -461,7 +463,7 @@ class QdrantLocal(QdrantBase):
             if not all(is_numeric_not_nan(vector) for vector in point.vector.values()):
                 raise ValueError(f"Point with ID {point.id} contains NaN values or non-numeric values in its vector.")
 
-        collection.update_vectors(points)
+        collection.upsert(points)
         return self._default_update_result()
 
     def update_vectors(
@@ -621,7 +623,12 @@ class QdrantLocal(QdrantBase):
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         collection = self._get_collection(collection_name)
         return collection.info()
-
+    def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
+        try:
+            self._get_collection(collection_name)
+            return True
+        except ValueError:
+            return False 
     def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
         _collection = self._get_collection(collection_name)
         return False
@@ -681,6 +688,7 @@ class QdrantLocal(QdrantBase):
         if src_collection and from_collection_name:
             batch_size = 100
             records, next_offset = self.scroll(from_collection_name, limit=2, with_vectors=True)
+            from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True
             self.upload_records(
                 collection_name, records
             )  # it is not crucial to replace upload_records here
@@ -728,6 +736,7 @@ class QdrantLocal(QdrantBase):
             points: Iterable[Union[types.PointStruct, types.Record]],
     ) -> None:
         collection = self._get_collection(collection_name)
+        
         # Initialize the list for prepared points
         prepared_points = []
         # Flag to indicate if any point contains NaN values
