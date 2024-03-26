@@ -30,19 +30,7 @@ from qdrant_client.local.local_collection import LocalCollection
 
 META_INFO_FILENAME = "meta.json"
 
-def is_numeric_not_nan(value):
-    """
-    Check if the value is numeric and not NaN.
 
-    Args:
-        value: The value to check.
-
-    Returns:
-        bool: True if the value is numeric and not NaN, False otherwise.
-    """
-    if isinstance(value, (int, float, complex)) and not isinstance(value, bool):
-        return not np.isnan(value)
-    return False
 class QdrantLocal(QdrantBase):
     """
     Everything Qdrant server can do, but locally.
@@ -453,17 +441,25 @@ class QdrantLocal(QdrantBase):
         collection = self._get_collection(collection_name)
         return collection.count(count_filter=count_filter)
 
-
     def upsert(
         self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
         # Check for NaN in vectors
+        # Check for NaN in vectors
         for point in points:
+<<<<<<< HEAD
             if not all(is_numeric_not_nan(vector) for vector in point.vector.values()):
                 raise ValueError(f"Point with ID {point.id} contains NaN values or non-numeric values in its vector.")
 
         collection.upsert(points)
+=======
+            if any(np.isnan(vector) for vector in point.vector.values()):
+                raise ValueError(
+                    f"Point with ID {point.id} contains NaN values in its vector."
+                )
+        collection.update_vectors(points)
+>>>>>>> parent of 8068555 (updated)
         return self._default_update_result()
 
     def update_vectors(
@@ -475,9 +471,8 @@ class QdrantLocal(QdrantBase):
         collection = self._get_collection(collection_name)
         # Check for NaN in vectors
         for point in points:
-            if not all(is_numeric_not_nan(vector) for vector in point.vector.values()):
-                raise ValueError(f"Point with ID {point.id} contains NaN values or non-numeric values in its vector.")
-
+            if any(np.isnan(vector) for vector in point.vector.values()):
+                raise ValueError(f"Point with ID {point.id} contains NaN values in its vector.")
         collection.update_vectors(points)
         return self._default_update_result()
 
@@ -623,12 +618,21 @@ class QdrantLocal(QdrantBase):
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
         collection = self._get_collection(collection_name)
         return collection.info()
+<<<<<<< HEAD
+=======
+    
+>>>>>>> parent of 8068555 (updated)
     def collection_exists(self, collection_name: str, **kwargs: Any) -> bool:
         try:
             self._get_collection(collection_name)
             return True
         except ValueError:
+<<<<<<< HEAD
             return False 
+=======
+            return False
+        
+>>>>>>> parent of 8068555 (updated)
     def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
         _collection = self._get_collection(collection_name)
         return False
@@ -695,11 +699,7 @@ class QdrantLocal(QdrantBase):
             # since it is an internal usage, and we don't have custom shard keys in qdrant local
             while next_offset is not None:
                 records, next_offset = self.scroll(
-                    from_collection_name,
-                    offset=next_offset,
-                    limit=batch_size,
-                    with_vectors=True,
-                )
+              from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True)
                 self.upload_records(collection_name, records)
 
         self._save()
@@ -730,10 +730,11 @@ class QdrantLocal(QdrantBase):
 
         self._upload_points(collection_name, records)
 
+    
     def _upload_points(
-            self,
-            collection_name: str,
-            points: Iterable[Union[types.PointStruct, types.Record]],
+        self,
+        collection_name: str,
+        points: Iterable[Union[types.PointStruct, types.Record]],
     ) -> None:
         collection = self._get_collection(collection_name)
         
@@ -744,9 +745,9 @@ class QdrantLocal(QdrantBase):
 
         # Prepare points for upsertion, checking for NaN in vectors
         for point in points:
-            if not all(is_numeric_not_nan(vector) for vector in point.vector):
-                raise ValueError("Point vector contains NaN values or non-numeric values")
-
+            if np.isnan(np.array(point.vector)).any():
+                contains_nan = True
+                break  # Break the loop at the first occurrence of NaN
             else:
                 # If no NaN values, add the point to the list of prepared points
                 prepared_points.append(
@@ -763,7 +764,8 @@ class QdrantLocal(QdrantBase):
 
         # Upsert the prepared points into the collection
         collection.upsert(prepared_points)
-
+    
+    
     def upload_collection(
         self,
         collection_name: str,

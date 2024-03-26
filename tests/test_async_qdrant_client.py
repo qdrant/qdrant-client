@@ -117,8 +117,12 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
     if version is None or (version >= "v1.8.0" or version == "dev"):
+<<<<<<< HEAD
         collections_response = await client.get_collections()
         assert any(collection.name == COLLECTION_NAME for collection in collections_response.collections)
+=======
+        await client.collection_exists(COLLECTION_NAME)
+>>>>>>> parent of 8068555 (updated)
 
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
@@ -354,9 +358,18 @@ async def test_upload_points_with_nan():
         payload={}
     )
 
+<<<<<<< HEAD
     # Attempt to upload the point with NaN values
     await client.upload_points(collection_name=COLLECTION_NAME, points=[point_with_nan])
 
+=======
+    # Attempt to upload the point
+    try:
+        await client.upload_points(collection_name=COLLECTION_NAME, points=[point_with_nan])
+        # Optionally, assert something about the successful execution
+    except ValueError as e:
+        pytest.fail(f"Unexpected ValueError raised: {e}")
+>>>>>>> parent of 8068555 (updated)
 
     # Clean up any resources if needed
     await client.delete_collection(collection_name=COLLECTION_NAME)
