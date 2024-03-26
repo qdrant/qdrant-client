@@ -253,7 +253,6 @@ def test_value_by_key() -> None:
 
 def test_set_value_by_key() -> None:
     # region valid keys
-
     payload: Dict[str, Any] = {}
     new_value: Dict[str, Any] = {}
     key = "a"
@@ -452,6 +451,11 @@ def test_set_value_by_key() -> None:
     set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {"c": [{"d": {"a": 1}}]}}, payload
 
+    payload = {"": 2}
+    new_value = {"a": 1}
+    key = '""'
+    set_value_by_key(payload, parse_json_path(key), new_value)
+    assert payload == {"": {"a": 1}}, payload
     # endregion
 
     # region exceptions

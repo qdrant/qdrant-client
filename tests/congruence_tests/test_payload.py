@@ -1,5 +1,8 @@
+import pytest
+
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
@@ -355,3 +358,65 @@ def test_set_payload_with_key():
     new_payload = {"a": 1}
     key = "a.c[][]"
     set_payload(payload, new_payload, key)
+
+    payload = {"": "xc"}
+    new_payload = {"": "bbb"}
+    key = ""
+    local_client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(
+                id=9999,
+                payload=payload,
+                vector=vector,
+            ),
+        ],
+        wait=True,
+    )
+    remote_client.upsert(
+        collection_name=COLLECTION_NAME,
+        points=[
+            PointStruct(
+                id=9999,
+                payload=payload,
+                vector=vector,
+            ),
+        ],
+        wait=True,
+    )
+
+    with pytest.raises(ValueError):
+        local_client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=new_payload,
+            points=[9999],
+            key=key,
+        )
+    with pytest.raises(UnexpectedResponse):
+        remote_client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload=new_payload,
+            points=[9999],
+            key=key,
+        )
+
+    filter_ = models.Filter(
+        must=[models.FieldCondition(key="", match=models.MatchValue(value="xc"))]
+    )
+    with pytest.raises(ValueError):
+        local_client.set_payload(
+            collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
+        )
+
+    with pytest.raises(UnexpectedResponse):
+        remote_client.set_payload(
+            collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
+        )
+
+    filter_ = models.Filter(
+        must=[models.FieldCondition(key='""', match=models.MatchValue(value="xc"))]
+    )
+
+    remote_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
+    local_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
+    compare_collections(local_client, remote_client, 1)

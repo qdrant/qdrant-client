@@ -89,9 +89,6 @@ def match_quote(path: str) -> Tuple[Optional[JsonPathItem], str]:
     if path.count('"') < 2:
         raise ValueError("Invalid path")
 
-    if left_quote_pos == (right_quote_pos + 1):
-        raise ValueError("Invalid path")
-
     return (
         JsonPathItem(
             item_type=JsonPathItemType.KEY, key=path[left_quote_pos + 1 : right_quote_pos]
