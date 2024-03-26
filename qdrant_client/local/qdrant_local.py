@@ -340,9 +340,9 @@ class QdrantLocal(QdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
