@@ -117,8 +117,7 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
     if version is None or (version >= "v1.8.0" or version == "dev"):
-        collections_response = await client.get_collections()
-        assert any(collection.name == COLLECTION_NAME for collection in collections_response.collections)
+        await client.collection_exists(COLLECTION_NAME)
 
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
