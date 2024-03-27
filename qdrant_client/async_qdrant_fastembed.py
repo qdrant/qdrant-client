@@ -106,14 +106,14 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
 
     async def set_sparse_model(
         self,
-        model_name: Optional[str],
+        embedding_model_name: Optional[str],
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
     ) -> None:
         """
         Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
         Args:
-            model_name: One of the supported sparse embedding models. See `SUPPORTED_SPARSE_EMBEDDING_MODELS` for details.
+            embedding_model_name: One of the supported sparse embedding models. See `SUPPORTED_SPARSE_EMBEDDING_MODELS` for details.
                         If None, sparse embeddings will not be used.
             cache_dir (str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
@@ -126,11 +126,11 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Returns:
             None
         """
-        if model_name is not None:
+        if embedding_model_name is not None:
             self._get_or_init_sparse_model(
-                model_name=model_name, cache_dir=cache_dir, threads=threads
+                model_name=embedding_model_name, cache_dir=cache_dir, threads=threads
             )
-        self._sparse_embedding_model_name = model_name
+        self._sparse_embedding_model_name = embedding_model_name
 
     @classmethod
     def _import_fastembed(cls) -> None:
@@ -247,8 +247,8 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Returns:
             Name of the vector field.
         """
-        if self._sparse_embedding_model_name is not None:
-            model_name = self._sparse_embedding_model_name.split("/")[-1].lower()
+        if self.sparse_embedding_model_name is not None:
+            model_name = self.sparse_embedding_model_name.split("/")[-1].lower()
             return f"fast-sparse-{model_name}"
         return None
 
