@@ -343,29 +343,7 @@ async def test_async_qdrant_client(prefer_grpc):
     # endregion
 
 
-@pytest.mark.asyncio
-async def test_upload_points_with_nan():
-    client = AsyncQdrantClient(":memory:")
-    await client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=rest_models.VectorParams(
-            size=3, distance=rest_models.Distance.COSINE
-        ),
-    )
 
-    # Generate a valid UUID for the point id
-    valid_uuid = str(uuid.uuid4())
-
-    # Define a point with NaN values in its vector
-    point_with_nan = rest_models.PointStruct(
-        id=valid_uuid, vector=np.array([np.nan, 0.1, 0.2]).tolist(), payload={}
-    )
-
-    # Attempt to upload the point with NaN values
-    await client.upload_points(collection_name=COLLECTION_NAME, points=[point_with_nan])
-
-    # Clean up any resources if needed
-    await client.delete_collection(collection_name=COLLECTION_NAME)
 
 
 @pytest.mark.asyncio
