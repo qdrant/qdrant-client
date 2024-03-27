@@ -791,9 +791,7 @@ class QdrantLocal(QdrantBase):
                 yield str(uuid4())
 
         collection = self._get_collection(collection_name)
-        if isinstance(vectors, dict) and any(
-            isinstance(v, np.ndarray) for v in vectors.values()
-        ):
+        if isinstance(vectors, dict) and any(isinstance(v, np.ndarray) for v in vectors.values()):
             assert (
                 len(set([arr.shape[0] for arr in vectors.values()])) == 1
             ), "Each named vector should have the same number of vectors"
