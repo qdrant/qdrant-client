@@ -655,7 +655,12 @@ class QdrantFastembedMixin(QdrantBase):
         sparse_embedding_model_inst = self._get_or_init_sparse_model(
             model_name=self.sparse_embedding_model_name
         )
-        sparse_query_vectors = list(sparse_embedding_model_inst.embed(documents=query_texts))
+        sparse_query_vectors = [
+            models.SparseVector(
+                indices=sparse_vector.indices.tolist(), values=sparse_vector.values.tolist()
+            )
+            for sparse_vector in sparse_embedding_model_inst.embed(documents=query_texts)
+        ]
         for sparse_vector in sparse_query_vectors:
             request = models.SearchRequest(
                 vector=models.NamedSparseVector(
