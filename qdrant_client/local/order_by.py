@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional, Union, get_args
 
 from qdrant_client.local.datetime_utils import parse
