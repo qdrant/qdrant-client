@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import List, Optional, Tuple
 
-import pytest
 from pydantic import BaseModel
 
 
