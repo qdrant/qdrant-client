@@ -1,10 +1,6 @@
 from typing import Any, Dict, List, Optional, Type
 
-from qdrant_client.local.json_path_parser import (
-    JsonPathItem,
-    JsonPathItemType,
-    parse_json_path,
-)
+from qdrant_client.local.json_path_parser import JsonPathItem, JsonPathItemType
 
 
 def set_value_by_key(payload: dict, keys: List[JsonPathItem], value: Any) -> None:
