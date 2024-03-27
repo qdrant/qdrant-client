@@ -271,7 +271,7 @@ class QdrantLocal(QdrantBase):
                 with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
                 using=request.using,
-lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
                 if request.lookup_from
                 else None,
                 lookup_from_vector_name=request.lookup_from.vector
@@ -707,10 +707,7 @@ lookup_from_collection=self._get_collection(request.lookup_from.collection)
             # since it is an internal usage, and we don't have custom shard keys in qdrant local
             while next_offset is not None:
                 records, next_offset = self.scroll(
-                    from_collection_name,
-                    offset=next_offset,
-                    limit=batch_size,
-                    with_vectors=True,
+                    from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True
                 )
                 self.upload_records(collection_name, records)
 
