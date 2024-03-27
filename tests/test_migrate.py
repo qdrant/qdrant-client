@@ -65,9 +65,8 @@ def test_single_vector_collection(source_client, dest_client, request) -> None:
         source_client, collection_name=collection_name, vectors_config=vectors_config
     )
     dense_points = generate_fixtures(VECTOR_NUMBER, vectors_sizes=vectors_config.size)
-    # TODO(sparse)
-    # sparse_points = generate_sparse_fixtures(VECTOR_NUMBER)
-    points = dense_points  # + sparse_points
+    sparse_points = generate_sparse_fixtures(VECTOR_NUMBER)
+    points = dense_points + sparse_points
     source_client.upload_points(collection_name, points, wait=True)
     source_client.migrate(dest_client)
     dest_client.upload_points(collection_name, points, wait=True)
