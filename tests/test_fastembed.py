@@ -103,7 +103,7 @@ def test_hybrid_query():
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
-    local_client.set_sparse_model(model_name="prithvida/Splade_PP_en_v1")
+    local_client.set_sparse_model(embedding_model_name="prithvida/Splade_PP_en_v1")
 
     local_client.add(
         collection_name=collection_name,
@@ -144,14 +144,12 @@ def test_set_model(
         pytest.skip("FastEmbed is not installed, skipping test")
 
     embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    max_length = 384
     local_client.set_model(
         embedding_model_name=embedding_model_name,
-        max_length=max_length,
     )
     # Check if the model is initialized & cls.embeddings_models is set with expected values
     dim, dist = local_client._get_model_params(embedding_model_name)
-    assert dim == max_length
+    assert dim == 384
 
     # Use the initialized model to add documents with vector embeddings
     local_client.add(collection_name=collection_name, documents=docs)
