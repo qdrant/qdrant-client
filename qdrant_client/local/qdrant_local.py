@@ -863,9 +863,8 @@ class QdrantLocal(QdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
 
-    def delete_snapshot(
-        self, collection_name: str, snapshot_name: str, **kwargs: Any
-    ) -> bool:
+
+    def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
@@ -883,9 +882,9 @@ class QdrantLocal(QdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
 
-    def recover_snapshot(
-        self, collection_name: str, location: str, **kwargs: Any
-    ) -> bool:
+
+    def recover_snapshot(self, collection_name: str, location: str, **kwargs: Any) -> bool:
+
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )

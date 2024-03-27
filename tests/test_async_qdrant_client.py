@@ -325,9 +325,10 @@ async def test_async_qdrant_client(prefer_grpc):
     }
 
     await client.delete_payload(COLLECTION_NAME, keys=["added_payload"], points=[0])
-    assert (
-        await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"])
-    )[0].payload == {}
+    assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
+        0
+    ].payload == {}
+
     await client.clear_payload(COLLECTION_NAME, points_selector=[1])
     assert (await client.retrieve(COLLECTION_NAME, ids=[1]))[0].payload == {}
 
@@ -518,9 +519,7 @@ async def test_async_qdrant_client_local():
         COLLECTION_NAME,
         update_operations=[
             models.UpsertOperation(
-                upsert=models.PointsList(
-                    points=[models.PointStruct(id=0, vector=[1.0] * 10)]
-                )
+                upsert=models.PointsList(points=[models.PointStruct(id=0, vector=[1.0] * 10)])
             )
         ],
     )
