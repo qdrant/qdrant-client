@@ -546,25 +546,14 @@ class QdrantFastembedMixin(QdrantBase):
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
         embeddings = list(embedding_model_inst.query_embed(query=query_text))
-        query_vector = embeddings[0]
+        query_vector = embeddings[0].tolist()
 
-        sparse_query_vector = None
-        if self.sparse_embedding_model_name is not None:
-            sparse_embedding_model_inst = self._get_or_init_sparse_model(
-                model_name=self.sparse_embedding_model_name
-            )
-            sparse_vector = list(sparse_embedding_model_inst.embed(documents=query_text))[0]
-            sparse_query_vector = models.SparseVector(
-                indices=sparse_vector.indices.tolist(),
-                values=sparse_vector.values.tolist(),
-            )
-
-        if sparse_query_vector is None:
+        if self.sparse_embedding_model_name is None:
             return self._scored_points_to_query_responses(
                 self.search(
                     collection_name=collection_name,
                     query_vector=models.NamedVector(
-                        name=self.get_vector_field_name(), vector=query_vector.tolist()
+                        name=self.get_vector_field_name(), vector=query_vector
                     ),
                     query_filter=query_filter,
                     limit=limit,
@@ -573,10 +562,19 @@ class QdrantFastembedMixin(QdrantBase):
                 )
             )
 
+        sparse_embedding_model_inst = self._get_or_init_sparse_model(
+            model_name=self.sparse_embedding_model_name
+        )
+        sparse_vector = list(sparse_embedding_model_inst.embed(documents=query_text))[0]
+        sparse_query_vector = models.SparseVector(
+            indices=sparse_vector.indices.tolist(),
+            values=sparse_vector.values.tolist(),
+        )
+
         dense_request = models.SearchRequest(
             vector=models.NamedVector(
                 name=self.get_vector_field_name(),
-                vector=query_vector.tolist(),
+                vector=query_vector,
             ),
             filter=query_filter,
             limit=limit,
