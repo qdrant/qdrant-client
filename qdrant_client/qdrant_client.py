@@ -85,6 +85,16 @@ class QdrantClient(QdrantFastembedMixin):
         # we will need to pop them from **kwargs. Otherwise, they might be passed to QdrantRemote as httpx kwargs.
         # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
 
+        # Saving the init options to facilitate building AsyncQdrantClient from QdrantClient and vice versa.
+        # Eg. AsyncQdrantClient(**sync_client.init_options) or QdrantClient(**async_client.init_options)
+        init_options = {
+            key: value
+            for key, value in locals().items()
+            if key not in ("self", "__class__", "kwargs")
+        }
+        init_options.update(kwargs)
+        self.init_options = init_options
+
         self._client: QdrantBase
 
         if sum([param is not None for param in (location, url, host, path)]) > 1:

@@ -90,6 +90,13 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
+        init_options = {
+            key: value
+            for (key, value) in locals().items()
+            if key not in ("self", "__class__", "kwargs")
+        }
+        init_options.update(kwargs)
+        self.init_options = init_options
         self._client: AsyncQdrantBase
         if sum([param is not None for param in (location, url, host, path)]) > 1:
             raise ValueError(
