@@ -11,6 +11,7 @@ import qdrant_client.http.exceptions
 from qdrant_client import QdrantClient
 from qdrant_client import grpc as qdrant_grpc
 from qdrant_client import models
+
 from qdrant_client.async_qdrant_client import AsyncQdrantClient
 from qdrant_client.conversions.conversion import payload_to_grpc
 from tests.fixtures.payload import one_random_payload_please
@@ -234,6 +235,7 @@ async def test_async_qdrant_client(prefer_grpc):
     assert (await client.unlock_storage()).write
     assert not (await client.get_locks()).write
 
+
     assert isinstance(await client.create_snapshot(COLLECTION_NAME), models.SnapshotDescription)
     snapshots = await client.list_snapshots(COLLECTION_NAME)
     assert len(snapshots) == 1
@@ -302,15 +304,18 @@ async def test_async_qdrant_client(prefer_grpc):
         update_operations=[
             models.UpsertOperation(
                 upsert=models.PointsList(points=[models.PointStruct(id=0, vector=[1.0] * 10)])
+
             )
         ],
     )
     assert (await client.count(COLLECTION_NAME)).count == 100
 
+
     await client.set_payload(COLLECTION_NAME, payload={"added_payload": "zero"}, points=[0])
     assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
         0
     ].payload == {"added_payload": "zero"}
+
     await client.overwrite_payload(
         COLLECTION_NAME, payload={"overwritten": True, "rand_digit": 2023}, points=[1]
     )
@@ -323,6 +328,7 @@ async def test_async_qdrant_client(prefer_grpc):
     assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
         0
     ].payload == {}
+
     await client.clear_payload(COLLECTION_NAME, points_selector=[1])
     assert (await client.retrieve(COLLECTION_NAME, ids=[1]))[0].payload == {}
 
@@ -330,9 +336,14 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.delete_collection(COLLECTION_NAME)
     collections = await client.get_collections()
 
+
     assert all(collection.name != COLLECTION_NAME for collection in collections.collections)
+
     await client.close()
     # endregion
+
+
+
 
 
 @pytest.mark.asyncio
@@ -516,5 +527,6 @@ async def test_async_qdrant_client_local():
     collections = await client.get_collections()
 
     assert all(collection.name != COLLECTION_NAME for collection in collections.collections)
+
     await client.close()
     # endregion
