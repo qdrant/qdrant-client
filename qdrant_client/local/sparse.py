@@ -40,7 +40,10 @@ def sort_sparse_vector(vector: SparseVector) -> SparseVector:
         values=[vector.values[i] for i in sorted_indices],
     )
 
-
+def _validate_sparse_vector(vector: SparseVector) -> None:
+    """Validate a sparse vector by checking for NaN values in its values array."""
+    if np.isnan(np.array(vector.values)).any():
+        raise ValueError("Sparse vector contains NaN values")
 def calculate_distance_sparse(
     query: SparseVector, vectors: List[SparseVector]
 ) -> types.NumpyArray:
