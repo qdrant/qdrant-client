@@ -15,6 +15,8 @@ def empty_sparse_vector() -> SparseVector:
 
 
 def validate_sparse_vector(vector: SparseVector) -> None:
+    if any(np.isnan(value) for value in vector.values):
+        raise ValueError("Sparse vector contains NaN values")
     assert len(vector.indices) == len(
         vector.values
     ), "Indices and values must have the same length"
@@ -42,6 +44,9 @@ def sort_sparse_vector(vector: SparseVector) -> SparseVector:
 def calculate_distance_sparse(
     query: SparseVector, vectors: List[SparseVector]
 ) -> types.NumpyArray:
+    _validate_sparse_vector(query)  # Add this line to validate the query vector
+    for vector in vectors:
+        _validate_sparse_vector(vector)
     scores = []
 
     for vector in vectors:

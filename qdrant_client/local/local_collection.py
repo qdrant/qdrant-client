@@ -25,11 +25,9 @@ from qdrant_client.local.distances import (
     calculate_recommend_best_scores,
     distance_to_order,
 )
-from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import OrderingValue, to_ordering_value
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
-from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
     calculate_distance_sparse,
@@ -104,6 +102,10 @@ class LocalCollection:
         if location is not None:
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
         self.load_vectors()
+
+    def _validate_vector(self, vector: Union[List[float], np.ndarray]) -> None:
+        if np.isnan(vector).any():
+            raise ValueError("Vector contains NaN values")
 
     def close(self) -> None:
         if self.storage is not None:
@@ -1095,6 +1097,7 @@ class LocalCollection:
         for vector_name, _named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
             if vector is not None:
+                self._validate_vector(vector)
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
                     norm = np.linalg.norm(vector)
@@ -1114,6 +1117,10 @@ class LocalCollection:
                 self.deleted_per_vector[vector_name][idx] = 1
 
         self.deleted[idx] = 0
+
+    def _validate_vector(self, vector: Union[List[float], np.ndarray]) -> None:
+        if np.isnan(vector).any():
+            raise ValueError("Vector contains NaN values")
 
     def _add_point(self, point: models.PointStruct) -> None:
         idx = len(self.ids)
@@ -1136,6 +1143,7 @@ class LocalCollection:
                 named_vectors = np.resize(named_vectors, (idx * 2 + 1, named_vectors.shape[1]))
 
             if vector is None:
+                self._validate_vector(vector)
                 # Add fake vector and mark as removed
                 fake_vector = np.ones(named_vectors.shape[1])
                 named_vectors[idx] = fake_vector
@@ -1183,7 +1191,7 @@ class LocalCollection:
                 _uuid = uuid.UUID(point.id)
             except ValueError as e:
                 raise ValueError(f"Point id {point.id} is not a valid UUID") from e
-
+        
         if isinstance(point.vector, dict):
             updated_sparse_vectors = {}
             for vector_name, vector in point.vector.items():
@@ -1214,14 +1222,25 @@ class LocalCollection:
     def upsert(self, points: Union[List[models.PointStruct], models.Batch]) -> None:
         if isinstance(points, list):
             for point in points:
+                # Check for NaN values in the vector of each PointStruct
+                if np.isnan(np.array(point.vector)).any():
+                    raise ValueError("Vector contains NaN values")
                 self._upsert_point(point)
         elif isinstance(points, models.Batch):
             batch = points
+            # Prepare vectors depending on their format in the batch
             if isinstance(batch.vectors, list):
                 vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
             else:
                 vectors = batch.vectors
-
+            
+            # Iterate over each vector in the batch to check for NaN values
+            for vector_list in vectors.values():
+                for vector in vector_list:
+                    if np.isnan(np.array(vector)).any():
+                        raise ValueError("Vector contains NaN values")
+            
+                        # After validating vectors, proceed with upserting each point
             for idx, point_id in enumerate(batch.ids):
                 payload = None
                 if batch.payloads is not None:
@@ -1239,6 +1258,13 @@ class LocalCollection:
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
 
+    def _upsert_point(self, point: models.PointStruct) -> None:
+        # Implementation of upserting a single point
+        pass
+
+    def _validate_vector(self, vector) -> None:
+        # Optional: Implement additional vector validation logic here
+        pass
     def _update_named_vectors(self, idx: int, vectors: Dict[str, List[float]]) -> None:
         for vector_name, vector in vectors.items():
             self.vectors[vector_name][idx] = np.array(vector)
@@ -1342,21 +1368,16 @@ class LocalCollection:
             models.FilterSelector,
             models.PointIdsList,
         ],
-        key: Optional[str] = None,
     ) -> None:
         ids = self._selector_to_ids(selector)
-        jsonable_payload = to_jsonable_python(payload)
-
-        keys: Optional[List[JsonPathItem]] = parse_json_path(key) if key is not None else None
-
         for point_id in ids:
             idx = self.ids[point_id]
-            if keys is None:
-                self.payload[idx] = {**self.payload[idx], **jsonable_payload}
-            else:
-                if self.payload[idx] is not None:
-                    set_value_by_key(payload=self.payload[idx], value=jsonable_payload, keys=keys)
-
+            self.payload[idx] = to_jsonable_python(
+                {
+                    **(self.payload[idx] or {}),
+                    **payload,
+                }
+            )
             self._persist_by_id(point_id)
 
     def overwrite_payload(

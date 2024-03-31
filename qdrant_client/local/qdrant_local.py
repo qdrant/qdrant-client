@@ -31,21 +31,6 @@ from qdrant_client.local.local_collection import LocalCollection
 META_INFO_FILENAME = "meta.json"
 
 
-def is_numeric_not_nan(value):
-    """
-    Check if the value is numeric and not NaN.
-
-    Args:
-        value: The value to check.
-
-    Returns:
-        bool: True if the value is numeric and not NaN, False otherwise.
-    """
-    if isinstance(value, (int, float, complex)) and not isinstance(value, bool):
-        return not np.isnan(value)
-    return False
-
-
 class QdrantLocal(QdrantBase):
     """
     Everything Qdrant server can do, but locally.
@@ -58,7 +43,6 @@ class QdrantLocal(QdrantBase):
     """
 
     def __init__(self, location: str, force_disable_check_same_thread: bool = False) -> None:
-
         """
         Initialize local Qdrant.
 
@@ -136,6 +120,23 @@ class QdrantLocal(QdrantBase):
                 f" If you require concurrent access, use Qdrant server instead."
             )
 
+    def _validate_vector(self, vector: Union[List[float], np.ndarray, Dict[str, Union[List[float], np.ndarray]]]) -> None:
+        """
+        Validates if the given vector or vectors in a dictionary do not contain NaN values.
+
+        Args:
+            vector: The vector or dictionary of vectors to validate.
+
+        Raises:
+            ValueError: If any vector contains NaN values.
+        """
+        if isinstance(vector, dict):  # If the input is a dictionary of vectors
+            for v in vector.values():
+                if np.isnan(v).any():
+                    raise ValueError("Vector contains NaN values")
+        else:  # If the input is a single vector
+            if np.isnan(vector).any():
+                raise ValueError("Vector contains NaN values")
     def _save(self) -> None:
         if not self.persistent:
             return
@@ -277,7 +278,6 @@ class QdrantLocal(QdrantBase):
                 lookup_from_vector_name=request.lookup_from.vector
                 if request.lookup_from
                 else None,
-
                 strategy=request.strategy,
             )
             for request in requests
@@ -314,7 +314,6 @@ class QdrantLocal(QdrantBase):
             lookup_from_collection=self._get_collection(lookup_from.collection)
             if lookup_from
             else None,
-
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             strategy=strategy,
         )
@@ -360,7 +359,6 @@ class QdrantLocal(QdrantBase):
             lookup_from_collection=self._get_collection(lookup_from.collection)
             if lookup_from
             else None,
-
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
@@ -463,13 +461,9 @@ class QdrantLocal(QdrantBase):
         self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        # Check for NaN in vectors
         for point in points:
-            if not all(is_numeric_not_nan(vector) for vector in point.vector.values()):
-                raise ValueError(
-                    f"Point with ID {point.id} contains NaN values or non-numeric values in its vector."
-                )
-
+            if 'vector' in point:
+                self._validate_vector(point['vector'])
         collection.upsert(points)
         return self._default_update_result()
 
@@ -480,13 +474,6 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        # Check for NaN in vectors
-        for point in points:
-            if not all(is_numeric_not_nan(vector) for vector in point.vector.values()):
-                raise ValueError(
-                    f"Point with ID {point.id} contains NaN values or non-numeric values in its vector."
-                )
-
         collection.update_vectors(points)
         return self._default_update_result()
 
@@ -531,10 +518,11 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.set_payload(payload=payload, selector=points)
+        collection.set_payload(payload=payload, selector=points, key=key)
         return self._default_update_result()
 
     def overwrite_payload(
@@ -585,7 +573,6 @@ class QdrantLocal(QdrantBase):
                 self.aliases[
                     operation.create_alias.alias_name
                 ] = operation.create_alias.collection_name
-                
             elif isinstance(operation, rest_models.DeleteAliasOperation):
                 self.aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
@@ -631,7 +618,6 @@ class QdrantLocal(QdrantBase):
         )
 
     def get_collection(self, collection_name: str, **kwargs: Any) -> types.CollectionInfo:
-
         collection = self._get_collection(collection_name)
         return collection.info()
 
@@ -730,13 +716,14 @@ class QdrantLocal(QdrantBase):
     def upload_points(
         self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
     ) -> None:
+        self._validate_vector(point.vector)
         self._upload_points(collection_name, points)
 
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
     ) -> None:
+        self._validate_vector(record.vector)
         # upload_records in local mode behaves like upload_records with wait=True in server mode
-
         self._upload_points(collection_name, records)
 
     def _upload_points(
@@ -745,35 +732,16 @@ class QdrantLocal(QdrantBase):
         points: Iterable[Union[types.PointStruct, types.Record]],
     ) -> None:
         collection = self._get_collection(collection_name)
-
-        # Initialize the list for prepared points
-        prepared_points = []
-        # Flag to indicate if any point contains NaN values
-        contains_nan = False
-
-        # Prepare points for upsertion, checking for NaN in vectors
-        for point in points:
-            if not all(is_numeric_not_nan(vector) for vector in point.vector):
-                raise ValueError(
-                    "Point vector contains NaN values or non-numeric values"
+        collection.upsert(
+            [
+                rest_models.PointStruct(
+                    id=point.id,
+                    vector=point.vector or {},
+                    payload=point.payload or {},
                 )
-
-            else:
-                # If no NaN values, add the point to the list of prepared points
-                prepared_points.append(
-                    rest_models.PointStruct(
-                        id=point.id,
-                        vector=point.vector or {},
-                        payload=point.payload or {},
-                    )
-                )
-
-        # Raise an error if any point contains NaN values
-        if contains_nan:
-            raise ValueError("Point vector contains NaN values")
-
-        # Upsert the prepared points into the collection
-        collection.upsert(prepared_points)
+                for point in points
+            ]
+        )
 
     def upload_collection(
         self,
@@ -802,31 +770,21 @@ class QdrantLocal(QdrantBase):
                 {name: vectors[name][i].tolist() for name in vectors.keys()}
                 for i in range(num_vectors)
             ]
-        prepared_points = []
-        for point_id, vector, point_payload in zip(
-            ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
-        ):
-            # Flatten the vector values if it's a dictionary of vectors, or use as-is if it's a single vector
-            vector_values = (
-                np.concatenate([np.array(v) for v in vector.values()])
-                if isinstance(vector, dict)
-                else np.array(vector)
-            )
 
-            # Check for NaN values
-            if np.isnan(vector_values).any():
-                raise ValueError(
-                    f"Point with ID {point_id} contains NaN values in its vector."
-                )
-
-            prepared_points.append(
+        collection.upsert(
+            [
                 rest_models.PointStruct(
                     id=point_id,
-                    vector=vector or {},
-                    payload=point_payload or {},
+                    vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
+                    payload=payload or {},
                 )
-            )
-        collection.upsert(prepared_points)
+                for (point_id, vector, payload) in zip(
+                    ids or uuid_generator(),
+                    iter(vectors),
+                    payload or itertools.cycle([{}]),
+                )
+            ]
+        )
 
     def create_payload_index(
         self,
@@ -861,7 +819,6 @@ class QdrantLocal(QdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
 
-
     def delete_snapshot(self, collection_name: str, snapshot_name: str, **kwargs: Any) -> bool:
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
@@ -880,9 +837,7 @@ class QdrantLocal(QdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
 
-
     def recover_snapshot(self, collection_name: str, location: str, **kwargs: Any) -> bool:
-
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )

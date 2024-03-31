@@ -63,7 +63,9 @@ def distance_to_order(distance: models.Distance) -> DistanceOrder:
 
     return DistanceOrder.BIGGER_IS_BETTER
 
-
+def _validate_vector(vector: np.ndarray) -> None:
+    if np.isnan(vector).any():
+        raise ValueError("Vector contains NaN values")
 def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
     """
     Calculate cosine distance between query and vectors
@@ -73,6 +75,8 @@ def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> typ
     Returns:
         distances
     """
+    _validate_vector(query)
+    _validate_vector(vectors)
     query_norm = np.linalg.norm(query)
     query /= np.where(query_norm != 0.0, query_norm, EPSILON)
 
