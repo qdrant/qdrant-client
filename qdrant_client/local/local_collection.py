@@ -1242,6 +1242,7 @@ class LocalCollection:
     def _update_named_vectors(self, idx: int, vectors: Dict[str, List[float]]) -> None:
         for vector_name, vector in vectors.items():
             if isinstance(vector, SparseVector):
+                validate_sparse_vector(vector)
                 self.sparse_vectors[vector_name][idx] = sort_sparse_vector(vector)
             else:
                 self.vectors[vector_name][idx] = np.array(vector)
