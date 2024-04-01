@@ -424,6 +424,7 @@ class LocalCollection:
         ):  # pyright: ignore[reportUnnecessaryIsInstance]
             scores = calculate_context_scores(query_vector, vectors[: len(self.payload)], distance)
         elif isinstance(query_vector, SparseVector):
+            validate_sparse_vector(query_vector)
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
             query_vector = sort_sparse_vector(query_vector)
             sparse_scoring = True
@@ -1094,6 +1095,7 @@ class LocalCollection:
             vector = vectors.get(vector_name)
             if vector is not None:
                 params = self.get_vector_params(vector_name)
+                assert not np.isnan(vector).any(), "Vector contains NaN values"
                 if params.distance == models.Distance.COSINE:
                     norm = np.linalg.norm(vector)
                     vector = np.array(vector) / norm if norm > EPSILON else vector
@@ -1142,6 +1144,7 @@ class LocalCollection:
                 )
             else:
                 vector_np = np.array(vector)
+                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
                     norm = np.linalg.norm(vector_np)
