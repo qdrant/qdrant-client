@@ -1,8 +1,10 @@
 from typing import List
 
 import numpy as np
+import pytest
 
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -242,3 +244,49 @@ def test_simple_recommend() -> None:
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
+
+
+def test_query_with_nan():
+    fixture_points = generate_fixtures()
+    vector = np.random.random(image_vector_size)
+    vector[0] = np.nan
+    vector = vector.tolist()
+    using = "image"
+
+    local_client = init_local()
+    remote_client = init_remote()
+
+    init_client(local_client, fixture_points)
+    init_client(remote_client, fixture_points)
+
+    with pytest.raises(AssertionError):
+        local_client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[vector],
+            negative=[],
+            using=using,
+        )
+
+    with pytest.raises(UnexpectedResponse):
+        remote_client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[vector],
+            negative=[],
+            using=using,
+        )
+
+    with pytest.raises(AssertionError):
+        local_client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[1],
+            negative=[vector],
+            using=using,
+        )
+
+    with pytest.raises(UnexpectedResponse):
+        remote_client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[1],
+            negative=[vector],
+            using=using,
+        )
