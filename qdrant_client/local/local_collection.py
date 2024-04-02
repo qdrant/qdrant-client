@@ -665,12 +665,8 @@ class LocalCollection:
     def _recommend_average(
         self,
         sparse: bool,
-        positive_vectors: Optional[
-            Union[Sequence[List[float]], Sequence[models.SparseVector]]
-        ] = None,
-        negative_vectors: Optional[
-            Union[Sequence[List[float]], Sequence[models.SparseVector]]
-        ] = None,
+        positive_vectors: Optional[Union[List[List[float]], List[models.SparseVector]]] = None,
+        negative_vectors: Optional[Union[List[List[float]], List[models.SparseVector]]] = None,
     ) -> Union[types.NumpyArray, models.SparseVector]:
         positive_vectors = positive_vectors if positive_vectors is not None else []
         negative_vectors = negative_vectors if negative_vectors is not None else []
@@ -810,7 +806,12 @@ class LocalCollection:
     ) -> types.GroupsResult:
         strategy = strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
 
-        positive_vectors, negative_vectors, edited_query_filter = self._preprocess_recommend(
+        (
+            positive_vectors,
+            negative_vectors,
+            edited_query_filter,
+            sparse,
+        ) = self._preprocess_recommend(
             positive,
             negative,
             strategy,
@@ -822,13 +823,18 @@ class LocalCollection:
 
         if strategy == types.RecommendStrategy.AVERAGE_VECTOR:
             query_vector = self._recommend_average(
+                sparse,
                 positive_vectors,
                 negative_vectors,
             )
         elif strategy == types.RecommendStrategy.BEST_SCORE:
-            query_vector = RecoQuery(
-                positive=positive_vectors,
-                negative=negative_vectors,
+            query_vector = (
+                RecoQuery(
+                    positive=positive_vectors,
+                    negative=negative_vectors,
+                )
+                if not sparse
+                else SparseRecoQuery(positive=positive_vectors, negative=negative_vectors)
             )
         else:
             raise ValueError(

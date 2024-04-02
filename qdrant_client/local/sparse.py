@@ -1,10 +1,10 @@
-from typing import List, Optional, Sequence
+from typing import Callable, List, Optional, Sequence
 
 import numpy as np
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.local.distances import scaled_fast_sigmoid
-from qdrant_client.models import Distance, SparseVector
+from qdrant_client.models import SparseVector
 
 
 class SparseRecoQuery:
@@ -136,7 +136,7 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional
 
 
 # Expects sorted indices
-def combine_aggregate(vector1: SparseVector, vector2: SparseVector, op) -> SparseVector:
+def combine_aggregate(vector1: SparseVector, vector2: SparseVector, op: Callable) -> SparseVector:
     result = empty_sparse_vector()
     i, j = 0, 0
     while i < len(vector1.indices) and j < len(vector2.indices):
