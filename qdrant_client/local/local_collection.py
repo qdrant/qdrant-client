@@ -20,10 +20,16 @@ from qdrant_client.local.distances import (
     DistanceOrder,
     QueryVector,
     RecoQuery,
+    SparseContextPair,
+    SparseContextQuery,
+    SparseDiscoveryQuery,
     calculate_context_scores,
     calculate_discovery_scores,
     calculate_distance,
+    calculate_distance_sparse,
     calculate_recommend_best_scores,
+    calculate_sparse_context_scores,
+    calculate_sparse_discovery_scores,
     distance_to_order,
 )
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
@@ -33,7 +39,6 @@ from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
-    calculate_distance_sparse,
     empty_sparse_vector,
     sort_sparse_vector,
     validate_sparse_vector,
@@ -397,7 +402,7 @@ class LocalCollection:
         sparse_scoring = False
 
         # early exit if the named vector does not exist
-        if isinstance(query_vector, SparseVector):
+        if isinstance(query_vector, (SparseVector, SparseDiscoveryQuery, SparseContextQuery)):
             if name not in self.sparse_vectors:
                 raise ValueError(f"Sparse vector {name} is not found in the collection")
             vectors = self.sparse_vectors[name]
@@ -419,10 +424,16 @@ class LocalCollection:
             scores = calculate_discovery_scores(
                 query_vector, vectors[: len(self.payload)], distance
             )
-        elif isinstance(
-            query_vector, ContextQuery
-        ):  # pyright: ignore[reportUnnecessaryIsInstance]
+        elif isinstance(query_vector, SparseDiscoveryQuery):
+            scores = calculate_sparse_discovery_scores(
+                query_vector, self.sparse_vectors[name][: len(self.payload)]
+            )
+        elif isinstance(query_vector, ContextQuery):
             scores = calculate_context_scores(query_vector, vectors[: len(self.payload)], distance)
+        elif isinstance(query_vector, SparseContextQuery):
+            scores = calculate_sparse_context_scores(
+                query_vector, self.sparse_vectors[name][: len(self.payload)]
+            )
         elif isinstance(query_vector, SparseVector):
             validate_sparse_vector(query_vector)
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
@@ -441,7 +452,8 @@ class LocalCollection:
         required_order = distance_to_order(distance)
 
         if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
-            query_vector, (DiscoveryQuery, ContextQuery, RecoQuery)
+            query_vector,
+            (DiscoveryQuery, ContextQuery, RecoQuery, SparseDiscoveryQuery, SparseContextQuery),
         ):
             order = np.argsort(scores)[::-1]
         else:
@@ -796,7 +808,10 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ) -> Tuple[Optional[List[float]], List[ContextPair], types.Filter]:
+    ) -> Union[
+        Tuple[Optional[List[float]], List[ContextPair], types.Filter, bool],
+        Tuple[Optional[SparseVector], List[SparseContextPair], types.Filter, bool],
+    ]:
         collection = lookup_from_collection if lookup_from_collection is not None else self
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         vector_name = (
@@ -826,16 +841,21 @@ class LocalCollection:
             raise ValueError("No target or context given")
 
         # Turn every example into vectors
-        target_vector: Optional[List[float]]
-        context_vectors: List[ContextPair] = []
+        target_vector: Optional[Union[List[float], SparseVector]]
+        context_vectors: Union[List[ContextPair], List[SparseContextPair]] = []
         mentioned_ids: List[ExtendedPointId] = []
+        sparse = vector_name in collection.sparse_vectors
 
         if isinstance(target, get_args(types.PointId)):
             if target not in collection.ids:
                 raise ValueError(f"Point {target} is not found in the collection")
 
             idx = collection.ids[target]
-            target_vector = collection.vectors[vector_name][idx].tolist()
+            target_vector = (
+                collection.vectors[vector_name][idx].tolist()
+                if not sparse
+                else collection.sparse_vectors[vector_name][idx]
+            )
             mentioned_ids.append(target)
         else:
             target_vector = target
@@ -848,12 +868,20 @@ class LocalCollection:
                         raise ValueError(f"Point {example} is not found in the collection")
 
                     idx = collection.ids[example]
-                    pair_vectors.append(collection.vectors[vector_name][idx].tolist())
+                    pair_vectors.append(
+                        collection.vectors[vector_name][idx].tolist()
+                        if not sparse
+                        else collection.sparse_vectors[vector_name][idx]
+                    )
                     mentioned_ids.append(example)
                 else:
                     pair_vectors.append(example)
 
-            context_vectors.append(ContextPair(positive=pair_vectors[0], negative=pair_vectors[1]))
+            context_vectors.append(
+                ContextPair(positive=pair_vectors[0], negative=pair_vectors[1])
+                if not sparse
+                else SparseContextPair(positive=pair_vectors[0], negative=pair_vectors[1])
+            )
 
         # Edit query filter
         ignore_mentioned_ids = models.HasIdCondition(has_id=mentioned_ids)
@@ -866,7 +894,7 @@ class LocalCollection:
             else:
                 query_filter.must_not.append(ignore_mentioned_ids)
 
-        return target_vector, context_vectors, query_filter  # type: ignore
+        return target_vector, context_vectors, query_filter, sparse  # type: ignore
 
     def discover(
         self,
@@ -881,7 +909,7 @@ class LocalCollection:
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
     ) -> List[models.ScoredPoint]:
-        target_vector, context_vectors, edited_query_filter = self._preprocess_discover(
+        target_vector, context_vectors, edited_query_filter, sparse = self._preprocess_discover(
             target,
             context,
             query_filter,
@@ -894,11 +922,19 @@ class LocalCollection:
 
         # Discovery search
         if target_vector is not None:
-            query_vector = DiscoveryQuery(target_vector, context_vectors)
+            query_vector = (
+                DiscoveryQuery(target_vector, context_vectors)
+                if not sparse
+                else SparseDiscoveryQuery(target_vector, context_vectors)
+            )
 
         # Context search
         elif target_vector is None and len(context_vectors) > 0:
-            query_vector = ContextQuery(context_vectors)
+            query_vector = (
+                ContextQuery(context_vectors)
+                if not sparse
+                else SparseContextQuery(context_vectors)
+            )
         else:
             raise ValueError("No target or context given")
 

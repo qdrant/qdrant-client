@@ -5,10 +5,20 @@ import numpy as np
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
-from qdrant_client.http.models import SparseVector
+from qdrant_client.http.models import Distance, SparseVector
+from qdrant_client.local.sparse import (
+    is_sorted,
+    sort_sparse_vector,
+    validate_sparse_vector,
+)
 
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
+
+
+class DistanceOrder(str, Enum):
+    BIGGER_IS_BETTER = "bigger_is_better"
+    SMALLER_IS_BETTER = "smaller_is_better"
 
 
 class RecoQuery:
@@ -49,12 +59,35 @@ class ContextQuery:
         self.context_pairs = context_pairs
 
 
-QueryVector = Union[DiscoveryQuery, ContextQuery, RecoQuery, types.NumpyArray, SparseVector]
+class SparseContextPair:
+    def __init__(self, positive: SparseVector, negative: SparseVector):
+        validate_sparse_vector(positive)
+        validate_sparse_vector(negative)
+        self.positive: SparseVector = sort_sparse_vector(positive)
+        self.negative: SparseVector = sort_sparse_vector(negative)
 
 
-class DistanceOrder(str, Enum):
-    BIGGER_IS_BETTER = "bigger_is_better"
-    SMALLER_IS_BETTER = "smaller_is_better"
+class SparseDiscoveryQuery:
+    def __init__(self, target: SparseVector, context: List[SparseContextPair]):
+        validate_sparse_vector(target)
+        self.target: SparseVector = sort_sparse_vector(target)
+        self.context = context
+
+
+class SparseContextQuery:
+    def __init__(self, context_pairs: List[SparseContextPair]):
+        self.context_pairs = context_pairs
+
+
+QueryVector = Union[
+    DiscoveryQuery,
+    ContextQuery,
+    RecoQuery,
+    types.NumpyArray,
+    SparseVector,
+    SparseDiscoveryQuery,
+    SparseContextQuery,
+]
 
 
 def distance_to_order(distance: models.Distance) -> DistanceOrder:
@@ -259,33 +292,99 @@ def calculate_context_scores(
     return overall_scores
 
 
-def test_distances() -> None:
-    query = np.array([1.0, 2.0, 3.0])
-    vectors = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.COSINE), [1.0, 1.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.DOT), [14.0, 14.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.EUCLID), [0.0, 0.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.MANHATTAN), [0.0, 0.0])
+def calculate_distance_sparse(
+    query: SparseVector, vectors: List[SparseVector]
+) -> types.NumpyArray:
+    scores = []
 
-    query = np.array([1.0, 0.0, 1.0])
-    vectors = np.array([[1.0, 2.0, 3.0], [0.0, 1.0, 0.0]])
+    for vector in vectors:
+        score = sparse_dot_product(query, vector)
+        if score is not None:
+            scores.append(score)
+        else:
+            # means no overlap
+            scores.append(np.float32("-inf"))
 
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.COSINE),
-        [0.75592895, 0.0],
-        atol=0.0001,
-    )
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.DOT), [4.0, 0.0], atol=0.0001
-    )
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.EUCLID),
-        [2.82842712, 1.7320508],
-        atol=0.0001,
+    return np.array(scores, dtype=np.float32)
+
+
+# Expects sorted indices
+# Returns None if no overlap
+def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional[np.float32]:
+    result = 0.0
+    i, j = 0, 0
+    overlap = False
+
+    assert is_sorted(vector1), "Query sparse vector must be sorted"
+    assert is_sorted(vector2), "Sparse vector to compare with must be sorted"
+
+    while i < len(vector1.indices) and j < len(vector2.indices):
+        if vector1.indices[i] == vector2.indices[j]:
+            overlap = True
+            result += vector1.values[i] * vector2.values[j]
+            i += 1
+            j += 1
+        elif vector1.indices[i] < vector2.indices[j]:
+            i += 1
+        else:
+            j += 1
+
+    if overlap:
+        return np.float32(result)
+    else:
+        return None
+
+
+def calculate_sparse_discovery_ranks(
+    context: List[SparseContextPair],
+    vectors: List[SparseVector],
+) -> types.NumpyArray:
+    overall_ranks = np.zeros(len(vectors), dtype=np.int32)
+    for pair in context:
+        # Get distances to positive and negative vectors
+        pos = calculate_distance_sparse(pair.positive, vectors)
+        neg = calculate_distance_sparse(pair.negative, vectors)
+
+        pair_ranks = np.array(
+            [
+                1 if is_bigger else 0 if is_equal else -1
+                for is_bigger, is_equal in zip(pos > neg, pos == neg)
+            ]
+        )
+
+        overall_ranks += pair_ranks
+
+    return overall_ranks
+
+
+def calculate_sparse_discovery_scores(
+    query: SparseDiscoveryQuery, vectors: types.NumpyArray
+) -> types.NumpyArray:
+    ranks = calculate_sparse_discovery_ranks(query.context, vectors)
+
+    # Get distances to target
+    distances_to_target = calculate_distance_sparse(query.target, vectors)
+
+    sigmoided_distances = np.fromiter(
+        (scaled_fast_sigmoid(xi) for xi in distances_to_target), np.float32
     )
 
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.MANHATTAN),
-        [4.0, 3.0],
-        atol=0.0001,
-    )
+    return ranks + sigmoided_distances
+
+
+def calculate_sparse_context_scores(
+    query: SparseContextQuery, vectors: List[SparseVector]
+) -> types.NumpyArray:
+    overall_scores = np.zeros(len(vectors), dtype=np.float32)
+    for pair in query.context_pairs:
+        # Get distances to positive and negative vectors
+        pos = calculate_distance_sparse(pair.positive, vectors)
+        neg = calculate_distance_sparse(pair.negative, vectors)
+
+        difference = pos - neg - EPSILON
+        pair_scores = np.fromiter(
+            (fast_sigmoid(xi) for xi in np.minimum(difference, 0.0)), np.float32
+        )
+        overall_scores += pair_scores
+
+    return overall_scores
