@@ -3,10 +3,9 @@ from typing import Any, Dict, List
 import numpy as np
 import pytest
 
+from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.exceptions import UnexpectedResponse
-from qdrant_client.http.models import models
-from qdrant_client.qdrant_client import QdrantClient
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -339,8 +338,6 @@ def test_context_with_filters(local_client, http_client, grpc_client, filter: mo
 
 
 def test_query_with_nan():
-    from qdrant_client.models import ContextExamplePair
-
     fixture_points = generate_fixtures()
     vector = np.random.random(image_vector_size)
     vector[0] = np.nan
@@ -368,24 +365,24 @@ def test_query_with_nan():
     with pytest.raises(AssertionError):
         local_client.discover(
             collection_name=COLLECTION_NAME,
-            context=[ContextExamplePair(positive=vector, negative=1)],
+            context=[models.ContextExamplePair(positive=vector, negative=1)],
             using=using,
         )
     with pytest.raises(UnexpectedResponse):
         remote_client.discover(
             collection_name=COLLECTION_NAME,
-            context=[ContextExamplePair(positive=vector, negative=1)],
+            context=[models.ContextExamplePair(positive=vector, negative=1)],
             using=using,
         )
     with pytest.raises(AssertionError):
         local_client.discover(
             collection_name=COLLECTION_NAME,
-            context=[ContextExamplePair(positive=1, negative=vector)],
+            context=[models.ContextExamplePair(positive=1, negative=vector)],
             using=using,
         )
     with pytest.raises(UnexpectedResponse):
         remote_client.discover(
             collection_name=COLLECTION_NAME,
-            context=[ContextExamplePair(positive=1, negative=vector)],
+            context=[models.ContextExamplePair(positive=1, negative=vector)],
             using=using,
         )
