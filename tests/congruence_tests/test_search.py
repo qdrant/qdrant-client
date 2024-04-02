@@ -3,6 +3,7 @@ from typing import List
 import numpy as np
 import pytest
 
+import qdrant_client.http.exceptions
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
@@ -10,13 +11,17 @@ from tests.congruence_tests.test_common import (
     code_vector_size,
     compare_client_results,
     generate_fixtures,
+    generate_sparse_fixtures,
     image_vector_size,
     init_client,
     init_local,
     init_remote,
+    sparse_text_vector_size,
+    sparse_vectors_config,
     text_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
+from tests.fixtures.points import random_sparse_vectors
 
 
 class TestSimpleSearcher:
@@ -336,3 +341,66 @@ def test_search_invalid_vector_type():
 
     with pytest.raises(ValueError):
         remote_client.search(collection_name=COLLECTION_NAME, query_vector=vector_invalid_type)
+
+
+def test_query_with_nan():
+    fixture_points = generate_fixtures()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    vector = np.random.random(text_vector_size)
+    vector[4] = np.nan
+    query_vector = ("text", vector.tolist())
+    with pytest.raises(AssertionError):
+        local_client.search(COLLECTION_NAME, query_vector)
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.search(COLLECTION_NAME, query_vector)
+
+    single_vector_config = models.VectorParams(
+        size=text_vector_size, distance=models.Distance.COSINE
+    )
+    local_client.recreate_collection(COLLECTION_NAME, vectors_config=single_vector_config)
+    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=single_vector_config)
+    fixture_points = generate_fixtures(vectors_sizes=text_vector_size)
+    init_client(local_client, fixture_points, vectors_config=single_vector_config)
+    init_client(remote_client, fixture_points, vectors_config=single_vector_config)
+
+    with pytest.raises(AssertionError):
+        local_client.search(COLLECTION_NAME, vector.tolist())
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.search(COLLECTION_NAME, vector.tolist())
+
+    fixture_points = generate_sparse_fixtures()
+    sparse_vector = random_sparse_vectors({"sparse-text": sparse_text_vector_size})
+    named_sparse_vector = models.NamedSparseVector(
+        name="sparse-text", vector=sparse_vector["sparse-text"]
+    )
+    named_sparse_vector.vector.values[0] = np.nan
+
+    local_client.recreate_collection(
+        COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+    )
+    remote_client.recreate_collection(
+        COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+    )
+    init_client(
+        local_client,
+        fixture_points,
+        vectors_config={},
+        sparse_vectors_config=sparse_vectors_config,
+    )
+    init_client(
+        remote_client,
+        fixture_points,
+        vectors_config={},
+        sparse_vectors_config=sparse_vectors_config,
+    )
+
+    with pytest.raises(AssertionError):
+        local_client.search(COLLECTION_NAME, named_sparse_vector)
+    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+        remote_client.search(COLLECTION_NAME, named_sparse_vector)
