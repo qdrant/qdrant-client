@@ -40,7 +40,7 @@ class ContextQuery:
         self.context_pairs = context_pairs
 
 
-QueryVector = Union[DiscoveryQuery, ContextQuery, RecoQuery, types.NumpyArray, SparseVector]
+QueryVector = Union[DiscoveryQuery, ContextQuery, RecoQuery, SparseVector]
 
 
 class DistanceOrder(str, Enum):
