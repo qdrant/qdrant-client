@@ -20,6 +20,7 @@ from qdrant_client.local.distances import (
     DistanceOrder,
     QueryVector,
     RecoQuery,
+    SparseRecoQuery,
     calculate_context_scores,
     calculate_discovery_scores,
     calculate_distance,
@@ -35,7 +36,9 @@ from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
     calculate_distance_sparse,
     empty_sparse_vector,
+    merge_positive_and_negative_avg,
     sort_sparse_vector,
+    sparse_avg,
     validate_sparse_vector,
 )
 
@@ -397,7 +400,7 @@ class LocalCollection:
         sparse_scoring = False
 
         # early exit if the named vector does not exist
-        if isinstance(query_vector, SparseVector):
+        if isinstance(query_vector, (SparseVector, SparseRecoQuery)):
             if name not in self.sparse_vectors:
                 raise ValueError(f"Sparse vector {name} is not found in the collection")
             vectors = self.sparse_vectors[name]
@@ -430,6 +433,10 @@ class LocalCollection:
             sparse_scoring = True
             sparse_vectors = self.sparse_vectors[name]
             scores = calculate_distance_sparse(query_vector, sparse_vectors[: len(self.payload)])
+        elif isinstance(query_vector, SparseRecoQuery):
+            scores = calculate_recommend_best_scores(
+                query_vector, vectors[: len(self.payload)], distance
+            )
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
@@ -588,7 +595,10 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ) -> Tuple[List[List[float]], List[List[float]], types.Filter]:
+    ) -> Union[
+        Tuple[List[List[float]], List[List[float]], types.Filter, bool],
+        Tuple[List[models.SparseVector], List[models.SparseVector], types.Filter, bool],
+    ]:
         collection = lookup_from_collection if lookup_from_collection is not None else self
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         vector_name = (
@@ -613,13 +623,16 @@ class LocalCollection:
         negative_vectors = []
         mentioned_ids: List[ExtendedPointId] = []
 
+        sparse = vector_name in collection.sparse_vectors
+        collection_vectors = collection.sparse_vectors if sparse else collection.vectors
+
         for example in positive:
             if isinstance(example, get_args(types.PointId)):
                 if example not in collection.ids:
                     raise ValueError(f"Point {example} is not found in the collection")
 
                 idx = collection.ids[example]
-                positive_vectors.append(collection.vectors[vector_name][idx])  # type: ignore
+                positive_vectors.append(collection_vectors[vector_name][idx])  # type: ignore
                 mentioned_ids.append(example)
             else:
                 positive_vectors.append(example)
@@ -630,7 +643,7 @@ class LocalCollection:
                     raise ValueError(f"Point {example} is not found in the collection")
 
                 idx = collection.ids[example]
-                negative_vectors.append(collection.vectors[vector_name][idx])  # type: ignore
+                negative_vectors.append(collection_vectors[vector_name][idx])  # type: ignore
                 mentioned_ids.append(example)
             else:
                 negative_vectors.append(example)
@@ -646,13 +659,18 @@ class LocalCollection:
             else:
                 query_filter.must_not.append(ignore_mentioned_ids)
 
-        return positive_vectors, negative_vectors, query_filter  # type: ignore
+        return positive_vectors, negative_vectors, query_filter, sparse  # type: ignore
 
     def _recommend_average(
         self,
-        positive_vectors: Optional[Sequence[List[float]]] = None,
-        negative_vectors: Optional[Sequence[List[float]]] = None,
-    ) -> types.NumpyArray:
+        sparse: bool,
+        positive_vectors: Optional[
+            Union[Sequence[List[float]], Sequence[models.SparseVector]]
+        ] = None,
+        negative_vectors: Optional[
+            Union[Sequence[List[float]], Sequence[models.SparseVector]]
+        ] = None,
+    ) -> Union[types.NumpyArray, models.SparseVector]:
         positive_vectors = positive_vectors if positive_vectors is not None else []
         negative_vectors = negative_vectors if negative_vectors is not None else []
 
@@ -660,6 +678,17 @@ class LocalCollection:
         if len(positive_vectors) == 0:
             raise ValueError("Positive list is empty")
 
+        vector = (
+            self._recommend_average_dense(positive_vectors, negative_vectors)
+            if not sparse
+            else self._recommend_average_sparse(positive_vectors, negative_vectors)
+        )
+        return vector
+
+    @staticmethod
+    def _recommend_average_dense(
+        positive_vectors: List[List[float]], negative_vectors: List[List[float]]
+    ) -> types.NumpyArray:
         positive_vectors_np = np.stack(positive_vectors)
         negative_vectors_np = np.stack(negative_vectors) if len(negative_vectors) > 0 else None
 
@@ -671,7 +700,28 @@ class LocalCollection:
             )
         else:
             vector = mean_positive_vector
+        return vector
 
+    @staticmethod
+    def _recommend_average_sparse(
+        positive_vectors: List[models.SparseVector],
+        negative_vectors: List[models.SparseVector],
+    ) -> models.SparseVector:
+        for i, vector in enumerate(positive_vectors):
+            validate_sparse_vector(vector)
+            positive_vectors[i] = sort_sparse_vector(vector)
+
+        for i, vector in enumerate(negative_vectors):
+            validate_sparse_vector(vector)
+            negative_vectors[i] = sort_sparse_vector(vector)
+
+        mean_positive_vector = sparse_avg(positive_vectors)
+
+        if negative_vectors:
+            mean_negative_vector = sparse_avg(negative_vectors)
+            vector = merge_positive_and_negative_avg(mean_positive_vector, mean_negative_vector)
+        else:
+            vector = mean_positive_vector
         return vector
 
     def recommend(
@@ -691,7 +741,12 @@ class LocalCollection:
     ) -> List[models.ScoredPoint]:
         strategy = strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
 
-        positive_vectors, negative_vectors, edited_query_filter = self._preprocess_recommend(
+        (
+            positive_vectors,
+            negative_vectors,
+            edited_query_filter,
+            sparse,
+        ) = self._preprocess_recommend(
             positive,
             negative,
             strategy,
@@ -703,14 +758,20 @@ class LocalCollection:
 
         if strategy == types.RecommendStrategy.AVERAGE_VECTOR:
             query_vector = self._recommend_average(
+                sparse,
                 positive_vectors,
                 negative_vectors,
             )
         elif strategy == types.RecommendStrategy.BEST_SCORE:
-            query_vector = RecoQuery(
-                positive=positive_vectors,
-                negative=negative_vectors,
+            query_vector = (
+                RecoQuery(
+                    positive=positive_vectors,
+                    negative=negative_vectors,
+                )
+                if not sparse
+                else SparseRecoQuery(positive=positive_vectors, negative=negative_vectors)
             )
+
         else:
             raise ValueError(
                 f"strategy `{strategy}` is not a valid strategy, choose one from {types.RecommendStrategy}"

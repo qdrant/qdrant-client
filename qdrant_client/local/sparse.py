@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 import numpy as np
 
@@ -80,3 +80,57 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional
         return np.float32(result)
     else:
         return None
+
+
+# Expects sorted indices
+def combine_aggregate(vector1: SparseVector, vector2: SparseVector, op) -> SparseVector:
+    result = empty_sparse_vector()
+    i, j = 0, 0
+    while i < len(vector1.indices) and j < len(vector2.indices):
+        if vector1.indices[i] == vector2.indices[j]:
+            result.indices.append(vector1.indices[i])
+            result.values.append(op(vector1.values[i], vector2.values[j]))
+            i += 1
+            j += 1
+        elif vector1.indices[i] < vector2.indices[j]:
+            result.indices.append(vector1.indices[i])
+            result.values.append(op(vector1.values[i], 0.0))
+            i += 1
+        else:
+            result.indices.append(vector2.indices[j])
+            result.values.append(op(0.0, vector2.values[j]))
+            j += 1
+
+    while i < len(vector1.indices):
+        result.indices.append(vector1.indices[i])
+        result.values.append(op(vector1.values[i], 0.0))
+        i += 1
+
+    while j < len(vector2.indices):
+        result.indices.append(vector2.indices[j])
+        result.values.append(op(0.0, vector2.values[j]))
+        j += 1
+
+    return result
+
+
+# Expects sorted indices
+def sparse_avg(vectors: Sequence[SparseVector]) -> SparseVector:
+    result = empty_sparse_vector()
+    if len(vectors) == 0:
+        return result
+
+    sparse_count = 0
+    for vector in vectors:
+        sparse_count += 1
+        result = combine_aggregate(result, vector, lambda v1, v2: v1 + v2)
+
+    result.values = np.divide(result.values, sparse_count).tolist()
+    return result
+
+
+# Expects sorted indices
+def merge_positive_and_negative_avg(
+    positive: SparseVector, negative: SparseVector
+) -> SparseVector:
+    return combine_aggregate(positive, negative, lambda pos, neg: pos + pos - neg)
