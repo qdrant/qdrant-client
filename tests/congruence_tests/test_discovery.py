@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
 from qdrant_client.qdrant_client import QdrantClient
 from tests.congruence_tests.test_common import (
@@ -335,3 +336,56 @@ def test_context_with_filters(local_client, http_client, grpc_client, filter: mo
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
     compare_client_results(local_client, http_client, f, is_context_search=True)
+
+
+def test_query_with_nan():
+    from qdrant_client.models import ContextExamplePair
+
+    fixture_points = generate_fixtures()
+    vector = np.random.random(image_vector_size)
+    vector[0] = np.nan
+    vector = vector.tolist()
+    using = "image"
+
+    local_client = init_local()
+    remote_client = init_remote()
+
+    init_client(local_client, fixture_points)
+    init_client(remote_client, fixture_points)
+
+    with pytest.raises(AssertionError):
+        local_client.discover(
+            collection_name=COLLECTION_NAME,
+            target=vector,
+            using=using,
+        )
+    with pytest.raises(UnexpectedResponse):
+        remote_client.discover(
+            collection_name=COLLECTION_NAME,
+            target=vector,
+            using=using,
+        )
+    with pytest.raises(AssertionError):
+        local_client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[ContextExamplePair(positive=vector, negative=1)],
+            using=using,
+        )
+    with pytest.raises(UnexpectedResponse):
+        remote_client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[ContextExamplePair(positive=vector, negative=1)],
+            using=using,
+        )
+    with pytest.raises(AssertionError):
+        local_client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[ContextExamplePair(positive=1, negative=vector)],
+            using=using,
+        )
+    with pytest.raises(UnexpectedResponse):
+        remote_client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[ContextExamplePair(positive=1, negative=vector)],
+            using=using,
+        )
