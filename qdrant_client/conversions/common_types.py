@@ -30,8 +30,15 @@ def remap_type(tp: type) -> type:
     return typing_remap.get(tp, tp)
 
 
-def get_args_subscribed(tp: type):  # type: ignore
-    """Get type arguments with all substitutions performed. Supports subscripted generics having __origin__"""
+def get_args_subscribed(tp):  # type: ignore
+    """Get type arguments with all substitutions performed. Supports subscripted generics having __origin__
+
+    Args:
+        tp: type to get arguments from. Can be either a type or a subscripted generic
+
+    Returns:
+        tuple of type arguments
+    """
     return tuple(
         remap_type(arg if not hasattr(arg, "__origin__") else arg.__origin__)
         for arg in get_args(tp)

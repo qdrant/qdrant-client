@@ -9,7 +9,7 @@ from pydantic.version import VERSION as PYDANTIC_VERSION
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
-from qdrant_client.conversions.common_types import Vector
+from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector
@@ -202,10 +202,7 @@ class LocalCollection:
         elif isinstance(query_vector, list):
             name = DEFAULT_VECTOR_NAME
             vector = np.array(query_vector)
-        elif isinstance(query_vector, np.ndarray):
-            name = DEFAULT_VECTOR_NAME
-            vector = query_vector
-        elif isinstance(query_vector, get_args(QueryVector)):
+        elif isinstance(query_vector, get_args_subscribed(QueryVector)):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
         else:
