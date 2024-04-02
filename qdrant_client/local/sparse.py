@@ -17,6 +17,7 @@ def validate_sparse_vector(vector: SparseVector) -> None:
     assert len(vector.indices) == len(
         vector.values
     ), "Indices and values must have the same length"
+    assert not np.isnan(vector.values).any(), "Values must not contain NaN"
     assert len(vector.indices) == len(set(vector.indices)), "Indices must be unique"
 
 

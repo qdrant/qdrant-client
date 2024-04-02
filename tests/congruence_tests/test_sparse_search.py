@@ -1,7 +1,11 @@
 from typing import List
 
+import numpy as np
+import pytest
+
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions.common_types import NamedSparseVector
+from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -16,7 +20,7 @@ from tests.congruence_tests.test_common import (
     sparse_vectors_config,
 )
 from tests.fixtures.filters import one_random_filter_please
-from tests.fixtures.points import generate_random_sparse_vector
+from tests.fixtures.points import generate_random_sparse_vector, random_sparse_vectors
 
 
 class TestSimpleSparseSearcher:
@@ -280,3 +284,39 @@ def test_search_with_persistence_and_skipped_vectors():
             except AssertionError as e:
                 print(f"\nFailed with filter {query_filter}")
                 raise e
+
+
+def test_query_with_nan():
+    local_client = init_local()
+    remote_client = init_remote()
+
+    fixture_points = generate_sparse_fixtures()
+    sparse_vector = random_sparse_vectors({"sparse-text": sparse_text_vector_size})
+    named_sparse_vector = models.NamedSparseVector(
+        name="sparse-text", vector=sparse_vector["sparse-text"]
+    )
+    named_sparse_vector.vector.values[0] = np.nan
+
+    local_client.recreate_collection(
+        COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+    )
+    remote_client.recreate_collection(
+        COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+    )
+    init_client(
+        local_client,
+        fixture_points,
+        vectors_config={},
+        sparse_vectors_config=sparse_vectors_config,
+    )
+    init_client(
+        remote_client,
+        fixture_points,
+        vectors_config={},
+        sparse_vectors_config=sparse_vectors_config,
+    )
+
+    with pytest.raises(AssertionError):
+        local_client.search(COLLECTION_NAME, named_sparse_vector)
+    with pytest.raises(UnexpectedResponse):
+        remote_client.search(COLLECTION_NAME, named_sparse_vector)

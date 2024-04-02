@@ -19,8 +19,12 @@ class RecoQuery:
     ):
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
+
         self.positive: List[types.NumpyArray] = [np.array(vector) for vector in positive]
         self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
+
+        assert not np.isnan(self.positive).any(), "Positive vectors must not contain NaN"
+        assert not np.isnan(self.negative).any(), "Negative vectors must not contain NaN"
 
 
 class ContextPair:
@@ -28,11 +32,16 @@ class ContextPair:
         self.positive: types.NumpyArray = np.array(positive)
         self.negative: types.NumpyArray = np.array(negative)
 
+        assert not np.isnan(self.positive).any(), "Positive vector must not contain NaN"
+        assert not np.isnan(self.negative).any(), "Negative vector must not contain NaN"
+
 
 class DiscoveryQuery:
     def __init__(self, target: List[float], context: List[ContextPair]):
         self.target: types.NumpyArray = np.array(target)
         self.context = context
+
+        assert not np.isnan(self.target).any(), "Target vector must not contain NaN"
 
 
 class ContextQuery:
@@ -121,6 +130,8 @@ def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
 def calculate_distance(
     query: types.NumpyArray, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
+    assert not np.isnan(query).any(), "Query vector must not contain NaN"
+
     if distance_type == models.Distance.COSINE:
         return cosine_similarity(query, vectors)
     elif distance_type == models.Distance.DOT:
@@ -139,6 +150,8 @@ def calculate_distance_core(
     """
     Calculate same internal distances as in core, rather than the final displayed distance
     """
+    assert not np.isnan(query).any(), "Query vector must not contain NaN"
+
     if distance_type == models.Distance.EUCLID:
         return -np.square(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
     if distance_type == models.Distance.MANHATTAN:
