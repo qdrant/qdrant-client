@@ -1,6 +1,7 @@
 from typing import List
 
 import numpy as np
+import pytest
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
@@ -318,3 +319,20 @@ def test_search_with_persistence_and_skipped_vectors():
             except AssertionError as e:
                 print(f"\nFailed with filter {query_filter}")
                 raise e
+
+
+def test_search_invalid_vector_type():
+    fixture_points = generate_fixtures()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    vector_invalid_type = {"text": [1, 2, 3, 4]}
+    with pytest.raises(ValueError):
+        local_client.search(collection_name=COLLECTION_NAME, query_vector=vector_invalid_type)
+
+    with pytest.raises(ValueError):
+        remote_client.search(collection_name=COLLECTION_NAME, query_vector=vector_invalid_type)
