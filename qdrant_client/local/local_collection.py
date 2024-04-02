@@ -20,7 +20,6 @@ from qdrant_client.local.distances import (
     DistanceOrder,
     QueryVector,
     RecoQuery,
-    SparseRecoQuery,
     calculate_context_scores,
     calculate_discovery_scores,
     calculate_distance,
@@ -34,7 +33,9 @@ from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
+    SparseRecoQuery,
     calculate_distance_sparse,
+    calculate_sparse_recommend_best_scores,
     empty_sparse_vector,
     merge_positive_and_negative_avg,
     sort_sparse_vector,
@@ -434,8 +435,8 @@ class LocalCollection:
             sparse_vectors = self.sparse_vectors[name]
             scores = calculate_distance_sparse(query_vector, sparse_vectors[: len(self.payload)])
         elif isinstance(query_vector, SparseRecoQuery):
-            scores = calculate_recommend_best_scores(
-                query_vector, vectors[: len(self.payload)], distance
+            scores = calculate_sparse_recommend_best_scores(
+                query_vector, vectors[: len(self.payload)]
             )
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
