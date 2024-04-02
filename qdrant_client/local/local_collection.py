@@ -9,6 +9,7 @@ from pydantic.version import VERSION as PYDANTIC_VERSION
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.common_types import Vector
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector
@@ -1239,7 +1240,9 @@ class LocalCollection:
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
 
-    def _update_named_vectors(self, idx: int, vectors: Dict[str, List[float]]) -> None:
+    def _update_named_vectors(
+        self, idx: int, vectors: Dict[str, Union[List[float], SparseVector]]
+    ) -> None:
         for vector_name, vector in vectors.items():
             if isinstance(vector, SparseVector):
                 validate_sparse_vector(vector)
