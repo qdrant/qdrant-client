@@ -47,7 +47,7 @@ def generate_random_sparse_vector_list(
 
 
 def random_sparse_vectors(
-    vector_sizes: Union[Dict[str, int], int],
+    vector_sizes: Union[Dict[str, int]],
 ) -> models.VectorStruct:
     vectors = {}
     for vector_name, vector_size in vector_sizes.items():
