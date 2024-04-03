@@ -407,6 +407,7 @@ class LocalCollection:
                 raise ValueError(f"Sparse vector {name} is not found in the collection")
             vectors = self.sparse_vectors[name]
             distance = Distance.DOT
+            sparse_scoring = True
         else:
             # it must be dense vector
             if name not in self.vectors:
@@ -438,7 +439,6 @@ class LocalCollection:
             validate_sparse_vector(query_vector)
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
             query_vector = sort_sparse_vector(query_vector)
-            sparse_scoring = True
             sparse_vectors = self.sparse_vectors[name]
             scores = calculate_distance_sparse(query_vector, sparse_vectors[: len(self.payload)])
         else:
@@ -851,11 +851,11 @@ class LocalCollection:
                 raise ValueError(f"Point {target} is not found in the collection")
 
             idx = collection.ids[target]
-            target_vector = (
-                collection.vectors[vector_name][idx].tolist()
-                if not sparse
-                else collection.sparse_vectors[vector_name][idx]
-            )
+            if not sparse:
+                target_vector = collection.vectors[vector_name][idx].tolist()
+            else:
+                target_vector = collection.sparse_vectors[vector_name][idx]
+
             mentioned_ids.append(target)
         else:
             target_vector = target

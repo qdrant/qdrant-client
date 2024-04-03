@@ -25,7 +25,7 @@ secondary_collection_name = "congruence_secondary_collection"
 
 @pytest.fixture(scope="module")
 def fixture_points() -> List[models.PointStruct]:
-    return generate_sparse_fixtures()
+    return generate_sparse_fixtures(200)
 
 
 @pytest.fixture(scope="module")
@@ -80,7 +80,7 @@ def test_context(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
-            limit=100,
+            limit=200,
             using="sparse-image",
         )
 
@@ -93,15 +93,19 @@ def test_context_many_pairs(
     http_client,
     grpc_client,
 ):
-    random_sparse_image_vector_1 = random_sparse_vectors(sparse_image_vector_size)
-    random_sparse_image_vector_2 = random_sparse_vectors(sparse_image_vector_size)
+    random_sparse_image_vector_1 = random_sparse_vectors(
+        {"sparse-image": sparse_image_vector_size}
+    )["sparse-image"]
+    random_sparse_image_vector_2 = random_sparse_vectors(
+        {"sparse-image": sparse_image_vector_size}
+    )["sparse-image"]
 
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[
                 models.ContextExamplePair(positive=11, negative=19),
-                models.ContextExamplePair(positive=400, negative=200),
+                models.ContextExamplePair(positive=100, negative=199),
                 models.ContextExamplePair(
                     positive=random_sparse_image_vector_1, negative=random_sparse_image_vector_2
                 ),
@@ -109,7 +113,7 @@ def test_context_many_pairs(
                 models.ContextExamplePair(positive=random_sparse_image_vector_1, negative=15),
             ],
             with_payload=True,
-            limit=1000,
+            limit=200,
             using="sparse-image",
         )
 
@@ -128,7 +132,7 @@ def test_discover(
             target=10,
             context=[models.ContextExamplePair(positive=11, negative=19)],
             with_payload=True,
-            limit=10,
+            limit=100,
             using="sparse-image",
         )
 
@@ -141,14 +145,16 @@ def test_discover_raw_target(
     http_client,
     grpc_client,
 ):
-    random_sparse_image_vector = random_sparse_vectors(sparse_image_vector_size)
+    random_sparse_image_vector = random_sparse_vectors({"sparse-image": sparse_image_vector_size})[
+        "sparse-image"
+    ]
 
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=random_sparse_image_vector,
             context=[models.ContextExamplePair(positive=10, negative=19)],
-            limit=10,
+            limit=100,
             using="sparse-image",
         )
 
@@ -161,13 +167,15 @@ def test_context_raw_positive(
     http_client,
     grpc_client,
 ):
-    random_image_vector = random_sparse_vectors(sparse_image_vector_size)
+    random_sparse_image_vector = random_sparse_vectors({"sparse-image": sparse_image_vector_size})[
+        "sparse-image"
+    ]
 
     def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
-            context=[models.ContextExamplePair(positive=random_image_vector, negative=19)],
+            context=[models.ContextExamplePair(positive=random_sparse_image_vector, negative=19)],
             limit=10,
             using="sparse-image",
         )
@@ -239,7 +247,7 @@ def test_discover_batch(
                     using="sparse-image",
                     lookup_from=models.LookupLocation(
                         collection=secondary_collection_name,
-                        vector="image",
+                        vector="sparse-image",
                     ),
                 ),
             ],
@@ -268,7 +276,7 @@ def test_context_with_filters(local_client, http_client, grpc_client, filter_: m
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=15, negative=7)],
-            limit=1000,
+            limit=200,
             using="sparse-image",
             query_filter=filter_,
         )

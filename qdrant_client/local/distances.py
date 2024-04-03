@@ -358,7 +358,7 @@ def calculate_sparse_discovery_ranks(
 
 
 def calculate_sparse_discovery_scores(
-    query: SparseDiscoveryQuery, vectors: types.NumpyArray
+    query: SparseDiscoveryQuery, vectors: list[SparseVector]
 ) -> types.NumpyArray:
     ranks = calculate_sparse_discovery_ranks(query.context, vectors)
 
