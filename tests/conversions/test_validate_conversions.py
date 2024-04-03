@@ -168,6 +168,16 @@ def test_vector_batch_conversion():
     ]
 
 
+def test_sparse_vector_conversion():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    sparse_vector = grpc.Vector(data=[0.2, 0.3, 0.4], indices=grpc.SparseIndices(data=[3, 2, 5]))
+    recovered = RestToGrpc.convert_sparse_vector(GrpcToRest.convert_vector(sparse_vector))
+
+    assert sparse_vector == recovered
+
+
 def test_sparse_vector_batch_conversion():
     from qdrant_client import grpc
     from qdrant_client.conversions.conversion import RestToGrpc
@@ -262,7 +272,6 @@ def test_datetime_to_timestamp_conversions(dt: datetime):
     rest_to_grpc = RestToGrpc.convert_datetime(dt)
     grpc_to_rest = GrpcToRest.convert_timestamp(rest_to_grpc)
 
-    print(f"dt: {dt}, rest_to_grpc: {rest_to_grpc}, grpc_to_rest: {grpc_to_rest}")
     assert (
         dt.utctimetuple() == grpc_to_rest.utctimetuple()
     ), f"Failed for {dt}, should be equal to {grpc_to_rest}"

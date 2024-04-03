@@ -783,7 +783,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_vector(cls, model: grpc.Vector) -> Union[List[float], SparseVector]:
-        if model.indices is not None and len(model.indices.data) > 0:
+        if model.HasField("indices"):
             return SparseVector(indices=model.indices.data[:], values=model.data[:])
         return model.data[:]
 
@@ -1947,8 +1947,8 @@ class RestToGrpc:
     @classmethod
     def convert_sparse_vector(cls, model: rest.SparseVector) -> grpc.Vector:
         return grpc.Vector(
-            data=model.data,
-            indices=grpc.SparseIndices(indices=model.indices),
+            data=model.values,
+            indices=grpc.SparseIndices(data=model.indices),
         )
 
     @classmethod
