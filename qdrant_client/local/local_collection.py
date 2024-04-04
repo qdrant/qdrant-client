@@ -198,7 +198,7 @@ class LocalCollection:
             Tuple[str, QueryVector],
         ],
     ) -> Tuple[str, QueryVector]:
-        vector: QueryVector
+        vector: Union[QueryVector, SparseQueryVector]
         if isinstance(query_vector, tuple):
             name, query = query_vector
             if isinstance(query, list):
