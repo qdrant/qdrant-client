@@ -515,10 +515,11 @@ class LocalCollection:
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
-            Tuple[str, Union[List[float], RecoQuery, types.NumpyArray]],
+            Tuple[str, Union[List[float], RecoQuery, types.NumpyArray, SparseQueryVector]],
             types.NamedVector,
             types.NamedSparseVector,
             RecoQuery,
+            SparseQueryVector,
         ],
         group_by: str,
         query_filter: Optional[models.Filter] = None,
