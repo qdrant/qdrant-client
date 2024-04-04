@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
-from typing import Any, List, Optional
+from datetime import date, datetime, timezone
+from typing import Any, List, Optional, Union
 
 import numpy as np
 
@@ -108,7 +108,10 @@ def check_range(condition: models.Range, value: Any) -> bool:
 
 
 def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
-    def make_condition_tz_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    def make_condition_tz_aware(dt: Optional[Union[datetime, date]]) -> Optional[datetime]:
+        if isinstance(dt, date):
+            dt = datetime.combine(dt, datetime.min.time())
+
         if dt is None or dt.tzinfo is not None:
             return dt
 
