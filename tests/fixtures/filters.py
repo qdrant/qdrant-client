@@ -1,5 +1,6 @@
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from typing import Union
 
 from qdrant_client.http import models
 from tests.fixtures.payload import geo_points, random_real_word, random_signed_int
@@ -198,11 +199,14 @@ def datetime_range_field_condition() -> models.FieldCondition:
     start_datetime = datetime(2000, 1, 1)
     end_datetime = datetime(2001, 1, 31)
 
-    def random_datetime() -> datetime:
+    def random_datetime() -> Union[datetime, date]:
         dt = start_datetime + timedelta(
             seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
             microseconds=random.randint(0, 999999),
         )
+        if random.random() > 0.8:
+            return dt.date()
+
         return dt.replace(tzinfo=timezone(offset=timedelta(hours=random.randint(-12, 12))))
 
     lt = random_datetime()
