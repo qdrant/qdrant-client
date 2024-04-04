@@ -466,7 +466,11 @@ class LocalCollection:
 
         if required_order == DistanceOrder.BIGGER_IS_BETTER or isinstance(
             query_vector,
-            (DiscoveryQuery, ContextQuery, RecoQuery, SparseDiscoveryQuery, SparseContextQuery),
+            (
+                DiscoveryQuery,
+                ContextQuery,
+                RecoQuery,
+            ),  # sparse structures are not required, sparse always uses DOT
         ):
             order = np.argsort(scores)[::-1]
         else:
