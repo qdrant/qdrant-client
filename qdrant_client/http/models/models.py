@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
@@ -24,7 +24,7 @@ class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
     features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
     system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
-    startup: datetime = Field(..., description="")
+    startup: Union[datetime, date] = Field(..., description="")
 
 
 class AppFeaturesTelemetry(BaseModel):
@@ -268,7 +268,7 @@ class ConsensusThreadStatusOneOf(BaseModel):
     consensus_thread_status: Literal[
         "working",
     ] = Field(..., description="")
-    last_update: datetime = Field(..., description="")
+    last_update: Union[datetime, date] = Field(..., description="")
 
 
 class ConsensusThreadStatusOneOf1(BaseModel):
@@ -405,10 +405,10 @@ class DatetimeRange(BaseModel, extra="forbid"):
     Range filter request
     """
 
-    lt: Optional[datetime] = Field(default=None, description="point.key &lt; range.lt")
-    gt: Optional[datetime] = Field(default=None, description="point.key &gt; range.gt")
-    gte: Optional[datetime] = Field(default=None, description="point.key &gt;= range.gte")
-    lte: Optional[datetime] = Field(default=None, description="point.key &lt;= range.lte")
+    lt: Optional[Union[datetime, date]] = Field(default=None, description="point.key &lt; range.lt")
+    gt: Optional[Union[datetime, date]] = Field(default=None, description="point.key &gt; range.gt")
+    gte: Optional[Union[datetime, date]] = Field(default=None, description="point.key &gt;= range.gte")
+    lte: Optional[Union[datetime, date]] = Field(default=None, description="point.key &lt;= range.lte")
 
 
 class DeleteAlias(BaseModel, extra="forbid"):
@@ -995,7 +995,9 @@ class MessageSendErrors(BaseModel):
 
     count: int = Field(..., description="Message send failures for a particular peer")
     latest_error: Optional[str] = Field(default=None, description="Message send failures for a particular peer")
-    latest_error_timestamp: Optional[datetime] = Field(default=None, description="Timestamp of the latest error")
+    latest_error_timestamp: Optional[Union[datetime, date]] = Field(
+        default=None, description="Timestamp of the latest error"
+    )
 
 
 class MinShould(BaseModel, extra="forbid"):
@@ -1060,7 +1062,7 @@ class OperationDurationStatistics(BaseModel):
         default=None, description="The maximum duration of the operations across all the measurements."
     )
     total_duration_micros: int = Field(..., description="The total duration of all operations in microseconds.")
-    last_responded: Optional[datetime] = Field(default=None, description="")
+    last_responded: Optional[Union[datetime, date]] = Field(default=None, description="")
 
 
 class OptimizerTelemetry(BaseModel):
@@ -2008,8 +2010,8 @@ class TrackerTelemetry(BaseModel):
     name: str = Field(..., description="Name of the optimizer")
     segment_ids: List[int] = Field(..., description="Segment IDs being optimized")
     status: "TrackerStatus" = Field(..., description="Tracker object used in telemetry")
-    start_at: datetime = Field(..., description="Start time of the optimizer")
-    end_at: Optional[datetime] = Field(default=None, description="End time of the optimizer")
+    start_at: Union[datetime, date] = Field(..., description="Start time of the optimizer")
+    end_at: Optional[Union[datetime, date]] = Field(default=None, description="End time of the optimizer")
 
 
 class UpdateCollection(BaseModel, extra="forbid"):
@@ -2357,6 +2359,7 @@ StartFrom = Union[
     StrictInt,
     StrictFloat,
     datetime,
+    date,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
