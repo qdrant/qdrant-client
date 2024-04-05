@@ -280,3 +280,4 @@ def test_datetime_to_timestamp_conversions(dt: Union[datetime, date]):
     assert (
         dt.utctimetuple() == grpc_to_rest.utctimetuple()
     ), f"Failed for {dt}, should be equal to {grpc_to_rest}"
+    print()
