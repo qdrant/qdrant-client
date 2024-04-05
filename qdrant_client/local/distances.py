@@ -53,7 +53,7 @@ class ContextQuery:
         self.context_pairs = context_pairs
 
 
-QueryVector = Union[
+DenseQueryVector = Union[
     DiscoveryQuery,
     ContextQuery,
     RecoQuery,

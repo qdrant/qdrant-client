@@ -16,9 +16,9 @@ from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVe
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
+    DenseQueryVector,
     DiscoveryQuery,
     DistanceOrder,
-    QueryVector,
     RecoQuery,
     calculate_context_scores,
     calculate_discovery_scores,
@@ -194,11 +194,11 @@ class LocalCollection:
             Tuple[str, List[float]],
             types.NamedVector,
             types.NamedSparseVector,
-            QueryVector,
-            Tuple[str, QueryVector],
+            DenseQueryVector,
+            Tuple[str, DenseQueryVector],
         ],
-    ) -> Tuple[str, QueryVector]:
-        vector: Union[QueryVector, SparseQueryVector]
+    ) -> Tuple[str, DenseQueryVector]:
+        vector: Union[DenseQueryVector, SparseQueryVector]
         if isinstance(query_vector, tuple):
             name, query = query_vector
             if isinstance(query, list):
@@ -214,7 +214,7 @@ class LocalCollection:
         elif isinstance(query_vector, list):
             name = DEFAULT_VECTOR_NAME
             vector = np.array(query_vector)
-        elif isinstance(query_vector, get_args_subscribed(QueryVector)):
+        elif isinstance(query_vector, get_args_subscribed(DenseQueryVector)):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
         else:
@@ -388,8 +388,8 @@ class LocalCollection:
             Tuple[str, List[float]],
             types.NamedVector,
             types.NamedSparseVector,
-            QueryVector,
-            Tuple[str, QueryVector],
+            DenseQueryVector,
+            Tuple[str, DenseQueryVector],
             SparseQueryVector,
             Tuple[str, SparseQueryVector],
         ],
@@ -641,7 +641,7 @@ class LocalCollection:
         List[models.SparseVector],
         types.Filter,
     ]:
-        def split_examples(
+        def examples_into_vectors(
             examples: Sequence[types.RecommendExample],
             acc: Union[List[List[float]], List[models.SparseVector]],
         ) -> None:
@@ -686,12 +686,12 @@ class LocalCollection:
 
         if sparse:
             collection_vectors = collection.sparse_vectors
-            split_examples(positive, sparse_positive_vectors)
-            split_examples(negative, sparse_negative_vectors)
+            examples_into_vectors(positive, sparse_positive_vectors)
+            examples_into_vectors(negative, sparse_negative_vectors)
         else:
             collection_vectors = collection.vectors
-            split_examples(positive, positive_vectors)
-            split_examples(negative, negative_vectors)
+            examples_into_vectors(positive, positive_vectors)
+            examples_into_vectors(negative, negative_vectors)
 
         # Edit query filter
         query_filter = self._ignore_mentioned_ids_filter(query_filter, mentioned_ids)
@@ -752,7 +752,7 @@ class LocalCollection:
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
         strategy: Optional[types.RecommendStrategy] = None,
-    ) -> Tuple[QueryVector, types.Filter]:
+    ) -> Tuple[DenseQueryVector, types.Filter]:
         strategy = strategy if strategy is not None else types.RecommendStrategy.AVERAGE_VECTOR
 
         (
@@ -1024,7 +1024,7 @@ class LocalCollection:
             lookup_from_vector_name,
         )
 
-        query_vector: Union[QueryVector, SparseQueryVector]
+        query_vector: Union[DenseQueryVector, SparseQueryVector]
 
         # Discovery search
         if target_vector is not None:
