@@ -66,7 +66,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return self._embedding_model_name
 
     @property
-    async def sparse_embedding_model_name(self) -> Optional[str]:
+    def sparse_embedding_model_name(self) -> Optional[str]:
         return self._sparse_embedding_model_name
 
     def set_model(
