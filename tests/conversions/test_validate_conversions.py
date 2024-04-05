@@ -1,8 +1,9 @@
 import inspect
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from inspect import getmembers
+from typing import Union
 
 import pytest
 from google.protobuf.json_format import MessageToDict
@@ -264,13 +265,17 @@ def test_init_from_conversion():
         datetime(2021, 1, 1, 0, 0, 0),
         datetime.utcnow(),
         datetime.now(),
+        date.today(),
     ],
 )
-def test_datetime_to_timestamp_conversions(dt: datetime):
+def test_datetime_to_timestamp_conversions(dt: Union[datetime, date]):
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 
     rest_to_grpc = RestToGrpc.convert_datetime(dt)
     grpc_to_rest = GrpcToRest.convert_timestamp(rest_to_grpc)
+
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        dt = datetime.combine(dt, datetime.min.time())
 
     assert (
         dt.utctimetuple() == grpc_to_rest.utctimetuple()
