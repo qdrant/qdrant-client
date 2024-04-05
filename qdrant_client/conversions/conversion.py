@@ -1474,7 +1474,7 @@ class RestToGrpc:
 
     @classmethod
     def convert_datetime(cls, model: Union[datetime, date]) -> Timestamp:
-        if isinstance(model, date):
+        if isinstance(model, date) and not isinstance(model, datetime):
             model = datetime.combine(model, datetime.min.time())
         ts = Timestamp()
         ts.FromDatetime(model)
