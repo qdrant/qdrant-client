@@ -954,7 +954,7 @@ class LocalCollection:
                 raise ValueError("Context example pair must be either dense or sparse vectors")
 
         if sparse_context_vectors and dense_context_vectors:
-            raise ValueError("Context example pair must be either dense or sparse vectors")
+            raise ValueError("All context example pairs must be either dense or sparse vectors")
 
         return dense_context_vectors, sparse_context_vectors, mentioned_ids
 
