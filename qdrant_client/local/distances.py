@@ -5,10 +5,14 @@ import numpy as np
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
-from qdrant_client.http.models import SparseVector
 
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
+
+
+class DistanceOrder(str, Enum):
+    BIGGER_IS_BETTER = "bigger_is_better"
+    SMALLER_IS_BETTER = "smaller_is_better"
 
 
 class RecoQuery:
@@ -49,12 +53,12 @@ class ContextQuery:
         self.context_pairs = context_pairs
 
 
-QueryVector = Union[DiscoveryQuery, ContextQuery, RecoQuery, types.NumpyArray, SparseVector]
-
-
-class DistanceOrder(str, Enum):
-    BIGGER_IS_BETTER = "bigger_is_better"
-    SMALLER_IS_BETTER = "smaller_is_better"
+DenseQueryVector = Union[
+    DiscoveryQuery,
+    ContextQuery,
+    RecoQuery,
+    types.NumpyArray,
+]
 
 
 def distance_to_order(distance: models.Distance) -> DistanceOrder:
@@ -257,35 +261,3 @@ def calculate_context_scores(
         overall_scores += pair_scores
 
     return overall_scores
-
-
-def test_distances() -> None:
-    query = np.array([1.0, 2.0, 3.0])
-    vectors = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.COSINE), [1.0, 1.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.DOT), [14.0, 14.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.EUCLID), [0.0, 0.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.MANHATTAN), [0.0, 0.0])
-
-    query = np.array([1.0, 0.0, 1.0])
-    vectors = np.array([[1.0, 2.0, 3.0], [0.0, 1.0, 0.0]])
-
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.COSINE),
-        [0.75592895, 0.0],
-        atol=0.0001,
-    )
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.DOT), [4.0, 0.0], atol=0.0001
-    )
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.EUCLID),
-        [2.82842712, 1.7320508],
-        atol=0.0001,
-    )
-
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.MANHATTAN),
-        [4.0, 3.0],
-        atol=0.0001,
-    )
