@@ -784,7 +784,7 @@ class LocalCollection:
                     sparse_negative_vectors,
                 )
             else:
-                raise ValueError("No positive examples given")
+                raise ValueError("No positive examples given with 'average_vector' strategy")
 
         elif strategy == types.RecommendStrategy.BEST_SCORE:
             if positive_vectors or negative_vectors:
