@@ -5,6 +5,8 @@ import warnings
 from multiprocessing import get_all_start_methods
 from typing import (
     Any,
+    Awaitable,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -24,6 +26,7 @@ from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
+from qdrant_client.bearer_auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
@@ -53,6 +56,9 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         host: Optional[str] = None,
         grpc_options: Optional[Dict[str, Any]] = None,
+        auth_token_provider: Optional[
+            Union[Callable[[], str], Callable[[], Awaitable[str]]]
+        ] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -107,6 +113,7 @@ class QdrantRemote(QdrantBase):
         )  # it has been changed from float to int.
         # convert it to the closest greater or equal int value (e.g. 0.5 -> 1)
         self._api_key = api_key
+        self._auth_token_provider = auth_token_provider
 
         limits = kwargs.pop("limits", None)
         if limits is None:
@@ -151,7 +158,15 @@ class QdrantRemote(QdrantBase):
         if self._timeout is not None:
             self._rest_args["timeout"] = self._timeout
 
-        self.openapi_client: SyncApis[ApiClient] = SyncApis(host=self.rest_uri, **self._rest_args)
+        if self._auth_token_provider is not None:
+            if not self._prefer_grpc:
+                bearerAuth = BearerAuth(self._auth_token_provider)
+                self._rest_args["auth"] = bearerAuth
+
+        self.openapi_client: SyncApis[ApiClient] = SyncApis(
+            host=self.rest_uri,
+            **self._rest_args,
+        )
 
         self._grpc_channel = None
         self._grpc_points_client: Optional[grpc.PointsStub] = None
@@ -213,6 +228,11 @@ class QdrantRemote(QdrantBase):
         if self._closed:
             raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
 
+        if asyncio.iscoroutinefunction(self._auth_token_provider):
+            raise RuntimeError(
+                "Auth token provider is coroutine function. Please use async client."
+            )
+
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
                 host=self._host,
@@ -221,6 +241,7 @@ class QdrantRemote(QdrantBase):
                 metadata=self._grpc_headers,
                 options=self._grpc_options,
                 compression=self._grpc_compression,
+                auth_token_provider=self._auth_token_provider,
             )
 
     def _init_async_grpc_channel(self) -> None:
@@ -235,6 +256,7 @@ class QdrantRemote(QdrantBase):
                 metadata=self._grpc_headers,
                 options=self._grpc_options,
                 compression=self._grpc_compression,
+                auth_token_provider=self._auth_token_provider,
             )
 
     def _init_grpc_points_client(self) -> None:
@@ -381,7 +403,7 @@ class QdrantRemote(QdrantBase):
             ]
         else:
             requests = [
-                GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r
+                (GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r)
                 for r in requests
             ]
             http_res: List[List[models.ScoredPoint]] = self.http.points_api.search_batch_points(
@@ -1146,7 +1168,11 @@ class QdrantRemote(QdrantBase):
             ]
         else:
             requests = [
-                GrpcToRest.convert_discover_points(r) if isinstance(r, grpc.DiscoverPoints) else r
+                (
+                    GrpcToRest.convert_discover_points(r)
+                    if isinstance(r, grpc.DiscoverPoints)
+                    else r
+                )
                 for r in requests
             ]
             http_res: List[List[models.ScoredPoint]] = self.http.points_api.discover_batch_points(
@@ -1507,7 +1533,7 @@ class QdrantRemote(QdrantBase):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
             ids = [
-                GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
+                (GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx)
                 for idx in ids
             ]
 
@@ -1566,7 +1592,7 @@ class QdrantRemote(QdrantBase):
     ) -> models.PointsSelector:
         if isinstance(points, list):
             _points = [
-                GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
+                (GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx)
                 for idx in points
             ]
             points_selector = construct(
@@ -1613,7 +1639,7 @@ class QdrantRemote(QdrantBase):
         _filter = None
         if isinstance(points, list):
             _points = [
-                GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx
+                (GrpcToRest.convert_point_id(idx) if isinstance(idx, grpc.PointId) else idx)
                 for idx in points
             ]
         elif isinstance(points, grpc.PointsSelector):

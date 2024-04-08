@@ -1,5 +1,17 @@
 import warnings
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
@@ -58,6 +70,7 @@ class QdrantClient(QdrantFastembedMixin):
         force_disable_check_same_thread:
             For QdrantLocal, force disable check_same_thread. Default: `False`
             Only use this if you can guarantee that you can resolve the thread safety outside QdrantClient.
+        auth_token_provider: Callback function to get Bearer access token. If given, the function will be called before each request to get the token.
         **kwargs: Additional arguments passed directly into REST client initialization
 
     """
@@ -77,6 +90,9 @@ class QdrantClient(QdrantFastembedMixin):
         path: Optional[str] = None,
         force_disable_check_same_thread: bool = False,
         grpc_options: Optional[Dict[str, Any]] = None,
+        auth_token_provider: Optional[
+            Union[Callable[[], str], Callable[[], Awaitable[str]]]
+        ] = None,
         **kwargs: Any,
     ):
         super().__init__(
@@ -116,6 +132,7 @@ class QdrantClient(QdrantFastembedMixin):
                 timeout=timeout,
                 host=host,
                 grpc_options=grpc_options,
+                auth_token_provider=auth_token_provider,
                 **kwargs,
             )
 
@@ -2102,7 +2119,10 @@ class QdrantClient(QdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.delete_snapshot(
-            collection_name=collection_name, snapshot_name=snapshot_name, wait=wait, **kwargs
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
+            wait=wait,
+            **kwargs,
         )
 
     def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:

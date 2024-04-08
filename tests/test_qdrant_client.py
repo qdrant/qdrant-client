@@ -1,3 +1,4 @@
+import asyncio
 import os
 import uuid
 from pprint import pprint
@@ -176,7 +177,11 @@ def test_records_upload(prefer_grpc, parallel):
     warnings.simplefilter("ignore", category=DeprecationWarning)
 
     records = (
-        Record(id=idx, vector=np.random.rand(DIM).tolist(), payload=one_random_payload_please(idx))
+        Record(
+            id=idx,
+            vector=np.random.rand(DIM).tolist(),
+            payload=one_random_payload_please(idx),
+        )
         for idx in range(NUM_VECTORS)
     )
 
@@ -236,7 +241,9 @@ def test_records_upload(prefer_grpc, parallel):
 def test_point_upload(prefer_grpc, parallel):
     points = (
         PointStruct(
-            id=idx, vector=np.random.rand(DIM).tolist(), payload=one_random_payload_please(idx)
+            id=idx,
+            vector=np.random.rand(DIM).tolist(),
+            payload=one_random_payload_please(idx),
         )
         for idx in range(NUM_VECTORS)
     )
@@ -621,7 +628,10 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         print(hit)
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vectors=True,
     )
 
     # ------------------ Test for full-text filtering ------------------
@@ -755,11 +765,16 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert len(got_points) == 3
 
     client.delete(
-        collection_name=COLLECTION_NAME, wait=True, points_selector=PointIdsList(points=[2, 3])
+        collection_name=COLLECTION_NAME,
+        wait=True,
+        points_selector=PointIdsList(points=[2, 3]),
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vectors=True,
     )
 
     assert len(got_points) == 1
@@ -771,17 +786,26 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vectors=True,
     )
 
     assert len(got_points) == 2
 
     client.set_payload(
-        collection_name=COLLECTION_NAME, payload={"new_key": 123}, points=[1, 2], wait=True
+        collection_name=COLLECTION_NAME,
+        payload={"new_key": 123},
+        points=[1, 2],
+        wait=True,
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2],
+        with_payload=True,
+        with_vectors=True,
     )
 
     for point in got_points:
@@ -806,7 +830,10 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2],
+        with_payload=True,
+        with_vectors=True,
     )
 
     for point in got_points:
@@ -1034,7 +1061,9 @@ def test_points_crud(prefer_grpc):
     # Update a single point
 
     client.set_payload(
-        collection_name=COLLECTION_NAME, payload={"test2": ["value2", "value3"]}, points=[123]
+        collection_name=COLLECTION_NAME,
+        payload={"test2": ["value2", "value3"]},
+        points=[123],
     )
 
     # Delete a single point
@@ -1199,7 +1228,9 @@ def test_custom_sharding(prefer_grpc):
     ]
 
     client.upload_points(
-        collection_name=COLLECTION_NAME, points=cat_points, shard_key_selector=cats_shard_key
+        collection_name=COLLECTION_NAME,
+        points=cat_points,
+        shard_key_selector=cats_shard_key,
     )
 
     res = client.search(
@@ -1583,7 +1614,11 @@ def test_locks():
         client.upsert(
             collection_name=COLLECTION_NAME,
             points=[
-                PointStruct(id=123, payload={"test": "value"}, vector=np.random.rand(DIM).tolist())
+                PointStruct(
+                    id=123,
+                    payload={"test": "value"},
+                    vector=np.random.rand(DIM).tolist(),
+                )
             ],
             wait=True,
         )
@@ -1802,6 +1837,49 @@ def test_grpc_compression():
 
     with pytest.raises(TypeError):
         QdrantClient(prefer_grpc=True, grpc_compression="gzip")
+
+
+def test_auth_token_provider():
+    token = ""
+
+    def auth_token_provider():
+        nonlocal token
+        token = "test_token"
+        return token
+
+    client = QdrantClient(auth_token_provider=auth_token_provider)
+    client.get_collections()
+
+    assert token == "test_token"
+    token = ""
+
+    client = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
+    client.get_collections()
+
+    assert token == "test_token"
+
+
+def test_async_auth_token_provider():
+    token = ""
+
+    async def auth_token_provider():
+        nonlocal token
+        await asyncio.sleep(0.1)
+        token = "test_token"
+        return token
+
+    client = QdrantClient(auth_token_provider=auth_token_provider)
+    with pytest.raises(qdrant_client.http.exceptions.ResponseHandlingException):
+        client.get_collections()
+
+    assert token == ""
+
+    client = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
+
+    with pytest.raises(RuntimeError):
+        client.get_collections()
+
+    assert token == ""
 
 
 if __name__ == "__main__":
