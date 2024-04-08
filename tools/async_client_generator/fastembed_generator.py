@@ -54,6 +54,7 @@ if __name__ == "__main__":
         keep_sync=[
             "__init__",
             "set_model",
+            "set_sparse_model",
             "get_vector_field_name",
             "get_fastembed_vector_params",
             "embedding_model_name",

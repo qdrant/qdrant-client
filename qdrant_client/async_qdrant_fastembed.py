@@ -104,7 +104,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         self._embedding_model_name = embedding_model_name
 
-    async def set_sparse_model(
+    def set_sparse_model(
         self,
         embedding_model_name: Optional[str],
         cache_dir: Optional[str] = None,
