@@ -26,7 +26,7 @@ from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
-from qdrant_client.bearer_auth import BearerAuth
+from qdrant_client.auth.bearer_auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
@@ -159,6 +159,14 @@ class QdrantRemote(QdrantBase):
             self._rest_args["timeout"] = self._timeout
 
         if self._auth_token_provider is not None:
+            if self.__class__.__name__ == "QdrantRemote" and asyncio.iscoroutinefunction(
+                self._auth_token_provider
+            ):
+                raise ValueError(
+                    "Async auth_token_provider is not supported for QdrantRemote. "
+                    "Please use QdrantAsyncClient instead."
+                )
+
             if not self._prefer_grpc:
                 bearerAuth = BearerAuth(self._auth_token_provider)
                 self._rest_args["auth"] = bearerAuth
@@ -227,11 +235,6 @@ class QdrantRemote(QdrantBase):
     def _init_grpc_channel(self) -> None:
         if self._closed:
             raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
-
-        if asyncio.iscoroutinefunction(self._auth_token_provider):
-            raise RuntimeError(
-                "Auth token provider is coroutine function. Please use async client."
-            )
 
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(

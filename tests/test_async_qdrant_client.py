@@ -518,3 +518,50 @@ async def test_async_qdrant_client_local():
     assert all(collection.name != COLLECTION_NAME for collection in collections.collections)
     await client.close()
     # endregion
+
+
+@pytest.mark.asyncio
+async def test_async_auth():
+    """Test that the auth token provider is called and the token in all modes."""
+    token = ""
+
+    async def async_auth_token_provider():
+        nonlocal token
+        await asyncio.sleep(0.1)
+        token = "test_token"
+        return token
+
+    client = AsyncQdrantClient(timeout=3, auth_token_provider=async_auth_token_provider)
+    await client.get_collections()
+
+    assert token == "test_token"
+    token = ""
+
+    client = AsyncQdrantClient(
+        prefer_grpc=True, timeout=3, auth_token_provider=async_auth_token_provider
+    )
+    await client.get_collections()
+
+    assert token == "test_token"
+
+    sync_token = ""
+
+    def auth_token_provider():
+        nonlocal sync_token
+        sync_token = "test_token"
+        return sync_token
+
+    client = AsyncQdrantClient(timeout=3, auth_token_provider=auth_token_provider)
+    await client.get_collections()
+
+    assert sync_token == "test_token"
+
+    sync_token = ""
+
+    client = AsyncQdrantClient(
+        prefer_grpc=True, timeout=3, auth_token_provider=auth_token_provider
+    )
+
+    await client.get_collections()
+
+    assert sync_token == "test_token"

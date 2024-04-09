@@ -1840,6 +1840,7 @@ def test_grpc_compression():
 
 
 def test_auth_token_provider():
+    """Check that the token provided is called for both http and grpc clients."""
     token = ""
 
     def auth_token_provider():
@@ -1860,6 +1861,7 @@ def test_auth_token_provider():
 
 
 def test_async_auth_token_provider():
+    """Check that initialization fails if async auth_token_provider is provided to sync client."""
     token = ""
 
     async def auth_token_provider():
@@ -1868,18 +1870,11 @@ def test_async_auth_token_provider():
         token = "test_token"
         return token
 
-    client = QdrantClient(auth_token_provider=auth_token_provider)
-    with pytest.raises(qdrant_client.http.exceptions.ResponseHandlingException):
-        client.get_collections()
+    with pytest.raises(ValueError):
+        _ = QdrantClient(auth_token_provider=auth_token_provider)
 
-    assert token == ""
-
-    client = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
-
-    with pytest.raises(RuntimeError):
-        client.get_collections()
-
-    assert token == ""
+    with pytest.raises(ValueError):
+        _ = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
 
 
 if __name__ == "__main__":
