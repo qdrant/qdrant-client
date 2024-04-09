@@ -168,8 +168,8 @@ class QdrantRemote(QdrantBase):
                 )
 
             if not self._prefer_grpc:
-                bearerAuth = BearerAuth(self._auth_token_provider)
-                self._rest_args["auth"] = bearerAuth
+                bearer_auth = BearerAuth(self._auth_token_provider)
+                self._rest_args["auth"] = bearer_auth
 
         self.openapi_client: SyncApis[ApiClient] = SyncApis(
             host=self.rest_uri,
