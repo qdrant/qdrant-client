@@ -163,8 +163,8 @@ class QdrantRemote(QdrantBase):
                 self._auth_token_provider
             ):
                 raise ValueError(
-                    "Async auth_token_provider is not supported for QdrantRemote. "
-                    "Please use QdrantAsyncClient instead."
+                    "Async auth_token_provider is not supported for QdrantClient. "
+                    "Please use AsyncQdrantClient instead."
                 )
 
             if not self._prefer_grpc:
