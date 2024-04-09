@@ -10,8 +10,6 @@ class BearerAuth(httpx.Auth):
         self,
         auth_token_provider: Union[Callable[[], str], Callable[[], Awaitable[str]]],
     ):
-        self._sync_lock = threading.RLock()
-        self._async_lock = asyncio.Lock()
         self.async_token: Optional[Callable[[], Awaitable[str]]] = None
         self.sync_token: Optional[Callable[[], str]] = None
 
@@ -24,25 +22,23 @@ class BearerAuth(httpx.Auth):
             else:
                 raise ValueError("auth_token_provider must be a callable or awaitable")
 
-    def sync_get_token(self) -> str:
+    def _sync_get_token(self) -> str:
         if self.sync_token is None:
             raise ValueError("Synchronous token provider is not set.")
-        with self._sync_lock:
-            return self.sync_token()
+        return self.sync_token()
 
     def sync_auth_flow(self, request: httpx.Request):
-        token = self.sync_get_token()
+        token = self._sync_get_token()
         request.headers["Authorization"] = f"Bearer {token}"
         yield request
 
-    async def async_get_token(self) -> str:
+    async def _async_get_token(self) -> str:
         if self.async_token is not None:
-            async with self._async_lock:
-                return await self.async_token()
+            return await self.async_token()
         # Fallback to synchronous token if asynchronous token is not available
-        return self.sync_get_token()
+        return self._sync_get_token()
 
     async def async_auth_flow(self, request: httpx.Request):
-        token = await self.async_get_token()
+        token = await self._async_get_token()
         request.headers["Authorization"] = f"Bearer {token}"
         yield request
