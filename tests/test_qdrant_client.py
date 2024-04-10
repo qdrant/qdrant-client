@@ -1870,11 +1870,23 @@ def test_async_auth_token_provider():
         token = "test_token"
         return token
 
-    with pytest.raises(ValueError):
-        _ = QdrantClient(auth_token_provider=auth_token_provider)
+    client = QdrantClient(auth_token_provider=auth_token_provider)
 
-    with pytest.raises(ValueError):
-        _ = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
+    with pytest.raises(
+        qdrant_client.http.exceptions.ResponseHandlingException,
+        match="Synchronous token provider is not set.",
+    ):
+        client.get_collections()
+
+    assert token == ""
+
+    client = QdrantClient(auth_token_provider=auth_token_provider, prefer_grpc=True)
+    with pytest.raises(
+        ValueError, match="Synchronous channel requires synchronous auth token provider."
+    ):
+        client.get_collections()
+
+    assert token == ""
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 import asyncio
-import threading
 from typing import Awaitable, Callable, Optional, Union
 
 import httpx
@@ -17,7 +16,6 @@ class BearerAuth(httpx.Auth):
             self.async_token = auth_token_provider
         else:
             if callable(auth_token_provider):
-                # type narrowing does not work here, so we use `# type: ignore`
                 self.sync_token = auth_token_provider  # type: ignore
             else:
                 raise ValueError("auth_token_provider must be a callable or awaitable")
@@ -27,18 +25,18 @@ class BearerAuth(httpx.Auth):
             raise ValueError("Synchronous token provider is not set.")
         return self.sync_token()
 
-    def sync_auth_flow(self, request: httpx.Request):
+    def sync_auth_flow(self, request: httpx.Request) -> httpx.Request:
         token = self._sync_get_token()
         request.headers["Authorization"] = f"Bearer {token}"
         yield request
 
     async def _async_get_token(self) -> str:
         if self.async_token is not None:
-            return await self.async_token()
+            return await self.async_token()  # type: ignore
         # Fallback to synchronous token if asynchronous token is not available
         return self._sync_get_token()
 
-    async def async_auth_flow(self, request: httpx.Request):
+    async def async_auth_flow(self, request: httpx.Request) -> httpx.Request:
         token = await self._async_get_token()
         request.headers["Authorization"] = f"Bearer {token}"
         yield request

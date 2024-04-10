@@ -127,7 +127,7 @@ class _ClientAsyncCallDetails(
 
 
 def header_adder_interceptor(
-    new_metadata: List[Tuple[str, str]] = [],
+    new_metadata: List[Tuple[str, str]],
     auth_token_provider: Optional[Callable[[], str]] = None,
 ) -> _GenericClientInterceptor:
     def intercept_call(
@@ -149,7 +149,10 @@ def header_adder_interceptor(
             )
 
         if auth_token_provider:
-            metadata.append(("authorization", f"Bearer {auth_token_provider()}"))
+            if not asyncio.iscoroutinefunction(auth_token_provider):
+                metadata.append(("authorization", f"Bearer {auth_token_provider()}"))
+            else:
+                raise ValueError("Synchronous channel requires synchronous auth token provider.")
 
         client_call_details = _ClientCallDetails(
             client_call_details.method,
@@ -163,7 +166,7 @@ def header_adder_interceptor(
 
 
 def header_adder_async_interceptor(
-    new_metadata: Optional[List[Tuple[str, str]]] = [],
+    new_metadata: List[Tuple[str, str]],
     auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
 ) -> _GenericAsyncClientInterceptor:
     async def intercept_call(
@@ -175,14 +178,13 @@ def header_adder_async_interceptor(
         metadata = []
         if client_call_details.metadata is not None:
             metadata = list(client_call_details.metadata)
-        if new_metadata:
-            for header, value in new_metadata:
-                metadata.append(
-                    (
-                        header,
-                        value,
-                    )
+        for header, value in new_metadata:
+            metadata.append(
+                (
+                    header,
+                    value,
                 )
+            )
 
         if auth_token_provider:
             if asyncio.iscoroutinefunction(auth_token_provider):
@@ -223,11 +225,9 @@ def get_channel(
 ) -> grpc.Channel:
     # Parse gRPC client options
     _options = parse_channel_options(options)
-
-    if metadata is None:
-        metadata = []
-
-    metadata_interceptor = header_adder_interceptor(metadata, auth_token_provider)
+    metadata_interceptor = header_adder_interceptor(
+        new_metadata=metadata or [], auth_token_provider=auth_token_provider
+    )
 
     if ssl:
         ssl_creds = grpc.ssl_channel_credentials()
@@ -252,7 +252,7 @@ def get_async_channel(
 
     # Create metadata interceptor
     metadata_interceptor = header_adder_async_interceptor(
-        new_metadata=metadata, auth_token_provider=auth_token_provider
+        new_metadata=metadata or [], auth_token_provider=auth_token_provider
     )
 
     if ssl:
