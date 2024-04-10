@@ -524,44 +524,60 @@ async def test_async_qdrant_client_local():
 async def test_async_auth():
     """Test that the auth token provider is called and the token in all modes."""
     token = ""
+    call_num = 0
 
     async def async_auth_token_provider():
         nonlocal token
+        nonlocal call_num
         await asyncio.sleep(0.1)
-        token = "test_token"
+        token = f"token_{call_num}"
+        call_num += 1
         return token
 
     client = AsyncQdrantClient(timeout=3, auth_token_provider=async_auth_token_provider)
     await client.get_collections()
+    assert token == "token_0"
 
-    assert token == "test_token"
+    await client.get_collections()
+    assert token == "token_1"
+
     token = ""
+    call_num = 0
 
     client = AsyncQdrantClient(
         prefer_grpc=True, timeout=3, auth_token_provider=async_auth_token_provider
     )
     await client.get_collections()
+    assert token == "token_0"
 
-    assert token == "test_token"
+    await client.get_collections()
+    assert token == "token_1"
 
     sync_token = ""
+    call_num = 0
 
     def auth_token_provider():
         nonlocal sync_token
-        sync_token = "test_token"
+        nonlocal call_num
+        sync_token = f"token_{call_num}"
+        call_num += 1
         return sync_token
 
     client = AsyncQdrantClient(timeout=3, auth_token_provider=auth_token_provider)
     await client.get_collections()
+    assert sync_token == "token_0"
 
-    assert sync_token == "test_token"
+    await client.get_collections()
+    assert sync_token == "token_1"
 
     sync_token = ""
+    call_num = 0
 
     client = AsyncQdrantClient(
         prefer_grpc=True, timeout=3, auth_token_provider=auth_token_provider
     )
+    await client.get_collections()
+    assert sync_token == "token_0"
 
     await client.get_collections()
-
-    assert sync_token == "test_token"
+    assert sync_token == "token_1"

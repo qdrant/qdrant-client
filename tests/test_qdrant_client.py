@@ -1847,22 +1847,30 @@ def test_grpc_compression():
 def test_auth_token_provider():
     """Check that the token provided is called for both http and grpc clients."""
     token = ""
+    call_num = 0
 
     def auth_token_provider():
         nonlocal token
-        token = "test_token"
+        nonlocal call_num
+
+        token = f"token_{call_num}"
+        call_num += 1
         return token
 
     client = QdrantClient(auth_token_provider=auth_token_provider)
     client.get_collections()
+    assert token == "token_0"
+    client.get_collections()
+    assert token == "token_1"
 
-    assert token == "test_token"
     token = ""
+    call_num = 0
 
     client = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
     client.get_collections()
-
-    assert token == "test_token"
+    assert token == "token_0"
+    client.get_collections()
+    assert token == "token_1"
 
 
 def test_async_auth_token_provider():
