@@ -139,8 +139,8 @@ def _migrate_collection(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
         dest_client.upload_points(collection_name, records, wait=True)  # type: ignore
-    source_client_vectors_count = source_client.get_collection(collection_name).vectors_count
-    dest_client_vectors_count = dest_client.get_collection(collection_name).vectors_count
+    source_client_vectors_count = source_client.count(collection_name).count
+    dest_client_vectors_count = dest_client.count(collection_name).count
     assert (
         source_client_vectors_count == dest_client_vectors_count
     ), f"Migration failed, vectors count are not equal: source vector count {source_client_vectors_count}, dest vector count {dest_client_vectors_count}"
