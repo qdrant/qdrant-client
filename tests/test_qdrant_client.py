@@ -50,6 +50,11 @@ from qdrant_client.models import (
 )
 from qdrant_client.qdrant_remote import QdrantRemote
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
+from tests.congruence_tests.test_common import (
+    generate_fixtures,
+    init_client,
+    init_remote,
+)
 from tests.fixtures.payload import (
     one_random_payload_please,
     random_payload,
@@ -1888,7 +1893,80 @@ def test_async_auth_token_provider():
 
     assert token == ""
 
+    
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_read_consistency(prefer_grpc):
+    fixture_points = generate_fixtures(vectors_sizes=DIM, num=NUM_VECTORS)
+    client = init_remote(prefer_grpc=prefer_grpc)
+    init_client(
+        client,
+        fixture_points,
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
 
+    query_vector = fixture_points[0].vector
+
+    client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=2,
+    )
+
+    search_requests = [models.SearchRequest(vector=query_vector, limit=5)]
+    client.search_batch(
+        collection_name=COLLECTION_NAME,
+        requests=search_requests,
+    )
+
+    client.search_batch(
+        collection_name=COLLECTION_NAME,
+        requests=search_requests,
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search_batch(collection_name=COLLECTION_NAME, requests=search_requests, consistency=2)
+
+    client.search_groups(
+        collection_name=COLLECTION_NAME,
+        group_by="word",
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search_groups(
+        collection_name=COLLECTION_NAME,
+        group_by="word",
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search_groups(
+        collection_name=COLLECTION_NAME,
+        group_by="word",
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    
 if __name__ == "__main__":
     test_qdrant_client_integration()
     test_points_crud()

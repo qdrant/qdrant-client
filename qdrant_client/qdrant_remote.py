@@ -382,7 +382,7 @@ class QdrantRemote(QdrantBase):
                 for r in requests
             ]
 
-            if isinstance(consistency, get_args_subscribed(models.ReadConsistencyType)):
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
             grpc_res: grpc.SearchBatchResponse = self.grpc_points.SearchBatch(
