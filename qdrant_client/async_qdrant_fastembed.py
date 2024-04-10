@@ -104,7 +104,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         self._embedding_model_name = embedding_model_name
 
-    async def set_sparse_model(
+    def set_sparse_model(
         self,
         embedding_model_name: Optional[str],
         cache_dir: Optional[str] = None,
@@ -241,7 +241,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         model_name = self.embedding_model_name.split("/")[-1].lower()
         return f"fast-{model_name}"
 
-    async def get_sparse_vector_field_name(self) -> Optional[str]:
+    def get_sparse_vector_field_name(self) -> Optional[str]:
         """
         Returns name of the vector field in qdrant collection, used by current fastembed model.
         Returns:
@@ -360,7 +360,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
         }
 
-    async def get_fastembed_sparse_vector_params(
+    def get_fastembed_sparse_vector_params(
         self, on_disk: Optional[bool] = None
     ) -> Optional[Dict[str, models.SparseVectorParams]]:
         """
