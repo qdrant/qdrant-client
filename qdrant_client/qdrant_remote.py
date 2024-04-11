@@ -127,7 +127,7 @@ class QdrantRemote(QdrantBase):
         self._rest_headers = kwargs.pop("metadata", {})
         if api_key is not None:
             if self._scheme == "http":
-                warnings.warn("Api key is used with unsecure connection.")
+                warnings.warn("Api key is used with an insecure connection.")
 
             # http2 = True
 
@@ -159,6 +159,9 @@ class QdrantRemote(QdrantBase):
             self._rest_args["timeout"] = self._timeout
 
         if self._auth_token_provider is not None:
+            if self._scheme == "http":
+                warnings.warn("Auth token provider is used with an insecure connection.")
+
             if not self._prefer_grpc:
                 bearer_auth = BearerAuth(self._auth_token_provider)
                 self._rest_args["auth"] = bearer_auth
