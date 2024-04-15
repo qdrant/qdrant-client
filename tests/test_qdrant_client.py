@@ -1742,6 +1742,20 @@ def test_client_close():
         "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
     )
     local_client_in_mem.close()
+    assert local_client_in_mem._client.closed is True
+
+    with pytest.raises(RuntimeError):
+        local_client_in_mem.upsert(
+            "test", [PointStruct(id=1, vector=np.random.rand(100).tolist())]
+        )
+
+    with pytest.raises(RuntimeError):
+        local_client_in_mem.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+
+    with pytest.raises(RuntimeError):
+        local_client_in_mem.delete_collection("test")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         path = tmpdir + "/test.db"

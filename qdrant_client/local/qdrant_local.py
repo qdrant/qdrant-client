@@ -60,6 +60,7 @@ class QdrantLocal(QdrantBase):
         self._load()
         self._closed: bool = False
 
+    @property
     def closed(self) -> bool:
         return self._closed
 
@@ -123,6 +124,10 @@ class QdrantLocal(QdrantBase):
     def _save(self) -> None:
         if not self.persistent:
             return
+
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
         with open(meta_path, "w") as f:
             f.write(
@@ -138,6 +143,9 @@ class QdrantLocal(QdrantBase):
             )
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
         if collection_name in self.collections:
             return self.collections[collection_name]
         if collection_name in self.aliases:
@@ -567,6 +575,9 @@ class QdrantLocal(QdrantBase):
     def get_collection_aliases(
         self, collection_name: str, **kwargs: Any
     ) -> types.CollectionsAliasesResponse:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(
@@ -579,6 +590,9 @@ class QdrantLocal(QdrantBase):
         )
 
     def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(
@@ -590,6 +604,9 @@ class QdrantLocal(QdrantBase):
         )
 
     def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
         return types.CollectionsResponse(
             collections=[
                 rest_models.CollectionDescription(name=name)
@@ -619,6 +636,9 @@ class QdrantLocal(QdrantBase):
             return None
 
     def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
         _collection = self.collections.pop(collection_name, None)
         del _collection
         self.aliases = {
@@ -640,6 +660,9 @@ class QdrantLocal(QdrantBase):
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
+
         src_collection = None
         from_collection_name = None
         if init_from is not None:
