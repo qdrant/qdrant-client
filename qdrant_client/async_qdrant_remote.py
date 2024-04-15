@@ -139,9 +139,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._auth_token_provider is not None:
             if self._scheme == "http":
                 warnings.warn("Auth token provider is used with an insecure connection.")
-            if not self._prefer_grpc:
-                bearer_auth = BearerAuth(self._auth_token_provider)
-                self._rest_args["auth"] = bearer_auth
+            bearer_auth = BearerAuth(self._auth_token_provider)
+            self._rest_args["auth"] = bearer_auth
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
             host=self.rest_uri, **self._rest_args
         )

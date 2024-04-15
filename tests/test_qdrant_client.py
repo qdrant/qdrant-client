@@ -1872,6 +1872,9 @@ def test_auth_token_provider():
     client.get_collections()
     assert token == "token_1"
 
+    client.unlock_storage()
+    assert token == "token_2"
+
 
 def test_async_auth_token_provider():
     """Check that initialization fails if async auth_token_provider is provided to sync client."""
@@ -1901,7 +1904,7 @@ def test_async_auth_token_provider():
 
     assert token == ""
 
-    
+
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_read_consistency(prefer_grpc):
     fixture_points = generate_fixtures(vectors_sizes=DIM, num=NUM_VECTORS)
@@ -1974,7 +1977,7 @@ def test_read_consistency(prefer_grpc):
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
-    
+
 if __name__ == "__main__":
     test_qdrant_client_integration()
     test_points_crud()

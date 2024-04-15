@@ -553,6 +553,9 @@ async def test_async_auth():
     await client.get_collections()
     assert token == "token_1"
 
+    await client.unlock_storage()
+    assert token == "token_2"
+
     sync_token = ""
     call_num = 0
 
@@ -581,3 +584,6 @@ async def test_async_auth():
 
     await client.get_collections()
     assert sync_token == "token_1"
+
+    await client.unlock_storage()
+    assert sync_token == "token_2"

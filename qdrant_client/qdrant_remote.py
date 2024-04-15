@@ -162,9 +162,8 @@ class QdrantRemote(QdrantBase):
             if self._scheme == "http":
                 warnings.warn("Auth token provider is used with an insecure connection.")
 
-            if not self._prefer_grpc:
-                bearer_auth = BearerAuth(self._auth_token_provider)
-                self._rest_args["auth"] = bearer_auth
+            bearer_auth = BearerAuth(self._auth_token_provider)
+            self._rest_args["auth"] = bearer_auth
 
         self.openapi_client: SyncApis[ApiClient] = SyncApis(
             host=self.rest_uri,
