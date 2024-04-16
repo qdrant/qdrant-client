@@ -165,10 +165,9 @@ def calculate_distance_core(
 
 
 def fast_sigmoid(x: np.float32) -> np.float32:
-    if np.isnan(x):
-        # To avoid divisions on NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
-        return x  # NaN
-
+    if np.isnan(x) or np.isinf(x):
+        # To avoid divisions on NaNs or inf, which gets: RuntimeWarning: invalid value encountered in scalar divide
+        return x
     return x / np.add(1.0, abs(x))
 
 
