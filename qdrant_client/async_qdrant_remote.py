@@ -15,6 +15,8 @@ import warnings
 from multiprocessing import get_all_start_methods
 from typing import (
     Any,
+    Awaitable,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -35,6 +37,7 @@ from urllib3.util import Url, parse_url
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.async_client_base import AsyncQdrantBase
+from qdrant_client.auth import BearerAuth
 from qdrant_client.connection import get_async_channel as get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -63,6 +66,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: Optional[int] = None,
         host: Optional[str] = None,
         grpc_options: Optional[Dict[str, Any]] = None,
+        auth_token_provider: Optional[
+            Union[Callable[[], str], Callable[[], Awaitable[str]]]
+        ] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -100,6 +106,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             self._port = port
         self._timeout = math.ceil(timeout) if timeout is not None else None
         self._api_key = api_key
+        self._auth_token_provider = auth_token_provider
         limits = kwargs.pop("limits", None)
         if limits is None:
             if self._host in ["localhost", "127.0.0.1"]:
@@ -109,7 +116,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._rest_headers = kwargs.pop("metadata", {})
         if api_key is not None:
             if self._scheme == "http":
-                warnings.warn("Api key is used with unsecure connection.")
+                warnings.warn("Api key is used with an insecure connection.")
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
         grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
@@ -129,6 +136,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             self._rest_args["limits"] = limits
         if self._timeout is not None:
             self._rest_args["timeout"] = self._timeout
+        if self._auth_token_provider is not None:
+            if self._scheme == "http":
+                warnings.warn("Auth token provider is used with an insecure connection.")
+            bearer_auth = BearerAuth(self._auth_token_provider)
+            self._rest_args["auth"] = bearer_auth
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
             host=self.rest_uri, **self._rest_args
         )
@@ -182,6 +194,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 metadata=self._grpc_headers,
                 options=self._grpc_options,
                 compression=self._grpc_compression,
+                auth_token_provider=self._auth_token_provider,
             )
 
     def _init_grpc_points_client(self) -> None:
