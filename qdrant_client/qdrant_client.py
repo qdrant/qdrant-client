@@ -1,3 +1,4 @@
+import logging
 import warnings
 from typing import (
     Any,
@@ -1745,6 +1746,8 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    # WARN: This method is deprecated and will be removed in the future
+    # Use separate check for collection existence and `create_collection` instead
     def recreate_collection(
         self,
         collection_name: str,
@@ -1811,6 +1814,11 @@ class QdrantClient(QdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        logging.warning(
+            "This method is deprecated and will be removed in the future."
+            "Use separate check for collection existence and `create_collection` instead."
+        )
 
         return self._client.recreate_collection(
             collection_name=collection_name,
