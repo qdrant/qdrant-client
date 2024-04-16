@@ -270,9 +270,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_search_request(r, collection_name)
-                if isinstance(r, models.SearchRequest)
-                else r
+                (
+                    RestToGrpc.convert_search_request(r, collection_name)
+                    if isinstance(r, models.SearchRequest)
+                    else r
+                )
                 for r in requests
             ]
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
@@ -537,9 +539,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_recommend_request(r, collection_name)
-                if isinstance(r, models.RecommendRequest)
-                else r
+                (
+                    RestToGrpc.convert_recommend_request(r, collection_name)
+                    if isinstance(r, models.RecommendRequest)
+                    else r
+                )
                 for r in requests
             ]
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
@@ -558,9 +562,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             ]
         else:
             requests = [
-                GrpcToRest.convert_recommend_points(r)
-                if isinstance(r, grpc.RecommendPoints)
-                else r
+                (
+                    GrpcToRest.convert_recommend_points(r)
+                    if isinstance(r, grpc.RecommendPoints)
+                    else r
+                )
                 for r in requests
             ]
             http_res: List[List[models.ScoredPoint]] = (
@@ -643,15 +649,19 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
             positive = [
-                GrpcToRest.convert_point_id(example)
-                if isinstance(example, grpc.PointId)
-                else example
+                (
+                    GrpcToRest.convert_point_id(example)
+                    if isinstance(example, grpc.PointId)
+                    else example
+                )
                 for example in positive
             ]
             negative = [
-                GrpcToRest.convert_point_id(example)
-                if isinstance(example, grpc.PointId)
-                else example
+                (
+                    GrpcToRest.convert_point_id(example)
+                    if isinstance(example, grpc.PointId)
+                    else example
+                )
                 for example in negative
             ]
             if isinstance(query_filter, grpc.Filter):
@@ -769,15 +779,19 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if isinstance(with_lookup, grpc.WithLookup):
                 with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
             positive = [
-                GrpcToRest.convert_point_id(point_id)
-                if isinstance(point_id, grpc.PointId)
-                else point_id
+                (
+                    GrpcToRest.convert_point_id(point_id)
+                    if isinstance(point_id, grpc.PointId)
+                    else point_id
+                )
                 for point_id in positive
             ]
             negative = [
-                GrpcToRest.convert_point_id(point_id)
-                if isinstance(point_id, grpc.PointId)
-                else point_id
+                (
+                    GrpcToRest.convert_point_id(point_id)
+                    if isinstance(point_id, grpc.PointId)
+                    else point_id
+                )
                 for point_id in negative
             ]
             if isinstance(query_filter, grpc.Filter):
@@ -844,9 +858,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 else target
             )
             context = [
-                RestToGrpc.convert_context_example_pair(pair)
-                if isinstance(pair, models.ContextExamplePair)
-                else pair
+                (
+                    RestToGrpc.convert_context_example_pair(pair)
+                    if isinstance(pair, models.ContextExamplePair)
+                    else pair
+                )
                 for pair in context
             ]
             if isinstance(query_filter, models.Filter):
@@ -890,9 +906,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 else target
             )
             context = [
-                GrpcToRest.convert_context_example_pair(pair)
-                if isinstance(pair, grpc.ContextExamplePair)
-                else pair
+                (
+                    GrpcToRest.convert_context_example_pair(pair)
+                    if isinstance(pair, grpc.ContextExamplePair)
+                    else pair
+                )
                 for pair in context
             ]
             if isinstance(query_filter, grpc.Filter):
@@ -936,9 +954,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> List[List[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
-                RestToGrpc.convert_discover_request(r, collection_name)
-                if isinstance(r, models.DiscoverRequest)
-                else r
+                (
+                    RestToGrpc.convert_discover_request(r, collection_name)
+                    if isinstance(r, models.DiscoverRequest)
+                    else r
+                )
                 for r in requests
             ]
             grpc_res: grpc.SearchBatchResponse = await self.grpc_points.DiscoverBatch(
@@ -1012,9 +1032,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
             return (
                 [GrpcToRest.convert_retrieved_point(point) for point in res.result],
-                GrpcToRest.convert_point_id(res.next_page_offset)
-                if res.HasField("next_page_offset")
-                else None,
+                (
+                    GrpcToRest.convert_point_id(res.next_page_offset)
+                    if res.HasField("next_page_offset")
+                    else None
+                ),
             )
         else:
             if isinstance(offset, grpc.PointId):
@@ -1099,17 +1121,21 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     grpc.PointStruct(
                         id=RestToGrpc.convert_extended_point_id(points.ids[idx]),
                         vectors=vectors_batch[idx],
-                        payload=RestToGrpc.convert_payload(points.payloads[idx])
-                        if points.payloads is not None
-                        else None,
+                        payload=(
+                            RestToGrpc.convert_payload(points.payloads[idx])
+                            if points.payloads is not None
+                            else None
+                        ),
                     )
                     for idx in range(len(points.ids))
                 ]
             if isinstance(points, list):
                 points = [
-                    RestToGrpc.convert_point_struct(point)
-                    if isinstance(point, models.PointStruct)
-                    else point
+                    (
+                        RestToGrpc.convert_point_struct(point)
+                        if isinstance(point, models.PointStruct)
+                        else point
+                    )
                     for point in points
                 ]
             if isinstance(ordering, models.WriteOrdering):
@@ -1133,9 +1159,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             if isinstance(points, list):
                 points = [
-                    GrpcToRest.convert_point_struct(point)
-                    if isinstance(point, grpc.PointStruct)
-                    else point
+                    (
+                        GrpcToRest.convert_point_struct(point)
+                        if isinstance(point, grpc.PointStruct)
+                        else point
+                    )
                     for point in points
                 ]
                 points = models.PointsList(points=points, shard_key=shard_key_selector)
@@ -1254,9 +1282,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
             ids = [
-                RestToGrpc.convert_extended_point_id(idx)
-                if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
-                else idx
+                (
+                    RestToGrpc.convert_extended_point_id(idx)
+                    if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
+                    else idx
+                )
                 for idx in ids
             ]
             with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
@@ -1310,9 +1340,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             points_selector = grpc.PointsSelector(
                 points=grpc.PointsIdsList(
                     ids=[
-                        RestToGrpc.convert_extended_point_id(idx)
-                        if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
-                        else idx
+                        (
+                            RestToGrpc.convert_extended_point_id(idx)
+                            if isinstance(idx, get_args_subscribed(models.ExtendedPointId))
+                            else idx
+                        )
                         for idx in points
                     ]
                 )
@@ -1696,9 +1728,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> bool:
         if self._prefer_grpc:
             change_aliases_operation = [
-                RestToGrpc.convert_alias_operations(operation)
-                if not isinstance(operation, grpc.AliasOperations)
-                else operation
+                (
+                    RestToGrpc.convert_alias_operations(operation)
+                    if not isinstance(operation, grpc.AliasOperations)
+                    else operation
+                )
                 for operation in change_aliases_operations
             ]
             return (
@@ -1708,9 +1742,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             ).result
         change_aliases_operation = [
-            GrpcToRest.convert_alias_operations(operation)
-            if isinstance(operation, grpc.AliasOperations)
-            else operation
+            (
+                GrpcToRest.convert_alias_operations(operation)
+                if isinstance(operation, grpc.AliasOperations)
+                else operation
+            )
             for operation in change_aliases_operations
         ]
         result: Optional[bool] = (

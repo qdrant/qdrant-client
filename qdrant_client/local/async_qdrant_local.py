@@ -254,12 +254,14 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
                 using=request.using,
-                lookup_from_collection=self._get_collection(request.lookup_from.collection)
-                if request.lookup_from
-                else None,
-                lookup_from_vector_name=request.lookup_from.vector
-                if request.lookup_from
-                else None,
+                lookup_from_collection=(
+                    self._get_collection(request.lookup_from.collection)
+                    if request.lookup_from
+                    else None
+                ),
+                lookup_from_vector_name=(
+                    request.lookup_from.vector if request.lookup_from else None
+                ),
                 strategy=request.strategy,
             )
             for request in requests
@@ -293,9 +295,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             using=using,
-            lookup_from_collection=self._get_collection(lookup_from.collection)
-            if lookup_from
-            else None,
+            lookup_from_collection=(
+                self._get_collection(lookup_from.collection) if lookup_from else None
+            ),
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             strategy=strategy,
         )
@@ -337,9 +339,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             using=using,
-            lookup_from_collection=self._get_collection(lookup_from.collection)
-            if lookup_from
-            else None,
+            lookup_from_collection=(
+                self._get_collection(lookup_from.collection) if lookup_from else None
+            ),
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
@@ -373,9 +375,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_payload=with_payload,
             with_vectors=with_vectors,
             using=using,
-            lookup_from_collection=self._get_collection(lookup_from.collection)
-            if lookup_from
-            else None,
+            lookup_from_collection=(
+                self._get_collection(lookup_from.collection) if lookup_from else None
+            ),
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
         )
 
@@ -393,12 +395,14 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 with_payload=request.with_payload,
                 with_vectors=request.with_vector,
                 using=request.using,
-                lookup_from_collection=self._get_collection(request.lookup_from.collection)
-                if request.lookup_from
-                else None,
-                lookup_from_vector_name=request.lookup_from.vector
-                if request.lookup_from
-                else None,
+                lookup_from_collection=(
+                    self._get_collection(request.lookup_from.collection)
+                    if request.lookup_from
+                    else None
+                ),
+                lookup_from_vector_name=(
+                    request.lookup_from.vector if request.lookup_from else None
+                ),
             )
             for request in requests
         ]
