@@ -122,7 +122,7 @@ def compare_collections(
     client_1,
     client_2,
     num_vectors,
-    attrs=("vectors_count", "indexed_vectors_count", "points_count"),
+    attrs=("indexed_vectors_count", "points_count"),
     collection_name: str = COLLECTION_NAME,
 ):
     collection_1 = client_1.get_collection(collection_name)

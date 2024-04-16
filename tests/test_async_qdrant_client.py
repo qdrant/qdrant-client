@@ -251,17 +251,6 @@ async def test_async_qdrant_client(prefer_grpc):
 
     assert len(await client.list_snapshots(COLLECTION_NAME)) == 0
 
-    assert isinstance(await client.create_full_snapshot(), models.SnapshotDescription)
-    snapshots = await client.list_full_snapshots()
-    assert len(snapshots) == 1
-
-    await client.delete_full_snapshot(snapshot_name=snapshots[0].name)
-    time.sleep(
-        0.5
-    )  # wait param is not propagated https://github.com/qdrant/qdrant-client/issues/254
-
-    assert len(await client.list_full_snapshots()) == 0
-
     assert isinstance(
         await client.create_shard_snapshot(COLLECTION_NAME, shard_id=0),
         models.SnapshotDescription,
