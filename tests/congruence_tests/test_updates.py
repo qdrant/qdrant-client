@@ -260,6 +260,7 @@ def test_upload_collection_dict_np_arrays(local_client, remote_client):
 
 def test_upload_payload_contain_nan_values():
     # usual case when payload is extracted from pandas dataframe
+    from pydantic.version import VERSION as PYDANTIC_VERSION
 
     local_client = init_local()
     remote_client = init_remote()
@@ -288,16 +289,6 @@ def test_upload_payload_contain_nan_values():
         vectors.append(point.vector)
         payload.append(point.payload)
 
-    with pytest.raises(ValueError):
-        local_client.upload_collection(nans_collection, vectors, payload)
-    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-        remote_client.upload_collection(nans_collection, vectors, payload)
-
-    with pytest.raises(ValueError):
-        local_client.upload_points(nans_collection, points)
-    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-        remote_client.upload_points(nans_collection, points)
-
     points_batch = models.Batch(
         ids=ids,
         vectors=vectors,
@@ -305,9 +296,27 @@ def test_upload_payload_contain_nan_values():
     )
 
     with pytest.raises(ValueError):
+        local_client.upload_collection(nans_collection, vectors, payload)
+    with pytest.raises(ValueError):
+        local_client.upload_points(nans_collection, points)
+    with pytest.raises(ValueError):
         local_client.upsert(nans_collection, points=points_batch)
-    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-        remote_client.upsert(nans_collection, points=points_batch)
+
+    sem_versions = PYDANTIC_VERSION.split(".")
+    major_version = int(sem_versions[0])
+    minor_version = int(sem_versions[1])
+
+    if (
+        major_version == 1 or minor_version <= 7
+    ):  # since of pydantic 2.7.0, pydantic converts nan to None
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upload_collection(nans_collection, vectors, payload)
+
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upload_points(nans_collection, points)
+
+        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
+            remote_client.upsert(nans_collection, points=points_batch)
 
     local_client.delete_collection(nans_collection)
     remote_client.delete_collection(nans_collection)
