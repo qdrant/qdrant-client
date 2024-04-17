@@ -76,7 +76,7 @@ else:
         return ENCODERS_BY_TYPE[type(x)](x)
 
 
-def convert_nan_inf_to_null(obj):
+def convert_nan_inf_to_null(obj: Any) -> Any:
     if isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
         return None
 
