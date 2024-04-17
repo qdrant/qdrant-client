@@ -139,7 +139,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     {
                         "collections": {
                             collection_name: to_dict(collection.config)
-                            for collection_name, collection in self.collections.items()
+                            for (collection_name, collection) in self.collections.items()
                         },
                         "aliases": self.aliases,
                     }
@@ -254,14 +254,12 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
                 using=request.using,
-                lookup_from_collection=(
-                    self._get_collection(request.lookup_from.collection)
-                    if request.lookup_from
-                    else None
-                ),
-                lookup_from_vector_name=(
-                    request.lookup_from.vector if request.lookup_from else None
-                ),
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
                 strategy=request.strategy,
             )
             for request in requests
@@ -295,9 +293,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             strategy=strategy,
         )
@@ -339,9 +337,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_vectors=with_vectors,
             score_threshold=score_threshold,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
@@ -375,9 +373,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_payload=with_payload,
             with_vectors=with_vectors,
             using=using,
-            lookup_from_collection=(
-                self._get_collection(lookup_from.collection) if lookup_from else None
-            ),
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
         )
 
@@ -395,14 +393,12 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 with_payload=request.with_payload,
                 with_vectors=request.with_vector,
                 using=request.using,
-                lookup_from_collection=(
-                    self._get_collection(request.lookup_from.collection)
-                    if request.lookup_from
-                    else None
-                ),
-                lookup_from_vector_name=(
-                    request.lookup_from.vector if request.lookup_from else None
-                ),
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
             )
             for request in requests
         ]
@@ -566,7 +562,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
-                for alias_name, name in self.aliases.items()
+                for (alias_name, name) in self.aliases.items()
                 if name == collection_name
             ]
         )
@@ -577,7 +573,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
-                for alias_name, name in self.aliases.items()
+                for (alias_name, name) in self.aliases.items()
             ]
         )
 
@@ -587,7 +583,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsResponse(
             collections=[
                 rest_models.CollectionDescription(name=name)
-                for name, _ in self.collections.items()
+                for (name, _) in self.collections.items()
             ]
         )
 
@@ -619,7 +615,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         del _collection
         self.aliases = {
             alias_name: name
-            for alias_name, name in self.aliases.items()
+            for (alias_name, name) in self.aliases.items()
             if name != collection_name
         }
         collection_path = self._collection_path(collection_name)
@@ -660,12 +656,12 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self.collections[collection_name] = collection
         if src_collection and from_collection_name:
             batch_size = 100
-            records, next_offset = await self.scroll(
+            (records, next_offset) = await self.scroll(
                 from_collection_name, limit=2, with_vectors=True
             )
             self.upload_records(collection_name, records)
             while next_offset is not None:
-                records, next_offset = await self.scroll(
+                (records, next_offset) = await self.scroll(
                     from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True
                 )
                 self.upload_records(collection_name, records)
@@ -741,7 +737,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                     payload=payload or {},
                 )
-                for point_id, vector, payload in zip(
+                for (point_id, vector, payload) in zip(
                     ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
                 )
             ]
