@@ -313,7 +313,7 @@ payload_schema_geo = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Geo
 payload_schema_text = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Text, points=0)
 payload_schema_bool = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Bool, points=0)
 payload_schema_datetime = grpc.PayloadSchemaInfo(
-    data_type=grpc.PayloadSchemaType.DATETIME, points=0
+    data_type=grpc.PayloadSchemaType.Datetime, points=0
 )
 
 text_index_params_1 = grpc.TextIndexParams(

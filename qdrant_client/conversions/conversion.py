@@ -367,7 +367,7 @@ class GrpcToRest:
             return rest.PayloadSchemaType.BOOL
         elif model == grpc.PayloadSchemaType.Text:
             return rest.PayloadSchemaType.TEXT
-        elif model == grpc.PayloadSchemaType.DATETIME:
+        elif model == grpc.PayloadSchemaType.Datetime:
             return rest.PayloadSchemaType.DATETIME
         else:
             raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
