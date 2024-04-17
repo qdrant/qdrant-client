@@ -1816,7 +1816,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         warnings.warn(
             "`recreate_collection` method is deprecated and will be removed in the future."
-            "Use `collection_exists` to check collection existence and `create_collection` instead.",
+            " Use `collection_exists` to check collection existence and `create_collection` instead.",
             DeprecationWarning,
             stacklevel=2,
         )
