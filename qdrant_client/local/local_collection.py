@@ -1,7 +1,18 @@
 import json
 import uuid
 from collections import OrderedDict, defaultdict
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    get_args,
+)
 
 import numpy as np
 from pydantic.version import VERSION as PYDANTIC_VERSION
@@ -65,7 +76,23 @@ else:
         return ENCODERS_BY_TYPE[type(x)](x)
 
 
+def convert_nan_inf_to_null(obj):
+    if isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
+        return None
+
+    if isinstance(obj, dict):
+        return {k: convert_nan_inf_to_null(v) for k, v in obj.items()}
+
+    # pydantic converts iterables to lists
+    elif isinstance(obj, Iterable) and not (isinstance(obj, str) or isinstance(obj, range)):
+        return [convert_nan_inf_to_null(v) for v in obj]
+
+    return obj
+
+
 def to_jsonable_python(x: Any) -> Any:
+    # breaks congruence with remote if pydantic<2.7, since it does not convert nan/inf to null
+    x = convert_nan_inf_to_null(x)
     try:
         json.dumps(x, allow_nan=False)
         return x

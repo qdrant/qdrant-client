@@ -260,21 +260,28 @@ def test_upload_collection_dict_np_arrays(local_client, remote_client):
 
 def test_upload_payload_contain_nan_values():
     # usual case when payload is extracted from pandas dataframe
-    from pydantic.version import VERSION as PYDANTIC_VERSION
+    from pydantic.version import VERSION
+
+    major, minor, patch = map(int, VERSION.split("."))
+    if major < 2 or (major == 2 and minor < 7):
+        pytest.skip("Test requires pydantic>=2.7.0")
+
+    def recreate_collections():
+        local_client.recreate_collection(
+            collection_name=nans_collection,
+            vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.DOT),
+        )
+        remote_client.recreate_collection(
+            collection_name=nans_collection,
+            vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.DOT),
+        )
 
     local_client = init_local()
     remote_client = init_remote()
 
     vector_size = 2
     nans_collection = "nans_collection"
-    local_client.recreate_collection(
-        collection_name=nans_collection,
-        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.DOT),
-    )
-    remote_client.recreate_collection(
-        collection_name=nans_collection,
-        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.DOT),
-    )
+
     points = generate_points(
         num_points=UPLOAD_NUM_VECTORS,
         vector_sizes=2,
@@ -295,28 +302,26 @@ def test_upload_payload_contain_nan_values():
         payloads=payload,
     )
 
-    with pytest.raises(ValueError):
-        local_client.upload_collection(nans_collection, vectors, payload)
-    with pytest.raises(ValueError):
-        local_client.upload_points(nans_collection, points)
-    with pytest.raises(ValueError):
-        local_client.upsert(nans_collection, points=points_batch)
+    recreate_collections()
+    local_client.upload_collection(nans_collection, vectors, payload, ids)
+    remote_client.upload_collection(nans_collection, vectors, payload, ids)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=nans_collection
+    )
 
-    sem_versions = PYDANTIC_VERSION.split(".")
-    major_version = int(sem_versions[0])
-    minor_version = int(sem_versions[1])
+    recreate_collections()
+    local_client.upload_points(nans_collection, points)
+    remote_client.upload_points(nans_collection, points)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=nans_collection
+    )
 
-    if (
-        major_version == 1 or minor_version <= 7
-    ):  # since of pydantic 2.7.0, pydantic converts nan to None
-        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-            remote_client.upload_collection(nans_collection, vectors, payload)
-
-        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-            remote_client.upload_points(nans_collection, points)
-
-        with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-            remote_client.upsert(nans_collection, points=points_batch)
+    recreate_collections()
+    local_client.upsert(nans_collection, points=points_batch)
+    remote_client.upsert(nans_collection, points=points_batch)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=nans_collection
+    )
 
     local_client.delete_collection(nans_collection)
     remote_client.delete_collection(nans_collection)
