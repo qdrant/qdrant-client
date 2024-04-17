@@ -109,7 +109,7 @@ def grpc_payload_schema_to_field_type(model: grpc.PayloadSchemaType) -> grpc.Fie
         return grpc.FieldType.FieldTypeGeo
     if model == grpc.PayloadSchemaType.Text:
         return grpc.FieldType.FieldTypeText
-    if model == grpc.PayloadSchemaType.DATETIME:
+    if model == grpc.PayloadSchemaType.Datetime:
         return grpc.FieldType.FieldTypeDatetime
 
     raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
@@ -129,7 +129,7 @@ def grpc_field_type_to_payload_schema(model: grpc.FieldType) -> grpc.PayloadSche
     if model == grpc.FieldType.FieldTypeText:
         return grpc.PayloadSchemaType.Text
     if model == grpc.FieldType.FieldTypeDatetime:
-        return grpc.PayloadSchemaType.DATETIME
+        return grpc.PayloadSchemaType.Datetime
 
     raise ValueError(f"invalid FieldType model: {model}")  # pragma: no cover
 
