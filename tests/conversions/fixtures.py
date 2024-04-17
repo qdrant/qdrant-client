@@ -312,6 +312,9 @@ payload_schema_float = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.F
 payload_schema_geo = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Geo, points=0)
 payload_schema_text = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Text, points=0)
 payload_schema_bool = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Bool, points=0)
+payload_schema_datetime = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.DATETIME, points=0
+)
 
 text_index_params_1 = grpc.TextIndexParams(
     tokenizer=grpc.TokenizerType.Prefix,
@@ -374,6 +377,7 @@ collection_info_ok = grpc.CollectionInfo(
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
+        "datetime_field": payload_schema_datetime,
     },
 )
 
@@ -395,6 +399,7 @@ collection_info = grpc.CollectionInfo(
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
+        "datetime_field": payload_schema_datetime,
     },
 )
 
@@ -416,6 +421,7 @@ collection_info_red = grpc.CollectionInfo(
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
+        "datetime_field": payload_schema_datetime,
     },
 )
 quantization_config = grpc.QuantizationConfig(
