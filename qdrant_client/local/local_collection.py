@@ -83,8 +83,11 @@ def convert_nan_inf_to_null(obj: Any) -> Any:
     if isinstance(obj, dict):
         return {k: convert_nan_inf_to_null(v) for k, v in obj.items()}
 
+    if isinstance(obj, str) or isinstance(obj, bytes) or isinstance(obj, range):
+        return obj
+
     # pydantic converts iterables to lists
-    elif isinstance(obj, Iterable) and not (isinstance(obj, str) or isinstance(obj, range)):
+    if isinstance(obj, Iterable):
         return [convert_nan_inf_to_null(v) for v in obj]
 
     return obj
