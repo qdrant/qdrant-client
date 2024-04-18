@@ -1745,6 +1745,8 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    # WARN: This method is deprecated and will be removed in the future
+    # Use separate check for collection existence and `create_collection` instead
     def recreate_collection(
         self,
         collection_name: str,
@@ -1811,6 +1813,13 @@ class QdrantClient(QdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        warnings.warn(
+            "`recreate_collection` method is deprecated and will be removed in the future."
+            " Use `collection_exists` to check collection existence and `create_collection` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         return self._client.recreate_collection(
             collection_name=collection_name,
