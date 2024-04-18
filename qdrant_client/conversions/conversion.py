@@ -214,7 +214,7 @@ class GrpcToRest:
             payload_schema=cls.convert_payload_schema(model.payload_schema),
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
-            vectors_count=model.vectors_count,
+            vectors_count=model.vectors_count if model.HasField("vectors_count") else None,
             points_count=model.points_count,
             indexed_vectors_count=model.indexed_vectors_count or 0,
         )
@@ -380,6 +380,8 @@ class GrpcToRest:
             return rest.CollectionStatus.YELLOW
         elif model == grpc.CollectionStatus.Red:
             return rest.CollectionStatus.RED
+        elif model == grpc.CollectionStatus.Grey:
+            return rest.CollectionStatus.GREY
         else:
             raise ValueError(f"invalid CollectionStatus model: {model}")  # pragma: no cover
 
@@ -757,6 +759,15 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_datatype(cls, model: grpc.Datatype) -> rest.Datatype:
+        if model == grpc.Datatype.Float32:
+            return rest.Datatype.FLOAT32
+        elif model == grpc.Datatype.Uint8:
+            return rest.Datatype.UINT8
+        else:
+            raise ValueError(f"invalid Datatype model: {model}")
+
+    @classmethod
     def convert_vector_params(cls, model: grpc.VectorParams) -> rest.VectorParams:
         return rest.VectorParams(
             size=model.size,
@@ -772,6 +783,7 @@ class GrpcToRest:
                 else None
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            datatype=cls.convert_datatype(model.datatype) if model.HasField("datatype") else None,
         )
 
     @classmethod
@@ -1517,7 +1529,7 @@ class RestToGrpc:
             ),
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
-            vectors_count=model.vectors_count,
+            vectors_count=model.vectors_count if model.vectors_count is not None else None,
             points_count=model.points_count,
         )
 
@@ -1529,6 +1541,8 @@ class RestToGrpc:
             return grpc.CollectionStatus.Yellow
         if model == rest.CollectionStatus.GREEN:
             return grpc.CollectionStatus.Green
+        if model == rest.CollectionStatus.GREY:
+            return grpc.CollectionStatus.Grey
 
         raise ValueError(f"invalid CollectionStatus model: {model}")  # pragma: no cover
 
@@ -2119,6 +2133,15 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_datatype(cls, model: rest.Datatype) -> grpc.Datatype:
+        if model == rest.Datatype.FLOAT32:
+            return grpc.Datatype.Float32
+        if model == rest.Datatype.UINT8:
+            return grpc.Datatype.Uint8
+
+        raise ValueError(f"invalid Datatype model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_vector_params(cls, model: rest.VectorParams) -> grpc.VectorParams:
         return grpc.VectorParams(
             size=model.size,
@@ -2134,6 +2157,7 @@ class RestToGrpc:
                 else None
             ),
             on_disk=model.on_disk,
+            datatype=cls.convert_datatype(model.datatype) if model.datatype is not None else None,
         )
 
     @classmethod

@@ -10,8 +10,14 @@ SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 
+class AbortShardTransfer(BaseModel, extra="forbid"):
+    shard_id: int = Field(..., description="")
+    to_peer_id: int = Field(..., description="")
+    from_peer_id: int = Field(..., description="")
+
+
 class AbortTransferOperation(BaseModel, extra="forbid"):
-    abort_transfer: "MoveShard" = Field(..., description="")
+    abort_transfer: "AbortShardTransfer" = Field(..., description="")
 
 
 class AliasDescription(BaseModel):
@@ -24,6 +30,7 @@ class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
     features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
     system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
+    jwt_rbac: Optional[bool] = Field(default=None, description="")
     startup: Union[datetime, date] = Field(..., description="")
 
 
@@ -153,7 +160,7 @@ class CollectionInfo(BaseModel):
     )
     vectors_count: Optional[int] = Field(
         default=None,
-        description="Approximate number of vectors in collection. All vectors in collection are available for querying. Calculated as `points_count x vectors_per_point`. Where `vectors_per_point` is a number of named vectors in schema.",
+        description="DEPRECATED: Approximate number of vectors in collection. All vectors in collection are available for querying. Calculated as `points_count x vectors_per_point`. Where `vectors_per_point` is a number of named vectors in schema.",
     )
     indexed_vectors_count: Optional[int] = Field(
         default=None,
@@ -220,6 +227,7 @@ class CollectionStatus(str, Enum):
 
     GREEN = "green"
     YELLOW = "yellow"
+    GREY = "grey"
     RED = "red"
 
 
@@ -398,6 +406,18 @@ class CreateShardingKey(BaseModel, extra="forbid"):
 
 class CreateShardingKeyOperation(BaseModel, extra="forbid"):
     create_sharding_key: "CreateShardingKey" = Field(..., description="")
+
+
+class Datatype(str, Enum):
+    """
+    Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy. - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1byte. It expects vector elements to be in range `[0, 255]`.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    FLOAT32 = "float32"
+    UINT8 = "uint8"
 
 
 class DatetimeRange(BaseModel, extra="forbid"):
@@ -1018,6 +1038,10 @@ class MoveShardOperation(BaseModel, extra="forbid"):
     move_shard: "MoveShard" = Field(..., description="")
 
 
+class MultiVectorConfigOneOf(BaseModel):
+    max_sim: Any = Field(..., description="")
+
+
 class NamedSparseVector(BaseModel, extra="forbid"):
     """
     Sparse vector data with name
@@ -1029,7 +1053,7 @@ class NamedSparseVector(BaseModel, extra="forbid"):
 
 class NamedVector(BaseModel, extra="forbid"):
     """
-    Vector data with name
+    Dense vector data with name
     """
 
     name: str = Field(..., description="Name of vector data")
@@ -1822,6 +1846,17 @@ class ShardTransferMethodOneOf1(str, Enum):
     SNAPSHOT = "snapshot"
 
 
+class ShardTransferMethodOneOf2(str, Enum):
+    """
+    Attempt to transfer shard difference by WAL delta.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    WAL_DELTA = "wal_delta"
+
+
 class ShardingMethod(str, Enum):
     AUTO = "auto"
     CUSTOM = "custom"
@@ -2098,6 +2133,12 @@ class VectorDataConfig(BaseModel):
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Vector specific quantization config that overrides collection config"
     )
+    multi_vec_config: Optional["MultiVectorConfig"] = Field(
+        default=None, description="Vector specific configuration to enable multiple vectors per point"
+    )
+    datatype: Optional["VectorStorageDatatype"] = Field(
+        default=None, description="Vector specific configuration to set specific storage element type"
+    )
 
 
 class VectorDataInfo(BaseModel):
@@ -2138,6 +2179,7 @@ class VectorParams(BaseModel, extra="forbid"):
         default=None,
         description="If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
     )
+    datatype: Optional["Datatype"] = Field(default=None, description="Params of single vector data storage")
 
 
 class VectorParamsDiff(BaseModel, extra="forbid"):
@@ -2150,6 +2192,18 @@ class VectorParamsDiff(BaseModel, extra="forbid"):
     on_disk: Optional[bool] = Field(
         default=None, description="If true, vectors are served from disk, improving RAM usage at the cost of latency"
     )
+
+
+class VectorStorageDatatype(str, Enum):
+    """
+    Storage types for vectors
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    FLOAT32 = "float32"
+    UINT8 = "uint8"
 
 
 class VectorStorageTypeOneOf(str, Enum):
@@ -2287,6 +2341,9 @@ Match = Union[
     MatchAny,
     MatchExcept,
 ]
+MultiVectorConfig = Union[
+    MultiVectorConfigOneOf,
+]
 NamedVectorStruct = Union[
     List[StrictFloat],
     NamedVector,
@@ -2349,6 +2406,7 @@ ShardSnapshotLocation = Union[
 ShardTransferMethod = Union[
     ShardTransferMethodOneOf,
     ShardTransferMethodOneOf1,
+    ShardTransferMethodOneOf2,
 ]
 SparseIndexType = Union[
     SparseIndexTypeOneOf,
