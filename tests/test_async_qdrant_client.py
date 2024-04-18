@@ -97,7 +97,7 @@ async def test_async_grpc():
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
     version = os.getenv("QDRANT_VERSION")
-    client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
+    client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=15)
     collection_params = dict(
         collection_name=COLLECTION_NAME,
         vectors_config=models.VectorParams(size=10, distance=models.Distance.EUCLID),
@@ -244,10 +244,7 @@ async def test_async_qdrant_client(prefer_grpc):
     # await client.recover_snapshot(collection_name=COLLECTION_NAME, location=...)
     # assert (await client.get_collection(COLLECTION_NAME)).vectors_count == 100
 
-    await client.delete_snapshot(COLLECTION_NAME, snapshot_name=snapshots[0].name)
-    time.sleep(
-        0.5
-    )  # wait param is not propagated https://github.com/qdrant/qdrant-client/issues/254
+    await client.delete_snapshot(COLLECTION_NAME, snapshot_name=snapshots[0].name, wait=True)
 
     assert len(await client.list_snapshots(COLLECTION_NAME)) == 0
 
@@ -255,10 +252,7 @@ async def test_async_qdrant_client(prefer_grpc):
     snapshots = await client.list_full_snapshots()
     assert len(snapshots) == 1
 
-    await client.delete_full_snapshot(snapshot_name=snapshots[0].name)
-    time.sleep(
-        0.5
-    )  # wait param is not propagated https://github.com/qdrant/qdrant-client/issues/254
+    await client.delete_full_snapshot(snapshot_name=snapshots[0].name, wait=True)
 
     assert len(await client.list_full_snapshots()) == 0
 

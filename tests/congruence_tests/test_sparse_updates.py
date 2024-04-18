@@ -92,10 +92,7 @@ def test_upsert():
         local_client,
         remote_client,
         UPLOAD_NUM_VECTORS,
-        attrs=(
-            "points_count",
-            "vectors_count",
-        ),
+        attrs=("points_count",),
     )
 
 
@@ -122,10 +119,7 @@ def test_upload_collection():
         local_client,
         remote_client,
         UPLOAD_NUM_VECTORS,
-        attrs=(
-            "points_count",
-            "vectors_count",
-        ),
+        attrs=("points_count",),
     )
 
 
@@ -155,10 +149,7 @@ def test_upload_collection_generators():
         local_client,
         remote_client,
         UPLOAD_NUM_VECTORS,
-        attrs=(
-            "points_count",
-            "vectors_count",
-        ),
+        attrs=("points_count",),
     )
 
 
@@ -178,10 +169,7 @@ def test_upload_points():
         local_client,
         remote_client,
         UPLOAD_NUM_VECTORS,
-        attrs=(
-            "points_count",
-            "vectors_count",
-        ),
+        attrs=("points_count",),
     )
 
 
@@ -213,8 +201,5 @@ def test_upload_uuid_in_batches():
         local_client,
         remote_client,
         UPLOAD_NUM_VECTORS,
-        attrs=(
-            "points_count",
-            "vectors_count",
-        ),
+        attrs=("points_count",),
     )
