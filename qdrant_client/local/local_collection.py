@@ -1,7 +1,18 @@
 import json
 import uuid
 from collections import OrderedDict, defaultdict
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, get_args
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    get_args,
+)
 
 import numpy as np
 from pydantic.version import VERSION as PYDANTIC_VERSION
@@ -67,10 +78,10 @@ else:
 
 def to_jsonable_python(x: Any) -> Any:
     try:
-        json.dumps(x, allow_nan=False)
+        json.dumps(x, allow_nan=True)
         return x
     except Exception:
-        return json.loads(json.dumps(x, allow_nan=False, default=_to_jsonable_python))
+        return json.loads(json.dumps(x, allow_nan=True, default=_to_jsonable_python))
 
 
 class LocalCollection:
