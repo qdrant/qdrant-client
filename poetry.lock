@@ -2952,13 +2952,13 @@ test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,
 
 [[package]]
 name = "types-protobuf"
-version = "4.25.0.20240410"
+version = "4.25.0.20240417"
 description = "Typing stubs for protobuf"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "types-protobuf-4.25.0.20240410.tar.gz", hash = "sha256:86576c2e7e691b8b75f4cabec430f7405edef411b5d191e847c91307935b1b38"},
-    {file = "types_protobuf-4.25.0.20240410-py3-none-any.whl", hash = "sha256:335b2e8cf9f39c233dbf0f977a2a4fbc2c0bac720225c544cc1412a67ab1e1d3"},
+    {file = "types-protobuf-4.25.0.20240417.tar.gz", hash = "sha256:c34eff17b9b3a0adb6830622f0f302484e4c089f533a46e3f147568313544352"},
+    {file = "types_protobuf-4.25.0.20240417-py3-none-any.whl", hash = "sha256:e9b613227c2127e3d4881d75d93c93b4d6fd97b5f6a099a0b654a05351c8685d"},
 ]
 
 [[package]]
@@ -3046,4 +3046,4 @@ fastembed = ["fastembed"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8"
-content-hash = "c8fe3eb19be1471d9663662acd143e1f12830ccba75b03217d55c7ade4b356be"
+content-hash = "d9f322012dac6de2c4f537befddade3c059b8f2dcd9420ff742450739da4dc03"
