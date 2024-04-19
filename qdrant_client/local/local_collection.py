@@ -76,31 +76,12 @@ else:
         return ENCODERS_BY_TYPE[type(x)](x)
 
 
-def convert_nan_inf_to_null(obj: Any) -> Any:
-    if isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
-        return None
-
-    if isinstance(obj, dict):
-        return {k: convert_nan_inf_to_null(v) for k, v in obj.items()}
-
-    if isinstance(obj, str) or isinstance(obj, bytes) or isinstance(obj, range):
-        return obj
-
-    # pydantic converts iterables to lists
-    if isinstance(obj, Iterable):
-        return [convert_nan_inf_to_null(v) for v in obj]
-
-    return obj
-
-
 def to_jsonable_python(x: Any) -> Any:
-    # breaks congruence with remote if pydantic<2.7, since it does not convert nan/inf to null
-    x = convert_nan_inf_to_null(x)
     try:
-        json.dumps(x, allow_nan=False)
+        json.dumps(x, allow_nan=True)
         return x
     except Exception:
-        return json.loads(json.dumps(x, allow_nan=False, default=_to_jsonable_python))
+        return json.loads(json.dumps(x, allow_nan=True, default=_to_jsonable_python))
 
 
 class LocalCollection:
