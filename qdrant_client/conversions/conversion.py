@@ -382,8 +382,8 @@ class GrpcToRest:
             return rest.CollectionStatus.RED
         elif model == grpc.CollectionStatus.Grey:
             return rest.CollectionStatus.GREY
-        else:
-            raise ValueError(f"invalid CollectionStatus model: {model}")  # pragma: no cover
+
+        raise ValueError(f"invalid CollectionStatus model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_update_result(cls, model: grpc.UpdateResult) -> rest.UpdateResult:
