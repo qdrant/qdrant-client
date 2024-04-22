@@ -163,6 +163,7 @@ vector_param_with_hnsw = grpc.VectorParams(
         ef_construct=1000,
     ),
     on_disk=True,
+    datatype=grpc.Datatype.Float32,
 )
 
 product_quantizations = [
@@ -190,6 +191,7 @@ vector_param_with_quant = grpc.VectorParams(
     size=100,
     distance=grpc.Distance.Cosine,
     quantization_config=grpc.QuantizationConfig(scalar=scalar_quantization),
+    datatype=grpc.Datatype.Uint8,
 )
 
 single_vector_config = grpc.VectorsConfig(params=vector_param)
@@ -302,6 +304,7 @@ rename_alias = grpc.RenameAlias(old_alias_name="col2", new_alias_name="col3")
 collection_status = grpc.CollectionStatus.Yellow
 collection_status_green = grpc.CollectionStatus.Green
 collection_status_error = grpc.CollectionStatus.Red
+collection_status_grey = grpc.CollectionStatus.Grey
 
 optimizer_status = grpc.OptimizerStatus(ok=True)
 optimizer_status_error = grpc.OptimizerStatus(ok=False, error="Error!")
@@ -357,6 +360,16 @@ payload_schema_text_multilingual = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
     params=grpc.PayloadIndexParams(text_index_params=text_index_params_4),
     points=0,
+)
+
+collection_info_grey = grpc.CollectionInfo(
+    status=collection_status_grey,
+    optimizer_status=optimizer_status_error,
+    # vectors_count=100000,
+    points_count=100000,
+    segments_count=6,
+    config=collection_config,
+    payload_schema={},
 )
 
 collection_info_ok = grpc.CollectionInfo(
@@ -888,7 +901,12 @@ fixtures = {
     "ValuesCount": [values_count],
     "Filter": [filter_nested, filter_],
     "OptimizersConfigDiff": [optimizer_config, optimizer_config_half],
-    "CollectionInfo": [collection_info, collection_info_ok, collection_info_red],
+    "CollectionInfo": [
+        collection_info,
+        collection_info_ok,
+        collection_info_red,
+        collection_info_grey,
+    ],
     "FieldCondition": [
         field_condition_match,
         field_condition_range,
