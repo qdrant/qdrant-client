@@ -29,6 +29,9 @@ portalocker = "^2.7.0"
 fastembed = [
     { version = "0.2.6", optional = true, python = "<3.13" }
 ]
+onnxruntime-gpu = [
+    { version = "^1.17.0", optional = true, python = "<3.13" }
+]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1"
@@ -58,6 +61,7 @@ types-protobuf = "^4.21.0.5"
 
 [tool.poetry.extras]
 fastembed = ["fastembed"]
+fastembed-gpu = ["fastembed", "onnxruntime-gpu"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
