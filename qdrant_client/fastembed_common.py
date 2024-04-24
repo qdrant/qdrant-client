@@ -10,5 +10,6 @@ class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
     embedding: Optional[List[float]]
     sparse_embedding: Optional[SparseVector] = Field(default=None)
     metadata: Dict[str, Any]
-    document: str
+    document: Optional[str] = None
+    path: Optional[str] = None
     score: float

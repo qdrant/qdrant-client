@@ -1,6 +1,7 @@
 import uuid
 import warnings
 from itertools import tee
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from qdrant_client.client_base import QdrantBase
@@ -10,14 +11,15 @@ from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 
 try:
-    from fastembed import SparseTextEmbedding, TextEmbedding
+    from fastembed import ImageEmbedding, SparseTextEmbedding, TextEmbedding
     from fastembed.common import OnnxProvider
 except ImportError:
     TextEmbedding = None
+    ImageEmbedding = None
     SparseTextEmbedding = None
     OnnxProvider = None
 
-SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+SUPPORTED_TEXT_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     {
         model["model"]: (model["dim"], models.Distance.COSINE)
         for model in TextEmbedding.list_supported_models()
@@ -25,6 +27,20 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     if TextEmbedding
     else {}
 )
+
+SUPPORTED_IMAGE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+    {
+        model["model"]: (model["dim"], models.Distance.COSINE)
+        for model in ImageEmbedding.list_supported_models()
+    }
+    if TextEmbedding
+    else {}
+)
+
+SUPPORTED_EMBEDDING_MODELS = {
+    **SUPPORTED_TEXT_EMBEDDING_MODELS,
+    **SUPPORTED_IMAGE_EMBEDDING_MODELS,
+}
 
 SUPPORTED_SPARSE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     {model["model"]: model for model in SparseTextEmbedding.list_supported_models()}
@@ -36,13 +52,14 @@ SUPPORTED_SPARSE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
 
-    embedding_models: Dict[str, "TextEmbedding"] = {}
+    embedding_models: Dict[str, Union["ImageEmbedding", "TextEmbedding"]] = {}
     sparse_embedding_models: Dict[str, "SparseTextEmbedding"] = {}
 
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
+        self._image_embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
@@ -63,12 +80,49 @@ class QdrantFastembedMixin(QdrantBase):
         return self._embedding_model_name
 
     @property
+    def image_embedding_model_name(self) -> str:
+        return self._image_embedding_model_name
+
+    @property
     def sparse_embedding_model_name(self) -> Optional[str]:
         return self._sparse_embedding_model_name
 
+    def _set_model(
+        self,
+        embedding_model_name: Optional[str],
+        max_length: Optional[int] = None,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
+        image: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        if max_length is not None:
+            warnings.warn(
+                "max_length parameter is deprecated and will be removed in the future. "
+                "It's not used by fastembed models.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        if embedding_model_name is not None:
+            self._get_or_init_model(
+                model_name=embedding_model_name,
+                cache_dir=cache_dir,
+                threads=threads,
+                providers=providers,
+                image=image,
+                **kwargs,
+            )
+
+        if not image:
+            self._embedding_model_name = embedding_model_name
+        else:
+            self._image_embedding_model_name = embedding_model_name
+
     def set_model(
         self,
-        embedding_model_name: str,
+        embedding_model_name: Optional[str],
         max_length: Optional[int] = None,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
@@ -76,9 +130,9 @@ class QdrantFastembedMixin(QdrantBase):
         **kwargs: Any,
     ) -> None:
         """
-        Set embedding model to use for encoding documents and queries.
+        Set text embedding model to use for encoding documents and queries.
         Args:
-            embedding_model_name: One of the supported embedding models. See `SUPPORTED_EMBEDDING_MODELS` for details.
+            embedding_model_name: One of the supported embedding models. See `SUPPORTED_TEXT_EMBEDDING_MODELS` for details.
             max_length (int, optional): Deprecated. Defaults to None.
             cache_dir (str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
@@ -94,23 +148,50 @@ class QdrantFastembedMixin(QdrantBase):
         Returns:
             None
         """
-
-        if max_length is not None:
-            warnings.warn(
-                "max_length parameter is deprecated and will be removed in the future. "
-                "It's not used by fastembed models.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
-        self._get_or_init_model(
-            model_name=embedding_model_name,
+        self._set_model(
+            embedding_model_name=embedding_model_name,
+            max_length=max_length,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
+            image=False,
             **kwargs,
         )
-        self._embedding_model_name = embedding_model_name
+
+    def set_image_model(
+        self,
+        embedding_model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Set image embedding model to use for encoding documents and queries.
+        Args:
+            embedding_model_name: One of the supported embedding models. See `SUPPORTED_IMAGE_EMBEDDING_MODELS` for details.
+            cache_dir (str, optional): The path to the cache directory.
+                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                                       Defaults to `fastembed_cache` in the system's temp directory.
+            threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            providers: The list of onnx providers (with or without options) to use. Defaults to None.
+                Example configuration:
+                https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#configuration-options
+        Raises:
+            ValueError: If embedding model is not supported.
+            ImportError: If fastembed is not installed.
+
+        Returns:
+            None
+        """
+        self._set_model(
+            embedding_model_name=embedding_model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            providers=providers,
+            image=True,
+            **kwargs,
+        )
 
     def set_sparse_model(
         self,
@@ -176,8 +257,9 @@ class QdrantFastembedMixin(QdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
+        image: bool = False,
         **kwargs: Any,
-    ) -> "TextEmbedding":
+    ) -> Union["ImageEmbedding", "TextEmbedding"]:
         if model_name in cls.embedding_models:
             return cls.embedding_models[model_name]
 
@@ -188,13 +270,22 @@ class QdrantFastembedMixin(QdrantBase):
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
 
-        cls.embedding_models[model_name] = TextEmbedding(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            **kwargs,
-        )
+        if not image:
+            cls.embedding_models[model_name] = TextEmbedding(
+                model_name=model_name,
+                cache_dir=cache_dir,
+                threads=threads,
+                providers=providers,
+                **kwargs,
+            )
+        else:
+            cls.embedding_models[model_name] = ImageEmbedding(
+                model_name=model_name,
+                cache_dir=cache_dir,
+                threads=threads,
+                providers=providers,
+                **kwargs,
+            )
         return cls.embedding_models[model_name]
 
     @classmethod
@@ -253,6 +344,20 @@ class QdrantFastembedMixin(QdrantBase):
         for vector, doc in zip(vectors_iter, documents_b):
             yield doc, vector.tolist()
 
+    def _embed_images(
+        self,
+        images: Iterable[Union[str, Path]],
+        embedding_model_name: str,
+        batch_size: int = 8,
+        parallel: Optional[int] = None,
+    ) -> Iterable[Tuple[str, List[float]]]:
+        embedding_model = self._get_or_init_model(model_name=embedding_model_name, image=True)
+        images_a, images_b = tee(images, 2)
+        vectors_iter = embedding_model.embed(images_a, batch_size=batch_size, parallel=parallel)
+
+        for vector, path in zip(vectors_iter, images_b):
+            yield path, vector.tolist()
+
     def _sparse_embed_documents(
         self,
         documents: Iterable[str],
@@ -272,14 +377,27 @@ class QdrantFastembedMixin(QdrantBase):
                 values=sparse_vector.values.tolist(),
             )
 
-    def get_vector_field_name(self) -> str:
+    def get_vector_field_name(self) -> Optional[str]:
         """
-        Returns name of the vector field in qdrant collection, used by current fastembed model.
+        Returns name of the text vector field in qdrant collection, used by current fastembed model.
         Returns:
             Name of the vector field.
         """
-        model_name = self.embedding_model_name.split("/")[-1].lower()
-        return f"fast-{model_name}"
+        if self.embedding_model_name is None:
+            model_name = self.embedding_model_name.split("/")[-1].lower()
+            return f"fast-{model_name}"
+        return None
+
+    def get_image_vector_field_name(self) -> Optional[str]:
+        """
+        Returns name of the image vector field in qdrant collection, used by current fastembed model.
+        Returns:
+            Name of the vector field.
+        """
+        if self.image_embedding_model_name is None:
+            model_name = self.image_embedding_model_name.split("/")[-1].lower()
+            return f"fast-image-{model_name}"
+        return None
 
     def get_sparse_vector_field_name(self) -> Optional[str]:
         """
@@ -321,6 +439,7 @@ class QdrantFastembedMixin(QdrantBase):
                     sparse_embedding=sparse_embedding,
                     metadata=scored_point.payload,
                     document=scored_point.payload.get("document", ""),
+                    path=scored_point.payload.get("path", ""),
                     score=scored_point.score,
                 )
             )
@@ -330,7 +449,8 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         ids: Optional[Iterable[models.ExtendedPointId]],
         metadata: Optional[Iterable[Dict[str, Any]]],
-        encoded_docs: Iterable[Tuple[str, List[float]]],
+        encoded_docs: Optional[Iterable[Tuple[str, List[float]]]],
+        encoded_images: Optional[Iterable[Tuple[str, List[float]]]],
         ids_accumulator: list,
         sparse_vectors: Optional[Iterable[types.SparseVector]] = None,
     ) -> Iterable[models.PointStruct]:
@@ -340,44 +460,59 @@ class QdrantFastembedMixin(QdrantBase):
         if metadata is None:
             metadata = iter(lambda: {}, None)
 
+        if encoded_docs is None:
+            encoded_docs = iter(lambda: (None, None), True)
+
+        if encoded_images is None:
+            encoded_images = iter(lambda: (None, None), True)
+
         if sparse_vectors is None:
             sparse_vectors = iter(lambda: None, True)
 
         vector_name = self.get_vector_field_name()
+        image_vector_name = self.get_image_vector_field_name()
         sparse_vector_name = self.get_sparse_vector_field_name()
 
-        for idx, meta, (doc, vector), sparse_vector in zip(
-            ids, metadata, encoded_docs, sparse_vectors
+        for idx, meta, (doc, vector), (path, image_vector), sparse_vector in zip(
+            ids, metadata, encoded_docs, encoded_images, sparse_vectors
         ):
             ids_accumulator.append(idx)
-            payload = {"document": doc, **meta}
-            point_vector: Dict[str, models.Vector] = {vector_name: vector}
+            point_vector: Dict[str, models.Vector] = {}
+            if doc is not None:
+                meta["document"] = doc
+                point_vector[vector_name] = vector
+            if path is not None:
+                meta["path"] = path
+                point_vector[image_vector_name] = image_vector
             if sparse_vector_name is not None and sparse_vector is not None:
                 point_vector[sparse_vector_name] = sparse_vector
-            yield models.PointStruct(id=idx, payload=payload, vector=point_vector)
+            yield models.PointStruct(id=idx, payload=meta, vector=point_vector)
 
     def _validate_collection_info(self, collection_info: models.CollectionInfo) -> None:
-        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
-        vector_field_name = self.get_vector_field_name()
+        vector_fields = [
+            vector_field_name
+            for vector_field_name in [
+                self.get_vector_field_name(),
+                self.get_image_vector_field_name(),
+            ]
+            if vector_field_name is not None
+        ]
+        assert all(
+            field in collection_info.config.params.vectors for field in vector_fields
+        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}, expected {vector_fields}"
 
-        # Check if collection has compatible vector params
-        assert isinstance(
-            collection_info.config.params.vectors, dict
-        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
+        for vector_field_name in vector_fields:
+            vector_params = collection_info.config.params.vectors[vector_field_name]
+            embeddings_size, distance = self._get_model_params(
+                model_name=self.embedding_model_name
+            )
+            assert (
+                embeddings_size == vector_params.size
+            ), f"Embedding size mismatch: {embeddings_size} != {vector_params.size}"
 
-        assert (
-            vector_field_name in collection_info.config.params.vectors
-        ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}, expected {vector_field_name}"
-
-        vector_params = collection_info.config.params.vectors[vector_field_name]
-
-        assert (
-            embeddings_size == vector_params.size
-        ), f"Embedding size mismatch: {embeddings_size} != {vector_params.size}"
-
-        assert (
-            distance == vector_params.distance
-        ), f"Distance mismatch: {distance} != {vector_params.distance}"
+            assert (
+                distance == vector_params.distance
+            ), f"Distance mismatch: {distance} != {vector_params.distance}"
 
         sparse_vector_field_name = self.get_sparse_vector_field_name()
         if sparse_vector_field_name is not None:
@@ -402,17 +537,26 @@ class QdrantFastembedMixin(QdrantBase):
         Returns:
             Configuration for `vectors_config` argument in `create_collection` method.
         """
-        vector_field_name = self.get_vector_field_name()
-        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
-        return {
-            vector_field_name: models.VectorParams(
+        params = {}
+        for vector_field_name in [
+            self.get_vector_field_name(),
+            self.get_image_vector_field_name(),
+        ]:
+            if vector_field_name is None:
+                continue
+
+            embeddings_size, distance = self._get_model_params(
+                model_name=self.embedding_model_name
+            )
+            params[vector_field_name] = models.VectorParams(
                 size=embeddings_size,
                 distance=distance,
                 on_disk=on_disk,
                 quantization_config=quantization_config,
                 hnsw_config=hnsw_config,
             )
-        }
+
+        return params
 
     def get_fastembed_sparse_vector_params(
         self,
@@ -441,11 +585,12 @@ class QdrantFastembedMixin(QdrantBase):
     def add(
         self,
         collection_name: str,
-        documents: Iterable[str],
+        documents: Optional[Iterable[str]] = None,
         metadata: Optional[Iterable[Dict[str, Any]]] = None,
         ids: Optional[Iterable[models.ExtendedPointId]] = None,
         batch_size: int = 32,
         parallel: Optional[int] = None,
+        images: Optional[Iterable[Union[str, Path]]] = None,
         **kwargs: Any,
     ) -> List[Union[str, int]]:
         """
@@ -468,26 +613,47 @@ class QdrantFastembedMixin(QdrantBase):
                 If not specified, UUIDs will be generated. Defaults to None.
             batch_size (int, optional):
                 How many documents to embed and upload in single request. Defaults to 32.
-            parallel (Optional[int], optional):
+            parallel (int, optional):
                 How many parallel workers to use for embedding. Defaults to None.
                 If number is specified, data-parallel process will be used.
+            images: (Iterable[Union[str, Path], optional): List of paths to images to embed and add to the collection.
 
         Raises:
             ImportError: If fastembed is not installed.
 
         Returns:
-            List of IDs of added documents. If no ids provided, UUIDs will be randomly generated on client side.
+            List of IDs of added items. If no ids provided, UUIDs will be randomly generated on client side.
 
         """
-
+        if self.sparse_embedding_model_name and not self._embedding_model_name:
+            raise ValueError(
+                "Sparse embedding models are set, but no dense embedding model is set. "
+                "Please set dense embedding model using `set_model` method."
+            )
         # check if we have fastembed installed
-        encoded_docs = self._embed_documents(
-            documents=documents,
-            embedding_model_name=self.embedding_model_name,
-            batch_size=batch_size,
-            embed_type="passage",
-            parallel=parallel,
-        )
+        encoded_docs = None
+        # embed if we are in the default text-only mode or if a model has been explicitly set
+        if (
+            documents is not None
+            and self.image_embedding_model_name is None
+            or self._embedding_model_name is not None
+        ):
+            encoded_docs = self._embed_documents(
+                documents=documents,
+                embedding_model_name=self.embedding_model_name,
+                batch_size=batch_size,
+                embed_type="passage",
+                parallel=parallel,
+            )
+
+        encoded_images = None
+        if images is not None and self.image_embedding_model_name:
+            encoded_images = self._embed_images(
+                images=images,
+                embedding_model_name=self.image_embedding_model_name,
+                batch_size=batch_size,
+                parallel=parallel,
+            )
 
         encoded_sparse_docs = None
         if self.sparse_embedding_model_name is not None:
@@ -517,6 +683,7 @@ class QdrantFastembedMixin(QdrantBase):
             ids=ids,
             metadata=metadata,
             encoded_docs=encoded_docs,
+            encoded_images=encoded_images,
             ids_accumulator=inserted_ids,
             sparse_vectors=encoded_sparse_docs,
         )
@@ -535,7 +702,8 @@ class QdrantFastembedMixin(QdrantBase):
     def query(
         self,
         collection_name: str,
-        query_text: str,
+        query_text: Optional[str] = None,
+        query_image: Optional[Union[str, Path]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
@@ -550,21 +718,43 @@ class QdrantFastembedMixin(QdrantBase):
             query_text:
                 Text to search for. This text will be embedded using the specified embedding model.
                 And then used as a query vector.
+            query_image:
+                Path to the image to search for. This image will be embedded using the specified image embedding model.
+                And then used as a query vector.
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
             limit: How many results return
             **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
 
+        Raises:
+            ValueError: If neither query_text nor query_image is provided.
+
         Returns:
             List[types.ScoredPoint]: List of scored points.
 
         """
-        embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        embeddings = list(embedding_model_inst.query_embed(query=query_text))
+        if self.sparse_embedding_model_name and not self._embedding_model_name:
+            raise ValueError(
+                "Sparse embedding model is set, but dense embedding model is not set. "
+                "Sparse embeddings are currently supported only within hybrid search"
+            )
+
+        if query_text is None is not query_image is None:
+            raise ValueError("Either query_text or query_image should be provided")
+
+        elif query_text is not None:
+            embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+            embeddings = list(embedding_model_inst.query_embed(query=query_text))
+        else:
+            embedding_model_inst = self._get_or_init_model(
+                model_name=self.image_embedding_model_name, image=True
+            )
+            embeddings = list(embedding_model_inst.embed([query_image]))
+
         query_vector = embeddings[0].tolist()
 
-        if self.sparse_embedding_model_name is None:
+        if self.sparse_embedding_model_name is None or query_text is None:
             return self._scored_points_to_query_responses(
                 self.search(
                     collection_name=collection_name,
@@ -618,7 +808,8 @@ class QdrantFastembedMixin(QdrantBase):
     def query_batch(
         self,
         collection_name: str,
-        query_texts: List[str],
+        query_texts: Optional[List[str]] = None,
+        query_images: Optional[List[Union[str, Path]]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
@@ -632,6 +823,9 @@ class QdrantFastembedMixin(QdrantBase):
             query_texts:
                 A list of texts to search for. Each text will be embedded using the specified embedding model.
                 And then used as a query vector for a separate search requests.
+            query_images:
+                A list of paths to the images to search for. Each image will be embedded using the specified image
+                embedding model. And then used as a query vector for a separate search requests.
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
@@ -643,6 +837,40 @@ class QdrantFastembedMixin(QdrantBase):
             List[List[QueryResponse]]: List of lists of responses for each query text.
 
         """
+
+        if self.sparse_embedding_model_name and not self._embedding_model_name:
+            raise ValueError(
+                "Sparse embedding models are set, but no dense embedding model is set. "
+                "Please set dense embedding model using `set_model` method."
+            )
+        if query_texts is None and query_images is None:
+            raise ValueError("Either query_texts or query_images should be provided")
+
+        text_responses = self._query_text_batch(
+            collection_name=collection_name,
+            query_texts=query_texts,
+            query_filter=query_filter,
+            limit=limit,
+            **kwargs,
+        )
+        image_responses = self._query_image_batch(
+            collection_name=collection_name,
+            query_images=query_images,
+            query_filter=query_filter,
+            limit=limit,
+            **kwargs,
+        )
+
+        return [*text_responses, *image_responses]
+
+    def _query_text_batch(
+        self,
+        collection_name: str,
+        query_texts: List[str],
+        query_filter: Optional[models.Filter] = None,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> List[List[QueryResponse]]:
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
         query_vectors = list(embedding_model_inst.query_embed(query=query_texts))
         requests = []
@@ -700,5 +928,38 @@ class QdrantFastembedMixin(QdrantBase):
             reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
             for dense_response, sparse_response in zip(dense_responses, sparse_responses)
         ]
+
+        return [self._scored_points_to_query_responses(response) for response in responses]
+
+    def _query_image_batch(
+        self,
+        collection_name: str,
+        query_images: List[Union[str, Path]],
+        query_filter: Optional[models.Filter] = None,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> List[List[QueryResponse]]:
+        embedding_model_inst = self._get_or_init_model(
+            model_name=self.image_embedding_model_name, image=True
+        )
+        query_vectors = list(embedding_model_inst.embed(images=query_images))
+        requests = []
+        for vector in query_vectors:
+            request = models.SearchRequest(
+                vector=models.NamedVector(
+                    name=self.get_image_vector_field_name(), vector=vector.tolist()
+                ),
+                filter=query_filter,
+                limit=limit,
+                with_payload=True,
+                **kwargs,
+            )
+
+            requests.append(request)
+
+        responses = self.search_batch(
+            collection_name=collection_name,
+            requests=requests,
+        )
 
         return [self._scored_points_to_query_responses(response) for response in responses]
