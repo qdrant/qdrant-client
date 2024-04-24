@@ -17,7 +17,6 @@ except ImportError:
     SparseTextEmbedding = None
     OnnxProvider = None
 
-
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     {
         model["model"]: (model["dim"], models.Distance.COSINE)
