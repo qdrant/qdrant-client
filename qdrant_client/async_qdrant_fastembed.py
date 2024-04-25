@@ -82,7 +82,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return self._embedding_model_name
 
     @property
-    async def image_embedding_model_name(self) -> str:
+    def image_embedding_model_name(self) -> str:
         return self._image_embedding_model_name
 
     @property
@@ -157,7 +157,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             **kwargs,
         )
 
-    async def set_image_model(
+    def set_image_model(
         self,
         embedding_model_name: str,
         cache_dir: Optional[str] = None,
@@ -371,7 +371,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             return f"fast-{model_name}"
         return None
 
-    async def get_image_vector_field_name(self) -> Optional[str]:
+    def get_image_vector_field_name(self) -> Optional[str]:
         """
         Returns name of the image vector field in qdrant collection, used by current fastembed model.
         Returns:
@@ -800,7 +800,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         return [*text_responses, *image_responses]
 
-    def _query_text_batch(
+    async def _query_text_batch(
         self,
         collection_name: str,
         query_texts: List[str],
@@ -854,7 +854,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         ]
         return [self._scored_points_to_query_responses(response) for response in responses]
 
-    def _query_image_batch(
+    async def _query_image_batch(
         self,
         collection_name: str,
         query_images: List[Union[str, Path]],
@@ -862,7 +862,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         limit: int = 10,
         **kwargs: Any,
     ) -> List[List[QueryResponse]]:
-        embedding_model_inst = self._get_or_init_model(
+        embedding_model_inst: ImageEmbedding = self._get_or_init_model(
             model_name=self.image_embedding_model_name, image=True
         )
         query_vectors = list(embedding_model_inst.embed(images=query_images))
