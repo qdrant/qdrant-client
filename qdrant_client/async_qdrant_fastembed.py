@@ -82,7 +82,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return self._embedding_model_name
 
     @property
-    def image_embedding_model_name(self) -> str:
+    def image_embedding_model_name(self) -> Optional[str]:
         return self._image_embedding_model_name
 
     @property
@@ -337,7 +337,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         embedding_model_name: str,
         batch_size: int = 8,
         parallel: Optional[int] = None,
-    ) -> Iterable[Tuple[str, List[float]]]:
+    ) -> Iterable[Tuple[Union[str, Path], List[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name, image=True)
         (images_a, images_b) = tee(images, 2)
         vectors_iter = embedding_model.embed(images_a, batch_size=batch_size, parallel=parallel)
@@ -377,7 +377,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Returns:
             Name of the vector field.
         """
-        if self.image_embedding_model_name is None:
+        if self.image_embedding_model_name is not None:
             model_name = self.image_embedding_model_name.split("/")[-1].lower()
             return f"fast-image-{model_name}"
         return None
@@ -430,7 +430,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         ids: Optional[Iterable[models.ExtendedPointId]],
         metadata: Optional[Iterable[Dict[str, Any]]],
         encoded_docs: Optional[Iterable[Tuple[str, List[float]]]],
-        encoded_images: Optional[Iterable[Tuple[str, List[float]]]],
+        encoded_images: Optional[Iterable[Tuple[Union[str, Path], List[float]]]],
         ids_accumulator: list,
         sparse_vectors: Optional[Iterable[types.SparseVector]] = None,
     ) -> Iterable[models.PointStruct]:
@@ -452,10 +452,12 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         ):
             ids_accumulator.append(idx)
             point_vector: Dict[str, models.Vector] = {}
-            if doc is not None:
+            if doc is not None and vector is not None:
+                assert vector_name is not None
                 meta["document"] = doc
                 point_vector[vector_name] = vector
-            if path is not None:
+            if path is not None and image_vector is not None:
+                assert image_vector_name is not None
                 meta["path"] = path
                 point_vector[image_vector_name] = image_vector
             if sparse_vector_name is not None and sparse_vector is not None:
@@ -596,10 +598,8 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 "Sparse embedding models are set, but no dense embedding model is set. Please set dense embedding model using `set_model` method."
             )
         encoded_docs = None
-        if (
-            documents is not None
-            and self.image_embedding_model_name is None
-            or self._embedding_model_name is not None
+        if documents is not None and (
+            self.image_embedding_model_name is None or self._embedding_model_name is not None
         ):
             encoded_docs = self._embed_documents(
                 documents=documents,
@@ -617,7 +617,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 parallel=parallel,
             )
         encoded_sparse_docs = None
-        if self.sparse_embedding_model_name is not None:
+        if documents is not None and self.sparse_embedding_model_name is not None:
             encoded_sparse_docs = self._sparse_embed_documents(
                 documents=documents,
                 embedding_model_name=self.sparse_embedding_model_name,
@@ -705,6 +705,10 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         else:
             if isinstance(query_image, dict):
                 (vector_name, query_image) = next(iter(query_image.items()))
+            if self.image_embedding_model_name is None:
+                raise ValueError(
+                    "Image query is provided, but image embedding model is not set. Please set image embedding model using `set_image_model` method."
+                )
             embedding_model_inst = self._get_or_init_model(
                 model_name=self.image_embedding_model_name, image=True
             )
@@ -792,21 +796,28 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
         if query_texts is None and query_images is None:
             raise ValueError("Either query_texts or query_images should be provided")
-        text_responses = self._query_text_batch(
-            collection_name=collection_name,
-            query_texts=query_texts,
-            query_filter=query_filter,
-            limit=limit,
-            **kwargs,
-        )
-        image_responses = self._query_image_batch(
-            collection_name=collection_name,
-            query_images=query_images,
-            query_filter=query_filter,
-            limit=limit,
-            **kwargs,
-        )
-        return [*text_responses, *image_responses]
+        result = []
+        if query_texts is not None:
+            result.extend(
+                self._query_text_batch(
+                    collection_name=collection_name,
+                    query_texts=query_texts,
+                    query_filter=query_filter,
+                    limit=limit,
+                    **kwargs,
+                )
+            )
+        if query_images is not None:
+            result.extend(
+                self._query_image_batch(
+                    collection_name=collection_name,
+                    query_images=query_images,
+                    query_filter=query_filter,
+                    limit=limit,
+                    **kwargs,
+                )
+            )
+        return result
 
     async def _query_text_batch(
         self,
@@ -819,6 +830,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         embedding_model_inst: TextEmbedding = self._get_or_init_model(
             model_name=self.embedding_model_name
         )
+        vector_names: Union[Iterable, List]
         if isinstance(query_texts, dict):
             vector_names = list(query_texts.keys())
             query_texts = list(query_texts.values())
@@ -877,9 +889,14 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         limit: int = 10,
         **kwargs: Any,
     ) -> List[List[QueryResponse]]:
+        if self.image_embedding_model_name is None:
+            raise ValueError(
+                "Image query is provided, but image embedding model is not set. Please set image embedding model using `set_image_model` method."
+            )
         embedding_model_inst: ImageEmbedding = self._get_or_init_model(
             model_name=self.image_embedding_model_name, image=True
         )
+        vector_names: Union[Iterable, List]
         if isinstance(query_images, dict):
             vector_names = list(query_images.keys())
             query_images = list(query_images.values())
