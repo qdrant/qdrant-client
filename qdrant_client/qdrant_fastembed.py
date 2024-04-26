@@ -702,8 +702,8 @@ class QdrantFastembedMixin(QdrantBase):
     def query(
         self,
         collection_name: str,
-        query_text: Optional[str] = None,
-        query_image: Optional[Union[str, Path]] = None,
+        query_text: Optional[Union[str, Dict[str, str]]] = None,
+        query_image: Optional[Union[Union[str, Path], Dict[str, Union[str, Path]]]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
@@ -717,10 +717,12 @@ class QdrantFastembedMixin(QdrantBase):
             collection_name: Collection to search in
             query_text:
                 Text to search for. This text will be embedded using the specified embedding model.
-                And then used as a query vector.
+                And then used as a query vector. Can be set as a dict, where a key is a vector field name to search
+                over. Useful in a multimodal setup.
             query_image:
                 Path to the image to search for. This image will be embedded using the specified image embedding model.
-                And then used as a query vector.
+                And then used as a query vector. Can be set as a dict, where a key is a vector field name to search
+                over. Useful in a multimodal setup
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
@@ -743,24 +745,28 @@ class QdrantFastembedMixin(QdrantBase):
         if query_text is None is not query_image is None:
             raise ValueError("Either query_text or query_image should be provided")
 
-        elif query_text is not None:
+        vector_name = None
+        if query_text is not None:
+            if isinstance(query_text, dict):
+                vector_name, query_text = next(iter(query_text.items()))
             embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
             embeddings = list(embedding_model_inst.query_embed(query=query_text))
         else:
+            if isinstance(query_image, dict):
+                vector_name, query_image = next(iter(query_image.items()))
             embedding_model_inst = self._get_or_init_model(
                 model_name=self.image_embedding_model_name, image=True
             )
             embeddings = list(embedding_model_inst.embed([query_image]))
 
         query_vector = embeddings[0].tolist()
+        vector_name = vector_name if vector_name else self.get_vector_field_name()
 
         if self.sparse_embedding_model_name is None or query_text is None:
             return self._scored_points_to_query_responses(
                 self.search(
                     collection_name=collection_name,
-                    query_vector=models.NamedVector(
-                        name=self.get_vector_field_name(), vector=query_vector
-                    ),
+                    query_vector=models.NamedVector(name=vector_name, vector=query_vector),
                     query_filter=query_filter,
                     limit=limit,
                     with_payload=True,
@@ -779,7 +785,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         dense_request = models.SearchRequest(
             vector=models.NamedVector(
-                name=self.get_vector_field_name(),
+                name=vector_name,
                 vector=query_vector,
             ),
             filter=query_filter,
@@ -808,8 +814,8 @@ class QdrantFastembedMixin(QdrantBase):
     def query_batch(
         self,
         collection_name: str,
-        query_texts: Optional[List[str]] = None,
-        query_images: Optional[List[Union[str, Path]]] = None,
+        query_texts: Optional[Union[List[str], Dict[str, str]]] = None,
+        query_images: Optional[Union[List[Union[str, Path]], Dict[str, Union[str, Path]]]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
@@ -821,10 +827,12 @@ class QdrantFastembedMixin(QdrantBase):
         Args:
             collection_name: Collection to search in
             query_texts:
-                A list of texts to search for. Each text will be embedded using the specified embedding model.
+                A list of texts to search for. Might be specified as a dict with vector names as keys.
+                Each text will be embedded using the specified embedding model.
                 And then used as a query vector for a separate search requests.
             query_images:
-                A list of paths to the images to search for. Each image will be embedded using the specified image
+                A list of paths to the images to search for. Might be specified as a dict with vector names as keys.
+                Each image will be embedded using the specified image
                 embedding model. And then used as a query vector for a separate search requests.
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
@@ -866,15 +874,24 @@ class QdrantFastembedMixin(QdrantBase):
     def _query_text_batch(
         self,
         collection_name: str,
-        query_texts: List[str],
+        query_texts: Union[List[str], Dict[str, str]],
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
     ) -> List[List[QueryResponse]]:
-        embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+        embedding_model_inst: TextEmbedding = self._get_or_init_model(
+            model_name=self.embedding_model_name
+        )
+        if isinstance(query_texts, dict):
+            vector_names = list(query_texts.keys())
+            query_texts = list(query_texts.values())
+        else:
+            default_vector_name = self.get_vector_field_name()
+            vector_names = iter(lambda: default_vector_name, True)
+
         query_vectors = list(embedding_model_inst.query_embed(query=query_texts))
         requests = []
-        for vector in query_vectors:
+        for vector_name, vector in zip(vector_names, query_vectors):
             request = models.SearchRequest(
                 vector=models.NamedVector(
                     name=self.get_vector_field_name(), vector=vector.tolist()
@@ -903,10 +920,11 @@ class QdrantFastembedMixin(QdrantBase):
             )
             for sparse_vector in sparse_embedding_model_inst.embed(documents=query_texts)
         ]
+        sparse_vector_name = self.get_sparse_vector_field_name()
         for sparse_vector in sparse_query_vectors:
             request = models.SearchRequest(
                 vector=models.NamedSparseVector(
-                    name=self.get_sparse_vector_field_name(),
+                    name=sparse_vector_name,
                     vector=sparse_vector,
                 ),
                 filter=query_filter,
@@ -934,21 +952,26 @@ class QdrantFastembedMixin(QdrantBase):
     def _query_image_batch(
         self,
         collection_name: str,
-        query_images: List[Union[str, Path]],
+        query_images: Union[List[Union[str, Path]], Dict[str, Union[str, Path]]],
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
     ) -> List[List[QueryResponse]]:
-        embedding_model_inst = self._get_or_init_model(
+        embedding_model_inst: ImageEmbedding = self._get_or_init_model(
             model_name=self.image_embedding_model_name, image=True
         )
+        if isinstance(query_images, dict):
+            vector_names = list(query_images.keys())
+            query_images = list(query_images.values())
+        else:
+            default_vector_name = self.get_vector_field_name()
+            vector_names = iter(lambda: default_vector_name, True)
+
         query_vectors = list(embedding_model_inst.embed(images=query_images))
         requests = []
-        for vector in query_vectors:
+        for vector_name, vector in zip(vector_names, query_vectors):
             request = models.SearchRequest(
-                vector=models.NamedVector(
-                    name=self.get_image_vector_field_name(), vector=vector.tolist()
-                ),
+                vector=models.NamedVector(name=vector_name, vector=vector.tolist()),
                 filter=query_filter,
                 limit=limit,
                 with_payload=True,
