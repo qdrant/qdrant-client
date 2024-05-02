@@ -64,9 +64,19 @@ def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> boo
         lat = values["lat"]
         lon = values["lon"]
 
+        # handle anti-meridian crossing case
+        if condition.top_left.lon > condition.bottom_right.lon:
+            longitude_condition = (
+                (condition.top_left.lon <= lon <= 180 or -180 <= lon <= condition.bottom_right.lon)
+            )
+        else:
+            longitude_condition = (condition.top_left.lon <= lon <= condition.bottom_right.lon)
+
+        latitude_condition = condition.top_left.lat >= lat >= condition.bottom_right.lat
+
         return (
-            condition.top_left.lat >= lat >= condition.bottom_right.lat
-            and condition.top_left.lon <= lon <= condition.bottom_right.lon
+            longitude_condition
+            and latitude_condition
         )
 
     return False
