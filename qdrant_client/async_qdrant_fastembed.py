@@ -22,9 +22,11 @@ from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 
 try:
     from fastembed import SparseTextEmbedding, TextEmbedding
+    from fastembed.common import OnnxProvider
 except ImportError:
     TextEmbedding = None
     SparseTextEmbedding = None
+    OnnxProvider = None
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     {
         model["model"]: (model["dim"], models.Distance.COSINE)
@@ -73,7 +75,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         max_length: Optional[int] = None,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -115,7 +117,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         embedding_model_name: Optional[str],
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
     ) -> None:
         """
         Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
@@ -168,7 +170,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "TextEmbedding":
         if model_name in cls.embedding_models:
@@ -193,7 +195,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
-        providers: Optional[Sequence[Union[str, Tuple[str, Dict[Any, Any]]]]] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "SparseTextEmbedding":
         if model_name in cls.sparse_embedding_models:
