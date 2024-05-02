@@ -47,7 +47,7 @@ class QdrantClient(QdrantFastembedMixin):
 
     Args:
         location:
-            If `:memory:` - use in-memory Qdrant instance.
+            If `":memory:"` - use in-memory Qdrant instance.
             If `str` - use it as a `url` parameter.
             If `None` - use default values for `host` and `port`.
         url: either host or str of "Optional[scheme], host, Optional[port], Optional[prefix]".
