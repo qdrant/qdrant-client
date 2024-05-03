@@ -107,6 +107,23 @@ search_result = client.query(
 print(search_result)
 ```
 
+FastEmbed can also utilise GPU for faster embeddings. To enable GPU support, install
+```bash
+pip install 'qdrant-client[fastembed-gpu]'
+```
+
+```python
+from qdrant_client import QdrantClient
+
+# Initialize the client
+client = QdrantClient(":memory:")  # or QdrantClient(path="path/to/db")
+client.set_model(client.DEFAULT_EMBEDDING_MODEL, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+```
+
+> Note: `fastembed-gpu` and `fastembed` are mutually exclusive. You can only install one of them.
+>
+> If you previously installed `fastembed`, you might need to start from a fresh environment to install `fastembed-gpu`.
+
 ## Connect to Qdrant server
 
 To connect to Qdrant server, simply specify host and port:

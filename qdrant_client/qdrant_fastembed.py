@@ -1,7 +1,7 @@
 import uuid
 import warnings
 from itertools import tee
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
@@ -10,11 +10,12 @@ from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 
 try:
-    from fastembed import TextEmbedding
-    from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
+    from fastembed import SparseTextEmbedding, TextEmbedding
+    from fastembed.common import OnnxProvider
 except ImportError:
     TextEmbedding = None
     SparseTextEmbedding = None
+    OnnxProvider = None
 
 
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
@@ -45,8 +46,7 @@ class QdrantFastembedMixin(QdrantBase):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
         try:
-            from fastembed import TextEmbedding  # noqa: F401
-            from fastembed.sparse.sparse_text_embedding import SparseTextEmbedding
+            from fastembed import SparseTextEmbedding, TextEmbedding  # noqa: F401
 
             self.__class__._FASTEMBED_INSTALLED = True
         except ImportError:
@@ -70,6 +70,7 @@ class QdrantFastembedMixin(QdrantBase):
         max_length: Optional[int] = None,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -81,6 +82,9 @@ class QdrantFastembedMixin(QdrantBase):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            providers: The list of onnx providers (with or without options) to use. Defaults to None.
+                Example configuration:
+                https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#configuration-options
         Raises:
             ValueError: If embedding model is not supported.
             ImportError: If fastembed is not installed.
@@ -101,6 +105,7 @@ class QdrantFastembedMixin(QdrantBase):
             model_name=embedding_model_name,
             cache_dir=cache_dir,
             threads=threads,
+            providers=providers,
             **kwargs,
         )
         self._embedding_model_name = embedding_model_name
@@ -110,6 +115,7 @@ class QdrantFastembedMixin(QdrantBase):
         embedding_model_name: Optional[str],
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
     ) -> None:
         """
         Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
@@ -120,6 +126,9 @@ class QdrantFastembedMixin(QdrantBase):
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
                                        Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
+            providers: The list of onnx providers (with or without options) to use. Defaults to None.
+                Example configuration:
+                https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#configuration-options
         Raises:
             ValueError: If embedding model is not supported.
             ImportError: If fastembed is not installed.
@@ -132,6 +141,7 @@ class QdrantFastembedMixin(QdrantBase):
                 model_name=embedding_model_name,
                 cache_dir=cache_dir,
                 threads=threads,
+                providers=providers,
             )
         self._sparse_embedding_model_name = embedding_model_name
 
@@ -163,6 +173,7 @@ class QdrantFastembedMixin(QdrantBase):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "TextEmbedding":
         if model_name in cls.embedding_models:
@@ -179,6 +190,7 @@ class QdrantFastembedMixin(QdrantBase):
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
+            providers=providers,
             **kwargs,
         )
         return cls.embedding_models[model_name]
@@ -189,6 +201,7 @@ class QdrantFastembedMixin(QdrantBase):
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "SparseTextEmbedding":
         if model_name in cls.sparse_embedding_models:
@@ -205,6 +218,7 @@ class QdrantFastembedMixin(QdrantBase):
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
+            providers=providers,
             **kwargs,
         )
         return cls.sparse_embedding_models[model_name]
