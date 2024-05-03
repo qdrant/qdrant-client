@@ -564,13 +564,13 @@ tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipyth
 
 [[package]]
 name = "fastembed"
-version = "0.2.6"
+version = "0.2.7"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 optional = true
 python-versions = "<3.13,>=3.8.0"
 files = [
-    {file = "fastembed-0.2.6-py3-none-any.whl", hash = "sha256:3e18633291722087abebccccd7fcdffafef643cb22d203370d7fad4fa83c10fb"},
-    {file = "fastembed-0.2.6.tar.gz", hash = "sha256:adaed5b46e19cc1bbe5f98f2b3ffecfc4d2a48d27512e28ff5bfe92a42649a66"},
+    {file = "fastembed-0.2.7-py3-none-any.whl", hash = "sha256:8f21e65e6d5d06bd8727488906c6c4eda8eb86d81be8879a54846dfe8a23c9d3"},
+    {file = "fastembed-0.2.7.tar.gz", hash = "sha256:f5537e3680694afcd3d806c19dd4514030fdc3144e7e9a9db0dfece771922503"},
 ]
 
 [package.dependencies]
@@ -583,7 +583,30 @@ numpy = [
 onnx = ">=1.15.0,<2.0.0"
 onnxruntime = ">=1.17.0,<2.0.0"
 requests = ">=2.31,<3.0"
-tokenizers = ">=0.15.1,<0.16.0"
+tokenizers = ">=0.15,<0.16"
+tqdm = ">=4.66,<5.0"
+
+[[package]]
+name = "fastembed-gpu"
+version = "0.2.7"
+description = "Fast, light, accurate library built for retrieval embedding generation"
+optional = true
+python-versions = "<3.13,>=3.8.0"
+files = [
+    {file = "fastembed_gpu-0.2.7-py3-none-any.whl", hash = "sha256:fdde2c0b78a837c38a09518299efc8c7e9a13d6a7cb21dd3072230b2a30593ed"},
+    {file = "fastembed_gpu-0.2.7.tar.gz", hash = "sha256:1fc33ce59cd6fd2816b348c0b4527e5218ff9c33c24b8efcf54f71accb7b055c"},
+]
+
+[package.dependencies]
+huggingface-hub = ">=0.20,<0.21"
+loguru = ">=0.7.2,<0.8.0"
+numpy = [
+    {version = ">=1.21", markers = "python_version < \"3.12\""},
+    {version = ">=1.26", markers = "python_version >= \"3.12\""},
+]
+onnxruntime-gpu = ">=1.17.0,<2.0.0"
+requests = ">=2.31,<3.0"
+tokenizers = ">=0.15,<0.16"
 tqdm = ">=4.66,<5.0"
 
 [[package]]
@@ -1693,6 +1716,33 @@ files = [
     {file = "onnxruntime-1.17.3-cp39-cp39-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cf6c37483782e4785019b56e26224a25e9b9a35b849d0169ce69189867a22bb1"},
     {file = "onnxruntime-1.17.3-cp39-cp39-win32.whl", hash = "sha256:351bf5a1140dcc43bfb8d3d1a230928ee61fcd54b0ea664c8e9a889a8e3aa515"},
     {file = "onnxruntime-1.17.3-cp39-cp39-win_amd64.whl", hash = "sha256:57a3de15778da8d6cc43fbf6cf038e1e746146300b5f0b1fbf01f6f795dc6440"},
+]
+
+[package.dependencies]
+coloredlogs = "*"
+flatbuffers = "*"
+numpy = ">=1.21.6"
+packaging = "*"
+protobuf = "*"
+sympy = "*"
+
+[[package]]
+name = "onnxruntime-gpu"
+version = "1.17.1"
+description = "ONNX Runtime is a runtime accelerator for Machine Learning models"
+optional = true
+python-versions = "*"
+files = [
+    {file = "onnxruntime_gpu-1.17.1-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:a55fe84ee11a59ea069c6a790ee960f1c7da0d7d6c74822b2a8b357027c93646"},
+    {file = "onnxruntime_gpu-1.17.1-cp310-cp310-win_amd64.whl", hash = "sha256:a9abefceb32879cbee9f57977d6bb8d58cbac501f8a64bf96bca2f4fdff157fe"},
+    {file = "onnxruntime_gpu-1.17.1-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:b2cd54f2b0a05e6bc9ab30182b859364d30115a19c31be24aa2edef40be00277"},
+    {file = "onnxruntime_gpu-1.17.1-cp311-cp311-win_amd64.whl", hash = "sha256:bdffcced8a5f6275c0df202220e9232138b336f868cd671c9d2c571e834d2a80"},
+    {file = "onnxruntime_gpu-1.17.1-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:a1c871e8d0ae4121ea6528fc9410a5a7cbc5e43714b30521d5514fd10b987c83"},
+    {file = "onnxruntime_gpu-1.17.1-cp312-cp312-win_amd64.whl", hash = "sha256:9a0a94eda080e9f4a8e5035fdf0b3c24f5533e7861d88833a94493e63fca0812"},
+    {file = "onnxruntime_gpu-1.17.1-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:624fdb65a632833f13de36854855818680be4f77942d8114524491d58f60d3ab"},
+    {file = "onnxruntime_gpu-1.17.1-cp38-cp38-win_amd64.whl", hash = "sha256:29fa78d232bbb5a5be3a3e0a022148a7b3df2ca66b4c21a11eef56e6f22859e9"},
+    {file = "onnxruntime_gpu-1.17.1-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:b0f8c70f2f9aeae825f3a397cc0c5f45124f9ae7c173263cf13c495982b0b99a"},
+    {file = "onnxruntime_gpu-1.17.1-cp39-cp39-win_amd64.whl", hash = "sha256:b1a27a104334461b690e4fc62775e1e71c68936399874932225d7fea21a0c261"},
 ]
 
 [package.dependencies]
@@ -3035,8 +3085,9 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 
 [extras]
 fastembed = ["fastembed"]
+fastembed-gpu = ["fastembed-gpu"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8"
-content-hash = "d9f322012dac6de2c4f537befddade3c059b8f2dcd9420ff742450739da4dc03"
+content-hash = "5a438b3f01f44b4b86d95f7c71e9bf3cae3a67316dc27cb657f4539e08570bb3"
