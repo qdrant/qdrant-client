@@ -799,7 +799,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         result = []
         if query_texts is not None:
             result.extend(
-                self._query_text_batch(
+                await self._query_text_batch(
                     collection_name=collection_name,
                     query_texts=query_texts,
                     query_filter=query_filter,
@@ -809,7 +809,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
         if query_images is not None:
             result.extend(
-                self._query_image_batch(
+                await self._query_image_batch(
                     collection_name=collection_name,
                     query_images=query_images,
                     query_filter=query_filter,

@@ -1,6 +1,7 @@
 import inspect
 from typing import Dict, List, Optional
 
+from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
 from tools.async_client_generator.async_client_base import AsyncQdrantBase
 from tools.async_client_generator.base_generator import BaseGenerator
 from tools.async_client_generator.transformers import (
@@ -23,16 +24,24 @@ class FastembedGenerator(BaseGenerator):
     ):
         super().__init__()
         self._async_methods: Optional[List[str]] = None
-        self.transformers.append(FastembedCallTransformer(async_methods=self.async_methods))
+        self.transformers.append(
+            FastembedCallTransformer(
+                async_methods=self.async_methods(exclude_list=keep_sync or [])
+            )
+        )
         self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
         self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))
         self.transformers.append(ImportFromTransformer(import_replace_map=import_replace_map))
         self.transformers.append(FastembedFunctionDefTransformer(keep_sync=keep_sync))
 
-    @property
-    def async_methods(self) -> List[str]:
+    def async_methods(self, exclude_list: List[str]) -> List[str]:
         if self._async_methods is None:
             self._async_methods = self.get_async_methods(AsyncQdrantBase)
+            self._async_methods.extend(
+                self.get_self_async_methods(
+                    QdrantFastembedMixin, [*self._async_methods, *exclude_list]
+                )
+            )
         return self._async_methods
 
     @staticmethod
@@ -40,6 +49,14 @@ class FastembedGenerator(BaseGenerator):
         async_methods = []
         for name, method in inspect.getmembers(class_obj):
             if inspect.iscoroutinefunction(method):
+                async_methods.append(name)
+        return async_methods
+
+    @staticmethod
+    def get_self_async_methods(class_obj: type, exclude_list: list[str]) -> List[str]:
+        async_methods = []
+        for name, method in inspect.getmembers(class_obj):
+            if inspect.isfunction(method) and name not in exclude_list:
                 async_methods.append(name)
         return async_methods
 
