@@ -56,6 +56,10 @@ def test_conversion_completeness():
 
                 back_convert_function_name = convert_function_name
 
+                print(
+                    f"back_convert_function_name: {back_convert_function_name} for {type(rest_fixture)}"
+                )
+
                 result = list(
                     inspect.signature(
                         rest_to_grpc_convert[back_convert_function_name]

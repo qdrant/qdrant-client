@@ -1025,6 +1025,18 @@ class MinShould(BaseModel, extra="forbid"):
     min_count: int = Field(..., description="")
 
 
+class Modifier(str, Enum):
+    """
+    If used, include weight modification, which will be applied to sparse vectors at query time: None - no modification (default) Idf - inverse document frequency, based on statistics of the collection
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    NONE = "none"
+    IDF = "idf"
+
+
 class MoveShard(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
     to_peer_id: int = Field(..., description="")
@@ -1038,8 +1050,12 @@ class MoveShardOperation(BaseModel, extra="forbid"):
     move_shard: "MoveShard" = Field(..., description="")
 
 
-class MultiVectorConfigOneOf(BaseModel):
-    max_sim: Any = Field(..., description="")
+class MultiVectorComparator(str, Enum):
+    MAX_SIM = "max_sim"
+
+
+class MultiVectorConfig(BaseModel, extra="forbid"):
+    comparator: "MultiVectorComparator" = Field(..., description="")
 
 
 class NamedSparseVector(BaseModel, extra="forbid"):
@@ -1808,6 +1824,9 @@ class ShardSnapshotRecover(BaseModel, extra="forbid"):
     checksum: Optional[str] = Field(
         default=None, description="Optional SHA256 checksum to verify snapshot integrity before recovery."
     )
+    api_key: Optional[str] = Field(
+        default=None, description="Optional API key used when fetching the snapshot from a remote URL."
+    )
 
 
 class ShardTransferInfo(BaseModel):
@@ -1893,6 +1912,9 @@ class SnapshotRecover(BaseModel, extra="forbid"):
     )
     checksum: Optional[str] = Field(
         default=None, description="Optional SHA256 checksum to verify snapshot integrity before recovery."
+    )
+    api_key: Optional[str] = Field(
+        default=None, description="Optional API key used when fetching the snapshot from a remote URL."
     )
 
 
@@ -1980,6 +2002,9 @@ class SparseVectorParams(BaseModel, extra="forbid"):
 
     index: Optional["SparseIndexParams"] = Field(
         default=None, description="Custom params for index. If none - values from collection configuration are used."
+    )
+    modifier: Optional["Modifier"] = Field(
+        default=None, description="Configures addition value modifications for sparse vectors. Default: none"
     )
 
 
@@ -2133,7 +2158,7 @@ class VectorDataConfig(BaseModel):
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Vector specific quantization config that overrides collection config"
     )
-    multi_vec_config: Optional["MultiVectorConfig"] = Field(
+    multivec_config: Optional["MultiVectorConfig"] = Field(
         default=None, description="Vector specific configuration to enable multiple vectors per point"
     )
     datatype: Optional["VectorStorageDatatype"] = Field(
@@ -2180,6 +2205,9 @@ class VectorParams(BaseModel, extra="forbid"):
         description="If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
     )
     datatype: Optional["Datatype"] = Field(default=None, description="Params of single vector data storage")
+    multivec_config: Optional["MultiVectorConfig"] = Field(
+        default=None, description="Params of single vector data storage"
+    )
 
 
 class VectorParamsDiff(BaseModel, extra="forbid"):
@@ -2341,9 +2369,6 @@ Match = Union[
     MatchAny,
     MatchExcept,
 ]
-MultiVectorConfig = Union[
-    MultiVectorConfigOneOf,
-]
 NamedVectorStruct = Union[
     List[StrictFloat],
     NamedVector,
@@ -2445,6 +2470,7 @@ ValueVariants = Union[
 Vector = Union[
     List[StrictFloat],
     SparseVector,
+    List[List[StrictFloat]],
 ]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,

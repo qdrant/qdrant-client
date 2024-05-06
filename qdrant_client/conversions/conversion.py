@@ -1374,12 +1374,23 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_modifier(cls, model: grpc.Modifier) -> rest.Modifier:
+        if model == grpc.Modifier.Idf:
+            return rest.Modifier.IDF
+        raise ValueError(f"invalid Modifier model: {model}")
+
+    @classmethod
     def convert_sparse_vector_params(
         cls, model: grpc.SparseVectorParams
     ) -> rest.SparseVectorParams:
         return rest.SparseVectorParams(
             index=(
-                cls.convert_sparse_index_config(model.index) if model.index is not None else None
+                cls.convert_sparse_index_config(model.index)
+                if model.HasField("index") is not None
+                else None
+            ),
+            modifier=(
+                cls.convert_modifier(model.modifier) if model.HasField("modifier") else None
             ),
         )
 
@@ -2837,7 +2848,7 @@ class RestToGrpc:
             raise ValueError(f"invalid RecommendStrategy model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_sparse_index_config(cls, model: rest.SparseIndexConfig) -> grpc.SparseIndexConfig:
+    def convert_sparse_index_params(cls, model: rest.SparseIndexParams) -> grpc.SparseIndexConfig:
         return grpc.SparseIndexConfig(
             full_scan_threshold=(
                 model.full_scan_threshold if model.full_scan_threshold is not None else None
@@ -2846,12 +2857,22 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_modifier(cls, model: rest.Modifier) -> grpc.Modifier:
+        if model == rest.Modifier.IDF:
+            return grpc.Modifier.Idf
+        else:
+            raise ValueError(f"invalid Modifier model: {model}")
+
+    @classmethod
     def convert_sparse_vector_params(
         cls, model: rest.SparseVectorParams
     ) -> grpc.SparseVectorParams:
         return grpc.SparseVectorParams(
             index=(
-                cls.convert_sparse_index_config(model.index) if model.index is not None else None
+                cls.convert_sparse_index_params(model.index) if model.index is not None else None
+            ),
+            modifier=(
+                cls.convert_modifier(model.modifier) if model.modifier is not None else None
             ),
         )
 

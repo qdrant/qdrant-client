@@ -450,7 +450,8 @@ sparse_vector_params = grpc.SparseVectorParams(
     index=grpc.SparseIndexConfig(
         full_scan_threshold=1000,
         on_disk=True,
-    )
+    ),
+    modifier=grpc.Modifier.Idf,
 )
 
 sparse_vector_config = grpc.SparseVectorConfig(
