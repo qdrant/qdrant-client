@@ -15,23 +15,10 @@ import logging
 import os
 import shutil
 from io import TextIOWrapper
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, Generator, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from uuid import uuid4
-
 import numpy as np
 import portalocker
-
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
@@ -540,9 +527,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
                 self._get_collection(operation.create_alias.collection_name)
-                self.aliases[
-                    operation.create_alias.alias_name
-                ] = operation.create_alias.collection_name
+                self.aliases[operation.create_alias.alias_name] = (
+                    operation.create_alias.collection_name
+                )
             elif isinstance(operation, rest_models.DeleteAliasOperation):
                 self.aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):

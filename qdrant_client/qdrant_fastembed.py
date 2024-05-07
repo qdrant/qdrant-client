@@ -46,7 +46,10 @@ class QdrantFastembedMixin(QdrantBase):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
         try:
-            from fastembed import SparseTextEmbedding, TextEmbedding  # noqa: F401
+            from fastembed import SparseTextEmbedding, TextEmbedding
+
+            assert len(SparseTextEmbedding.list_supported_models()) > 0
+            assert len(TextEmbedding.list_supported_models()) > 0
 
             self.__class__._FASTEMBED_INSTALLED = True
         except ImportError:

@@ -13,7 +13,6 @@ import uuid
 import warnings
 from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
-
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.fastembed_common import QueryResponse
@@ -54,6 +53,8 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
+            assert len(SparseTextEmbedding.list_supported_models()) > 0
+            assert len(TextEmbedding.list_supported_models()) > 0
             self.__class__._FASTEMBED_INSTALLED = True
         except ImportError:
             self.__class__._FASTEMBED_INSTALLED = False

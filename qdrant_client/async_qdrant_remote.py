@@ -28,16 +28,14 @@ from typing import (
     Union,
     get_args,
 )
-
 import httpx
 import numpy as np
 from grpc import Compression
 from urllib3.util import Url, parse_url
-
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
-from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.auth import BearerAuth
+from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.connection import get_async_channel as get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -84,7 +82,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
         if host is not None and (host.startswith("http://") or host.startswith("https://")):
             raise ValueError(
-                f"`host` param is not expected to contain protocol (http:// or https://). Try to use `url` parameter instead."
+                "`host` param is not expected to contain protocol (http:// or https://). Try to use `url` parameter instead."
             )
         elif url:
             if url.startswith("localhost"):
