@@ -23,14 +23,13 @@ from typing import (
     Tuple,
     Union,
 )
-
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
-from qdrant_client.async_qdrant_fastembed import AsyncQdrantFastembedMixin
-from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import AsyncApiClient, AsyncApis
 from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
+from qdrant_client.async_qdrant_fastembed import AsyncQdrantFastembedMixin
+from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
 
 
 class AsyncQdrantClient(AsyncQdrantFastembedMixin):
