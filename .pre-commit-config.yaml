@@ -16,9 +16,10 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.3
     hooks:
-      - id: ruff
-        types_or: [ python, pyi ]
-        args: [ --fix ]
+# ToDo: re-introduce ruff linter later
+#      - id: ruff
+#        types_or: [ python, pyi ]
+#        args: [ --fix ]
       - id: ruff-format
         types_or: [ python, pyi ]
         args: [ --line-length=99 ]

@@ -82,7 +82,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
         if host is not None and (host.startswith("http://") or host.startswith("https://")):
             raise ValueError(
-                "`host` param is not expected to contain protocol (http:// or https://). Try to use `url` parameter instead."
+                f"`host` param is not expected to contain protocol (http:// or https://). Try to use `url` parameter instead."
             )
         elif url:
             if url.startswith("localhost"):
