@@ -23,7 +23,6 @@ mv async_qdrant_local.py $ABSOLUTE_PROJECT_ROOT/qdrant_client/async_qdrant_local
 cd $ABSOLUTE_PROJECT_ROOT/qdrant_client
 
 ls -1 async*.py | autoflake --recursive --imports qdrant_client --remove-unused-variables --in-place async*.py
-ls -1 async*.py | xargs -I {} isort --profile black --py 310 {}
-ls -1 async*.py | xargs -I {} black -l 99 --target-version py310 {}
+ls -1 async*.py | xargs -I {} ruff format --line-length 99 {}
 
 mv async_qdrant_local.py local/async_qdrant_local.py
