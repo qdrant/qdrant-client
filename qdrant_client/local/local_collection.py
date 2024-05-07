@@ -1667,7 +1667,7 @@ class LocalCollection:
 
     def update_sparce_vectors_config(
         self, vector_name: str, new_config: models.SparseVectorParams
-    ):
+    ) -> None:
         if vector_name not in self.sparse_vectors:
             raise ValueError(f"Vector {vector_name} does not exist in the collection")
 
