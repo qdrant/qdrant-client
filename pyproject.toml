@@ -44,7 +44,7 @@ coverage = "^6.3.3"
 pytest-asyncio = "^0.21.0"
 pytest-timeout = "^2.1.0"
 autoflake = "^2.2.1"
-ruff = "^0.4.3"
+ruff = "0.4.3"
 
 
 [tool.poetry.group.docs.dependencies]
