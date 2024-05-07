@@ -21,9 +21,11 @@ from uuid import uuid4
 import numpy as np
 import portalocker
 
+from qdrant_client import grpc
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models as rest_models
 from qdrant_client.http.models.models import RecommendExample
 from qdrant_client.local.local_collection import LocalCollection
@@ -625,8 +627,20 @@ class QdrantLocal(QdrantBase):
         except ValueError:
             return False
 
-    def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
+    def update_collection(
+        self,
+        collection_name: str,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        **kwargs: Any,
+    ) -> bool:
         _collection = self._get_collection(collection_name)
+
+        if sparse_vectors_config is not None:
+            for vector_name, vector_params in sparse_vectors_config.items():
+                collection = self._get_collection(collection_name)
+                collection.update_sparce_vectors_config(vector_name, vector_params)
+
+            return True
         return False
 
     def _collection_path(self, collection_name: str) -> Optional[str]:
