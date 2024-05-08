@@ -206,7 +206,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
 
     @classmethod
-    async def _get_text_model_params(cls, model_name: str) -> Tuple[int, models.Distance]:
+    def _get_text_model_params(cls, model_name: str) -> Tuple[int, models.Distance]:
         cls._import_fastembed()
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
             raise ValueError(
@@ -215,7 +215,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return SUPPORTED_EMBEDDING_MODELS[model_name]
 
     @classmethod
-    async def _get_image_model_params(cls, model_name: str) -> Tuple[int, models.Distance]:
+    def _get_image_model_params(cls, model_name: str) -> Tuple[int, models.Distance]:
         cls._import_fastembed()
         if model_name not in SUPPORTED_IMAGE_EMBEDDING_MODELS:
             raise ValueError(
@@ -224,7 +224,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return SUPPORTED_IMAGE_EMBEDDING_MODELS[model_name]
 
     @classmethod
-    async def _get_or_init_text_model(
+    def _get_or_init_text_model(
         cls,
         model_name: str,
         cache_dir: Optional[str] = None,
@@ -249,7 +249,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return cls.embedding_models[model_name]
 
     @classmethod
-    async def _get_or_init_image_model(
+    def _get_or_init_image_model(
         cls,
         model_name: str,
         cache_dir: Optional[str] = None,
