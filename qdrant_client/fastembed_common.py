@@ -8,8 +8,9 @@ from qdrant_client.conversions.common_types import SparseVector
 class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
     id: Union[str, int]
     embedding: Optional[List[float]]
+    image_embedding: Optional[List[float]]
     sparse_embedding: Optional[SparseVector] = Field(default=None)
     metadata: Dict[str, Any]
     document: Optional[str] = None
-    path: Optional[str] = None
+    image_path: Optional[str] = None
     score: float
