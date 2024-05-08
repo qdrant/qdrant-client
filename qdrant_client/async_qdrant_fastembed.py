@@ -476,6 +476,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 model_name=self.embedding_model_name
             )
         if image_vector_field_name := self.get_image_vector_field_name():
+            assert self.image_embedding_model_name is not None
             params_map[image_vector_field_name] = self._get_image_model_params(
                 model_name=self.image_embedding_model_name
             )
@@ -527,6 +528,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 hnsw_config=hnsw_config,
             )
         if image_vector_field_name := self.get_image_vector_field_name():
+            assert self.image_embedding_model_name is not None
             (embeddings_size, distance) = self._get_image_model_params(
                 model_name=self.image_embedding_model_name
             )
