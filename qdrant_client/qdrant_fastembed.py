@@ -95,7 +95,7 @@ class QdrantFastembedMixin(QdrantBase):
         """
         Set text embedding model to use for encoding documents and queries.
         Args:
-            embedding_model_name: One of the supported embedding models. See `SUPPORTED_TEXT_EMBEDDING_MODELS` for details.
+            embedding_model_name: One of the supported embedding models. See `SUPPORTED_EMBEDDING_MODELS` for details.
             max_length (int, optional): Deprecated. Defaults to None.
             cache_dir (str, optional): The path to the cache directory.
                                        Can be set using the `FASTEMBED_CACHE_PATH` env variable.
@@ -249,7 +249,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
+                f"Unsupported text embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
 
         cls.embedding_models[model_name] = TextEmbedding(
@@ -277,7 +277,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         if model_name not in SUPPORTED_IMAGE_EMBEDDING_MODELS:
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_IMAGE_EMBEDDING_MODELS}"
+                f"Unsupported image embedding model: {model_name}. Supported models: {SUPPORTED_IMAGE_EMBEDDING_MODELS}"
             )
 
         cls.image_embedding_models[model_name] = ImageEmbedding(
@@ -305,7 +305,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         if model_name not in SUPPORTED_SPARSE_EMBEDDING_MODELS:
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_SPARSE_EMBEDDING_MODELS}"
+                f"Unsupported sparse embedding model: {model_name}. Supported models: {SUPPORTED_SPARSE_EMBEDDING_MODELS}"
             )
 
         cls.sparse_embedding_models[model_name] = SparseTextEmbedding(
@@ -385,7 +385,7 @@ class QdrantFastembedMixin(QdrantBase):
             Name of the vector field.
         """
         if self._embedding_model_name is not None:
-            model_name = self._embedding_model_name.split("/")[-1].lower()
+            model_name = self.embedding_model_name.split("/")[-1].lower()
             return f"fast-{model_name}"
         return None
 
