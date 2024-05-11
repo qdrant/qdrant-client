@@ -985,17 +985,11 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
 
-        if self.sparse_embedding_model_name and not self._embedding_model_name:
-            raise ValueError(
-                "Sparse embedding models are set, but no dense embedding model is set. "
-                "Please set dense embedding model using `set_model` method."
-            )
-
         if (query_texts is None) and (query_images is None):
             raise ValueError("Either query_texts or query_images should be provided")
 
         result = []
-        if query_texts is not None:
+        if query_texts is not None and query_texts:
             result.extend(
                 self._query_text_batch(
                     collection_name=collection_name,
@@ -1005,7 +999,7 @@ class QdrantFastembedMixin(QdrantBase):
                     **kwargs,
                 )
             )
-        if query_images is not None:
+        if query_images is not None and query_images:
             result.extend(
                 self._query_image_batch(
                     collection_name=collection_name,
@@ -1026,25 +1020,35 @@ class QdrantFastembedMixin(QdrantBase):
         limit: int = 10,
         **kwargs: Any,
     ) -> List[List[QueryResponse]]:
-        embedding_model_inst: TextEmbedding = self._get_or_init_text_model(
-            model_name=self.embedding_model_name
-        )
-        vector_names: Union[Iterable, List]
-
+        rescore = True
+        sparse_vector_name = self.get_sparse_vector_field_name()
+        dense_queries, dense_vector_names = [], []
+        sparse_queries = []
         if isinstance(query_texts, dict):
-            vector_names = list(query_texts.keys())
-            query_texts = list(query_texts.values())
+            rescore = False  # named queries allow more precise search queries, but does not support hybrid search
+            for i, (key, query) in enumerate(query_texts.items()):
+                self.verify_text_query_vector_name(key)
+                if key != sparse_vector_name:
+                    dense_queries.append(query)
+                    dense_vector_names.append(key)
+                else:
+                    sparse_queries.append(query)
         else:
-            default_vector_name = self.get_vector_field_name()
-            vector_names = iter(lambda: default_vector_name, True)
+            dense_queries = query_texts
+            sparse_queries = query_texts
+            dense_vector_names = iter(lambda: self.get_vector_field_name(), True)
 
-        query_vectors = list(embedding_model_inst.query_embed(query=query_texts))
+        dense_query_vectors = []
+        if len(dense_queries):
+            dense_embedding_model_inst = self._get_or_init_text_model(
+                model_name=self.embedding_model_name
+            )
+            dense_query_vectors = list(dense_embedding_model_inst.query_embed(query=dense_queries))
+
         requests = []
-        for vector_name, vector in zip(vector_names, query_vectors):
+        for vector_name, vector in zip(dense_vector_names, dense_query_vectors):
             request = models.SearchRequest(
-                vector=models.NamedVector(
-                    name=self.get_vector_field_name(), vector=vector.tolist()
-                ),
+                vector=models.NamedVector(name=vector_name, vector=vector.tolist()),
                 filter=query_filter,
                 limit=limit,
                 with_payload=True,
@@ -1060,16 +1064,18 @@ class QdrantFastembedMixin(QdrantBase):
             )
             return [self._scored_points_to_query_responses(response) for response in responses]
 
-        sparse_embedding_model_inst = self._get_or_init_sparse_model(
-            model_name=self.sparse_embedding_model_name
-        )
-        sparse_query_vectors = [
-            models.SparseVector(
-                indices=sparse_vector.indices.tolist(), values=sparse_vector.values.tolist()
+        sparse_query_vectors = []
+        if len(sparse_queries):
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(
+                model_name=self.sparse_embedding_model_name
             )
-            for sparse_vector in sparse_embedding_model_inst.embed(documents=query_texts)
-        ]
-        sparse_vector_name = self.get_sparse_vector_field_name()
+            sparse_query_vectors = [
+                models.SparseVector(
+                    indices=sparse_vector.indices.tolist(), values=sparse_vector.values.tolist()
+                )
+                for sparse_vector in sparse_embedding_model_inst.embed(documents=sparse_queries)
+            ]
+
         for sparse_vector in sparse_query_vectors:
             request = models.SearchRequest(
                 vector=models.NamedSparseVector(
@@ -1089,13 +1095,13 @@ class QdrantFastembedMixin(QdrantBase):
             requests=requests,
         )
 
-        dense_responses = responses[: len(query_texts)]
-        sparse_responses = responses[len(query_texts) :]
-        responses = [
-            reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
-            for dense_response, sparse_response in zip(dense_responses, sparse_responses)
-        ]
-
+        if rescore:
+            dense_responses = responses[: len(query_texts)]
+            sparse_responses = responses[len(query_texts) :]
+            responses = [
+                reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
+                for dense_response, sparse_response in zip(dense_responses, sparse_responses)
+            ]
         return [self._scored_points_to_query_responses(response) for response in responses]
 
     def _query_image_batch(
@@ -1116,7 +1122,10 @@ class QdrantFastembedMixin(QdrantBase):
         )
         vector_names: Union[Iterable, List]
         if isinstance(query_images, dict):
-            vector_names = list(query_images.keys())
+            vector_names = []
+            for key in query_images:
+                self.verify_image_query_vector_name(key)
+                vector_names.append(key)
             query_images = list(query_images.values())
         else:
             default_vector_name = self.get_vector_field_name()
