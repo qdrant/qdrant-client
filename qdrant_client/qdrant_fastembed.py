@@ -468,6 +468,9 @@ class QdrantFastembedMixin(QdrantBase):
             text_vectors = iter(lambda: None, True)
             sparse_vectors = iter(lambda: None, True)
 
+        if sparse_vectors is None:
+            sparse_vectors = iter(lambda: None, True)
+
         if images is None:
             images = iter(lambda: None, True)
             image_vectors = iter(lambda: None, True)
@@ -769,7 +772,7 @@ class QdrantFastembedMixin(QdrantBase):
                 "Sparse embeddings are currently supported only within hybrid search"
             )
 
-        if query_text is None is not query_image is None:
+        if (query_text is None) is (query_image is None):
             raise ValueError("Either query_text or query_image should be provided")
 
         vector_name = None
@@ -886,7 +889,7 @@ class QdrantFastembedMixin(QdrantBase):
                 "Please set dense embedding model using `set_model` method."
             )
 
-        if query_texts is None and query_images is None:
+        if (query_texts is None) and (query_images is None):
             raise ValueError("Either query_texts or query_images should be provided")
 
         result = []
