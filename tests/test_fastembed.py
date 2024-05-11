@@ -15,7 +15,28 @@ IMAGE_EXAMPLE = TEST_DATA_DIR / "image.jpeg"
 CROSS_MODEL_EXAMPLE = {**DOCS_EXAMPLE, "images": [IMAGE_EXAMPLE, IMAGE_EXAMPLE]}
 
 
-def test_dense(tmp_path):
+def test_set_model():
+    local_client = QdrantClient(":memory:")
+    collection_name = "demo_collection"
+    embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping test")
+
+    local_client.set_model(
+        embedding_model_name=embedding_model_name,
+    )
+
+    # Check if the model is initialized & cls.embeddings_models is set with expected values
+    dim, dist = local_client._get_text_model_params(embedding_model_name)
+    assert dim == 384
+
+    # Use the initialized model to add documents with vector embeddings
+    local_client.add(collection_name=collection_name, **DOCS_EXAMPLE)
+    assert local_client.count(collection_name).count == 2
+
+
+@pytest.mark.parametrize("dense_model_name", ["sentence-transformers/all-MiniLM-L6-v2", None])
+def test_dense(tmp_path, dense_model_name):
     # tmp_path is a pytest fixture
     local_client = QdrantClient(path=str(tmp_path / "db_test_dense"))
     collection_name = "demo_collection"
@@ -28,6 +49,8 @@ def test_dense(tmp_path):
         with pytest.raises(ImportError):
             local_client.add(collection_name, docs)
     else:
+        if dense_model_name is not None:
+            local_client.set_model(embedding_model_name=dense_model_name)
         local_client.add(collection_name=collection_name, documents=docs)
         assert local_client.count(collection_name).count == 2
 
@@ -48,6 +71,8 @@ def test_dense(tmp_path):
 
         # region query without preliminary add
         local_client = QdrantClient(path=str(tmp_path / "db_test_dense"))
+        if dense_model_name is not None:
+            local_client.set_model(embedding_model_name=dense_model_name)
         local_client.query(collection_name=collection_name, query_text="This is a query document")
         assert len(search_result) > 0
         local_client.close()
@@ -133,6 +158,85 @@ def test_hybrid(tmp_path, dense_model_name):
     # endregion
 
 
+def test_cross_model(tmp_path):
+    # tmp_path is a pytest fixture
+    local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
+    collection_name = "demo_collection"
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping test")
+
+    local_client.set_model("Qdrant/clip-ViT-B-32-text")
+    local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
+
+    local_client.add(collection_name=collection_name, **CROSS_MODEL_EXAMPLE)
+    assert len(local_client.get_collection(collection_name).config.params.vectors) == 2
+    assert local_client.count(collection_name).count == 2
+
+    search_result = local_client.query(
+        collection_name=collection_name, query_text="This is a query document"
+    )
+
+    assert len(search_result) > 0
+    assert search_result[0].id == 2000
+
+    search_result = local_client.query(collection_name=collection_name, query_image=IMAGE_EXAMPLE)
+
+    assert len(search_result) > 0
+    assert search_result[0].id == 2000
+
+    search_result = local_client.query(
+        collection_name=collection_name,
+        query_text={local_client.get_image_vector_field_name(): "This is a query document"},
+    )
+
+    assert len(search_result) > 0
+    assert search_result[0].id == 2000
+
+    search_result = local_client.query(
+        collection_name=collection_name,
+        query_image={local_client.get_vector_field_name(): IMAGE_EXAMPLE},
+    )
+
+    assert len(search_result) > 0
+    assert search_result[0].id == 2000
+
+    with pytest.raises(ValueError):
+        local_client.query(
+            collection_name=collection_name,
+            query_text="This is a query document",
+            query_image=IMAGE_EXAMPLE,
+        )
+
+    local_client.close()
+    local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
+    local_client.set_model("Qdrant/clip-ViT-B-32-text")
+    search_result = local_client.query(
+        collection_name=collection_name,
+        query_text={
+            local_client.vector_field_from_model(
+                "Qdrant/clip-ViT-B-32-vision"
+            ): "This is a query document"
+        },
+    )
+
+    assert len(search_result) > 0
+    assert search_result[0].id == 2000
+    local_client.close()
+
+    local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
+    local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
+    search_result = local_client.query(
+        collection_name=collection_name,
+        query_image={
+            local_client.vector_field_from_model("Qdrant/clip-ViT-B-32-text"): IMAGE_EXAMPLE
+        },
+    )
+
+    assert len(search_result) > 0
+    assert search_result[0].id == 2000
+    local_client.close()
+
+
 def test_query_batch(tmp_path):
     # tmp_path is a pytest fixture
     local_client = QdrantClient(path=str(tmp_path / "db_test_query_batch"))
@@ -194,73 +298,3 @@ def test_query_batch(tmp_path):
     )  # hybrid search has score from fusion
     local_client.close()
     # endregion
-
-
-def test_set_model():
-    local_client = QdrantClient(":memory:")
-    collection_name = "demo_collection"
-    embedding_model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    if not local_client._FASTEMBED_INSTALLED:
-        pytest.skip("FastEmbed is not installed, skipping test")
-
-    local_client.set_model(
-        embedding_model_name=embedding_model_name,
-    )
-
-    # Check if the model is initialized & cls.embeddings_models is set with expected values
-    dim, dist = local_client._get_text_model_params(embedding_model_name)
-    assert dim == 384
-
-    # Use the initialized model to add documents with vector embeddings
-    local_client.add(collection_name=collection_name, **DOCS_EXAMPLE)
-    assert local_client.count(collection_name).count == 2
-
-
-def test_cross_model(tmp_path):
-    # tmp_path is a pytest fixture
-    local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
-    collection_name = "demo_collection"
-    if not local_client._FASTEMBED_INSTALLED:
-        pytest.skip("FastEmbed is not installed, skipping test")
-
-    local_client.set_model(embedding_model_name="Qdrant/clip-ViT-B-32-text")
-    local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
-
-    local_client.add(collection_name=collection_name, **CROSS_MODEL_EXAMPLE)
-    assert len(local_client.get_collection(collection_name).config.params.vectors) == 2
-    assert local_client.count(collection_name).count == 2
-
-    search_result = local_client.query(
-        collection_name=collection_name, query_text="This is a query document"
-    )
-
-    assert len(search_result) > 0
-    assert search_result[0].id == 2000
-
-    search_result = local_client.query(collection_name=collection_name, query_image=IMAGE_EXAMPLE)
-
-    assert len(search_result) > 0
-    assert search_result[0].id == 2000
-
-    search_result = local_client.query(
-        collection_name=collection_name,
-        query_text={local_client.get_image_vector_field_name(): "This is a query document"},
-    )
-
-    assert len(search_result) > 0
-    assert search_result[0].id == 2000
-
-    search_result = local_client.query(
-        collection_name=collection_name,
-        query_image={local_client.get_vector_field_name(): IMAGE_EXAMPLE},
-    )
-
-    assert len(search_result) > 0
-    assert search_result[0].id == 2000
-
-    with pytest.raises(ValueError):
-        local_client.query(
-            collection_name=collection_name,
-            query_text="This is a query document",
-            query_image=IMAGE_EXAMPLE,
-        )
