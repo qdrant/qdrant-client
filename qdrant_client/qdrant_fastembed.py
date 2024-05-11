@@ -423,6 +423,9 @@ class QdrantFastembedMixin(QdrantBase):
             return vector
 
         response = []
+        # If models were not set, we can't extract embeddings.
+        # Should we look for prefixes `fast-`, `fast-image`, `fast-sparse`?
+
         vector_field_name = self.get_vector_field_name()
         image_vector_field_name = self.get_image_vector_field_name()
         sparse_vector_field_name = self.get_sparse_vector_field_name()
@@ -457,6 +460,14 @@ class QdrantFastembedMixin(QdrantBase):
         sparse_vectors: Optional[Iterable[types.SparseVector]],
         ids_accumulator: list,
     ) -> Iterable[models.PointStruct]:
+        assert (documents is None) is (
+            text_vectors is None
+        )  # docs and vectors should be both None or not None
+        assert (sparse_vectors is None) or (
+            documents is not None
+        )  # sparse vectors should be None if docs are None
+        assert (images is None) is (image_vectors is None)
+
         if ids is None:
             ids = iter(lambda: uuid.uuid4().hex, None)
 
@@ -466,7 +477,6 @@ class QdrantFastembedMixin(QdrantBase):
         if documents is None:
             documents = iter(lambda: None, True)
             text_vectors = iter(lambda: None, True)
-            sparse_vectors = iter(lambda: None, True)
 
         if sparse_vectors is None:
             sparse_vectors = iter(lambda: None, True)
@@ -652,18 +662,10 @@ class QdrantFastembedMixin(QdrantBase):
             List of IDs of added items. If no ids provided, UUIDs will be randomly generated on client side.
 
         """
-        embed_dense_text = False
-
-        # default mode, no models set
-        if self.image_embedding_model_name is None and self.sparse_embedding_model_name is None:
-            embed_dense_text = True
-
-        # text embedding model has already been set
-        if self._embedding_model_name is not None:
-            embed_dense_text = True
 
         dense_text_embeddings = None
-        if documents is not None and embed_dense_text:
+        sparse_embeddings = None
+        if documents is not None:
             documents, documents_iter = tee(documents, 2)
             dense_text_embeddings = self._embed_documents(
                 documents=documents_iter,
@@ -672,22 +674,20 @@ class QdrantFastembedMixin(QdrantBase):
                 embed_type="passage",
                 parallel=parallel,
             )
+            if self.sparse_embedding_model_name:
+                documents, documents_iter = tee(documents, 2)
+                sparse_embeddings = self._sparse_embed_documents(
+                    documents=documents_iter,
+                    embedding_model_name=self.sparse_embedding_model_name,
+                    batch_size=batch_size,
+                    parallel=parallel,
+                )
 
         image_embeddings = None
         if images is not None and self.image_embedding_model_name:
             image_embeddings = self._embed_images(
                 images=images,
                 embedding_model_name=self.image_embedding_model_name,
-                batch_size=batch_size,
-                parallel=parallel,
-            )
-
-        sparse_embeddings = None
-        if documents is not None and self.sparse_embedding_model_name is not None:
-            documents, documents_iter = tee(documents, 2)
-            sparse_embeddings = self._sparse_embed_documents(
-                documents=documents_iter,
-                embedding_model_name=self.sparse_embedding_model_name,
                 batch_size=batch_size,
                 parallel=parallel,
             )
