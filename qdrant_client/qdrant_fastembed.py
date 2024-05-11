@@ -783,6 +783,7 @@ class QdrantFastembedMixin(QdrantBase):
                 model_name=self.embedding_model_name
             )
             embeddings = list(embedding_model_inst.query_embed(query=query_text))
+            vector_name = vector_name if vector_name else self.get_vector_field_name()
         else:
             if isinstance(query_image, dict):
                 vector_name, query_image = next(iter(query_image.items()))
@@ -795,9 +796,9 @@ class QdrantFastembedMixin(QdrantBase):
                 model_name=self.image_embedding_model_name
             )
             embeddings = list(embedding_model_inst.embed([query_image]))
+            vector_name = vector_name if vector_name else self.get_image_vector_field_name()
 
         query_vector = embeddings[0].tolist()
-        vector_name = vector_name if vector_name else self.get_vector_field_name()
 
         if self.sparse_embedding_model_name is None or query_text is None:
             return self._scored_points_to_query_responses(
