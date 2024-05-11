@@ -351,7 +351,22 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
 
     @staticmethod
-    def _get_vector_field_name(model_name: str, prefix: str = "fast") -> str:
+    async def vector_field_from_model(model_name: str) -> str:
+        if model_name in SUPPORTED_EMBEDDING_MODELS:
+            prefix = "fast"
+        elif model_name in SUPPORTED_IMAGE_EMBEDDING_MODELS:
+            prefix = "fast-image"
+        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            prefix = "fast-sparse"
+        else:
+            supported_models = [
+                *list(SUPPORTED_EMBEDDING_MODELS.keys()),
+                *list(SUPPORTED_IMAGE_EMBEDDING_MODELS.keys()),
+                *list(SUPPORTED_SPARSE_EMBEDDING_MODELS.keys()),
+            ]
+            raise ValueError(
+                f"Unsupported model name: {model_name}, supported models: {supported_models}"
+            )
         return f"{prefix}-{model_name.split('/')[-1].lower()}"
 
     def get_vector_field_name(self) -> Optional[str]:
@@ -361,7 +376,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Name of the vector field.
         """
         if self._embedding_model_name is not None:
-            return self._get_vector_field_name(self._embedding_model_name)
+            return await self.vector_field_from_model(self._embedding_model_name)
         return None
 
     def get_image_vector_field_name(self) -> Optional[str]:
@@ -371,9 +386,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Name of the vector field.
         """
         if self.image_embedding_model_name is not None:
-            return self._get_vector_field_name(
-                self.image_embedding_model_name, prefix="fast-image"
-            )
+            return await self.vector_field_from_model(self.image_embedding_model_name)
         return None
 
     def get_sparse_vector_field_name(self) -> Optional[str]:
@@ -383,9 +396,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Name of the vector field.
         """
         if self.sparse_embedding_model_name is not None:
-            return self._get_vector_field_name(
-                self.sparse_embedding_model_name, prefix="fast-sparse"
-            )
+            return await self.vector_field_from_model(self.sparse_embedding_model_name)
         return None
 
     def _scored_points_to_query_responses(
@@ -669,32 +680,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         return inserted_ids
 
-    def verify_text_query_vector_name(self, vector_name: str) -> None:
-        text_vector_name = self.get_vector_field_name() or self._get_vector_field_name(
-            self.DEFAULT_EMBEDDING_MODEL
-        )
-        image_vector_name = self.get_image_vector_field_name()
-        sparse_vector_name = self.get_sparse_vector_field_name()
-        if vector_name not in (text_vector_name, image_vector_name, sparse_vector_name):
-            raise ValueError(
-                f"Vector name {vector_name} does not match any of the available vector names: {text_vector_name}, {image_vector_name}, {sparse_vector_name}. Please provide a valid vector name."
-            )
-
-    def verify_image_query_vector_name(self, vector_name: str) -> None:
-        text_vector_name = self.get_vector_field_name() or self._get_vector_field_name(
-            self.DEFAULT_EMBEDDING_MODEL
-        )
-        image_vector_name = self.get_image_vector_field_name()
-        sparse_vector_name = self.get_sparse_vector_field_name()
-        if vector_name not in (text_vector_name, image_vector_name, sparse_vector_name):
-            raise ValueError(
-                f"Vector name {vector_name} does not match any of the available vector names: {text_vector_name}, {image_vector_name}, {sparse_vector_name}. Please provide a valid vector name."
-            )
-        if vector_name == sparse_vector_name:
-            raise ValueError(
-                f"Sparse vectors are not supported for image queries. Please provide a valid vector name."
-            )
-
     async def _query_text(
         self,
         collection_name: str,
@@ -708,7 +693,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         sparse_vector_name = self.get_sparse_vector_field_name()
         if isinstance(query_text, dict):
             (vector_name, query_text) = next(iter(query_text.items()))
-            self.verify_text_query_vector_name(vector_name)
         if vector_name is None or vector_name != sparse_vector_name:
             embedding_model_inst = self._get_or_init_text_model(
                 model_name=self.embedding_model_name
@@ -789,7 +773,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         vector_name = None
         if isinstance(query_image, dict):
             (vector_name, query_image) = next(iter(query_image.items()))
-            self.verify_image_query_vector_name(vector_name)
         vector_name = vector_name if vector_name else self.get_image_vector_field_name()
         embedding_model_inst = self._get_or_init_image_model(
             model_name=self.image_embedding_model_name
@@ -937,7 +920,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         if isinstance(query_texts, dict):
             rescore = False
             for i, (key, query) in enumerate(query_texts.items()):
-                self.verify_text_query_vector_name(key)
                 if key != sparse_vector_name:
                     dense_queries.append(query)
                     dense_vector_names.append(key)
@@ -946,7 +928,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         else:
             dense_queries = query_texts
             sparse_queries = query_texts
-            dense_vector_name = self.get_vector_field_name() or self._get_vector_field_name(
+            dense_vector_name = self.get_vector_field_name() or await self.vector_field_from_model(
                 self.DEFAULT_EMBEDDING_MODEL
             )
             dense_vector_names = [dense_vector_name] * len(dense_queries)
@@ -1016,14 +998,11 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         vector_names: Union[Iterable, List]
         if isinstance(query_images, dict):
-            vector_names = []
-            for key in query_images:
-                self.verify_image_query_vector_name(key)
-                vector_names.append(key)
+            vector_names = list(query_images.keys())
             query_images = list(query_images.values())
         else:
-            default_vector_name = self.get_vector_field_name()
-            vector_names = iter(lambda: default_vector_name, True)
+            default_vector_name = self.get_image_vector_field_name()
+            vector_names = [default_vector_name for _ in query_images]
         query_vectors = list(embedding_model_inst.embed(images=query_images))
         requests = []
         for vector_name, vector in zip(vector_names, query_vectors):
