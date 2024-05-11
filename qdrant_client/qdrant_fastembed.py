@@ -324,26 +324,24 @@ class QdrantFastembedMixin(QdrantBase):
         batch_size: int = 32,
         embed_type: str = "default",
         parallel: Optional[int] = None,
-    ) -> Iterable[Tuple[str, List[float]]]:
+    ) -> Iterable[List[float]]:
         embedding_model = self._get_or_init_text_model(model_name=embedding_model_name)
-        documents_a, documents_b = tee(documents, 2)
         if embed_type == "passage":
             vectors_iter = embedding_model.passage_embed(
-                documents_a, batch_size=batch_size, parallel=parallel
+                documents, batch_size=batch_size, parallel=parallel
             )
         elif embed_type == "query":
             vectors_iter = (
-                list(embedding_model.query_embed(query=query))[0] for query in documents_a
+                list(embedding_model.query_embed(query=query))[0] for query in documents
             )
         elif embed_type == "default":
             vectors_iter = embedding_model.embed(
-                documents_a, batch_size=batch_size, parallel=parallel
+                documents, batch_size=batch_size, parallel=parallel
             )
         else:
             raise ValueError(f"Unknown embed type: {embed_type}")
 
-        for vector, doc in zip(vectors_iter, documents_b):
-            yield doc, vector.tolist()
+        yield from vectors_iter
 
     def _embed_images(
         self,
@@ -351,13 +349,10 @@ class QdrantFastembedMixin(QdrantBase):
         embedding_model_name: str,
         batch_size: int = 8,
         parallel: Optional[int] = None,
-    ) -> Iterable[Tuple[PathInput, List[float]]]:
+    ) -> Iterable[List[float]]:
         embedding_model = self._get_or_init_image_model(model_name=embedding_model_name)
-        images_a, images_b = tee(images, 2)
-        vectors_iter = embedding_model.embed(images_a, batch_size=batch_size, parallel=parallel)
-
-        for vector, path in zip(vectors_iter, images_b):
-            yield path, vector.tolist()
+        vectors_iter = embedding_model.embed(images, batch_size=batch_size, parallel=parallel)
+        yield from vectors_iter
 
     def _sparse_embed_documents(
         self,
@@ -415,31 +410,27 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         scored_points: List[types.ScoredPoint],
     ) -> List[QueryResponse]:
+        def _get_embedding(
+            scored_point: types.ScoredPoint, field_name: Optional[str]
+        ) -> Optional[List[float]]:
+            if field_name is None:
+                return None
+            vector = (
+                scored_point.vector.get(field_name, None)
+                if isinstance(scored_point.vector, Dict)
+                else None
+            )
+            return vector
+
         response = []
         vector_field_name = self.get_vector_field_name()
         image_vector_field_name = self.get_image_vector_field_name()
         sparse_vector_field_name = self.get_sparse_vector_field_name()
 
         for scored_point in scored_points:
-            embedding = (
-                scored_point.vector.get(vector_field_name, None)
-                if isinstance(scored_point.vector, Dict)
-                else None
-            )
-            sparse_embedding = None
-            if sparse_vector_field_name is not None:
-                sparse_embedding = (
-                    scored_point.vector.get(sparse_vector_field_name, None)
-                    if isinstance(scored_point.vector, Dict)
-                    else None
-                )
-            image_embedding = None
-            if image_vector_field_name is not None:
-                image_embedding = (
-                    scored_point.vector.get(image_vector_field_name, None)
-                    if isinstance(scored_point.vector, Dict)
-                    else None
-                )
+            embedding = _get_embedding(scored_point, vector_field_name)
+            sparse_embedding = _get_embedding(scored_point, sparse_vector_field_name)
+            image_embedding = _get_embedding(scored_point, image_vector_field_name)
 
             response.append(
                 QueryResponse(
@@ -459,10 +450,12 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         ids: Optional[Iterable[models.ExtendedPointId]],
         metadata: Optional[Iterable[Dict[str, Any]]],
-        encoded_docs: Optional[Iterable[Tuple[str, List[float]]]],
-        encoded_images: Optional[Iterable[Tuple[PathInput, List[float]]]],
+        documents: Optional[Iterable[str]],
+        images: Optional[Iterable[PathInput]],
+        text_vectors: Optional[Iterable[List[float]]],
+        image_vectors: Optional[Iterable[List[float]]],
+        sparse_vectors: Optional[Iterable[types.SparseVector]],
         ids_accumulator: list,
-        sparse_vectors: Optional[Iterable[types.SparseVector]] = None,
     ) -> Iterable[models.PointStruct]:
         if ids is None:
             ids = iter(lambda: uuid.uuid4().hex, None)
@@ -470,39 +463,41 @@ class QdrantFastembedMixin(QdrantBase):
         if metadata is None:
             metadata = iter(lambda: {}, None)
 
-        if encoded_docs is None:
-            encoded_docs = iter(lambda: (None, None), True)  # type: ignore
-
-        if encoded_images is None:
-            encoded_images = iter(lambda: (None, None), True)  # type: ignore
-
-        if sparse_vectors is None:
+        if documents is None:
+            documents = iter(lambda: None, True)
+            text_vectors = iter(lambda: None, True)
             sparse_vectors = iter(lambda: None, True)
+
+        if images is None:
+            images = iter(lambda: None, True)
+            image_vectors = iter(lambda: None, True)
 
         vector_name = self.get_vector_field_name()
         image_vector_name = self.get_image_vector_field_name()
         sparse_vector_name = self.get_sparse_vector_field_name()
 
-        for idx, meta, (doc, vector), (image_path, image_vector), sparse_vector in zip(
-            ids, metadata, encoded_docs, encoded_images, sparse_vectors
+        for idx, meta, doc, text_vector, image_path, image_vector, sparse_vector in zip(
+            ids, metadata, documents, text_vectors, images, image_vectors, sparse_vectors
         ):
             ids_accumulator.append(idx)
             point_vector: Dict[str, models.Vector] = {}
-            if doc is not None:
-                assert vector is not None
-                assert vector_name is not None
 
+            if doc is not None:
+                assert text_vector is not None or sparse_vector is not None
                 meta["document"] = doc
-                point_vector[vector_name] = vector
+
+            if text_vector is not None:
+                assert vector_name is not None
+                point_vector[vector_name] = text_vector
 
             if image_path is not None:
                 assert image_vector is not None
                 assert image_vector_name is not None
-
                 meta["image_path"] = image_path
                 point_vector[image_vector_name] = image_vector
 
-            if sparse_vector_name is not None and sparse_vector is not None:
+            if sparse_vector is not None:
+                assert sparse_vector_name is not None
                 point_vector[sparse_vector_name] = sparse_vector
 
             yield models.PointStruct(id=idx, payload=meta, vector=point_vector)
@@ -654,38 +649,41 @@ class QdrantFastembedMixin(QdrantBase):
             List of IDs of added items. If no ids provided, UUIDs will be randomly generated on client side.
 
         """
-        if self.sparse_embedding_model_name and not self._embedding_model_name:
-            raise ValueError(
-                "Sparse embedding models are set, but no dense embedding model is set. "
-                "Please set dense embedding model using `set_model` method."
-            )
-        # check if we have fastembed installed
-        encoded_docs = None
-        # embed if we are in the default text-only mode or if a model has been explicitly set
-        if documents is not None and (
-            self.image_embedding_model_name is None or self._embedding_model_name is not None
-        ):
-            encoded_docs = self._embed_documents(
-                documents=documents,
+        embed_dense_text = False
+
+        # default mode, no models set
+        if self.image_embedding_model_name is None and self.sparse_embedding_model_name is None:
+            embed_dense_text = True
+
+        # text embedding model has already been set
+        if self._embedding_model_name is not None:
+            embed_dense_text = True
+
+        dense_text_embeddings = None
+        if documents is not None and embed_dense_text:
+            documents, documents_iter = tee(documents, 2)
+            dense_text_embeddings = self._embed_documents(
+                documents=documents_iter,
                 embedding_model_name=self.embedding_model_name,
                 batch_size=batch_size,
                 embed_type="passage",
                 parallel=parallel,
             )
 
-        encoded_images = None
+        image_embeddings = None
         if images is not None and self.image_embedding_model_name:
-            encoded_images = self._embed_images(
+            image_embeddings = self._embed_images(
                 images=images,
                 embedding_model_name=self.image_embedding_model_name,
                 batch_size=batch_size,
                 parallel=parallel,
             )
 
-        encoded_sparse_docs = None
+        sparse_embeddings = None
         if documents is not None and self.sparse_embedding_model_name is not None:
-            encoded_sparse_docs = self._sparse_embed_documents(
-                documents=documents,
+            documents, documents_iter = tee(documents, 2)
+            sparse_embeddings = self._sparse_embed_documents(
+                documents=documents_iter,
                 embedding_model_name=self.sparse_embedding_model_name,
                 batch_size=batch_size,
                 parallel=parallel,
@@ -709,10 +707,12 @@ class QdrantFastembedMixin(QdrantBase):
         points = self._points_iterator(
             ids=ids,
             metadata=metadata,
-            encoded_docs=encoded_docs,
-            encoded_images=encoded_images,
+            documents=documents,
+            text_vectors=dense_text_embeddings,
+            image_vectors=image_embeddings,
+            images=images,
             ids_accumulator=inserted_ids,
-            sparse_vectors=encoded_sparse_docs,
+            sparse_vectors=sparse_embeddings,
         )
 
         self.upload_points(
