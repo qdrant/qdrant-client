@@ -374,7 +374,7 @@ class QdrantFastembedMixin(QdrantBase):
             )
 
     @staticmethod
-    def _get_vector_field_name(model_name: str, prefix: str = "fast"):
+    def _get_vector_field_name(model_name: str, prefix: str = "fast") -> str:
         return f"{prefix}-{model_name.split('/')[-1].lower()}"
 
     def get_vector_field_name(self) -> Optional[str]:
@@ -480,22 +480,28 @@ class QdrantFastembedMixin(QdrantBase):
             metadata = iter(lambda: {}, None)
 
         if documents is None:
-            documents = iter(lambda: None, True)
-            text_vectors = iter(lambda: None, True)
+            documents = iter(lambda: None, True)  # type: ignore
+            text_vectors = iter(lambda: None, True)  # type: ignore
 
         if sparse_vectors is None:
-            sparse_vectors = iter(lambda: None, True)
+            sparse_vectors = iter(lambda: None, True)  # type: ignore
 
         if images is None:
-            images = iter(lambda: None, True)
-            image_vectors = iter(lambda: None, True)
+            images = iter(lambda: None, True)  # type: ignore
+            image_vectors = iter(lambda: None, True)  # type: ignore
 
         vector_name = self.get_vector_field_name()
         image_vector_name = self.get_image_vector_field_name()
         sparse_vector_name = self.get_sparse_vector_field_name()
 
         for idx, meta, doc, text_vector, image_path, image_vector, sparse_vector in zip(
-            ids, metadata, documents, text_vectors, images, image_vectors, sparse_vectors
+            ids,
+            metadata,
+            documents,
+            text_vectors,  # type: ignore
+            images,
+            image_vectors,  # type: ignore
+            sparse_vectors,
         ):
             ids_accumulator.append(idx)
             point_vector: Dict[str, models.Vector] = {}
@@ -789,6 +795,7 @@ class QdrantFastembedMixin(QdrantBase):
             query_vector = embeddings[0].tolist()
 
         if sparse_vector_name and vector_name in (None, sparse_vector_name):
+            assert self.sparse_embedding_model_name is not None
             sparse_embedding_model_inst = self._get_or_init_sparse_model(
                 model_name=self.sparse_embedding_model_name
             )
@@ -863,7 +870,7 @@ class QdrantFastembedMixin(QdrantBase):
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
-    ):
+    ) -> List[QueryResponse]:
         if self.image_embedding_model_name is None:
             raise ValueError(
                 "Image query is provided, but image embedding model is not set. "
@@ -1036,7 +1043,10 @@ class QdrantFastembedMixin(QdrantBase):
         else:
             dense_queries = query_texts
             sparse_queries = query_texts
-            dense_vector_names = iter(lambda: self.get_vector_field_name(), True)
+            dense_vector_name = self.get_vector_field_name() or self._get_vector_field_name(
+                self.DEFAULT_EMBEDDING_MODEL
+            )
+            dense_vector_names = [dense_vector_name] * len(dense_queries)
 
         dense_query_vectors = []
         if len(dense_queries):
