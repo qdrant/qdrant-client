@@ -351,7 +351,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
 
     @staticmethod
-    async def vector_field_from_model(model_name: str) -> str:
+    def vector_field_from_model(model_name: str) -> str:
         if model_name in SUPPORTED_EMBEDDING_MODELS:
             prefix = "fast"
         elif model_name in SUPPORTED_IMAGE_EMBEDDING_MODELS:
@@ -376,7 +376,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Name of the vector field.
         """
         if self._embedding_model_name is not None:
-            return await self.vector_field_from_model(self._embedding_model_name)
+            return self.vector_field_from_model(self._embedding_model_name)
         return None
 
     def get_image_vector_field_name(self) -> Optional[str]:
@@ -386,7 +386,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Name of the vector field.
         """
         if self.image_embedding_model_name is not None:
-            return await self.vector_field_from_model(self.image_embedding_model_name)
+            return self.vector_field_from_model(self.image_embedding_model_name)
         return None
 
     def get_sparse_vector_field_name(self) -> Optional[str]:
@@ -396,32 +396,32 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Name of the vector field.
         """
         if self.sparse_embedding_model_name is not None:
-            return await self.vector_field_from_model(self.sparse_embedding_model_name)
+            return self.vector_field_from_model(self.sparse_embedding_model_name)
         return None
 
     def _scored_points_to_query_responses(
         self, scored_points: List[types.ScoredPoint]
     ) -> List[QueryResponse]:
-        def _get_embedding(
-            scored_point: types.ScoredPoint, field_name: Optional[str]
-        ) -> Optional[List[float]]:
-            if field_name is None:
-                return None
-            vector = (
-                scored_point.vector.get(field_name, None)
-                if isinstance(scored_point.vector, Dict)
-                else None
-            )
-            return vector
+        def _extract_embeddings(
+            scored_point: types.ScoredPoint,
+        ) -> Tuple[Optional[List[float]], Optional[List[float]], Optional[List[float]]]:
+            (text_vector, sparse_vector, image_vector) = (None, None, None)
+            if not isinstance(scored_point.vector, dict):
+                return (text_vector, sparse_vector, image_vector)
+            for vector_name, vector in scored_point.vector.items():
+                if vector_name.startswith("fast-image"):
+                    image_vector = vector
+                elif vector_name.startswith("fast-sparse"):
+                    sparse_vector = vector
+                elif vector_name.startswith("fast"):
+                    text_vector = vector
+                else:
+                    raise ValueError(f"Unknown vector field: {vector_name}")
+            return (text_vector, sparse_vector, image_vector)
 
         response = []
-        vector_field_name = self.get_vector_field_name()
-        image_vector_field_name = self.get_image_vector_field_name()
-        sparse_vector_field_name = self.get_sparse_vector_field_name()
         for scored_point in scored_points:
-            embedding = _get_embedding(scored_point, vector_field_name)
-            sparse_embedding = _get_embedding(scored_point, sparse_vector_field_name)
-            image_embedding = _get_embedding(scored_point, image_vector_field_name)
+            (embedding, sparse_embedding, image_embedding) = _extract_embeddings(scored_point)
             response.append(
                 QueryResponse(
                     id=scored_point.id,
@@ -928,7 +928,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         else:
             dense_queries = query_texts
             sparse_queries = query_texts
-            dense_vector_name = self.get_vector_field_name() or await self.vector_field_from_model(
+            dense_vector_name = self.get_vector_field_name() or self.vector_field_from_model(
                 self.DEFAULT_EMBEDDING_MODEL
             )
             dense_vector_names = [dense_vector_name] * len(dense_queries)

@@ -93,10 +93,8 @@ if __name__ == "__main__":
             "_scored_points_to_query_responses",
             "_points_iterator",
             "_validate_collection_info",
-            "_get_vector_field_name",
-            "verify_text_query_vector_name",
-            "verify_image_query_vector_name",
-            "_get_embedding",
+            "vector_field_from_model",
+            "_extract_embeddings",
         ],
         class_replace_map={
             "QdrantBase": "AsyncQdrantBase",

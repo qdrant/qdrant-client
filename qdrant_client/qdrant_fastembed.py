@@ -426,31 +426,30 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         scored_points: List[types.ScoredPoint],
     ) -> List[QueryResponse]:
-        def _get_embedding(
-            scored_point: types.ScoredPoint, field_name: Optional[str]
-        ) -> Optional[List[float]]:
-            if field_name is None:
-                return None
-            vector = (
-                scored_point.vector.get(field_name, None)
-                if isinstance(scored_point.vector, Dict)
-                else None
-            )
-            return vector
+        def _extract_embeddings(
+            scored_point: types.ScoredPoint,
+        ) -> Tuple[Optional[List[float]], Optional[List[float]], Optional[List[float]]]:
+            text_vector, sparse_vector, image_vector = None, None, None
+
+            if not isinstance(scored_point.vector, dict):
+                return text_vector, sparse_vector, image_vector
+
+            for vector_name, vector in scored_point.vector.items():
+                if vector_name.startswith("fast-image"):
+                    image_vector = vector
+                elif vector_name.startswith("fast-sparse"):
+                    sparse_vector = vector
+                elif vector_name.startswith("fast"):
+                    text_vector = vector
+                else:
+                    raise ValueError(f"Unknown vector field: {vector_name}")
+
+            return text_vector, sparse_vector, image_vector
 
         response = []
-        # If models were not set, we can't extract embeddings.
-        # Should we look for prefixes `fast-`, `fast-image`, `fast-sparse`?
-
-        vector_field_name = self.get_vector_field_name()
-        image_vector_field_name = self.get_image_vector_field_name()
-        sparse_vector_field_name = self.get_sparse_vector_field_name()
 
         for scored_point in scored_points:
-            embedding = _get_embedding(scored_point, vector_field_name)
-            sparse_embedding = _get_embedding(scored_point, sparse_vector_field_name)
-            image_embedding = _get_embedding(scored_point, image_vector_field_name)
-
+            embedding, sparse_embedding, image_embedding = _extract_embeddings(scored_point)
             response.append(
                 QueryResponse(
                     id=scored_point.id,
