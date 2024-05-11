@@ -373,6 +373,10 @@ class QdrantFastembedMixin(QdrantBase):
                 values=sparse_vector.values.tolist(),
             )
 
+    @staticmethod
+    def _get_vector_field_name(model_name: str, prefix: str = "fast"):
+        return f"{prefix}-{model_name.split('/')[-1].lower()}"
+
     def get_vector_field_name(self) -> Optional[str]:
         """
         Returns name of the text vector field in qdrant collection, used by current fastembed model.
@@ -380,8 +384,7 @@ class QdrantFastembedMixin(QdrantBase):
             Name of the vector field.
         """
         if self._embedding_model_name is not None:
-            model_name = self.embedding_model_name.split("/")[-1].lower()
-            return f"fast-{model_name}"
+            return self._get_vector_field_name(self._embedding_model_name)
         return None
 
     def get_image_vector_field_name(self) -> Optional[str]:
@@ -391,8 +394,9 @@ class QdrantFastembedMixin(QdrantBase):
             Name of the vector field.
         """
         if self.image_embedding_model_name is not None:
-            model_name = self.image_embedding_model_name.split("/")[-1].lower()
-            return f"fast-image-{model_name}"
+            return self._get_vector_field_name(
+                self.image_embedding_model_name, prefix="fast-image"
+            )
         return None
 
     def get_sparse_vector_field_name(self) -> Optional[str]:
@@ -402,8 +406,9 @@ class QdrantFastembedMixin(QdrantBase):
             Name of the vector field.
         """
         if self.sparse_embedding_model_name is not None:
-            model_name = self.sparse_embedding_model_name.split("/")[-1].lower()
-            return f"fast-sparse-{model_name}"
+            return self._get_vector_field_name(
+                self.sparse_embedding_model_name, prefix="fast-sparse"
+            )
         return None
 
     def _scored_points_to_query_responses(
@@ -729,6 +734,165 @@ class QdrantFastembedMixin(QdrantBase):
 
         return inserted_ids
 
+    def verify_text_query_vector_name(self, vector_name: str) -> None:
+        text_vector_name = self.get_vector_field_name() or self._get_vector_field_name(
+            self.DEFAULT_EMBEDDING_MODEL
+        )
+        image_vector_name = self.get_image_vector_field_name()
+        sparse_vector_name = self.get_sparse_vector_field_name()
+
+        if vector_name not in (text_vector_name, image_vector_name, sparse_vector_name):
+            raise ValueError(
+                f"Vector name {vector_name} does not match any of the available vector names: "
+                f"{text_vector_name}, {image_vector_name}, {sparse_vector_name}. Please provide a valid vector name."
+            )
+
+    def verify_image_query_vector_name(self, vector_name: str) -> None:
+        text_vector_name = self.get_vector_field_name() or self._get_vector_field_name(
+            self.DEFAULT_EMBEDDING_MODEL
+        )
+        image_vector_name = self.get_image_vector_field_name()
+        sparse_vector_name = self.get_sparse_vector_field_name()
+        if vector_name not in (text_vector_name, image_vector_name, sparse_vector_name):
+            raise ValueError(
+                f"Vector name {vector_name} does not match any of the available vector names: "
+                f"{text_vector_name}, {image_vector_name}, {sparse_vector_name}. Please provide a valid vector name."
+            )
+        if vector_name == sparse_vector_name:
+            raise ValueError(
+                f"Sparse vectors are not supported for image queries. Please provide a valid vector name."
+            )
+
+    def _query_text(
+        self,
+        collection_name: str,
+        query_text: Optional[Union[str, Dict[str, str]]] = None,
+        query_filter: Optional[models.Filter] = None,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> List[QueryResponse]:
+        vector_name = None
+        query_vector, sparse_query_vector = None, None
+        sparse_vector_name = self.get_sparse_vector_field_name()
+
+        if isinstance(query_text, dict):
+            vector_name, query_text = next(iter(query_text.items()))
+            self.verify_text_query_vector_name(vector_name)
+
+        if vector_name is None or vector_name != sparse_vector_name:
+            embedding_model_inst = (
+                self._get_or_init_text_model(  # initialize either provided or default model
+                    model_name=self.embedding_model_name
+                )
+            )
+            embeddings = list(embedding_model_inst.query_embed(query=query_text))
+            query_vector = embeddings[0].tolist()
+
+        if sparse_vector_name and vector_name in (None, sparse_vector_name):
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(
+                model_name=self.sparse_embedding_model_name
+            )
+            sparse_vector = list(sparse_embedding_model_inst.embed(documents=query_text))[0]
+            sparse_query_vector = models.SparseVector(
+                indices=sparse_vector.indices.tolist(),
+                values=sparse_vector.values.tolist(),
+            )
+
+        dense_vector_name = vector_name if vector_name else self.get_vector_field_name()
+
+        if sparse_query_vector is None:
+            assert query_vector is not None
+            return self._scored_points_to_query_responses(
+                self.search(
+                    collection_name=collection_name,
+                    query_vector=models.NamedVector(name=dense_vector_name, vector=query_vector),
+                    query_filter=query_filter,
+                    limit=limit,
+                    with_payload=True,
+                    **kwargs,
+                )
+            )
+
+        if query_vector is None:
+            assert sparse_query_vector is not None
+            return self._scored_points_to_query_responses(
+                self.search(
+                    collection_name=collection_name,
+                    query_vector=models.NamedSparseVector(
+                        name=sparse_vector_name, vector=sparse_query_vector
+                    ),
+                    query_filter=query_filter,
+                    limit=limit,
+                    with_payload=True,
+                    **kwargs,
+                )
+            )
+
+        dense_request = models.SearchRequest(
+            vector=models.NamedVector(
+                name=dense_vector_name,
+                vector=query_vector,
+            ),
+            filter=query_filter,
+            limit=limit,
+            with_payload=True,
+            **kwargs,
+        )
+        sparse_request = models.SearchRequest(
+            vector=models.NamedSparseVector(
+                name=self.get_sparse_vector_field_name(),
+                vector=sparse_query_vector,
+            ),
+            filter=query_filter,
+            limit=limit,
+            with_payload=True,
+            **kwargs,
+        )
+
+        dense_request_response, sparse_request_response = self.search_batch(
+            collection_name=collection_name, requests=[dense_request, sparse_request]
+        )
+        return self._scored_points_to_query_responses(
+            reciprocal_rank_fusion([dense_request_response, sparse_request_response], limit=limit)
+        )
+
+    def _query_image(
+        self,
+        collection_name: str,
+        query_image: Optional[Union[PathInput, Dict[str, PathInput]]] = None,
+        query_filter: Optional[models.Filter] = None,
+        limit: int = 10,
+        **kwargs: Any,
+    ):
+        if self.image_embedding_model_name is None:
+            raise ValueError(
+                "Image query is provided, but image embedding model is not set. "
+                "Please set image embedding model using `set_image_model` method."
+            )
+
+        vector_name = None
+        if isinstance(query_image, dict):
+            vector_name, query_image = next(iter(query_image.items()))
+            self.verify_image_query_vector_name(vector_name)
+        vector_name = vector_name if vector_name else self.get_image_vector_field_name()
+
+        embedding_model_inst = self._get_or_init_image_model(
+            model_name=self.image_embedding_model_name
+        )
+        embeddings = list(embedding_model_inst.embed([query_image]))
+
+        query_vector = embeddings[0].tolist()
+        return self._scored_points_to_query_responses(
+            self.search(
+                collection_name=collection_name,
+                query_vector=models.NamedVector(name=vector_name, vector=query_vector),
+                query_filter=query_filter,
+                limit=limit,
+                with_payload=True,
+                **kwargs,
+            )
+        )
+
     def query(
         self,
         collection_name: str,
@@ -766,88 +930,25 @@ class QdrantFastembedMixin(QdrantBase):
             List[types.ScoredPoint]: List of scored points.
 
         """
-        if self.sparse_embedding_model_name and not self._embedding_model_name:
-            raise ValueError(
-                "Sparse embedding model is set, but dense embedding model is not set. "
-                "Sparse embeddings are currently supported only within hybrid search"
-            )
-
         if (query_text is None) is (query_image is None):
             raise ValueError("Either query_text or query_image should be provided")
 
-        vector_name = None
         if query_text is not None:
-            if isinstance(query_text, dict):
-                vector_name, query_text = next(iter(query_text.items()))
-            embedding_model_inst = self._get_or_init_text_model(
-                model_name=self.embedding_model_name
+            return self._query_text(
+                collection_name=collection_name,
+                query_text=query_text,
+                query_filter=query_filter,
+                limit=limit,
+                **kwargs,
             )
-            embeddings = list(embedding_model_inst.query_embed(query=query_text))
-            vector_name = vector_name if vector_name else self.get_vector_field_name()
         else:
-            if isinstance(query_image, dict):
-                vector_name, query_image = next(iter(query_image.items()))
-            if self.image_embedding_model_name is None:
-                raise ValueError(
-                    "Image query is provided, but image embedding model is not set. "
-                    "Please set image embedding model using `set_image_model` method."
-                )
-            embedding_model_inst = self._get_or_init_image_model(
-                model_name=self.image_embedding_model_name
+            return self._query_image(
+                collection_name=collection_name,
+                query_image=query_image,
+                query_filter=query_filter,
+                limit=limit,
+                **kwargs,
             )
-            embeddings = list(embedding_model_inst.embed([query_image]))
-            vector_name = vector_name if vector_name else self.get_image_vector_field_name()
-
-        query_vector = embeddings[0].tolist()
-
-        if self.sparse_embedding_model_name is None or query_text is None:
-            return self._scored_points_to_query_responses(
-                self.search(
-                    collection_name=collection_name,
-                    query_vector=models.NamedVector(name=vector_name, vector=query_vector),
-                    query_filter=query_filter,
-                    limit=limit,
-                    with_payload=True,
-                    **kwargs,
-                )
-            )
-
-        sparse_embedding_model_inst = self._get_or_init_sparse_model(
-            model_name=self.sparse_embedding_model_name
-        )
-        sparse_vector = list(sparse_embedding_model_inst.embed(documents=query_text))[0]
-        sparse_query_vector = models.SparseVector(
-            indices=sparse_vector.indices.tolist(),
-            values=sparse_vector.values.tolist(),
-        )
-
-        dense_request = models.SearchRequest(
-            vector=models.NamedVector(
-                name=vector_name,
-                vector=query_vector,
-            ),
-            filter=query_filter,
-            limit=limit,
-            with_payload=True,
-            **kwargs,
-        )
-        sparse_request = models.SearchRequest(
-            vector=models.NamedSparseVector(
-                name=self.get_sparse_vector_field_name(),
-                vector=sparse_query_vector,
-            ),
-            filter=query_filter,
-            limit=limit,
-            with_payload=True,
-            **kwargs,
-        )
-
-        dense_request_response, sparse_request_response = self.search_batch(
-            collection_name=collection_name, requests=[dense_request, sparse_request]
-        )
-        return self._scored_points_to_query_responses(
-            reciprocal_rank_fusion([dense_request_response, sparse_request_response], limit=limit)
-        )
 
     def query_batch(
         self,
