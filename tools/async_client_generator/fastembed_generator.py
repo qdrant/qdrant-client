@@ -95,6 +95,8 @@ if __name__ == "__main__":
             "_validate_collection_info",
             "vector_field_from_model",
             "_extract_embeddings",
+            "_build_image_batch_requests",
+            "_build_text_batch_requests",
         ],
         class_replace_map={
             "QdrantBase": "AsyncQdrantBase",

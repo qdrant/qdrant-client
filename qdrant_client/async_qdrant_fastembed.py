@@ -887,12 +887,12 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         text_requests: List[models.SearchRequest] = []
         rescore_text = False
         if query_texts is not None and query_texts:
-            (text_requests, rescore_text) = await self._build_text_batch_requests(
+            (text_requests, rescore_text) = self._build_text_batch_requests(
                 query_texts=query_texts, query_filter=query_filter, limit=limit, **kwargs
             )
         image_requests = []
         if query_images is not None and query_images:
-            image_requests = await self._build_image_batch_requests(
+            image_requests = self._build_image_batch_requests(
                 query_images=query_images, query_filter=query_filter, limit=limit, **kwargs
             )
         requests = text_requests + image_requests
@@ -911,7 +911,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             ]
         return [self._scored_points_to_query_responses(response) for response in responses]
 
-    async def _build_text_batch_requests(
+    def _build_text_batch_requests(
         self,
         query_texts: Union[List[str], List[Dict[str, str]]],
         query_filter: Optional[models.Filter] = None,
@@ -981,7 +981,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             requests.append(request)
         return (requests, rescore)
 
-    async def _build_image_batch_requests(
+    def _build_image_batch_requests(
         self,
         query_images: Union[List[PathInput], List[Dict[str, PathInput]]],
         query_filter: Optional[models.Filter] = None,
