@@ -884,7 +884,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             raise ValueError(
                 "At least one of params `query_texts` or `query_images` has to be provided."
             )
-        text_requests = []
+        text_requests: List[models.SearchRequest] = []
         rescore_text = False
         if query_texts is not None and query_texts:
             (text_requests, rescore_text) = await self._build_text_batch_requests(
@@ -900,6 +900,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             return []
         responses = await self.search_batch(collection_name=collection_name, requests=requests)
         if rescore_text:
+            assert query_texts is not None
             num_texts = len(query_texts)
             num_text_requests = len(text_requests)
             dense_responses = responses[:num_texts]
