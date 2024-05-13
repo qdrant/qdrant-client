@@ -850,7 +850,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         self,
         collection_name: str,
         query_texts: Optional[Union[List[str], List[Dict[str, str]]]] = None,
-        query_images: Optional[Union[List[PathInput], Dict[str, PathInput]]] = None,
+        query_images: Optional[Union[List[PathInput], List[Dict[str, PathInput]]]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
@@ -925,7 +925,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             rescore = False
             for query_request in query_texts:
                 assert isinstance(query_request, dict)
-                for i, (key, query) in enumerate(query_request.items()):
+                for key, query in query_request.items():
                     if key != sparse_vector_name:
                         dense_queries.append(query)
                         dense_vector_names.append(key)
@@ -1002,15 +1002,16 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         if len(query_images) == 0:
             return []
         embedding_model_inst: ImageEmbedding = self._get_or_init_image_model(
-            model_name=self.image_embedding_model_name, image=True
+            model_name=self.image_embedding_model_name
         )
         if isinstance(query_images[0], dict):
-            (vector_names, query_images) = ([], [])
+            (vector_names, queries) = ([], [])
             for query_request in query_images:
                 assert isinstance(query_request, dict)
-                for key, query in enumerate(query_request.items()):
+                for key, query in query_request.items():
                     vector_names.append(key)
-                    query_images.append(query)
+                    queries.append(query)
+            query_images = queries
         else:
             default_vector_name = self.get_image_vector_field_name()
             vector_names = [default_vector_name for _ in query_images]
