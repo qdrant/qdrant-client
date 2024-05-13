@@ -976,40 +976,56 @@ class QdrantFastembedMixin(QdrantBase):
                 "At least one of params `query_texts` or `query_images` has to be provided."
             )
 
-        result = []
+        text_requests = []
+        rescore_text = False
         if query_texts is not None and query_texts:
-            result.extend(
-                self._query_text_batch(
-                    collection_name=collection_name,
-                    query_texts=query_texts,
-                    query_filter=query_filter,
-                    limit=limit,
-                    **kwargs,
-                )
+            text_requests, rescore_text = self._build_text_batch_requests(
+                query_texts=query_texts,
+                query_filter=query_filter,
+                limit=limit,
+                **kwargs,
             )
+
+        image_requests = []
         if query_images is not None and query_images:
-            result.extend(
-                self._query_image_batch(
-                    collection_name=collection_name,
-                    query_images=query_images,
-                    query_filter=query_filter,
-                    limit=limit,
-                    **kwargs,
-                )
+            image_requests = self._build_image_batch_requests(
+                query_images=query_images,
+                query_filter=query_filter,
+                limit=limit,
+                **kwargs,
             )
 
-        return result
+        requests = text_requests + image_requests
 
-    def _query_text_batch(
+        if not requests:
+            return []
+
+        responses = self.search_batch(
+            collection_name=collection_name,
+            requests=requests,
+        )
+
+        if rescore_text:
+            num_texts = len(query_texts)
+            num_text_requests = len(text_requests)
+            dense_responses = responses[:num_texts]
+            sparse_responses = responses[num_texts:num_text_requests]
+            responses[:num_text_requests] = [
+                reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
+                for dense_response, sparse_response in zip(dense_responses, sparse_responses)
+            ]
+
+        return [self._scored_points_to_query_responses(response) for response in responses]
+
+    def _build_text_batch_requests(
         self,
-        collection_name: str,
         query_texts: Union[List[str], List[Dict[str, str]]],
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
-    ) -> List[List[QueryResponse]]:
+    ) -> Tuple[List[models.SearchRequest], bool]:
         if len(query_texts) == 0:
-            return []
+            return [], False
 
         rescore = True
         sparse_vector_name = self.get_sparse_vector_field_name()
@@ -1055,11 +1071,7 @@ class QdrantFastembedMixin(QdrantBase):
             requests.append(request)
 
         if self.sparse_embedding_model_name is None:
-            responses = self.search_batch(
-                collection_name=collection_name,
-                requests=requests,
-            )
-            return [self._scored_points_to_query_responses(response) for response in responses]
+            return requests, False
 
         sparse_query_vectors = []
         if len(sparse_queries):
@@ -1087,28 +1099,15 @@ class QdrantFastembedMixin(QdrantBase):
 
             requests.append(request)
 
-        responses = self.search_batch(
-            collection_name=collection_name,
-            requests=requests,
-        )
+        return requests, rescore
 
-        if rescore:
-            dense_responses = responses[: len(query_texts)]
-            sparse_responses = responses[len(query_texts) :]
-            responses = [
-                reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
-                for dense_response, sparse_response in zip(dense_responses, sparse_responses)
-            ]
-        return [self._scored_points_to_query_responses(response) for response in responses]
-
-    def _query_image_batch(
+    def _build_image_batch_requests(
         self,
-        collection_name: str,
         query_images: Union[List[PathInput], List[Dict[str, PathInput]]],
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
-    ) -> List[List[QueryResponse]]:
+    ) -> List[models.SearchRequest]:
         if self.image_embedding_model_name is None:
             raise ValueError(
                 "Image query is provided, but image embedding model is not set. "
@@ -1146,10 +1145,4 @@ class QdrantFastembedMixin(QdrantBase):
             )
 
             requests.append(request)
-
-        responses = self.search_batch(
-            collection_name=collection_name,
-            requests=requests,
-        )
-
-        return [self._scored_points_to_query_responses(response) for response in responses]
+        return requests

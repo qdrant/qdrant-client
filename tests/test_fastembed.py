@@ -13,6 +13,7 @@ DOCS_EXAMPLE = {
 }
 IMAGE_EXAMPLE = TEST_DATA_DIR / "image.jpeg"
 CROSS_MODEL_EXAMPLE = {**DOCS_EXAMPLE, "images": [IMAGE_EXAMPLE, IMAGE_EXAMPLE]}
+DB_NAME = "default_db"
 
 
 def test_set_model():
@@ -38,7 +39,7 @@ def test_set_model():
 @pytest.mark.parametrize("dense_model_name", ["sentence-transformers/all-MiniLM-L6-v2", None])
 def test_dense(tmp_path, dense_model_name):
     # tmp_path is a pytest fixture
-    local_client = QdrantClient(path=str(tmp_path / "db_test_dense"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     collection_name = "demo_collection"
     docs = [
         "Qdrant has Langchain integrations",
@@ -70,7 +71,7 @@ def test_dense(tmp_path, dense_model_name):
         local_client.close()
 
         # region query without preliminary add
-        local_client = QdrantClient(path=str(tmp_path / "db_test_dense"))
+        local_client = QdrantClient(path=str(tmp_path / DB_NAME))
         if dense_model_name is not None:
             local_client.set_model(embedding_model_name=dense_model_name)
         local_client.query(collection_name=collection_name, query_text="This is a query document")
@@ -81,7 +82,7 @@ def test_dense(tmp_path, dense_model_name):
 
 def test_image(tmp_path):
     # tmp_path is a pytest fixture
-    local_client = QdrantClient(path=str(tmp_path / "db_test_image"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     collection_name = "demo_collection"
     data = [IMAGE_EXAMPLE, IMAGE_EXAMPLE]
 
@@ -110,7 +111,7 @@ def test_image(tmp_path):
         local_client.close()
 
         # region query without preliminary add
-        local_client = QdrantClient(path=str(tmp_path / "db_test_image"))
+        local_client = QdrantClient(path=str(tmp_path / DB_NAME))
         local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
         search_result = local_client.query(
             collection_name=collection_name, query_image=IMAGE_EXAMPLE
@@ -123,7 +124,7 @@ def test_image(tmp_path):
 @pytest.mark.parametrize("dense_model_name", ["BAAI/bge-small-en", None])
 def test_hybrid(tmp_path, dense_model_name):
     # tmp_path is a pytest fixture
-    local_client = QdrantClient(path=str(tmp_path / "db_test_hybrid"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     collection_name = "hybrid_collection"
     query_text = "This is a query document about Qdrant"
 
@@ -167,7 +168,7 @@ def test_hybrid(tmp_path, dense_model_name):
     local_client.close()
 
     # region query without preliminary add
-    local_client = QdrantClient(path=str(tmp_path / "db_test_hybrid"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     if dense_model_name is not None:
         local_client.set_model(embedding_model_name=dense_model_name)
     local_client.set_sparse_model(embedding_model_name="prithvida/Splade_PP_en_v1")
@@ -194,7 +195,7 @@ def test_hybrid(tmp_path, dense_model_name):
 
 def test_cross_model(tmp_path):
     # tmp_path is a pytest fixture
-    local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     collection_name = "demo_collection"
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
@@ -241,7 +242,7 @@ def test_cross_model(tmp_path):
     local_client.close()
 
     # region query without preliminary add
-    local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     local_client.set_model("Qdrant/clip-ViT-B-32-text")
     search_result = local_client.query(
         collection_name=collection_name,
@@ -256,7 +257,7 @@ def test_cross_model(tmp_path):
     assert search_result[0].id == 2000
     local_client.close()
 
-    local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
     search_result = local_client.query(
         collection_name=collection_name,
@@ -377,7 +378,7 @@ def test_query_text_batch(tmp_path):
 
 
 def test_query_image_batch(tmp_path):
-    local_client = QdrantClient(path=str(tmp_path / "db_test_query_image_batch"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     collection_name = "image_collection"
 
     if not local_client._FASTEMBED_INSTALLED:
@@ -397,7 +398,7 @@ def test_query_image_batch(tmp_path):
     local_client.close()
 
     # region query without preliminary add
-    local_client = QdrantClient(path=str(tmp_path / "db_test_query_image_batch"))
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
     image_search_result = local_client.query_batch(
         collection_name=collection_name, query_images=query_images
@@ -409,8 +410,9 @@ def test_query_image_batch(tmp_path):
     local_client.close()
 
 
-def test_query_cross_model_batch(tmp_path):
-    local_client = QdrantClient(path=str(tmp_path / "db_test_query_cross_model_batch"))
+@pytest.mark.parametrize("with_sparse", [True, False])
+def test_query_cross_model_batch(tmp_path, with_sparse):
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
     collection_name = "cross_model_collection"
 
     if not local_client._FASTEMBED_INSTALLED:
@@ -418,6 +420,8 @@ def test_query_cross_model_batch(tmp_path):
 
     local_client.set_model("Qdrant/clip-ViT-B-32-text")
     local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
+    if with_sparse:
+        local_client.set_sparse_model(embedding_model_name="prithvida/Splade_PP_en_v1")
 
     local_client.add(collection_name=collection_name, **CROSS_MODEL_EXAMPLE)
 
@@ -450,4 +454,37 @@ def test_query_cross_model_batch(tmp_path):
     assert all(len(res) > 0 for res in named_queries_result)
     assert all(
         res[0].id == named_res[0].id for res, named_res in zip(result, named_queries_result)
+    )  # when sparse are used, the order is guaranteed only for these queries
+
+    local_client.close()
+
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
+    local_client.set_model("Qdrant/clip-ViT-B-32-text")
+    search_result = local_client.query_batch(
+        collection_name=collection_name,
+        query_texts=[
+            {
+                local_client.vector_field_from_model(
+                    "Qdrant/clip-ViT-B-32-vision"
+                ): "This is a query document"
+            }
+        ],
     )
+
+    assert len(search_result) > 0
+    assert all(len(res) > 0 for res in search_result)
+
+    local_client.close()
+
+    local_client = QdrantClient(path=str(tmp_path / DB_NAME))
+    local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
+    search_result = local_client.query_batch(
+        collection_name=collection_name,
+        query_images=[
+            {local_client.vector_field_from_model("Qdrant/clip-ViT-B-32-text"): IMAGE_EXAMPLE}
+        ],
+    )
+
+    assert len(search_result) > 0
+    assert all(len(res) > 0 for res in search_result)
+    local_client.close()
