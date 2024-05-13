@@ -622,6 +622,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             List of IDs of added items. If no ids provided, UUIDs will be randomly generated on client side.
 
         """
+        self._import_fastembed()
         dense_text_embeddings = None
         sparse_embeddings = None
         if documents is not None:
@@ -827,6 +828,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             List[types.ScoredPoint]: List of scored points.
 
         """
+        self._import_fastembed()
         if (query_text is None) is (query_image is None):
             raise ValueError("One of params `query_text` or `query_image` has to be provided.")
         if query_text is not None:
@@ -880,6 +882,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             List[List[QueryResponse]]: List of lists of responses for each query text.
 
         """
+        self._import_fastembed()
         if query_texts is None and query_images is None:
             raise ValueError(
                 "At least one of params `query_texts` or `query_images` has to be provided."
