@@ -158,7 +158,8 @@ def test_hybrid(tmp_path, dense_model_name):
     # endregion
 
 
-def test_cross_model(tmp_path):
+@pytest.mark.parametrize("include_sparse", [True, False])
+def test_cross_model(tmp_path, include_sparse):
     # tmp_path is a pytest fixture
     local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
     collection_name = "demo_collection"
@@ -167,23 +168,43 @@ def test_cross_model(tmp_path):
 
     local_client.set_model("Qdrant/clip-ViT-B-32-text")
     local_client.set_image_model("Qdrant/clip-ViT-B-32-vision")
+    if include_sparse:
+        local_client.set_sparse_model("prithvida/Splade_PP_en_v1")
 
     local_client.add(collection_name=collection_name, **CROSS_MODEL_EXAMPLE)
     assert len(local_client.get_collection(collection_name).config.params.vectors) == 2
     assert local_client.count(collection_name).count == 2
 
+    # regular text query
     search_result = local_client.query(
         collection_name=collection_name, query_text="This is a query document"
     )
 
     assert len(search_result) > 0
     assert search_result[0].id == 2000
+    # endregion
 
+    # named text query
+    dense_search_result = local_client.query(
+        collection_name=collection_name,
+        query_text={local_client.get_vector_field_name(): "This is a query document"},
+    )
+    assert len(dense_search_result) > 0
+    assert dense_search_result[0].id == 2000
+    if include_sparse:
+        assert (
+            dense_search_result[0].score != search_result[0].score
+        )  # hybrid search has score from fusion
+    # endregion
+
+    # regular image query
     search_result = local_client.query(collection_name=collection_name, query_image=IMAGE_EXAMPLE)
 
     assert len(search_result) > 0
     assert search_result[0].id == 2000
+    # endregion
 
+    # region cross modal text-to-image query
     search_result = local_client.query(
         collection_name=collection_name,
         query_text={local_client.get_image_vector_field_name(): "This is a query document"},
@@ -191,7 +212,9 @@ def test_cross_model(tmp_path):
 
     assert len(search_result) > 0
     assert search_result[0].id == 2000
+    # endregion
 
+    # region cross modal image-to-text query
     search_result = local_client.query(
         collection_name=collection_name,
         query_image={local_client.get_vector_field_name(): IMAGE_EXAMPLE},
@@ -199,15 +222,11 @@ def test_cross_model(tmp_path):
 
     assert len(search_result) > 0
     assert search_result[0].id == 2000
-
-    with pytest.raises(ValueError):
-        local_client.query(
-            collection_name=collection_name,
-            query_text="This is a query document",
-            query_image=IMAGE_EXAMPLE,
-        )
+    # endregion
 
     local_client.close()
+
+    # region query without preliminary add
     local_client = QdrantClient(path=str(tmp_path / "db_test_cross_model"))
     local_client.set_model("Qdrant/clip-ViT-B-32-text")
     search_result = local_client.query(
@@ -235,66 +254,109 @@ def test_cross_model(tmp_path):
     assert len(search_result) > 0
     assert search_result[0].id == 2000
     local_client.close()
+    # endregion
 
 
-def test_query_batch(tmp_path):
-    # tmp_path is a pytest fixture
-    local_client = QdrantClient(path=str(tmp_path / "db_test_query_batch"))
-
-    dense_collection_name = "dense_collection"
-    hybrid_collection_name = "hybrid_collection"
+def test_query_interface_validation():
+    local_client = QdrantClient(":memory:")
+    collection_name = "demo_collection"
 
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
-    local_client.add(collection_name=dense_collection_name, **DOCS_EXAMPLE)
-    query_texts = ["This is a query document", "This is another query document"]
-    dense_search_result = local_client.query_batch(
-        collection_name=dense_collection_name, query_texts=query_texts
-    )
-    assert len(dense_search_result) == len(query_texts)
-    assert all(len(result) > 0 for result in dense_search_result)
+    local_client.set_model("sentence-transformers/all-MiniLM-L6-v2")
 
-    local_client.set_sparse_model(embedding_model_name="prithvida/Splade_PP_en_v1")
+    with pytest.raises(ValueError):
+        local_client.query(
+            collection_name=collection_name,
+            query_text="This is a query document",
+            query_image=IMAGE_EXAMPLE,
+        )
 
-    local_client.add(collection_name=hybrid_collection_name, **DOCS_EXAMPLE)
+    with pytest.raises(ValueError):
+        local_client.query(
+            collection_name=collection_name,
+        )
 
-    hybrid_search_result = local_client.query_batch(
-        collection_name=hybrid_collection_name, query_texts=query_texts
-    )
+    # image model is not set
+    with pytest.raises(ValueError):
+        local_client.query(collection_name=collection_name, query_image=IMAGE_EXAMPLE)
 
-    assert len(hybrid_search_result) == len(query_texts)
-    assert all(len(result) > 0 for result in hybrid_search_result)
+    with pytest.raises(ValueError):
+        local_client.query_batch(
+            collection_name=collection_name,
+        )
 
-    single_dense_response = next(iter(dense_search_result))
-    single_hybrid_response = next(iter(hybrid_search_result))
+    with pytest.raises(ValueError):
+        local_client.query_batch(collection_name=collection_name, query_images=[IMAGE_EXAMPLE])
 
-    assert (
-        single_hybrid_response[0].score != single_dense_response[0].score
-    )  # hybrid search has score from fusion
 
-    local_client.close()
+def test_query_batch(tmp_path):
+    # tmp_path is a pytest fixture
+    tmp_client = QdrantClient(":memory:")
 
-    # region query without preliminary add
-    local_client = QdrantClient(path=str(tmp_path / "db_test_query_batch"))
-    dense_search_result = local_client.query_batch(
-        collection_name=dense_collection_name, query_texts=query_texts
-    )
-    assert len(dense_search_result) == len(query_texts)
-    assert all(len(result) > 0 for result in dense_search_result)
+    collection_name = "dense_collection"
 
-    local_client.set_sparse_model(embedding_model_name="prithvida/Splade_PP_en_v1")
-    hybrid_search_result = local_client.query_batch(
-        collection_name=hybrid_collection_name, query_texts=query_texts
-    )
-    assert len(hybrid_search_result) == len(query_texts)
-    assert all(len(result) > 0 for result in hybrid_search_result)
+    if not tmp_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping test")
 
-    single_dense_response = next(iter(dense_search_result))
-    single_hybrid_response = next(iter(hybrid_search_result))
+    tmp_client.close()
 
-    assert (
-        single_hybrid_response[0].score != single_dense_response[0].score
-    )  # hybrid search has score from fusion
-    local_client.close()
-    # endregion
+    query_texts = [
+        "This is a query document about Qdrant",
+        "This is another query document about Qdrant",
+    ]
+    for with_preliminary_add in [True, False]:
+        local_client = QdrantClient(path=str(tmp_path / "db_test_query_batch"))
+
+        local_client.set_sparse_model(embedding_model_name="prithvida/Splade_PP_en_v1")
+        if with_preliminary_add:
+            local_client.add(collection_name=collection_name, **DOCS_EXAMPLE)
+
+        dense_query_texts = [
+            {
+                local_client.vector_field_from_model(
+                    local_client.DEFAULT_EMBEDDING_MODEL
+                ): query_text
+            }
+            for query_text in query_texts
+        ]
+        dense_search_result = local_client.query_batch(
+            collection_name=collection_name, query_texts=dense_query_texts
+        )
+        assert len(dense_search_result) == len(dense_query_texts)
+        assert all(len(result) > 0 for result in dense_search_result)
+
+        sparse_query_texts = [
+            {local_client.get_sparse_vector_field_name(): query_text} for query_text in query_texts
+        ]
+        sparse_search_result = local_client.query_batch(
+            collection_name=collection_name, query_texts=sparse_query_texts
+        )
+        assert len(sparse_search_result) == len(sparse_query_texts)
+        assert all(len(result) > 0 for result in sparse_search_result)
+
+        single_dense_response = next(iter(dense_search_result))
+        single_sparse_response = next(iter(sparse_search_result))
+
+        assert (
+            single_sparse_response[0].id == single_dense_response[0].id
+            and single_sparse_response[0].score  # it is manually selected, no guarantees
+            != single_dense_response[0].score
+        )  # dense and sparse search have different scores
+
+        hybrid_search_result = local_client.query_batch(
+            collection_name=collection_name, query_texts=query_texts
+        )
+        assert len(hybrid_search_result) == len(query_texts)
+        assert all(len(result) > 0 for result in hybrid_search_result)
+
+        single_hybrid_response = next(iter(hybrid_search_result))
+
+        assert (
+            single_hybrid_response[0].id == single_dense_response[0].id
+            and single_hybrid_response[0].score  # it is manually selected, no guarantees
+            != single_dense_response[0].score
+        )  # hybrid search has score from fusion
+
+        local_client.close()

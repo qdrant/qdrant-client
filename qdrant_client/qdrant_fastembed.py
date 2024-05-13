@@ -917,7 +917,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         if (query_text is None) is (query_image is None):
-            raise ValueError("Either query_text or query_image should be provided")
+            raise ValueError("One of params `query_text` or `query_image` has to be provided.")
 
         if query_text is not None:
             return self._query_text(
@@ -939,7 +939,7 @@ class QdrantFastembedMixin(QdrantBase):
     def query_batch(
         self,
         collection_name: str,
-        query_texts: Optional[Union[List[str], Dict[str, str]]] = None,
+        query_texts: Optional[Union[List[str], List[Dict[str, str]]]] = None,
         query_images: Optional[Union[List[PathInput], Dict[str, PathInput]]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
@@ -972,7 +972,9 @@ class QdrantFastembedMixin(QdrantBase):
         """
 
         if (query_texts is None) and (query_images is None):
-            raise ValueError("Either query_texts or query_images should be provided")
+            raise ValueError(
+                "At least one of params `query_texts` or `query_images` has to be provided."
+            )
 
         result = []
         if query_texts is not None and query_texts:
@@ -1001,23 +1003,30 @@ class QdrantFastembedMixin(QdrantBase):
     def _query_text_batch(
         self,
         collection_name: str,
-        query_texts: Union[List[str], Dict[str, str]],
+        query_texts: Union[List[str], List[Dict[str, str]]],
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
     ) -> List[List[QueryResponse]]:
+        if len(query_texts) == 0:
+            return []
+
         rescore = True
         sparse_vector_name = self.get_sparse_vector_field_name()
         dense_queries, dense_vector_names = [], []
         sparse_queries = []
-        if isinstance(query_texts, dict):
+
+        if isinstance(query_texts[0], dict):
             rescore = False  # named queries allow more precise search queries, but does not support hybrid search
-            for i, (key, query) in enumerate(query_texts.items()):
-                if key != sparse_vector_name:
-                    dense_queries.append(query)
-                    dense_vector_names.append(key)
-                else:
-                    sparse_queries.append(query)
+            for query_request in query_texts:
+                assert isinstance(query_request, dict)
+
+                for i, (key, query) in enumerate(query_request.items()):
+                    if key != sparse_vector_name:
+                        dense_queries.append(query)
+                        dense_vector_names.append(key)
+                    else:
+                        sparse_queries.append(query)
         else:
             dense_queries = query_texts
             sparse_queries = query_texts
@@ -1095,7 +1104,7 @@ class QdrantFastembedMixin(QdrantBase):
     def _query_image_batch(
         self,
         collection_name: str,
-        query_images: Union[List[PathInput], Dict[str, PathInput]],
+        query_images: Union[List[PathInput], List[Dict[str, PathInput]]],
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
@@ -1105,13 +1114,21 @@ class QdrantFastembedMixin(QdrantBase):
                 "Image query is provided, but image embedding model is not set. "
                 "Please set image embedding model using `set_image_model` method."
             )
+
+        if len(query_images) == 0:
+            return []
+
         embedding_model_inst: ImageEmbedding = self._get_or_init_image_model(
             model_name=self.image_embedding_model_name, image=True
         )
-        vector_names: Union[Iterable, List]
-        if isinstance(query_images, dict):
-            vector_names = list(query_images.keys())
-            query_images = list(query_images.values())
+
+        if isinstance(query_images[0], dict):
+            vector_names, query_images = [], []
+            for query_request in query_images:
+                assert isinstance(query_request, dict)
+                for key, query in enumerate(query_request.items()):
+                    vector_names.append(key)
+                    query_images.append(query)
         else:
             default_vector_name = self.get_image_vector_field_name()
             vector_names = [default_vector_name for _ in query_images]
