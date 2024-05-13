@@ -1028,8 +1028,8 @@ class QdrantFastembedMixin(QdrantBase):
                     else:
                         sparse_queries.append(query)
         else:
-            dense_queries = query_texts
-            sparse_queries = query_texts
+            dense_queries = query_texts  # type: ignore
+            sparse_queries = query_texts  # type: ignore
             dense_vector_name = self.get_vector_field_name() or self.vector_field_from_model(
                 self.DEFAULT_EMBEDDING_MODEL
             )
