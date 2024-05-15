@@ -39,14 +39,7 @@ def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
 def generate_random_sparse_vector_uneven(size: int, density: float) -> SparseVector:
     if random.random() > 0.5:
         size = int(size * 0.3)
-
-    num_non_zero = int(size * density)
-    indices: List[int] = random.sample(range(size), num_non_zero)
-
-    values: List[float] = [round(random.random(), 6) for _ in range(num_non_zero)]
-    sparse_vector = SparseVector(indices=indices, values=values)
-    validate_sparse_vector(sparse_vector)
-    return sparse_vector
+    return generate_random_sparse_vector(size, density)
 
 
 def generate_random_sparse_vector_list(
