@@ -5,7 +5,6 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Iterable,
     List,
     Optional,
     Sequence,
@@ -13,6 +12,7 @@ from typing import (
     Union,
     get_args,
 )
+from copy import deepcopy
 
 import numpy as np
 from pydantic.version import VERSION as PYDANTIC_VERSION
@@ -357,9 +357,11 @@ class LocalCollection:
         self,
         idx: int,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        return_copy: bool = True,
     ) -> Optional[models.Payload]:
         payload = self.payload[idx]
-        return self._process_payload(payload, with_payload)
+        processed_payload = self._process_payload(payload, with_payload)
+        return deepcopy(processed_payload) if return_copy else processed_payload
 
     def _get_vectors(
         self, idx: int, with_vectors: Union[bool, Sequence[str]] = False
@@ -1487,7 +1489,7 @@ class LocalCollection:
             idx = self.ids[point_id]
             point = models.PointStruct(
                 id=point_id,
-                payload=self._get_payload(idx, with_payload=True),
+                payload=self._get_payload(idx, with_payload=True, return_copy=False),
                 vector=self._get_vectors(idx, with_vectors=True),
             )
             self.storage.persist(point)
