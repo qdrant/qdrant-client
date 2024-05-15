@@ -55,7 +55,7 @@ def test_simple_search():
     )
 
     assert (
-        local_client.get_collection("congruence_test_collection")
+        local_client.get_collection(COLLECTION_NAME)
         .config.params.sparse_vectors["sparse-text"]
         .modifier
         == models.Modifier.IDF
@@ -81,7 +81,7 @@ def test_simple_search():
     )
 
     assert (
-        local_client.get_collection("congruence_test_collection")
+        local_client.get_collection(COLLECTION_NAME)
         .config.params.sparse_vectors["sparse-text"]
         .modifier
         == models.Modifier.NONE

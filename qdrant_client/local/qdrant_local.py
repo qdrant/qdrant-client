@@ -21,11 +21,9 @@ from uuid import uuid4
 import numpy as np
 import portalocker
 
-from qdrant_client import grpc
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
-from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models as rest_models
 from qdrant_client.http.models.models import RecommendExample
 from qdrant_client.local.local_collection import LocalCollection
@@ -560,9 +558,9 @@ class QdrantLocal(QdrantBase):
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
                 self._get_collection(operation.create_alias.collection_name)
-                self.aliases[
-                    operation.create_alias.alias_name
-                ] = operation.create_alias.collection_name
+                self.aliases[operation.create_alias.alias_name] = (
+                    operation.create_alias.collection_name
+                )
             elif isinstance(operation, rest_models.DeleteAliasOperation):
                 self.aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
@@ -637,8 +635,7 @@ class QdrantLocal(QdrantBase):
 
         if sparse_vectors_config is not None:
             for vector_name, vector_params in sparse_vectors_config.items():
-                collection = self._get_collection(collection_name)
-                collection.update_sparce_vectors_config(vector_name, vector_params)
+                _collection.update_sparse_vectors_config(vector_name, vector_params)
 
             return True
         return False

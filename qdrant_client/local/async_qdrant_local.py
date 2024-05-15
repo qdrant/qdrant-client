@@ -591,11 +591,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
-        self._get_collection(collection_name)
+        _collection = self._get_collection(collection_name)
         if sparse_vectors_config is not None:
             for vector_name, vector_params in sparse_vectors_config.items():
-                collection = self._get_collection(collection_name)
-                collection.update_sparce_vectors_config(vector_name, vector_params)
+                _collection.update_sparse_vectors_config(vector_name, vector_params)
             return True
         return False
 

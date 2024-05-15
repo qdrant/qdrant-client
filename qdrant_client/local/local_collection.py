@@ -115,7 +115,9 @@ class LocalCollection:
             if sparse_vectors_config is not None
             else {}
         )
-        self.sparse_vectors_idf: Dict[str, Dict[int, int]] = {}
+        self.sparse_vectors_idf: Dict[
+            str, Dict[int, int]
+        ] = {}  # vector_name: {idx_in_vocab: doc frequency}
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
         self._all_vectors_keys = list(self.vectors.keys()) + list(self.sparse_vectors.keys())
@@ -156,8 +158,8 @@ class LocalCollection:
         idf_store = self.sparse_vectors_idf[vector_name]
 
         for idx, value in zip(vector.indices, vector.values):
-            term_frequency = idf_store.get(idx, 0)
-            idf = self._compute_idf(term_frequency, num_docs)
+            document_frequency = idf_store.get(idx, 0)
+            idf = self._compute_idf(document_frequency, num_docs)
             new_values.append(value * idf)
 
         return SparseVector(indices=vector.indices, values=new_values)
@@ -1665,7 +1667,7 @@ class LocalCollection:
             else:
                 raise ValueError(f"Unsupported update operation: {type(update_op)}")
 
-    def update_sparce_vectors_config(
+    def update_sparse_vectors_config(
         self, vector_name: str, new_config: models.SparseVectorParams
     ) -> None:
         if vector_name not in self.sparse_vectors:

@@ -418,13 +418,14 @@ class QdrantFastembedMixin(QdrantBase):
     def get_fastembed_sparse_vector_params(
         self,
         on_disk: Optional[bool] = None,
+        modifier: Optional[models.Modifier] = None,
     ) -> Optional[Dict[str, models.SparseVectorParams]]:
         """
         Generates vector configuration, compatible with fastembed sparse models.
 
         Args:
             on_disk: if True, vectors will be stored on disk. If None, default value will be used.
-
+            modifier: Sparse vector queries modifier. E.g. Modifier.IDF for idf-based rescoring. Default: None.
         Returns:
             Configuration for `vectors_config` argument in `create_collection` method.
         """
@@ -435,7 +436,8 @@ class QdrantFastembedMixin(QdrantBase):
             vector_field_name: models.SparseVectorParams(
                 index=models.SparseIndexParams(
                     on_disk=on_disk,
-                )
+                ),
+                modifier=modifier,
             )
         }
 
