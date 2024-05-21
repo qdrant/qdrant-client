@@ -1237,7 +1237,9 @@ class LocalCollection:
 
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
-        self.payload[idx] = to_jsonable_python(point.payload) if point.payload is not None else {}
+        self.payload[idx] = deepcopy(
+            to_jsonable_python(point.payload) if point.payload is not None else {}
+        )
 
         if isinstance(point.vector, list):
             vectors = {DEFAULT_VECTOR_NAME: point.vector}
@@ -1274,7 +1276,9 @@ class LocalCollection:
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
 
-        self.payload.append(to_jsonable_python(point.payload) if point.payload is not None else {})
+        self.payload.append(
+            deepcopy(to_jsonable_python(point.payload) if point.payload is not None else {})
+        )
         assert len(self.payload) == len(self.ids_inv), "Payload and ids_inv must be the same size"
         self.deleted = np.append(self.deleted, 0)
 
@@ -1506,7 +1510,7 @@ class LocalCollection:
         key: Optional[str] = None,
     ) -> None:
         ids = self._selector_to_ids(selector)
-        jsonable_payload = to_jsonable_python(payload)
+        jsonable_payload = deepcopy(to_jsonable_python(payload))
 
         keys: Optional[List[JsonPathItem]] = parse_json_path(key) if key is not None else None
 
@@ -1533,7 +1537,7 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         for point_id in ids:
             idx = self.ids[point_id]
-            self.payload[idx] = to_jsonable_python(payload) or {}
+            self.payload[idx] = deepcopy(to_jsonable_python(payload)) or {}
             self._persist_by_id(point_id)
 
     def delete_payload(
