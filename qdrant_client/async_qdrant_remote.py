@@ -611,7 +611,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-            if isinstance(strategy, models.RecommendStrategy):
+            if isinstance(strategy, (str, models.RecommendStrategy)):
                 strategy = RestToGrpc.convert_recommend_strategy(strategy)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
@@ -730,7 +730,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
-            if isinstance(strategy, models.RecommendStrategy):
+            if isinstance(strategy, (str, models.RecommendStrategy)):
                 strategy = RestToGrpc.convert_recommend_strategy(strategy)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
