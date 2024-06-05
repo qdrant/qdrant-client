@@ -212,7 +212,7 @@ def test_simple_recommend() -> None:
     init_client(local_client, fixture_points)
     init_client(local_client, secondary_collection_points, secondary_collection_name)
 
-    remote_client = init_remote(prefer_grpc=True)
+    remote_client = init_remote()
     init_client(remote_client, fixture_points)
     init_client(remote_client, secondary_collection_points, secondary_collection_name)
 
