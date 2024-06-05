@@ -769,7 +769,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
-            if isinstance(strategy, models.RecommendStrategy):
+            if isinstance(strategy, (str, models.RecommendStrategy)):
                 strategy = RestToGrpc.convert_recommend_strategy(strategy)
 
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
@@ -910,7 +910,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
 
-            if isinstance(strategy, models.RecommendStrategy):
+            if isinstance(strategy, (str, models.RecommendStrategy)):
                 strategy = RestToGrpc.convert_recommend_strategy(strategy)
 
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
@@ -1250,21 +1250,21 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
-            scroll_result: Optional[
-                models.ScrollResult
-            ] = self.openapi_client.points_api.scroll_points(
-                collection_name=collection_name,
-                consistency=consistency,
-                scroll_request=models.ScrollRequest(
-                    filter=scroll_filter,
-                    limit=limit,
-                    order_by=order_by,
-                    offset=offset,
-                    with_payload=with_payload,
-                    with_vector=with_vectors,
-                    shard_key=shard_key_selector,
-                ),
-            ).result
+            scroll_result: Optional[models.ScrollResult] = (
+                self.openapi_client.points_api.scroll_points(
+                    collection_name=collection_name,
+                    consistency=consistency,
+                    scroll_request=models.ScrollRequest(
+                        filter=scroll_filter,
+                        limit=limit,
+                        order_by=order_by,
+                        offset=offset,
+                        with_payload=with_payload,
+                        with_vector=with_vectors,
+                        shard_key=shard_key_selector,
+                    ),
+                ).result
+            )
             assert scroll_result is not None, "Scroll points API returned None result"
 
             return scroll_result.points, scroll_result.next_page_offset
@@ -1793,19 +1793,19 @@ class QdrantRemote(QdrantBase):
             )
         else:
             _points, _filter = self._try_argument_to_rest_points_and_filter(points)
-            result: Optional[
-                types.UpdateResult
-            ] = self.openapi_client.points_api.overwrite_payload(
-                collection_name=collection_name,
-                wait=wait,
-                ordering=ordering,
-                set_payload=models.SetPayload(
-                    payload=payload,
-                    points=_points,
-                    filter=_filter,
-                    shard_key=shard_key_selector,
-                ),
-            ).result
+            result: Optional[types.UpdateResult] = (
+                self.openapi_client.points_api.overwrite_payload(
+                    collection_name=collection_name,
+                    wait=wait,
+                    ordering=ordering,
+                    set_payload=models.SetPayload(
+                        payload=payload,
+                        points=_points,
+                        filter=_filter,
+                        shard_key=shard_key_selector,
+                    ),
+                ).result
+            )
             assert result is not None, "Overwrite payload returned None"
             return result
 
@@ -1932,14 +1932,14 @@ class QdrantRemote(QdrantBase):
                 ).result
             ]
         else:
-            result: Optional[
-                List[types.UpdateResult]
-            ] = self.openapi_client.points_api.batch_update(
-                collection_name=collection_name,
-                wait=wait,
-                ordering=ordering,
-                update_operations=models.UpdateOperations(operations=update_operations),
-            ).result
+            result: Optional[List[types.UpdateResult]] = (
+                self.openapi_client.points_api.batch_update(
+                    collection_name=collection_name,
+                    wait=wait,
+                    ordering=ordering,
+                    update_operations=models.UpdateOperations(operations=update_operations),
+                ).result
+            )
             assert result is not None, "Batch update points returned None"
             return result
 
@@ -1997,11 +1997,11 @@ class QdrantRemote(QdrantBase):
                 ]
             )
 
-        result: Optional[
-            types.CollectionsAliasesResponse
-        ] = self.http.collections_api.get_collection_aliases(
-            collection_name=collection_name
-        ).result
+        result: Optional[types.CollectionsAliasesResponse] = (
+            self.http.collections_api.get_collection_aliases(
+                collection_name=collection_name
+            ).result
+        )
         assert result is not None, "Get collection aliases returned None"
         return result
 
@@ -2015,9 +2015,9 @@ class QdrantRemote(QdrantBase):
                     GrpcToRest.convert_alias_description(description) for description in response
                 ]
             )
-        result: Optional[
-            types.CollectionsAliasesResponse
-        ] = self.http.collections_api.get_collections_aliases().result
+        result: Optional[types.CollectionsAliasesResponse] = (
+            self.http.collections_api.get_collections_aliases().result
+        )
         assert result is not None, "Get aliases returned None"
         return result
 
@@ -2033,9 +2033,9 @@ class QdrantRemote(QdrantBase):
                 ]
             )
 
-        result: Optional[
-            types.CollectionsResponse
-        ] = self.http.collections_api.get_collections().result
+        result: Optional[types.CollectionsResponse] = (
+            self.http.collections_api.get_collections().result
+        )
         assert result is not None, "Get collections returned None"
         return result
 
@@ -2499,16 +2499,16 @@ class QdrantRemote(QdrantBase):
         if isinstance(field_schema, grpc.PayloadIndexParams):
             field_schema = GrpcToRest.convert_payload_schema_params(field_schema)
 
-        result: Optional[
-            types.UpdateResult
-        ] = self.openapi_client.collections_api.create_field_index(
-            collection_name=collection_name,
-            create_field_index=models.CreateFieldIndex(
-                field_name=field_name, field_schema=field_schema
-            ),
-            wait=wait,
-            ordering=ordering,
-        ).result
+        result: Optional[types.UpdateResult] = (
+            self.openapi_client.collections_api.create_field_index(
+                collection_name=collection_name,
+                create_field_index=models.CreateFieldIndex(
+                    field_name=field_name, field_schema=field_schema
+                ),
+                wait=wait,
+                ordering=ordering,
+            ).result
+        )
         assert result is not None, "Create field index returned None"
         return result
 
@@ -2531,14 +2531,14 @@ class QdrantRemote(QdrantBase):
                 self.grpc_points.DeleteFieldIndex(request).result
             )
 
-        result: Optional[
-            types.UpdateResult
-        ] = self.openapi_client.collections_api.delete_field_index(
-            collection_name=collection_name,
-            field_name=field_name,
-            wait=wait,
-            ordering=ordering,
-        ).result
+        result: Optional[types.UpdateResult] = (
+            self.openapi_client.collections_api.delete_field_index(
+                collection_name=collection_name,
+                field_name=field_name,
+                wait=wait,
+                ordering=ordering,
+            ).result
+        )
         assert result is not None, "Delete field index returned None"
         return result
 

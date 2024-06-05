@@ -139,7 +139,7 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="code",
-            strategy=models.RecommendStrategy.BEST_SCORE,
+            strategy="best_score",  # type: ignore , check it works with literal
         )
 
     @classmethod
@@ -224,6 +224,9 @@ def test_simple_recommend() -> None:
     compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend
+    )
+    compare_client_results(
+        local_client, remote_client, searcher.only_negatives_best_score_recommend_euclid
     )
     compare_client_results(local_client, remote_client, searcher.avg_vector_recommend)
     compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors)
