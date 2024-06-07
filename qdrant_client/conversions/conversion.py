@@ -350,6 +350,9 @@ class GrpcToRest:
         if model.HasField("text_index_params"):
             text_index_params = model.text_index_params
             return cls.convert_text_index_params(text_index_params)
+        if model.HasField("integer_index_params"):
+            integer_index_params = model.integer_index_params
+            return cls.convert_integer_index_params(integer_index_params)
 
         raise ValueError(f"invalid PayloadIndexParams model: {model}")  # pragma: no cover
 
@@ -989,6 +992,16 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_integer_index_params(
+        cls, model: grpc.IntegerIndexParams
+    ) -> rest.IntegerIndexParams:
+        return rest.IntegerIndexParams(
+            type=rest.IntegerIndexType.INTEGER,
+            range=model.range,
+            lookup=model.lookup,
+        )
+
+    @classmethod
     def convert_collection_params_diff(
         cls, model: grpc.CollectionParamsDiff
     ) -> rest.CollectionParamsDiff:
@@ -1577,6 +1590,11 @@ class RestToGrpc:
     ) -> grpc.PayloadIndexParams:
         if isinstance(model, rest.TextIndexParams):
             return grpc.PayloadIndexParams(text_index_params=cls.convert_text_index_params(model))
+
+        if isinstance(model, rest.IntegerIndexParams):
+            return grpc.PayloadIndexParams(
+                integer_index_params=cls.convert_integer_index_params(model)
+            )
 
         raise ValueError(f"invalid PayloadSchemaParams model: {model}")  # pragma: no cover
 
@@ -2401,6 +2419,12 @@ class RestToGrpc:
             min_token_len=model.min_token_len,
             max_token_len=model.max_token_len,
         )
+
+    @classmethod
+    def convert_integer_index_params(
+        cls, model: rest.IntegerIndexParams
+    ) -> grpc.IntegerIndexParams:
+        return grpc.IntegerIndexParams(lookup=model.lookup, range=model.range)
 
     @classmethod
     def convert_collection_params_diff(
