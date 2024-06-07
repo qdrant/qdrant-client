@@ -340,6 +340,11 @@ text_index_params_3 = grpc.TextIndexParams(
 
 text_index_params_4 = grpc.TextIndexParams(tokenizer=grpc.TokenizerType.Multilingual)
 
+integer_index_params_0 = grpc.IntegerIndexParams(lookup=True, range=False)
+integer_index_params_1 = grpc.IntegerIndexParams(lookup=False, range=True)
+integer_index_params_2 = grpc.IntegerIndexParams(lookup=True, range=True)
+
+
 payload_schema_text_prefix = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
     params=grpc.PayloadIndexParams(text_index_params=text_index_params_1),
@@ -359,6 +364,24 @@ payload_schema_text_word = grpc.PayloadSchemaInfo(
 payload_schema_text_multilingual = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
     params=grpc.PayloadIndexParams(text_index_params=text_index_params_4),
+    points=0,
+)
+
+payload_schema_integer_lookup = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Integer,
+    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_0),
+    points=0,
+)
+
+payload_schema_integer_range = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Integer,
+    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_1),
+    points=0,
+)
+
+payload_schema_integer_lookup_and_range = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Integer,
+    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_2),
     points=0,
 )
 
@@ -391,6 +414,9 @@ collection_info_ok = grpc.CollectionInfo(
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
         "datetime_field": payload_schema_datetime,
+        "integer_lookup": payload_schema_integer_lookup,
+        "integer_range": payload_schema_integer_range,
+        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
     },
 )
 
@@ -413,6 +439,9 @@ collection_info = grpc.CollectionInfo(
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
         "datetime_field": payload_schema_datetime,
+        "integer_lookup": payload_schema_integer_lookup,
+        "integer_range": payload_schema_integer_range,
+        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
     },
 )
 
@@ -435,6 +464,9 @@ collection_info_red = grpc.CollectionInfo(
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
         "datetime_field": payload_schema_datetime,
+        "integer_lookup": payload_schema_integer_lookup,
+        "integer_range": payload_schema_integer_range,
+        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
     },
 )
 quantization_config = grpc.QuantizationConfig(
@@ -966,6 +998,11 @@ fixtures = {
         text_index_params_1,
         text_index_params_2,
         text_index_params_3,
+    ],
+    "IntegerIndexParams": [
+        integer_index_params_0,
+        integer_index_params_1,
+        integer_index_params_2,
     ],
     "CollectionParamsDiff": [collections_params_diff],
     "LookupLocation": [lookup_location_1, lookup_location_2],
