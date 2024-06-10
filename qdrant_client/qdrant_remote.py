@@ -47,14 +47,17 @@ class QdrantRemote(QdrantBase):
     def __init__(
         self,
         url: Optional[str] = None,
+        grpc_url: Optional[str] = None,
         port: Optional[int] = 6333,
         grpc_port: int = 6334,
         prefer_grpc: bool = False,
         https: Optional[bool] = None,
+        grpc_https: Optional[bool] = None,
         api_key: Optional[str] = None,
         prefix: Optional[str] = None,
         timeout: Optional[int] = None,
         host: Optional[str] = None,
+        grpc_host: Optional[str] = None,
         grpc_options: Optional[Dict[str, Any]] = None,
         auth_token_provider: Optional[
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
@@ -66,12 +69,14 @@ class QdrantRemote(QdrantBase):
         self._grpc_port = grpc_port
         self._grpc_options = grpc_options
         self._https = https if https is not None else api_key is not None
+        self._grpc_https = grpc_https if grpc_https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
 
         self._prefix = prefix or ""
         if len(self._prefix) > 0 and self._prefix[0] != "/":
             self._prefix = f"/{self._prefix}"
 
+        # HTTP endpoint configurations
         if url is not None and host is not None:
             raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
 
@@ -107,6 +112,39 @@ class QdrantRemote(QdrantBase):
         else:
             self._host = host or "localhost"
             self._port = port
+
+        # gRPC endpoint configurations
+        if grpc_url is not None and grpc_host is not None:
+            raise ValueError(f"Only one of (grpc_url, grpc_host) can be set. url is {url}, grpc_host is {grpc_host}")
+
+        if grpc_host is not None and (grpc_host.startswith("http://") or grpc_host.startswith("https://")):
+            raise ValueError(
+                f"`grpc_host` param is not expected to contain protocol (http:// or https://). "
+                f"Try to use `url` parameter instead."
+            )
+
+        elif grpc_url:
+            if grpc_url.startswith("localhost"):
+                # Handle for a special case when url is localhost:port
+                # Which is not parsed correctly by urllib
+                grpc_url = f"//{url}"
+
+            parsed_url: Url = parse_url(grpc_url)
+            self._grpc_host, self._grpc_port = parsed_url.host, parsed_url.port
+
+            if parsed_url.scheme:
+                self._grpc_https = parsed_url.scheme == "https"
+
+            self._grpc_port = self._grpc_port if self._grpc_port else grpc_port
+
+            if self._prefix and parsed_url.path:
+                raise ValueError(
+                    "Prefix can be set either in `url` or in `prefix`. "
+                    f"url is {url}, prefix is {parsed_url.path}"
+                )
+        else:
+            self._grpc_host = grpc_host or "localhost"
+            self._grpc_port = grpc_port
 
         self._timeout = (
             math.ceil(timeout) if timeout is not None else None
@@ -232,9 +270,9 @@ class QdrantRemote(QdrantBase):
 
         if self._grpc_channel is None:
             self._grpc_channel = get_channel(
-                host=self._host,
+                host=self._grpc_host,
                 port=self._grpc_port,
-                ssl=self._https,
+                ssl=self._grpc_https,
                 metadata=self._grpc_headers,
                 options=self._grpc_options,
                 compression=self._grpc_compression,
