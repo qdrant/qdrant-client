@@ -2328,8 +2328,8 @@ ExtendedPointId = Union[
     StrictStr,
 ]
 GroupId = Union[
-    StrictStr,
     StrictInt,
+    StrictStr,
 ]
 Indexes = Union[
     IndexesOneOf,
@@ -2397,8 +2397,8 @@ ReadConsistency = Union[
     ReadConsistencyType,
 ]
 ShardKey = Union[
-    StrictStr,
     StrictInt,
+    StrictStr,
 ]
 ShardSnapshotLocation = Union[
     StrictStr,
@@ -2414,10 +2414,10 @@ SparseIndexType = Union[
     SparseIndexTypeOneOf2,
 ]
 StartFrom = Union[
-    StrictInt,
-    StrictFloat,
     datetime,
     date,
+    StrictFloat,
+    StrictInt,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
@@ -2438,9 +2438,9 @@ UsingVector = Union[
     StrictStr,
 ]
 ValueVariants = Union[
-    StrictStr,
-    StrictInt,
     StrictBool,
+    StrictInt,
+    StrictStr,
 ]
 Vector = Union[
     List[StrictFloat],
