@@ -86,13 +86,17 @@ def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> typ
     Returns:
         distances
     """
-    query_norm = np.linalg.norm(query)
-    query /= np.where(query_norm != 0.0, query_norm, EPSILON)
-
-    vectors_norm = np.linalg.norm(vectors, axis=1)[:, np.newaxis]
+    vectors_norm = np.linalg.norm(vectors, axis=-1)[:, np.newaxis]
     vectors /= np.where(vectors_norm != 0.0, vectors_norm, EPSILON)
 
-    return np.dot(vectors, query)
+    if len(query.shape) == 1:
+        query_norm = np.linalg.norm(query)
+        query /= np.where(query_norm != 0.0, query_norm, EPSILON)
+        return np.dot(vectors, query)
+
+    query_norm = np.linalg.norm(query, axis=-1)[:, np.newaxis]
+    query /= np.where(query_norm != 0.0, query_norm, EPSILON)
+    return np.dot(query, vectors.T)
 
 
 def dot_product(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -104,7 +108,10 @@ def dot_product(query: types.NumpyArray, vectors: types.NumpyArray) -> types.Num
     Returns:
         distances
     """
-    return np.dot(vectors, query)
+    if len(query.shape) == 1:
+        return np.dot(query, vectors)
+    else:
+        return np.dot(query, vectors.T)
 
 
 def euclidean_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -116,7 +123,10 @@ def euclidean_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
     Returns:
         distances
     """
-    return np.linalg.norm(vectors - query, axis=1)
+    if len(query.shape) == 1:
+        return np.linalg.norm(vectors - query, axis=-1)
+    else:
+        return np.linalg.norm(vectors - query[:, np.newaxis], axis=-1)
 
 
 def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -128,7 +138,10 @@ def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
     Returns:
         distances
     """
-    return np.sum(np.abs(vectors - query), axis=1)
+    if len(query.shape) == 1:
+        return np.sum(np.abs(vectors - query), axis=-1)
+    else:
+        return np.sum(np.abs(vectors - query[:, np.newaxis]), axis=-1)
 
 
 def calculate_distance(
@@ -157,8 +170,12 @@ def calculate_distance_core(
     assert not np.isnan(query).any(), "Query vector must not contain NaN"
 
     if distance_type == models.Distance.EUCLID:
+        if len(query.shape) != 1:
+            query = query[:, np.newaxis]
         return -np.square(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
     if distance_type == models.Distance.MANHATTAN:
+        if len(query.shape) != 1:
+            query = query[:, np.newaxis]
         return -np.abs(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
     else:
         return calculate_distance(query, vectors, distance_type)
@@ -178,6 +195,7 @@ def scaled_fast_sigmoid(x: np.float32) -> np.float32:
 def calculate_recommend_best_scores(
     query: RecoQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
+    # todo: add multivec support
     def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
         vector_count = vectors.shape[0]
 
@@ -211,6 +229,7 @@ def calculate_discovery_ranks(
     vectors: types.NumpyArray,
     distance_type: models.Distance,
 ) -> types.NumpyArray:
+    # todo: add multivec support
     overall_ranks = np.zeros(vectors.shape[0], dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors
@@ -232,6 +251,7 @@ def calculate_discovery_ranks(
 def calculate_discovery_scores(
     query: DiscoveryQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
+    # todo: add multivec support
     ranks = calculate_discovery_ranks(query.context, vectors, distance_type)
 
     # Get distances to target
@@ -247,6 +267,7 @@ def calculate_discovery_scores(
 def calculate_context_scores(
     query: ContextQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
+    # todo: add multivec support
     overall_scores = np.zeros(vectors.shape[0], dtype=np.float32)
     for pair in query.context_pairs:
         # Get distances to positive and negative vectors
