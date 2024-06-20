@@ -105,6 +105,7 @@ def generate_sparse_fixtures(
     vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
     skip_vectors: bool = False,
     with_payload: bool = True,
+    even_sparse: bool = True,
 ) -> List[models.PointStruct]:
     if vectors_sizes is None:
         vectors_sizes = sparse_vectors_sizes
@@ -115,6 +116,7 @@ def generate_sparse_fixtures(
         random_ids=random_ids,
         skip_vectors=skip_vectors,
         sparse=True,
+        even_sparse=even_sparse,
     )
 
 

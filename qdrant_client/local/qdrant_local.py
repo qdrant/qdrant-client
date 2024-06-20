@@ -558,9 +558,9 @@ class QdrantLocal(QdrantBase):
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
                 self._get_collection(operation.create_alias.collection_name)
-                self.aliases[
-                    operation.create_alias.alias_name
-                ] = operation.create_alias.collection_name
+                self.aliases[operation.create_alias.alias_name] = (
+                    operation.create_alias.collection_name
+                )
             elif isinstance(operation, rest_models.DeleteAliasOperation):
                 self.aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
@@ -625,8 +625,19 @@ class QdrantLocal(QdrantBase):
         except ValueError:
             return False
 
-    def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
+    def update_collection(
+        self,
+        collection_name: str,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        **kwargs: Any,
+    ) -> bool:
         _collection = self._get_collection(collection_name)
+
+        if sparse_vectors_config is not None:
+            for vector_name, vector_params in sparse_vectors_config.items():
+                _collection.update_sparse_vectors_config(vector_name, vector_params)
+
+            return True
         return False
 
     def _collection_path(self, collection_name: str) -> Optional[str]:

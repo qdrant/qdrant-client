@@ -585,8 +585,17 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         except ValueError:
             return False
 
-    async def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
-        self._get_collection(collection_name)
+    async def update_collection(
+        self,
+        collection_name: str,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        _collection = self._get_collection(collection_name)
+        if sparse_vectors_config is not None:
+            for vector_name, vector_params in sparse_vectors_config.items():
+                _collection.update_sparse_vectors_config(vector_name, vector_params)
+            return True
         return False
 
     def _collection_path(self, collection_name: str) -> Optional[str]:

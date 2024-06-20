@@ -1,4 +1,5 @@
 import json
+import math
 import uuid
 from collections import OrderedDict, defaultdict
 from typing import (
@@ -114,6 +115,9 @@ class LocalCollection:
             if sparse_vectors_config is not None
             else {}
         )
+        self.sparse_vectors_idf: Dict[
+            str, Dict[int, int]
+        ] = {}  # vector_name: {idx_in_vocab: doc frequency}
         self.payload: List[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
         self._all_vectors_keys = list(self.vectors.keys()) + list(self.sparse_vectors.keys())
@@ -132,6 +136,33 @@ class LocalCollection:
     def close(self) -> None:
         if self.storage is not None:
             self.storage.close()
+
+    def _update_idf_append(self, vector: SparseVector, vector_name: str) -> None:
+        if vector_name not in self.sparse_vectors_idf:
+            self.sparse_vectors_idf[vector_name] = defaultdict(int)
+        for idx in vector.indices:
+            self.sparse_vectors_idf[vector_name][idx] += 1
+
+    def _update_idf_remove(self, vector: SparseVector, vector_name: str) -> None:
+        for idx in vector.indices:
+            self.sparse_vectors_idf[vector_name][idx] -= 1
+
+    @classmethod
+    def _compute_idf(cls, df: int, n: int) -> float:
+        # ((n - df + 0.5) / (df + 0.5) + 1.).ln()
+        return math.log((n - df + 0.5) / (df + 0.5) + 1)
+
+    def _rescore_idf(self, vector: SparseVector, vector_name: str) -> SparseVector:
+        num_docs = self.count(count_filter=None).count
+        new_values = []
+        idf_store = self.sparse_vectors_idf[vector_name]
+
+        for idx, value in zip(vector.indices, vector.values):
+            document_frequency = idf_store.get(idx, 0)
+            idf = self._compute_idf(document_frequency, num_docs)
+            new_values.append(value * idf)
+
+        return SparseVector(indices=vector.indices, values=new_values)
 
     def load_vectors(self) -> None:
         if self.storage is not None:
@@ -189,6 +220,8 @@ class LocalCollection:
             for name, named_vectors in sparse_vectors.items():
                 self.sparse_vectors[name] = named_vectors
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
+                for vector in named_vectors:
+                    self._update_idf_append(vector, name)
 
             # track deleted points by named vector
             for idx, name in deleted_ids:
@@ -422,12 +455,15 @@ class LocalCollection:
 
         result: List[models.ScoredPoint] = []
         sparse_scoring = False
+        rescore_idf = False
 
         # early exit if the named vector does not exist
         if isinstance(query_vector, get_args(SparseQueryVector)):
             if name not in self.sparse_vectors:
                 raise ValueError(f"Sparse vector {name} is not found in the collection")
             vectors = self.sparse_vectors[name]
+            if self.config.sparse_vectors[name].modifier == models.Modifier.IDF:
+                rescore_idf = True
             distance = Distance.DOT
             sparse_scoring = True
         else:
@@ -444,6 +480,8 @@ class LocalCollection:
                 query_vector, vectors[: len(self.payload)], distance
             )
         elif isinstance(query_vector, SparseRecoQuery):
+            if rescore_idf:
+                query_vector = query_vector.transform_sparse(lambda x: self._rescore_idf(x, name))
             scores = calculate_sparse_recommend_best_scores(
                 query_vector, vectors[: len(self.payload)]
             )
@@ -452,17 +490,23 @@ class LocalCollection:
                 query_vector, vectors[: len(self.payload)], distance
             )
         elif isinstance(query_vector, SparseDiscoveryQuery):
+            if rescore_idf:
+                query_vector = query_vector.transform_sparse(lambda x: self._rescore_idf(x, name))
             scores = calculate_sparse_discovery_scores(
                 query_vector, self.sparse_vectors[name][: len(self.payload)]
             )
         elif isinstance(query_vector, ContextQuery):
             scores = calculate_context_scores(query_vector, vectors[: len(self.payload)], distance)
         elif isinstance(query_vector, SparseContextQuery):
+            if rescore_idf:
+                query_vector = query_vector.transform_sparse(lambda x: self._rescore_idf(x, name))
             scores = calculate_sparse_context_scores(
                 query_vector, self.sparse_vectors[name][: len(self.payload)]
             )
         elif isinstance(query_vector, SparseVector):
             validate_sparse_vector(query_vector)
+            if rescore_idf:
+                query_vector = self._rescore_idf(query_vector, name)
             # sparse vector query must be sorted by indices for dot product to work with persisted vectors
             query_vector = sort_sparse_vector(query_vector)
             sparse_vectors = self.sparse_vectors[name]
@@ -899,7 +943,9 @@ class LocalCollection:
 
     @staticmethod
     def _preprocess_target(
-        target: Optional[types.TargetVector], collection: "LocalCollection", vector_name: str
+        target: Optional[types.TargetVector],
+        collection: "LocalCollection",
+        vector_name: str,
     ) -> Tuple[Union[List[float], SparseVector], types.PointId]:
         target = (
             GrpcToRest.convert_target_vector(target)
@@ -922,7 +968,9 @@ class LocalCollection:
 
     @staticmethod
     def _preprocess_context(
-        context: List[types.ContextExamplePair], collection: "LocalCollection", vector_name: str
+        context: List[types.ContextExamplePair],
+        collection: "LocalCollection",
+        vector_name: str,
     ) -> Tuple[List[ContextPair], List[SparseContextPair], List[types.PointId]]:
         context = [
             (
@@ -999,9 +1047,11 @@ class LocalCollection:
         target_vector, target_id = self._preprocess_target(target, collection, vector_name)
         context = list(context) if context is not None else []
 
-        dense_context_vectors, sparse_context_vectors, mentioned_ids = self._preprocess_context(
-            context, collection, vector_name
-        )
+        (
+            dense_context_vectors,
+            sparse_context_vectors,
+            mentioned_ids,
+        ) = self._preprocess_context(context, collection, vector_name)
         if target_id is not None:
             mentioned_ids.append(target_id)
 
@@ -1263,9 +1313,15 @@ class LocalCollection:
         # sparse vectors
         for vector_name, _named_vectors in self.sparse_vectors.items():
             vector = vectors.get(vector_name)
+            was_deleted = self.deleted_per_vector[vector_name][idx]
+            if not was_deleted:
+                previous_vector = self.sparse_vectors[vector_name][idx]
+                self._update_idf_remove(previous_vector, vector_name)
+
             if vector is not None:
                 self.sparse_vectors[vector_name][idx] = vector
                 self.deleted_per_vector[vector_name][idx] = 0
+                self._update_idf_append(vector, vector_name)
             else:
                 self.deleted_per_vector[vector_name][idx] = 1
 
@@ -1330,6 +1386,7 @@ class LocalCollection:
                 )
             else:
                 named_vectors[idx] = vector
+                self._update_idf_append(vector, vector_name)
                 self.sparse_vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
@@ -1404,7 +1461,11 @@ class LocalCollection:
         for vector_name, vector in vectors.items():
             if isinstance(vector, SparseVector):
                 validate_sparse_vector(vector)
-                self.sparse_vectors[vector_name][idx] = sort_sparse_vector(vector)
+                old_vector = self.sparse_vectors[vector_name][idx]
+                self._update_idf_remove(old_vector, vector_name)
+                new_vector = sort_sparse_vector(vector)
+                self.sparse_vectors[vector_name][idx] = new_vector
+                self._update_idf_append(new_vector, vector_name)
             else:
                 self.vectors[vector_name][idx] = np.array(vector)
 
@@ -1611,6 +1672,14 @@ class LocalCollection:
                 self.delete_vectors(update_op.delete_vectors.vector, points_selector)
             else:
                 raise ValueError(f"Unsupported update operation: {type(update_op)}")
+
+    def update_sparse_vectors_config(
+        self, vector_name: str, new_config: models.SparseVectorParams
+    ) -> None:
+        if vector_name not in self.sparse_vectors:
+            raise ValueError(f"Vector {vector_name} does not exist in the collection")
+
+        self.config.sparse_vectors[vector_name] = new_config
 
     def info(self) -> models.CollectionInfo:
         return models.CollectionInfo(

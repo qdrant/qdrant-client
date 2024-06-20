@@ -408,6 +408,74 @@ class _PointsApi:
             content=body,
         )
 
+    def _build_for_query_batch_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_request_batch: m.QueryRequestBatch = None,
+    ):
+        """
+        Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(query_request_batch)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20022,
+            method="POST",
+            url="/collections/{collection_name}/points/query/batch",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
+    def _build_for_query_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_request: m.QueryRequest = None,
+    ):
+        """
+        Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(query_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20021,
+            method="POST",
+            url="/collections/{collection_name}/points/query",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
     def _build_for_recommend_batch_points(
         self,
         collection_name: str,
@@ -926,6 +994,40 @@ class AsyncPointsApi(_PointsApi):
             set_payload=set_payload,
         )
 
+    async def query_batch_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_request_batch: m.QueryRequestBatch = None,
+    ) -> m.InlineResponse20022:
+        """
+        Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
+        """
+        return await self._build_for_query_batch_points(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            query_request_batch=query_request_batch,
+        )
+
+    async def query_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_request: m.QueryRequest = None,
+    ) -> m.InlineResponse20021:
+        """
+        Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
+        """
+        return await self._build_for_query_points(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            query_request=query_request,
+        )
+
     async def recommend_batch_points(
         self,
         collection_name: str,
@@ -1273,6 +1375,40 @@ class SyncPointsApi(_PointsApi):
             wait=wait,
             ordering=ordering,
             set_payload=set_payload,
+        )
+
+    def query_batch_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_request_batch: m.QueryRequestBatch = None,
+    ) -> m.InlineResponse20022:
+        """
+        Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
+        """
+        return self._build_for_query_batch_points(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            query_request_batch=query_request_batch,
+        )
+
+    def query_points(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_request: m.QueryRequest = None,
+    ) -> m.InlineResponse20021:
+        """
+        Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
+        """
+        return self._build_for_query_points(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            query_request=query_request,
         )
 
     def recommend_batch_points(
