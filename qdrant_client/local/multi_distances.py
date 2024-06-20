@@ -2,7 +2,7 @@ from typing import Optional, List, Union
 
 import numpy as np
 
-from qdrant_client import models
+from qdrant_client.http import models
 from qdrant_client.conversions import common_types as types
 from qdrant_client.local.distances import (
     distance_to_order,
@@ -68,12 +68,12 @@ def calculate_multi_distance(
     assert len(query_matrix.shape) == 2, "Query must be a matrix"
 
     reverse = distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER
-    similarities = []
+    similarities: List[float] = []
     # max sim
     for matrix in matrices:
         sim_matrix = calculate_distance(query_matrix, matrix, distance_type)
         op = np.max if not reverse else np.min
-        similarity = np.sum(op(sim_matrix, axis=-1))
+        similarity = float(np.sum(op(sim_matrix, axis=-1)))
         similarities.append(similarity)
     return np.array(similarities)
 
@@ -82,21 +82,21 @@ def calculate_multi_distance_core(
     query_matrix: types.NumpyArray,
     matrices: List[types.NumpyArray],
     distance_type: models.Distance,
-):
-    def euclidean(m, q):
-        return -np.square(np.array(m) - q, dtype=np.float32).sum(axis=1, dtype=np.float32)
+) -> types.NumpyArray:
+    def euclidean(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
+        return -np.square(m - q, dtype=np.float32).sum(axis=1, dtype=np.float32)
 
-    def manhattan(m, q):
-        return -np.abs(np.array(m) - q, dtype=np.float32).sum(axis=1, dtype=np.float32)
+    def manhattan(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
+        return -np.abs(m - q, dtype=np.float32).sum(axis=1, dtype=np.float32)
 
     assert not np.isnan(query_matrix).any(), "Query vector must not contain NaN"
     if distance_type in [models.Distance.EUCLID, models.Distance.MANHATTAN]:
         query_matrix = query_matrix[:, np.newaxis]
-        similarities = []
+        similarities: List[float] = []
         dist_func = euclidean if distance_type == models.Distance.EUCLID else manhattan
         for matrix in matrices:
             sim_matrix = dist_func(matrix, query_matrix)
-            similarity = np.sum(np.max(sim_matrix, axis=-1))
+            similarity = float(np.sum(np.max(sim_matrix, axis=-1)))
             similarities.append(similarity)
         return np.array(similarities)
 
