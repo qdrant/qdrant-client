@@ -1554,9 +1554,6 @@ class LocalCollection:
                 diff = idx - len(named_vectors) + 1
                 for _ in range(diff):
                     named_vectors.append(empty_sparse_vector())
-                    self.deleted_per_vector[vector_name] = np.append(
-                        self.deleted_per_vector[vector_name], 1
-                    )
 
             if vector is None:
                 # Add fake vector and mark as removed
@@ -1580,9 +1577,6 @@ class LocalCollection:
                 diff = idx - len(named_vectors) + 1
                 for _ in range(diff):
                     named_vectors.append(np.array([]))
-                    self.deleted_per_vector[vector_name] = np.append(
-                        self.deleted_per_vector[vector_name], 1
-                    )
 
             if vector is None:
                 # Add fake vector and mark as removed
