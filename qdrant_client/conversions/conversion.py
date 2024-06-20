@@ -2747,7 +2747,7 @@ class RestToGrpc:
             )
 
             return grpc.PointsUpdateOperation(
-                overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
+                overwrite_payload=grpc.PointsUpdateOperation.OverwritePayload(
                     payload=cls.convert_payload(model.overwrite_payload.payload),
                     points_selector=cls.convert_points_selector(points_selector),
                     shard_key_selector=shard_key_selector,

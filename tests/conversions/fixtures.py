@@ -806,14 +806,14 @@ set_payload_operation_2 = grpc.PointsUpdateOperation(
 )
 
 overwrite_payload_operation_1 = grpc.PointsUpdateOperation(
-    overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
+    overwrite_payload=grpc.PointsUpdateOperation.OverwritePayload(
         payload=payload_to_grpc({"my_payload": payload_value}),
         points_selector=points_selector_list,
     ),
 )
 
 overwrite_payload_operation_2 = grpc.PointsUpdateOperation(
-    overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
+    overwrite_payload=grpc.PointsUpdateOperation.OverwritePayload(
         payload=payload_to_grpc({"my_payload": payload_value}),
         points_selector=points_selector_filter,
     ),

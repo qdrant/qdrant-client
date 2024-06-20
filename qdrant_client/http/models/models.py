@@ -12,7 +12,6 @@ VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 class AbortShardTransfer(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
-    to_shard_id: Optional[int] = Field(default=None, description="")
     to_peer_id: int = Field(..., description="")
     from_peer_id: int = Field(..., description="")
 
@@ -509,7 +508,7 @@ class Disabled(str, Enum):
 
 class DiscoverInput(BaseModel, extra="forbid"):
     target: "VectorInput" = Field(..., description="")
-    context: "Union[ContextPair, List[ContextPair]]" = Field(
+    context: Union[List["ContextPair"], "ContextPair"] = Field(
         ..., description="Search space will be constrained by these pairs of vectors"
     )
 
@@ -617,14 +616,14 @@ class FieldCondition(BaseModel, extra="forbid"):
 
 
 class Filter(BaseModel, extra="forbid"):
-    should: Optional["Union[Condition, List[Condition]]"] = Field(
+    should: Optional[Union[List["Condition"], "Condition"]] = Field(
         default=None, description="At least one of those conditions should match"
     )
     min_should: Optional["MinShould"] = Field(
         default=None, description="At least minimum amount of given conditions should match"
     )
-    must: Optional["Union[Condition, List[Condition]]"] = Field(default=None, description="All conditions must match")
-    must_not: Optional["Union[Condition, List[Condition]]"] = Field(
+    must: Optional[Union[List["Condition"], "Condition"]] = Field(default=None, description="All conditions must match")
+    must_not: Optional[Union[List["Condition"], "Condition"]] = Field(
         default=None, description="All conditions must NOT match"
     )
 
@@ -1090,7 +1089,6 @@ class Modifier(str, Enum):
 
 class MoveShard(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
-    to_shard_id: Optional[int] = Field(default=None, description="")
     to_peer_id: int = Field(..., description="")
     from_peer_id: int = Field(..., description="")
     method: Optional["ShardTransferMethod"] = Field(
@@ -1388,7 +1386,7 @@ class PointsList(BaseModel, extra="forbid"):
 
 
 class Prefetch(BaseModel, extra="forbid"):
-    prefetch: Optional["Union[Prefetch, List[Prefetch]]"] = Field(
+    prefetch: Optional[Union[List["Prefetch"], "Prefetch"]] = Field(
         default=None,
         description="Sub-requests to perform first. If present, the query will be performed on the results of the prefetches.",
     )
@@ -1443,7 +1441,7 @@ class QuantizationSearchParams(BaseModel, extra="forbid"):
 
 class QueryRequest(BaseModel, extra="forbid"):
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
-    prefetch: Optional["Union[Prefetch, List[Prefetch]]"] = Field(
+    prefetch: Optional[Union[List["Prefetch"], "Prefetch"]] = Field(
         default=None,
         description="Sub-requests to perform first. If present, the query will be performed on the results of the prefetch(es).",
     )
@@ -1715,7 +1713,6 @@ class ReplicaState(str, Enum):
 
 class ReplicateShard(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
-    to_shard_id: Optional[int] = Field(default=None, description="")
     to_peer_id: int = Field(..., description="")
     from_peer_id: int = Field(..., description="")
     method: Optional["ShardTransferMethod"] = Field(
@@ -1734,7 +1731,6 @@ class RequestsTelemetry(BaseModel):
 
 class RestartTransfer(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
-    to_shard_id: Optional[int] = Field(default=None, description="")
     from_peer_id: int = Field(..., description="")
     to_peer_id: int = Field(..., description="")
     method: "ShardTransferMethod" = Field(..., description="")
@@ -1989,7 +1985,6 @@ class ShardSnapshotRecover(BaseModel, extra="forbid"):
 
 class ShardTransferInfo(BaseModel):
     shard_id: int = Field(..., description="")
-    to_shard_id: Optional[int] = Field(default=None, description="")
     from_: int = Field(..., description="Source peer id", alias="from")
     to: int = Field(..., description="Destination peer id")
     sync: bool = Field(
@@ -2566,8 +2561,8 @@ OrderByInterface = Union[
     OrderBy,
 ]
 OrderValue = Union[
-    StrictFloat,
     StrictInt,
+    StrictFloat,
 ]
 PayloadSchemaParams = Union[
     TextIndexParams,
@@ -2634,10 +2629,10 @@ SparseIndexType = Union[
     SparseIndexTypeOneOf2,
 ]
 StartFrom = Union[
+    StrictInt,
+    StrictFloat,
     datetime,
     date,
-    StrictFloat,
-    StrictInt,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
