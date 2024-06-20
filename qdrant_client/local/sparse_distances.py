@@ -33,6 +33,14 @@ class SparseRecoQuery:
         self.positive = positive
         self.negative = negative
 
+    def transform_sparse(
+        self, foo: Callable[["SparseVector"], "SparseVector"]
+    ) -> "SparseRecoQuery":
+        return SparseRecoQuery(
+            positive=[foo(vector) for vector in self.positive],
+            negative=[foo(vector) for vector in self.negative],
+        )
+
 
 class SparseContextPair:
     def __init__(self, positive: SparseVector, negative: SparseVector):
@@ -48,10 +56,30 @@ class SparseDiscoveryQuery:
         self.target: SparseVector = sort_sparse_vector(target)
         self.context = context
 
+    def transform_sparse(
+        self, foo: Callable[["SparseVector"], "SparseVector"]
+    ) -> "SparseDiscoveryQuery":
+        return SparseDiscoveryQuery(
+            target=foo(self.target),
+            context=[
+                SparseContextPair(foo(pair.positive), foo(pair.negative)) for pair in self.context
+            ],
+        )
+
 
 class SparseContextQuery:
     def __init__(self, context_pairs: List[SparseContextPair]):
         self.context_pairs = context_pairs
+
+    def transform_sparse(
+        self, foo: Callable[["SparseVector"], "SparseVector"]
+    ) -> "SparseContextQuery":
+        return SparseContextQuery(
+            context_pairs=[
+                SparseContextPair(foo(pair.positive), foo(pair.negative))
+                for pair in self.context_pairs
+            ]
+        )
 
 
 SparseQueryVector = Union[

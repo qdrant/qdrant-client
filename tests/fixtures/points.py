@@ -36,6 +36,12 @@ def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
     return sparse_vector
 
 
+def generate_random_sparse_vector_uneven(size: int, density: float) -> SparseVector:
+    if random.random() > 0.5:
+        size = int(size * 0.3)
+    return generate_random_sparse_vector(size, density)
+
+
 def generate_random_sparse_vector_list(
     num_vectors: int, vector_size: int, vector_density: float
 ) -> List[SparseVector]:
@@ -48,11 +54,15 @@ def generate_random_sparse_vector_list(
 
 def random_sparse_vectors(
     vector_sizes: Dict[str, int],
+    even: bool = True,
 ) -> models.VectorStruct:
     vectors = {}
     for vector_name, vector_size in vector_sizes.items():
         # use sparse vectors with 20% density
-        vectors[vector_name] = generate_random_sparse_vector(vector_size, density=0.2)
+        if even:
+            vectors[vector_name] = generate_random_sparse_vector(vector_size, density=0.2)
+        else:
+            vectors[vector_name] = generate_random_sparse_vector_uneven(vector_size, density=0.2)
     return vectors
 
 
@@ -63,6 +73,7 @@ def generate_points(
     random_ids: bool = False,
     skip_vectors: bool = False,
     sparse: bool = False,
+    even_sparse: bool = True,
 ) -> List[models.PointStruct]:
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
@@ -78,7 +89,7 @@ def generate_points(
             idx = str(uuid.uuid4())
 
         if sparse:
-            vectors = random_sparse_vectors(vector_sizes)
+            vectors = random_sparse_vectors(vector_sizes, even=even_sparse)
         else:
             vectors = random_vectors(vector_sizes)
 

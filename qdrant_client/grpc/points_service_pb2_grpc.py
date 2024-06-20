@@ -124,6 +124,11 @@ class PointsStub(object):
                 request_serializer=points__pb2.UpdateBatchPoints.SerializeToString,
                 response_deserializer=points__pb2.UpdateBatchResponse.FromString,
                 )
+        self.Query = channel.unary_unary(
+                '/qdrant.Points/Query',
+                request_serializer=points__pb2.QueryPoints.SerializeToString,
+                response_deserializer=points__pb2.QueryResponse.FromString,
+                )
 
 
 class PointsServicer(object):
@@ -319,6 +324,14 @@ class PointsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Query(self, request, context):
+        """
+        Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PointsServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -431,6 +444,11 @@ def add_PointsServicer_to_server(servicer, server):
                     servicer.UpdateBatch,
                     request_deserializer=points__pb2.UpdateBatchPoints.FromString,
                     response_serializer=points__pb2.UpdateBatchResponse.SerializeToString,
+            ),
+            'Query': grpc.unary_unary_rpc_method_handler(
+                    servicer.Query,
+                    request_deserializer=points__pb2.QueryPoints.FromString,
+                    response_serializer=points__pb2.QueryResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -813,5 +831,22 @@ class Points(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Points/UpdateBatch',
             points__pb2.UpdateBatchPoints.SerializeToString,
             points__pb2.UpdateBatchResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Query(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/Query',
+            points__pb2.QueryPoints.SerializeToString,
+            points__pb2.QueryResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

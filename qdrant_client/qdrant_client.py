@@ -2185,6 +2185,8 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         location: str,
+        api_key: Optional[str] = None,
+        checksum: Optional[str] = None,
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
@@ -2197,6 +2199,10 @@ class QdrantClient(QdrantFastembedMixin):
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
                 - Local path `file:///qdrant/snapshots/test_collection/test_collection-6194298859870377-2023-11-09-15-17-51.snapshot`
+
+            api_key: API key to use for accessing the snapshot on another server.
+
+            checksum: Checksum of the snapshot to verify the integrity of the snapshot.
 
             priority: Defines source of truth for snapshot recovery
 
@@ -2217,6 +2223,8 @@ class QdrantClient(QdrantFastembedMixin):
         return self._client.recover_snapshot(
             collection_name=collection_name,
             location=location,
+            api_key=api_key,
+            checksum=checksum,
             priority=priority,
             wait=wait,
             **kwargs,
@@ -2305,6 +2313,8 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         shard_id: int,
         location: str,
+        api_key: Optional[str] = None,
+        checksum: Optional[str] = None,
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
@@ -2317,6 +2327,9 @@ class QdrantClient(QdrantFastembedMixin):
             location: URL of the snapshot
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
+
+            api_key: API key to use for accessing the snapshot on another server.
+            checksum: Checksum of the snapshot to verify the integrity of the snapshot.
             priority: Defines source of truth for snapshot recovery
 
                 - `replica` (default) means - prefer existing data over the snapshot
@@ -2337,6 +2350,8 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             shard_id=shard_id,
             location=location,
+            api_key=api_key,
+            checksum=checksum,
             priority=priority,
             wait=wait,
             **kwargs,

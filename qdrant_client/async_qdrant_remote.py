@@ -2327,6 +2327,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         location: str,
+        api_key: Optional[str] = None,
+        checksum: Optional[str] = None,
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
@@ -2335,7 +2337,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             await self.openapi_client.snapshots_api.recover_from_snapshot(
                 collection_name=collection_name,
                 wait=wait,
-                snapshot_recover=models.SnapshotRecover(location=location, priority=priority),
+                snapshot_recover=models.SnapshotRecover(
+                    location=location, priority=priority, checksum=checksum, api_key=api_key
+                ),
             )
         ).result
 
@@ -2381,6 +2385,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         shard_id: int,
         location: str,
+        api_key: Optional[str] = None,
+        checksum: Optional[str] = None,
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
@@ -2391,7 +2397,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 shard_id=shard_id,
                 wait=wait,
                 shard_snapshot_recover=models.ShardSnapshotRecover(
-                    location=location, priority=priority
+                    location=location, priority=priority, checksum=checksum, api_key=api_key
                 ),
             )
         ).result
