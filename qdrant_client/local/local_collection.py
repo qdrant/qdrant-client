@@ -21,7 +21,6 @@ from pydantic.version import VERSION as PYDANTIC_VERSION
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
-from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector
@@ -38,14 +37,18 @@ from qdrant_client.local.distances import (
     calculate_recommend_best_scores,
     distance_to_order,
 )
-from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
-from qdrant_client.local.multivector_distances import (
+from qdrant_client.local.multi_distances import (
     MultiQueryVector,
     MultiRecoQuery,
     MultiDiscoveryQuery,
     MultiContextQuery,
     MultiContextPair,
+    calculate_multi_distance,
+    calculate_multi_recommend_best_scores,
+    calculate_multi_discovery_scores,
+    calculate_multi_context_scores,
 )
+from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import OrderingValue, to_ordering_value
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
@@ -281,9 +284,10 @@ class LocalCollection:
     def _resolve_query_vector_name(
         cls,
         query_vector: Union[
-            types.NumpyArray,
             List[float],
             Tuple[str, List[float]],
+            List[List[float]],
+            Tuple[str, List[List[float]]],
             types.NamedVector,
             types.NamedSparseVector,
             DenseQueryVector,
@@ -291,17 +295,23 @@ class LocalCollection:
             Tuple[str, SparseQueryVector],
             MultiQueryVector,
             Tuple[str, MultiQueryVector],
+            types.NumpyArray,
         ],
-    ) -> Tuple[str, Union[DenseQueryVector, SparseQueryVector, MultiQueryVector]]:
+    ) -> Tuple[
+        str, Union[DenseQueryVector, SparseQueryVector, MultiQueryVector, types.NumpyArray]
+    ]:
         # SparseQueryVector is not in the method's signature, because sparse vectors can only be used as named vectors,
         # and there is no default name for them
-        vector: Union[DenseQueryVector, SparseQueryVector, MultiQueryVector]
+        vector: Union[DenseQueryVector, SparseQueryVector, MultiQueryVector, types.NumpyArray]
         if isinstance(query_vector, tuple):
             name, query = query_vector
             if isinstance(query, list):
                 vector = np.array(query)
             else:
                 vector = query
+        elif isinstance(query_vector, np.ndarray):
+            name = DEFAULT_VECTOR_NAME
+            vector = query_vector
         elif isinstance(query_vector, types.NamedVector):
             name = query_vector.name
             vector = np.array(query_vector.vector)
@@ -311,10 +321,10 @@ class LocalCollection:
         elif isinstance(query_vector, list):
             name = DEFAULT_VECTOR_NAME
             vector = np.array(query_vector)
-        elif isinstance(query_vector, get_args_subscribed(DenseQueryVector)):
+        elif isinstance(query_vector, get_args(DenseQueryVector)):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
-        elif isinstance(query_vector, get_args_subscribed(MultiQueryVector)):
+        elif isinstance(query_vector, get_args(MultiQueryVector)):
             name = DEFAULT_VECTOR_NAME
             vector = query_vector
         else:
@@ -494,15 +504,17 @@ class LocalCollection:
         query_vector: Union[
             List[float],
             Tuple[str, List[float]],
+            List[List[float]],
+            Tuple[str, List[List[float]]],
             types.NamedVector,
             types.NamedSparseVector,
-            types.NumpyArray,
             DenseQueryVector,
             Tuple[str, DenseQueryVector],
             SparseQueryVector,
             Tuple[str, SparseQueryVector],
             MultiQueryVector,
             Tuple[str, MultiQueryVector],
+            types.NumpyArray,
         ],
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
@@ -531,16 +543,14 @@ class LocalCollection:
                 rescore_idf = True
             distance = Distance.DOT
             sparse_scoring = True
-        elif isinstance(
-            query_vector, get_args_subscribed(MultiQueryVector)
-        ):  # todo: should not match a numpy vector, but only a numpy matrix
-            # todo: multiqueryvector should not contain numpy array ?
+        elif isinstance(query_vector, get_args(MultiQueryVector)) or (
+            isinstance(query_vector, np.ndarray) and len(query_vector.shape) == 2
+        ):
             if name not in self.multivectors:
                 raise ValueError(f"Multivector {name} is not found in the collection")
             vectors = self.multivectors[name]
             distance = self.get_vector_params(name).distance
         else:
-            # it must be dense vector
             if name not in self.vectors:
                 raise ValueError(f"Dense vector {name} is not found in the collection")
             vectors = self.vectors[name]
@@ -548,27 +558,34 @@ class LocalCollection:
 
         vectors = vectors[: len(self.payload)]
         if isinstance(query_vector, np.ndarray):
-            scores = calculate_distance(query_vector, vectors, distance)
-        elif isinstance(query_vector, RecoQuery) or isinstance(query_vector, MultiRecoQuery):
+            if len(query_vector.shape) == 1:
+                scores = calculate_distance(query_vector, vectors, distance)
+            else:
+                scores = calculate_multi_distance(query_vector, vectors, distance)
+        elif isinstance(query_vector, RecoQuery):
             scores = calculate_recommend_best_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseRecoQuery):
             if rescore_idf:
                 query_vector = query_vector.transform_sparse(lambda x: self._rescore_idf(x, name))
             scores = calculate_sparse_recommend_best_scores(query_vector, vectors)
-        elif isinstance(query_vector, DiscoveryQuery) or isinstance(
-                query_vector, MultiDiscoveryQuery
-        ):
+        elif isinstance(query_vector, MultiRecoQuery):
+            scores = calculate_multi_recommend_best_scores(query_vector, vectors, distance)
+        elif isinstance(query_vector, DiscoveryQuery):
             scores = calculate_discovery_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseDiscoveryQuery):
             if rescore_idf:
                 query_vector = query_vector.transform_sparse(lambda x: self._rescore_idf(x, name))
             scores = calculate_sparse_discovery_scores(query_vector, vectors)
-        elif isinstance(query_vector, ContextQuery) or isinstance(query_vector, MultiContextQuery):
+        elif isinstance(query_vector, MultiDiscoveryQuery):
+            scores = calculate_multi_discovery_scores(query_vector, vectors, distance)
+        elif isinstance(query_vector, ContextQuery):
             scores = calculate_context_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseContextQuery):
             if rescore_idf:
                 query_vector = query_vector.transform_sparse(lambda x: self._rescore_idf(x, name))
             scores = calculate_sparse_context_scores(query_vector, vectors)
+        elif isinstance(query_vector, MultiContextQuery):
+            scores = calculate_multi_context_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseVector):
             validate_sparse_vector(query_vector)
             if rescore_idf:
@@ -592,6 +609,9 @@ class LocalCollection:
                 DiscoveryQuery,
                 ContextQuery,
                 RecoQuery,
+                MultiDiscoveryQuery,
+                MultiContextQuery,
+                MultiRecoQuery,
             ),  # sparse structures are not required, sparse always uses DOT
         ):
             order = np.argsort(scores)[::-1]
@@ -636,11 +656,11 @@ class LocalCollection:
         self,
         query_vector: Union[
             Sequence[float],
+            List[List[float]],
             Tuple[
                 str,
                 Union[
-                    List[float],
-                    List[List[float]],
+                    models.Vector,
                     RecoQuery,
                     SparseRecoQuery,
                     MultiRecoQuery,
@@ -649,7 +669,6 @@ class LocalCollection:
             ],
             types.NamedVector,
             types.NamedSparseVector,
-            List[List[float]],
             RecoQuery,
             SparseRecoQuery,
             MultiRecoQuery,
@@ -761,8 +780,8 @@ class LocalCollection:
 
     def _preprocess_recommend_input(
         self,
-        positive: Optional[Sequence[types.RecommendExample]] = None,
-        negative: Optional[Sequence[types.RecommendExample]] = None,
+        positive: Optional[Sequence[models.VectorInput]] = None,
+        negative: Optional[Sequence[models.VectorInput]] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         query_filter: Optional[types.Filter] = None,
         using: Optional[str] = None,
@@ -777,9 +796,8 @@ class LocalCollection:
         List[List[List[float]]],
         types.Filter,
     ]:
-        # todo: multivector support
         def examples_into_vectors(
-            examples: Sequence[types.RecommendExample],
+            examples: Sequence[models.VectorInput],
             acc: Union[List[List[float]], List[models.SparseVector], List[List[List[float]]]],
         ) -> None:
             for example in examples:
@@ -788,7 +806,10 @@ class LocalCollection:
                         raise ValueError(f"Point {example} is not found in the collection")
 
                     idx = collection.ids[example]
-                    acc.append(collection_vectors[vector_name][idx])  # type: ignore
+                    vec = collection_vectors[vector_name][idx]
+                    if isinstance(vec, np.ndarray):
+                        vec = vec.tolist()
+                    acc.append(vec)
                     mentioned_ids.append(example)
                 else:
                     acc.append(example)
@@ -890,8 +911,8 @@ class LocalCollection:
 
     def _construct_recommend_query(
         self,
-        positive: Optional[Sequence[types.RecommendExample]] = None,
-        negative: Optional[Sequence[types.RecommendExample]] = None,
+        positive: Optional[Sequence[models.VectorInput]] = None,
+        negative: Optional[Sequence[models.VectorInput]] = None,
         query_filter: Optional[types.Filter] = None,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
@@ -964,8 +985,8 @@ class LocalCollection:
 
     def recommend(
         self,
-        positive: Optional[Sequence[types.RecommendExample]] = None,
-        negative: Optional[Sequence[types.RecommendExample]] = None,
+        positive: Optional[Sequence[models.VectorInput]] = None,
+        negative: Optional[Sequence[models.VectorInput]] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
@@ -1001,8 +1022,8 @@ class LocalCollection:
     def recommend_groups(
         self,
         group_by: str,
-        positive: Optional[Sequence[types.RecommendExample]] = None,
-        negative: Optional[Sequence[types.RecommendExample]] = None,
+        positive: Optional[Sequence[models.VectorInput]] = None,
+        negative: Optional[Sequence[models.VectorInput]] = None,
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         group_size: int = 1,
@@ -1045,8 +1066,9 @@ class LocalCollection:
 
     @staticmethod
     def _preprocess_target(
-        target: Optional[types.TargetVector], collection: "LocalCollection", vector_name: str
-    ) -> Tuple[Union[List[float], List[List[float]], SparseVector], types.PointId]:
+        target: Optional[models.VectorInput], collection: "LocalCollection", vector_name: str
+    ) -> Tuple[models.Vector, types.PointId]:
+        # todo: context can no longer be grpc.TargetVector, but models.VectorInput, currently, grpc types are not supported
         target = (
             GrpcToRest.convert_target_vector(target)
             if target is not None and isinstance(target, grpc.TargetVector)
@@ -1062,7 +1084,7 @@ class LocalCollection:
             elif vector_name in collection.sparse_vectors:
                 target_vector = collection.sparse_vectors[vector_name][idx]
             else:
-                target_vector = collection.multivectors[vector_name][idx]
+                target_vector = collection.multivectors[vector_name][idx].tolist()
 
             return target_vector, target
 
@@ -1070,10 +1092,11 @@ class LocalCollection:
 
     @staticmethod
     def _preprocess_context(
-        context: List[types.ContextExamplePair], collection: "LocalCollection", vector_name: str
+        context: List[models.ContextPair], collection: "LocalCollection", vector_name: str
     ) -> Tuple[
         List[ContextPair], List[SparseContextPair], List[MultiContextPair], List[types.PointId]
     ]:
+        # todo: context can no longer be ContextExamplePair, currently grpc types are not supported
         context = [
             (
                 GrpcToRest.convert_context_example_pair(pair)
@@ -1100,7 +1123,7 @@ class LocalCollection:
                     elif vector_name in collection.sparse_vectors:
                         vector = collection.sparse_vectors[vector_name][idx]
                     else:
-                        vector = collection.multivectors[vector_name][idx]
+                        vector = collection.multivectors[vector_name][idx].tolist()
 
                     pair_vectors.append(vector)
                     mentioned_ids.append(example)
@@ -1149,14 +1172,14 @@ class LocalCollection:
 
     def _preprocess_discover(
         self,
-        target: Optional[types.TargetVector] = None,
-        context: Optional[Sequence[types.ContextExamplePair]] = None,
+        target: Optional[models.VectorInput] = None,
+        context: Optional[Sequence[models.ContextPair]] = None,
         query_filter: Optional[types.Filter] = None,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
     ) -> Tuple[
-        Optional[Union[List[float], SparseVector, List[List[float]]]],
+        Optional[models.Vector],
         List[ContextPair],
         List[SparseContextPair],
         List[MultiContextPair],
@@ -1196,8 +1219,8 @@ class LocalCollection:
 
     def discover(
         self,
-        target: Optional[types.TargetVector] = None,
-        context: Optional[Sequence[types.ContextExamplePair]] = None,
+        target: Optional[models.VectorInput] = None,
+        context: Optional[Sequence[models.ContextPair]] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,

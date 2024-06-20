@@ -57,7 +57,6 @@ DenseQueryVector = Union[
     DiscoveryQuery,
     ContextQuery,
     RecoQuery,
-    types.NumpyArray,
 ]
 
 
@@ -170,12 +169,8 @@ def calculate_distance_core(
     assert not np.isnan(query).any(), "Query vector must not contain NaN"
 
     if distance_type == models.Distance.EUCLID:
-        if len(query.shape) != 1:
-            query = query[:, np.newaxis]
         return -np.square(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
     if distance_type == models.Distance.MANHATTAN:
-        if len(query.shape) != 1:
-            query = query[:, np.newaxis]
         return -np.abs(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
     else:
         return calculate_distance(query, vectors, distance_type)
@@ -195,7 +190,6 @@ def scaled_fast_sigmoid(x: np.float32) -> np.float32:
 def calculate_recommend_best_scores(
     query: RecoQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    # todo: add multivec support
     def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
         vector_count = vectors.shape[0]
 
@@ -229,7 +223,6 @@ def calculate_discovery_ranks(
     vectors: types.NumpyArray,
     distance_type: models.Distance,
 ) -> types.NumpyArray:
-    # todo: add multivec support
     overall_ranks = np.zeros(vectors.shape[0], dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors
@@ -251,7 +244,6 @@ def calculate_discovery_ranks(
 def calculate_discovery_scores(
     query: DiscoveryQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    # todo: add multivec support
     ranks = calculate_discovery_ranks(query.context, vectors, distance_type)
 
     # Get distances to target
@@ -267,7 +259,6 @@ def calculate_discovery_scores(
 def calculate_context_scores(
     query: ContextQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    # todo: add multivec support
     overall_scores = np.zeros(vectors.shape[0], dtype=np.float32)
     for pair in query.context_pairs:
         # Get distances to positive and negative vectors
