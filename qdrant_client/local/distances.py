@@ -108,7 +108,7 @@ def dot_product(query: types.NumpyArray, vectors: types.NumpyArray) -> types.Num
         distances
     """
     if len(query.shape) == 1:
-        return np.dot(query, vectors)
+        return np.dot(vectors, query)
     else:
         return np.dot(query, vectors.T)
 
