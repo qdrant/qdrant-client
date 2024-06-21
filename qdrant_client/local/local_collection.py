@@ -1162,7 +1162,7 @@ class LocalCollection:
                     bool(multi_context_vectors),
                 ]
             )
-            != 1
+            > 1
         ):
             raise ValueError(
                 "All context example pairs must be either dense or sparse or multi vectors"
