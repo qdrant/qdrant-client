@@ -767,6 +767,8 @@ class GrpcToRest:
             return rest.Datatype.FLOAT32
         elif model == grpc.Datatype.Uint8:
             return rest.Datatype.UINT8
+        elif model == grpc.Datatype.Float16:
+            return rest.Datatype.FLOAT16
         else:
             raise ValueError(f"invalid Datatype model: {model}")
 
@@ -787,7 +789,27 @@ class GrpcToRest:
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             datatype=cls.convert_datatype(model.datatype) if model.HasField("datatype") else None,
+            multivector_config=(
+                cls.convert_multivector_config(model.multivector_config)
+                if model.HasField("multivector_config")
+                else None
+            ),
         )
+
+    @classmethod
+    def convert_multivector_config(cls, model: grpc.MultiVectorConfig) -> rest.MultiVectorConfig:
+        return grpc.MultiVectorConfig(
+            comparator=cls.convert_multivector_comparator(model.comparator)
+        )
+
+    @classmethod
+    def convert_multivector_comparator(
+        cls, model: grpc.MultiVectorComparator
+    ) -> rest.MultiVectorComparator:
+        if model == grpc.MultiVectorComparator.MAX_SIM:
+            return rest.MultiVectorComparator.MAX_SIM
+
+        raise ValueError(f"invalid MultiVectorComparator model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_vectors_config(cls, model: grpc.VectorsConfig) -> rest.VectorsConfig:
@@ -803,9 +825,16 @@ class GrpcToRest:
         raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_vector(cls, model: grpc.Vector) -> Union[List[float], SparseVector]:
+    def convert_vector(
+        cls, model: grpc.Vector
+    ) -> Union[List[float], List[List[float]], SparseVector]:
         if model.HasField("indices"):
             return SparseVector(indices=model.indices.data[:], values=model.data[:])
+        if model.HasField("vectors_count"):
+            vectors_count = model.vectors_count
+            return [
+                model.data[i : i + vectors_count] for i in range(0, len(model.data), vectors_count)
+            ]
         return model.data[:]
 
     @classmethod
@@ -825,6 +854,112 @@ class GrpcToRest:
         if name == "vectors":
             return cls.convert_named_vectors(val)
         raise ValueError(f"invalid Vectors model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_dense_vector(cls, model: grpc.DenseVector) -> List[float]:
+        return model.data[:]
+
+    @classmethod
+    def convert_sparse_vector(cls, model: grpc.SparseVector) -> SparseVector:
+        return SparseVector(indices=model.indices.data[:], values=model.data[:])
+
+    @classmethod
+    def convert_multi_dense_vector(cls, model: grpc.MultiDenseVector) -> List[List[float]]:
+        return [cls.convert_dense_vector(vector) for vector in model.vectors]
+
+    @classmethod
+    def convert_vector_input(cls, model: grpc.VectorInput) -> rest.VectorInput:
+        name = model.WhichOneof("variant")
+        val = getattr(model, name)
+
+        if name == "id":
+            return cls.convert_point_id(val)
+        if name == "dense":
+            return cls.convert_dense_vector(val)
+        if name == "sparse":
+            return cls.convert_sparse_vector(val)
+        if name == "multi_dense":
+            return cls.convert_multi_dense_vector(val)
+        raise ValueError(f"invalid VectorInput model: {model}")
+
+    @classmethod
+    def convert_recommend_input(cls, model: grpc.RecommendInput) -> rest.RecommendInput:
+        return rest.RecommendInput(
+            positive=[cls.convert_vector_input(vector) for vector in model.positive],
+            negative=[cls.convert_vector_input(vector) for vector in model.negative],
+            strategy=cls.convert_recommend_strategy(model.strategy)
+            if model.HasField("strategy")
+            else None,
+        )
+
+    @classmethod
+    def convert_context_input_pair(cls, model: grpc.ContextInputPair) -> rest.ContextPair:
+        return rest.ContextPair(
+            positive=cls.convert_vector_input(model.positive),
+            negative=cls.convert_vector_input(model.negative),
+        )
+
+    @classmethod
+    def convert_context_input(cls, model: grpc.ContextInput) -> rest.ContextInput:
+        return [cls.convert_context_input_pair(pair) for pair in model.pairs]
+
+    @classmethod
+    def convert_discover_input(cls, model: grpc.DiscoverInput) -> rest.DiscoverInput:
+        return rest.DiscoverInput(
+            target=cls.convert_vector_input(model.target),
+            context=[cls.convert_context_input_pair(pair) for pair in model.context],
+        )
+
+    @classmethod
+    def convert_fusion(cls, model: grpc.Fusion) -> rest.Fusion:
+        if model == grpc.Fusion.RRF:
+            return rest.FusionOneOf.RRF
+
+        raise ValueError(f"invalid Fusion model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_query(cls, model: grpc.Query) -> rest.Query:
+        name = model.WhichOneof("variant")
+        val = getattr(model, name)
+
+        if name == "nearest":
+            return rest.NearestQuery(nearest=cls.convert_vector_input(val))
+
+        if name == "recommend":
+            return rest.RecommendQuery(recommend=cls.convert_recommend_input(val))
+
+        if name == "discover":
+            return rest.DiscoverQuery(discover=cls.convert_discover_input(val))
+
+        if name == "context":
+            return rest.ContextQuery(context=cls.convert_context_input(val))
+
+        if name == "order_by":
+            return rest.OrderByQuery(order_by=cls.convert_order_by(val))
+
+        if name == "fusion":
+            return rest.FusionQuery(fusion=cls.convert_fusion(val))
+
+        raise ValueError(f"invalid Query model: {model}")
+
+    @classmethod
+    def convert_prefetch_query(cls, model: rest.Prefetch) -> grpc.PrefetchQuery:
+        return grpc.PrefetchQuery(
+            prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
+            if model.prefetch is not None
+            else [],
+            query=cls.convert_query(model.query) if model.query is not None else None,
+            using=model.using if model.using is not None else None,
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            search_params=cls.convert_search_params(model.search_params)
+            if model.search_params is not None
+            else None,
+            score_threshold=model.score_threshold,
+            limit=model.limit if model.limit is not None else None,
+            lookup_from=cls.convert_lookup_location(model.lookup_from)
+            if model.lookup_from is not None
+            else None,
+        )
 
     @classmethod
     def convert_vectors_selector(cls, model: grpc.VectorsSelector) -> List[str]:
@@ -1384,6 +1519,7 @@ class GrpcToRest:
                 model.full_scan_threshold if model.HasField("full_scan_threshold") else None
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
+            datatype=cls.convert_datatype(model.datatype) if model.HasField("datatype") else None,
         )
 
     @classmethod
@@ -1404,6 +1540,9 @@ class GrpcToRest:
             ),
             modifier=(
                 cls.convert_modifier(model.modifier) if model.HasField("modifier") else None
+            ),
+            datatype=(
+                cls.convert_datatype(model.datatype) if model.HasField("datatype") else None
             ),
         )
 
@@ -1693,6 +1832,14 @@ class RestToGrpc:
         return grpc.CreateAlias(collection_name=model.collection_name, alias_name=model.alias_name)
 
     @classmethod
+    def convert_order_value(cls, model: rest.OrderValue) -> grpc.OrderValue:
+        if isinstance(model, int):
+            return grpc.OrderValue(int=True)
+        if isinstance(model, float):
+            return grpc.OrderValue(float=True)
+        raise ValueError(f"invalid OrderValue model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_scored_point(cls, model: rest.ScoredPoint) -> grpc.ScoredPoint:
         return grpc.ScoredPoint(
             id=cls.convert_extended_point_id(model.id),
@@ -1701,6 +1848,7 @@ class RestToGrpc:
             vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
             version=model.version,
             shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
+            order_value=cls.convert_order_value(model.order_value) if model.order_value else None,
         )
 
     @classmethod
@@ -1998,7 +2146,7 @@ class RestToGrpc:
         raise ValueError(f"Invalid RecommendExample model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_sparse_vector(cls, model: rest.SparseVector) -> grpc.Vector:
+    def convert_sparse_vector_legacy(cls, model: rest.SparseVector) -> grpc.Vector:
         return grpc.Vector(
             data=model.values,
             indices=grpc.SparseIndices(data=model.indices),
@@ -2167,6 +2315,8 @@ class RestToGrpc:
             return grpc.Datatype.Float32
         if model == rest.Datatype.UINT8:
             return grpc.Datatype.Uint8
+        if model == rest.Datatype.FLOAT16:
+            return grpc.Datatype.Float16
 
         raise ValueError(f"invalid Datatype model: {model}")  # pragma: no cover
 
@@ -2187,7 +2337,27 @@ class RestToGrpc:
             ),
             on_disk=model.on_disk,
             datatype=cls.convert_datatype(model.datatype) if model.datatype is not None else None,
+            multivector_config=(
+                cls.convert_multivector_config(model.multivector_config)
+                if model.multivector_config is not None
+                else None,
+            ),
         )
+
+    @classmethod
+    def convert_multivector_config(cls, model: rest.MultiVectorConfig) -> grpc.MultiVectorConfig:
+        return grpc.MultiVectorConfig(
+            comparator=cls.convert_multivector_comparator(model.comparator)
+        )
+
+    @classmethod
+    def convert_multivector_comparator(
+        cls, model: rest.MultiVectorComparator
+    ) -> grpc.MultiVectorComparator:
+        if model == rest.MultiVectorComparator.MAX_SIM:
+            return grpc.MultiVectorComparator.MaxSim
+
+        raise ValueError(f"invalid MultiVectorComparator model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_vectors_config(cls, model: rest.VectorsConfig) -> grpc.VectorsConfig:
@@ -2204,13 +2374,21 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_struct(cls, model: rest.VectorStruct) -> grpc.Vectors:
+        def convert_vector(vector: Union[List[float], List[List[float]]]) -> grpc.Vector:
+            if isinstance(vector[0], list):
+                return grpc.Vector(
+                    data=[inner_vector for multi_vector in model for inner_vector in multi_vector],
+                    vectors_count=len(model),
+                )
+            return grpc.Vector(data=vector)
+
         if isinstance(model, list):
-            return grpc.Vectors(vector=grpc.Vector(data=model))
+            return grpc.Vectors(vector=convert_vector(model))
         elif isinstance(model, dict):
             vectors: Dict = {}
             for key, val in model.items():
                 if isinstance(val, list):
-                    vectors.update({key: grpc.Vector(data=val)})
+                    vectors.update({key: convert_vector(val)})
                 elif isinstance(val, rest.SparseVector):
                     vectors.update(
                         {
@@ -2259,6 +2437,107 @@ class RestToGrpc:
             return model.vector.values, grpc.SparseIndices(data=model.vector.indices), model.name
         else:
             raise ValueError(f"invalid NamedVectorStruct model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_dense_vector(cls, model: List[float]) -> grpc.DenseVector:
+        return grpc.DenseVector(data=model)
+
+    @classmethod
+    def convert_sparse_vector(cls, model: SparseVector) -> grpc.SparseVector:
+        return grpc.SparseVector(values=model.values, indices=model.indices)
+
+    @classmethod
+    def convert_multi_dense_vector(cls, model: List[List[float]]) -> grpc.MultiDenseVector:
+        return [cls.convert_dense_vector(vector) for vector in model]
+
+    @classmethod
+    def convert_vector_input(cls, model: rest.VectorInput) -> grpc.VectorInput:
+        if isinstance(model, list):
+            if isinstance(model[0], list):
+                return grpc.VectorInput(multi_dense=cls.convert_multi_dense_vector(model))
+            return grpc.VectorInput(dense=cls.convert_dense_vector(model))
+        if isinstance(model, rest.SparseVector):
+            return grpc.VectorInput(sparse=cls.convert_sparse_vector(model))
+        if isinstance(model, get_args_subscribed(rest.ExtendedPointId)):
+            return grpc.VectorInput(id=cls.convert_extended_point_id(model))
+
+        raise ValueError(f"invalid VectorInput model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_recommend_input(cls, model: rest.RecommendInput) -> grpc.RecommendInput:
+        return grpc.RecommendInput(
+            positive=[cls.convert_vector_input(vector) for vector in model.positive],
+            negative=[cls.convert_vector_input(vector) for vector in model.negative],
+            strategy=cls.convert_recommend_strategy(model.strategy)
+            if model.strategy is not None
+            else None,
+        )
+
+    @classmethod
+    def convert_context_input_pair(cls, model: rest.ContextPair) -> grpc.ContextInputPair:
+        return grpc.ContextInputPair(
+            positive=cls.convert_vector_input(model.positive),
+            negative=cls.convert_vector_input(model.negative),
+        )
+
+    @classmethod
+    def convert_context_input(cls, model: rest.ContextInput) -> grpc.ContextInput:
+        return grpc.ContextInput(
+            context=[cls.convert_context_input_pair(pair) for pair in model.context]
+        )
+
+    @classmethod
+    def convert_discover_input(cls, model: rest.DiscoverInput) -> grpc.DiscoverInput:
+        return grpc.DiscoverInput(
+            vector_input=cls.convert_vector_input(model.vector),
+            context_input=cls.convert_context_input(model.context),
+        )
+
+    @classmethod
+    def convert_fusion(cls, model: rest.Fusion) -> grpc.Fusion:
+        if model == rest.FusionOneOf.RRF:
+            return grpc.Fusion.RRF
+
+    @classmethod
+    def convert_query(cls, model: rest.Query) -> grpc.Query:  # todo: convert query interface
+        if isinstance(model, rest.NearestQuery):
+            return grpc.Query(nearest=cls.convert_vector_input(model.nearest))
+
+        if isinstance(model, rest.RecommendQuery):
+            return grpc.Query(recommend=cls.convert_recommend_input(model.recommend))
+
+        if isinstance(model, rest.DiscoverQuery):
+            return grpc.Query(discover=cls.convert_discover_input(model.discover))
+
+        if isinstance(model, rest.ContextQuery):
+            return grpc.Query(context=cls.convert_context_input(model.context))
+
+        if isinstance(model, rest.OrderByQuery):
+            return grpc.Query(order_by=cls.convert_order_by_interface(model.order_by))
+
+        if isinstance(model, rest.FusionQuery):
+            return grpc.Query(fusion=cls.convert_fusion(model.fusion))
+
+        raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_prefetch_query(cls, model: rest.Prefetch) -> grpc.PrefetchQuery:
+        return grpc.PrefetchQuery(
+            prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
+            if model.prefetch is not None
+            else [],
+            query=cls.convert_query(model.query) if model.query is not None else None,
+            using=model.using if model.using is not None else None,
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            search_params=cls.convert_search_params(model.search_params)
+            if model.search_params is not None
+            else None,
+            score_threshold=model.score_threshold,
+            limit=model.limit if model.limit is not None else None,
+            lookup_from=cls.convert_lookup_location(model.lookup_from)
+            if model.lookup_from is not None
+            else None,
+        )
 
     @classmethod
     def convert_search_request(
