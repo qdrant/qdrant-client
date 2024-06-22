@@ -2338,8 +2338,8 @@ class RestToGrpc:
             on_disk=model.on_disk,
             datatype=cls.convert_datatype(model.datatype) if model.datatype is not None else None,
             multivector_config=(
-                cls.convert_multivector_config(model.multivector_config)
-                if model.multivector_config is not None
+                cls.convert_multivector_config(model.multivec)
+                if model.multivec_config is not None
                 else None,
             ),
         )
