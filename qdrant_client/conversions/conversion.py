@@ -1541,9 +1541,6 @@ class GrpcToRest:
             modifier=(
                 cls.convert_modifier(model.modifier) if model.HasField("modifier") else None
             ),
-            datatype=(
-                cls.convert_datatype(model.datatype) if model.HasField("datatype") else None
-            ),
         )
 
     @classmethod
@@ -2340,7 +2337,7 @@ class RestToGrpc:
             multivector_config=(
                 cls.convert_multivector_config(model.multivec)
                 if model.multivec_config is not None
-                else None,
+                else None
             ),
         )
 
@@ -3157,6 +3154,7 @@ class RestToGrpc:
                 model.full_scan_threshold if model.full_scan_threshold is not None else None
             ),
             on_disk=model.on_disk if model.on_disk is not None else None,
+            datatype=cls.convert_datatype(model.datatype) if model.datatype is not None else None,
         )
 
     @classmethod
