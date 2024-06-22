@@ -745,6 +745,27 @@ recommend_points = grpc.RecommendPoints(
     ],
     shard_key_selector=shard_key_selector_2,
 )
+legacy_sparse_vector = grpc.Vector(
+    data=[0.2, 0.3, 0.4],
+    indices=SparseIndices(data=[1, 2, 3]),
+)
+recommend_points_sparse = grpc.RecommendPoints(
+    collection_name="collection-123",
+    positive=[point_id_1, point_id_2],
+    negative=[point_id],
+    filter=filter_,
+    limit=100,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+    strategy=recommend_strategy,
+    positive_vectors=[legacy_sparse_vector],
+    negative_vectors=[legacy_sparse_vector],
+    shard_key_selector=shard_key_selector_2,
+)
 
 lookup_location_1 = grpc.LookupLocation(
     collection_name="collection-123",
@@ -855,11 +876,6 @@ discover_points = grpc.DiscoverPoints(
     using="abc",
     with_vectors=grpc.WithVectorsSelector(enable=True),
     shard_key_selector=shard_key_selector_2,
-)
-
-legacy_sparse_vector = grpc.Vector(
-    data=[0.2, 0.3, 0.4],
-    indices=SparseIndices(data=[1, 2, 3]),
 )
 
 sparse_vector_example = grpc.VectorExample(
@@ -1126,7 +1142,7 @@ fixtures = {
     ],
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
-    "RecommendPoints": [recommend_points],
+    "RecommendPoints": [recommend_points, recommend_points_sparse],
     "RecommendStrategy": [recommend_strategy, recommend_strategy2],
     "TextIndexParams": [
         text_index_params_1,
