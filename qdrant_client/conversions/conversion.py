@@ -2119,7 +2119,7 @@ class RestToGrpc:
             elif isinstance(example, list):
                 vector = grpc.Vector(data=example)
             elif isinstance(example, rest.SparseVector):
-                vector = cls.convert_sparse_vector(example)
+                vector = cls.convert_sparse_vector_legacy(example)
             else:
                 continue
 
@@ -2136,7 +2136,7 @@ class RestToGrpc:
         if isinstance(model, get_args_subscribed(rest.ExtendedPointId)):
             return grpc.VectorExample(id=cls.convert_extended_point_id(model))
         if isinstance(model, rest.SparseVector):
-            return grpc.VectorExample(vector=cls.convert_sparse_vector(model))
+            return grpc.VectorExample(vector=cls.convert_sparse_vector_legacy(model))
         if isinstance(model, list):
             return grpc.VectorExample(vector=grpc.Vector(data=model))
 
