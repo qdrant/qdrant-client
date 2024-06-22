@@ -260,11 +260,11 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
             types.NamedSparseVector,
+            types.NumpyArray,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -371,11 +371,11 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
             types.NamedSparseVector,
+            types.NumpyArray,
         ],
         group_by: str,
         query_filter: Optional[types.Filter] = None,
@@ -1945,7 +1945,9 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         vectors: Union[
-            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+            Iterable[types.VectorStruct],
+            Dict[str, types.NumpyArray],
+            types.NumpyArray,
         ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,

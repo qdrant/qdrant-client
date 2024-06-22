@@ -412,11 +412,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
             types.NamedSparseVector,
+            types.NumpyArray,
         ],
         group_by: str,
         query_filter: Optional[models.Filter] = None,
