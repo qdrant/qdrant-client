@@ -487,7 +487,7 @@ class GrpcToRest:
             shard_key=(
                 cls.convert_shard_key(model.shard_key) if model.HasField("shard_key") else None
             ),
-            order_by=(
+            order_value=(
                 cls.convert_order_value(model.order_value)
                 if model.HasField("order_value")
                 else None
@@ -816,7 +816,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_multivector_config(cls, model: grpc.MultiVectorConfig) -> rest.MultiVectorConfig:
-        return grpc.MultiVectorConfig(
+        return rest.MultiVectorConfig(
             comparator=cls.convert_multivector_comparator(model.comparator)
         )
 
@@ -824,7 +824,7 @@ class GrpcToRest:
     def convert_multivector_comparator(
         cls, model: grpc.MultiVectorComparator
     ) -> rest.MultiVectorComparator:
-        if model == grpc.MultiVectorComparator.MAX_SIM:
+        if model == grpc.MultiVectorComparator.MaxSim:
             return rest.MultiVectorComparator.MAX_SIM
 
         raise ValueError(f"invalid MultiVectorComparator model: {model}")  # pragma: no cover
@@ -850,9 +850,9 @@ class GrpcToRest:
             return SparseVector(indices=model.indices.data[:], values=model.data[:])
         if model.HasField("vectors_count"):
             vectors_count = model.vectors_count
-            return [
-                model.data[i : i + vectors_count] for i in range(0, len(model.data), vectors_count)
-            ]
+            vectors = model.data
+            step = len(vectors) // vectors_count
+            return [vectors[i : i + step] for i in range(0, len(vectors), step)]
         return model.data[:]
 
     @classmethod
@@ -925,7 +925,7 @@ class GrpcToRest:
     def convert_discover_input(cls, model: grpc.DiscoverInput) -> rest.DiscoverInput:
         return rest.DiscoverInput(
             target=cls.convert_vector_input(model.target),
-            context=[cls.convert_context_input_pair(pair) for pair in model.context],
+            context=cls.convert_context_input(model.context),
         )
 
     @classmethod
@@ -961,21 +961,21 @@ class GrpcToRest:
         raise ValueError(f"invalid Query model: {model}")
 
     @classmethod
-    def convert_prefetch_query(cls, model: rest.Prefetch) -> grpc.PrefetchQuery:
-        return grpc.PrefetchQuery(
+    def convert_prefetch_query(cls, model: grpc.PrefetchQuery) -> rest.Prefetch:
+        return rest.Prefetch(
             prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
-            if model.prefetch is not None
+            if len(model.prefetch) != 0
             else [],
-            query=cls.convert_query(model.query) if model.query is not None else None,
-            using=model.using if model.using is not None else None,
-            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
-            search_params=cls.convert_search_params(model.search_params)
-            if model.search_params is not None
+            query=cls.convert_query(model.query) if model.HasField("query") else None,
+            using=model.using if model.HasField("using") else None,
+            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
+            params=cls.convert_search_params(model.search_params)
+            if model.HasField("search_params")
             else None,
-            score_threshold=model.score_threshold,
-            limit=model.limit if model.limit is not None else None,
+            score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
+            limit=model.limit if model.HasField("limit") else None,
             lookup_from=cls.convert_lookup_location(model.lookup_from)
-            if model.lookup_from is not None
+            if model.HasField("lookup_from")
             else None,
         )
 
@@ -2353,7 +2353,7 @@ class RestToGrpc:
             on_disk=model.on_disk,
             datatype=cls.convert_datatype(model.datatype) if model.datatype is not None else None,
             multivector_config=(
-                cls.convert_multivector_config(model.multivec)
+                cls.convert_multivector_config(model.multivec_config)
                 if model.multivec_config is not None
                 else None
             ),
@@ -2501,15 +2501,20 @@ class RestToGrpc:
 
     @classmethod
     def convert_context_input(cls, model: rest.ContextInput) -> grpc.ContextInput:
-        return grpc.ContextInput(
-            context=[cls.convert_context_input_pair(pair) for pair in model.context]
-        )
+        if isinstance(model, list):
+            return grpc.ContextInput(
+                pairs=[cls.convert_context_input_pair(pair) for pair in model]
+            )
+        if isinstance(model, rest.ContextPair):
+            return grpc.ContextInput(context=[cls.convert_context_input_pair(model)])
+
+        raise ValueError(f"invalid ContextInput model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_discover_input(cls, model: rest.DiscoverInput) -> grpc.DiscoverInput:
         return grpc.DiscoverInput(
-            vector_input=cls.convert_vector_input(model.vector),
-            context_input=cls.convert_context_input(model.context),
+            target=cls.convert_vector_input(model.target),
+            context=cls.convert_context_input(model.context),
         )
 
     @classmethod
@@ -2551,15 +2556,19 @@ class RestToGrpc:
 
     @classmethod
     def convert_prefetch_query(cls, model: rest.Prefetch) -> grpc.PrefetchQuery:
+        prefetch = None
+        if isinstance(model.prefetch, List):
+            prefetch = [cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
+        elif isinstance(model.prefetch, rest.Prefetch):
+            prefetch = cls.convert_prefetch_query(model.prefetch)
+
         return grpc.PrefetchQuery(
-            prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
-            if model.prefetch is not None
-            else [],
+            prefetch=prefetch,
             query=cls.convert_query(model.query) if model.query is not None else None,
             using=model.using if model.using is not None else None,
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
-            search_params=cls.convert_search_params(model.search_params)
-            if model.search_params is not None
+            search_params=cls.convert_search_params(model.params)
+            if model.params is not None
             else None,
             score_threshold=model.score_threshold,
             limit=model.limit if model.limit is not None else None,
