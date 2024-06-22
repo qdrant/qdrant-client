@@ -879,7 +879,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_sparse_vector(cls, model: grpc.SparseVector) -> SparseVector:
-        return SparseVector(indices=model.indices.data[:], values=model.data[:])
+        return SparseVector(indices=model.indices[:], values=model.values[:])
 
     @classmethod
     def convert_multi_dense_vector(cls, model: grpc.MultiDenseVector) -> List[List[float]]:
@@ -2465,7 +2465,9 @@ class RestToGrpc:
 
     @classmethod
     def convert_multi_dense_vector(cls, model: List[List[float]]) -> grpc.MultiDenseVector:
-        return [cls.convert_dense_vector(vector) for vector in model]
+        return grpc.MultiDenseVector(
+            vectors=[cls.convert_dense_vector(vector) for vector in model]
+        )
 
     @classmethod
     def convert_vector_input(cls, model: rest.VectorInput) -> grpc.VectorInput:

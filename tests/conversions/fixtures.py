@@ -857,6 +857,36 @@ discover_points = grpc.DiscoverPoints(
     shard_key_selector=shard_key_selector_2,
 )
 
+legacy_sparse_vector = grpc.Vector(
+    data=[0.2, 0.3, 0.4],
+    indices=SparseIndices(data=[1, 2, 3]),
+)
+
+sparse_vector_example = grpc.VectorExample(
+    vector=legacy_sparse_vector,
+)
+target_vector_sparse = grpc.TargetVector(
+    single=sparse_vector_example,
+)
+
+context_example_pair_sparse = grpc.ContextExamplePair(
+    positive=sparse_vector_example,
+    negative=sparse_vector_example,
+)
+discover_points_sparse = grpc.DiscoverPoints(
+    collection_name="collection-123",
+    target=target_vector_sparse,
+    context=[context_example_pair_sparse, context_example_pair_sparse],
+    filter=filter_,
+    limit=100,
+    with_payload=with_payload_bool,
+    params=search_params,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+    shard_key_selector=shard_key_selector_2,
+)
+
 upsert_operation = grpc.PointsUpdateOperation(
     upsert=grpc.PointsUpdateOperation.PointStructList(
         points=[point_struct],
@@ -983,18 +1013,19 @@ recommend_input = grpc.RecommendInput(
     negative=[vector_input_dense_2],
 )
 recommend_input_strategy = grpc.RecommendInput(
-    positive=[vector_input_dense],
+    positive=[vector_input_id],
     strategy=recommend_strategy,
 )
 
 context_input_pair = grpc.ContextInputPair(
-    positive=vector_input_dense, negative=vector_input_dense_2
+    positive=vector_input_dense, negative=vector_input_multi
 )
 context_input = grpc.ContextInput(pairs=[context_input_pair])
 discover_input = grpc.DiscoverInput(target=vector_input_dense, context=context_input)
 
-query_nearest = grpc.Query(nearest=vector_input_dense)
+query_nearest = grpc.Query(nearest=vector_input_sparse)
 query_recommend = grpc.Query(recommend=recommend_input)
+query_recommend_id = grpc.Query(recommend=recommend_input_strategy)
 query_discover = grpc.Query(discover=discover_input)
 query_context = grpc.Query(context=context_input)
 query_order_by = grpc.Query(order_by=order_by)
@@ -1139,7 +1170,7 @@ fixtures = {
         delete_vectors_operation,
         delete_vectors_operation_2,
     ],
-    "DiscoverPoints": [discover_points],
+    "DiscoverPoints": [discover_points, discover_points_sparse],
     "ContextExamplePair": [context_example_pair_1],
     "VectorExample": [vector_example_1, vector_example_2, vector_example_3],
     "TargetVector": [target_vector_1],
@@ -1158,6 +1189,7 @@ fixtures = {
         query_context,
         query_order_by,
         query_fusion,
+        query_recommend_id,
     ],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
 }
