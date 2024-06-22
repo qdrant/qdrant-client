@@ -789,7 +789,7 @@ class GrpcToRest:
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             datatype=cls.convert_datatype(model.datatype) if model.HasField("datatype") else None,
-            multivector_config=(
+            multivec_config=(
                 cls.convert_multivector_config(model.multivector_config)
                 if model.HasField("multivector_config")
                 else None
