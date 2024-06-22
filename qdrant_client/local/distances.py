@@ -57,7 +57,6 @@ DenseQueryVector = Union[
     DiscoveryQuery,
     ContextQuery,
     RecoQuery,
-    types.NumpyArray,
 ]
 
 
@@ -86,13 +85,17 @@ def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> typ
     Returns:
         distances
     """
-    query_norm = np.linalg.norm(query)
-    query /= np.where(query_norm != 0.0, query_norm, EPSILON)
-
-    vectors_norm = np.linalg.norm(vectors, axis=1)[:, np.newaxis]
+    vectors_norm = np.linalg.norm(vectors, axis=-1)[:, np.newaxis]
     vectors /= np.where(vectors_norm != 0.0, vectors_norm, EPSILON)
 
-    return np.dot(vectors, query)
+    if len(query.shape) == 1:
+        query_norm = np.linalg.norm(query)
+        query /= np.where(query_norm != 0.0, query_norm, EPSILON)
+        return np.dot(vectors, query)
+
+    query_norm = np.linalg.norm(query, axis=-1)[:, np.newaxis]
+    query /= np.where(query_norm != 0.0, query_norm, EPSILON)
+    return np.dot(query, vectors.T)
 
 
 def dot_product(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -104,7 +107,10 @@ def dot_product(query: types.NumpyArray, vectors: types.NumpyArray) -> types.Num
     Returns:
         distances
     """
-    return np.dot(vectors, query)
+    if len(query.shape) == 1:
+        return np.dot(vectors, query)
+    else:
+        return np.dot(query, vectors.T)
 
 
 def euclidean_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -116,7 +122,10 @@ def euclidean_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
     Returns:
         distances
     """
-    return np.linalg.norm(vectors - query, axis=1)
+    if len(query.shape) == 1:
+        return np.linalg.norm(vectors - query, axis=-1)
+    else:
+        return np.linalg.norm(vectors - query[:, np.newaxis], axis=-1)
 
 
 def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -128,7 +137,10 @@ def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
     Returns:
         distances
     """
-    return np.sum(np.abs(vectors - query), axis=1)
+    if len(query.shape) == 1:
+        return np.sum(np.abs(vectors - query), axis=-1)
+    else:
+        return np.sum(np.abs(vectors - query[:, np.newaxis]), axis=-1)
 
 
 def calculate_distance(
