@@ -254,7 +254,7 @@ class LocalCollection:
                     if v is not None:
                         multivectors[name].append(v)
                     else:
-                        multivectors[name].append([])
+                        multivectors[name].append(np.array([]))
                         deleted_ids.append((idx, name))
 
             # setup dense vectors by name
@@ -271,7 +271,7 @@ class LocalCollection:
 
             # setup multivectors by name
             for name, named_vectors in multivectors.items():
-                self.multivectors[name] = named_vectors
+                self.multivectors[name] = [np.array(vector) for vector in named_vectors]
                 self.deleted_per_vector[name] = np.zeros(len(self.payload), dtype=bool)
 
             # track deleted points by named vector
@@ -955,7 +955,10 @@ class LocalCollection:
                     sparse_negative_vectors,
                 )
             elif multi_positive_vectors:
-                raise TypeError("Multivectors do not support recommend average")
+                raise TypeError(
+                    "Multivectors do not support recommend average, consider using "
+                    "strategy=models.RecommendStrategy.BEST_SCORE"
+                )
             else:
                 raise ValueError("No positive examples given with 'average_vector' strategy")
 
