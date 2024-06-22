@@ -2500,7 +2500,7 @@ class RestToGrpc:
             return grpc.Fusion.RRF
 
     @classmethod
-    def convert_query(cls, model: rest.Query) -> grpc.Query:  # todo: convert query interface
+    def convert_query(cls, model: rest.Query) -> grpc.Query:
         if isinstance(model, rest.NearestQuery):
             return grpc.Query(nearest=cls.convert_vector_input(model.nearest))
 
@@ -2520,6 +2520,16 @@ class RestToGrpc:
             return grpc.Query(fusion=cls.convert_fusion(model.fusion))
 
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_query_interface(cls, model: rest.QueryInterface) -> grpc.Query:
+        if isinstance(model, get_args_subscribed(rest.VectorInput)):
+            return grpc.Query(nearest=cls.convert_vector_input(model))
+
+        if isinstance(model, rest.Query):
+            return cls.convert_query(model)
+
+        raise ValueError(f"invalid QueryInterface: {model}")  # pragma: no cover
 
     @classmethod
     def convert_prefetch_query(cls, model: rest.Prefetch) -> grpc.PrefetchQuery:
