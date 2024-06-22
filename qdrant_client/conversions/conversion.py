@@ -463,6 +463,19 @@ class GrpcToRest:
         return rest.CreateAlias(collection_name=model.collection_name, alias_name=model.alias_name)
 
     @classmethod
+    def convert_order_value(cls, model: grpc.OrderValue) -> rest.OrderValue:
+        name = model.WhichOneof("variant")
+        val = getattr(model, name)
+
+        if name == "int":
+            return val
+
+        if name == "float":
+            return val
+
+        raise ValueError(f"invalid OrderValue model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_scored_point(cls, model: grpc.ScoredPoint) -> rest.ScoredPoint:
         return construct(
             rest.ScoredPoint,
@@ -473,6 +486,11 @@ class GrpcToRest:
             version=model.version,
             shard_key=(
                 cls.convert_shard_key(model.shard_key) if model.HasField("shard_key") else None
+            ),
+            order_by=(
+                cls.convert_order_value(model.order_value)
+                if model.HasField("order_value")
+                else None
             ),
         )
 
@@ -1831,9 +1849,9 @@ class RestToGrpc:
     @classmethod
     def convert_order_value(cls, model: rest.OrderValue) -> grpc.OrderValue:
         if isinstance(model, int):
-            return grpc.OrderValue(int=True)
+            return grpc.OrderValue(int=model)
         if isinstance(model, float):
-            return grpc.OrderValue(float=True)
+            return grpc.OrderValue(float=model)
         raise ValueError(f"invalid OrderValue model: {model}")  # pragma: no cover
 
     @classmethod
