@@ -2372,7 +2372,9 @@ class RestToGrpc:
     @classmethod
     def convert_vector_struct(cls, model: rest.VectorStruct) -> grpc.Vectors:
         def convert_vector(vector: Union[List[float], List[List[float]]]) -> grpc.Vector:
-            if isinstance(vector[0], list):
+            if len(vector) != 0 and isinstance(
+                vector[0], list
+            ):  # we can't say whether it is an empty dense or multi-dense vector
                 return grpc.Vector(
                     data=[inner_vector for multi_vector in model for inner_vector in multi_vector],
                     vectors_count=len(model),
@@ -2450,7 +2452,9 @@ class RestToGrpc:
     @classmethod
     def convert_vector_input(cls, model: rest.VectorInput) -> grpc.VectorInput:
         if isinstance(model, list):
-            if isinstance(model[0], list):
+            if len(model) != 0 and isinstance(
+                model[0], list
+            ):  # we can't say whether it is an empty dense or multi-dense vector
                 return grpc.VectorInput(multi_dense=cls.convert_multi_dense_vector(model))
             return grpc.VectorInput(dense=cls.convert_dense_vector(model))
         if isinstance(model, rest.SparseVector):

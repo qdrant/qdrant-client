@@ -178,7 +178,7 @@ def test_sparse_vector_conversion():
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 
     sparse_vector = grpc.Vector(data=[0.2, 0.3, 0.4], indices=grpc.SparseIndices(data=[3, 2, 5]))
-    recovered = RestToGrpc.convert_sparse_vector(GrpcToRest.convert_vector(sparse_vector))
+    recovered = RestToGrpc.convert_sparse_vector_legacy(GrpcToRest.convert_vector(sparse_vector))
 
     assert sparse_vector == recovered
 
