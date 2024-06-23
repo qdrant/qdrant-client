@@ -491,7 +491,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         return inserted_ids
 
-    def _query(
+    async def _query(
         self,
         collection_name: str,
         query_text: str,
