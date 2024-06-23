@@ -284,3 +284,45 @@ def test_datetime_to_timestamp_conversions(dt: Union[datetime, date]):
     assert (
         dt.utctimetuple() == grpc_to_rest.utctimetuple()
     ), f"Failed for {dt}, should be equal to {grpc_to_rest}"
+
+
+def test_convert_context_input_flat_pair():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_context_pair = models.ContextPair(
+        positive=1,
+        negative=2,
+    )
+    grpc_context_input = RestToGrpc.convert_context_input(rest_context_pair)
+    recovered = GrpcToRest.convert_context_input(grpc_context_input)
+
+    assert recovered[0] == rest_context_pair
+
+
+def test_convert_query_interface():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_query = 1
+    expected = models.NearestQuery(nearest=rest_query)
+    grpc_query = RestToGrpc.convert_query_interface(rest_query)
+    recovered = GrpcToRest.convert_query(grpc_query)
+
+    assert recovered == expected
+
+    grpc_query = RestToGrpc.convert_query_interface(expected)
+    recovered = GrpcToRest.convert_query(grpc_query)
+
+    assert recovered == expected
+
+
+def test_convert_flat_prefetch():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_prefetch = models.Prefetch(prefetch=models.Prefetch(using="test"))
+    grpc_prefetch = RestToGrpc.convert_prefetch_query(rest_prefetch)
+    recovered = GrpcToRest.convert_prefetch_query(grpc_prefetch)
+
+    assert recovered.prefetch[0] == rest_prefetch.prefetch

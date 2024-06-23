@@ -965,7 +965,7 @@ class GrpcToRest:
         return rest.Prefetch(
             prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
             if len(model.prefetch) != 0
-            else [],
+            else None,
             query=cls.convert_query(model.query) if model.HasField("query") else None,
             using=model.using if model.HasField("using") else None,
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
@@ -2508,7 +2508,7 @@ class RestToGrpc:
                 pairs=[cls.convert_context_input_pair(pair) for pair in model]
             )
         if isinstance(model, rest.ContextPair):
-            return grpc.ContextInput(context=[cls.convert_context_input_pair(model)])
+            return grpc.ContextInput(pairs=[cls.convert_context_input_pair(model)])
 
         raise ValueError(f"invalid ContextInput model: {model}")  # pragma: no cover
 
@@ -2559,10 +2559,10 @@ class RestToGrpc:
     @classmethod
     def convert_prefetch_query(cls, model: rest.Prefetch) -> grpc.PrefetchQuery:
         prefetch = None
-        if isinstance(model.prefetch, List):
+        if isinstance(model.prefetch, rest.Prefetch):
+            prefetch = [cls.convert_prefetch_query(model.prefetch)]
+        elif isinstance(model.prefetch, List):
             prefetch = [cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
-        elif isinstance(model.prefetch, rest.Prefetch):
-            prefetch = cls.convert_prefetch_query(model.prefetch)
 
         return grpc.PrefetchQuery(
             prefetch=prefetch,
