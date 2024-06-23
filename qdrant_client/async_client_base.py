@@ -67,6 +67,34 @@ class AsyncQdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
+    async def query(
+        self,
+        collection_name: str,
+        query: Union[
+            str,
+            List[float],
+            List[List[float]],
+            List[types.SparseVector],
+            Tuple[str, List[float]],
+            types.NamedVector,
+            types.NamedSparseVector,
+            types.Query,
+            types.NumpyArray,
+        ],
+        prefetch: types.Prefetch,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        raise NotImplementedError()
+
     async def recommend_batch(
         self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
     ) -> List[List[types.ScoredPoint]]:

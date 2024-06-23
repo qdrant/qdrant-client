@@ -18,6 +18,7 @@ from typing import (
     Union,
     get_args,
 )
+from uuid import UUID
 
 import httpx
 import numpy as np
@@ -417,11 +418,11 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
             types.NamedSparseVector,
+            types.NumpyArray,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -534,6 +535,190 @@ class QdrantRemote(QdrantBase):
             result: Optional[List[types.ScoredPoint]] = search_result.result
             assert result is not None, "Search returned None"
             return result
+
+    def query(
+        self,
+        collection_name: str,
+        query: Union[
+            str,
+            List[float],
+            List[List[float]],
+            List[models.SparseVector],
+            Tuple[str, List[float]],
+            types.NamedVector,
+            types.NamedSparseVector,
+            models.Query,
+            types.NumpyArray,
+        ],  # todo: add fastembed document and extended query
+        prefetch: models.Prefetch,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[
+        models.ScoredPoint
+    ]:  # todo: should it be List[models.ScoredPoint] or models.QueryResponse?
+        if self._prefer_grpc:
+            vector_name = None
+
+            if isinstance(query, get_args(models.Query)):
+                query = RestToGrpc.convert_query(query)
+            else:  # todo: for the sake of brevity, it might be better to convert everything to models.Query first, then convert to grpc.Query
+                if isinstance(query, types.NamedSparseVector):
+                    vector_name = query.name
+                    query = grpc.Query(
+                        nearest=grpc.VectorInput(
+                            sparse=grpc.SparseVector(
+                                indices=query.vector.indices, values=query.vector.values
+                            )
+                        )
+                    )
+
+                elif isinstance(query, types.NamedVector):
+                    vector_name = query.name
+                    query = grpc.Query(nearest=grpc.VectorInput(dense=query.vector))
+                elif isinstance(query, tuple):
+                    vector_name = query[0]
+                    query = grpc.Query(nearest=grpc.VectorInput(dense=query[1]))
+                elif isinstance(query, int):
+                    query = grpc.Query(nearest=grpc.VectorInput(id=grpc.PointId(num=query)))
+                elif isinstance(query, UUID):
+                    query = grpc.Query(nearest=grpc.VectorInput(id=grpc.PointId(str=str(query))))
+                else:  # todo: add fastembed document and extended query
+                    if isinstance(query, types.NumpyArray):
+                        query = query.tolist()
+                    query = grpc.Query(nearest=grpc.VectorInput(dense=list(query)))
+
+                if using is None:
+                    using = vector_name
+                elif vector_name is not None and using != vector_name:
+                    raise ValueError(
+                        "If both vector_name and using are provided, they should be equal."
+                    )
+
+            if isinstance(prefetch, models.Prefetch):
+                prefetch = RestToGrpc.convert_prefetch_query(prefetch)
+
+            if isinstance(query_filter, models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
+
+            if isinstance(search_params, models.SearchParams):
+                search_params = RestToGrpc.convert_search_params(search_params)
+
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
+                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
+
+            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
+                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
+
+            if isinstance(lookup_from, models.LookupLocation):
+                lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
+
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
+                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+
+            res: grpc.QueryResponse = self.grpc_points.Query(
+                grpc.QueryPoints(
+                    collection_name=collection_name,
+                    query=query,
+                    prefetch=prefetch,
+                    filter=query_filter,
+                    limit=limit,
+                    offset=offset,
+                    with_vectors=with_vectors,
+                    with_payload=with_payload,
+                    params=search_params,
+                    score_threshold=score_threshold,
+                    using=using,
+                    lookup_from=lookup_from,
+                    timeout=timeout,
+                    shard_key_selector=shard_key_selector,
+                    read_consistency=consistency,
+                ),
+                timeout=timeout if timeout is None else self._timeout,
+            )
+
+            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+
+        else:
+            vector_name = None
+            if isinstance(query, types.NamedSparseVector):
+                vector_name = query.name
+                query = models.NearestQuery(nearest=query.vector)
+
+            elif isinstance(query, types.NamedVector):
+                vector_name = query.name
+                query = models.NearestQuery(nearest=query.vector)
+            elif isinstance(query, tuple):
+                vector_name = query[0]
+                query = models.NearestQuery(nearest=query[1])
+            elif isinstance(query, (int, UUID)):
+                query = models.NearestQuery(
+                    nearest=query if isinstance(query, int) else str(query)
+                )
+            elif not isinstance(
+                query, models.Query
+            ):  # todo: add fastembed document and extended query
+                if isinstance(query, types.NumpyArray):
+                    query = query.tolist()
+                query = models.NearestQuery(nearest=list(query))
+
+            if using is None:
+                using = vector_name
+            elif vector_name is not None and using != vector_name:
+                raise ValueError(
+                    "If both vector_name and using are provided, they should be equal."
+                )
+
+            if isinstance(query_filter, grpc.Filter):
+                query_filter = GrpcToRest.convert_filter(model=query_filter)
+
+            if isinstance(search_params, grpc.SearchParams):
+                search_params = GrpcToRest.convert_search_params(search_params)
+
+            if isinstance(with_payload, grpc.WithPayloadSelector):
+                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
+
+            if isinstance(lookup_from, grpc.LookupLocation):
+                lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
+
+            query_request = models.QueryRequest(
+                shard_key=shard_key_selector,
+                prefetch=prefetch,
+                query=query,
+                using=using,
+                filter=query_filter,
+                params=search_params,
+                score_threshold=score_threshold,
+                limit=limit,
+                offset=offset,
+                with_vector=with_vectors,
+                with_payload=with_payload,
+                lookup_from=lookup_from,
+            )
+
+            query_result = self.http.points_api.query_points(
+                collection_name=collection_name,
+                consistency=consistency,
+                timeout=timeout,
+                query_request=query_request,
+            )
+
+            result: Optional[models.QueryResponse] = query_result.result
+            assert result is not None, "Search returned None"
+            return result.points
 
     def search_groups(
         self,

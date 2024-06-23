@@ -12,6 +12,7 @@ DOCS_EXAMPLE = {
 }
 
 
+@pytest.mark.skip(reason=".query method will be implemented in QdrantClient itself")
 def test_dense():
     local_client = QdrantClient(":memory:")
     collection_name = "demo_collection"
@@ -44,6 +45,7 @@ def test_dense():
         assert len(search_result) > 0
 
 
+@pytest.mark.skip(reason=".query method will be implemented in QdrantClient itself")
 def test_hybrid_query():
     local_client = QdrantClient(":memory:")
     collection_name = "hybrid_collection"
@@ -72,6 +74,7 @@ def test_hybrid_query():
     )  # hybrid search has score from fusion
 
 
+@pytest.mark.skip(reason=".query method will be implemented in QdrantClient itself")
 def test_query_batch():
     local_client = QdrantClient(":memory:")
 

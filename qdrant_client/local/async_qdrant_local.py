@@ -226,6 +226,49 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_lookup_collection=with_lookup_collection,
         )
 
+    async def query(
+        self,
+        collection_name: str,
+        query: Union[
+            str,
+            List[float],
+            List[List[float]],
+            List[types.SparseVector],
+            Tuple[str, List[float]],
+            types.NamedVector,
+            types.NamedSparseVector,
+            types.Query,
+            types.NumpyArray,
+        ],
+        prefetch: types.Prefetch,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        collection = self._get_collection(collection_name)
+        return collection.query(
+            query=query,
+            prefetch=prefetch,
+            query_filter=query_filter,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            using=using,
+            lookup_from_collection=self._get_collection(lookup_from.collection)
+            if lookup_from
+            else None,
+            lookup_from_vector_name=lookup_from.vector if lookup_from else None,
+        )
+
     async def recommend_batch(
         self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
     ) -> List[List[types.ScoredPoint]]:

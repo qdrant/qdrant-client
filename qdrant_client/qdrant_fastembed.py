@@ -535,7 +535,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         return inserted_ids
 
-    def query(
+    def _query(
         self,
         collection_name: str,
         query_text: str,
@@ -552,7 +552,7 @@ class QdrantFastembedMixin(QdrantBase):
             collection_name: Collection to search in
             query_text:
                 Text to search for. This text will be embedded using the specified embedding model.
-                And then used as a query vector.
+                And then used as a query vector. Deprecated.
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors

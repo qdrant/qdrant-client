@@ -367,6 +367,130 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    def query(
+        self,
+        collection_name: str,
+        query: Union[
+            str,
+            List[float],
+            List[List[float]],
+            List[types.SparseVector],
+            Tuple[str, List[float]],
+            types.NamedVector,
+            types.NamedSparseVector,
+            types.Query,
+            types.NumpyArray,
+        ],  # todo: add fastembed document and extended query
+        prefetch: types.Prefetch,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
+
+        Args:
+            collection_name: Collection to search in
+            query: Query for the chosen search type operation.
+            prefetch: prefetch queries to make a selection of the data to be used with the main query
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many results return
+            offset:
+                Offset of the first result to return.
+                May be used to paginate results.
+                Note: large offset values may cause performance issues.
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
+            using:
+                Name of the vectors to use for query.
+                If `None` - use default vectors or provided in named vector structures.
+            lookup_from:
+                Defines a location (collection and vector field name), used to lookup vectors for recommendations,
+                    discovery and context queries.
+                If `None` - current collection will be used.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
+
+        Examples:
+
+        `Search for closest points with a filter`::
+
+            qdrant.query(
+                collection_name="test_collection",
+                query=QueryNearest(nearest=[1.0, 0.1, 0.2, 0.7]),
+                query_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key='color',
+                            range=Match(
+                                value="red"
+                            )
+                        )
+                    ]
+                )
+            )
+
+        Returns:
+            List of found close points with similarity scores.
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.query(
+            collection_name=collection_name,
+            query=query,
+            prefetch=prefetch,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            using=using,
+            lookup_from=lookup_from,
+            consistency=consistency,
+            shard_key_selector=shard_key_selector,
+            timeout=timeout,
+            **kwargs,
+        )
+
     def search_groups(
         self,
         collection_name: str,
@@ -574,7 +698,7 @@ class QdrantClient(QdrantFastembedMixin):
                 If `None` - use default vectors.
             lookup_from:
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
-                If `None` - use current collection will be used.
+                If `None` - current collection will be used.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
 
@@ -693,7 +817,7 @@ class QdrantClient(QdrantFastembedMixin):
                 If `None` - use default vectors.
             lookup_from:
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
-                If `None` - use current collection will be used.
+                If `None` - current collection will be used.
             with_lookup:
                 Look for points in another collection using the group ids.
                 If specified, each group will contain a record from the specified collection

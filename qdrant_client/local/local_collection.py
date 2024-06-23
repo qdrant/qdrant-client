@@ -652,6 +652,33 @@ class LocalCollection:
 
         return result[offset:]
 
+    def query(
+        self,
+        query: Union[
+            str,
+            List[float],
+            List[List[float]],
+            List[types.SparseVector],
+            Tuple[str, List[float]],
+            types.NamedVector,
+            types.NamedSparseVector,
+            types.Query,
+            types.NumpyArray,
+        ],  # todo: add fastembed document and extended query
+        prefetch: types.Prefetch,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        using: Optional[str] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        raise NotImplementedError()
+
     def search_groups(
         self,
         query_vector: Union[

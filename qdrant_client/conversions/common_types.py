@@ -103,11 +103,13 @@ SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
 InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
-
+Query: TypeAlias = rest.Query
+Prefetch: TypeAlias = rest.Prefetch
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 DiscoverRequest: TypeAlias = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
+QueryRequest: TypeAlias = Union[rest.QueryRequest, grpc.QueryPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
