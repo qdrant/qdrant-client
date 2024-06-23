@@ -178,7 +178,9 @@ def test_sparse_vector_conversion():
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 
     sparse_vector = grpc.Vector(data=[0.2, 0.3, 0.4], indices=grpc.SparseIndices(data=[3, 2, 5]))
-    recovered = RestToGrpc.convert_sparse_vector(GrpcToRest.convert_vector(sparse_vector))
+    recovered = RestToGrpc.convert_sparse_vector_to_vector(
+        GrpcToRest.convert_vector(sparse_vector)
+    )
 
     assert sparse_vector == recovered
 
@@ -284,3 +286,69 @@ def test_datetime_to_timestamp_conversions(dt: Union[datetime, date]):
     assert (
         dt.utctimetuple() == grpc_to_rest.utctimetuple()
     ), f"Failed for {dt}, should be equal to {grpc_to_rest}"
+
+
+def test_convert_context_input_flat_pair():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_context_pair = models.ContextPair(
+        positive=1,
+        negative=2,
+    )
+    grpc_context_input = RestToGrpc.convert_context_input(rest_context_pair)
+    recovered = GrpcToRest.convert_context_input(grpc_context_input)
+
+    assert recovered[0] == rest_context_pair
+
+
+def test_convert_query_interface():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_query = 1
+    expected = models.NearestQuery(nearest=rest_query)
+    grpc_query = RestToGrpc.convert_query_interface(rest_query)
+    recovered = GrpcToRest.convert_query(grpc_query)
+
+    assert recovered == expected
+
+    grpc_query = RestToGrpc.convert_query_interface(expected)
+    recovered = GrpcToRest.convert_query(grpc_query)
+
+    assert recovered == expected
+
+
+def test_convert_flat_prefetch():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_prefetch = models.Prefetch(prefetch=models.Prefetch(using="test"))
+    grpc_prefetch = RestToGrpc.convert_prefetch_query(rest_prefetch)
+    recovered = GrpcToRest.convert_prefetch_query(grpc_prefetch)
+
+    assert recovered.prefetch[0] == rest_prefetch.prefetch
+
+
+def test_convert_flat_filter():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_filter = models.Filter(
+        must=models.FieldCondition(key="mandatory", match=models.MatchValue(value=1)),
+        should=models.FieldCondition(key="desirable", range=models.DatetimeRange(lt=3.0)),
+        must_not=models.HasIdCondition(has_id=[1, 2, 3]),
+        min_should=models.MinShould(
+            conditions=[
+                models.FieldCondition(key="at_least_one", values_count=models.ValuesCount(gte=1)),
+                models.FieldCondition(key="fallback", match=models.MatchValue(value=42)),
+            ],
+            min_count=1,
+        ),
+    )
+    grpc_filter = RestToGrpc.convert_filter(rest_filter)
+    recovered = GrpcToRest.convert_filter(grpc_filter)
+
+    assert recovered.must[0] == rest_filter.must
+    assert recovered.should[0] == rest_filter.should
+    assert recovered.must_not[0] == rest_filter.must_not
