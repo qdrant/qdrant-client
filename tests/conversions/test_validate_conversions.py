@@ -338,6 +338,13 @@ def test_convert_flat_filter():
         must=models.FieldCondition(key="mandatory", match=models.MatchValue(value=1)),
         should=models.FieldCondition(key="desirable", range=models.DatetimeRange(lt=3.0)),
         must_not=models.HasIdCondition(has_id=[1, 2, 3]),
+        min_should=models.MinShould(
+            conditions=[
+                models.FieldCondition(key="at_least_one", values_count=models.ValuesCount(gte=1)),
+                models.FieldCondition(key="fallback", match=models.MatchValue(value=42)),
+            ],
+            min_count=1,
+        ),
     )
     grpc_filter = RestToGrpc.convert_filter(rest_filter)
     recovered = GrpcToRest.convert_filter(grpc_filter)
