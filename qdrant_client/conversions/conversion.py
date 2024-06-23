@@ -2551,7 +2551,7 @@ class RestToGrpc:
         if isinstance(model, get_args_subscribed(rest.VectorInput)):
             return grpc.Query(nearest=cls.convert_vector_input(model))
 
-        if isinstance(model, rest.Query):
+        if isinstance(model, get_args(rest.Query)):
             return cls.convert_query(model)
 
         raise ValueError(f"invalid QueryInterface: {model}")  # pragma: no cover
