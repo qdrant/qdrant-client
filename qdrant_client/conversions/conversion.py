@@ -1629,28 +1629,20 @@ class GrpcToRest:
 class RestToGrpc:
     @classmethod
     def convert_filter(cls, model: rest.Filter) -> grpc.Filter:
+        def convert_conditions(
+            conditions: Union[List[rest.Condition], rest.Condition],
+        ) -> List[grpc.Condition]:
+            if not isinstance(conditions, List):
+                conditions = [conditions]
+            return [cls.convert_condition(condition) for condition in conditions]
+
         return grpc.Filter(
-            must=(
-                [cls.convert_condition(condition) for condition in model.must]
-                if model.must is not None
-                else None
-            ),
-            must_not=(
-                [cls.convert_condition(condition) for condition in model.must_not]
-                if model.must_not is not None
-                else None
-            ),
-            should=(
-                [cls.convert_condition(condition) for condition in model.should]
-                if model.should is not None
-                else None
-            ),
+            must=(convert_conditions(model.must) if model.must is not None else None),
+            must_not=(convert_conditions(model.must_not) if model.must_not is not None else None),
+            should=(convert_conditions(model.should) if model.should is not None else None),
             min_should=(
                 grpc.MinShould(
-                    conditions=[
-                        cls.convert_condition(condition)
-                        for condition in model.min_should.conditions
-                    ],
+                    conditions=convert_conditions(model.min_should.conditions),
                     min_count=model.min_should.min_count,
                 )
                 if model.min_should is not None

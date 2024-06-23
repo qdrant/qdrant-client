@@ -328,3 +328,20 @@ def test_convert_flat_prefetch():
     recovered = GrpcToRest.convert_prefetch_query(grpc_prefetch)
 
     assert recovered.prefetch[0] == rest_prefetch.prefetch
+
+
+def test_convert_flat_filter():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_filter = models.Filter(
+        must=models.FieldCondition(key="mandatory", match=models.MatchValue(value=1)),
+        should=models.FieldCondition(key="desirable", range=models.DatetimeRange(lt=3.0)),
+        must_not=models.HasIdCondition(has_id=[1, 2, 3]),
+    )
+    grpc_filter = RestToGrpc.convert_filter(rest_filter)
+    recovered = GrpcToRest.convert_filter(grpc_filter)
+
+    assert recovered.must[0] == rest_filter.must
+    assert recovered.should[0] == rest_filter.should
+    assert recovered.must_not[0] == rest_filter.must_not
