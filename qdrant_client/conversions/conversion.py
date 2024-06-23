@@ -13,8 +13,7 @@ except ImportError:
     pass
 
 from qdrant_client import grpc
-from qdrant_client.grpc import ListValue, NullValue, SparseIndices, Struct, Value
-from qdrant_client.http.models import SparseVector
+from qdrant_client.grpc import ListValue, NullValue, Struct, Value
 from qdrant_client.http.models import models as rest
 
 
@@ -845,9 +844,9 @@ class GrpcToRest:
     @classmethod
     def convert_vector(
         cls, model: grpc.Vector
-    ) -> Union[List[float], List[List[float]], SparseVector]:
+    ) -> Union[List[float], List[List[float]], rest.SparseVector]:
         if model.HasField("indices"):
-            return SparseVector(indices=model.indices.data[:], values=model.data[:])
+            return rest.SparseVector(indices=model.indices.data[:], values=model.data[:])
         if model.HasField("vectors_count"):
             vectors_count = model.vectors_count
             vectors = model.data
@@ -878,8 +877,8 @@ class GrpcToRest:
         return model.data[:]
 
     @classmethod
-    def convert_sparse_vector(cls, model: grpc.SparseVector) -> SparseVector:
-        return SparseVector(indices=model.indices[:], values=model.values[:])
+    def convert_sparse_vector(cls, model: grpc.SparseVector) -> rest.SparseVector:
+        return rest.SparseVector(indices=model.indices[:], values=model.values[:])
 
     @classmethod
     def convert_multi_dense_vector(cls, model: grpc.MultiDenseVector) -> List[List[float]]:
@@ -2137,7 +2136,7 @@ class RestToGrpc:
             elif isinstance(example, list):
                 vector = grpc.Vector(data=example)
             elif isinstance(example, rest.SparseVector):
-                vector = cls.convert_sparse_vector_legacy(example)
+                vector = cls.convert_sparse_vector_to_vector(example)
             else:
                 continue
 
@@ -2154,14 +2153,14 @@ class RestToGrpc:
         if isinstance(model, get_args_subscribed(rest.ExtendedPointId)):
             return grpc.VectorExample(id=cls.convert_extended_point_id(model))
         if isinstance(model, rest.SparseVector):
-            return grpc.VectorExample(vector=cls.convert_sparse_vector_legacy(model))
+            return grpc.VectorExample(vector=cls.convert_sparse_vector_to_vector(model))
         if isinstance(model, list):
             return grpc.VectorExample(vector=grpc.Vector(data=model))
 
         raise ValueError(f"Invalid RecommendExample model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_sparse_vector_legacy(cls, model: rest.SparseVector) -> grpc.Vector:
+    def convert_sparse_vector_to_vector(cls, model: rest.SparseVector) -> grpc.Vector:
         return grpc.Vector(
             data=model.values,
             indices=grpc.SparseIndices(data=model.indices),
@@ -2407,13 +2406,7 @@ class RestToGrpc:
                 if isinstance(val, list):
                     vectors.update({key: convert_vector(val)})
                 elif isinstance(val, rest.SparseVector):
-                    vectors.update(
-                        {
-                            key: grpc.Vector(
-                                data=val.values, indices=SparseIndices(data=val.indices)
-                            )
-                        }
-                    )
+                    vectors.update({key: cls.convert_sparse_vector_to_vector(val)})
             return grpc.Vectors(vectors=grpc.NamedVectors(vectors=vectors))
         else:
             raise ValueError(f"invalid VectorStruct model: {model}")  # pragma: no cover
@@ -2460,7 +2453,7 @@ class RestToGrpc:
         return grpc.DenseVector(data=model)
 
     @classmethod
-    def convert_sparse_vector(cls, model: SparseVector) -> grpc.SparseVector:
+    def convert_sparse_vector(cls, model: rest.SparseVector) -> grpc.SparseVector:
         return grpc.SparseVector(values=model.values, indices=model.indices)
 
     @classmethod
