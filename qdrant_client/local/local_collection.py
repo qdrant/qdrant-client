@@ -23,7 +23,8 @@ from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
-from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector
+from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
+from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
@@ -49,7 +50,7 @@ from qdrant_client.local.multi_distances import (
     calculate_multi_context_scores,
 )
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
-from qdrant_client.local.order_by import OrderingValue, to_ordering_value
+from qdrant_client.local.order_by import to_order_value
 from qdrant_client.local.payload_filters import calculate_payload_mask
 from qdrant_client.local.payload_value_extractor import value_by_key
 from qdrant_client.local.payload_value_setter import set_value_by_key
@@ -658,16 +659,228 @@ class LocalCollection:
         prefetch: Optional[List[types.Prefetch]] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
-        offset: Optional[int] = None,
+        offset: int = 0,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
-        lookup_from_collection: Optional["LocalCollection"] = None,
-        lookup_from_vector_name: Optional[str] = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
-        raise NotImplementedError()
+        # Assumes all vectors have been homogenized so that there are no ids in the inputs
+
+        scored_points = []
+        if prefetch is not None and isinstance(prefetch, list) and len(prefetch) > 0:
+            # It is a hybrid/re-scoring query
+            prefetches = prefetch if isinstance(prefetch, list) else [prefetch]
+            sources = []
+            for prefetch in prefetches:
+                sources.append(self._prefetch(prefetch, offset))
+            # Merge sources
+            scored_points = self._merge_sources(
+                sources=sources,
+                query=query,
+                limit=limit,
+                offset=offset,
+                using=using,
+                query_filter=query_filter,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
+        else:
+            # It is a base query
+            scored_points = self._query_collection(
+                query=query,
+                using=using,
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
+
+        return types.QueryResponse(points=scored_points)
+
+    def _prefetch(self, prefetch: types.Prefetch, offset: int) -> List[types.ScoredPoint]:
+        if prefetch.limit is not None:
+            prefetch.limit = prefetch.limit + offset
+        if prefetch.prefetch is not None and isinstance(prefetch.prefetch, list) and len(prefetch.prefetch) > 0:
+            # Recursive case: inner prefetches
+            prefetches = (
+                prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
+            )
+
+            sources = []
+            for inner_prefetch in prefetches:
+                sources.append(self._prefetch(inner_prefetch, offset))
+            # Merge sources
+            return self._merge_sources(
+                sources=sources,
+                query=prefetch.query,
+                limit=prefetch.limit,
+                offset=0,
+                using=prefetch.using,
+                query_filter=prefetch.filter,
+                with_payload=False,
+                with_vectors=False,
+                score_threshold=prefetch.score_threshold,
+            )
+        else:
+            # Base case: fetch from collection
+            return self._query_collection(
+                query=prefetch.query,
+                using=prefetch.using,
+                query_filter=prefetch.filter,
+                limit=prefetch.limit,
+                offset=0,
+                with_payload=False,
+                with_vectors=False,
+                score_threshold=prefetch.score_threshold,
+            )
+
+    def _merge_sources(
+        self,
+        sources: List[List[types.ScoredPoint]],
+        query: types.Query,
+        limit: int,
+        offset: int,
+        using: Optional[str] = None,
+        query_filter: Optional[types.Filter] = None,
+        score_threshold: Optional[float] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+    ) -> List[types.ScoredPoint]:
+        if isinstance(query, models.FusionQuery):
+            # Fuse results
+            if query.fusion == models.Fusion.RRF:
+                # RRF: Reciprocal Rank Fusion
+                rrf_results = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
+
+                # Fetch payload and vectors
+                ids = [point.id for point in rrf_results]
+                fetched_points = self.retrieve(
+                    ids, with_payload=with_payload, with_vectors=with_vectors
+                )
+                for fetched, scored in zip(fetched_points, rrf_results):
+                    scored.payload = fetched.payload
+                    scored.vector = fetched.vector
+
+                return rrf_results[offset:]
+
+            else:
+                raise ValueError(f"Fusion method {query.fusion} does not exist")
+        else:
+            # Re-score
+            sources_ids = set()
+            for source in sources:
+                for point in source:
+                    sources_ids.add(point.id)
+
+            filter_with_sources = _include_ids_in_filter(query_filter, list(sources_ids))
+
+            return self._query_collection(
+                query=query,
+                using=using,
+                query_filter=filter_with_sources,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
+
+    def _query_collection(
+        self,
+        query: Optional[types.Query] = None,
+        using: Optional[str] = None,
+        query_filter: Optional[types.Filter] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = False,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+    ) -> List[types.ScoredPoint]:
+        using = using or DEFAULT_VECTOR_NAME
+        limit = limit or 10
+        offset = offset or 0
+
+        if query is None:
+            records, _ = self.scroll(
+                scroll_filter=query_filter,
+                limit=limit + offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+            )
+            return [record_to_scored_point(record) for record in records[offset:]]
+        elif isinstance(query, models.NearestQuery):
+            return self.search(
+                query_vector=(using, query.nearest),
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
+        elif isinstance(query, models.RecommendQuery):
+            return self.recommend(
+                positive=query.recommend.positive,
+                negative=query.recommend.negative,
+                strategy=query.recommend.strategy,
+                using=using,
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
+        elif isinstance(query, models.DiscoverQuery):
+            return self.discover(
+                target=query.discover.target,
+                context=query.discover.context,
+                using=using,
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
+        elif isinstance(query, models.ContextQuery):
+            return self.discover(
+                context=query.context,
+                using=using,
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
+        elif isinstance(query, models.OrderByQuery):
+            records, _ = self.scroll(
+                scroll_filter=query_filter,
+                order_by=query.order_by,
+                limit=limit + offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+            )
+            return [record_to_scored_point(record) for record in records[offset:]]
+        elif isinstance(query, models.FusionQuery):
+            raise AssertionError("Cannot perform fusion without prefetches")
+        else:
+            # most likely a VectorInput, delegate to search
+            return self.search(
+                query_vector=(using, query),
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
 
     def search_groups(
         self,
@@ -779,22 +992,6 @@ class LocalCollection:
 
         return result
 
-    @staticmethod
-    def _ignore_mentioned_ids_filter(
-        query_filter: Optional[types.Filter], mentioned_ids: List[types.PointId]
-    ) -> types.Filter:
-        ignore_mentioned_ids = models.HasIdCondition(has_id=mentioned_ids)
-
-        if query_filter is None:
-            query_filter = models.Filter(must_not=[ignore_mentioned_ids])
-        else:
-            if query_filter.must_not is None:
-                query_filter.must_not = [ignore_mentioned_ids]
-            else:
-                query_filter.must_not.append(ignore_mentioned_ids)
-
-        return query_filter
-
     def _preprocess_recommend_input(
         self,
         positive: Optional[Sequence[models.VectorInput]] = None,
@@ -876,7 +1073,7 @@ class LocalCollection:
             examples_into_vectors(negative, negative_vectors)
 
         # Edit query filter
-        query_filter = self._ignore_mentioned_ids_filter(query_filter, mentioned_ids)
+        query_filter = _ignore_mentioned_ids_filter(query_filter, mentioned_ids)
 
         return (
             positive_vectors,
@@ -1011,8 +1208,8 @@ class LocalCollection:
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
@@ -1228,7 +1425,7 @@ class LocalCollection:
             mentioned_ids.append(target_id)
 
         # Edit query filter
-        query_filter = self._ignore_mentioned_ids_filter(query_filter, mentioned_ids)
+        query_filter = _ignore_mentioned_ids_filter(query_filter, mentioned_ids)
 
         return (
             target_vector,
@@ -1245,11 +1442,12 @@ class LocalCollection:
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
+        score_threshold: Optional[float] = None,
     ) -> List[models.ScoredPoint]:
         (
             target_vector,
@@ -1299,7 +1497,7 @@ class LocalCollection:
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
-            score_threshold=None,
+            score_threshold=score_threshold,
         )
 
     @classmethod
@@ -1411,7 +1609,7 @@ class LocalCollection:
         if isinstance(order_by, str):
             order_by = models.OrderBy(key=order_by)
 
-        value_and_ids: List[Tuple[OrderingValue, ExtendedPointId, int]] = []
+        value_and_ids: List[Tuple[OrderValue, ExtendedPointId, int]] = []
 
         for external_id, internal_id in self.ids.items():
             # get order-by values for id
@@ -1421,7 +1619,7 @@ class LocalCollection:
 
             # replicate id for each value it has
             for value in payload_values:
-                ordering_value = to_ordering_value(value)
+                ordering_value = to_order_value(value)
                 if ordering_value is not None:
                     value_and_ids.append((ordering_value, external_id, internal_id))
 
@@ -1442,7 +1640,7 @@ class LocalCollection:
 
         result: List[types.Record] = []
 
-        start_from = to_ordering_value(order_by.start_from)
+        start_from = to_order_value(order_by.start_from)
 
         for value, external_id, internal_id in value_and_ids:
             if start_from is not None:
@@ -1951,3 +2149,52 @@ class LocalCollection:
                 quantization_config=None,
             ),
         )
+
+
+def _ignore_mentioned_ids_filter(
+    query_filter: Optional[types.Filter], mentioned_ids: List[types.PointId]
+) -> types.Filter:
+    if len(mentioned_ids) == 0:
+        return query_filter
+
+    ignore_mentioned_ids = models.HasIdCondition(has_id=mentioned_ids)
+
+    if query_filter is None:
+        query_filter = models.Filter(must_not=[ignore_mentioned_ids])
+    else:
+        if query_filter.must_not is None:
+            query_filter.must_not = [ignore_mentioned_ids]
+        else:
+            query_filter.must_not.append(ignore_mentioned_ids)
+
+    return query_filter
+
+
+def _include_ids_in_filter(
+    query_filter: Optional[types.Filter], ids: List[types.PointId]
+) -> types.Filter:
+    if len(ids) == 0:
+        return query_filter
+
+    include_ids = models.HasIdCondition(has_id=ids)
+
+    if query_filter is None:
+        query_filter = models.Filter(must=[include_ids])
+    else:
+        if query_filter.must is None:
+            query_filter.must = [include_ids]
+        else:
+            query_filter.must.append(include_ids)
+
+    return query_filter
+
+
+def record_to_scored_point(record: types.Record) -> types.ScoredPoint:
+    return types.ScoredPoint(
+        id=record.id,
+        version=0,
+        score=0,
+        payload=record.payload,
+        vector=record.vector,
+        order_value=record.order_value,
+    )

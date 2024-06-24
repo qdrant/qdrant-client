@@ -96,6 +96,7 @@ NamedSparseVector: TypeAlias = rest.NamedSparseVector
 SparseVector: TypeAlias = rest.SparseVector
 PointVectors: TypeAlias = rest.PointVectors
 Vector: TypeAlias = rest.Vector
+VectorInput: TypeAlias = rest.VectorInput
 VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
 SparseVectorParams: TypeAlias = rest.SparseVectorParams
