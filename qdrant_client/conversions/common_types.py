@@ -12,6 +12,7 @@ from typing import List, Union, get_args
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
+from qdrant_client.embed import models as embed
 
 typing_remap = {
     rest.StrictStr: str,
@@ -105,6 +106,7 @@ InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
 Query: TypeAlias = rest.Query
 Prefetch: TypeAlias = rest.Prefetch
+Document: TypeAlias = embed.Document
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]

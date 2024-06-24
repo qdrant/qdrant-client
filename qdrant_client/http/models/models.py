@@ -418,13 +418,6 @@ class CreateShardingKeyOperation(BaseModel, extra="forbid"):
 
 
 class Datatype(str, Enum):
-    """
-    Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy. - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1byte. It expects vector elements to be in range `[0, 255]`.
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
     FLOAT32 = "float32"
     UINT8 = "uint8"
     FLOAT16 = "float16"
@@ -633,9 +626,9 @@ class FilterSelector(BaseModel, extra="forbid"):
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
 
 
-class FusionOneOf(str, Enum):
+class Fusion(str, Enum):
     """
-    Reciprocal rank fusion
+    Fusion algorithm allows to combine results of multiple prefetches. Available fusion algorithms: * `rrf` - Rank Reciprocal Fusion
     """
 
     def __str__(self) -> str:
@@ -1649,6 +1642,7 @@ class Record(BaseModel):
     payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
     vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
     shard_key: Optional["ShardKey"] = Field(default=None, description="Shard Key")
+    order_value: Optional["OrderValue"] = Field(default=None, description="Point data")
 
 
 class RemoteShardInfo(BaseModel):
@@ -2082,7 +2076,7 @@ class SparseIndexConfig(BaseModel):
         description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
     )
     index_type: "SparseIndexType" = Field(..., description="Configuration for sparse inverted index.")
-    datatype: Optional["SparseVectorIndexDatatype"] = Field(
+    datatype: Optional["VectorStorageDatatype"] = Field(
         default=None, description="Datatype used to store weights in the index."
     )
 
@@ -2100,7 +2094,10 @@ class SparseIndexParams(BaseModel, extra="forbid"):
         default=None,
         description="Store index on disk. If set to false, the index will be stored in RAM. Default: false",
     )
-    datatype: Optional["Datatype"] = Field(default=None, description="Datatype used to store weights in the index.")
+    datatype: Optional["Datatype"] = Field(
+        default=None,
+        description="Defines which datatype should be used for the index. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are quantized to unsigned 8-bit integers, 1 byte. Quantization to fit byte range `[0, 255]` happens during indexing automatically, so the actual vector data does not need to conform to this range.",
+    )
 
 
 class SparseIndexTypeOneOf(str, Enum):
@@ -2151,18 +2148,6 @@ class SparseVectorDataConfig(BaseModel):
     """
 
     index: "SparseIndexConfig" = Field(..., description="Config of single sparse vector data storage")
-
-
-class SparseVectorIndexDatatype(str, Enum):
-    """
-    Storage types for vectors
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
-    FLOAT32 = "float32"
-    FLOAT16 = "float16"
 
 
 class SparseVectorParams(BaseModel, extra="forbid"):
@@ -2374,7 +2359,10 @@ class VectorParams(BaseModel, extra="forbid"):
         default=None,
         description="If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
     )
-    datatype: Optional["Datatype"] = Field(default=None, description="Params of single vector data storage")
+    datatype: Optional["Datatype"] = Field(
+        default=None,
+        description="Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1 byte. It expects vector elements to be in range `[0, 255]`.",
+    )
     multivector_config: Optional["MultiVectorConfig"] = Field(
         default=None, description="Params of single vector data storage"
     )
@@ -2529,9 +2517,6 @@ ContextInput = Union[
 ExtendedPointId = Union[
     StrictInt,
     StrictStr,
-]
-Fusion = Union[
-    FusionOneOf,
 ]
 GroupId = Union[
     StrictInt,

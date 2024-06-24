@@ -654,18 +654,8 @@ class LocalCollection:
 
     def query(
         self,
-        query: Union[
-            str,
-            List[float],
-            List[List[float]],
-            List[types.SparseVector],
-            Tuple[str, List[float]],
-            types.NamedVector,
-            types.NamedSparseVector,
-            types.Query,
-            types.NumpyArray,
-        ],  # todo: add fastembed document and extended query
-        prefetch: types.Prefetch,
+        query: Optional[types.Query] = None,
+        prefetch: Optional[List[types.Prefetch]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,

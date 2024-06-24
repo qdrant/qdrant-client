@@ -1,6 +1,7 @@
 import pytest
 
 from qdrant_client import QdrantClient
+from qdrant_client.embed.models import Document
 
 DOCS_EXAMPLE = {
     "documents": [
@@ -39,7 +40,7 @@ def test_dense():
         }
 
         search_result = local_client.query(
-            collection_name=collection_name, query_text="This is a query document"
+            collection_name=collection_name, query=Document(text="This is a query document")
         )
 
         assert len(search_result) > 0
@@ -58,14 +59,14 @@ def test_hybrid_query():
     local_client.add(collection_name=collection_name, **DOCS_EXAMPLE)
 
     hybrid_search_result = local_client.query(
-        collection_name=collection_name, query_text="This is a query document"
+        collection_name=collection_name, query=Document(text="This is a query document")
     )
 
     assert len(hybrid_search_result) > 0
 
     local_client.set_sparse_model(None)
     dense_search_result = local_client.query(
-        collection_name=collection_name, query_text="This is a query document"
+        collection_name=collection_name, query=Document(text="This is a query document")
     )
     assert len(dense_search_result) > 0
 
