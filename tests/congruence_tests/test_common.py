@@ -59,6 +59,36 @@ sparse_vectors_sizes = {
     "sparse-code": sparse_code_vector_size,
 }
 
+multivectors_sizes = {
+    "multi-text": text_vector_size,
+    "multi-image": image_vector_size,
+    "multi-code": code_vector_size,
+}
+
+multi_vector_config = {
+    "multi-text": models.VectorParams(
+        size=text_vector_size,
+        distance=models.Distance.COSINE,
+        multivector_config=models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM,
+        ),
+    ),
+    "multi-image": models.VectorParams(
+        size=image_vector_size,
+        distance=models.Distance.DOT,
+        multivector_config=models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM,
+        ),
+    ),
+    "multi-code": models.VectorParams(
+        size=code_vector_size,
+        distance=models.Distance.EUCLID,
+        multivector_config=models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM,
+        ),
+    )
+}
+
 
 def initialize_fixture_collection(
     client: QdrantBase,
@@ -117,6 +147,25 @@ def generate_sparse_fixtures(
         skip_vectors=skip_vectors,
         sparse=True,
         even_sparse=even_sparse,
+    )
+
+
+def generate_multivector_fixtures(
+    num: Optional[int] = NUM_VECTORS,
+    random_ids: bool = False,
+    vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
+    skip_vectors: bool = False,
+    with_payload: bool = True,
+) -> List[models.PointStruct]:
+    if vectors_sizes is None:
+        vectors_sizes = multivectors_sizes
+    return generate_points(
+        num_points=num or NUM_VECTORS,
+        vector_sizes=vectors_sizes,
+        with_payload=with_payload,
+        random_ids=random_ids,
+        skip_vectors=skip_vectors,
+        multivector=True,
     )
 
 
@@ -225,6 +274,10 @@ def compare_client_results(
     foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ) -> None:
+    # context search can have many points with the same 0.0 score
+    is_context_search = kwargs.pop("is_context_search", False)
+
+    # get results from both clients
     res1 = foo(client1, **kwargs)
     res2 = foo(client2, **kwargs)
 
@@ -236,14 +289,19 @@ def compare_client_results(
             assert offset1 == offset2, f"offset1 = {offset1}, offset2 = {offset2}"
 
     if isinstance(res1, list):
-        if kwargs.get("is_context_search") is True:
-            # context search can have many points with the same 0.0 score
+        if is_context_search is True:
             sorted_1 = sorted(res1, key=lambda x: (x.id))
             sorted_2 = sorted(res2, key=lambda x: (x.id))
-
             compare_records(sorted_1, sorted_2, abs_tol=1e-5)
         else:
             compare_records(res1, res2)
+    elif isinstance(res1, models.QueryResponse):
+        if is_context_search is True:
+            sorted_1 = sorted(res1.points, key=lambda x: (x.id))
+            sorted_2 = sorted(res2.points, key=lambda x: (x.id))
+            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+        else:
+            compare_records(res1.points, res2.points)
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
         groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))
