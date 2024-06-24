@@ -157,14 +157,14 @@ class LocalCollection:
         vectors_config = {}
         multivectors_config = {}
         if isinstance(vectors, models.VectorParams):
-            if vectors.multivec_config is not None:
+            if vectors.multivector_config is not None:
                 multivectors_config = {DEFAULT_VECTOR_NAME: vectors}
             else:
                 vectors_config = {DEFAULT_VECTOR_NAME: vectors}
             return vectors_config, multivectors_config
 
         for name, params in vectors.items():
-            if params.multivec_config is not None:
+            if params.multivector_config is not None:
                 multivectors_config[name] = params
             else:
                 vectors_config[name] = params
