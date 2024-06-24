@@ -542,10 +542,10 @@ class DiscoverRequest(BaseModel, extra="forbid"):
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     using: Optional["UsingVector"] = Field(
         default=None,
@@ -1359,7 +1359,7 @@ class PointRequest(BaseModel, extra="forbid"):
     )
     ids: List["ExtendedPointId"] = Field(..., description="Look for points with ids")
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: All"
+        default=None, description="Select which payload to return with the response. Default is true."
     )
     with_vector: Optional["WithVector"] = Field(default=None, description="")
 
@@ -1539,10 +1539,10 @@ class RecommendGroupsRequest(BaseModel, extra="forbid"):
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1605,10 +1605,10 @@ class RecommendRequest(BaseModel, extra="forbid"):
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1799,7 +1799,7 @@ class ScrollRequest(BaseModel, extra="forbid"):
         default=None, description="Look only for points which satisfies this conditions. If not provided - all points."
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: All"
+        default=None, description="Select which payload to return with the response. Default is true."
     )
     with_vector: Optional["WithVector"] = Field(
         default=None, description="Scroll request - paginate over all points which matches given condition"
@@ -1827,10 +1827,10 @@ class SearchGroupsRequest(BaseModel, extra="forbid"):
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1888,10 +1888,10 @@ class SearchRequest(BaseModel, extra="forbid"):
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -2328,7 +2328,7 @@ class VectorDataConfig(BaseModel):
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Vector specific quantization config that overrides collection config"
     )
-    multivec_config: Optional["MultiVectorConfig"] = Field(
+    multivector_config: Optional["MultiVectorConfig"] = Field(
         default=None, description="Vector specific configuration to enable multiple vectors per point"
     )
     datatype: Optional["VectorStorageDatatype"] = Field(
@@ -2375,7 +2375,7 @@ class VectorParams(BaseModel, extra="forbid"):
         description="If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
     )
     datatype: Optional["Datatype"] = Field(default=None, description="Params of single vector data storage")
-    multivec_config: Optional["MultiVectorConfig"] = Field(
+    multivector_config: Optional["MultiVectorConfig"] = Field(
         default=None, description="Params of single vector data storage"
     )
 
@@ -2629,10 +2629,10 @@ SparseIndexType = Union[
     SparseIndexTypeOneOf2,
 ]
 StartFrom = Union[
+    StrictInt,
+    StrictFloat,
     datetime,
     date,
-    StrictFloat,
-    StrictInt,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,

@@ -806,7 +806,7 @@ class GrpcToRest:
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             datatype=cls.convert_datatype(model.datatype) if model.HasField("datatype") else None,
-            multivec_config=(
+            multivector_config=(
                 cls.convert_multivector_config(model.multivector_config)
                 if model.HasField("multivector_config")
                 else None
@@ -968,9 +968,7 @@ class GrpcToRest:
             query=cls.convert_query(model.query) if model.HasField("query") else None,
             using=model.using if model.HasField("using") else None,
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
-            params=cls.convert_search_params(model.search_params)
-            if model.HasField("search_params")
-            else None,
+            params=cls.convert_search_params(model.params) if model.HasField("params") else None,
             score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
             limit=model.limit if model.HasField("limit") else None,
             lookup_from=cls.convert_lookup_location(model.lookup_from)
@@ -2344,8 +2342,8 @@ class RestToGrpc:
             on_disk=model.on_disk,
             datatype=cls.convert_datatype(model.datatype) if model.datatype is not None else None,
             multivector_config=(
-                cls.convert_multivector_config(model.multivec_config)
-                if model.multivec_config is not None
+                cls.convert_multivector_config(model.multivector_config)
+                if model.multivector_config is not None
                 else None
             ),
         )
@@ -2554,9 +2552,7 @@ class RestToGrpc:
             query=cls.convert_query(model.query) if model.query is not None else None,
             using=model.using if model.using is not None else None,
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
-            search_params=cls.convert_search_params(model.params)
-            if model.params is not None
-            else None,
+            params=cls.convert_search_params(model.params) if model.params is not None else None,
             score_threshold=model.score_threshold,
             limit=model.limit if model.limit is not None else None,
             lookup_from=cls.convert_lookup_location(model.lookup_from)
