@@ -338,17 +338,18 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self,
         collection_name: str,
         query: Union[
+            int,
             str,
             List[float],
             List[List[float]],
-            List[types.SparseVector],
-            Tuple[str, List[float]],
-            types.NamedVector,
-            types.NamedSparseVector,
+            types.SparseVector,
             types.Query,
             types.NumpyArray,
-        ],
-        prefetch: types.Prefetch,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -356,7 +357,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
-        using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
@@ -367,7 +367,18 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         Args:
             collection_name: Collection to search in
-            query: Query for the chosen search type operation.
+            query:
+                Query for the chosen search type operation.
+                - If `str` - use string as UUID of the existing point as a search query.
+                - If `int` - use integer as ID of the existing point as a search query.
+                - If `List[float]` - use as a dense vector for nearest search.
+                - If `List[List[float]]` - use as a multi-vector for nearest search.
+                - If `SparseVector` - use as a sparse vector for nearest search.
+                - If `Query` - use as a query for specific search type.
+                - If `NumpyArray` - use as a dense vector for nearest search.
+                - If `Document` - infer vector from the document text and use
+                                    it for nearest search (requires `fastembed` package installed).
+                - If `None` - return first `limit` points from the collection.
             prefetch: prefetch queries to make a selection of the data to be used with the main query
             query_filter:
                 - Exclude vectors which doesn't fit given conditions.
@@ -421,7 +432,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
             qdrant.query(
                 collection_name="test_collection",
-                query=QueryNearest(nearest=[1.0, 0.1, 0.2, 0.7]),
+                query=[1.0, 0.1, 0.2, 0.7],
                 query_filter=Filter(
                     must=[
                         FieldCondition(
@@ -437,7 +448,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             List of found close points with similarity scores.
         """
+        if "query_text" in kwargs:
+            warnings.warn(
+                "The 'query_text' parameter is deprecated and will be removed in the next release. Please use 'query' parameter with Document type instead.",
+                DeprecationWarning,
+            )
+            query = types.Document(text=kwargs.pop("query_text"))
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        (using, query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
+            query, prefetch, using, limit
+        )
         return await self._client.query(
             collection_name=collection_name,
             query=query,

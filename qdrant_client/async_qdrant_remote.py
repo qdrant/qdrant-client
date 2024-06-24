@@ -28,7 +28,6 @@ from typing import (
     Union,
     get_args,
 )
-from uuid import UUID
 import httpx
 import numpy as np
 from grpc import Compression
@@ -412,18 +411,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def query(
         self,
         collection_name: str,
-        query: Union[
-            str,
-            List[float],
-            List[List[float]],
-            List[models.SparseVector],
-            Tuple[str, List[float]],
-            types.NamedVector,
-            types.NamedSparseVector,
-            models.Query,
-            types.NumpyArray,
-        ],
-        prefetch: models.Prefetch,
+        query: Optional[types.Query] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -431,7 +421,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
-        using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
@@ -439,43 +428,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> List[models.ScoredPoint]:
         if self._prefer_grpc:
-            vector_name = None
             if isinstance(query, get_args(models.Query)):
                 query = RestToGrpc.convert_query(query)
-            else:
-                if isinstance(query, types.NamedSparseVector):
-                    vector_name = query.name
-                    query = await grpc.Query(
-                        nearest=grpc.VectorInput(
-                            sparse=grpc.SparseVector(
-                                indices=query.vector.indices, values=query.vector.values
-                            )
-                        )
-                    )
-                elif isinstance(query, types.NamedVector):
-                    vector_name = query.name
-                    query = await grpc.Query(nearest=grpc.VectorInput(dense=query.vector))
-                elif isinstance(query, tuple):
-                    vector_name = query[0]
-                    query = await grpc.Query(nearest=grpc.VectorInput(dense=query[1]))
-                elif isinstance(query, int):
-                    query = await grpc.Query(nearest=grpc.VectorInput(id=grpc.PointId(num=query)))
-                elif isinstance(query, UUID):
-                    query = await grpc.Query(
-                        nearest=grpc.VectorInput(id=grpc.PointId(str=str(query)))
-                    )
-                else:
-                    if isinstance(query, types.NumpyArray):
-                        query = query.tolist()
-                    query = await grpc.Query(nearest=grpc.VectorInput(dense=list(query)))
-                if using is None:
-                    using = vector_name
-                elif vector_name is not None and using != vector_name:
-                    raise ValueError(
-                        "If both vector_name and using are provided, they should be equal."
-                    )
             if isinstance(prefetch, models.Prefetch):
-                prefetch = RestToGrpc.convert_prefetch_query(prefetch)
+                prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
+            if isinstance(prefetch, list):
+                prefetch = [
+                    RestToGrpc.convert_prefetch_query(p) if isinstance(p, models.Prefetch) else p
+                    for p in prefetch
+                ]
             if isinstance(query_filter, models.Filter):
                 query_filter = RestToGrpc.convert_filter(model=query_filter)
             if isinstance(search_params, models.SearchParams):
@@ -512,30 +473,17 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
-            vector_name = None
-            if isinstance(query, types.NamedSparseVector):
-                vector_name = query.name
-                query = models.NearestQuery(nearest=query.vector)
-            elif isinstance(query, types.NamedVector):
-                vector_name = query.name
-                query = models.NearestQuery(nearest=query.vector)
-            elif isinstance(query, tuple):
-                vector_name = query[0]
-                query = models.NearestQuery(nearest=query[1])
-            elif isinstance(query, (int, UUID)):
-                query = models.NearestQuery(
-                    nearest=query if isinstance(query, int) else str(query)
-                )
-            elif not isinstance(query, models.Query):
-                if isinstance(query, types.NumpyArray):
-                    query = query.tolist()
-                query = models.NearestQuery(nearest=list(query))
-            if using is None:
-                using = vector_name
-            elif vector_name is not None and using != vector_name:
-                raise ValueError(
-                    "If both vector_name and using are provided, they should be equal."
-                )
+            if isinstance(query, grpc.Query):
+                query = GrpcToRest.convert_query(query)
+            if isinstance(prefetch, grpc.PrefetchQuery):
+                prefetch = GrpcToRest.convert_prefetch_query(prefetch)
+            if isinstance(prefetch, list):
+                prefetch = [
+                    GrpcToRest.convert_prefetch_query(p)
+                    if isinstance(p, grpc.PrefetchQuery)
+                    else p
+                    for p in prefetch
+                ]
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
             if isinstance(search_params, grpc.SearchParams):
