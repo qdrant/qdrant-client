@@ -244,6 +244,8 @@ def compare_client_results(
             compare_records(sorted_1, sorted_2, abs_tol=1e-5)
         else:
             compare_records(res1, res2)
+    elif isinstance(res1, models.QueryResponse):
+        compare_records(res1.points, res2.points)
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
         groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))

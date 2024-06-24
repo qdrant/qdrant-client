@@ -589,8 +589,9 @@ class QdrantFastembedMixin(QdrantBase):
         if isinstance(query, types.SparseVector):
             return using, models.NearestQuery(nearest=query), []
 
-        if isinstance(query, types.NumpyArray):
-            return using, models.NearestQuery(nearest=query.tolist()), []
+        # TODO add support for numpy array? should be `np.ndarray` instead of `types.NumpyArray`
+        # if isinstance(query, types.NumpyArray):
+        #     return using, models.NearestQuery(nearest=query.tolist()), []
 
         if isinstance(query, list):
             return using, models.NearestQuery(nearest=query), []

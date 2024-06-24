@@ -15,7 +15,20 @@ import logging
 import os
 import shutil
 from io import TextIOWrapper
-from typing import Any, Dict, Generator, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    get_args,
+    Set,
+)
 from uuid import uuid4
 import numpy as np
 import portalocker
@@ -24,7 +37,11 @@ from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
 from qdrant_client.http.models.models import RecommendExample
-from qdrant_client.local.local_collection import LocalCollection
+from qdrant_client.local.local_collection import (
+    LocalCollection,
+    DEFAULT_VECTOR_NAME,
+    _ignore_mentioned_ids_filter,
+)
 
 META_INFO_FILENAME = "meta.json"
 
@@ -226,6 +243,117 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_lookup_collection=with_lookup_collection,
         )
 
+    def _resolve_query_input(
+        self,
+        collection_name: str,
+        query: Optional[types.Query],
+        using: Optional[str],
+        lookup_from: Optional[types.LookupLocation],
+    ) -> Tuple[types.Query, Set[types.PointId]]:
+        """
+        Resolves any possible ids into vectors and returns a new query object, along with a set of the mentioned
+        point ids that should be filtered when searching.
+        """
+        lookup_collection_name = lookup_from.collection if lookup_from else collection_name
+        collection = self._get_collection(lookup_collection_name)
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+        vector_name = (
+            lookup_from.vector
+            if lookup_from is not None and lookup_from.vector is not None
+            else search_in_vector_name
+        )
+        sparse = vector_name in collection.sparse_vectors
+        multi = vector_name in collection.multivectors
+        if sparse:
+            collection_vectors = collection.sparse_vectors
+        elif multi:
+            collection_vectors = collection.multivectors
+        else:
+            collection_vectors = collection.vectors
+        mentioned_ids: Set[types.PointId] = set()
+
+        def input_into_vector(vector_input: types.VectorInput) -> types.VectorInput:
+            if isinstance(vector_input, get_args(types.PointId)):
+                point_id = vector_input
+                if point_id not in collection.ids:
+                    raise ValueError(f"Point {point_id} is not found in the collection")
+                idx = collection.ids[point_id]
+                vec = collection_vectors[vector_name][idx]
+                if isinstance(vec, np.ndarray):
+                    vec = vec.tolist()
+                if collection_name == lookup_collection_name:
+                    mentioned_ids.add(point_id)
+                return vec
+            else:
+                return vector_input
+
+        if isinstance(query, rest_models.NearestQuery):
+            query.nearest = input_into_vector(query.nearest)
+        elif isinstance(query, rest_models.RecommendQuery):
+            query.recommend.negative = [
+                input_into_vector(vector_input) for vector_input in query.recommend.negative
+            ]
+            query.recommend.positive = [
+                input_into_vector(vector_input) for vector_input in query.recommend.positive
+            ]
+        elif isinstance(query, rest_models.DiscoverQuery):
+            query.discover.target = input_into_vector(query.discover.target)
+            pairs = (
+                query.discover.context
+                if isinstance(query.discover.context, list)
+                else [query.discover.context]
+            )
+            query.discover.context = [
+                rest_models.ContextPair(
+                    positive=input_into_vector(pair.positive),
+                    negative=input_into_vector(pair.negative),
+                )
+                for pair in pairs
+            ]
+        elif isinstance(query, rest_models.ContextQuery):
+            pairs = (
+                query.context.context
+                if isinstance(query.context.context, list)
+                else [query.context.context]
+            )
+            query.context.context = [
+                rest_models.ContextPair(
+                    positive=input_into_vector(pair.positive),
+                    negative=input_into_vector(pair.negative),
+                )
+                for pair in pairs
+            ]
+        elif isinstance(query, rest_models.OrderByQuery):
+            pass
+        elif isinstance(query, rest_models.FusionQuery):
+            pass
+        return (query, mentioned_ids)
+
+    def _resolve_prefetches_input(
+        self,
+        prefetch: Optional[Union[Sequence[types.Prefetch], types.Prefetch]],
+        collection_name: str,
+    ) -> List[types.Prefetch]:
+        if prefetch is None:
+            return []
+        prefetches = (
+            prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
+        )
+        return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches]
+
+    def _resolve_prefetch_input(
+        self, prefetch: types.Prefetch, collection_name: str
+    ) -> types.Prefetch:
+        if prefetch.query is None:
+            return prefetch
+        (query, mentioned_ids) = self._resolve_query_input(
+            collection_name, prefetch.query, prefetch.using, prefetch.lookup_from
+        )
+        prefetch.query = query
+        prefetch.filter = _ignore_mentioned_ids_filter(prefetch.filter, list(mentioned_ids))
+        prefetch.prefetch = self._resolve_prefetches_input(prefetch.prefetch, collection_name)
+        return prefetch
+
     async def query_points(
         self,
         collection_name: str,
@@ -243,20 +371,23 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.QueryResponse:
         collection = self._get_collection(collection_name)
+
+        if query is not None:
+            (query, mentioned_ids) = self._resolve_query_input(
+                collection_name, query, using, lookup_from
+            )
+            query_filter = _ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+        prefetch = self._resolve_prefetches_input(prefetch, collection_name)
         return collection.query_points(
             query=query,
             prefetch=prefetch,
             query_filter=query_filter,
+            using=using,
+            score_threshold=score_threshold,
             limit=limit,
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
-            score_threshold=score_threshold,
-            using=using,
-            lookup_from_collection=self._get_collection(lookup_from.collection)
-            if lookup_from
-            else None,
-            lookup_from_vector_name=lookup_from.vector if lookup_from else None,
         )
 
     async def query_batch_points(

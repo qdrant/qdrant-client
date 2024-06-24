@@ -125,8 +125,8 @@ def calculate_multi_recommend_best_scores(
     pos = get_best_scores(query.positive)
     neg = get_best_scores(query.negative)
 
-    # Choose from best positive or best negative,
-    # in in both cases we apply sigmoid and then negate depending on the order
+    # Choose from the best positive or the best negative,
+    # in both cases we apply sigmoid and then negate depending on the order
     return np.where(
         pos > neg,
         np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
