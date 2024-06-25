@@ -649,8 +649,6 @@ class QdrantFastembedMixin(QdrantBase):
         **kwargs: Any,
     ) -> List[QueryResponse]:
         """
-        DEPRECATED: Use `query_points` method instead.
-
         Search for documents in a collection.
         This method automatically embeds the query text using the specified embedding model.
         If you want to use your own query vector, use `search` method instead.

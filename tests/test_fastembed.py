@@ -39,8 +39,8 @@ def test_dense():
             **DOCS_EXAMPLE["metadata"][0],
         }
 
-        search_result = local_client.query_points(
-            collection_name=collection_name, query=Document(text="This is a query document")
+        search_result = local_client.query(
+            collection_name=collection_name, query_text="This is a query document"
         )
 
         assert len(search_result) > 0
@@ -58,15 +58,15 @@ def test_hybrid_query():
 
     local_client.add(collection_name=collection_name, **DOCS_EXAMPLE)
 
-    hybrid_search_result = local_client.query_points(
-        collection_name=collection_name, query=Document(text="This is a query document")
+    hybrid_search_result = local_client.query(
+        collection_name=collection_name, query_text="This is a query document"
     )
 
     assert len(hybrid_search_result) > 0
 
     local_client.set_sparse_model(None)
-    dense_search_result = local_client.query_points(
-        collection_name=collection_name, query=Document(text="This is a query document")
+    dense_search_result = local_client.query(
+        collection_name=collection_name, query_text="This is a query document"
     )
     assert len(dense_search_result) > 0
 
