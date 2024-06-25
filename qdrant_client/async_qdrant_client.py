@@ -334,7 +334,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             **kwargs,
         )
 
-    async def query(
+    async def query_points(
         self,
         collection_name: str,
         query: Union[
@@ -448,17 +448,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             List of found close points with similarity scores.
         """
-        if "query_text" in kwargs:
-            warnings.warn(
-                "The 'query_text' parameter is deprecated and will be removed in the next release. Please use 'query' parameter with Document type instead.",
-                DeprecationWarning,
-            )
-            query = types.Document(text=kwargs.pop("query_text"))
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         (using, query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
             query, prefetch, using, limit
         )
-        return await self._client.query(
+        return await self._client.query_points(
             collection_name=collection_name,
             query=query,
             prefetch=prefetch,

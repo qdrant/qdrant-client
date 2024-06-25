@@ -408,7 +408,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             assert result is not None, "Search returned None"
             return result
 
-    async def query(
+    async def query_points(
         self,
         collection_name: str,
         query: Optional[types.Query] = None,

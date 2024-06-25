@@ -226,7 +226,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_lookup_collection=with_lookup_collection,
         )
 
-    async def query(
+    async def query_points(
         self,
         collection_name: str,
         query: Optional[types.Query] = None,

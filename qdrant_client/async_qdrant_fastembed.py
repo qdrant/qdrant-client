@@ -581,6 +581,80 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 )
         raise ValueError(f"Unsupported query type: {type(query)}")
 
+    async def query(
+        self,
+        collection_name: str,
+        query_text: str,
+        query_filter: Optional[models.Filter] = None,
+        limit: int = 10,
+        **kwargs: Any,
+    ) -> List[QueryResponse]:
+        """
+        Search for documents in a collection.
+        This method automatically embeds the query text using the specified embedding model.
+        If you want to use your own query vector, use `search` method instead.
+
+        Args:
+            collection_name: Collection to search in
+            query_text:
+                Text to search for. This text will be embedded using the specified embedding model.
+                And then used as a query vector.
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            limit: How many results return
+            **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
+
+        Returns:
+            List[types.ScoredPoint]: List of scored points.
+
+        """
+        embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+        embeddings = list(embedding_model_inst.query_embed(query=query_text))
+        query_vector = embeddings[0].tolist()
+        if self.sparse_embedding_model_name is None:
+            return self._scored_points_to_query_responses(
+                await self.search(
+                    collection_name=collection_name,
+                    query_vector=models.NamedVector(
+                        name=self.get_vector_field_name(), vector=query_vector
+                    ),
+                    query_filter=query_filter,
+                    limit=limit,
+                    with_payload=True,
+                    **kwargs,
+                )
+            )
+        sparse_embedding_model_inst = self._get_or_init_sparse_model(
+            model_name=self.sparse_embedding_model_name
+        )
+        sparse_vector = list(sparse_embedding_model_inst.embed(documents=query_text))[0]
+        sparse_query_vector = models.SparseVector(
+            indices=sparse_vector.indices.tolist(), values=sparse_vector.values.tolist()
+        )
+        dense_request = models.SearchRequest(
+            vector=models.NamedVector(name=self.get_vector_field_name(), vector=query_vector),
+            filter=query_filter,
+            limit=limit,
+            with_payload=True,
+            **kwargs,
+        )
+        sparse_request = models.SearchRequest(
+            vector=models.NamedSparseVector(
+                name=self.get_sparse_vector_field_name(), vector=sparse_query_vector
+            ),
+            filter=query_filter,
+            limit=limit,
+            with_payload=True,
+            **kwargs,
+        )
+        (dense_request_response, sparse_request_response) = await self.search_batch(
+            collection_name=collection_name, requests=[dense_request, sparse_request]
+        )
+        return self._scored_points_to_query_responses(
+            reciprocal_rank_fusion([dense_request_response, sparse_request_response], limit=limit)
+        )
+
     async def query_batch(
         self,
         collection_name: str,

@@ -67,7 +67,7 @@ class AsyncQdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
-    async def query(
+    async def query_points(
         self,
         collection_name: str,
         query: Union[
