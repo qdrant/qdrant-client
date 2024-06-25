@@ -18,7 +18,6 @@ from typing import (
     Union,
     get_args,
 )
-from uuid import UUID
 
 import httpx
 import numpy as np
