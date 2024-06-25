@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.embed.models import Document
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
@@ -535,88 +536,109 @@ class QdrantFastembedMixin(QdrantBase):
 
         return inserted_ids
 
-    def query(
+    def _resolve_query_to_embedding_embeddings_and_prefetch(
         self,
-        collection_name: str,
-        query_text: str,
-        query_filter: Optional[models.Filter] = None,
+        query: Union[
+            int,
+            str,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            Document,
+            None,
+        ],
+        prefetch: Union[models.Prefetch, List[models.Prefetch], None] = None,
+        using: Optional[str] = None,
         limit: int = 10,
-        **kwargs: Any,
-    ) -> List[QueryResponse]:
-        """
-        Search for documents in a collection.
-        This method automatically embeds the query text using the specified embedding model.
-        If you want to use your own query vector, use `search` method instead.
+    ) -> Tuple[Optional[str], Optional[models.Query], List[models.Prefetch]]:
+        using, query, extra_prefetch = self._resolve_query_to_embedding_embeddings(
+            query=query, using=using, limit=limit
+        )
 
-        Args:
-            collection_name: Collection to search in
-            query_text:
-                Text to search for. This text will be embedded using the specified embedding model.
-                And then used as a query vector.
-            query_filter:
-                - Exclude vectors which doesn't fit given conditions.
-                - If `None` - search among all vectors
-            limit: How many results return
-            **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
+        if prefetch is None:
+            prefetch = []
 
-        Returns:
-            List[types.ScoredPoint]: List of scored points.
+        if not isinstance(prefetch, list):
+            prefetch = [prefetch]
 
-        """
-        embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
-        embeddings = list(embedding_model_inst.query_embed(query=query_text))
-        query_vector = embeddings[0].tolist()
+        extra_prefetch.extend(prefetch)
 
-        if self.sparse_embedding_model_name is None:
-            return self._scored_points_to_query_responses(
-                self.search(
-                    collection_name=collection_name,
-                    query_vector=models.NamedVector(
-                        name=self.get_vector_field_name(), vector=query_vector
-                    ),
-                    query_filter=query_filter,
-                    limit=limit,
-                    with_payload=True,
-                    **kwargs,
+        return using, query, extra_prefetch
+
+    def _resolve_query_to_embedding_embeddings(
+        self,
+        query: Union[
+            int,
+            str,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            Document,
+            None,
+        ],
+        using: Optional[str] = None,
+        limit: int = 10,
+    ) -> Tuple[Optional[str], Optional[models.Query], List[models.Prefetch]]:
+        if isinstance(query, types.Query):
+            return using, query, []
+
+        if isinstance(query, types.SparseVector):
+            return using, models.NearestQuery(nearest=query), []
+
+        if isinstance(query, types.NumpyArray):
+            return using, models.NearestQuery(nearest=query.tolist()), []
+
+        if isinstance(query, list):
+            return using, models.NearestQuery(nearest=query), []
+
+        if isinstance(query, (int, str)):
+            return using, models.NearestQuery(nearest=query), []
+
+        if query is None:
+            return using, None, []
+
+        # If query is not recognized, try to embed it
+
+        if isinstance(query, Document):
+            embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+
+            vector_field_name = self.get_vector_field_name()
+            dense_vector = list(embedding_model_inst.embed(documents=[query.text]))[0].tolist()
+
+            if self.sparse_embedding_model_name is None:
+                return using, models.NearestQuery(nearest=dense_vector), []
+            else:
+                sparse_embedding_model_inst = self._get_or_init_sparse_model(
+                    model_name=self.sparse_embedding_model_name
                 )
-            )
+                sparse_vector = list(sparse_embedding_model_inst.embed(documents=[query.text]))[0]
+                return (
+                    None,
+                    models.FusionQuery(fusion=models.Fusion.RRF),
+                    [
+                        models.Prefetch(
+                            query=models.NearestQuery(nearest=dense_vector),
+                            using=vector_field_name,
+                            limit=limit,
+                        ),
+                        models.Prefetch(
+                            query=models.NearestQuery(
+                                nearest=models.SparseVector(
+                                    indices=sparse_vector.indices.tolist(),
+                                    values=sparse_vector.values.tolist(),
+                                )
+                            ),
+                            using=self.get_sparse_vector_field_name(),
+                            limit=limit,
+                        ),
+                    ],
+                )
 
-        sparse_embedding_model_inst = self._get_or_init_sparse_model(
-            model_name=self.sparse_embedding_model_name
-        )
-        sparse_vector = list(sparse_embedding_model_inst.embed(documents=query_text))[0]
-        sparse_query_vector = models.SparseVector(
-            indices=sparse_vector.indices.tolist(),
-            values=sparse_vector.values.tolist(),
-        )
-
-        dense_request = models.SearchRequest(
-            vector=models.NamedVector(
-                name=self.get_vector_field_name(),
-                vector=query_vector,
-            ),
-            filter=query_filter,
-            limit=limit,
-            with_payload=True,
-            **kwargs,
-        )
-        sparse_request = models.SearchRequest(
-            vector=models.NamedSparseVector(
-                name=self.get_sparse_vector_field_name(),
-                vector=sparse_query_vector,
-            ),
-            filter=query_filter,
-            limit=limit,
-            with_payload=True,
-            **kwargs,
-        )
-
-        dense_request_response, sparse_request_response = self.search_batch(
-            collection_name=collection_name, requests=[dense_request, sparse_request]
-        )
-        return self._scored_points_to_query_responses(
-            reciprocal_rank_fusion([dense_request_response, sparse_request_response], limit=limit)
-        )
+        raise ValueError(f"Unsupported query type: {type(query)}")
 
     def query_batch(
         self,
@@ -674,7 +696,8 @@ class QdrantFastembedMixin(QdrantBase):
         )
         sparse_query_vectors = [
             models.SparseVector(
-                indices=sparse_vector.indices.tolist(), values=sparse_vector.values.tolist()
+                indices=sparse_vector.indices.tolist(),
+                values=sparse_vector.values.tolist(),
             )
             for sparse_vector in sparse_embedding_model_inst.embed(documents=query_texts)
         ]

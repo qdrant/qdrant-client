@@ -60,6 +60,34 @@ class QdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
+    def query(
+        self,
+        collection_name: str,
+        query: Union[
+            int,
+            str,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        **kwargs: Any,
+    ) -> List[types.ScoredPoint]:
+        raise NotImplementedError()
+
     def recommend_batch(
         self,
         collection_name: str,
