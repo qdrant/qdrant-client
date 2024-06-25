@@ -754,6 +754,11 @@ class GrpcToRest:
             shard_key=(
                 cls.convert_shard_key(model.shard_key) if model.HasField("shard_key") else None
             ),
+            order_value=(
+                cls.convert_order_value(model.order_value)
+                if model.HasField("order_value")
+                else None
+            ),
         )
 
     @classmethod
@@ -930,7 +935,7 @@ class GrpcToRest:
     @classmethod
     def convert_fusion(cls, model: grpc.Fusion) -> rest.Fusion:
         if model == grpc.Fusion.RRF:
-            return rest.FusionOneOf.RRF
+            return rest.Fusion.RRF
 
         raise ValueError(f"invalid Fusion model: {model}")  # pragma: no cover
 
@@ -2291,6 +2296,7 @@ class RestToGrpc:
             payload=cls.convert_payload(model.payload),
             vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
             shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
+            order_value=cls.convert_order_value(model.order_value) if model.order_value else None,
         )
 
     @classmethod
@@ -2504,7 +2510,7 @@ class RestToGrpc:
 
     @classmethod
     def convert_fusion(cls, model: rest.Fusion) -> grpc.Fusion:
-        if model == rest.FusionOneOf.RRF:
+        if model == rest.Fusion.RRF:
             return grpc.Fusion.RRF
 
     @classmethod

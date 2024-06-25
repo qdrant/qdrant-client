@@ -12,6 +12,7 @@ from typing import List, Union, get_args
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
+from qdrant_client.embed import models as embed
 
 typing_remap = {
     rest.StrictStr: str,
@@ -103,11 +104,14 @@ SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
 InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
-
+Query: TypeAlias = rest.Query
+Prefetch: TypeAlias = rest.Prefetch
+Document: TypeAlias = embed.Document
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 DiscoverRequest: TypeAlias = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
+QueryRequest: TypeAlias = Union[rest.QueryRequest, grpc.QueryPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering

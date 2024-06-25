@@ -166,7 +166,7 @@ vector_param_with_hnsw = grpc.VectorParams(
     datatype=grpc.Datatype.Float32,
 )
 
-vector_param_with_multivec = grpc.VectorParams(
+vector_param_with_multivector = grpc.VectorParams(
     size=100,
     distance=grpc.Distance.Cosine,
     hnsw_config=grpc.HnswConfigDiff(
@@ -656,6 +656,14 @@ retrieved_point = grpc.RetrievedPoint(
     vectors=single_vector,
 )
 
+retrieved_point_with_order_value = grpc.RetrievedPoint(
+    id=point_id_1,
+    payload=payload_to_grpc({"key": payload_value}),
+    vectors=single_vector,
+    order_value=order_value_int,
+)
+
+
 count_result = grpc.CountResult(count=5)
 
 timestamp = Timestamp()
@@ -1129,7 +1137,7 @@ fixtures = {
         with_payload_include,
         with_payload_exclude,
     ],
-    "RetrievedPoint": [retrieved_point],
+    "RetrievedPoint": [retrieved_point, retrieved_point_with_order_value],
     "CountResult": [count_result],
     "SnapshotDescription": [snapshot_description],
     "VectorParams": [
@@ -1138,7 +1146,7 @@ fixtures = {
         vector_param_with_quant,
         vector_param_1,
         vector_param_2,
-        vector_param_with_multivec,
+        vector_param_with_multivector,
     ],
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
