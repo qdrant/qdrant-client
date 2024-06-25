@@ -67,6 +67,11 @@ class AsyncQdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
+    async def query_batch_points(
+        self, collection_name: str, requests: Sequence[types.QueryRequest], **kwargs: Any
+    ) -> List[List[types.ScoredPoint]]:
+        raise NotImplementedError()
+
     async def query_points(
         self,
         collection_name: str,

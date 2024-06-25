@@ -249,6 +249,8 @@ def test_grpc_payload_scheme_conversion():
         PayloadSchemaType.Float,
         PayloadSchemaType.Geo,
         PayloadSchemaType.Text,
+        PayloadSchemaType.Bool,
+        PayloadSchemaType.Datetime,
     ):
         assert payload_schema == grpc_field_type_to_payload_schema(
             grpc_payload_schema_to_field_type(payload_schema)

@@ -405,12 +405,15 @@ class QdrantRemote(QdrantBase):
                 (GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r)
                 for r in requests
             ]
-            http_res: List[List[models.ScoredPoint]] = self.http.points_api.search_batch_points(
-                collection_name=collection_name,
-                consistency=consistency,
-                timeout=timeout,
-                search_request_batch=models.SearchRequestBatch(searches=requests),
-            ).result
+            http_res: Optional[List[List[models.ScoredPoint]]] = (
+                self.http.points_api.search_batch_points(
+                    collection_name=collection_name,
+                    consistency=consistency,
+                    timeout=timeout,
+                    search_request_batch=models.SearchRequestBatch(searches=requests),
+                ).result
+            )
+            assert http_res is not None, "Search batch returned None"
             return http_res
 
     def search(
@@ -663,6 +666,56 @@ class QdrantRemote(QdrantBase):
             result: Optional[models.QueryResponse] = query_result.result
             assert result is not None, "Search returned None"
             return result.points
+
+    def query_batch_points(
+        self,
+        collection_name: str,
+        requests: Sequence[types.QueryRequest],
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[List[types.ScoredPoint]]:
+        if self._prefer_grpc:
+            requests = [
+                (
+                    RestToGrpc.convert_query_request(r, collection_name)
+                    if isinstance(r, models.QueryRequest)
+                    else r
+                )
+                for r in requests
+            ]
+
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+
+            grpc_res: grpc.QueryBatchResponse = self.grpc_points.QueryBatch(
+                grpc.QueryBatchPoints(
+                    collection_name=collection_name,
+                    query_points=requests,
+                    read_consistency=consistency,
+                    timeout=timeout,
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            )
+
+            return [
+                [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
+            ]
+        else:
+            requests = [
+                (GrpcToRest.convert_query_points(r) if isinstance(r, grpc.QueryPoints) else r)
+                for r in requests
+            ]
+            http_res: Optional[List[models.QueryResponse]] = (
+                self.http.points_api.query_batch_points(
+                    collection_name=collection_name,
+                    consistency=consistency,
+                    timeout=timeout,
+                    search_request_batch=models.QueryRequestBatch(searches=requests),
+                ).result
+            )
+            assert http_res is not None, "Query batch returned None"
+            return [query_response.points for query_response in http_res]
 
     def search_groups(
         self,

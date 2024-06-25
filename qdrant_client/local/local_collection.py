@@ -652,19 +652,19 @@ class LocalCollection:
 
         return result[offset:]
 
-    def query(
+    def query_points(
         self,
         query: Optional[types.Query] = None,
         prefetch: Optional[List[types.Prefetch]] = None,
         query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
+        lookup_from_collection: Optional["LocalCollection"] = None,
+        lookup_from_vector_name: Optional[str] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         raise NotImplementedError()
