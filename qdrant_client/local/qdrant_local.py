@@ -244,7 +244,7 @@ class QdrantLocal(QdrantBase):
             with_lookup_collection=with_lookup_collection,
         )
 
-    def query(
+    def query_points(
         self,
         collection_name: str,
         query: Optional[types.Query] = None,

@@ -536,7 +536,7 @@ class QdrantRemote(QdrantBase):
             assert result is not None, "Search returned None"
             return result
 
-    def query(
+    def query_points(
         self,
         collection_name: str,
         query: Optional[types.Query] = None,

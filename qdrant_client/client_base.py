@@ -60,7 +60,7 @@ class QdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
-    def query(
+    def query_points(
         self,
         collection_name: str,
         query: Union[
