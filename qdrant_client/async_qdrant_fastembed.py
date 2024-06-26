@@ -13,6 +13,7 @@ import uuid
 import warnings
 from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from qdrant_client import grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.embed.models import Document
@@ -535,7 +536,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         using: Optional[str] = None,
         limit: int = 10,
     ) -> Tuple[Optional[str], Optional[models.Query], List[models.Prefetch]]:
-        if isinstance(query, types.Query):
+        if isinstance(query, types.Query) or isinstance(query, grpc.Query):
             return (using, query, [])
         if isinstance(query, types.SparseVector):
             return (using, models.NearestQuery(nearest=query), [])

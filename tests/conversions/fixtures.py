@@ -699,7 +699,6 @@ shard_key_selector_2 = grpc.ShardKeySelector(
     ]
 )
 
-
 search_points = grpc.SearchPoints(
     collection_name="collection-123",
     vector=[1.0, 2.0, 3.0, 5.0],
@@ -728,6 +727,31 @@ search_points_all_vectors = grpc.SearchPoints(
     shard_key_selector=shard_key_selector_2,
 )
 
+lookup_location_1 = grpc.LookupLocation(
+    collection_name="collection-123",
+)
+
+lookup_location_2 = grpc.LookupLocation(
+    collection_name="collection-123",
+    vector_name="vector-123",
+)
+
+query_points = grpc.QueryPoints(
+    collection_name="collection-123",
+    prefetch=[grpc.PrefetchQuery(using="cba")],
+    query=grpc.Query(nearest=grpc.VectorInput(dense=grpc.DenseVector(data=[0.1, 0.2, 0.3]))),
+    lookup_from=lookup_location_1,
+    filter=filter_,
+    limit=100,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(include=grpc.VectorsSelector(names=["abc", "def"])),
+    shard_key_selector=shard_key_selector,
+)
+
 recommend_strategy = grpc.RecommendStrategy.BestScore
 recommend_strategy2 = grpc.RecommendStrategy.AverageVector
 
@@ -752,6 +776,7 @@ recommend_points = grpc.RecommendPoints(
         grpc.Vector(data=[3.0, 2.0, -1.0, -0.2]),
     ],
     shard_key_selector=shard_key_selector_2,
+    lookup_from=lookup_location_1,
 )
 legacy_sparse_vector = grpc.Vector(
     data=[0.2, 0.3, 0.4],
@@ -773,15 +798,6 @@ recommend_points_sparse = grpc.RecommendPoints(
     positive_vectors=[legacy_sparse_vector],
     negative_vectors=[legacy_sparse_vector],
     shard_key_selector=shard_key_selector_2,
-)
-
-lookup_location_1 = grpc.LookupLocation(
-    collection_name="collection-123",
-)
-
-lookup_location_2 = grpc.LookupLocation(
-    collection_name="collection-123",
-    vector_name="vector-123",
 )
 
 read_consistency = grpc.ReadConsistency(
@@ -909,6 +925,7 @@ discover_points_sparse = grpc.DiscoverPoints(
     using="abc",
     with_vectors=grpc.WithVectorsSelector(enable=True),
     shard_key_selector=shard_key_selector_2,
+    lookup_from=lookup_location_1,
 )
 
 upsert_operation = grpc.PointsUpdateOperation(
@@ -1150,6 +1167,7 @@ fixtures = {
     ],
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
+    "QueryPoints": [query_points],
     "RecommendPoints": [recommend_points, recommend_points_sparse],
     "RecommendStrategy": [recommend_strategy, recommend_strategy2],
     "TextIndexParams": [
