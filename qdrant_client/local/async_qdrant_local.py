@@ -226,7 +226,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_lookup_collection=with_lookup_collection,
         )
 
-    async def query(
+    async def query_points(
         self,
         collection_name: str,
         query: Optional[types.Query] = None,
@@ -243,7 +243,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         collection = self._get_collection(collection_name)
-        return collection.query(
+        return collection.query_points(
             query=query,
             prefetch=prefetch,
             query_filter=query_filter,
@@ -258,6 +258,31 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             else None,
             lookup_from_vector_name=lookup_from.vector if lookup_from else None,
         )
+
+    async def query_batch_points(
+        self, collection_name: str, requests: Sequence[types.QueryRequest], **kwargs: Any
+    ) -> List[List[types.ScoredPoint]]:
+        collection = self._get_collection(collection_name)
+        return [
+            collection.query_points(
+                query=request.query,
+                prefetch=request.prefetch,
+                query_filter=request.filter,
+                limit=request.limit,
+                offset=request.offset,
+                with_payload=request.with_payload,
+                with_vectors=request.with_vector,
+                score_threshold=request.score_threshold,
+                using=request.using,
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
+            )
+            for request in requests
+        ]
 
     async def recommend_batch(
         self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any

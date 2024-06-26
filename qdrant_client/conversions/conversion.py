@@ -1022,6 +1022,41 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_query_points(cls, model: grpc.QueryPoints) -> rest.QueryRequest:
+        return rest.QueryRequest(
+            shard_key=(
+                cls.convert_shard_key_selector(model.shard_key_selector)
+                if model.HasField("shard_key_selector")
+                else None
+            ),
+            prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
+            if len(model.prefetch) != 0
+            else None,
+            query=cls.convert_query(model.query) if model.HasField("query") else None,
+            using=model.using if model.HasField("using") else None,
+            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
+            params=cls.convert_search_params(model.params) if model.HasField("params") else None,
+            score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
+            limit=model.limit if model.HasField("limit") else None,
+            offset=model.offset if model.HasField("offset") else None,
+            with_vector=(
+                cls.convert_with_vectors_selector(model.with_vectors)
+                if model.HasField("with_vectors")
+                else None
+            ),
+            with_payload=(
+                cls.convert_with_payload_interface(model.with_payload)
+                if model.HasField("with_payload")
+                else None
+            ),
+            lookup_from=(
+                cls.convert_lookup_location(model.lookup_from)
+                if model.HasField("lookup_from")
+                else None
+            ),
+        )
+
+    @classmethod
     def convert_recommend_points(cls, model: grpc.RecommendPoints) -> rest.RecommendRequest:
         positive_ids = [cls.convert_point_id(point_id) for point_id in model.positive]
         negative_ids = [cls.convert_point_id(point_id) for point_id in model.negative]
@@ -2602,6 +2637,46 @@ class RestToGrpc:
         cls, model: rest.SearchRequest, collection_name: str
     ) -> grpc.SearchPoints:
         return cls.convert_search_request(model, collection_name)
+
+    @classmethod
+    def convert_query_request(
+        cls, model: rest.QueryRequest, collection_name: str
+    ) -> grpc.QueryPoints:
+        return grpc.QueryPoints(
+            collection_name=collection_name,
+            prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
+            if model.prefetch is not None
+            else None,
+            query=cls.convert_query(model.query) if model.query is not None else None,
+            using=model.using,
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+            params=cls.convert_search_params(model.params) if model.params is not None else None,
+            score_threshold=model.score_threshold,
+            limit=model.limit,
+            offset=model.offset,
+            with_vectors=cls.convert_with_vectors(model.with_vector)
+            if model.with_vector is not None
+            else None,
+            with_payload=(
+                cls.convert_with_payload_interface(model.with_payload)
+                if model.with_payload is not None
+                else None
+            ),
+            shard_key_selector=(
+                cls.convert_shard_key_selector(model.shard_key)
+                if model.shard_key is not None
+                else None
+            ),
+            lookup_from=cls.convert_lookup_location(model.lookup_from)
+            if model.lookup_from is not None
+            else None,
+        )
+
+    @classmethod
+    def convert_query_points(
+        cls, model: rest.QueryRequest, collection_name: str
+    ) -> grpc.QueryPoints:
+        return cls.convert_query_request(model, collection_name)
 
     @classmethod
     def convert_recommend_request(

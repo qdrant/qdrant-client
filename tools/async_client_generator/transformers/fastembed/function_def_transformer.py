@@ -6,6 +6,4 @@ class FastembedFunctionDefTransformer(FunctionDefTransformer):
         # dump approach:
         # does not check for async methods used inside methods, instead replaces every method that is not in keep_sync
         # and does not start with "_" will be transformed to async
-        return (
-            name in self.keep_sync or (name.startswith("_") and name != "_query")
-        )  # todo: remove _query, it's a temporarity solution until `query` is implemented in `QdrantClient`
+        return name in self.keep_sync or name.startswith("_")
