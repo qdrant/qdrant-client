@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import pytest
@@ -59,11 +59,13 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def recommend_from_another_collection(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def recommend_from_another_collection(
+        cls, client: QdrantBase, positive_point_id: Optional[int] = None
+    ) -> List[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
-            positive=[10],
-            negative=[15, 7],
+            positive=[10] if positive_point_id is None else [positive_point_id],
+            negative=[15, 7] if positive_point_id is None else [],
             with_payload=True,
             limit=10,
             using="image",
@@ -139,7 +141,7 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="code",
-            strategy="best_score",  # type: ignore , check it works with literal
+            strategy="best_score",  # type: ignore  # check it works with a literal
         )
 
     @classmethod
@@ -198,6 +200,29 @@ class TestSimpleRecommendation:
                     ),
                 ),
             ],
+        )
+
+
+def test_recommend_from_another_collection():
+    fixture_points = generate_fixtures(10)
+
+    secondary_collection_points = generate_fixtures(10)
+
+    searcher = TestSimpleRecommendation()
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+    init_client(local_client, secondary_collection_points, secondary_collection_name)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+    init_client(remote_client, secondary_collection_points, secondary_collection_name)
+
+    for i in range(10):
+        compare_client_results(
+            local_client,
+            remote_client,
+            searcher.recommend_from_another_collection,
+            positive_point_id=i,
         )
 
 

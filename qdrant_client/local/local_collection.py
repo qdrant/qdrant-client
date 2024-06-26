@@ -827,7 +827,8 @@ class LocalCollection:
                     if isinstance(vec, np.ndarray):
                         vec = vec.tolist()
                     acc.append(vec)
-                    mentioned_ids.append(example)
+                    if collection == self:
+                        mentioned_ids.append(example)
                 else:
                     acc.append(example)
 
@@ -1110,9 +1111,8 @@ class LocalCollection:
 
         return target, None
 
-    @staticmethod
     def _preprocess_context(
-        context: List[models.ContextPair], collection: "LocalCollection", vector_name: str
+        self, context: List[models.ContextPair], collection: "LocalCollection", vector_name: str
     ) -> Tuple[
         List[ContextPair], List[SparseContextPair], List[MultiContextPair], List[types.PointId]
     ]:
@@ -1146,7 +1146,8 @@ class LocalCollection:
                         vector = collection.multivectors[vector_name][idx].tolist()
 
                     pair_vectors.append(vector)
-                    mentioned_ids.append(example)
+                    if collection == self:
+                        mentioned_ids.append(example)
                 else:
                     pair_vectors.append(example)
 
@@ -1223,7 +1224,7 @@ class LocalCollection:
             self._preprocess_context(context, collection, vector_name)
         )
 
-        if target_id is not None:
+        if target_id is not None and collection == self:
             mentioned_ids.append(target_id)
 
         # Edit query filter
