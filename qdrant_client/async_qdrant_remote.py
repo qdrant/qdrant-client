@@ -427,7 +427,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[models.ScoredPoint]:
+    ) -> types.QueryResponse:
         if self._prefer_grpc:
             if isinstance(query, get_args(models.Query)):
                 query = RestToGrpc.convert_query(query)
@@ -472,7 +472,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=timeout if timeout is None else self._timeout,
             )
-            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+            scored_points = [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+            return models.QueryResponse(points=scored_points)
         else:
             if isinstance(query, grpc.Query):
                 query = GrpcToRest.convert_query(query)
@@ -515,7 +516,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
             result: Optional[models.QueryResponse] = query_result.result
             assert result is not None, "Search returned None"
-            return result.points
+            return result
 
     async def query_batch_points(
         self,
@@ -524,7 +525,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> List[types.QueryResponse]:
         if self._prefer_grpc:
             requests = [
                 RestToGrpc.convert_query_request(r, collection_name)
@@ -544,7 +545,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 timeout=timeout if timeout is not None else self._timeout,
             )
             return [
-                [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
+                models.QueryResponse(
+                    points=[GrpcToRest.convert_scored_point(hit) for hit in r.result]
+                )
+                for r in grpc_res.result
             ]
         else:
             requests = [
@@ -560,7 +564,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             ).result
             assert http_res is not None, "Query batch returned None"
-            return [query_response.points for query_response in http_res]
+            return http_res
 
     async def search_groups(
         self,
