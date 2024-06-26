@@ -228,7 +228,7 @@ class QdrantClient(QdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
-        """Search for points in multiple collections
+        """Perform multiple searches in a collection mitigating network overhead
 
         Args:
             collection_name: Name of the collection
@@ -367,7 +367,43 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
-    def query(
+    def query_batch_points(
+        self,
+        collection_name: str,
+        requests: Sequence[types.QueryRequest],
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[List[types.ScoredPoint]]:
+        """Perform any search, recommend, discovery, context search operations in batch, and mitigate network overhead
+
+        Args:
+            collection_name: Name of the collection
+            requests: List of query requests
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
+
+        Returns:
+            List of query responses
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.query_batch_points(
+            collection_name=collection_name,
+            requests=requests,
+            consistency=consistency,
+            timeout=timeout,
+            **kwargs,
+        )
+
+    def query_points(
         self,
         collection_name: str,
         query: Union[
@@ -482,14 +518,6 @@ class QdrantClient(QdrantFastembedMixin):
             List of found close points with similarity scores.
         """
 
-        if "query_text" in kwargs:
-            warnings.warn(
-                "The 'query_text' parameter is deprecated and will be removed in the next release. "
-                "Please use 'query' parameter with Document type instead.",
-                DeprecationWarning,
-            )
-            query = types.Document(text=kwargs.pop("query_text"))
-
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         # If the query contains unprocessed documents, we need to embed them and
@@ -498,7 +526,7 @@ class QdrantClient(QdrantFastembedMixin):
             query, prefetch, using, limit
         )
 
-        return self._client.query(
+        return self._client.query_points(
             collection_name=collection_name,
             query=query,
             prefetch=prefetch,

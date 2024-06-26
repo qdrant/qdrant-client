@@ -652,19 +652,19 @@ class LocalCollection:
 
         return result[offset:]
 
-    def query(
+    def query_points(
         self,
         query: Optional[types.Query] = None,
         prefetch: Optional[List[types.Prefetch]] = None,
         query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
+        lookup_from_collection: Optional["LocalCollection"] = None,
+        lookup_from_vector_name: Optional[str] = None,
         **kwargs: Any,
     ) -> List[types.ScoredPoint]:
         raise NotImplementedError()
@@ -827,7 +827,8 @@ class LocalCollection:
                     if isinstance(vec, np.ndarray):
                         vec = vec.tolist()
                     acc.append(vec)
-                    mentioned_ids.append(example)
+                    if collection == self:
+                        mentioned_ids.append(example)
                 else:
                     acc.append(example)
 
@@ -1110,9 +1111,8 @@ class LocalCollection:
 
         return target, None
 
-    @staticmethod
     def _preprocess_context(
-        context: List[models.ContextPair], collection: "LocalCollection", vector_name: str
+        self, context: List[models.ContextPair], collection: "LocalCollection", vector_name: str
     ) -> Tuple[
         List[ContextPair], List[SparseContextPair], List[MultiContextPair], List[types.PointId]
     ]:
@@ -1146,7 +1146,8 @@ class LocalCollection:
                         vector = collection.multivectors[vector_name][idx].tolist()
 
                     pair_vectors.append(vector)
-                    mentioned_ids.append(example)
+                    if collection == self:
+                        mentioned_ids.append(example)
                 else:
                     pair_vectors.append(example)
 
@@ -1223,7 +1224,7 @@ class LocalCollection:
             self._preprocess_context(context, collection, vector_name)
         )
 
-        if target_id is not None:
+        if target_id is not None and collection == self:
             mentioned_ids.append(target_id)
 
         # Edit query filter
