@@ -12,10 +12,11 @@
 import uuid
 import warnings
 from itertools import tee
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, get_args
 from qdrant_client import grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.models import Document
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
@@ -496,8 +497,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     def _resolve_query_to_embedding_embeddings_and_prefetch(
         self,
         query: Union[
-            int,
-            str,
+            types.PointId,
             List[float],
             List[List[float]],
             types.SparseVector,
@@ -523,8 +523,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     def _resolve_query_to_embedding_embeddings(
         self,
         query: Union[
-            int,
-            str,
+            types.PointId,
             List[float],
             List[List[float]],
             types.SparseVector,
@@ -544,7 +543,10 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             return (using, models.NearestQuery(nearest=query.tolist()), [])
         if isinstance(query, list):
             return (using, models.NearestQuery(nearest=query), [])
-        if isinstance(query, (int, str)):
+        if isinstance(query, get_args(types.PointId)):
+            query = (
+                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
+            )
             return (using, models.NearestQuery(nearest=query), [])
         if query is None:
             return (using, None, [])

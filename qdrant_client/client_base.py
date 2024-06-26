@@ -65,15 +65,14 @@ class QdrantBase:
         collection_name: str,
         requests: Sequence[types.QueryRequest],
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> List[types.QueryResponse]:
         raise NotImplementedError()
 
     def query_points(
         self,
         collection_name: str,
         query: Union[
-            int,
-            str,
+            types.PointId,
             List[float],
             List[List[float]],
             types.SparseVector,
@@ -93,7 +92,7 @@ class QdrantBase:
         score_threshold: Optional[float] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> types.QueryResponse:
         raise NotImplementedError()
 
     def recommend_batch(

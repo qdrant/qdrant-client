@@ -374,7 +374,7 @@ class QdrantClient(QdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> List[types.QueryResponse]:
         """Perform any search, recommend, discovery, context search operations in batch, and mitigate network overhead
 
         Args:
@@ -407,8 +407,7 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         query: Union[
-            int,
-            str,
+            types.PointId,
             List[float],
             List[List[float]],
             types.SparseVector,
@@ -431,7 +430,7 @@ class QdrantClient(QdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> types.QueryResponse:
         """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
 
         Args:
@@ -515,7 +514,7 @@ class QdrantClient(QdrantFastembedMixin):
             )
 
         Returns:
-            List of found close points with similarity scores.
+            QueryResponse structure containing list of found close points with similarity scores.
         """
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"

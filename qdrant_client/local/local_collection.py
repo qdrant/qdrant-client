@@ -666,7 +666,7 @@ class LocalCollection:
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> types.QueryResponse:
         raise NotImplementedError()
 
     def search_groups(

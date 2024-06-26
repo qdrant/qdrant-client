@@ -556,7 +556,7 @@ class QdrantRemote(QdrantBase):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[models.ScoredPoint]:
+    ) -> types.QueryResponse:
         if self._prefer_grpc:
             if isinstance(query, get_args(models.Query)):
                 query = RestToGrpc.convert_query(query)
@@ -612,7 +612,8 @@ class QdrantRemote(QdrantBase):
                 timeout=timeout if timeout is None else self._timeout,
             )
 
-            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+            scored_points = [GrpcToRest.convert_scored_point(hit) for hit in res.result]
+            return models.QueryResponse(points=scored_points)
 
         else:
             if isinstance(query, grpc.Query):
@@ -665,7 +666,7 @@ class QdrantRemote(QdrantBase):
 
             result: Optional[models.QueryResponse] = query_result.result
             assert result is not None, "Search returned None"
-            return result.points
+            return result
 
     def query_batch_points(
         self,
@@ -674,7 +675,7 @@ class QdrantRemote(QdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> List[types.QueryResponse]:
         if self._prefer_grpc:
             requests = [
                 (
@@ -699,7 +700,10 @@ class QdrantRemote(QdrantBase):
             )
 
             return [
-                [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
+                models.QueryResponse(
+                    points=[GrpcToRest.convert_scored_point(hit) for hit in r.result]
+                )
+                for r in grpc_res.result
             ]
         else:
             requests = [
@@ -715,7 +719,7 @@ class QdrantRemote(QdrantBase):
                 ).result
             )
             assert http_res is not None, "Query batch returned None"
-            return [query_response.points for query_response in http_res]
+            return http_res
 
     def search_groups(
         self,
