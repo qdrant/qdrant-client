@@ -375,7 +375,7 @@ class QdrantClient(QdrantFastembedMixin):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
-        """Perform any search, recommend, discovery, context search operations, and mitigate network overhead
+        """Perform any search, recommend, discovery, context search operations in batch, and mitigate network overhead
 
         Args:
             collection_name: Name of the collection
