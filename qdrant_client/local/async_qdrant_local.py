@@ -241,7 +241,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         score_threshold: Optional[float] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> types.QueryResponse:
         collection = self._get_collection(collection_name)
         return collection.query_points(
             query=query,
@@ -261,7 +261,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
     async def query_batch_points(
         self, collection_name: str, requests: Sequence[types.QueryRequest], **kwargs: Any
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> List[types.QueryResponse]:
         collection = self._get_collection(collection_name)
         return [
             collection.query_points(

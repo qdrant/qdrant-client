@@ -341,7 +341,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> List[types.QueryResponse]:
         """Perform any search, recommend, discovery, context search operations in batch, and mitigate network overhead
 
         Args:
@@ -373,8 +373,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self,
         collection_name: str,
         query: Union[
-            int,
-            str,
+            types.PointId,
             List[float],
             List[List[float]],
             types.SparseVector,
@@ -397,7 +396,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> types.QueryResponse:
         """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
 
         Args:
@@ -481,7 +480,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             )
 
         Returns:
-            List of found close points with similarity scores.
+            QueryResponse structure containing list of found close points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         (using, query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
