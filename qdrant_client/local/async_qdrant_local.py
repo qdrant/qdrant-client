@@ -311,12 +311,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 for pair in pairs
             ]
         elif isinstance(query, rest_models.ContextQuery):
-            pairs = (
-                query.context.context
-                if isinstance(query.context.context, list)
-                else [query.context.context]
-            )
-            query.context.context = [
+            pairs = query.context if isinstance(query.context, list) else [query.context]
+            query.context = [
                 rest_models.ContextPair(
                     positive=input_into_vector(pair.positive),
                     negative=input_into_vector(pair.negative),
@@ -336,10 +332,21 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> List[types.Prefetch]:
         if prefetch is None:
             return []
-        prefetches = (
-            prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
-        )
-        return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches]
+        elif isinstance(prefetch, list) and len(prefetch) == 0:
+            return []
+        else:
+            prefetches = []
+            if isinstance(prefetch, types.Prefetch):
+                prefetches = (
+                    prefetch.prefetch
+                    if isinstance(prefetch.prefetch, list)
+                    else [prefetch.prefetch]
+                )
+            elif isinstance(prefetch, Sequence):
+                prefetches = list(prefetch)
+            return [
+                self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches
+            ]
 
     def _resolve_prefetch_input(
         self, prefetch: types.Prefetch, collection_name: str
@@ -371,7 +378,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.QueryResponse:
         collection = self._get_collection(collection_name)
-
         if query is not None:
             (query, mentioned_ids) = self._resolve_query_input(
                 collection_name, query, using, lookup_from
@@ -385,7 +391,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             using=using,
             score_threshold=score_threshold,
             limit=limit,
-            offset=offset,
+            offset=offset or 0,
             with_payload=with_payload,
             with_vectors=with_vectors,
         )

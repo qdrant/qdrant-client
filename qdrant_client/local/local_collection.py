@@ -802,11 +802,10 @@ class LocalCollection:
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
     ) -> List[types.ScoredPoint]:
-        if using is None:
-            using = DEFAULT_VECTOR_NAME
+        using = using or DEFAULT_VECTOR_NAME
 
         if query is None:
-            records = self.scroll(
+            records, _ = self.scroll(
                 scroll_filter=query_filter,
                 limit=limit + offset,
                 with_payload=with_payload,
@@ -867,10 +866,11 @@ class LocalCollection:
                 with_payload=with_payload,
                 with_vectors=with_vectors,
             )
-
             return [record_to_scored_point(record) for record in records[offset:]]
         elif isinstance(query, models.FusionQuery):
             raise AssertionError("Cannot perform fusion without prefetches")
+        else:
+            raise ValueError(f"Unsupported query type {type(query)}")
 
     def search_groups(
         self,
@@ -1198,8 +1198,8 @@ class LocalCollection:
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
@@ -1432,8 +1432,8 @@ class LocalCollection:
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,

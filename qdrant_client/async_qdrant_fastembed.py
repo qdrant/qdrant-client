@@ -539,8 +539,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             return (using, query, [])
         if isinstance(query, types.SparseVector):
             return (using, models.NearestQuery(nearest=query), [])
-        if isinstance(query, types.NumpyArray):
-            return (using, models.NearestQuery(nearest=query.tolist()), [])
         if isinstance(query, list):
             return (using, models.NearestQuery(nearest=query), [])
         if isinstance(query, get_args(types.PointId)):

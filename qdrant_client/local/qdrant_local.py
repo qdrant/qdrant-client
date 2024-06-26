@@ -250,7 +250,6 @@ class QdrantLocal(QdrantBase):
             with_lookup_collection=with_lookup_collection,
         )
 
-
     def _resolve_query_input(
         self,
         collection_name: str,
@@ -345,22 +344,21 @@ class QdrantLocal(QdrantBase):
         return query, mentioned_ids
 
     def _resolve_prefetches_input(
-        self,
-        prefetch: Optional[Union[Sequence[types.Prefetch], types.Prefetch]],
-        collection_name: str,
+            self,
+            prefetch: Optional[Union[Sequence[types.Prefetch], types.Prefetch]],
+            collection_name: str,
     ) -> List[types.Prefetch]:
         if prefetch is None:
             return []
-        # if prefetch is an empty list, we should return an empty list
-        empty_prefetch = isinstance(prefetch, (list, tuple, set, dict)) and len(prefetch) == 0
-        if empty_prefetch:
+        elif isinstance(prefetch, list) and len(prefetch) == 0:
             return []
-
-        prefetches = (
-            prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
-        )
-
-        return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches]
+        else:
+            prefetches = []
+            if isinstance(prefetch, types.Prefetch):
+                prefetches = prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
+            elif isinstance(prefetch, Sequence):
+                prefetches = list(prefetch)
+            return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches]
 
     def _resolve_prefetch_input(
         self, prefetch: types.Prefetch, collection_name: str
@@ -415,7 +413,7 @@ class QdrantLocal(QdrantBase):
             using=using,
             score_threshold=score_threshold,
             limit=limit,
-            offset=offset,
+            offset=offset or 0,
             with_payload=with_payload,
             with_vectors=with_vectors,
         )
