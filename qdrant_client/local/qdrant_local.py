@@ -405,7 +405,6 @@ class QdrantLocal(QdrantBase):
             query_filter = _ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
 
         prefetch = self._resolve_prefetches_input(prefetch, collection_name)
-
         return collection.query_points(
             query=query,
             prefetch=prefetch,

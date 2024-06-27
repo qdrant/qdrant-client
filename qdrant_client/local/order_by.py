@@ -1,6 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional, Union, get_args
-from pydantic.types import StrictFloat, StrictInt
+from typing import Optional, Union
 
 from qdrant_client.http.models import OrderValue
 from qdrant_client.local.datetime_utils import parse

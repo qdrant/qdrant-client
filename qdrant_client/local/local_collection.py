@@ -669,14 +669,12 @@ class LocalCollection:
         # Assumes all vectors have been homogenized so that there are no ids in the inputs
 
         scored_points = []
-        if prefetch is not None:
+        if prefetch is not None and isinstance(prefetch, list) and len(prefetch) > 0:
             # It is a hybrid/re-scoring query
             prefetches = prefetch if isinstance(prefetch, list) else [prefetch]
-
             sources = []
             for prefetch in prefetches:
                 sources.append(self._prefetch(prefetch, offset))
-
             # Merge sources
             scored_points = self._merge_sources(
                 sources=sources,
@@ -705,7 +703,9 @@ class LocalCollection:
         return types.QueryResponse(points=scored_points)
 
     def _prefetch(self, prefetch: types.Prefetch, offset: int) -> List[types.ScoredPoint]:
-        if prefetch.prefetch is not None:
+        if prefetch.limit is not None:
+            prefetch.limit = prefetch.limit + offset
+        if prefetch.prefetch is not None and isinstance(prefetch.prefetch, list) and len(prefetch.prefetch) > 0:
             # Recursive case: inner prefetches
             prefetches = (
                 prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
@@ -714,12 +714,11 @@ class LocalCollection:
             sources = []
             for inner_prefetch in prefetches:
                 sources.append(self._prefetch(inner_prefetch, offset))
-
             # Merge sources
             return self._merge_sources(
                 sources=sources,
                 query=prefetch.query,
-                limit=prefetch.limit + offset,
+                limit=prefetch.limit,
                 offset=0,
                 using=prefetch.using,
                 query_filter=prefetch.filter,
@@ -733,7 +732,7 @@ class LocalCollection:
                 query=prefetch.query,
                 using=prefetch.using,
                 query_filter=prefetch.filter,
-                limit=prefetch.limit + offset,
+                limit=prefetch.limit,
                 offset=0,
                 with_payload=False,
                 with_vectors=False,
@@ -796,13 +795,15 @@ class LocalCollection:
         query: Optional[types.Query] = None,
         using: Optional[str] = None,
         query_filter: Optional[types.Filter] = None,
-        limit: int = 10,
-        offset: int = 0,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = False,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
     ) -> List[types.ScoredPoint]:
         using = using or DEFAULT_VECTOR_NAME
+        limit = limit or 10
+        offset = offset or 0
 
         if query is None:
             records, _ = self.scroll(
@@ -870,7 +871,16 @@ class LocalCollection:
         elif isinstance(query, models.FusionQuery):
             raise AssertionError("Cannot perform fusion without prefetches")
         else:
-            raise ValueError(f"Unsupported query type {type(query)}")
+            # most likely a VectorInput, delegate to search
+            return self.search(
+                query_vector=(using, query),
+                query_filter=query_filter,
+                limit=limit,
+                offset=offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+                score_threshold=score_threshold,
+            )
 
     def search_groups(
         self,
