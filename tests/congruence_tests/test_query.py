@@ -158,8 +158,9 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    @classmethod
     def simple_query_text_scroll(
-            self, client: QdrantBase, query_filter: models.Filter
+            cls, client: QdrantBase, query_filter: models.Filter
     ) -> List[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -225,23 +226,28 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    @classmethod
+    def simple_recommend_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[10],
+            negative=[],
+            with_payload=True,
+            limit=10,
+            using="image",
+        )
 
-def test_simple_query_orderby():
-    fixture_points = generate_fixtures(200)
+    @classmethod
+    def many_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[10, 19],
+            with_payload=True,
+            limit=10,
+            using="image",
+        )
 
-    searcher = TestSimpleSearcher()
-
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    remote_client.create_payload_index(
-        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
-    )
-
-    compare_client_results(local_client, remote_client, searcher.simple_queries_orderby)
+# ---- TESTS  ---- #
 
 
 def test_simple_query():
@@ -264,8 +270,6 @@ def test_simple_query():
     compare_client_results(local_client, remote_client, searcher.simple_query_text_select_payload)
     compare_client_results(local_client, remote_client, searcher.simple_query_image_select_vector)
     compare_client_results(local_client, remote_client, searcher.query_payload_exclude)
-    compare_client_results(local_client, remote_client, searcher.simple_query_fusion)
-    compare_client_results(local_client, remote_client, searcher.simple_queries_rescore)
 
     for i in range(100):
         query_filter = one_random_filter_please()
@@ -279,6 +283,67 @@ def test_simple_query():
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
+
+
+def test_simple_query_orderby():
+    fixture_points = generate_fixtures(200)
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    remote_client.create_payload_index(
+        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+    )
+
+    compare_client_results(local_client, remote_client, searcher.simple_queries_orderby)
+
+
+def test_simple_query_recommend():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(local_client, remote_client, searcher.simple_recommend_image)
+    compare_client_results(local_client, remote_client, searcher.many_recommend)
+
+
+def test_simple_query_rescore():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(local_client, remote_client, searcher.simple_queries_rescore)
+
+
+def test_simple_query_fusion():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(local_client, remote_client, searcher.simple_query_fusion)
 
 
 def test_simple_opt_vectors_query():
