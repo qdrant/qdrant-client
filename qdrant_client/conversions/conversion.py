@@ -2647,7 +2647,7 @@ class RestToGrpc:
             prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
             if model.prefetch is not None
             else None,
-            query=cls.convert_query(model.query) if model.query is not None else None,
+            query=cls.convert_query_interface(model.query) if model.query is not None else None,
             using=model.using,
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
             params=cls.convert_search_params(model.params) if model.params is not None else None,
