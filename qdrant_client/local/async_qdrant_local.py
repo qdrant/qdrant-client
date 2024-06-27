@@ -290,12 +290,14 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if isinstance(query, rest_models.NearestQuery):
             query.nearest = input_into_vector(query.nearest)
         elif isinstance(query, rest_models.RecommendQuery):
-            query.recommend.negative = [
-                input_into_vector(vector_input) for vector_input in query.recommend.negative
-            ]
-            query.recommend.positive = [
-                input_into_vector(vector_input) for vector_input in query.recommend.positive
-            ]
+            if query.recommend.negative is not None:
+                query.recommend.negative = [
+                    input_into_vector(vector_input) for vector_input in query.recommend.negative
+                ]
+            if query.recommend.positive is not None:
+                query.recommend.positive = [
+                    input_into_vector(vector_input) for vector_input in query.recommend.positive
+                ]
         elif isinstance(query, rest_models.DiscoverQuery):
             query.discover.target = input_into_vector(query.discover.target)
             pairs = (
