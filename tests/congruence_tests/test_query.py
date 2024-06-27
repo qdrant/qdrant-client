@@ -254,6 +254,39 @@ class TestSimpleSearcher:
             using="image",
         )
 
+    @classmethod
+    def simple_discovery_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=10,
+                    context=models.ContextPair(positive=11, negative=19),
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="image",
+        )
+
+    @classmethod
+    def many_discover(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=10,
+                    context=[
+                        models.ContextPair(positive=11, negative=19),
+                        models.ContextPair(positive=12, negative=20),
+                    ]
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="image",
+        )
+
 # ---- TESTS  ---- #
 
 
@@ -351,6 +384,21 @@ def test_simple_query_fusion():
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.simple_query_fusion)
+
+
+def test_simple_query_discovery():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(local_client, remote_client, searcher.simple_discovery_image)
+    compare_client_results(local_client, remote_client, searcher.many_discover)
 
 
 def test_simple_opt_vectors_query():
