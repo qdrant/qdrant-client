@@ -59,6 +59,36 @@ sparse_vectors_sizes = {
     "sparse-code": sparse_code_vector_size,
 }
 
+multivectors_sizes = {
+    "multi-text": text_vector_size,
+    "multi-image": image_vector_size,
+    "multi-code": code_vector_size,
+}
+
+multi_vector_config = {
+    "multi-text": models.VectorParams(
+        size=text_vector_size,
+        distance=models.Distance.COSINE,
+        multivector_config=models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM,
+        ),
+    ),
+    "multi-image": models.VectorParams(
+        size=image_vector_size,
+        distance=models.Distance.DOT,
+        multivector_config=models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM,
+        ),
+    ),
+    "multi-code": models.VectorParams(
+        size=code_vector_size,
+        distance=models.Distance.EUCLID,
+        multivector_config=models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM,
+        ),
+    )
+}
+
 
 def initialize_fixture_collection(
     client: QdrantBase,
@@ -117,6 +147,25 @@ def generate_sparse_fixtures(
         skip_vectors=skip_vectors,
         sparse=True,
         even_sparse=even_sparse,
+    )
+
+
+def generate_multivector_fixtures(
+    num: Optional[int] = NUM_VECTORS,
+    random_ids: bool = False,
+    vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
+    skip_vectors: bool = False,
+    with_payload: bool = True,
+) -> List[models.PointStruct]:
+    if vectors_sizes is None:
+        vectors_sizes = multivectors_sizes
+    return generate_points(
+        num_points=num or NUM_VECTORS,
+        vector_sizes=vectors_sizes,
+        with_payload=with_payload,
+        random_ids=random_ids,
+        skip_vectors=skip_vectors,
+        multivector=True,
     )
 
 
