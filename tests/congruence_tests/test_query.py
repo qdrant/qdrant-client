@@ -228,10 +228,13 @@ class TestSimpleSearcher:
 
     @classmethod
     def simple_recommend_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[10],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10],
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
@@ -239,9 +242,13 @@ class TestSimpleSearcher:
 
     @classmethod
     def many_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[10, 19],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 19],
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
