@@ -2192,6 +2192,8 @@ def _include_ids_in_filter(
 def record_to_scored_point(record: types.Record) -> types.ScoredPoint:
     return types.ScoredPoint(
         id=record.id,
+        version=0,
+        score=0,
         payload=record.payload,
         vector=record.vector,
         order_value=record.order_value,

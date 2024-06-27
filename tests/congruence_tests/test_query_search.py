@@ -158,6 +158,18 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def simple_query_text_scroll(
+            self, client: QdrantBase, query_filter: models.Filter
+    ) -> List[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            using="text",
+            query_filter=query_filter,
+            with_payload=True,
+            with_vectors=True,
+            limit=10,
+        )
+
     def simple_query_fusion(self, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -223,6 +235,9 @@ def test_simple_query():
             compare_client_results(
                 local_client, remote_client, searcher.filter_query_text, query_filter=query_filter
             )
+            compare_client_results(
+                local_client, remote_client, searcher.simple_query_text_scroll, query_filter=query_filter,
+            )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
@@ -254,6 +269,9 @@ def test_simple_opt_vectors_query():
         try:
             compare_client_results(
                 local_client, remote_client, searcher.filter_query_text, query_filter=query_filter
+            )
+            compare_client_results(
+                local_client, remote_client, searcher.simple_query_text_scroll, query_filter=query_filter,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
