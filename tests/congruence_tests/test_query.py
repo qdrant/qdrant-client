@@ -287,6 +287,18 @@ class TestSimpleSearcher:
             using="image",
         )
 
+    @classmethod
+    def simple_context_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.ContextQuery(
+                context=models.ContextPair(positive=11, negative=19)
+            ),
+            with_payload=True,
+            limit=10,
+            using="image",
+        )
+
 # ---- TESTS  ---- #
 
 
@@ -386,7 +398,7 @@ def test_simple_query_fusion():
     compare_client_results(local_client, remote_client, searcher.simple_query_fusion)
 
 
-def test_simple_query_discovery():
+def test_simple_query_discovery_context():
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -399,6 +411,7 @@ def test_simple_query_discovery():
 
     compare_client_results(local_client, remote_client, searcher.simple_discovery_image)
     compare_client_results(local_client, remote_client, searcher.many_discover)
+    compare_client_results(local_client, remote_client, searcher.simple_context_image, is_context_search=True)
 
 
 def test_simple_opt_vectors_query():

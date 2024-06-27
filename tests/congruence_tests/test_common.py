@@ -274,6 +274,10 @@ def compare_client_results(
     foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ) -> None:
+    # context search can have many points with the same 0.0 score
+    is_context_search = kwargs.pop("is_context_search", False)
+
+    # get results from both clients
     res1 = foo(client1, **kwargs)
     res2 = foo(client2, **kwargs)
 
@@ -285,16 +289,19 @@ def compare_client_results(
             assert offset1 == offset2, f"offset1 = {offset1}, offset2 = {offset2}"
 
     if isinstance(res1, list):
-        if kwargs.get("is_context_search") is True:
-            # context search can have many points with the same 0.0 score
+        if is_context_search is True:
             sorted_1 = sorted(res1, key=lambda x: (x.id))
             sorted_2 = sorted(res2, key=lambda x: (x.id))
-
             compare_records(sorted_1, sorted_2, abs_tol=1e-5)
         else:
             compare_records(res1, res2)
     elif isinstance(res1, models.QueryResponse):
-        compare_records(res1.points, res2.points)
+        if is_context_search is True:
+            sorted_1 = sorted(res1.points, key=lambda x: (x.id))
+            sorted_2 = sorted(res2.points, key=lambda x: (x.id))
+            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+        else:
+            compare_records(res1.points, res2.points)
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
         groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))

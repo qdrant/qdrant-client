@@ -850,7 +850,7 @@ class LocalCollection:
             )
         elif isinstance(query, models.ContextQuery):
             return self.discover(
-                context=query.discover.context,
+                context=query.context,
                 using=using,
                 query_filter=query_filter,
                 limit=limit,
