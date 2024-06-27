@@ -205,6 +205,44 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def simple_queries_orderby(self, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.query_text,
+                    using="text",
+                ),
+                models.Prefetch(
+                    query=self.query_code,
+                    using="code",
+                )
+            ],
+            query=models.OrderByQuery(
+                order_by="rand_digit",
+            ),
+            with_payload=True,
+            limit=10,
+        )
+
+
+def test_simple_query_orderby():
+    fixture_points = generate_fixtures(200)
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    remote_client.create_payload_index(
+        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+    )
+
+    compare_client_results(local_client, remote_client, searcher.simple_queries_orderby)
+
 
 def test_simple_query():
     fixture_points = generate_fixtures()
