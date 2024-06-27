@@ -3,6 +3,8 @@ import warnings
 from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, get_args
 
+import numpy as np
+
 from qdrant_client import grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
@@ -583,13 +585,13 @@ class QdrantFastembedMixin(QdrantBase):
         using: Optional[str] = None,
         limit: int = 10,
     ) -> Tuple[Optional[str], Optional[models.Query], List[models.Prefetch]]:
-        if isinstance(query, types.Query) or isinstance(query, grpc.Query):
+        if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
             return using, query, []
 
         if isinstance(query, types.SparseVector):
             return using, models.NearestQuery(nearest=query), []
 
-        if isinstance(query, types.NumpyArray):
+        if isinstance(query, np.ndarray):
             return using, models.NearestQuery(nearest=query.tolist()), []
 
         if isinstance(query, list):

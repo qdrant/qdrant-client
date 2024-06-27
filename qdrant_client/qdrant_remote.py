@@ -715,7 +715,7 @@ class QdrantRemote(QdrantBase):
                     collection_name=collection_name,
                     consistency=consistency,
                     timeout=timeout,
-                    search_request_batch=models.QueryRequestBatch(searches=requests),
+                    query_request_batch=models.QueryRequestBatch(searches=requests),
                 ).result
             )
             assert http_res is not None, "Query batch returned None"
