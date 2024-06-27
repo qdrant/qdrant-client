@@ -174,6 +174,25 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def simple_queries_rescore(self, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.query_text,
+                    using="text",
+                ),
+                models.Prefetch(
+                    query=self.query_code,
+                    using="code",
+                )
+            ],
+            query=self.query_image,
+            using="image",
+            with_payload=True,
+            limit=10,
+        )
+
 
 def test_simple_query():
     fixture_points = generate_fixtures()
@@ -196,6 +215,7 @@ def test_simple_query():
     compare_client_results(local_client, remote_client, searcher.simple_query_image_select_vector)
     compare_client_results(local_client, remote_client, searcher.query_payload_exclude)
     compare_client_results(local_client, remote_client, searcher.simple_query_fusion)
+    compare_client_results(local_client, remote_client, searcher.simple_queries_rescore)
 
     for i in range(100):
         query_filter = one_random_filter_please()
