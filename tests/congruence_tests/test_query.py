@@ -16,9 +16,10 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
     text_vector_size, sparse_text_vector_size, sparse_image_vector_size, sparse_code_vector_size,
+    generate_sparse_fixtures, sparse_vectors_config, generate_multivector_fixtures, multi_vector_config,
 )
 from tests.fixtures.filters import one_random_filter_please
-from tests.fixtures.points import generate_random_sparse_vector
+from tests.fixtures.points import generate_random_sparse_vector, generate_random_multivector
 
 
 class TestSimpleSearcher:
@@ -29,10 +30,34 @@ class TestSimpleSearcher:
         self.dense_vector_query_text = np.random.random(text_vector_size).tolist()
         self.dense_vector_query_image = np.random.random(image_vector_size).tolist()
         self.dense_vector_query_code = np.random.random(code_vector_size).tolist()
+
         # sparse query vectors
         self.sparse_vector_query_text = generate_random_sparse_vector(sparse_text_vector_size, density=0.3)
         self.sparse_vector_query_image = generate_random_sparse_vector(sparse_image_vector_size, density=0.2)
         self.sparse_vector_query_code = generate_random_sparse_vector(sparse_code_vector_size, density=0.1)
+
+        # multivector query vectors
+        self.multivector_query_text = generate_random_multivector(text_vector_size, 3)
+        self.multivector_query_image = generate_random_multivector(image_vector_size, 3)
+        self.multivector_query_code = generate_random_multivector(code_vector_size, 3)
+
+    def sparse_query_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=self.sparse_vector_query_text,
+            using="sparse-text",
+            with_payload=True,
+            limit=10,
+        )
+
+    def multivec_query_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=self.multivector_query_text,
+            using="multi-text",
+            with_payload=True,
+            limit=10,
+        )
 
     def dense_query_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.query_points(
@@ -398,6 +423,34 @@ class TestSimpleSearcher:
         )
 
 # ---- TESTS  ---- #
+
+
+def test_sparse_query():
+    fixture_points = generate_sparse_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+
+    compare_client_results(local_client, remote_client, searcher.sparse_query_text)
+
+
+def test_multivec_query():
+    fixture_points = generate_multivector_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
+
+    compare_client_results(local_client, remote_client, searcher.multivec_query_text)
 
 
 def test_dense_query():
