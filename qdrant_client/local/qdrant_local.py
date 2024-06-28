@@ -293,7 +293,10 @@ class QdrantLocal(QdrantBase):
                     raise ValueError(f"Point {point_id} is not found in the collection")
 
                 idx = collection.ids[point_id]
-                vec = collection_vectors[vector_name][idx]
+                if vector_name in collection_vectors:
+                    vec = collection_vectors[vector_name][idx]
+                else:
+                    raise ValueError(f"Vector {vector_name} not found")
                 if isinstance(vec, np.ndarray):
                     vec = vec.tolist()
                 if collection_name == lookup_collection_name:
@@ -346,9 +349,9 @@ class QdrantLocal(QdrantBase):
         return query, mentioned_ids
 
     def _resolve_prefetches_input(
-            self,
-            prefetch: Optional[Union[Sequence[types.Prefetch], types.Prefetch]],
-            collection_name: str,
+        self,
+        prefetch: Optional[Union[Sequence[types.Prefetch], types.Prefetch]],
+        collection_name: str,
     ) -> List[types.Prefetch]:
         if prefetch is None:
             return []
@@ -357,10 +360,16 @@ class QdrantLocal(QdrantBase):
         else:
             prefetches = []
             if isinstance(prefetch, types.Prefetch):
-                prefetches = prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
+                prefetches = (
+                    prefetch.prefetch
+                    if isinstance(prefetch.prefetch, list)
+                    else [prefetch.prefetch]
+                )
             elif isinstance(prefetch, Sequence):
                 prefetches = list(prefetch)
-            return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches]
+            return [
+                self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches
+            ]
 
     def _resolve_prefetch_input(
         self, prefetch: types.Prefetch, collection_name: str
