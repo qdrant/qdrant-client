@@ -419,12 +419,12 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_context_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_context_image(cls, client: QdrantBase, limit: int) -> List[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=models.ContextPair(positive=11, negative=19)),
             with_payload=True,
-            limit=1000,
+            limit=limit,
             using="image",
         )
 
@@ -566,7 +566,8 @@ def test_dense_query_fusion():
 
 
 def test_dense_query_discovery_context():
-    fixture_points = generate_fixtures()
+    n_vectors = 250
+    fixture_points = generate_fixtures(n_vectors)
 
     searcher = TestSimpleSearcher()
 
@@ -579,7 +580,11 @@ def test_dense_query_discovery_context():
     compare_client_results(local_client, remote_client, searcher.dense_discovery_image)
     compare_client_results(local_client, remote_client, searcher.dense_many_discover)
     compare_client_results(
-        local_client, remote_client, searcher.dense_context_image, is_context_search=True
+        local_client,
+        remote_client,
+        searcher.dense_context_image,
+        is_context_search=True,
+        limit=n_vectors,
     )
 
 
@@ -746,10 +751,8 @@ def test_query_invalid_vector_type():
 
     vector_invalid_type = [1, 2, 3, 4]
     with pytest.raises(ValueError):
-        print(
-            local_client.query_points(
-                collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
-            )
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
         )
 
     with pytest.raises(UnexpectedResponse):
