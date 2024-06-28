@@ -45,30 +45,63 @@ class TestQueryBatchSearcher:
         self.multivector_query_batch_code = []
 
         for _ in range(4):
-            self.dense_vector_query_batch_text.append(np.random.random(text_vector_size).tolist())
-            self.dense_vector_query_batch_image.append(
-                np.random.random(image_vector_size).tolist()
+            self.dense_vector_query_batch_text.append(
+                models.QueryRequest(
+                    query=np.random.random(text_vector_size).tolist(),
+                    limit=5,
+                    using="text",
+                    with_payload=True,
+                )
             )
-            self.dense_vector_query_batch_code.append(np.random.random(code_vector_size).tolist())
+            self.dense_vector_query_batch_image.append(
+                models.QueryRequest(
+                    query=np.random.random(image_vector_size).tolist(),
+                    limit=5,
+                    using="image",
+                    with_payload=True,
+                )
+            )
+            self.dense_vector_query_batch_code.append(
+                models.QueryRequest(
+                    query=np.random.random(code_vector_size).tolist(),
+                    limit=5,
+                    using="code",
+                    with_payload=True,
+                )
+            )
 
             self.sparse_vector_query_batch_text.append(
-                generate_random_sparse_vector(sparse_text_vector_size, density=0.3)
-            )
-            self.sparse_vector_query_batch_image.append(
-                generate_random_sparse_vector(sparse_image_vector_size, density=0.2)
-            )
-            self.sparse_vector_query_batch_code.append(
-                generate_random_sparse_vector(sparse_code_vector_size, density=0.1)
+                models.QueryRequest(
+                    query=generate_random_sparse_vector(sparse_text_vector_size, density=0.3),
+                    limit=5,
+                    using="sparse-text",
+                    with_payload=True,
+                )
             )
 
             self.multivector_query_batch_text.append(
-                generate_random_multivector(text_vector_size, 3)
+                models.QueryRequest(
+                    query=generate_random_multivector(text_vector_size, 3),
+                    limit=5,
+                    using="multi-text",
+                    with_payload=True,
+                )
             )
             self.multivector_query_batch_image.append(
-                generate_random_multivector(text_vector_size, 3)
+                models.QueryRequest(
+                    query=generate_random_multivector(text_vector_size, 3),
+                    limit=5,
+                    using="multi-image",
+                    with_payload=True,
+                )
             )
             self.multivector_query_batch_code.append(
-                generate_random_multivector(text_vector_size, 3)
+                models.QueryRequest(
+                    query=generate_random_multivector(text_vector_size, 3),
+                    limit=5,
+                    using="multi-code",
+                    with_payload=True,
+                )
             )
 
     def sparse_query_batch_text(
@@ -89,7 +122,7 @@ class TestQueryBatchSearcher:
 # ---- TESTS  ---- #
 
 
-def test_sparse_query():
+def test_sparse_query_batch():
     fixture_points = generate_sparse_fixtures()
 
     searcher = TestQueryBatchSearcher()
@@ -101,3 +134,17 @@ def test_sparse_query():
     init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, searcher.sparse_query_batch_text)
+
+
+def test_multivec_query_batch():
+    fixture_points = generate_multivector_fixtures()
+
+    searcher = TestQueryBatchSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
+
+    compare_client_results(local_client, remote_client, searcher.multivec_query_batch_text)
