@@ -593,7 +593,6 @@ class QdrantFastembedMixin(QdrantBase):
 
         if isinstance(query, np.ndarray):
             return using, models.NearestQuery(nearest=query.tolist()), []
-
         if isinstance(query, list):
             return using, models.NearestQuery(nearest=query), []
 

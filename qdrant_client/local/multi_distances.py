@@ -67,7 +67,7 @@ def calculate_multi_distance(
     assert not np.isnan(query_matrix).any(), "Query matrix must not contain NaN"
     assert len(query_matrix.shape) == 2, "Query must be a matrix"
 
-    reverse = distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER
+    reverse = distance_to_order(distance_type) == DistanceOrder.SMALLER_IS_BETTER
     similarities: List[float] = []
     # max sim
     for matrix in matrices:
@@ -125,8 +125,8 @@ def calculate_multi_recommend_best_scores(
     pos = get_best_scores(query.positive)
     neg = get_best_scores(query.negative)
 
-    # Choose from best positive or best negative,
-    # in in both cases we apply sigmoid and then negate depending on the order
+    # Choose from the best positive or the best negative,
+    # in both cases we apply sigmoid and then negate depending on the order
     return np.where(
         pos > neg,
         np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
