@@ -165,7 +165,7 @@ def test_multivec_query_batch():
     compare_client_results(local_client, remote_client, searcher.multivec_query_batch_text)
 
 
-def test_dense_query():
+def test_dense_query_batch():
     fixture_points = generate_fixtures()
 
     searcher = TestQueryBatchSearcher()
@@ -179,17 +179,4 @@ def test_dense_query():
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_text)
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_image)
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_code)
-
-
-def test_dense_query_empty_batch():
-    fixture_points = generate_fixtures()
-
-    searcher = TestQueryBatchSearcher()
-
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_empty)
