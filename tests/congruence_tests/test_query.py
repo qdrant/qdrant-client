@@ -309,6 +309,77 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_queries_prefetch_filtered(
+        self, client: QdrantBase, query_filter: models.Filter
+    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                    filter=query_filter,
+                ),
+                models.Prefetch(
+                    query=self.dense_vector_query_code,
+                    using="code",
+                    filter=query_filter,
+                )
+            ],
+            query=self.dense_vector_query_image,
+            using="image",
+            with_payload=True,
+            limit=10,
+        )
+
+    def dense_queries_prefetch_score_threshold(
+        self, client: QdrantBase
+    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text, using="text", score_threshold=0.9
+                ),
+                models.Prefetch(
+                    query=self.dense_vector_query_code,
+                    using="code",
+                    score_threshold=0.1,
+                ),
+            ],
+            query=self.dense_vector_query_image,
+            using="image",
+            with_payload=True,
+            limit=10,
+        )
+
+    def dense_queries_prefetch_parametrized(
+        self, client: QdrantBase, search_params: models.SearchParams
+    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text, using="text", params=search_params
+                ),
+            ],
+            query=self.dense_vector_query_image,
+            using="image",
+            with_payload=True,
+            limit=10,
+        )
+
+    def dense_queries_parametrized(
+        self, client: QdrantBase, search_params: models.SearchParams
+    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=self.dense_vector_query_image,
+            using="image",
+            limit=10,
+            search_params=search_params,
+        )
+
     def dense_queries_orderby(self, client: QdrantBase) -> List[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -444,6 +515,12 @@ class TestSimpleSearcher:
             lookup_from=lookup_from,
         )
 
+    @classmethod
+    def no_query_no_prefetch(cls, client: QdrantBase) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            limit=10
+        )
 
 # ---- TESTS  ---- #
 
@@ -529,6 +606,135 @@ def test_dense_query_lookup_from_negative():
             limit=10,
             lookup_from=lookup_from,
         )
+
+
+def test_no_query_no_prefetch():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(local_client, remote_client, searcher.no_query_no_prefetch)
+
+
+def test_dense_query_filtered_prefetch():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    for i in range(100):
+        query_filter = one_random_filter_please()
+        try:
+            compare_client_results(
+                local_client,
+                remote_client,
+                searcher.dense_queries_prefetch_filtered,
+                query_filter=query_filter,
+            )
+        except AssertionError as e:
+            print(f"\nAttempt {i} failed with filter {query_filter}")
+            raise e
+
+
+def test_dense_query_prefetch_score_threshold():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client, remote_client, searcher.dense_queries_prefetch_score_threshold
+    )
+
+
+def test_dense_query_prefetch_parametrized():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_queries_prefetch_parametrized,
+        search_params={"exact": True},
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_queries_prefetch_parametrized,
+        search_params={"hnsw_ef": 128},
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_queries_prefetch_parametrized,
+        search_params={"indexed_only": True},
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_queries_prefetch_parametrized,
+        search_params={"quantization": {"ignore": True, "rescore": True, "oversampling": 2.0}},
+    )
+
+
+def test_dense_query_parametrized():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_queries_parametrized,
+        search_params={"exact": True},
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_queries_parametrized,
+        search_params={"hnsw_ef": 128},
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_queries_parametrized,
+        search_params={"indexed_only": True},
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_queries_parametrized,
+        search_params={"quantization": {"ignore": True, "rescore": True, "oversampling": 2.0}},
+    )
 
 
 def test_sparse_query():

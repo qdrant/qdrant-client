@@ -777,18 +777,21 @@ class LocalCollection:
                 for point in source:
                     sources_ids.add(point.id)
 
-            filter_with_sources = _include_ids_in_filter(query_filter, list(sources_ids))
-
-            return self._query_collection(
-                query=query,
-                using=using,
-                query_filter=filter_with_sources,
-                limit=limit,
-                offset=offset,
-                with_payload=with_payload,
-                with_vectors=with_vectors,
-                score_threshold=score_threshold,
-            )
+            if len(sources_ids) == 0:
+                # no need to perform a query if there no matches for the sources
+                return []
+            else:
+                filter_with_sources = _include_ids_in_filter(query_filter, list(sources_ids))
+                return self._query_collection(
+                    query=query,
+                    using=using,
+                    query_filter=filter_with_sources,
+                    limit=limit,
+                    offset=offset,
+                    with_payload=with_payload,
+                    with_vectors=with_vectors,
+                    score_threshold=score_threshold,
+                )
 
     def _query_collection(
         self,
