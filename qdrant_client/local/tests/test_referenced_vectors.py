@@ -3,7 +3,6 @@ import copy
 import pytest
 
 
-from qdrant_client import QdrantClient
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client import models
 

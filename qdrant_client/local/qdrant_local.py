@@ -27,11 +27,11 @@ from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
-from qdrant_client.http.models.models import RecommendExample, Prefetch
+from qdrant_client.http.models.models import RecommendExample
 from qdrant_client.local.local_collection import (
     LocalCollection,
     DEFAULT_VECTOR_NAME,
-    _ignore_mentioned_ids_filter,
+    ignore_mentioned_ids_filter,
 )
 
 META_INFO_FILENAME = "meta.json"
@@ -355,21 +355,19 @@ class QdrantLocal(QdrantBase):
     ) -> List[types.Prefetch]:
         if prefetch is None:
             return []
-        elif isinstance(prefetch, list) and len(prefetch) == 0:
+
+        if isinstance(prefetch, list) and len(prefetch) == 0:
             return []
-        else:
-            prefetches = []
-            if isinstance(prefetch, types.Prefetch):
-                prefetches = (
-                    prefetch.prefetch
-                    if isinstance(prefetch.prefetch, list)
-                    else [prefetch.prefetch]
-                )
-            elif isinstance(prefetch, Sequence):
-                prefetches = list(prefetch)
-            return [
-                self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches
-            ]
+
+        prefetches = []
+        if isinstance(prefetch, types.Prefetch):
+            prefetches = (
+                prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
+            )
+        elif isinstance(prefetch, Sequence):
+            prefetches = list(prefetch)
+
+        return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches]
 
     def _resolve_prefetch_input(
         self, prefetch: types.Prefetch, collection_name: str
@@ -385,7 +383,7 @@ class QdrantLocal(QdrantBase):
         )
         prefetch.query = query
 
-        prefetch.filter = _ignore_mentioned_ids_filter(prefetch.filter, list(mentioned_ids))
+        prefetch.filter = ignore_mentioned_ids_filter(prefetch.filter, list(mentioned_ids))
 
         prefetch.prefetch = self._resolve_prefetches_input(prefetch.prefetch, collection_name)
 
@@ -413,7 +411,7 @@ class QdrantLocal(QdrantBase):
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
-            query_filter = _ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
 
         prefetch = self._resolve_prefetches_input(prefetch, collection_name)
         return collection.query_points(
