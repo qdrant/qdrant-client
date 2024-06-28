@@ -67,7 +67,7 @@ def calculate_multi_distance(
     assert not np.isnan(query_matrix).any(), "Query matrix must not contain NaN"
     assert len(query_matrix.shape) == 2, "Query must be a matrix"
 
-    reverse = distance_to_order(distance_type) == DistanceOrder.BIGGER_IS_BETTER
+    reverse = distance_to_order(distance_type) == DistanceOrder.SMALLER_IS_BETTER
     similarities: List[float] = []
     # max sim
     for matrix in matrices:

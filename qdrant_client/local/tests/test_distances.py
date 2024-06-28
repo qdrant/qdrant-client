@@ -2,6 +2,7 @@ import numpy as np
 
 from qdrant_client.http import models
 from qdrant_client.local.distances import calculate_distance
+from qdrant_client.local.multi_distances import calculate_multi_distance
 from qdrant_client.local.sparse_distances import calculate_distance_sparse
 
 
@@ -50,3 +51,7 @@ def test_distances() -> None:
     assert np.allclose(
         calculate_distance_sparse(sparse_query, sparse_vectors), [11.0, 5], atol=0.0001
     )
+
+    multivector_query = np.array([[1, 2, 3], [3, 4, 5]])
+    docs = [np.array([[1, 2, 3], [0, 1, 2]])]
+    assert calculate_multi_distance(multivector_query, docs, models.Distance.DOT)[0] == 40.0
