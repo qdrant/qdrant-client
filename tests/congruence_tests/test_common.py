@@ -249,6 +249,11 @@ def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: floa
         if isinstance(res1_item, list) and isinstance(res2_item, list):
             compare_records(res1_item, res2_item)
 
+        elif isinstance(res1_item, models.QueryResponse) and isinstance(
+                res2_item, models.QueryResponse
+            ):
+            compare_records(res1_item.points, res2_item.points, rel_tol=rel_tol, abs_tol=abs_tol)
+
         elif isinstance(res1_item, models.ScoredPoint) and isinstance(
             res2_item, models.ScoredPoint
         ):

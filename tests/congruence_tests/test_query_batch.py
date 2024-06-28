@@ -126,7 +126,7 @@ class TestQueryBatchSearcher:
 
     def dense_query_batch_code(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_batch_points(
-            collection_name=COLLECTION_NAME, requstets=self.dense_vector_query_batch_code
+            collection_name=COLLECTION_NAME, requests=self.dense_vector_query_batch_code
         )
 
 
