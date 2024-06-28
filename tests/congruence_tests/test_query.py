@@ -217,7 +217,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_dense_query_fusion(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_fusion(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -862,7 +862,7 @@ def test_dense_query_fusion():
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
 
-    compare_client_results(local_client, remote_client, searcher.dense_dense_query_fusion)
+    compare_client_results(local_client, remote_client, searcher.dense_query_fusion)
     compare_client_results(local_client, remote_client, searcher.deep_dense_queries_fusion)
 
 
