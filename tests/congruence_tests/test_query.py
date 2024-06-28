@@ -643,7 +643,7 @@ def test_dense_query_filtered_prefetch():
                 query_filter=query_filter,
             )
         except AssertionError as e:
-            print(f"\nFailed with filter {query_filter}")
+            print(f"\nAttempt {i} failed with filter {query_filter}")
             raise e
 
 
