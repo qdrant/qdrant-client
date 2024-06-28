@@ -60,6 +60,7 @@ from tests.fixtures.payload import (
     random_payload,
     random_real_word,
 )
+from tests.utils import read_version
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -414,7 +415,8 @@ def test_multiple_vectors(prefer_grpc):
 @pytest.mark.parametrize("numpy_upload", [False, True])
 @pytest.mark.parametrize("local_mode", [False, True])
 def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
-    version = os.getenv("QDRANT_VERSION")
+    _, minor_version, patch_version, dev_version = read_version()
+    version_set = minor_version is not None or dev_version
 
     vectors_path = create_random_vectors()
 
@@ -438,7 +440,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         timeout=TIMEOUT,
     )
 
-    if version is None or (version >= "v1.8.0" or version == "dev"):
+    if not version_set or (dev_version or minor_version >= 8):
         assert client.collection_exists(collection_name=COLLECTION_NAME)
         assert not client.collection_exists(collection_name="non_existing_collection")
 
@@ -577,7 +579,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
     assert hits_should == hits_match_any
 
-    if version is None or (version >= "v1.8.0" or version == "dev"):
+    if not version_set or dev_version or minor_version >= 8:
         hits_min_should = client.search(
             collection_name=COLLECTION_NAME,
             query_vector=query_vector,
@@ -631,6 +633,15 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     print("Filtered search result (`rand_number` >= 0.5):")
     for hit in hits:
         print(hit)
+
+    if not version_set or dev_version or minor_version >= 10:
+        query_response = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            limit=5,
+        )
+
+        assert len(query_response.points) == 5
 
     got_points = client.retrieve(
         collection_name=COLLECTION_NAME,
@@ -765,6 +776,55 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert batch_reco_result[1] == reco_result_2
     assert batch_reco_result[2] == reco_result_3
 
+    if not version_set or dev_version or minor_version >= 10:
+        query_points_requests = [
+            models.QueryRequest(
+                query=query_vector_1,
+                filter=filter_1,
+                limit=5,
+                with_payload=True,
+            ),
+            models.QueryRequest(
+                query=query_vector_2,
+                filter=filter_2,
+                limit=5,
+                with_payload=True,
+            ),
+            models.QueryRequest(
+                query=query_vector_3,
+                filter=filter_3,
+                limit=5,
+                with_payload=True,
+            ),
+        ]
+        single_query_result_1 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector_1,
+            query_filter=filter_1,
+            limit=5,
+        )
+        single_query_result_2 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector_2,
+            query_filter=filter_2,
+            limit=5,
+        )
+        single_query_result_3 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector_3,
+            query_filter=filter_3,
+            limit=5,
+        )
+
+        batch_query_result = client.query_batch_points(
+            collection_name=COLLECTION_NAME, requests=query_points_requests
+        )
+
+        assert len(batch_query_result) == 3
+        assert batch_query_result[0] == single_query_result_1
+        assert batch_query_result[1] == single_query_result_2
+        assert batch_query_result[2] == single_query_result_3
+
     # ------------------  End of batch queries test ----------------
 
     assert len(got_points) == 3
@@ -847,7 +907,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     positive = [1, 2, query_vector.tolist()]
     negative = []
 
-    if version is not None and version < "v1.6.0":
+    if minor_version is not None and minor_version < 6:
         positive = [1, 2]
         negative = []
 
@@ -908,59 +968,58 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     assert next_page is None
 
-    if version is None or (version >= "v1.5.0" or version == "dev"):
-        client.batch_update_points(
-            collection_name=COLLECTION_NAME,
-            ordering=models.WriteOrdering.STRONG,
-            update_operations=[
-                models.UpsertOperation(
-                    upsert=models.PointsList(
-                        points=[
-                            models.PointStruct(
-                                id=1,
-                                payload={"new_key": 123},
-                                vector=vectors_2,
-                            ),
-                            models.PointStruct(
-                                id=2,
-                                payload={"new_key": 321},
-                                vector=vectors_2,
-                            ),
-                        ]
-                    )
-                ),
-                models.DeleteOperation(delete=models.PointIdsList(points=[2])),
-                models.SetPayloadOperation(
-                    set_payload=models.SetPayload(payload={"new_key2": 321}, points=[1])
-                ),
-                models.OverwritePayloadOperation(
-                    overwrite_payload=models.SetPayload(
-                        payload={
-                            "new_key3": 321,
-                            "new_key4": 321,
-                        },
-                        points=[1],
-                    )
-                ),
-                models.DeletePayloadOperation(
-                    delete_payload=models.DeletePayload(keys=["new_key3"], points=[1])
-                ),
-                models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[1])),
-                models.UpdateVectorsOperation(
-                    update_vectors=models.UpdateVectors(
-                        points=[
-                            models.PointVectors(
-                                id=1,
-                                vector=vectors_2,
-                            )
-                        ]
-                    )
-                ),
-                models.DeleteVectorsOperation(
-                    delete_vectors=models.DeleteVectors(points=[1], vector=[""])
-                ),
-            ],
-        )
+    client.batch_update_points(
+        collection_name=COLLECTION_NAME,
+        ordering=models.WriteOrdering.STRONG,
+        update_operations=[
+            models.UpsertOperation(
+                upsert=models.PointsList(
+                    points=[
+                        models.PointStruct(
+                            id=1,
+                            payload={"new_key": 123},
+                            vector=vectors_2,
+                        ),
+                        models.PointStruct(
+                            id=2,
+                            payload={"new_key": 321},
+                            vector=vectors_2,
+                        ),
+                    ]
+                )
+            ),
+            models.DeleteOperation(delete=models.PointIdsList(points=[2])),
+            models.SetPayloadOperation(
+                set_payload=models.SetPayload(payload={"new_key2": 321}, points=[1])
+            ),
+            models.OverwritePayloadOperation(
+                overwrite_payload=models.SetPayload(
+                    payload={
+                        "new_key3": 321,
+                        "new_key4": 321,
+                    },
+                    points=[1],
+                )
+            ),
+            models.DeletePayloadOperation(
+                delete_payload=models.DeletePayload(keys=["new_key3"], points=[1])
+            ),
+            models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[1])),
+            models.UpdateVectorsOperation(
+                update_vectors=models.UpdateVectors(
+                    points=[
+                        models.PointVectors(
+                            id=1,
+                            vector=vectors_2,
+                        )
+                    ]
+                )
+            ),
+            models.DeleteVectorsOperation(
+                delete_vectors=models.DeleteVectors(points=[1], vector=[""])
+            ),
+        ],
+    )
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
@@ -1007,21 +1066,18 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
     collection_info = client.get_collection(COLLECTION_NAME)
 
-    # Many collection update parameters are available since v1.4.0
-    version = os.getenv("QDRANT_VERSION")
-    if version is None or (version >= "v1.4.0" or version == "dev"):
-        assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
-        assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
-        assert (
-            collection_info.config.params.vectors["text"].quantization_config.product.compression
-            == CompressionRatio.X32
-        )
-        assert collection_info.config.params.vectors["text"].quantization_config.product.always_ram
-        assert collection_info.config.params.vectors["text"].on_disk
-        assert collection_info.config.hnsw_config.ef_construct == 123
-        assert collection_info.config.quantization_config.scalar.type == ScalarType.INT8
-        assert 0.7999 < collection_info.config.quantization_config.scalar.quantile < 0.8001
-        assert not collection_info.config.quantization_config.scalar.always_ram
+    assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
+    assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
+    assert (
+        collection_info.config.params.vectors["text"].quantization_config.product.compression
+        == CompressionRatio.X32
+    )
+    assert collection_info.config.params.vectors["text"].quantization_config.product.always_ram
+    assert collection_info.config.params.vectors["text"].on_disk
+    assert collection_info.config.hnsw_config.ef_construct == 123
+    assert collection_info.config.quantization_config.scalar.type == ScalarType.INT8
+    assert 0.7999 < collection_info.config.quantization_config.scalar.quantile < 0.8001
+    assert not collection_info.config.quantization_config.scalar.always_ram
 
     assert collection_info.config.optimizer_config.max_segment_size == 10000
 
@@ -1125,9 +1181,15 @@ def test_quantization_config(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_custom_sharding(prefer_grpc):
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v1.7.0":
+    _, minor_version, patch_version, dev_version = read_version()
+    version_set = minor_version is not None or dev_version
+
+    if minor_version is not None and minor_version < 7:
         pytest.skip("Custom sharding is supported since v1.7.0")
+
+    query_api_available = (
+        not version_set or dev_version or (minor_version is not None and minor_version >= 10)
+    )
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
@@ -1175,31 +1237,50 @@ def test_custom_sharding(prefer_grpc):
         shard_key_selector=dogs_shard_key,
     )
 
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
         shard_key_selector=cats_shard_key,
     )
-
     assert len(res) == 3
     for record in res:
         assert record.shard_key == cats_shard_key
 
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
+        )
+        assert query_res.points == res
+
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
         shard_key_selector=[cats_shard_key, dogs_shard_key],
     )
-
     assert len(res) == 6
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            shard_key_selector=[cats_shard_key, dogs_shard_key],
+        )
+        assert query_res.points == res
 
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
     )
-
     assert len(res) == 6
 
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+        )
+        assert res == query_res.points
     # endregion
 
     # region upload_collection
@@ -1213,15 +1294,25 @@ def test_custom_sharding(prefer_grpc):
         shard_key_selector=cats_shard_key,
     )
 
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
         shard_key_selector=cats_shard_key,
     )
-
     assert len(res) == 3
+
     for record in res:
         assert record.shard_key == cats_shard_key
+
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            shard_key_selector=cats_shard_key,
+        )
+        assert query_res.points == res
+
     # endregion
 
     # region upload_points
@@ -1238,21 +1329,32 @@ def test_custom_sharding(prefer_grpc):
         shard_key_selector=cats_shard_key,
     )
 
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
         shard_key_selector=cats_shard_key,
     )
-
     assert len(res) == 3
 
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
+        )
+        assert res == query_res.points
+
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
         shard_key_selector=dogs_shard_key,
     )
-
     assert len(res) == 0
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=dogs_shard_key
+        )
+        assert res == query_res.points
 
     # endregion
 
@@ -1261,8 +1363,8 @@ def test_custom_sharding(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors(prefer_grpc):
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v1.7.0":
+    _, minor_version, patch_version, dev_version = read_version()
+    if minor_version is not None and minor_version < 7:
         pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
@@ -1340,8 +1442,8 @@ def test_sparse_vectors(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors_batch(prefer_grpc):
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v1.7.0":
+    _, minor_version, patch_version, dev_version = read_version()
+    if minor_version is not None and minor_version < 7:
         pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
