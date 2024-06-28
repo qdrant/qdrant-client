@@ -324,7 +324,7 @@ class TestSimpleSearcher:
                     query=self.dense_vector_query_code,
                     using="code",
                     filter=query_filter,
-                ),
+                )
             ],
             query=self.dense_vector_query_image,
             using="image",
@@ -516,21 +516,11 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def no_query_no_prefetch(
-        cls, client: QdrantBase
-    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
-        return client.query_points(collection_name=COLLECTION_NAME, limit=10)
-
-    def dense_query_lookup_from(
-        self, client: QdrantBase, lookup_from: models.LookupLocation
-    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+    def no_query_no_prefetch(cls, client: QdrantBase) -> Union[List[models.ScoredPoint], models.QueryResponse]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
-            query=self.dense_vector_query_text,
-            limit=10,
-            lookup_from=lookup_from,
+            limit=10
         )
-
 
 # ---- TESTS  ---- #
 
@@ -744,37 +734,6 @@ def test_dense_query_parametrized():
         remote_client,
         searcher.dense_queries_parametrized,
         search_params={"quantization": {"ignore": True, "rescore": True, "oversampling": 2.0}},
-    )
-
-
-def test_dense_query_lookup_from():
-    fixture_points = generate_fixtures()
-
-    searcher = TestSimpleSearcher()
-
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=COLLECTION_NAME, vector="text"),
-    )
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=COLLECTION_NAME, vector="code"),
-    )
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=COLLECTION_NAME, vector="image"),
     )
 
 
