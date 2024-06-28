@@ -28,6 +28,9 @@ from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, generate_random_multivector
 
 
+SECONDARY_COLLECTION_NAME = "congruence_secondary_collection"
+
+
 class TestSimpleSearcher:
     __test__ = False
 
@@ -433,7 +436,10 @@ class TestSimpleSearcher:
     ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
-            query=self.dense_vector_query_text,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
+            ),
+            using="text",
             limit=10,
             lookup_from=lookup_from,
         )
@@ -442,35 +448,87 @@ class TestSimpleSearcher:
 # ---- TESTS  ---- #
 
 
-def test_dense_query_lookup_from():
+def test_dense_query_lookup_from_another_collection():
     fixture_points = generate_fixtures()
+
+    secondary_collection_points = generate_fixtures(10)
 
     searcher = TestSimpleSearcher()
 
     local_client = init_local()
     init_client(local_client, fixture_points)
+    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
+    init_client(remote_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
     compare_client_results(
         local_client,
         remote_client,
         searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=COLLECTION_NAME, vector="text"),
+        lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
     )
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=COLLECTION_NAME, vector="code"),
+
+
+def test_dense_query_lookup_from_negative():
+    fixture_points = generate_fixtures()
+
+    secondary_collection_points = generate_fixtures(10)
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points)
+    init_client(remote_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+
+    lookup_from = models.LookupLocation(collection="i-do-not-exist", vector="text")
+    with pytest.raises(ValueError, match="Collection i-do-not-exist not found"):
+        local_client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
+            ),
+            using="text",
+            limit=10,
+            lookup_from=lookup_from,
+        )
+    with pytest.raises(UnexpectedResponse, match="Not found: Collection"):
+        remote_client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
+            ),
+            using="text",
+            limit=10,
+            lookup_from=lookup_from,
+        )
+
+    lookup_from = models.LookupLocation(
+        collection=SECONDARY_COLLECTION_NAME, vector="i-do-not-exist"
     )
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=COLLECTION_NAME, vector="image"),
-    )
+    with pytest.raises(KeyError):
+        local_client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
+            ),
+            using="text",
+            limit=10,
+            lookup_from=lookup_from,
+        )
+    with pytest.raises(UnexpectedResponse, match="Not existing vector name error"):
+        remote_client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
+            ),
+            using="text",
+            limit=10,
+            lookup_from=lookup_from,
+        )
 
 
 def test_sparse_query():
