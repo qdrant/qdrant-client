@@ -278,7 +278,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 if point_id not in collection.ids:
                     raise ValueError(f"Point {point_id} is not found in the collection")
                 idx = collection.ids[point_id]
-                vec = collection_vectors[vector_name][idx]
+                if vector_name in collection_vectors:
+                    vec = collection_vectors[vector_name][idx]
+                else:
+                    raise ValueError(f"Vector {vector_name} not found")
                 if isinstance(vec, np.ndarray):
                     vec = vec.tolist()
                 if collection_name == lookup_collection_name:
