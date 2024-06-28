@@ -666,15 +666,21 @@ class LocalCollection:
         using: Optional[str] = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
-        # Assumes all vectors have been homogenized so that there are no ids in the inputs
+        """
+        Queries points in the local collection, resolving any prefetches first.
 
+        Assumes all vectors have been homogenized so that there are no ids in the inputs
+        """
         scored_points = []
-        if prefetch is not None and isinstance(prefetch, list) and len(prefetch) > 0:
-            # It is a hybrid/re-scoring query
+
+        prefetches = []
+        if prefetch is not None:
             prefetches = prefetch if isinstance(prefetch, list) else [prefetch]
-            sources = []
-            for prefetch in prefetches:
-                sources.append(self._prefetch(prefetch, offset))
+
+        if len(prefetches) > 0:
+            # It is a hybrid/re-scoring query
+            sources = [self._prefetch(prefetch, offset) for prefetch in prefetches]
+
             # Merge sources
             scored_points = self._merge_sources(
                 sources=sources,
@@ -705,15 +711,23 @@ class LocalCollection:
     def _prefetch(self, prefetch: types.Prefetch, offset: int) -> List[types.ScoredPoint]:
         if prefetch.limit is not None:
             prefetch.limit = prefetch.limit + offset
-        if prefetch.prefetch is not None and isinstance(prefetch.prefetch, list) and len(prefetch.prefetch) > 0:
+
+        inner_prefetches = []
+        if prefetch.prefetch is not None:
+            inner_prefetches = (
+                prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
+            )
+
+        if len(inner_prefetches) > 0:
             # Recursive case: inner prefetches
             prefetches = (
                 prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
             )
 
-            sources = []
-            for inner_prefetch in prefetches:
-                sources.append(self._prefetch(inner_prefetch, offset))
+            sources = [
+                self._prefetch(inner_prefetch, offset) for inner_prefetch in inner_prefetches
+            ]
+
             # Merge sources
             return self._merge_sources(
                 sources=sources,
@@ -804,6 +818,10 @@ class LocalCollection:
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
     ) -> List[types.ScoredPoint]:
+        """
+        Performs the query on the collection, assuming it didn't have any prefetches.
+        """
+
         using = using or DEFAULT_VECTOR_NAME
         limit = limit or 10
         offset = offset or 0
@@ -1076,7 +1094,7 @@ class LocalCollection:
             examples_into_vectors(negative, negative_vectors)
 
         # Edit query filter
-        query_filter = _ignore_mentioned_ids_filter(query_filter, mentioned_ids)
+        query_filter = ignore_mentioned_ids_filter(query_filter, mentioned_ids)
 
         return (
             positive_vectors,
@@ -1428,7 +1446,7 @@ class LocalCollection:
             mentioned_ids.append(target_id)
 
         # Edit query filter
-        query_filter = _ignore_mentioned_ids_filter(query_filter, mentioned_ids)
+        query_filter = ignore_mentioned_ids_filter(query_filter, mentioned_ids)
 
         return (
             target_vector,
@@ -2154,7 +2172,7 @@ class LocalCollection:
         )
 
 
-def _ignore_mentioned_ids_filter(
+def ignore_mentioned_ids_filter(
     query_filter: Optional[types.Filter], mentioned_ids: List[types.PointId]
 ) -> types.Filter:
     if len(mentioned_ids) == 0:
