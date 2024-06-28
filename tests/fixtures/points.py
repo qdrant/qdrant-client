@@ -26,7 +26,7 @@ def random_vectors(
 
 
 def random_multivectors(
-        vector_sizes: Dict[str, int],
+    vector_sizes: Dict[str, int],
 ) -> models.VectorStruct:
     vectors = {}
     for vector_name, vector_size in vector_sizes.items():
@@ -35,7 +35,7 @@ def random_multivectors(
     return vectors
 
 
-def generate_random_multivector(vec_size: int, vec_count) -> List[List[float]]:
+def generate_random_multivector(vec_size: int, vec_count: int) -> List[List[float]]:
     multivec = []
     for _ in range(vec_count):
         multivec.append(np.random.random(vec_size).round(3).tolist())
