@@ -15,8 +15,14 @@ from tests.congruence_tests.test_common import (
     init_client,
     init_local,
     init_remote,
-    text_vector_size, sparse_text_vector_size, sparse_image_vector_size, sparse_code_vector_size,
-    generate_sparse_fixtures, sparse_vectors_config, generate_multivector_fixtures, multi_vector_config,
+    text_vector_size,
+    sparse_text_vector_size,
+    sparse_image_vector_size,
+    sparse_code_vector_size,
+    generate_sparse_fixtures,
+    sparse_vectors_config,
+    generate_multivector_fixtures,
+    multi_vector_config,
 )
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, generate_random_multivector
@@ -32,9 +38,15 @@ class TestSimpleSearcher:
         self.dense_vector_query_code = np.random.random(code_vector_size).tolist()
 
         # sparse query vectors
-        self.sparse_vector_query_text = generate_random_sparse_vector(sparse_text_vector_size, density=0.3)
-        self.sparse_vector_query_image = generate_random_sparse_vector(sparse_image_vector_size, density=0.2)
-        self.sparse_vector_query_code = generate_random_sparse_vector(sparse_code_vector_size, density=0.1)
+        self.sparse_vector_query_text = generate_random_sparse_vector(
+            sparse_text_vector_size, density=0.3
+        )
+        self.sparse_vector_query_image = generate_random_sparse_vector(
+            sparse_image_vector_size, density=0.2
+        )
+        self.sparse_vector_query_code = generate_random_sparse_vector(
+            sparse_code_vector_size, density=0.1
+        )
 
         # multivector query vectors
         self.multivector_query_text = generate_random_multivector(text_vector_size, 3)
@@ -166,7 +178,7 @@ class TestSimpleSearcher:
         )
 
     def filter_dense_query_text(
-            self, client: QdrantBase, query_filter: models.Filter
+        self, client: QdrantBase, query_filter: models.Filter
     ) -> List[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -178,7 +190,7 @@ class TestSimpleSearcher:
         )
 
     def filter_dense_query_text_single(
-            self, client: QdrantBase, query_filter: models.Filter
+        self, client: QdrantBase, query_filter: models.Filter
     ) -> List[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -191,7 +203,7 @@ class TestSimpleSearcher:
 
     @classmethod
     def dense_query_text_scroll(
-            cls, client: QdrantBase, query_filter: models.Filter
+        cls, client: QdrantBase, query_filter: models.Filter
     ) -> List[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -211,9 +223,7 @@ class TestSimpleSearcher:
                     using="text",
                 )
             ],
-            query=models.FusionQuery(
-                fusion=models.Fusion.RRF
-            ),
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
             with_payload=True,
             limit=10,
         )
@@ -242,9 +252,7 @@ class TestSimpleSearcher:
                     ],
                 )
             ],
-            query=models.FusionQuery(
-                fusion=models.Fusion.RRF
-            ),
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
             with_payload=True,
             limit=10,
         )
@@ -260,7 +268,7 @@ class TestSimpleSearcher:
                 models.Prefetch(
                     query=self.dense_vector_query_code,
                     using="code",
-                )
+                ),
             ],
             query=self.dense_vector_query_image,
             using="image",
@@ -309,7 +317,7 @@ class TestSimpleSearcher:
                 models.Prefetch(
                     query=self.dense_vector_query_code,
                     using="code",
-                )
+                ),
             ],
             query=models.OrderByQuery(
                 order_by="rand_digit",
@@ -402,7 +410,7 @@ class TestSimpleSearcher:
                     context=[
                         models.ContextPair(positive=11, negative=19),
                         models.ContextPair(positive=12, negative=20),
-                    ]
+                    ],
                 )
             ),
             with_payload=True,
@@ -411,16 +419,15 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_context_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_context_image(cls, client: QdrantBase, limit: int) -> List[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
-            query=models.ContextQuery(
-                context=models.ContextPair(positive=11, negative=19)
-            ),
+            query=models.ContextQuery(context=models.ContextPair(positive=11, negative=19)),
             with_payload=True,
-            limit=10,
+            limit=limit,
             using="image",
         )
+
 
 # ---- TESTS  ---- #
 
@@ -478,10 +485,16 @@ def test_dense_query():
         query_filter = one_random_filter_please()
         try:
             compare_client_results(
-                local_client, remote_client, searcher.filter_dense_query_text, query_filter=query_filter
+                local_client,
+                remote_client,
+                searcher.filter_dense_query_text,
+                query_filter=query_filter,
             )
             compare_client_results(
-                local_client, remote_client, searcher.dense_query_text_scroll, query_filter=query_filter,
+                local_client,
+                remote_client,
+                searcher.dense_query_text_scroll,
+                query_filter=query_filter,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
@@ -553,7 +566,8 @@ def test_dense_query_fusion():
 
 
 def test_dense_query_discovery_context():
-    fixture_points = generate_fixtures()
+    n_vectors = 250
+    fixture_points = generate_fixtures(n_vectors)
 
     searcher = TestSimpleSearcher()
 
@@ -565,7 +579,13 @@ def test_dense_query_discovery_context():
 
     compare_client_results(local_client, remote_client, searcher.dense_discovery_image)
     compare_client_results(local_client, remote_client, searcher.dense_many_discover)
-    compare_client_results(local_client, remote_client, searcher.dense_context_image, is_context_search=True)
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_context_image,
+        is_context_search=True,
+        limit=n_vectors,
+    )
 
 
 def test_simple_opt_vectors_query():
@@ -593,10 +613,16 @@ def test_simple_opt_vectors_query():
         query_filter = one_random_filter_please()
         try:
             compare_client_results(
-                local_client, remote_client, searcher.filter_dense_query_text, query_filter=query_filter
+                local_client,
+                remote_client,
+                searcher.filter_dense_query_text,
+                query_filter=query_filter,
             )
             compare_client_results(
-                local_client, remote_client, searcher.dense_query_text_scroll, query_filter=query_filter,
+                local_client,
+                remote_client,
+                searcher.dense_query_text_scroll,
+                query_filter=query_filter,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
@@ -725,10 +751,14 @@ def test_query_invalid_vector_type():
 
     vector_invalid_type = [1, 2, 3, 4]
     with pytest.raises(ValueError):
-        print(local_client.query_points(collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"))
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
+        )
 
     with pytest.raises(UnexpectedResponse):
-        remote_client.query_points(collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text")
+        remote_client.query_points(
+            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
+        )
 
 
 def test_query_with_nan():
