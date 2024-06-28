@@ -55,9 +55,7 @@ def test_upsert(local_client, remote_client):
         COLLECTION_NAME,
         scroll_filter=id_filter,
         limit=1,
-    )[
-        0
-    ][0]
+    )[0][0]
     remote_old_point = remote_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][
         0
     ]
@@ -96,12 +94,12 @@ def test_upload_collection(local_client, remote_client):
     payload = []
     ids = []
     for point in points:
-        ids.append(point.id),
+        (ids.append(point.id),)
         vectors.append(point.vector)
         payload.append(point.payload)
 
     local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
@@ -118,7 +116,9 @@ def test_upload_collection_generators(local_client, remote_client):
 
     payload = itertools.cycle(payload)
     local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
+    remote_client.upload_collection(
+        COLLECTION_NAME, vectors, payload, ids=itertools.count(), wait=True
+    )
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
@@ -168,7 +168,7 @@ def test_upload_collection_float_list():
 
     ids = list(range(len(vectors)))
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
     local_client.delete_collection(COLLECTION_NAME)
@@ -182,7 +182,7 @@ def test_upload_collection_named_float_list_vectors(local_client, remote_client)
         vectors.append(point.vector)
     ids = [point.id for point in points]
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
@@ -206,7 +206,7 @@ def test_upload_collection_np_array_2d():
     )
 
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
     local_client.delete_collection(COLLECTION_NAME)
@@ -234,7 +234,7 @@ def test_upload_collection_list_np_arrays():
     )
 
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
     local_client.delete_collection(COLLECTION_NAME)
@@ -254,7 +254,7 @@ def test_upload_collection_dict_np_arrays(local_client, remote_client):
         vectors[key] = np.array(intermediate_vectors[key])
 
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
