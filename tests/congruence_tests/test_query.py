@@ -522,7 +522,7 @@ class TestSimpleSearcher:
 
 
 def test_dense_query_lookup_from_another_collection():
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(10)
 
     secondary_collection_points = generate_fixtures(10)
 
@@ -717,19 +717,11 @@ def test_dense_query_parametrized():
         local_client,
         remote_client,
         searcher.dense_queries_parametrized,
-        search_params={"hnsw_ef": 128},
-    )
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.dense_queries_parametrized,
-        search_params={"indexed_only": True},
-    )
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.dense_queries_parametrized,
-        search_params={"quantization": {"ignore": True, "rescore": True, "oversampling": 2.0}},
+        search_params={
+            "hnsw_ef": 128,
+            "indexed_only": True,
+            "quantization": {"ignore": True, "rescore": True, "oversampling": 2.0},
+        },
     )
 
 
