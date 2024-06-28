@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 
 import numpy as np
 import pytest
@@ -56,7 +56,7 @@ class TestSimpleSearcher:
         self.multivector_query_image = generate_random_multivector(image_vector_size, 3)
         self.multivector_query_code = generate_random_multivector(code_vector_size, 3)
 
-    def sparse_query_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def sparse_query_text(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.sparse_vector_query_text,
@@ -65,7 +65,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def multivec_query_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def multivec_query_text(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.multivector_query_text,
@@ -74,7 +74,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_query_text(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
@@ -83,7 +83,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_image(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_query_image(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_image,
@@ -92,7 +92,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_code(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_query_code(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_code,
@@ -101,7 +101,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_text_offset(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_query_text_offset(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
@@ -111,7 +111,7 @@ class TestSimpleSearcher:
             offset=10,
         )
 
-    def dense_query_text_with_vector(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_query_text_with_vector(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
@@ -152,7 +152,7 @@ class TestSimpleSearcher:
 
         return res1 + res2 + res3
 
-    def dense_query_text_select_payload(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_query_text_select_payload(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
@@ -161,7 +161,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_payload_exclude(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_payload_exclude(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
@@ -170,7 +170,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_image_select_vector(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_query_image_select_vector(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_image,
@@ -182,7 +182,7 @@ class TestSimpleSearcher:
 
     def filter_dense_query_text(
         self, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
@@ -194,7 +194,7 @@ class TestSimpleSearcher:
 
     def filter_dense_query_text_single(
         self, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
@@ -207,7 +207,7 @@ class TestSimpleSearcher:
     @classmethod
     def dense_query_text_scroll(
         cls, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             using="text",
@@ -217,7 +217,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_dense_query_fusion(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_dense_query_fusion(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -231,7 +231,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def deep_dense_queries_fusion(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def deep_dense_queries_fusion(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -260,7 +260,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_queries_rescore(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_queries_rescore(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -279,7 +279,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_deep_queries_rescore(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_deep_queries_rescore(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -311,7 +311,7 @@ class TestSimpleSearcher:
 
     def dense_queries_prefetch_filtered(
         self, client: QdrantBase, query_filter: models.Filter
-    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+    ) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -324,7 +324,7 @@ class TestSimpleSearcher:
                     query=self.dense_vector_query_code,
                     using="code",
                     filter=query_filter,
-                )
+                ),
             ],
             query=self.dense_vector_query_image,
             using="image",
@@ -332,9 +332,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_queries_prefetch_score_threshold(
-        self, client: QdrantBase
-    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+    def dense_queries_prefetch_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -355,7 +353,7 @@ class TestSimpleSearcher:
 
     def dense_queries_prefetch_parametrized(
         self, client: QdrantBase, search_params: models.SearchParams
-    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+    ) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -371,7 +369,7 @@ class TestSimpleSearcher:
 
     def dense_queries_parametrized(
         self, client: QdrantBase, search_params: models.SearchParams
-    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+    ) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_image,
@@ -380,7 +378,7 @@ class TestSimpleSearcher:
             search_params=search_params,
         )
 
-    def dense_queries_orderby(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_queries_orderby(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -400,7 +398,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def deep_dense_queries_orderby(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def deep_dense_queries_orderby(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -432,7 +430,7 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_recommend_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_recommend_image(cls, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
@@ -446,7 +444,7 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_many_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_many_recommend(cls, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
@@ -460,7 +458,7 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_discovery_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_discovery_image(cls, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.DiscoverQuery(
@@ -475,7 +473,7 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_many_discover(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_many_discover(cls, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.DiscoverQuery(
@@ -493,7 +491,7 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_context_image(cls, client: QdrantBase, limit: int) -> List[models.ScoredPoint]:
+    def dense_context_image(cls, client: QdrantBase, limit: int) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=models.ContextPair(positive=11, negative=19)),
@@ -504,7 +502,7 @@ class TestSimpleSearcher:
 
     def dense_query_lookup_from(
         self, client: QdrantBase, lookup_from: models.LookupLocation
-    ) -> Union[List[models.ScoredPoint], models.QueryResponse]:
+    ) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
@@ -516,11 +514,9 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def no_query_no_prefetch(cls, client: QdrantBase) -> Union[List[models.ScoredPoint], models.QueryResponse]:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            limit=10
-        )
+    def no_query_no_prefetch(cls, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(collection_name=COLLECTION_NAME, limit=10)
+
 
 # ---- TESTS  ---- #
 
