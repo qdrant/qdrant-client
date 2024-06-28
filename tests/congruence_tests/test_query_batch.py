@@ -1,10 +1,6 @@
-from typing import List, Union
-
 import numpy as np
-import pytest
 
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -17,14 +13,11 @@ from tests.congruence_tests.test_common import (
     init_remote,
     text_vector_size,
     sparse_text_vector_size,
-    sparse_image_vector_size,
-    sparse_code_vector_size,
     generate_sparse_fixtures,
     sparse_vectors_config,
     generate_multivector_fixtures,
     multi_vector_config,
 )
-from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, generate_random_multivector
 
 
