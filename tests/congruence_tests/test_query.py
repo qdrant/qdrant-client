@@ -509,7 +509,7 @@ def test_dense_query_lookup_from_negative():
     lookup_from = models.LookupLocation(
         collection=SECONDARY_COLLECTION_NAME, vector="i-do-not-exist"
     )
-    with pytest.raises(KeyError):
+    with pytest.raises(KeyError, match="Vector i-do-not-exist not found"):
         local_client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
