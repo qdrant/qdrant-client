@@ -3,7 +3,7 @@
 For breaking changes:
 
 * [ ] Create a new branch from the branch of upcoming release.
-  * E.g. `git checkout v0.7.0 && git pull && git checkout -b v0.7.0-my-changees`
+  * E.g. `git checkout v0.7.0 && git pull && git checkout -b v0.7.0-my-changes`
 
 For fixes:
 
