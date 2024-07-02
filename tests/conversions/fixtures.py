@@ -163,6 +163,18 @@ vector_param_with_hnsw = grpc.VectorParams(
         ef_construct=1000,
     ),
     on_disk=True,
+    datatype=grpc.Datatype.Float32,
+)
+
+vector_param_with_multivector = grpc.VectorParams(
+    size=100,
+    distance=grpc.Distance.Cosine,
+    hnsw_config=grpc.HnswConfigDiff(
+        ef_construct=1000,
+    ),
+    on_disk=True,
+    datatype=grpc.Datatype.Float16,
+    multivector_config=grpc.MultiVectorConfig(comparator=grpc.MultiVectorComparator.MaxSim),
 )
 
 product_quantizations = [
@@ -190,6 +202,7 @@ vector_param_with_quant = grpc.VectorParams(
     size=100,
     distance=grpc.Distance.Cosine,
     quantization_config=grpc.QuantizationConfig(scalar=scalar_quantization),
+    datatype=grpc.Datatype.Uint8,
 )
 
 single_vector_config = grpc.VectorsConfig(params=vector_param)
@@ -270,11 +283,38 @@ payload_value = {
 payload = payload_to_grpc({"payload": payload_value})
 
 single_vector = grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, 3.0, 4.0]))
-
+multi_vector = grpc.Vectors(
+    vector=grpc.Vector(data=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], vectors_count=2)
+)
+order_value_int = grpc.OrderValue(int=42)
+order_value_float = grpc.OrderValue(float=42.0)
 scored_point = grpc.ScoredPoint(
     id=point_id, payload=payload, score=0.99, vectors=single_vector, version=12
 )
-
+scored_point_order_value_int = grpc.ScoredPoint(
+    id=point_id,
+    payload=payload,
+    score=0.99,
+    vectors=single_vector,
+    version=12,
+    order_value=order_value_int,
+)
+scored_point_order_value_float = grpc.ScoredPoint(
+    id=point_id,
+    payload=payload,
+    score=0.99,
+    vectors=single_vector,
+    version=12,
+    order_value=order_value_int,
+)
+scored_point_multivector = grpc.ScoredPoint(
+    id=point_id,
+    payload=payload,
+    score=0.99,
+    vectors=multi_vector,
+    version=12,
+    order_value=order_value_float,
+)
 create_alias = grpc.CreateAlias(collection_name="col1", alias_name="col2")
 
 quantization_search_params = grpc.QuantizationSearchParams(
@@ -302,6 +342,7 @@ rename_alias = grpc.RenameAlias(old_alias_name="col2", new_alias_name="col3")
 collection_status = grpc.CollectionStatus.Yellow
 collection_status_green = grpc.CollectionStatus.Green
 collection_status_error = grpc.CollectionStatus.Red
+collection_status_grey = grpc.CollectionStatus.Grey
 
 optimizer_status = grpc.OptimizerStatus(ok=True)
 optimizer_status_error = grpc.OptimizerStatus(ok=False, error="Error!")
@@ -312,6 +353,9 @@ payload_schema_float = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.F
 payload_schema_geo = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Geo, points=0)
 payload_schema_text = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Text, points=0)
 payload_schema_bool = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Bool, points=0)
+payload_schema_datetime = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Datetime, points=0
+)
 
 text_index_params_1 = grpc.TextIndexParams(
     tokenizer=grpc.TokenizerType.Prefix,
@@ -333,6 +377,11 @@ text_index_params_3 = grpc.TextIndexParams(
 )
 
 text_index_params_4 = grpc.TextIndexParams(tokenizer=grpc.TokenizerType.Multilingual)
+
+integer_index_params_0 = grpc.IntegerIndexParams(lookup=True, range=False)
+integer_index_params_1 = grpc.IntegerIndexParams(lookup=False, range=True)
+integer_index_params_2 = grpc.IntegerIndexParams(lookup=True, range=True)
+
 
 payload_schema_text_prefix = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
@@ -356,6 +405,34 @@ payload_schema_text_multilingual = grpc.PayloadSchemaInfo(
     points=0,
 )
 
+payload_schema_integer_lookup = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Integer,
+    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_0),
+    points=0,
+)
+
+payload_schema_integer_range = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Integer,
+    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_1),
+    points=0,
+)
+
+payload_schema_integer_lookup_and_range = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Integer,
+    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_2),
+    points=0,
+)
+
+collection_info_grey = grpc.CollectionInfo(
+    status=collection_status_grey,
+    optimizer_status=optimizer_status_error,
+    # vectors_count=100000,
+    points_count=100000,
+    segments_count=6,
+    config=collection_config,
+    payload_schema={},
+)
+
 collection_info_ok = grpc.CollectionInfo(
     status=collection_status_green,
     optimizer_status=optimizer_status,
@@ -374,6 +451,10 @@ collection_info_ok = grpc.CollectionInfo(
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
+        "datetime_field": payload_schema_datetime,
+        "integer_lookup": payload_schema_integer_lookup,
+        "integer_range": payload_schema_integer_range,
+        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
     },
 )
 
@@ -395,6 +476,10 @@ collection_info = grpc.CollectionInfo(
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
+        "datetime_field": payload_schema_datetime,
+        "integer_lookup": payload_schema_integer_lookup,
+        "integer_range": payload_schema_integer_range,
+        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
     },
 )
 
@@ -416,6 +501,10 @@ collection_info_red = grpc.CollectionInfo(
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
         "bool_field": payload_schema_bool,
+        "datetime_field": payload_schema_datetime,
+        "integer_lookup": payload_schema_integer_lookup,
+        "integer_range": payload_schema_integer_range,
+        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
     },
 )
 quantization_config = grpc.QuantizationConfig(
@@ -431,12 +520,23 @@ sparse_vector_params = grpc.SparseVectorParams(
     index=grpc.SparseIndexConfig(
         full_scan_threshold=1000,
         on_disk=True,
-    )
+    ),
+    modifier=grpc.Modifier.Idf,
+)
+
+sparse_vector_params_datatype = grpc.SparseVectorParams(
+    index=grpc.SparseIndexConfig(
+        full_scan_threshold=1000,
+        on_disk=True,
+        datatype=grpc.Datatype.Float16,
+    ),
+    modifier=grpc.Modifier.Idf,
 )
 
 sparse_vector_config = grpc.SparseVectorConfig(
     map={
         "sparse": sparse_vector_params,
+        "sparse_float16": sparse_vector_params_datatype,
     }
 )
 
@@ -456,7 +556,7 @@ point_struct = grpc.PointStruct(
     payload=payload_to_grpc({"my_payload": payload_value}),
 )
 
-multi_vectors = grpc.Vectors(
+many_vectors = grpc.Vectors(
     vectors=grpc.NamedVectors(
         vectors={
             "image": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
@@ -468,9 +568,9 @@ multi_vectors = grpc.Vectors(
     )
 )
 
-point_struct_multivec = grpc.PointStruct(
+point_struct_many = grpc.PointStruct(
     id=point_id_1,
-    vectors=multi_vectors,
+    vectors=many_vectors,
     payload=payload_to_grpc({"my_payload": payload_value}),
 )
 
@@ -556,6 +656,14 @@ retrieved_point = grpc.RetrievedPoint(
     vectors=single_vector,
 )
 
+retrieved_point_with_order_value = grpc.RetrievedPoint(
+    id=point_id_1,
+    payload=payload_to_grpc({"key": payload_value}),
+    vectors=single_vector,
+    order_value=order_value_int,
+)
+
+
 count_result = grpc.CountResult(count=5)
 
 timestamp = Timestamp()
@@ -591,7 +699,6 @@ shard_key_selector_2 = grpc.ShardKeySelector(
     ]
 )
 
-
 search_points = grpc.SearchPoints(
     collection_name="collection-123",
     vector=[1.0, 2.0, 3.0, 5.0],
@@ -620,6 +727,31 @@ search_points_all_vectors = grpc.SearchPoints(
     shard_key_selector=shard_key_selector_2,
 )
 
+lookup_location_1 = grpc.LookupLocation(
+    collection_name="collection-123",
+)
+
+lookup_location_2 = grpc.LookupLocation(
+    collection_name="collection-123",
+    vector_name="vector-123",
+)
+
+query_points = grpc.QueryPoints(
+    collection_name="collection-123",
+    prefetch=[grpc.PrefetchQuery(using="cba")],
+    query=grpc.Query(nearest=grpc.VectorInput(dense=grpc.DenseVector(data=[0.1, 0.2, 0.3]))),
+    lookup_from=lookup_location_1,
+    filter=filter_,
+    limit=100,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(include=grpc.VectorsSelector(names=["abc", "def"])),
+    shard_key_selector=shard_key_selector,
+)
+
 recommend_strategy = grpc.RecommendStrategy.BestScore
 recommend_strategy2 = grpc.RecommendStrategy.AverageVector
 
@@ -644,15 +776,28 @@ recommend_points = grpc.RecommendPoints(
         grpc.Vector(data=[3.0, 2.0, -1.0, -0.2]),
     ],
     shard_key_selector=shard_key_selector_2,
+    lookup_from=lookup_location_1,
 )
-
-lookup_location_1 = grpc.LookupLocation(
-    collection_name="collection-123",
+legacy_sparse_vector = grpc.Vector(
+    data=[0.2, 0.3, 0.4],
+    indices=SparseIndices(data=[1, 2, 3]),
 )
-
-lookup_location_2 = grpc.LookupLocation(
+recommend_points_sparse = grpc.RecommendPoints(
     collection_name="collection-123",
-    vector_name="vector-123",
+    positive=[point_id_1, point_id_2],
+    negative=[point_id],
+    filter=filter_,
+    limit=100,
+    with_payload=with_payload_bool,
+    params=search_params,
+    score_threshold=0.123,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+    strategy=recommend_strategy,
+    positive_vectors=[legacy_sparse_vector],
+    negative_vectors=[legacy_sparse_vector],
+    shard_key_selector=shard_key_selector_2,
 )
 
 read_consistency = grpc.ReadConsistency(
@@ -690,7 +835,7 @@ point_vector_1 = grpc.PointVectors(
 
 point_vector_2 = grpc.PointVectors(
     id=point_id_2,
-    vectors=multi_vectors,
+    vectors=many_vectors,
 )
 
 group_id_1 = grpc.GroupId(unsigned_value=123)
@@ -757,6 +902,32 @@ discover_points = grpc.DiscoverPoints(
     shard_key_selector=shard_key_selector_2,
 )
 
+sparse_vector_example = grpc.VectorExample(
+    vector=legacy_sparse_vector,
+)
+target_vector_sparse = grpc.TargetVector(
+    single=sparse_vector_example,
+)
+
+context_example_pair_sparse = grpc.ContextExamplePair(
+    positive=sparse_vector_example,
+    negative=sparse_vector_example,
+)
+discover_points_sparse = grpc.DiscoverPoints(
+    collection_name="collection-123",
+    target=target_vector_sparse,
+    context=[context_example_pair_sparse, context_example_pair_sparse],
+    filter=filter_,
+    limit=100,
+    with_payload=with_payload_bool,
+    params=search_params,
+    offset=10,
+    using="abc",
+    with_vectors=grpc.WithVectorsSelector(enable=True),
+    shard_key_selector=shard_key_selector_2,
+    lookup_from=lookup_location_1,
+)
+
 upsert_operation = grpc.PointsUpdateOperation(
     upsert=grpc.PointsUpdateOperation.PointStructList(
         points=[point_struct],
@@ -786,14 +957,14 @@ set_payload_operation_2 = grpc.PointsUpdateOperation(
 )
 
 overwrite_payload_operation_1 = grpc.PointsUpdateOperation(
-    overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
+    overwrite_payload=grpc.PointsUpdateOperation.OverwritePayload(
         payload=payload_to_grpc({"my_payload": payload_value}),
         points_selector=points_selector_list,
     ),
 )
 
 overwrite_payload_operation_2 = grpc.PointsUpdateOperation(
-    overwrite_payload=grpc.PointsUpdateOperation.SetPayload(
+    overwrite_payload=grpc.PointsUpdateOperation.OverwritePayload(
         payload=payload_to_grpc({"my_payload": payload_value}),
         points_selector=points_selector_filter,
     ),
@@ -869,11 +1040,65 @@ order_by = grpc.OrderBy(
     start_from=float_start_from,
 )
 
+dense_vector = grpc.DenseVector(data=[1.0, 2.0, 3.0, 4.0])
+dense_vector_2 = grpc.DenseVector(data=[5.0, 6.0, 7.0, 8.0])
+sparse_vector = grpc.SparseVector(values=[1.0, 2.0, 3.0, 4.0], indices=[1, 2, 3, 4])
+multi_dense_vector = grpc.MultiDenseVector(vectors=[dense_vector, dense_vector_2])
+vector_input_id = grpc.VectorInput(id=point_id_2)
+vector_input_dense = grpc.VectorInput(dense=dense_vector)
+vector_input_dense_2 = grpc.VectorInput(dense=dense_vector_2)
+vector_input_sparse = grpc.VectorInput(sparse=sparse_vector)
+vector_input_multi = grpc.VectorInput(multi_dense=multi_dense_vector)
+recommend_input = grpc.RecommendInput(
+    positive=[vector_input_dense],
+    negative=[vector_input_dense_2],
+)
+recommend_input_strategy = grpc.RecommendInput(
+    positive=[vector_input_id],
+    strategy=recommend_strategy,
+)
+
+context_input_pair = grpc.ContextInputPair(
+    positive=vector_input_dense, negative=vector_input_multi
+)
+context_input = grpc.ContextInput(pairs=[context_input_pair])
+discover_input = grpc.DiscoverInput(target=vector_input_dense, context=context_input)
+
+query_nearest = grpc.Query(nearest=vector_input_sparse)
+query_recommend = grpc.Query(recommend=recommend_input)
+query_recommend_id = grpc.Query(recommend=recommend_input_strategy)
+query_discover = grpc.Query(discover=discover_input)
+query_context = grpc.Query(context=context_input)
+query_order_by = grpc.Query(order_by=order_by)
+query_fusion = grpc.Query(fusion=grpc.Fusion.RRF)
+
+deep_prefetch_query = grpc.PrefetchQuery(query=query_recommend)
+prefetch_query = grpc.PrefetchQuery(
+    prefetch=[deep_prefetch_query],
+    filter=filter_,
+)
+prefetch_full_query = grpc.PrefetchQuery(
+    prefetch=[prefetch_query],
+    query=query_fusion,
+    filter=filter_,
+    params=search_params_2,
+    score_threshold=0.123,
+    limit=100,
+    lookup_from=lookup_location_1,
+)
+prefetch_many = grpc.PrefetchQuery(
+    prefetch=[prefetch_query, prefetch_full_query],
+)
 
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
-    "ScoredPoint": [scored_point],
+    "ScoredPoint": [
+        scored_point,
+        scored_point_order_value_int,
+        scored_point_order_value_float,
+        scored_point_multivector,
+    ],
     "CreateAlias": [create_alias],
     "GeoBoundingBox": [geo_bounding_box],
     "SearchParams": [search_params, search_params_2, search_params_3],
@@ -882,7 +1107,12 @@ fixtures = {
     "ValuesCount": [values_count],
     "Filter": [filter_nested, filter_],
     "OptimizersConfigDiff": [optimizer_config, optimizer_config_half],
-    "CollectionInfo": [collection_info, collection_info_ok, collection_info_red],
+    "CollectionInfo": [
+        collection_info,
+        collection_info_ok,
+        collection_info_red,
+        collection_info_grey,
+    ],
     "FieldCondition": [
         field_condition_match,
         field_condition_range,
@@ -898,7 +1128,7 @@ fixtures = {
     "IsEmptyCondition": [is_empty],
     "IsNullCondition": [is_null],
     "DeleteAlias": [delete_alias],
-    "PointStruct": [point_struct, point_struct_multivec],
+    "PointStruct": [point_struct, point_struct_many],
     "CollectionDescription": [collection_description],
     "GeoPoint": [geo_point],
     "WalConfigDiff": [wal_config],
@@ -924,7 +1154,7 @@ fixtures = {
         with_payload_include,
         with_payload_exclude,
     ],
-    "RetrievedPoint": [retrieved_point],
+    "RetrievedPoint": [retrieved_point, retrieved_point_with_order_value],
     "CountResult": [count_result],
     "SnapshotDescription": [snapshot_description],
     "VectorParams": [
@@ -933,15 +1163,22 @@ fixtures = {
         vector_param_with_quant,
         vector_param_1,
         vector_param_2,
+        vector_param_with_multivector,
     ],
     "VectorsConfig": [single_vector_config, vector_config],
     "SearchPoints": [search_points, search_points_all_vectors],
-    "RecommendPoints": [recommend_points],
+    "QueryPoints": [query_points],
+    "RecommendPoints": [recommend_points, recommend_points_sparse],
     "RecommendStrategy": [recommend_strategy, recommend_strategy2],
     "TextIndexParams": [
         text_index_params_1,
         text_index_params_2,
         text_index_params_3,
+    ],
+    "IntegerIndexParams": [
+        integer_index_params_0,
+        integer_index_params_1,
+        integer_index_params_2,
     ],
     "CollectionParamsDiff": [collections_params_diff],
     "LookupLocation": [lookup_location_1, lookup_location_2],
@@ -975,17 +1212,28 @@ fixtures = {
         delete_vectors_operation,
         delete_vectors_operation_2,
     ],
-    "DiscoverPoints": [discover_points],
+    "DiscoverPoints": [discover_points, discover_points_sparse],
     "ContextExamplePair": [context_example_pair_1],
     "VectorExample": [vector_example_1, vector_example_2, vector_example_3],
     "TargetVector": [target_vector_1],
-    "SparseVectorParams": [sparse_vector_params],
+    "SparseVectorParams": [sparse_vector_params, sparse_vector_params_datatype],
     "SparseVectorConfig": [sparse_vector_config],
     "ShardKeySelector": [shard_key_selector, shard_key_selector_2],
     "ShardingMethod": [sharding_method_1, sharding_method_2],
     "StartFrom": [float_start_from, integer_start_from, datetime_start_from, timestamp_start_from],
     "Direction": [direction_asc, direction_desc],
     "OrderBy": [order_by],
+    "OrderValue": [order_value_int, order_value_float],
+    "Query": [
+        query_nearest,
+        query_recommend,
+        query_discover,
+        query_context,
+        query_order_by,
+        query_fusion,
+        query_recommend_id,
+    ],
+    "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
 }
 
 

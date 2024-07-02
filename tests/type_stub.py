@@ -180,7 +180,7 @@ qdrant_client.search_batch(
         )
     ],
 )
-qdrant_client.set_payload("collection", {}, [], True)
+qdrant_client.set_payload("collection", {}, [], key=None, wait=True)
 qdrant_client.unlock_storage()
 qdrant_client.update_collection(
     "collection",

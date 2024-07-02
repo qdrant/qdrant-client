@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
 
@@ -10,8 +10,14 @@ SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 
+class AbortShardTransfer(BaseModel, extra="forbid"):
+    shard_id: int = Field(..., description="")
+    to_peer_id: int = Field(..., description="")
+    from_peer_id: int = Field(..., description="")
+
+
 class AbortTransferOperation(BaseModel, extra="forbid"):
-    abort_transfer: "MoveShard" = Field(..., description="")
+    abort_transfer: "AbortShardTransfer" = Field(..., description="")
 
 
 class AliasDescription(BaseModel):
@@ -24,7 +30,8 @@ class AppBuildTelemetry(BaseModel):
     version: str = Field(..., description="")
     features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
     system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
-    startup: datetime = Field(..., description="")
+    jwt_rbac: Optional[bool] = Field(default=None, description="")
+    startup: Union[datetime, date] = Field(..., description="")
 
 
 class AppFeaturesTelemetry(BaseModel):
@@ -153,7 +160,7 @@ class CollectionInfo(BaseModel):
     )
     vectors_count: Optional[int] = Field(
         default=None,
-        description="Approximate number of vectors in collection. All vectors in collection are available for querying. Calculated as `points_count x vectors_per_point`. Where `vectors_per_point` is a number of named vectors in schema.",
+        description="DEPRECATED: Approximate number of vectors in collection. All vectors in collection are available for querying. Calculated as `points_count x vectors_per_point`. Where `vectors_per_point` is a number of named vectors in schema.",
     )
     indexed_vectors_count: Optional[int] = Field(
         default=None,
@@ -220,6 +227,7 @@ class CollectionStatus(str, Enum):
 
     GREEN = "green"
     YELLOW = "yellow"
+    GREY = "grey"
     RED = "red"
 
 
@@ -268,7 +276,7 @@ class ConsensusThreadStatusOneOf(BaseModel):
     consensus_thread_status: Literal[
         "working",
     ] = Field(..., description="")
-    last_update: datetime = Field(..., description="")
+    last_update: Union[datetime, date] = Field(..., description="")
 
 
 class ConsensusThreadStatusOneOf1(BaseModel):
@@ -287,6 +295,15 @@ class ConsensusThreadStatusOneOf2(BaseModel):
 class ContextExamplePair(BaseModel, extra="forbid"):
     positive: "RecommendExample" = Field(..., description="")
     negative: "RecommendExample" = Field(..., description="")
+
+
+class ContextPair(BaseModel, extra="forbid"):
+    positive: "VectorInput" = Field(..., description="")
+    negative: "VectorInput" = Field(..., description="")
+
+
+class ContextQuery(BaseModel, extra="forbid"):
+    context: "ContextInput" = Field(..., description="")
 
 
 class CountRequest(BaseModel, extra="forbid"):
@@ -400,15 +417,21 @@ class CreateShardingKeyOperation(BaseModel, extra="forbid"):
     create_sharding_key: "CreateShardingKey" = Field(..., description="")
 
 
+class Datatype(str, Enum):
+    FLOAT32 = "float32"
+    UINT8 = "uint8"
+    FLOAT16 = "float16"
+
+
 class DatetimeRange(BaseModel, extra="forbid"):
     """
     Range filter request
     """
 
-    lt: Optional[datetime] = Field(default=None, description="point.key &lt; range.lt")
-    gt: Optional[datetime] = Field(default=None, description="point.key &gt; range.gt")
-    gte: Optional[datetime] = Field(default=None, description="point.key &gt;= range.gte")
-    lte: Optional[datetime] = Field(default=None, description="point.key &lt;= range.lte")
+    lt: Optional[Union[datetime, date]] = Field(default=None, description="point.key &lt; range.lt")
+    gt: Optional[Union[datetime, date]] = Field(default=None, description="point.key &gt; range.gt")
+    gte: Optional[Union[datetime, date]] = Field(default=None, description="point.key &gt;= range.gte")
+    lte: Optional[Union[datetime, date]] = Field(default=None, description="point.key &lt;= range.lte")
 
 
 class DeleteAlias(BaseModel, extra="forbid"):
@@ -476,6 +499,17 @@ class Disabled(str, Enum):
     DISABLED = "Disabled"
 
 
+class DiscoverInput(BaseModel, extra="forbid"):
+    target: "VectorInput" = Field(..., description="")
+    context: Union[List["ContextPair"], "ContextPair"] = Field(
+        ..., description="Search space will be constrained by these pairs of vectors"
+    )
+
+
+class DiscoverQuery(BaseModel, extra="forbid"):
+    discover: "DiscoverInput" = Field(..., description="")
+
+
 class DiscoverRequest(BaseModel, extra="forbid"):
     """
     Use context and a target to find the most similar points, constrained by the context.
@@ -501,10 +535,10 @@ class DiscoverRequest(BaseModel, extra="forbid"):
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     using: Optional["UsingVector"] = Field(
         default=None,
@@ -575,19 +609,36 @@ class FieldCondition(BaseModel, extra="forbid"):
 
 
 class Filter(BaseModel, extra="forbid"):
-    should: Optional[List["Condition"]] = Field(
+    should: Optional[Union[List["Condition"], "Condition"]] = Field(
         default=None, description="At least one of those conditions should match"
     )
     min_should: Optional["MinShould"] = Field(
         default=None, description="At least minimum amount of given conditions should match"
     )
-    must: Optional[List["Condition"]] = Field(default=None, description="All conditions must match")
-    must_not: Optional[List["Condition"]] = Field(default=None, description="All conditions must NOT match")
+    must: Optional[Union[List["Condition"], "Condition"]] = Field(default=None, description="All conditions must match")
+    must_not: Optional[Union[List["Condition"], "Condition"]] = Field(
+        default=None, description="All conditions must NOT match"
+    )
 
 
 class FilterSelector(BaseModel, extra="forbid"):
     filter: "Filter" = Field(..., description="")
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+
+
+class Fusion(str, Enum):
+    """
+    Fusion algorithm allows to combine results of multiple prefetches. Available fusion algorithms: * `rrf` - Rank Reciprocal Fusion
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    RRF = "rrf"
+
+
+class FusionQuery(BaseModel, extra="forbid"):
+    fusion: "Fusion" = Field(..., description="")
 
 
 class GeoBoundingBox(BaseModel, extra="forbid"):
@@ -847,6 +898,18 @@ class InlineResponse20020(BaseModel):
     result: Optional["CountResult"] = Field(default=None, description="")
 
 
+class InlineResponse20021(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["QueryResponse"] = Field(default=None, description="")
+
+
+class InlineResponse20022(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional[List["QueryResponse"]] = Field(default=None, description="")
+
+
 class InlineResponse2003(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
@@ -995,12 +1058,26 @@ class MessageSendErrors(BaseModel):
 
     count: int = Field(..., description="Message send failures for a particular peer")
     latest_error: Optional[str] = Field(default=None, description="Message send failures for a particular peer")
-    latest_error_timestamp: Optional[datetime] = Field(default=None, description="Timestamp of the latest error")
+    latest_error_timestamp: Optional[Union[datetime, date]] = Field(
+        default=None, description="Timestamp of the latest error"
+    )
 
 
 class MinShould(BaseModel, extra="forbid"):
     conditions: List["Condition"] = Field(..., description="")
     min_count: int = Field(..., description="")
+
+
+class Modifier(str, Enum):
+    """
+    If used, include weight modification, which will be applied to sparse vectors at query time: None - no modification (default) Idf - inverse document frequency, based on statistics of the collection
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    NONE = "none"
+    IDF = "idf"
 
 
 class MoveShard(BaseModel, extra="forbid"):
@@ -1016,6 +1093,14 @@ class MoveShardOperation(BaseModel, extra="forbid"):
     move_shard: "MoveShard" = Field(..., description="")
 
 
+class MultiVectorComparator(str, Enum):
+    MAX_SIM = "max_sim"
+
+
+class MultiVectorConfig(BaseModel, extra="forbid"):
+    comparator: "MultiVectorComparator" = Field(..., description="")
+
+
 class NamedSparseVector(BaseModel, extra="forbid"):
     """
     Sparse vector data with name
@@ -1027,11 +1112,15 @@ class NamedSparseVector(BaseModel, extra="forbid"):
 
 class NamedVector(BaseModel, extra="forbid"):
     """
-    Vector data with name
+    Dense vector data with name
     """
 
     name: str = Field(..., description="Name of vector data")
     vector: List[float] = Field(..., description="Vector data")
+
+
+class NearestQuery(BaseModel, extra="forbid"):
+    nearest: "VectorInput" = Field(..., description="")
 
 
 class Nested(BaseModel, extra="forbid"):
@@ -1060,7 +1149,7 @@ class OperationDurationStatistics(BaseModel):
         default=None, description="The maximum duration of the operations across all the measurements."
     )
     total_duration_micros: int = Field(..., description="The total duration of all operations in microseconds.")
-    last_responded: Optional[datetime] = Field(default=None, description="")
+    last_responded: Optional[Union[datetime, date]] = Field(default=None, description="")
 
 
 class OptimizerTelemetry(BaseModel):
@@ -1161,6 +1250,10 @@ class OrderBy(BaseModel, extra="forbid"):
     )
 
 
+class OrderByQuery(BaseModel, extra="forbid"):
+    order_by: "OrderByInterface" = Field(..., description="")
+
+
 class OverwritePayloadOperation(BaseModel, extra="forbid"):
     overwrite_payload: "SetPayload" = Field(..., description="")
 
@@ -1259,7 +1352,7 @@ class PointRequest(BaseModel, extra="forbid"):
     )
     ids: List["ExtendedPointId"] = Field(..., description="Look for points with ids")
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: All"
+        default=None, description="Select which payload to return with the response. Default is true."
     )
     with_vector: Optional["WithVector"] = Field(default=None, description="")
 
@@ -1283,6 +1376,33 @@ class PointsBatch(BaseModel, extra="forbid"):
 class PointsList(BaseModel, extra="forbid"):
     points: List["PointStruct"] = Field(..., description="")
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+
+
+class Prefetch(BaseModel, extra="forbid"):
+    prefetch: Optional[Union[List["Prefetch"], "Prefetch"]] = Field(
+        default=None,
+        description="Sub-requests to perform first. If present, the query will be performed on the results of the prefetches.",
+    )
+    query: Optional["QueryInterface"] = Field(
+        default=None,
+        description="Query to perform. If missing without prefetches, returns points ordered by their IDs.",
+    )
+    using: Optional[str] = Field(
+        default=None,
+        description="Define which vector name to use for querying. If missing, the default vector is used.",
+    )
+    filter: Optional["Filter"] = Field(
+        default=None, description="Filter conditions - return only those points that satisfy the specified conditions."
+    )
+    params: Optional["SearchParams"] = Field(default=None, description="Search params for when there is no prefetch")
+    score_threshold: Optional[float] = Field(
+        default=None, description="Return points with scores better than this threshold."
+    )
+    limit: Optional[int] = Field(default=None, description="Max number of points to return. Default is 10.")
+    lookup_from: Optional["LookupLocation"] = Field(
+        default=None,
+        description="The location to use for IDs lookup, if not specified - use the current collection and the &#x27;using&#x27; vector Note: the other collection vectors should have the same vector size as the &#x27;using&#x27; vector in the current collection",
+    )
 
 
 class ProductQuantization(BaseModel, extra="forbid"):
@@ -1310,6 +1430,49 @@ class QuantizationSearchParams(BaseModel, extra="forbid"):
         default=None,
         description="Oversampling factor for quantization. Default is 1.0.  Defines how many extra vectors should be pre-selected using quantized index, and then re-scored using original vectors.  For example, if `oversampling` is 2.4 and `limit` is 100, then 240 vectors will be pre-selected using quantized index, and then top-100 will be returned after re-scoring.",
     )
+
+
+class QueryRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+    prefetch: Optional[Union[List["Prefetch"], "Prefetch"]] = Field(
+        default=None,
+        description="Sub-requests to perform first. If present, the query will be performed on the results of the prefetch(es).",
+    )
+    query: Optional["QueryInterface"] = Field(
+        default=None,
+        description="Query to perform. If missing without prefetches, returns points ordered by their IDs.",
+    )
+    using: Optional[str] = Field(
+        default=None,
+        description="Define which vector name to use for querying. If missing, the default vector is used.",
+    )
+    filter: Optional["Filter"] = Field(
+        default=None, description="Filter conditions - return only those points that satisfy the specified conditions."
+    )
+    params: Optional["SearchParams"] = Field(default=None, description="Search params for when there is no prefetch")
+    score_threshold: Optional[float] = Field(
+        default=None, description="Return points with scores better than this threshold."
+    )
+    limit: Optional[int] = Field(default=None, description="Max number of points to return. Default is 10.")
+    offset: Optional[int] = Field(default=None, description="Offset of the result. Skip this many points. Default is 0")
+    with_vector: Optional["WithVector"] = Field(
+        default=None, description="Options for specifying which vectors to include into the response. Default is false."
+    )
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        default=None, description="Options for specifying which payload to include or not. Default is false."
+    )
+    lookup_from: Optional["LookupLocation"] = Field(
+        default=None,
+        description="The location to use for IDs lookup, if not specified - use the current collection and the &#x27;using&#x27; vector Note: the other collection vectors should have the same vector size as the &#x27;using&#x27; vector in the current collection",
+    )
+
+
+class QueryRequestBatch(BaseModel, extra="forbid"):
+    searches: List["QueryRequest"] = Field(..., description="")
+
+
+class QueryResponse(BaseModel):
+    points: List["ScoredPoint"] = Field(..., description="")
 
 
 class RaftInfo(BaseModel):
@@ -1369,10 +1532,10 @@ class RecommendGroupsRequest(BaseModel, extra="forbid"):
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1397,6 +1560,22 @@ class RecommendGroupsRequest(BaseModel, extra="forbid"):
     )
 
 
+class RecommendInput(BaseModel, extra="forbid"):
+    positive: Optional[List["VectorInput"]] = Field(
+        default=None, description="Look for vectors closest to the vectors from these points"
+    )
+    negative: Optional[List["VectorInput"]] = Field(
+        default=None, description="Try to avoid vectors like the vector from these points"
+    )
+    strategy: Optional["RecommendStrategy"] = Field(
+        default=None, description="How to use the provided vectors to find the results"
+    )
+
+
+class RecommendQuery(BaseModel, extra="forbid"):
+    recommend: "RecommendInput" = Field(..., description="")
+
+
 class RecommendRequest(BaseModel, extra="forbid"):
     """
     Recommendation request. Provides positive and negative examples of the vectors, which can be ids of points that are already stored in the collection, raw vectors, or even ids and vectors combined.  Service should look for the points which are closer to positive examples and at the same time further to negative examples. The concrete way of how to compare negative and positive distances is up to the `strategy` chosen.
@@ -1419,10 +1598,10 @@ class RecommendRequest(BaseModel, extra="forbid"):
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1463,6 +1642,7 @@ class Record(BaseModel):
     payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
     vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
     shard_key: Optional["ShardKey"] = Field(default=None, description="Shard Key")
+    order_value: Optional["OrderValue"] = Field(default=None, description="Point data")
 
 
 class RemoteShardInfo(BaseModel):
@@ -1525,8 +1705,17 @@ class ReplicaState(str, Enum):
     RECOVERY = "Recovery"
 
 
+class ReplicateShard(BaseModel, extra="forbid"):
+    shard_id: int = Field(..., description="")
+    to_peer_id: int = Field(..., description="")
+    from_peer_id: int = Field(..., description="")
+    method: Optional["ShardTransferMethod"] = Field(
+        default=None, description="Method for transferring the shard from one node to another"
+    )
+
+
 class ReplicateShardOperation(BaseModel, extra="forbid"):
-    replicate_shard: "MoveShard" = Field(..., description="")
+    replicate_shard: "ReplicateShard" = Field(..., description="")
 
 
 class RequestsTelemetry(BaseModel):
@@ -1586,6 +1775,7 @@ class ScoredPoint(BaseModel):
     payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
     vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
     shard_key: Optional["ShardKey"] = Field(default=None, description="Shard Key")
+    order_value: Optional["OrderValue"] = Field(default=None, description="Order-by value")
 
 
 class ScrollRequest(BaseModel, extra="forbid"):
@@ -1603,7 +1793,7 @@ class ScrollRequest(BaseModel, extra="forbid"):
         default=None, description="Look only for points which satisfies this conditions. If not provided - all points."
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: All"
+        default=None, description="Select which payload to return with the response. Default is true."
     )
     with_vector: Optional["WithVector"] = Field(
         default=None, description="Scroll request - paginate over all points which matches given condition"
@@ -1631,10 +1821,10 @@ class SearchGroupsRequest(BaseModel, extra="forbid"):
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
     params: Optional["SearchParams"] = Field(default=None, description="Additional search params")
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1692,10 +1882,10 @@ class SearchRequest(BaseModel, extra="forbid"):
         description="Offset of the first result to return. May be used to paginate results. Note: large offset values may cause performance issues.",
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
-        default=None, description="Select which payload to return with the response. Default: None"
+        default=None, description="Select which payload to return with the response. Default is false."
     )
     with_vector: Optional["WithVector"] = Field(
-        default=None, description="Whether to return the point vector with the result?"
+        default=None, description="Options for specifying which vectors to include into response. Default is false."
     )
     score_threshold: Optional[float] = Field(
         default=None,
@@ -1782,6 +1972,9 @@ class ShardSnapshotRecover(BaseModel, extra="forbid"):
     checksum: Optional[str] = Field(
         default=None, description="Optional SHA256 checksum to verify snapshot integrity before recovery."
     )
+    api_key: Optional[str] = Field(
+        default=None, description="Optional API key used when fetching the snapshot from a remote URL."
+    )
 
 
 class ShardTransferInfo(BaseModel):
@@ -1818,6 +2011,17 @@ class ShardTransferMethodOneOf1(str, Enum):
         return str(self.value)
 
     SNAPSHOT = "snapshot"
+
+
+class ShardTransferMethodOneOf2(str, Enum):
+    """
+    Attempt to transfer shard difference by WAL delta.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    WAL_DELTA = "wal_delta"
 
 
 class ShardingMethod(str, Enum):
@@ -1857,6 +2061,9 @@ class SnapshotRecover(BaseModel, extra="forbid"):
     checksum: Optional[str] = Field(
         default=None, description="Optional SHA256 checksum to verify snapshot integrity before recovery."
     )
+    api_key: Optional[str] = Field(
+        default=None, description="Optional API key used when fetching the snapshot from a remote URL."
+    )
 
 
 class SparseIndexConfig(BaseModel):
@@ -1869,6 +2076,9 @@ class SparseIndexConfig(BaseModel):
         description="We prefer a full scan search upto (excluding) this number of vectors.  Note: this is number of vectors, not KiloBytes.",
     )
     index_type: "SparseIndexType" = Field(..., description="Configuration for sparse inverted index.")
+    datatype: Optional["VectorStorageDatatype"] = Field(
+        default=None, description="Datatype used to store weights in the index."
+    )
 
 
 class SparseIndexParams(BaseModel, extra="forbid"):
@@ -1883,6 +2093,10 @@ class SparseIndexParams(BaseModel, extra="forbid"):
     on_disk: Optional[bool] = Field(
         default=None,
         description="Store index on disk. If set to false, the index will be stored in RAM. Default: false",
+    )
+    datatype: Optional["Datatype"] = Field(
+        default=None,
+        description="Defines which datatype should be used for the index. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are quantized to unsigned 8-bit integers, 1 byte. Quantization to fit byte range `[0, 255]` happens during indexing automatically, so the actual vector data does not need to conform to this range.",
     )
 
 
@@ -1924,8 +2138,8 @@ class SparseVector(BaseModel, extra="forbid"):
     Sparse vector structure
     """
 
-    indices: List[int] = Field(..., description="indices must be unique")
-    values: List[float] = Field(..., description="values and indices must be the same length")
+    indices: List[int] = Field(..., description="Indices must be unique")
+    values: List[float] = Field(..., description="Values and indices must be the same length")
 
 
 class SparseVectorDataConfig(BaseModel):
@@ -1943,6 +2157,9 @@ class SparseVectorParams(BaseModel, extra="forbid"):
 
     index: Optional["SparseIndexParams"] = Field(
         default=None, description="Custom params for index. If none - values from collection configuration are used."
+    )
+    modifier: Optional["Modifier"] = Field(
+        default=None, description="Configures addition value modifications for sparse vectors. Default: none"
     )
 
 
@@ -2008,8 +2225,8 @@ class TrackerTelemetry(BaseModel):
     name: str = Field(..., description="Name of the optimizer")
     segment_ids: List[int] = Field(..., description="Segment IDs being optimized")
     status: "TrackerStatus" = Field(..., description="Tracker object used in telemetry")
-    start_at: datetime = Field(..., description="Start time of the optimizer")
-    end_at: Optional[datetime] = Field(default=None, description="End time of the optimizer")
+    start_at: Union[datetime, date] = Field(..., description="Start time of the optimizer")
+    end_at: Optional[Union[datetime, date]] = Field(default=None, description="End time of the optimizer")
 
 
 class UpdateCollection(BaseModel, extra="forbid"):
@@ -2096,6 +2313,12 @@ class VectorDataConfig(BaseModel):
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Vector specific quantization config that overrides collection config"
     )
+    multivector_config: Optional["MultiVectorConfig"] = Field(
+        default=None, description="Vector specific configuration to enable multiple vectors per point"
+    )
+    datatype: Optional["VectorStorageDatatype"] = Field(
+        default=None, description="Vector specific configuration to set specific storage element type"
+    )
 
 
 class VectorDataInfo(BaseModel):
@@ -2136,6 +2359,13 @@ class VectorParams(BaseModel, extra="forbid"):
         default=None,
         description="If true, vectors are served from disk, improving RAM usage at the cost of latency Default: false",
     )
+    datatype: Optional["Datatype"] = Field(
+        default=None,
+        description="Defines which datatype should be used to represent vectors in the storage. Choosing different datatypes allows to optimize memory usage and performance vs accuracy.  - For `float32` datatype - vectors are stored as single-precision floating point numbers, 4 bytes. - For `float16` datatype - vectors are stored as half-precision floating point numbers, 2 bytes. - For `uint8` datatype - vectors are stored as unsigned 8-bit integers, 1 byte. It expects vector elements to be in range `[0, 255]`.",
+    )
+    multivector_config: Optional["MultiVectorConfig"] = Field(
+        default=None, description="Params of single vector data storage"
+    )
 
 
 class VectorParamsDiff(BaseModel, extra="forbid"):
@@ -2148,6 +2378,19 @@ class VectorParamsDiff(BaseModel, extra="forbid"):
     on_disk: Optional[bool] = Field(
         default=None, description="If true, vectors are served from disk, improving RAM usage at the cost of latency"
     )
+
+
+class VectorStorageDatatype(str, Enum):
+    """
+    Storage types for vectors
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    FLOAT32 = "float32"
+    FLOAT16 = "float16"
+    UINT8 = "uint8"
 
 
 class VectorStorageTypeOneOf(str, Enum):
@@ -2267,13 +2510,17 @@ ConsensusThreadStatus = Union[
     ConsensusThreadStatusOneOf1,
     ConsensusThreadStatusOneOf2,
 ]
+ContextInput = Union[
+    ContextPair,
+    List[ContextPair],
+]
 ExtendedPointId = Union[
     StrictInt,
     StrictStr,
 ]
 GroupId = Union[
-    StrictStr,
     StrictInt,
+    StrictStr,
 ]
 Indexes = Union[
     IndexesOneOf,
@@ -2297,6 +2544,10 @@ OptimizersStatus = Union[
 OrderByInterface = Union[
     StrictStr,
     OrderBy,
+]
+OrderValue = Union[
+    StrictInt,
+    StrictFloat,
 ]
 PayloadSchemaParams = Union[
     TextIndexParams,
@@ -2329,6 +2580,14 @@ QuantizationConfigDiff = Union[
     BinaryQuantization,
     Disabled,
 ]
+Query = Union[
+    NearestQuery,
+    RecommendQuery,
+    DiscoverQuery,
+    ContextQuery,
+    OrderByQuery,
+    FusionQuery,
+]
 RangeInterface = Union[
     Range,
     DatetimeRange,
@@ -2338,8 +2597,8 @@ ReadConsistency = Union[
     ReadConsistencyType,
 ]
 ShardKey = Union[
-    StrictStr,
     StrictInt,
+    StrictStr,
 ]
 ShardSnapshotLocation = Union[
     StrictStr,
@@ -2347,6 +2606,7 @@ ShardSnapshotLocation = Union[
 ShardTransferMethod = Union[
     ShardTransferMethodOneOf,
     ShardTransferMethodOneOf1,
+    ShardTransferMethodOneOf2,
 ]
 SparseIndexType = Union[
     SparseIndexTypeOneOf,
@@ -2357,6 +2617,7 @@ StartFrom = Union[
     StrictInt,
     StrictFloat,
     datetime,
+    date,
 ]
 TrackerStatus = Union[
     TrackerStatusOneOf,
@@ -2377,13 +2638,14 @@ UsingVector = Union[
     StrictStr,
 ]
 ValueVariants = Union[
-    StrictStr,
-    StrictInt,
     StrictBool,
+    StrictInt,
+    StrictStr,
 ]
 Vector = Union[
     List[StrictFloat],
     SparseVector,
+    List[List[StrictFloat]],
 ]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,
@@ -2404,6 +2666,7 @@ WithVector = Union[
 ]
 BatchVectorStruct = Union[
     List[List[StrictFloat]],
+    List[List[List[StrictFloat]]],
     Dict[StrictStr, List[Vector]],
 ]
 PayloadFieldSchema = Union[
@@ -2419,12 +2682,23 @@ ShardKeySelector = Union[
     ShardKey,
     List[ShardKey],
 ]
+VectorInput = Union[
+    List[StrictFloat],
+    SparseVector,
+    List[List[StrictFloat]],
+    ExtendedPointId,
+]
 VectorStruct = Union[
     List[StrictFloat],
+    List[List[StrictFloat]],
     Dict[StrictStr, Vector],
 ]
 WithPayloadInterface = Union[
     StrictBool,
     List[StrictStr],
     PayloadSelector,
+]
+QueryInterface = Union[
+    VectorInput,
+    Query,
 ]

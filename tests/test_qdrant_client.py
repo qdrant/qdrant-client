@@ -1,3 +1,4 @@
+import asyncio
 import os
 import uuid
 from pprint import pprint
@@ -49,11 +50,17 @@ from qdrant_client.models import (
 )
 from qdrant_client.qdrant_remote import QdrantRemote
 from qdrant_client.uploader.grpc_uploader import payload_to_grpc
+from tests.congruence_tests.test_common import (
+    generate_fixtures,
+    init_client,
+    init_remote,
+)
 from tests.fixtures.payload import (
     one_random_payload_please,
     random_payload,
     random_real_word,
 )
+from tests.utils import read_version
 
 DIM = 100
 NUM_VECTORS = 1_000
@@ -183,7 +190,11 @@ def test_records_upload(prefer_grpc, parallel):
     warnings.simplefilter("ignore", category=DeprecationWarning)
 
     records = (
-        Record(id=idx, vector=np.random.rand(DIM).tolist(), payload=one_random_payload_please(idx))
+        Record(
+            id=idx,
+            vector=np.random.rand(DIM).tolist(),
+            payload=one_random_payload_please(idx),
+        )
         for idx in range(NUM_VECTORS)
     )
 
@@ -243,7 +254,9 @@ def test_records_upload(prefer_grpc, parallel):
 def test_point_upload(prefer_grpc, parallel):
     points = (
         PointStruct(
-            id=idx, vector=np.random.rand(DIM).tolist(), payload=one_random_payload_please(idx)
+            id=idx,
+            vector=np.random.rand(DIM).tolist(),
+            payload=one_random_payload_please(idx),
         )
         for idx in range(NUM_VECTORS)
     )
@@ -409,7 +422,8 @@ def test_multiple_vectors(prefer_grpc):
 @pytest.mark.parametrize("numpy_upload", [False, True])
 @pytest.mark.parametrize("local_mode", [False, True])
 def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
-    version = os.getenv("QDRANT_VERSION")
+    _, minor_version, patch_version, dev_version = read_version()
+    version_set = minor_version is not None or dev_version
 
     vectors_path = create_random_vectors()
 
@@ -433,7 +447,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         timeout=TIMEOUT,
     )
 
-    if version is None or (version >= "v1.8.0" or version == "dev"):
+    if not version_set or (dev_version or minor_version >= 8):
         assert client.collection_exists(collection_name=COLLECTION_NAME)
         assert not client.collection_exists(collection_name="non_existing_collection")
 
@@ -572,7 +586,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
     assert hits_should == hits_match_any
 
-    if version is None or (version >= "v1.8.0" or version == "dev"):
+    if not version_set or dev_version or minor_version >= 8:
         hits_min_should = client.search(
             collection_name=COLLECTION_NAME,
             query_vector=query_vector,
@@ -627,8 +641,20 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     for hit in hits:
         print(hit)
 
+    if not version_set or dev_version or minor_version >= 10:
+        query_response = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            limit=5,
+        )
+
+        assert len(query_response.points) == 5
+
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vectors=True,
     )
 
     # ------------------ Test for full-text filtering ------------------
@@ -757,16 +783,70 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert batch_reco_result[1] == reco_result_2
     assert batch_reco_result[2] == reco_result_3
 
+    if not version_set or dev_version or minor_version >= 10:
+        query_points_requests = [
+            models.QueryRequest(
+                query=query_vector_1,
+                filter=filter_1,
+                limit=5,
+                with_payload=True,
+            ),
+            models.QueryRequest(
+                query=query_vector_2,
+                filter=filter_2,
+                limit=5,
+                with_payload=True,
+            ),
+            models.QueryRequest(
+                query=query_vector_3,
+                filter=filter_3,
+                limit=5,
+                with_payload=True,
+            ),
+        ]
+        single_query_result_1 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector_1,
+            query_filter=filter_1,
+            limit=5,
+        )
+        single_query_result_2 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector_2,
+            query_filter=filter_2,
+            limit=5,
+        )
+        single_query_result_3 = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector_3,
+            query_filter=filter_3,
+            limit=5,
+        )
+
+        batch_query_result = client.query_batch_points(
+            collection_name=COLLECTION_NAME, requests=query_points_requests
+        )
+
+        assert len(batch_query_result) == 3
+        assert batch_query_result[0] == single_query_result_1
+        assert batch_query_result[1] == single_query_result_2
+        assert batch_query_result[2] == single_query_result_3
+
     # ------------------  End of batch queries test ----------------
 
     assert len(got_points) == 3
 
     client.delete(
-        collection_name=COLLECTION_NAME, wait=True, points_selector=PointIdsList(points=[2, 3])
+        collection_name=COLLECTION_NAME,
+        wait=True,
+        points_selector=PointIdsList(points=[2, 3]),
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vectors=True,
     )
 
     assert len(got_points) == 1
@@ -778,17 +858,26 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2, 3], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2, 3],
+        with_payload=True,
+        with_vectors=True,
     )
 
     assert len(got_points) == 2
 
     client.set_payload(
-        collection_name=COLLECTION_NAME, payload={"new_key": 123}, points=[1, 2], wait=True
+        collection_name=COLLECTION_NAME,
+        payload={"new_key": 123},
+        points=[1, 2],
+        wait=True,
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2],
+        with_payload=True,
+        with_vectors=True,
     )
 
     for point in got_points:
@@ -813,7 +902,10 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1, 2], with_payload=True, with_vectors=True
+        collection_name=COLLECTION_NAME,
+        ids=[1, 2],
+        with_payload=True,
+        with_vectors=True,
     )
 
     for point in got_points:
@@ -822,7 +914,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     positive = [1, 2, query_vector.tolist()]
     negative = []
 
-    if version is not None and version < "v1.6.0":
+    if minor_version is not None and minor_version < 6:
         positive = [1, 2]
         negative = []
 
@@ -883,59 +975,58 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     assert next_page is None
 
-    if version is None or (version >= "v1.5.0" or version == "dev"):
-        client.batch_update_points(
-            collection_name=COLLECTION_NAME,
-            ordering=models.WriteOrdering.STRONG,
-            update_operations=[
-                models.UpsertOperation(
-                    upsert=models.PointsList(
-                        points=[
-                            models.PointStruct(
-                                id=1,
-                                payload={"new_key": 123},
-                                vector=vectors_2,
-                            ),
-                            models.PointStruct(
-                                id=2,
-                                payload={"new_key": 321},
-                                vector=vectors_2,
-                            ),
-                        ]
-                    )
-                ),
-                models.DeleteOperation(delete=models.PointIdsList(points=[2])),
-                models.SetPayloadOperation(
-                    set_payload=models.SetPayload(payload={"new_key2": 321}, points=[1])
-                ),
-                models.OverwritePayloadOperation(
-                    overwrite_payload=models.SetPayload(
-                        payload={
-                            "new_key3": 321,
-                            "new_key4": 321,
-                        },
-                        points=[1],
-                    )
-                ),
-                models.DeletePayloadOperation(
-                    delete_payload=models.DeletePayload(keys=["new_key3"], points=[1])
-                ),
-                models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[1])),
-                models.UpdateVectorsOperation(
-                    update_vectors=models.UpdateVectors(
-                        points=[
-                            models.PointVectors(
-                                id=1,
-                                vector=vectors_2,
-                            )
-                        ]
-                    )
-                ),
-                models.DeleteVectorsOperation(
-                    delete_vectors=models.DeleteVectors(points=[1], vector=[""])
-                ),
-            ],
-        )
+    client.batch_update_points(
+        collection_name=COLLECTION_NAME,
+        ordering=models.WriteOrdering.STRONG,
+        update_operations=[
+            models.UpsertOperation(
+                upsert=models.PointsList(
+                    points=[
+                        models.PointStruct(
+                            id=1,
+                            payload={"new_key": 123},
+                            vector=vectors_2,
+                        ),
+                        models.PointStruct(
+                            id=2,
+                            payload={"new_key": 321},
+                            vector=vectors_2,
+                        ),
+                    ]
+                )
+            ),
+            models.DeleteOperation(delete=models.PointIdsList(points=[2])),
+            models.SetPayloadOperation(
+                set_payload=models.SetPayload(payload={"new_key2": 321}, points=[1])
+            ),
+            models.OverwritePayloadOperation(
+                overwrite_payload=models.SetPayload(
+                    payload={
+                        "new_key3": 321,
+                        "new_key4": 321,
+                    },
+                    points=[1],
+                )
+            ),
+            models.DeletePayloadOperation(
+                delete_payload=models.DeletePayload(keys=["new_key3"], points=[1])
+            ),
+            models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[1])),
+            models.UpdateVectorsOperation(
+                update_vectors=models.UpdateVectors(
+                    points=[
+                        models.PointVectors(
+                            id=1,
+                            vector=vectors_2,
+                        )
+                    ]
+                )
+            ),
+            models.DeleteVectorsOperation(
+                delete_vectors=models.DeleteVectors(points=[1], vector=[""])
+            ),
+        ],
+    )
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
@@ -982,21 +1073,18 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
     collection_info = client.get_collection(COLLECTION_NAME)
 
-    # Many collection update parameters are available since v1.4.0
-    version = os.getenv("QDRANT_VERSION")
-    if version is None or (version >= "v1.4.0" or version == "dev"):
-        assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
-        assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
-        assert (
-            collection_info.config.params.vectors["text"].quantization_config.product.compression
-            == CompressionRatio.X32
-        )
-        assert collection_info.config.params.vectors["text"].quantization_config.product.always_ram
-        assert collection_info.config.params.vectors["text"].on_disk
-        assert collection_info.config.hnsw_config.ef_construct == 123
-        assert collection_info.config.quantization_config.scalar.type == ScalarType.INT8
-        assert 0.7999 < collection_info.config.quantization_config.scalar.quantile < 0.8001
-        assert not collection_info.config.quantization_config.scalar.always_ram
+    assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
+    assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
+    assert (
+        collection_info.config.params.vectors["text"].quantization_config.product.compression
+        == CompressionRatio.X32
+    )
+    assert collection_info.config.params.vectors["text"].quantization_config.product.always_ram
+    assert collection_info.config.params.vectors["text"].on_disk
+    assert collection_info.config.hnsw_config.ef_construct == 123
+    assert collection_info.config.quantization_config.scalar.type == ScalarType.INT8
+    assert 0.7999 < collection_info.config.quantization_config.scalar.quantile < 0.8001
+    assert not collection_info.config.quantization_config.scalar.always_ram
 
     assert collection_info.config.optimizer_config.max_segment_size == 10000
 
@@ -1041,7 +1129,9 @@ def test_points_crud(prefer_grpc):
     # Update a single point
 
     client.set_payload(
-        collection_name=COLLECTION_NAME, payload={"test2": ["value2", "value3"]}, points=[123]
+        collection_name=COLLECTION_NAME,
+        payload={"test2": ["value2", "value3"]},
+        points=[123],
     )
 
     # Delete a single point
@@ -1098,9 +1188,15 @@ def test_quantization_config(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_custom_sharding(prefer_grpc):
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v1.7.0":
+    _, minor_version, patch_version, dev_version = read_version()
+    version_set = minor_version is not None or dev_version
+
+    if minor_version is not None and minor_version < 7:
         pytest.skip("Custom sharding is supported since v1.7.0")
+
+    query_api_available = (
+        not version_set or dev_version or (minor_version is not None and minor_version >= 10)
+    )
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
@@ -1148,31 +1244,50 @@ def test_custom_sharding(prefer_grpc):
         shard_key_selector=dogs_shard_key,
     )
 
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
         shard_key_selector=cats_shard_key,
     )
-
     assert len(res) == 3
     for record in res:
         assert record.shard_key == cats_shard_key
 
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
+        )
+        assert query_res.points == res
+
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
         shard_key_selector=[cats_shard_key, dogs_shard_key],
     )
-
     assert len(res) == 6
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            shard_key_selector=[cats_shard_key, dogs_shard_key],
+        )
+        assert query_res.points == res
 
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
     )
-
     assert len(res) == 6
 
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+        )
+        assert res == query_res.points
     # endregion
 
     # region upload_collection
@@ -1186,15 +1301,25 @@ def test_custom_sharding(prefer_grpc):
         shard_key_selector=cats_shard_key,
     )
 
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
         shard_key_selector=cats_shard_key,
     )
-
     assert len(res) == 3
+
     for record in res:
         assert record.shard_key == cats_shard_key
+
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            shard_key_selector=cats_shard_key,
+        )
+        assert query_res.points == res
+
     # endregion
 
     # region upload_points
@@ -1206,24 +1331,37 @@ def test_custom_sharding(prefer_grpc):
     ]
 
     client.upload_points(
-        collection_name=COLLECTION_NAME, points=cat_points, shard_key_selector=cats_shard_key
-    )
-
-    res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        points=cat_points,
         shard_key_selector=cats_shard_key,
     )
 
-    assert len(res) == 3
-
+    query_vector = np.random.rand(DIM)
     res = client.search(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query_vector=query_vector,
+        shard_key_selector=cats_shard_key,
+    )
+    assert len(res) == 3
+
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
+        )
+        assert res == query_res.points
+
+    query_vector = np.random.rand(DIM)
+    res = client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
         shard_key_selector=dogs_shard_key,
     )
-
     assert len(res) == 0
+    if query_api_available:
+        query_res = client.query_points(
+            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=dogs_shard_key
+        )
+        assert res == query_res.points
 
     # endregion
 
@@ -1232,8 +1370,8 @@ def test_custom_sharding(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors(prefer_grpc):
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v1.7.0":
+    _, minor_version, patch_version, dev_version = read_version()
+    if minor_version is not None and minor_version < 7:
         pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
@@ -1311,8 +1449,8 @@ def test_sparse_vectors(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors_batch(prefer_grpc):
-    version = os.getenv("QDRANT_VERSION")
-    if version is not None and version < "v1.7.0":
+    _, minor_version, patch_version, dev_version = read_version()
+    if minor_version is not None and minor_version < 7:
         pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
@@ -1590,7 +1728,11 @@ def test_locks():
         client.upsert(
             collection_name=COLLECTION_NAME,
             points=[
-                PointStruct(id=123, payload={"test": "value"}, vector=np.random.rand(DIM).tolist())
+                PointStruct(
+                    id=123,
+                    payload={"test": "value"},
+                    vector=np.random.rand(DIM).tolist(),
+                )
             ],
             wait=True,
         )
@@ -1744,6 +1886,20 @@ def test_client_close():
         "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
     )
     local_client_in_mem.close()
+    assert local_client_in_mem._client.closed is True
+
+    with pytest.raises(RuntimeError):
+        local_client_in_mem.upsert(
+            "test", [PointStruct(id=1, vector=np.random.rand(100).tolist())]
+        )
+
+    with pytest.raises(RuntimeError):
+        local_client_in_mem.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+
+    with pytest.raises(RuntimeError):
+        local_client_in_mem.delete_collection("test")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         path = tmpdir + "/test.db"
@@ -1809,6 +1965,140 @@ def test_grpc_compression():
 
     with pytest.raises(TypeError):
         QdrantClient(prefer_grpc=True, grpc_compression="gzip")
+
+
+def test_auth_token_provider():
+    """Check that the token provided is called for both http and grpc clients."""
+    token = ""
+    call_num = 0
+
+    def auth_token_provider():
+        nonlocal token
+        nonlocal call_num
+
+        token = f"token_{call_num}"
+        call_num += 1
+        return token
+
+    client = QdrantClient(auth_token_provider=auth_token_provider)
+    client.get_collections()
+    assert token == "token_0"
+    client.get_collections()
+    assert token == "token_1"
+
+    token = ""
+    call_num = 0
+
+    client = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
+    client.get_collections()
+    assert token == "token_0"
+    client.get_collections()
+    assert token == "token_1"
+
+    client.unlock_storage()
+    assert token == "token_2"
+
+
+def test_async_auth_token_provider():
+    """Check that initialization fails if async auth_token_provider is provided to sync client."""
+    token = ""
+
+    async def auth_token_provider():
+        nonlocal token
+        await asyncio.sleep(0.1)
+        token = "test_token"
+        return token
+
+    client = QdrantClient(auth_token_provider=auth_token_provider)
+
+    with pytest.raises(
+        qdrant_client.http.exceptions.ResponseHandlingException,
+        match="Synchronous token provider is not set.",
+    ):
+        client.get_collections()
+
+    assert token == ""
+
+    client = QdrantClient(auth_token_provider=auth_token_provider, prefer_grpc=True)
+    with pytest.raises(
+        ValueError, match="Synchronous channel requires synchronous auth token provider."
+    ):
+        client.get_collections()
+
+    assert token == ""
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_read_consistency(prefer_grpc):
+    fixture_points = generate_fixtures(vectors_sizes=DIM, num=NUM_VECTORS)
+    client = init_remote(prefer_grpc=prefer_grpc)
+    init_client(
+        client,
+        fixture_points,
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+    )
+
+    query_vector = fixture_points[0].vector
+
+    client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search(
+        collection_name=COLLECTION_NAME,
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=2,
+    )
+
+    search_requests = [models.SearchRequest(vector=query_vector, limit=5)]
+    client.search_batch(
+        collection_name=COLLECTION_NAME,
+        requests=search_requests,
+    )
+
+    client.search_batch(
+        collection_name=COLLECTION_NAME,
+        requests=search_requests,
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search_batch(collection_name=COLLECTION_NAME, requests=search_requests, consistency=2)
+
+    client.search_groups(
+        collection_name=COLLECTION_NAME,
+        group_by="word",
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search_groups(
+        collection_name=COLLECTION_NAME,
+        group_by="word",
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
+
+    client.search_groups(
+        collection_name=COLLECTION_NAME,
+        group_by="word",
+        query_vector=query_vector,
+        limit=5,  # Return 5 closest points
+        consistency=models.ReadConsistencyType.MAJORITY,
+    )
 
 
 if __name__ == "__main__":

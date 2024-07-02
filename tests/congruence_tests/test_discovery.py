@@ -1,11 +1,11 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pytest
 
+from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.http.models import models
-from qdrant_client.qdrant_client import QdrantClient
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -254,27 +254,62 @@ def test_only_target(
     compare_client_results(local_client, http_client, f)
 
 
+def discover_from_another_collection(
+    client: QdrantBase,
+    collection_name=COLLECTION_NAME,
+    lookup_collection_name=secondary_collection_name,
+    positive_point_id: Optional[int] = None,
+    **kwargs: Dict[str, Any],
+) -> List[models.ScoredPoint]:
+    return client.discover(
+        collection_name=collection_name,
+        target=5,
+        context=[models.ContextExamplePair(positive=3, negative=6)]
+        if positive_point_id is None
+        else [],
+        with_payload=True,
+        limit=10,
+        using="image",
+        lookup_from=models.LookupLocation(
+            collection=lookup_collection_name,
+            vector="image",
+        ),
+    )
+
+
 def test_discover_from_another_collection(
     local_client,
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
-        return client.discover(
-            collection_name=COLLECTION_NAME,
-            target=10,
-            context=[models.ContextExamplePair(positive=15, negative=7)],
-            with_payload=True,
-            limit=10,
-            using="image",
-            lookup_from=models.LookupLocation(
-                collection=secondary_collection_name,
-                vector="image",
-            ),
-        )
+    compare_client_results(grpc_client, http_client, discover_from_another_collection)
+    compare_client_results(local_client, http_client, discover_from_another_collection)
 
-    compare_client_results(grpc_client, http_client, f)
-    compare_client_results(local_client, http_client, f)
+
+def test_discover_from_another_collection_id_exclusion():
+    fixture_points = generate_fixtures(10)
+
+    secondary_collection_points = generate_fixtures(10)
+
+    local_client = init_local()
+    collection_name = COLLECTION_NAME + "_small"
+    lookup_collection_name = secondary_collection_name + "_small"
+    init_client(local_client, fixture_points, collection_name=collection_name)
+    init_client(local_client, secondary_collection_points, collection_name=lookup_collection_name)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points, collection_name=collection_name)
+    init_client(remote_client, secondary_collection_points, collection_name=lookup_collection_name)
+
+    for i in range(10):
+        compare_client_results(
+            local_client,
+            remote_client,
+            discover_from_another_collection,
+            positive_point_id=i,
+            collection_name=collection_name,
+            lookup_collection_name=lookup_collection_name,
+        )
 
 
 def test_discover_batch(
@@ -335,3 +370,54 @@ def test_context_with_filters(local_client, http_client, grpc_client, filter: mo
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
     compare_client_results(local_client, http_client, f, is_context_search=True)
+
+
+def test_query_with_nan():
+    fixture_points = generate_fixtures()
+    vector = np.random.random(image_vector_size)
+    vector[0] = np.nan
+    vector = vector.tolist()
+    using = "image"
+
+    local_client = init_local()
+    remote_client = init_remote()
+
+    init_client(local_client, fixture_points)
+    init_client(remote_client, fixture_points)
+
+    with pytest.raises(AssertionError):
+        local_client.discover(
+            collection_name=COLLECTION_NAME,
+            target=vector,
+            using=using,
+        )
+    with pytest.raises(UnexpectedResponse):
+        remote_client.discover(
+            collection_name=COLLECTION_NAME,
+            target=vector,
+            using=using,
+        )
+    with pytest.raises(AssertionError):
+        local_client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[models.ContextExamplePair(positive=vector, negative=1)],
+            using=using,
+        )
+    with pytest.raises(UnexpectedResponse):
+        remote_client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[models.ContextExamplePair(positive=vector, negative=1)],
+            using=using,
+        )
+    with pytest.raises(AssertionError):
+        local_client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[models.ContextExamplePair(positive=1, negative=vector)],
+            using=using,
+        )
+    with pytest.raises(UnexpectedResponse):
+        remote_client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[models.ContextExamplePair(positive=1, negative=vector)],
+            using=using,
+        )

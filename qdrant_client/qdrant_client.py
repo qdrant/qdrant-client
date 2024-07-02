@@ -1,5 +1,17 @@
 import warnings
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
@@ -35,7 +47,7 @@ class QdrantClient(QdrantFastembedMixin):
 
     Args:
         location:
-            If `:memory:` - use in-memory Qdrant instance.
+            If `":memory:"` - use in-memory Qdrant instance.
             If `str` - use it as a `url` parameter.
             If `None` - use default values for `host` and `port`.
         url: either host or str of "Optional[scheme], host, Optional[port], Optional[prefix]".
@@ -58,6 +70,7 @@ class QdrantClient(QdrantFastembedMixin):
         force_disable_check_same_thread:
             For QdrantLocal, force disable check_same_thread. Default: `False`
             Only use this if you can guarantee that you can resolve the thread safety outside QdrantClient.
+        auth_token_provider: Callback function to get Bearer access token. If given, the function will be called before each request to get the token.
         **kwargs: Additional arguments passed directly into REST client initialization
 
     """
@@ -77,6 +90,9 @@ class QdrantClient(QdrantFastembedMixin):
         path: Optional[str] = None,
         force_disable_check_same_thread: bool = False,
         grpc_options: Optional[Dict[str, Any]] = None,
+        auth_token_provider: Optional[
+            Union[Callable[[], str], Callable[[], Awaitable[str]]]
+        ] = None,
         **kwargs: Any,
     ):
         super().__init__(
@@ -125,6 +141,7 @@ class QdrantClient(QdrantFastembedMixin):
                 timeout=timeout,
                 host=host,
                 grpc_options=grpc_options,
+                auth_token_provider=auth_token_provider,
                 **kwargs,
             )
 
@@ -229,7 +246,7 @@ class QdrantClient(QdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
-        """Search for points in multiple collections
+        """Perform multiple searches in a collection mitigating network overhead
 
         Args:
             collection_name: Name of the collection
@@ -261,11 +278,11 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
             types.NamedSparseVector,
+            types.NumpyArray,
         ],
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
@@ -368,15 +385,192 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    def query_batch_points(
+        self,
+        collection_name: str,
+        requests: Sequence[types.QueryRequest],
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> List[types.QueryResponse]:
+        """Perform any search, recommend, discovery, context search operations in batch, and mitigate network overhead
+
+        Args:
+            collection_name: Name of the collection
+            requests: List of query requests
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
+
+        Returns:
+            List of query responses
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.query_batch_points(
+            collection_name=collection_name,
+            requests=requests,
+            consistency=consistency,
+            timeout=timeout,
+            **kwargs,
+        )
+
+    def query_points(
+        self,
+        collection_name: str,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> types.QueryResponse:
+        """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
+
+        Args:
+            collection_name: Collection to search in
+            query:
+                Query for the chosen search type operation.
+                - If `str` - use string as UUID of the existing point as a search query.
+                - If `int` - use integer as ID of the existing point as a search query.
+                - If `List[float]` - use as a dense vector for nearest search.
+                - If `List[List[float]]` - use as a multi-vector for nearest search.
+                - If `SparseVector` - use as a sparse vector for nearest search.
+                - If `Query` - use as a query for specific search type.
+                - If `NumpyArray` - use as a dense vector for nearest search.
+                - If `Document` - infer vector from the document text and use
+                                    it for nearest search (requires `fastembed` package installed).
+                - If `None` - return first `limit` points from the collection.
+            prefetch: prefetch queries to make a selection of the data to be used with the main query
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many results return
+            offset:
+                Offset of the first result to return.
+                May be used to paginate results.
+                Note: large offset values may cause performance issues.
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
+            using:
+                Name of the vectors to use for query.
+                If `None` - use default vectors or provided in named vector structures.
+            lookup_from:
+                Defines a location (collection and vector field name), used to lookup vectors for recommendations,
+                    discovery and context queries.
+                If `None` - current collection will be used.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
+
+        Examples:
+
+        `Search for closest points with a filter`::
+
+            qdrant.query(
+                collection_name="test_collection",
+                query=[1.0, 0.1, 0.2, 0.7],
+                query_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key='color',
+                            range=Match(
+                                value="red"
+                            )
+                        )
+                    ]
+                )
+            )
+
+        Returns:
+            QueryResponse structure containing list of found close points with similarity scores.
+        """
+
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        # If the query contains unprocessed documents, we need to embed them and
+        # replace the original query with the embedded vectors.
+        using, query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(
+            query, prefetch, using, limit
+        )
+
+        return self._client.query_points(
+            collection_name=collection_name,
+            query=query,
+            prefetch=prefetch,
+            query_filter=query_filter,
+            search_params=search_params,
+            limit=limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            using=using,
+            lookup_from=lookup_from,
+            consistency=consistency,
+            shard_key_selector=shard_key_selector,
+            timeout=timeout,
+            **kwargs,
+        )
+
     def search_groups(
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray,
             Sequence[float],
             Tuple[str, List[float]],
             types.NamedVector,
             types.NamedSparseVector,
+            types.NumpyArray,
         ],
         group_by: str,
         query_filter: Optional[types.Filter] = None,
@@ -575,7 +769,7 @@ class QdrantClient(QdrantFastembedMixin):
                 If `None` - use default vectors.
             lookup_from:
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
-                If `None` - use current collection will be used.
+                If `None` - current collection will be used.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
 
@@ -694,7 +888,7 @@ class QdrantClient(QdrantFastembedMixin):
                 If `None` - use default vectors.
             lookup_from:
                 Defines a location (collection and vector field name), used to lookup vectors for recommendations.
-                If `None` - use current collection will be used.
+                If `None` - current collection will be used.
             with_lookup:
                 Look for points in another collection using the group ids.
                 If specified, each group will contain a record from the specified collection
@@ -1213,6 +1407,7 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
@@ -1258,6 +1453,39 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            key: Path to the nested field in the payload to modify. If not specified - modify the root of the
+                payload. E.g.:
+
+                PointStruct(
+                    id=42,
+                    vector=[...],
+                    payload={
+                        "recipe": {
+                            "fruits": {"apple": "100g"}
+                        }
+                    }
+                )
+
+                qdrant_client.set_payload(
+                    ...,
+                    payload = {"cinnamon": "2g"},
+                    key = "recipe.fruits",
+                    points=[42]
+                )
+
+                PointStruct(
+                    id=42,
+                    vector=[...],
+                    payload={
+                        "recipe": {
+                            "fruits": {
+                                "apple": "100g",
+                                "cinnamon": "2g"
+                            }
+                        }
+                    }
+                )
+
         Returns:
             Operation result
         """
@@ -1270,6 +1498,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            key=key,
             **kwargs,
         )
 
@@ -1711,6 +1940,8 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    # WARN: This method is deprecated and will be removed in the future
+    # Use separate check for collection existence and `create_collection` instead
     def recreate_collection(
         self,
         collection_name: str,
@@ -1777,6 +2008,13 @@ class QdrantClient(QdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        warnings.warn(
+            "`recreate_collection` method is deprecated and will be removed in the future."
+            " Use `collection_exists` to check collection existence and `create_collection` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         return self._client.recreate_collection(
             collection_name=collection_name,
@@ -1902,7 +2140,9 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         vectors: Union[
-            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+            Iterable[types.VectorStruct],
+            Dict[str, types.NumpyArray],
+            types.NumpyArray,
         ],
         payload: Optional[Iterable[Dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
@@ -2085,7 +2325,10 @@ class QdrantClient(QdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.delete_snapshot(
-            collection_name=collection_name, snapshot_name=snapshot_name, wait=wait, **kwargs
+            collection_name=collection_name,
+            snapshot_name=snapshot_name,
+            wait=wait,
+            **kwargs,
         )
 
     def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
@@ -2139,6 +2382,8 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         location: str,
+        api_key: Optional[str] = None,
+        checksum: Optional[str] = None,
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
@@ -2151,6 +2396,10 @@ class QdrantClient(QdrantFastembedMixin):
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
                 - Local path `file:///qdrant/snapshots/test_collection/test_collection-6194298859870377-2023-11-09-15-17-51.snapshot`
+
+            api_key: API key to use for accessing the snapshot on another server.
+
+            checksum: Checksum of the snapshot to verify the integrity of the snapshot.
 
             priority: Defines source of truth for snapshot recovery
 
@@ -2171,6 +2420,8 @@ class QdrantClient(QdrantFastembedMixin):
         return self._client.recover_snapshot(
             collection_name=collection_name,
             location=location,
+            api_key=api_key,
+            checksum=checksum,
             priority=priority,
             wait=wait,
             **kwargs,
@@ -2259,6 +2510,8 @@ class QdrantClient(QdrantFastembedMixin):
         collection_name: str,
         shard_id: int,
         location: str,
+        api_key: Optional[str] = None,
+        checksum: Optional[str] = None,
         priority: Optional[types.SnapshotPriority] = None,
         wait: bool = True,
         **kwargs: Any,
@@ -2271,6 +2524,9 @@ class QdrantClient(QdrantFastembedMixin):
             location: URL of the snapshot
                 Example:
                 - URL `http://localhost:8080/collections/my_collection/snapshots/my_snapshot`
+
+            api_key: API key to use for accessing the snapshot on another server.
+            checksum: Checksum of the snapshot to verify the integrity of the snapshot.
             priority: Defines source of truth for snapshot recovery
 
                 - `replica` (default) means - prefer existing data over the snapshot
@@ -2291,6 +2547,8 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name=collection_name,
             shard_id=shard_id,
             location=location,
+            api_key=api_key,
+            checksum=checksum,
             priority=priority,
             wait=wait,
             **kwargs,

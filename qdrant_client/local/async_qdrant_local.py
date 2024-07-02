@@ -26,18 +26,22 @@ from typing import (
     Sequence,
     Tuple,
     Union,
+    get_args,
+    Set,
 )
 from uuid import uuid4
-
 import numpy as np
 import portalocker
-
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
 from qdrant_client.http.models.models import RecommendExample
-from qdrant_client.local.local_collection import LocalCollection
+from qdrant_client.local.local_collection import (
+    LocalCollection,
+    DEFAULT_VECTOR_NAME,
+    ignore_mentioned_ids_filter,
+)
 
 META_INFO_FILENAME = "meta.json"
 
@@ -71,6 +75,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self._load()
         self._closed: bool = False
 
+    @property
     def closed(self) -> bool:
         return self._closed
 
@@ -129,6 +134,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     def _save(self) -> None:
         if not self.persistent:
             return
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
         with open(meta_path, "w") as f:
             f.write(
@@ -144,6 +151,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             )
 
     def _get_collection(self, collection_name: str) -> LocalCollection:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         if collection_name in self.collections:
             return self.collections[collection_name]
         if collection_name in self.aliases:
@@ -233,6 +242,184 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
         )
+
+    def _resolve_query_input(
+        self,
+        collection_name: str,
+        query: Optional[types.Query],
+        using: Optional[str],
+        lookup_from: Optional[types.LookupLocation],
+    ) -> Tuple[types.Query, Set[types.PointId]]:
+        """
+        Resolves any possible ids into vectors and returns a new query object, along with a set of the mentioned
+        point ids that should be filtered when searching.
+        """
+        lookup_collection_name = lookup_from.collection if lookup_from else collection_name
+        collection = self._get_collection(lookup_collection_name)
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+        vector_name = (
+            lookup_from.vector
+            if lookup_from is not None and lookup_from.vector is not None
+            else search_in_vector_name
+        )
+        sparse = vector_name in collection.sparse_vectors
+        multi = vector_name in collection.multivectors
+        if sparse:
+            collection_vectors = collection.sparse_vectors
+        elif multi:
+            collection_vectors = collection.multivectors
+        else:
+            collection_vectors = collection.vectors
+        mentioned_ids: Set[types.PointId] = set()
+
+        def input_into_vector(vector_input: types.VectorInput) -> types.VectorInput:
+            if isinstance(vector_input, get_args(types.PointId)):
+                point_id = vector_input
+                if point_id not in collection.ids:
+                    raise ValueError(f"Point {point_id} is not found in the collection")
+                idx = collection.ids[point_id]
+                if vector_name in collection_vectors:
+                    vec = collection_vectors[vector_name][idx]
+                else:
+                    raise ValueError(f"Vector {vector_name} not found")
+                if isinstance(vec, np.ndarray):
+                    vec = vec.tolist()
+                if collection_name == lookup_collection_name:
+                    mentioned_ids.add(point_id)
+                return vec
+            else:
+                return vector_input
+
+        if isinstance(query, rest_models.NearestQuery):
+            query.nearest = input_into_vector(query.nearest)
+        elif isinstance(query, rest_models.RecommendQuery):
+            if query.recommend.negative is not None:
+                query.recommend.negative = [
+                    input_into_vector(vector_input) for vector_input in query.recommend.negative
+                ]
+            if query.recommend.positive is not None:
+                query.recommend.positive = [
+                    input_into_vector(vector_input) for vector_input in query.recommend.positive
+                ]
+        elif isinstance(query, rest_models.DiscoverQuery):
+            query.discover.target = input_into_vector(query.discover.target)
+            pairs = (
+                query.discover.context
+                if isinstance(query.discover.context, list)
+                else [query.discover.context]
+            )
+            query.discover.context = [
+                rest_models.ContextPair(
+                    positive=input_into_vector(pair.positive),
+                    negative=input_into_vector(pair.negative),
+                )
+                for pair in pairs
+            ]
+        elif isinstance(query, rest_models.ContextQuery):
+            pairs = query.context if isinstance(query.context, list) else [query.context]
+            query.context = [
+                rest_models.ContextPair(
+                    positive=input_into_vector(pair.positive),
+                    negative=input_into_vector(pair.negative),
+                )
+                for pair in pairs
+            ]
+        elif isinstance(query, rest_models.OrderByQuery):
+            pass
+        elif isinstance(query, rest_models.FusionQuery):
+            pass
+        return (query, mentioned_ids)
+
+    def _resolve_prefetches_input(
+        self,
+        prefetch: Optional[Union[Sequence[types.Prefetch], types.Prefetch]],
+        collection_name: str,
+    ) -> List[types.Prefetch]:
+        if prefetch is None:
+            return []
+        if isinstance(prefetch, list) and len(prefetch) == 0:
+            return []
+        prefetches = []
+        if isinstance(prefetch, types.Prefetch):
+            prefetches = (
+                prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
+            )
+        elif isinstance(prefetch, Sequence):
+            prefetches = list(prefetch)
+        return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches]
+
+    def _resolve_prefetch_input(
+        self, prefetch: types.Prefetch, collection_name: str
+    ) -> types.Prefetch:
+        if prefetch.query is None:
+            return prefetch
+        (query, mentioned_ids) = self._resolve_query_input(
+            collection_name, prefetch.query, prefetch.using, prefetch.lookup_from
+        )
+        prefetch.query = query
+        prefetch.filter = ignore_mentioned_ids_filter(prefetch.filter, list(mentioned_ids))
+        prefetch.prefetch = self._resolve_prefetches_input(prefetch.prefetch, collection_name)
+        return prefetch
+
+    async def query_points(
+        self,
+        collection_name: str,
+        query: Optional[types.Query] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        **kwargs: Any,
+    ) -> types.QueryResponse:
+        collection = self._get_collection(collection_name)
+        if query is not None:
+            (query, mentioned_ids) = self._resolve_query_input(
+                collection_name, query, using, lookup_from
+            )
+            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+        prefetch = self._resolve_prefetches_input(prefetch, collection_name)
+        return collection.query_points(
+            query=query,
+            prefetch=prefetch,
+            query_filter=query_filter,
+            using=using,
+            score_threshold=score_threshold,
+            limit=limit,
+            offset=offset or 0,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+        )
+
+    async def query_batch_points(
+        self, collection_name: str, requests: Sequence[types.QueryRequest], **kwargs: Any
+    ) -> List[types.QueryResponse]:
+        collection = self._get_collection(collection_name)
+        return [
+            collection.query_points(
+                query=request.query,
+                prefetch=request.prefetch,
+                query_filter=request.filter,
+                limit=request.limit,
+                offset=request.offset,
+                with_payload=request.with_payload,
+                with_vectors=request.with_vector,
+                score_threshold=request.score_threshold,
+                using=request.using,
+                lookup_from_collection=self._get_collection(request.lookup_from.collection)
+                if request.lookup_from
+                else None,
+                lookup_from_vector_name=request.lookup_from.vector
+                if request.lookup_from
+                else None,
+            )
+            for request in requests
+        ]
 
     async def recommend_batch(
         self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
@@ -483,10 +670,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection_name: str,
         payload: types.Payload,
         points: types.PointsSelector,
+        key: Optional[str] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.set_payload(payload=payload, selector=points)
+        collection.set_payload(payload=payload, selector=points, key=key)
         return self._default_update_result()
 
     async def overwrite_payload(
@@ -534,9 +722,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         for operation in change_aliases_operations:
             if isinstance(operation, rest_models.CreateAliasOperation):
                 self._get_collection(operation.create_alias.collection_name)
-                self.aliases[
-                    operation.create_alias.alias_name
-                ] = operation.create_alias.collection_name
+                self.aliases[operation.create_alias.alias_name] = (
+                    operation.create_alias.collection_name
+                )
             elif isinstance(operation, rest_models.DeleteAliasOperation):
                 self.aliases.pop(operation.delete_alias.alias_name, None)
             elif isinstance(operation, rest_models.RenameAliasOperation):
@@ -551,6 +739,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def get_collection_aliases(
         self, collection_name: str, **kwargs: Any
     ) -> types.CollectionsAliasesResponse:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
@@ -560,6 +750,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         )
 
     async def get_aliases(self, **kwargs: Any) -> types.CollectionsAliasesResponse:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
@@ -568,6 +760,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         )
 
     async def get_collections(self, **kwargs: Any) -> types.CollectionsResponse:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         return types.CollectionsResponse(
             collections=[
                 rest_models.CollectionDescription(name=name)
@@ -586,8 +780,17 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         except ValueError:
             return False
 
-    async def update_collection(self, collection_name: str, **kwargs: Any) -> bool:
-        self._get_collection(collection_name)
+    async def update_collection(
+        self,
+        collection_name: str,
+        sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        _collection = self._get_collection(collection_name)
+        if sparse_vectors_config is not None:
+            for vector_name, vector_params in sparse_vectors_config.items():
+                _collection.update_sparse_vectors_config(vector_name, vector_params)
+            return True
         return False
 
     def _collection_path(self, collection_name: str) -> Optional[str]:
@@ -597,6 +800,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             return None
 
     async def delete_collection(self, collection_name: str, **kwargs: Any) -> bool:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         _collection = self.collections.pop(collection_name, None)
         del _collection
         self.aliases = {
@@ -618,6 +823,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
+        if self.closed:
+            raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
         src_collection = None
         from_collection_name = None
         if init_from is not None:

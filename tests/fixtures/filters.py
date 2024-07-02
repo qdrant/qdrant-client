@@ -1,8 +1,9 @@
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
+from typing import Union
 
 from qdrant_client.http import models
-from tests.fixtures.payload import geo_points, random_real_word
+from tests.fixtures.payload import geo_points, random_real_word, random_signed_int
 
 """
 data structure:
@@ -30,6 +31,10 @@ data structure:
     ],
     "id": 101
   },
+  "nested_array": [[1, 8], [-5, 9, 3]],
+  "rand_digit": 3,
+  "rand_signed_int": -3,
+  "rand_datetime": "2021-08-17T14:00:00+00:00",  # or datetime object
   "rand_number": 0.8558,
   "text_array": [
     "3044671ce68848fb839a3ae8cb523cb8",
@@ -37,6 +42,7 @@ data structure:
   ],
   "text_data": "6d610fbd8a1345b4a8bcb4161a0a3a52",
   "words": "ape wolf",
+  "two_words": ["ape", "wolf"],
   "maybe": None,
 }
 
@@ -193,11 +199,14 @@ def datetime_range_field_condition() -> models.FieldCondition:
     start_datetime = datetime(2000, 1, 1)
     end_datetime = datetime(2001, 1, 31)
 
-    def random_datetime() -> datetime:
+    def random_datetime() -> Union[datetime, date]:
         dt = start_datetime + timedelta(
             seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
             microseconds=random.randint(0, 999999),
         )
+        if random.random() > 0.8:
+            return dt.date()
+
         return dt.replace(tzinfo=timezone(offset=timedelta(hours=random.randint(-12, 12))))
 
     lt = random_datetime()
@@ -218,10 +227,26 @@ def datetime_range_field_condition() -> models.FieldCondition:
     )
 
 
+def range_nested_array_field_condition() -> models.Condition:
+    first_index, second_index = random.choices([0, 1, 2, 10, ""], k=2)
+    lt = random_signed_int()
+
+    return models.FieldCondition(
+        key=f"nested_array[{first_index}][{second_index}]",
+        range=models.Range(lt=lt),
+    )
+
+
 def geo_bounding_box_field_condition() -> models.FieldCondition:
     field = "city.geo"
-    random_top_left = {"lat": random.random() * 180 - 90, "lon": random.random() * 360 - 180}
-    random_bottom_right = {"lat": random.random() * 180 - 90, "lon": random.random() * 360 - 180}
+    random_top_left = {
+        "lat": random.random() * 180 - 90,
+        "lon": random.random() * 360 - 180,
+    }
+    random_bottom_right = {
+        "lat": random.random() * 180 - 90,
+        "lon": random.random() * 360 - 180,
+    }
 
     return models.FieldCondition(
         key=field,
@@ -272,6 +297,7 @@ def one_random_condition_please() -> models.Condition:
             match_except_field_condition,
             range_field_condition,
             datetime_range_field_condition,
+            range_nested_array_field_condition,
             geo_bounding_box_field_condition,
             geo_radius_field_condition,
             values_count_field_condition,

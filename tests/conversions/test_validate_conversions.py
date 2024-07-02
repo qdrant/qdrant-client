@@ -1,8 +1,9 @@
 import inspect
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from inspect import getmembers
+from typing import Union
 
 import pytest
 from google.protobuf.json_format import MessageToDict
@@ -54,6 +55,10 @@ def test_conversion_completeness():
                     rest_fixture = grpc_to_rest_convert[convert_function_name](fixture)
 
                 back_convert_function_name = convert_function_name
+
+                print(
+                    f"back_convert_function_name: {back_convert_function_name} for {type(rest_fixture)}"
+                )
 
                 result = list(
                     inspect.signature(
@@ -168,6 +173,18 @@ def test_vector_batch_conversion():
     ]
 
 
+def test_sparse_vector_conversion():
+    from qdrant_client import grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    sparse_vector = grpc.Vector(data=[0.2, 0.3, 0.4], indices=grpc.SparseIndices(data=[3, 2, 5]))
+    recovered = RestToGrpc.convert_sparse_vector_to_vector(
+        GrpcToRest.convert_vector(sparse_vector)
+    )
+
+    assert sparse_vector == recovered
+
+
 def test_sparse_vector_batch_conversion():
     from qdrant_client import grpc
     from qdrant_client.conversions.conversion import RestToGrpc
@@ -232,6 +249,8 @@ def test_grpc_payload_scheme_conversion():
         PayloadSchemaType.Float,
         PayloadSchemaType.Geo,
         PayloadSchemaType.Text,
+        PayloadSchemaType.Bool,
+        PayloadSchemaType.Datetime,
     ):
         assert payload_schema == grpc_field_type_to_payload_schema(
             grpc_payload_schema_to_field_type(payload_schema)
@@ -254,15 +273,84 @@ def test_init_from_conversion():
         datetime(2021, 1, 1, 0, 0, 0),
         datetime.utcnow(),
         datetime.now(),
+        date.today(),
     ],
 )
-def test_datetime_to_timestamp_conversions(dt: datetime):
+def test_datetime_to_timestamp_conversions(dt: Union[datetime, date]):
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 
     rest_to_grpc = RestToGrpc.convert_datetime(dt)
     grpc_to_rest = GrpcToRest.convert_timestamp(rest_to_grpc)
 
-    print(f"dt: {dt}, rest_to_grpc: {rest_to_grpc}, grpc_to_rest: {grpc_to_rest}")
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        dt = datetime.combine(dt, datetime.min.time())
+
     assert (
         dt.utctimetuple() == grpc_to_rest.utctimetuple()
     ), f"Failed for {dt}, should be equal to {grpc_to_rest}"
+
+
+def test_convert_context_input_flat_pair():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_context_pair = models.ContextPair(
+        positive=1,
+        negative=2,
+    )
+    grpc_context_input = RestToGrpc.convert_context_input(rest_context_pair)
+    recovered = GrpcToRest.convert_context_input(grpc_context_input)
+
+    assert recovered[0] == rest_context_pair
+
+
+def test_convert_query_interface():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_query = 1
+    expected = models.NearestQuery(nearest=rest_query)
+    grpc_query = RestToGrpc.convert_query_interface(rest_query)
+    recovered = GrpcToRest.convert_query(grpc_query)
+
+    assert recovered == expected
+
+    grpc_query = RestToGrpc.convert_query_interface(expected)
+    recovered = GrpcToRest.convert_query(grpc_query)
+
+    assert recovered == expected
+
+
+def test_convert_flat_prefetch():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_prefetch = models.Prefetch(prefetch=models.Prefetch(using="test"))
+    grpc_prefetch = RestToGrpc.convert_prefetch_query(rest_prefetch)
+    recovered = GrpcToRest.convert_prefetch_query(grpc_prefetch)
+
+    assert recovered.prefetch[0] == rest_prefetch.prefetch
+
+
+def test_convert_flat_filter():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    rest_filter = models.Filter(
+        must=models.FieldCondition(key="mandatory", match=models.MatchValue(value=1)),
+        should=models.FieldCondition(key="desirable", range=models.DatetimeRange(lt=3.0)),
+        must_not=models.HasIdCondition(has_id=[1, 2, 3]),
+        min_should=models.MinShould(
+            conditions=[
+                models.FieldCondition(key="at_least_one", values_count=models.ValuesCount(gte=1)),
+                models.FieldCondition(key="fallback", match=models.MatchValue(value=42)),
+            ],
+            min_count=1,
+        ),
+    )
+    grpc_filter = RestToGrpc.convert_filter(rest_filter)
+    recovered = GrpcToRest.convert_filter(grpc_filter)
+
+    assert recovered.must[0] == rest_filter.must
+    assert recovered.should[0] == rest_filter.should
+    assert recovered.must_not[0] == rest_filter.must_not

@@ -1,5 +1,6 @@
+import asyncio
 import collections
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Union
 
 import grpc
 
@@ -64,7 +65,7 @@ class _GenericAsyncClientInterceptor(
     async def intercept_unary_unary(
         self, continuation: Any, client_call_details: Any, request: Any
     ) -> Any:
-        new_details, new_request_iterator, postprocess = self._fn(
+        new_details, new_request_iterator, postprocess = await self._fn(
             client_call_details, iter((request,)), False, False
         )
         next_request = next(new_request_iterator)
@@ -74,7 +75,7 @@ class _GenericAsyncClientInterceptor(
     async def intercept_unary_stream(
         self, continuation: Any, client_call_details: Any, request: Any
     ) -> Any:
-        new_details, new_request_iterator, postprocess = self._fn(
+        new_details, new_request_iterator, postprocess = await self._fn(
             client_call_details, iter((request,)), False, True
         )
         response_it = await continuation(new_details, next(new_request_iterator))
@@ -83,7 +84,7 @@ class _GenericAsyncClientInterceptor(
     async def intercept_stream_unary(
         self, continuation: Any, client_call_details: Any, request_iterator: Any
     ) -> Any:
-        new_details, new_request_iterator, postprocess = self._fn(
+        new_details, new_request_iterator, postprocess = await self._fn(
             client_call_details, request_iterator, True, False
         )
         response = await continuation(new_details, new_request_iterator)
@@ -92,7 +93,7 @@ class _GenericAsyncClientInterceptor(
     async def intercept_stream_stream(
         self, continuation: Any, client_call_details: Any, request_iterator: Any
     ) -> Any:
-        new_details, new_request_iterator, postprocess = self._fn(
+        new_details, new_request_iterator, postprocess = await self._fn(
             client_call_details, request_iterator, True, True
         )
         response_it = await continuation(new_details, new_request_iterator)
@@ -125,7 +126,10 @@ class _ClientAsyncCallDetails(
     pass
 
 
-def header_adder_interceptor(new_metadata: List[Tuple[str, str]]) -> _GenericClientInterceptor:
+def header_adder_interceptor(
+    new_metadata: List[Tuple[str, str]],
+    auth_token_provider: Optional[Callable[[], str]] = None,
+) -> _GenericClientInterceptor:
     def intercept_call(
         client_call_details: _ClientCallDetails,
         request_iterator: Any,
@@ -133,6 +137,7 @@ def header_adder_interceptor(new_metadata: List[Tuple[str, str]]) -> _GenericCli
         _response_streaming: Any,
     ) -> Tuple[_ClientCallDetails, Any, Any]:
         metadata = []
+
         if client_call_details.metadata is not None:
             metadata = list(client_call_details.metadata)
         for header, value in new_metadata:
@@ -142,6 +147,13 @@ def header_adder_interceptor(new_metadata: List[Tuple[str, str]]) -> _GenericCli
                     value,
                 )
             )
+
+        if auth_token_provider:
+            if not asyncio.iscoroutinefunction(auth_token_provider):
+                metadata.append(("authorization", f"Bearer {auth_token_provider()}"))
+            else:
+                raise ValueError("Synchronous channel requires synchronous auth token provider.")
+
         client_call_details = _ClientCallDetails(
             client_call_details.method,
             client_call_details.timeout,
@@ -154,9 +166,10 @@ def header_adder_interceptor(new_metadata: List[Tuple[str, str]]) -> _GenericCli
 
 
 def header_adder_async_interceptor(
-    new_metadata: List[Tuple[str, str]]
+    new_metadata: List[Tuple[str, str]],
+    auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
 ) -> _GenericAsyncClientInterceptor:
-    def intercept_call(
+    async def intercept_call(
         client_call_details: grpc.aio.ClientCallDetails,
         request_iterator: Any,
         _request_streaming: Any,
@@ -172,6 +185,14 @@ def header_adder_async_interceptor(
                     value,
                 )
             )
+
+        if auth_token_provider:
+            if asyncio.iscoroutinefunction(auth_token_provider):
+                token = await auth_token_provider()
+            else:
+                token = auth_token_provider()
+            metadata.append(("authorization", f"Bearer {token}"))
+
         client_call_details = client_call_details._replace(metadata=metadata)
         return client_call_details, request_iterator, None
 
@@ -200,38 +221,21 @@ def get_channel(
     metadata: Optional[List[Tuple[str, str]]] = None,
     options: Optional[Dict[str, Any]] = None,
     compression: Optional[grpc.Compression] = None,
+    auth_token_provider: Optional[Callable[[], str]] = None,
 ) -> grpc.Channel:
-    # gRPC client options
+    # Parse gRPC client options
     _options = parse_channel_options(options)
+    metadata_interceptor = header_adder_interceptor(
+        new_metadata=metadata or [], auth_token_provider=auth_token_provider
+    )
 
     if ssl:
-        if metadata:
-
-            def metadata_callback(context: Any, callback: Any) -> None:
-                # for more info see grpc docs
-                callback(metadata, None)
-
-            # build ssl credentials using the cert the same as before
-            cert_creds = grpc.ssl_channel_credentials()
-
-            # now build meta data credentials
-            auth_creds = grpc.metadata_call_credentials(metadata_callback)
-
-            # combine the cert credentials and the macaroon auth credentials
-            # such that every call is properly encrypted and authenticated
-            creds = grpc.composite_channel_credentials(cert_creds, auth_creds)
-        else:
-            creds = grpc.ssl_channel_credentials()
-
-        # finally pass in the combined credentials when creating a channel
-        return grpc.secure_channel(f"{host}:{port}", creds, _options, compression)
+        ssl_creds = grpc.ssl_channel_credentials()
+        channel = grpc.secure_channel(f"{host}:{port}", ssl_creds, _options, compression)
+        return grpc.intercept_channel(channel, metadata_interceptor)
     else:
-        if metadata:
-            metadata_interceptor = header_adder_interceptor(metadata)
-            channel = grpc.insecure_channel(f"{host}:{port}", _options, compression)
-            return grpc.intercept_channel(channel, metadata_interceptor)
-        else:
-            return grpc.insecure_channel(f"{host}:{port}", _options, compression)
+        channel = grpc.insecure_channel(f"{host}:{port}", _options, compression)
+        return grpc.intercept_channel(channel, metadata_interceptor)
 
 
 def get_async_channel(
@@ -241,36 +245,26 @@ def get_async_channel(
     metadata: Optional[List[Tuple[str, str]]] = None,
     options: Optional[Dict[str, Any]] = None,
     compression: Optional[grpc.Compression] = None,
+    auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
 ) -> grpc.aio.Channel:
-    # gRPC client options
+    # Parse gRPC client options
     _options = parse_channel_options(options)
 
+    # Create metadata interceptor
+    metadata_interceptor = header_adder_async_interceptor(
+        new_metadata=metadata or [], auth_token_provider=auth_token_provider
+    )
+
     if ssl:
-        if metadata:
-
-            def metadata_callback(context: Any, callback: Any) -> None:
-                # for more info see grpc docs
-                callback(metadata, None)
-
-            # build ssl credentials using the cert the same as before
-            cert_creds = grpc.ssl_channel_credentials()
-
-            # now build meta data credentials
-            auth_creds = grpc.metadata_call_credentials(metadata_callback)
-
-            # combine the cert credentials and the macaroon auth credentials
-            # such that every call is properly encrypted and authenticated
-            creds = grpc.composite_channel_credentials(cert_creds, auth_creds)
-        else:
-            creds = grpc.ssl_channel_credentials()
-
-        # finally pass in the combined credentials when creating a channel
-        return grpc.aio.secure_channel(f"{host}:{port}", creds, _options, compression)
+        ssl_creds = grpc.ssl_channel_credentials()
+        return grpc.aio.secure_channel(
+            f"{host}:{port}",
+            ssl_creds,
+            _options,
+            compression,
+            interceptors=[metadata_interceptor],
+        )
     else:
-        if metadata:
-            metadata_interceptor = header_adder_async_interceptor(metadata)
-            return grpc.aio.insecure_channel(
-                f"{host}:{port}", _options, compression, interceptors=[metadata_interceptor]
-            )
-        else:
-            return grpc.aio.insecure_channel(f"{host}:{port}", _options, compression)
+        return grpc.aio.insecure_channel(
+            f"{host}:{port}", _options, compression, interceptors=[metadata_interceptor]
+        )

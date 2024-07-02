@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
-from typing import Any, List, Optional
+from datetime import date, datetime, timezone
+from typing import Any, List, Optional, Union
 
 import numpy as np
 
@@ -64,9 +64,19 @@ def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> boo
         lat = values["lat"]
         lon = values["lon"]
 
+        # handle anti-meridian crossing case
+        if condition.top_left.lon > condition.bottom_right.lon:
+            longitude_condition = (
+                (condition.top_left.lon <= lon <= 180 or -180 <= lon <= condition.bottom_right.lon)
+            )
+        else:
+            longitude_condition = (condition.top_left.lon <= lon <= condition.bottom_right.lon)
+
+        latitude_condition = condition.top_left.lat >= lat >= condition.bottom_right.lat
+
         return (
-            condition.top_left.lat >= lat >= condition.bottom_right.lat
-            and condition.top_left.lon <= lon <= condition.bottom_right.lon
+            longitude_condition
+            and latitude_condition
         )
 
     return False
@@ -108,7 +118,10 @@ def check_range(condition: models.Range, value: Any) -> bool:
 
 
 def check_datetime_range(condition: models.DatetimeRange, value: Any) -> bool:
-    def make_condition_tz_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    def make_condition_tz_aware(dt: Optional[Union[datetime, date]]) -> Optional[datetime]:
+        if isinstance(dt, date) and not isinstance(dt, datetime):
+            dt = datetime.combine(dt, datetime.min.time())
+
         if dt is None or dt.tzinfo is not None:
             return dt
 

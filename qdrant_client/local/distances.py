@@ -5,10 +5,14 @@ import numpy as np
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
-from qdrant_client.http.models import SparseVector
 
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
+
+
+class DistanceOrder(str, Enum):
+    BIGGER_IS_BETTER = "bigger_is_better"
+    SMALLER_IS_BETTER = "smaller_is_better"
 
 
 class RecoQuery:
@@ -19,8 +23,12 @@ class RecoQuery:
     ):
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
+
         self.positive: List[types.NumpyArray] = [np.array(vector) for vector in positive]
         self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
+
+        assert not np.isnan(self.positive).any(), "Positive vectors must not contain NaN"
+        assert not np.isnan(self.negative).any(), "Negative vectors must not contain NaN"
 
 
 class ContextPair:
@@ -28,11 +36,16 @@ class ContextPair:
         self.positive: types.NumpyArray = np.array(positive)
         self.negative: types.NumpyArray = np.array(negative)
 
+        assert not np.isnan(self.positive).any(), "Positive vector must not contain NaN"
+        assert not np.isnan(self.negative).any(), "Negative vector must not contain NaN"
+
 
 class DiscoveryQuery:
     def __init__(self, target: List[float], context: List[ContextPair]):
         self.target: types.NumpyArray = np.array(target)
         self.context = context
+
+        assert not np.isnan(self.target).any(), "Target vector must not contain NaN"
 
 
 class ContextQuery:
@@ -40,12 +53,11 @@ class ContextQuery:
         self.context_pairs = context_pairs
 
 
-QueryVector = Union[DiscoveryQuery, ContextQuery, RecoQuery, types.NumpyArray, SparseVector]
-
-
-class DistanceOrder(str, Enum):
-    BIGGER_IS_BETTER = "bigger_is_better"
-    SMALLER_IS_BETTER = "smaller_is_better"
+DenseQueryVector = Union[
+    DiscoveryQuery,
+    ContextQuery,
+    RecoQuery,
+]
 
 
 def distance_to_order(distance: models.Distance) -> DistanceOrder:
@@ -73,13 +85,17 @@ def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> typ
     Returns:
         distances
     """
-    query_norm = np.linalg.norm(query)
-    query /= np.where(query_norm != 0.0, query_norm, EPSILON)
-
-    vectors_norm = np.linalg.norm(vectors, axis=1)[:, np.newaxis]
+    vectors_norm = np.linalg.norm(vectors, axis=-1)[:, np.newaxis]
     vectors /= np.where(vectors_norm != 0.0, vectors_norm, EPSILON)
 
-    return np.dot(vectors, query)
+    if len(query.shape) == 1:
+        query_norm = np.linalg.norm(query)
+        query /= np.where(query_norm != 0.0, query_norm, EPSILON)
+        return np.dot(vectors, query)
+
+    query_norm = np.linalg.norm(query, axis=-1)[:, np.newaxis]
+    query /= np.where(query_norm != 0.0, query_norm, EPSILON)
+    return np.dot(query, vectors.T)
 
 
 def dot_product(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -91,7 +107,10 @@ def dot_product(query: types.NumpyArray, vectors: types.NumpyArray) -> types.Num
     Returns:
         distances
     """
-    return np.dot(vectors, query)
+    if len(query.shape) == 1:
+        return np.dot(vectors, query)
+    else:
+        return np.dot(query, vectors.T)
 
 
 def euclidean_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -103,7 +122,10 @@ def euclidean_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
     Returns:
         distances
     """
-    return np.linalg.norm(vectors - query, axis=1)
+    if len(query.shape) == 1:
+        return np.linalg.norm(vectors - query, axis=-1)
+    else:
+        return np.linalg.norm(vectors - query[:, np.newaxis], axis=-1)
 
 
 def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> types.NumpyArray:
@@ -115,12 +137,17 @@ def manhattan_distance(query: types.NumpyArray, vectors: types.NumpyArray) -> ty
     Returns:
         distances
     """
-    return np.sum(np.abs(vectors - query), axis=1)
+    if len(query.shape) == 1:
+        return np.sum(np.abs(vectors - query), axis=-1)
+    else:
+        return np.sum(np.abs(vectors - query[:, np.newaxis]), axis=-1)
 
 
 def calculate_distance(
     query: types.NumpyArray, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
+    assert not np.isnan(query).any(), "Query vector must not contain NaN"
+
     if distance_type == models.Distance.COSINE:
         return cosine_similarity(query, vectors)
     elif distance_type == models.Distance.DOT:
@@ -139,6 +166,8 @@ def calculate_distance_core(
     """
     Calculate same internal distances as in core, rather than the final displayed distance
     """
+    assert not np.isnan(query).any(), "Query vector must not contain NaN"
+
     if distance_type == models.Distance.EUCLID:
         return -np.square(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)
     if distance_type == models.Distance.MANHATTAN:
@@ -148,10 +177,9 @@ def calculate_distance_core(
 
 
 def fast_sigmoid(x: np.float32) -> np.float32:
-    if np.isnan(x):
-        # To avoid divisions on NaNs, which gets: RuntimeWarning: invalid value encountered in scalar divide
-        return x  # NaN
-
+    if np.isnan(x) or np.isinf(x):
+        # To avoid divisions on NaNs or inf, which gets: RuntimeWarning: invalid value encountered in scalar divide
+        return x
     return x / np.add(1.0, abs(x))
 
 
@@ -244,35 +272,3 @@ def calculate_context_scores(
         overall_scores += pair_scores
 
     return overall_scores
-
-
-def test_distances() -> None:
-    query = np.array([1.0, 2.0, 3.0])
-    vectors = np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.COSINE), [1.0, 1.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.DOT), [14.0, 14.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.EUCLID), [0.0, 0.0])
-    assert np.allclose(calculate_distance(query, vectors, models.Distance.MANHATTAN), [0.0, 0.0])
-
-    query = np.array([1.0, 0.0, 1.0])
-    vectors = np.array([[1.0, 2.0, 3.0], [0.0, 1.0, 0.0]])
-
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.COSINE),
-        [0.75592895, 0.0],
-        atol=0.0001,
-    )
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.DOT), [4.0, 0.0], atol=0.0001
-    )
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.EUCLID),
-        [2.82842712, 1.7320508],
-        atol=0.0001,
-    )
-
-    assert np.allclose(
-        calculate_distance(query, vectors, models.Distance.MANHATTAN),
-        [4.0, 3.0],
-        atol=0.0001,
-    )

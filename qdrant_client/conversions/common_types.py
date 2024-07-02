@@ -12,6 +12,7 @@ from typing import List, Union, get_args
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
+from qdrant_client.embed import models as embed
 
 typing_remap = {
     rest.StrictStr: str,
@@ -30,8 +31,15 @@ def remap_type(tp: type) -> type:
     return typing_remap.get(tp, tp)
 
 
-def get_args_subscribed(tp: type):  # type: ignore
-    """Get type arguments with all substitutions performed. Supports subscripted generics having __origin__"""
+def get_args_subscribed(tp):  # type: ignore
+    """Get type arguments with all substitutions performed. Supports subscripted generics having __origin__
+
+    Args:
+        tp: type to get arguments from. Can be either a type or a subscripted generic
+
+    Returns:
+        tuple of type arguments
+    """
     return tuple(
         remap_type(arg if not hasattr(arg, "__origin__") else arg.__origin__)
         for arg in get_args(tp)
@@ -85,8 +93,10 @@ CountResult: TypeAlias = rest.CountResult
 SnapshotDescription: TypeAlias = rest.SnapshotDescription
 NamedVector: TypeAlias = rest.NamedVector
 NamedSparseVector: TypeAlias = rest.NamedSparseVector
+SparseVector: TypeAlias = rest.SparseVector
 PointVectors: TypeAlias = rest.PointVectors
 Vector: TypeAlias = rest.Vector
+VectorInput: TypeAlias = rest.VectorInput
 VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
 SparseVectorParams: TypeAlias = rest.SparseVectorParams
@@ -95,17 +105,21 @@ SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
 InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
-
+Query: TypeAlias = rest.Query
+Prefetch: TypeAlias = rest.Prefetch
+Document: TypeAlias = embed.Document
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 DiscoverRequest: TypeAlias = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
+QueryRequest: TypeAlias = Union[rest.QueryRequest, grpc.QueryPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
 WithLookupInterface: TypeAlias = rest.WithLookupInterface
 
 GroupsResult: TypeAlias = rest.GroupsResult
+QueryResponse: TypeAlias = rest.QueryResponse
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7

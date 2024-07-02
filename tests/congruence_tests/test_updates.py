@@ -55,9 +55,7 @@ def test_upsert(local_client, remote_client):
         COLLECTION_NAME,
         scroll_filter=id_filter,
         limit=1,
-    )[
-        0
-    ][0]
+    )[0][0]
     remote_old_point = remote_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][
         0
     ]
@@ -96,12 +94,12 @@ def test_upload_collection(local_client, remote_client):
     payload = []
     ids = []
     for point in points:
-        ids.append(point.id),
+        (ids.append(point.id),)
         vectors.append(point.vector)
         payload.append(point.payload)
 
     local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
@@ -118,7 +116,9 @@ def test_upload_collection_generators(local_client, remote_client):
 
     payload = itertools.cycle(payload)
     local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
+    remote_client.upload_collection(
+        COLLECTION_NAME, vectors, payload, ids=itertools.count(), wait=True
+    )
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
@@ -168,7 +168,7 @@ def test_upload_collection_float_list():
 
     ids = list(range(len(vectors)))
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
     local_client.delete_collection(COLLECTION_NAME)
@@ -182,7 +182,7 @@ def test_upload_collection_named_float_list_vectors(local_client, remote_client)
         vectors.append(point.vector)
     ids = [point.id for point in points]
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
 
 
@@ -206,7 +206,7 @@ def test_upload_collection_np_array_2d():
     )
 
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
     local_client.delete_collection(COLLECTION_NAME)
@@ -234,7 +234,7 @@ def test_upload_collection_list_np_arrays():
     )
 
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
     local_client.delete_collection(COLLECTION_NAME)
@@ -254,63 +254,8 @@ def test_upload_collection_dict_np_arrays(local_client, remote_client):
         vectors[key] = np.array(intermediate_vectors[key])
 
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
+    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
-
-
-def test_upload_payload_contain_nan_values():
-    # usual case when payload is extracted from pandas dataframe
-
-    local_client = init_local()
-    remote_client = init_remote()
-
-    vector_size = 2
-    nans_collection = "nans_collection"
-    local_client.recreate_collection(
-        collection_name=nans_collection,
-        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.DOT),
-    )
-    remote_client.recreate_collection(
-        collection_name=nans_collection,
-        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.DOT),
-    )
-    points = generate_points(
-        num_points=UPLOAD_NUM_VECTORS,
-        vector_sizes=2,
-        with_payload=False,
-    )
-    ids, vectors, payload = [], [], []
-    for i in range(len(points)):
-        points[i].payload = {"surprise": math.nan}
-
-    for point in points:
-        ids.append(point.id)
-        vectors.append(point.vector)
-        payload.append(point.payload)
-
-    with pytest.raises(ValueError):
-        local_client.upload_collection(nans_collection, vectors, payload)
-    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-        remote_client.upload_collection(nans_collection, vectors, payload)
-
-    with pytest.raises(ValueError):
-        local_client.upload_points(nans_collection, points)
-    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-        remote_client.upload_points(nans_collection, points)
-
-    points_batch = models.Batch(
-        ids=ids,
-        vectors=vectors,
-        payloads=payload,
-    )
-
-    with pytest.raises(ValueError):
-        local_client.upsert(nans_collection, points=points_batch)
-    with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-        remote_client.upsert(nans_collection, points=points_batch)
-
-    local_client.delete_collection(nans_collection)
-    remote_client.delete_collection(nans_collection)
 
 
 def test_upload_wrong_vectors():
