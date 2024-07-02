@@ -87,13 +87,12 @@ class QdrantClient(QdrantFastembedMixin):
 
         # Saving the init options to facilitate building AsyncQdrantClient from QdrantClient and vice versa.
         # Eg. AsyncQdrantClient(**sync_client.init_options) or QdrantClient(**async_client.init_options)
-        init_options = {
+        self._init_options = {
             key: value
             for key, value in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
-        init_options.update(kwargs)
-        self.init_options = init_options
+        self._init_options.update(kwargs)
 
         self._client: QdrantBase
 
@@ -212,6 +211,15 @@ class QdrantClient(QdrantFastembedMixin):
             return self._client.http
 
         raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
+
+    @property
+    def init_options(self) -> Dict[str, Any]:
+        """`__init__` Options
+
+        Returns:
+             A dictionary of options the client class was instantiated with
+        """
+        return self._init_options
 
     def search_batch(
         self,

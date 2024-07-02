@@ -90,13 +90,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
-        init_options = {
+        self._init_options = {
             key: value
-            for (key, value) in locals().items()
+            for key, value in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
-        init_options.update(kwargs)
-        self.init_options = init_options
+        self._init_options.update(kwargs)
         self._client: AsyncQdrantBase
         if sum([param is not None for param in (location, url, host, path)]) > 1:
             raise ValueError(
@@ -179,6 +178,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         if isinstance(self._client, AsyncQdrantRemote):
             return self._client.http
         raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
+
+    @property
+    def init_options(self) -> Dict[str, Any]:
+        """`__init__` Options
+
+        Returns:
+             A dictionary of options the client class was instantiated with
+        """
+        return self._init_options
 
     async def search_batch(
         self,
