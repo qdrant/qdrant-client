@@ -107,7 +107,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         super().__init__(**kwargs)
         self._init_options = {
             key: value
-            for key, value in locals().items()
+            for (key, value) in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
         self._init_options.update(kwargs)
