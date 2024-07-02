@@ -167,6 +167,13 @@ def test_client_init():
         ):
             QdrantClient(**params)
 
+    client = QdrantClient(
+        url="http://localhost:6333", prefix="custom", metadata={"some-rest-meta": "some-value"}
+    )
+    assert client.init_options["url"] == "http://localhost:6333"
+    assert client.init_options["prefix"] == "custom"
+    assert client.init_options["metadata"] == {"some-rest-meta": "some-value"}
+
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("parallel", [1, 2])
