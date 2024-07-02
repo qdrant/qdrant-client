@@ -609,6 +609,9 @@ class GrpcToRest:
                 if model.HasField("write_consistency_factor")
                 else None
             ),
+            sparse_vectors=cls.convert_sparse_vector_config(model.sparse_vectors_config)
+            if model.HasField("sparse_vectors_config")
+            else None,
         )
 
     @classmethod
@@ -2023,6 +2026,11 @@ class RestToGrpc:
             write_consistency_factor=model.write_consistency_factor,
             replication_factor=model.replication_factor,
             read_fan_out_factor=model.read_fan_out_factor,
+            sparse_vectors_config=(
+                cls.convert_sparse_vector_config(model.sparse_vectors)
+                if model.sparse_vectors is not None
+                else None
+            ),
         )
 
     @classmethod
