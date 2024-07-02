@@ -211,6 +211,9 @@ multiple_vector_config = grpc.VectorsConfig(
     params_map=grpc.VectorParamsMap(map={"text_vector": vector_param})
 )
 
+sparse_vector_config = grpc.SparseVectorConfig(
+    map={"sparse": grpc.SparseVectorParams(index=grpc.SparseIndexConfig(full_scan_threshold=1212))}
+)
 collection_params = grpc.CollectionParams(
     vectors_config=single_vector_config,
     shard_number=10,
@@ -222,6 +225,7 @@ collection_params_2 = grpc.CollectionParams(
     replication_factor=2,
     write_consistency_factor=1,
     read_fan_out_factor=2,
+    sparse_vectors_config=sparse_vector_config,
 )
 
 hnsw_config = grpc.HnswConfigDiff(
