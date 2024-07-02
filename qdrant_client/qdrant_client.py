@@ -1,4 +1,5 @@
 import warnings
+from copy import deepcopy
 from typing import (
     Any,
     Awaitable,
@@ -108,7 +109,7 @@ class QdrantClient(QdrantFastembedMixin):
             for key, value in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
-        self._init_options.update(kwargs)
+        self._init_options.update(deepcopy(kwargs))
 
         self._client: QdrantBase
 
