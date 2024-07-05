@@ -121,6 +121,8 @@ WithLookupInterface: TypeAlias = rest.WithLookupInterface
 GroupsResult: TypeAlias = rest.GroupsResult
 QueryResponse: TypeAlias = rest.QueryResponse
 
+VersionInfo: TypeAlias = rest.VersionInfo
+
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7
 _np_numeric = Union[

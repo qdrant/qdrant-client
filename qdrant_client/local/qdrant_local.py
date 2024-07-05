@@ -1,3 +1,4 @@
+import importlib.metadata
 import itertools
 import json
 import logging
@@ -1132,4 +1133,10 @@ class QdrantLocal(QdrantBase):
     ) -> bool:
         raise NotImplementedError(
             "Sharding is not supported in the local Qdrant. Please use server Qdrant if you need sharding."
+        )
+
+    def info(self) -> types.VersionInfo:
+        version = importlib.metadata.version("qdrant-client")
+        return rest_models.VersionInfo(
+            title="qdrant - vector search engine", version=version, commit=None
         )
