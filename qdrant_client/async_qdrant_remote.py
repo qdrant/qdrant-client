@@ -212,21 +212,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._init_grpc_channel()
         self._grpc_root_client = grpc.QdrantStub(self._grpc_channel)
 
-    def _init_async_grpc_root_client(self) -> None:
-        self._init_async_grpc_channel()
-        self._aio_grpc_root_client = grpc.QdrantStub(self._aio_grpc_channel)
-
-    @property
-    def async_grpc_root(self) -> grpc.QdrantStub:
-        """gRPC client for info methods
-
-        Returns:
-            An instance of raw gRPC client, generated from Protobuf
-        """
-        if self._aio_grpc_root_client is None:
-            self._init_async_grpc_root_client()
-        return self._aio_grpc_root_client
-
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
