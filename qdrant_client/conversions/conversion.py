@@ -2432,8 +2432,12 @@ class RestToGrpc:
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
                 return grpc.Vector(
-                    data=[inner_vector for multi_vector in model for inner_vector in multi_vector],
-                    vectors_count=len(model),
+                    data=[
+                        inner_vector
+                        for multi_vector in vector
+                        for inner_vector in multi_vector  # type: ignore
+                    ],
+                    vectors_count=len(vector),
                 )
             return grpc.Vector(data=vector)
 
@@ -2598,7 +2602,7 @@ class RestToGrpc:
 
         return grpc.PrefetchQuery(
             prefetch=prefetch,
-            query=cls.convert_query(model.query) if model.query is not None else None,
+            query=cls.convert_query_interface(model.query) if model.query is not None else None,
             using=model.using if model.using is not None else None,
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
             params=cls.convert_search_params(model.params) if model.params is not None else None,

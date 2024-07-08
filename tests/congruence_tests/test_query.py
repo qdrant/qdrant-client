@@ -83,6 +83,24 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_query_text_np_array(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=np.array(self.dense_vector_query_text),
+            using="text",
+            with_payload=True,
+            limit=10,
+        )
+
+    def dense_query_text_by_id(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=1,
+            using="text",
+            with_payload=True,
+            limit=10,
+        )
+
     def dense_query_image(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -1100,3 +1118,50 @@ def test_query_with_nan():
         print(local_client.query_points(COLLECTION_NAME, query=query))
     with pytest.raises(UnexpectedResponse):
         remote_client.query_points(COLLECTION_NAME, query=query)
+
+
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_flat_query_dense_interface(prefer_grpc):
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points)
+
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    init_client(remote_client, fixture_points)
+
+    compare_client_results(local_client, remote_client, searcher.dense_query_text)
+    compare_client_results(local_client, remote_client, searcher.dense_query_text_np_array)
+    compare_client_results(local_client, remote_client, searcher.dense_query_text_by_id)
+
+
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_flat_query_sparse_interface(prefer_grpc):
+    fixture_points = generate_sparse_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+
+    compare_client_results(local_client, remote_client, searcher.sparse_query_text)
+
+
+@pytest.mark.parametrize("prefer_grpc", (True,))
+def test_flat_query_multivector_interface(prefer_grpc):
+    fixture_points = generate_multivector_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
+
+    compare_client_results(local_client, remote_client, searcher.multivec_query_text)

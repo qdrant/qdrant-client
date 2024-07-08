@@ -568,6 +568,7 @@ many_vectors = grpc.Vectors(
             "sparse": grpc.Vector(
                 data=[1.0, 2.0, -1.0, -0.2], indices=SparseIndices(data=[1, 2, 3])
             ),
+            "multi": grpc.Vector(data=[1.0, 2.0, 3.0, 4.0], vectors_count=2),
         }
     )
 )
