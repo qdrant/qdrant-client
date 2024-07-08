@@ -2433,8 +2433,10 @@ class RestToGrpc:
             ):  # we can't say whether it is an empty dense or multi-dense vector
                 return grpc.Vector(
                     data=[
-                        inner_vector for multi_vector in vector for inner_vector in multi_vector
-                    ],  # type: ignore
+                        inner_vector
+                        for multi_vector in vector
+                        for inner_vector in multi_vector  # type: ignore
+                    ],
                     vectors_count=len(vector),
                 )
             return grpc.Vector(data=vector)
