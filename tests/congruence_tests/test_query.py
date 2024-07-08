@@ -205,7 +205,7 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_query_text_scroll(
+    def filter_query_scroll(
         cls, client: QdrantBase, query_filter: models.Filter
     ) -> models.QueryResponse:
         return client.query_points(
@@ -376,6 +376,15 @@ class TestSimpleSearcher:
             using="image",
             limit=10,
             search_params=search_params,
+        )
+
+    @classmethod
+    def query_scroll_offset(cls, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            with_payload=True,
+            limit=10,
+            offset=10,
         )
 
     def dense_queries_orderby(self, client: QdrantBase) -> models.QueryResponse:
@@ -616,6 +625,7 @@ def test_no_query_no_prefetch():
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.no_query_no_prefetch)
+    compare_client_results(local_client, remote_client, searcher.query_scroll_offset)
 
 
 def test_dense_query_filtered_prefetch():
@@ -786,7 +796,7 @@ def test_dense_query():
             compare_client_results(
                 local_client,
                 remote_client,
-                searcher.dense_query_text_scroll,
+                searcher.filter_query_scroll,
                 query_filter=query_filter,
             )
         except AssertionError as e:
@@ -914,7 +924,7 @@ def test_simple_opt_vectors_query():
             compare_client_results(
                 local_client,
                 remote_client,
-                searcher.dense_query_text_scroll,
+                searcher.filter_query_scroll,
                 query_filter=query_filter,
             )
         except AssertionError as e:
