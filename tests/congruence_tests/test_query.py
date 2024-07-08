@@ -26,7 +26,7 @@ from tests.congruence_tests.test_common import (
 )
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, generate_random_multivector
-
+from tests.utils import read_version
 
 SECONDARY_COLLECTION_NAME = "congruence_secondary_collection"
 
@@ -614,6 +614,12 @@ def test_dense_query_lookup_from_negative():
 
 
 def test_no_query_no_prefetch():
+    major, minor, patch, dev = read_version()
+    version_set = major is not None or dev
+    if version_set and not dev:
+        if major == 0 or (major == 1 and (minor < 10 or (minor == 10 and patch == 0))):
+            pytest.skip("Works as of version 1.10.1")
+
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
