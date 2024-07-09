@@ -2677,6 +2677,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             version_info = self.grpc_root.HealthCheck(grpc.HealthCheckRequest())
             return GrpcToRest.convert_health_check_reply(version_info)
-        version_info = (await self.rest.service_api.root()).result
+        version_info = await self.rest.service_api.root()
+        print(version_info)
         assert version_info is not None, "Healthcheck returned None"
         return version_info
