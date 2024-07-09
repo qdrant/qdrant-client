@@ -215,8 +215,4 @@ def _get_parsing_type(type_: Any, source: str) -> Any:
 
 def parse_as_type(obj: Any, type_: Type[T]) -> T:
     model_type = _get_parsing_type(type_, source=parse_as_type.__name__)
-    if "result" not in obj:
-        obj = {
-            "result": obj
-        }  # some requests do not have result/time/status fields, due to this, InlineResponse.result becomes None
     return model_type(obj=obj).obj

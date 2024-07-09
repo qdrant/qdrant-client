@@ -55,6 +55,14 @@ class BinaryQuantizationConfig(BaseModel, extra="forbid"):
     always_ram: Optional[bool] = Field(default=None, description="")
 
 
+class BoolIndexParams(BaseModel, extra="forbid"):
+    type: "BoolIndexType" = Field(..., description="")
+
+
+class BoolIndexType(str, Enum):
+    BOOL = "bool"
+
+
 class ChangeAliasesOperation(BaseModel, extra="forbid"):
     """
     Operation for performing changes of collection aliases. Alias changes are atomic, meaning that no collection modifications can happen between alias operations.
@@ -127,6 +135,7 @@ class CollectionClusterInfo(BaseModel):
     local_shards: List["LocalShardInfo"] = Field(..., description="Local shards")
     remote_shards: List["RemoteShardInfo"] = Field(..., description="Remote shards")
     shard_transfers: List["ShardTransferInfo"] = Field(..., description="Shard transfers")
+    resharding_operations: List["ReshardingInfo"] = Field(..., description="Resharding operations")
 
 
 class CollectionConfig(BaseModel):
@@ -423,6 +432,14 @@ class Datatype(str, Enum):
     FLOAT16 = "float16"
 
 
+class DatetimeIndexParams(BaseModel, extra="forbid"):
+    type: "DatetimeIndexType" = Field(..., description="")
+
+
+class DatetimeIndexType(str, Enum):
+    DATETIME = "datetime"
+
+
 class DatetimeRange(BaseModel, extra="forbid"):
     """
     Range filter request
@@ -626,6 +643,14 @@ class FilterSelector(BaseModel, extra="forbid"):
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
 
 
+class FloatIndexParams(BaseModel, extra="forbid"):
+    type: "FloatIndexType" = Field(..., description="")
+
+
+class FloatIndexType(str, Enum):
+    FLOAT = "float"
+
+
 class Fusion(str, Enum):
     """
     Fusion algorithm allows to combine results of multiple prefetches. Available fusion algorithms: * `rrf` - Rank Reciprocal Fusion
@@ -654,6 +679,14 @@ class GeoBoundingBox(BaseModel, extra="forbid"):
         ...,
         description="Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
     )
+
+
+class GeoIndexParams(BaseModel, extra="forbid"):
+    type: "GeoIndexType" = Field(..., description="")
+
+
+class GeoIndexType(str, Enum):
+    GEO = "geo"
 
 
 class GeoLineString(BaseModel, extra="forbid"):
@@ -823,88 +856,82 @@ class InlineResponse200(BaseModel):
 class InlineResponse2001(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["VersionInfo"] = Field(default=None, description="")
+    result: Optional["TelemetryData"] = Field(default=None, description="")
 
 
 class InlineResponse20010(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
+    result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
 class InlineResponse20011(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
+    result: Optional["SnapshotDescription"] = Field(default=None, description="")
 
 
 class InlineResponse20012(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["SnapshotDescription"] = Field(default=None, description="")
+    result: Optional["Record"] = Field(default=None, description="")
 
 
 class InlineResponse20013(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["Record"] = Field(default=None, description="")
+    result: Optional[List["Record"]] = Field(default=None, description="")
 
 
 class InlineResponse20014(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["Record"]] = Field(default=None, description="")
+    result: Optional[List["UpdateResult"]] = Field(default=None, description="")
 
 
 class InlineResponse20015(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["UpdateResult"]] = Field(default=None, description="")
+    result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
 class InlineResponse20016(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["ScrollResult"] = Field(default=None, description="")
+    result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
 
 
 class InlineResponse20017(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
+    result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
 
 
 class InlineResponse20018(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
+    result: Optional["GroupsResult"] = Field(default=None, description="")
 
 
 class InlineResponse20019(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["GroupsResult"] = Field(default=None, description="")
+    result: Optional["CountResult"] = Field(default=None, description="")
 
 
 class InlineResponse2002(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["TelemetryData"] = Field(default=None, description="")
+    result: Optional["LocksOption"] = Field(default=None, description="")
 
 
 class InlineResponse20020(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CountResult"] = Field(default=None, description="")
-
-
-class InlineResponse20021(BaseModel):
-    time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Optional[str] = Field(default=None, description="")
     result: Optional["QueryResponse"] = Field(default=None, description="")
 
 
-class InlineResponse20022(BaseModel):
+class InlineResponse20021(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["QueryResponse"]] = Field(default=None, description="")
@@ -913,43 +940,43 @@ class InlineResponse20022(BaseModel):
 class InlineResponse2003(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["LocksOption"] = Field(default=None, description="")
+    result: Optional["ClusterStatus"] = Field(default=None, description="")
 
 
 class InlineResponse2004(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["ClusterStatus"] = Field(default=None, description="")
+    result: Optional["CollectionsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2005(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionsResponse"] = Field(default=None, description="")
+    result: Optional["CollectionInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2006(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionInfo"] = Field(default=None, description="")
+    result: Optional["UpdateResult"] = Field(default=None, description="")
 
 
 class InlineResponse2007(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["UpdateResult"] = Field(default=None, description="")
+    result: Optional["CollectionExistence"] = Field(default=None, description="")
 
 
 class InlineResponse2008(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionExistence"] = Field(default=None, description="")
+    result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2009(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
+    result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
 
 
 class InlineResponse202(BaseModel):
@@ -981,6 +1008,14 @@ class IsNullCondition(BaseModel, extra="forbid"):
     """
 
     is_null: "PayloadField" = Field(..., description="Select points with null payload for a specified field")
+
+
+class KeywordIndexParams(BaseModel, extra="forbid"):
+    type: "KeywordIndexType" = Field(..., description="")
+
+
+class KeywordIndexType(str, Enum):
+    KEYWORD = "keyword"
 
 
 class LocalShardInfo(BaseModel):
@@ -1102,19 +1137,11 @@ class MultiVectorConfig(BaseModel, extra="forbid"):
 
 
 class NamedSparseVector(BaseModel, extra="forbid"):
-    """
-    Sparse vector data with name
-    """
-
     name: str = Field(..., description="Name of vector data")
-    vector: "SparseVector" = Field(..., description="Sparse vector data with name")
+    vector: "SparseVector" = Field(..., description="")
 
 
 class NamedVector(BaseModel, extra="forbid"):
-    """
-    Dense vector data with name
-    """
-
     name: str = Field(..., description="Name of vector data")
     vector: List[float] = Field(..., description="Vector data")
 
@@ -1621,15 +1648,11 @@ class RecommendRequestBatch(BaseModel, extra="forbid"):
     searches: List["RecommendRequest"] = Field(..., description="")
 
 
-class RecommendStrategy(str, Enum):
-    """
-    How to use positive and negative examples to find the results, default is `average_vector`:  * `average_vector` - Average positive and negative vectors and create a single query with the formula `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.  * `best_score` - Uses custom search objective. Each candidate is compared against all examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. If the `max_neg_score` is chosen then it is squared and negated, otherwise it is just the `max_pos_score`.
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
+class RecommendStrategyOneOf(str, Enum):
     AVERAGE_VECTOR = "average_vector"
+
+
+class RecommendStrategyOneOf1(str, Enum):
     BEST_SCORE = "best_score"
 
 
@@ -1721,6 +1744,16 @@ class ReplicateShardOperation(BaseModel, extra="forbid"):
 class RequestsTelemetry(BaseModel):
     rest: "WebApiTelemetry" = Field(..., description="")
     grpc: "GrpcTelemetry" = Field(..., description="")
+
+
+class ReshardingInfo(BaseModel):
+    shard_id: int = Field(..., description="")
+    peer_id: int = Field(..., description="")
+    shard_key: Optional["ShardKey"] = Field(default=None, description="")
+    comment: Optional[str] = Field(
+        default=None,
+        description="A human-readable report of the operation progress. Available only on the source peer.",
+    )
 
 
 class RestartTransfer(BaseModel, extra="forbid"):
@@ -2190,7 +2223,7 @@ class TextIndexParams(BaseModel, extra="forbid"):
     tokenizer: Optional["TokenizerType"] = Field(default=None, description="")
     min_token_len: Optional[int] = Field(default=None, description="")
     max_token_len: Optional[int] = Field(default=None, description="")
-    lowercase: Optional[bool] = Field(default=None, description="If true, lowercase all tokens. Default: true")
+    lowercase: Optional[bool] = Field(default=None, description="If true, lowercase all tokens. Default: true.")
 
 
 class TextIndexType(str, Enum):
@@ -2550,8 +2583,13 @@ OrderValue = Union[
     StrictFloat,
 ]
 PayloadSchemaParams = Union[
-    TextIndexParams,
+    KeywordIndexParams,
     IntegerIndexParams,
+    FloatIndexParams,
+    GeoIndexParams,
+    TextIndexParams,
+    BoolIndexParams,
+    DatetimeIndexParams,
 ]
 PayloadSelector = Union[
     PayloadSelectorInclude,
@@ -2595,6 +2633,10 @@ RangeInterface = Union[
 ReadConsistency = Union[
     StrictInt,
     ReadConsistencyType,
+]
+RecommendStrategy = Union[
+    RecommendStrategyOneOf,
+    RecommendStrategyOneOf1,
 ]
 ShardKey = Union[
     StrictInt,
