@@ -1459,6 +1459,46 @@ class QuantizationSearchParams(BaseModel, extra="forbid"):
     )
 
 
+class QueryGroupsRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+    prefetch: Optional[Union[List["Prefetch"], "Prefetch"]] = Field(
+        default=None,
+        description="Sub-requests to perform first. If present, the query will be performed on the results of the prefetch(es).",
+    )
+    query: Optional["QueryInterface"] = Field(
+        default=None,
+        description="Query to perform. If missing without prefetches, returns points ordered by their IDs.",
+    )
+    using: Optional[str] = Field(
+        default=None,
+        description="Define which vector name to use for querying. If missing, the default vector is used.",
+    )
+    filter: Optional["Filter"] = Field(
+        default=None, description="Filter conditions - return only those points that satisfy the specified conditions."
+    )
+    params: Optional["SearchParams"] = Field(default=None, description="Search params for when there is no prefetch")
+    score_threshold: Optional[float] = Field(
+        default=None, description="Return points with scores better than this threshold."
+    )
+    with_vector: Optional["WithVector"] = Field(
+        default=None, description="Options for specifying which vectors to include into the response. Default is false."
+    )
+    with_payload: Optional["WithPayloadInterface"] = Field(
+        default=None, description="Options for specifying which payload to include or not. Default is false."
+    )
+    group_by: str = Field(
+        ...,
+        description="Payload field to group by, must be a string or number field. If the field contains more than 1 value, all values will be used for grouping. One point can be in multiple groups.",
+    )
+    group_size: Optional[int] = Field(
+        default=None, description="Maximum amount of points to return per group. Default is 3."
+    )
+    limit: Optional[int] = Field(default=None, description="Maximum amount of groups to return. Default is 10.")
+    with_lookup: Optional["WithLookupInterface"] = Field(
+        default=None, description="Look for points in another collection using the group ids"
+    )
+
+
 class QueryRequest(BaseModel, extra="forbid"):
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
     prefetch: Optional[Union[List["Prefetch"], "Prefetch"]] = Field(
@@ -1648,11 +1688,15 @@ class RecommendRequestBatch(BaseModel, extra="forbid"):
     searches: List["RecommendRequest"] = Field(..., description="")
 
 
-class RecommendStrategyOneOf(str, Enum):
+class RecommendStrategy(str, Enum):
+    """
+    How to use positive and negative examples to find the results, default is `average_vector`:  * `average_vector` - Average positive and negative vectors and create a single query with the formula `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.  * `best_score` - Uses custom search objective. Each candidate is compared against all examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. If the `max_neg_score` is chosen then it is squared and negated, otherwise it is just the `max_pos_score`.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
     AVERAGE_VECTOR = "average_vector"
-
-
-class RecommendStrategyOneOf1(str, Enum):
     BEST_SCORE = "best_score"
 
 
@@ -2633,10 +2677,6 @@ RangeInterface = Union[
 ReadConsistency = Union[
     StrictInt,
     ReadConsistencyType,
-]
-RecommendStrategy = Union[
-    RecommendStrategyOneOf,
-    RecommendStrategyOneOf1,
 ]
 ShardKey = Union[
     StrictInt,

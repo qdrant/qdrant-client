@@ -476,6 +476,40 @@ class _PointsApi:
             content=body,
         )
 
+    def _build_for_query_points_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_groups_request: m.QueryGroupsRequest = None,
+    ):
+        """
+        Universally query points, grouped by a given payload field
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(query_groups_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20018,
+            method="POST",
+            url="/collections/{collection_name}/points/query/groups",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
     def _build_for_recommend_batch_points(
         self,
         collection_name: str,
@@ -1028,6 +1062,23 @@ class AsyncPointsApi(_PointsApi):
             query_request=query_request,
         )
 
+    async def query_points_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_groups_request: m.QueryGroupsRequest = None,
+    ) -> m.InlineResponse20018:
+        """
+        Universally query points, grouped by a given payload field
+        """
+        return await self._build_for_query_points_groups(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            query_groups_request=query_groups_request,
+        )
+
     async def recommend_batch_points(
         self,
         collection_name: str,
@@ -1409,6 +1460,23 @@ class SyncPointsApi(_PointsApi):
             consistency=consistency,
             timeout=timeout,
             query_request=query_request,
+        )
+
+    def query_points_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_groups_request: m.QueryGroupsRequest = None,
+    ) -> m.InlineResponse20018:
+        """
+        Universally query points, grouped by a given payload field
+        """
+        return self._build_for_query_points_groups(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            query_groups_request=query_groups_request,
         )
 
     def recommend_batch_points(
