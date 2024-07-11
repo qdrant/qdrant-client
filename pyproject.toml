@@ -55,7 +55,7 @@ ipython = "8"
 Pygments= "2.16.1"
 
 [tool.poetry.group.types.dependencies]
-pyright = "^1.1.293"
+pyright = ">=1.1.293,<1.1.371"  # tmp upper bound due to a (reportUnknownMemberType) for grpc structures
 mypy = "^1.0.0"
 types-protobuf = "^4.21.0.5"
 
