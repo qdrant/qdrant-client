@@ -12,7 +12,7 @@
 import uuid
 import warnings
 from itertools import tee
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, get_args
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, get_args, Set
 import numpy as np
 from qdrant_client import grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
@@ -43,6 +43,11 @@ SUPPORTED_SPARSE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     if SparseTextEmbedding
     else {}
 )
+IDF_EMBEDDING_MODELS: Set[str] = {
+    model_name
+    for model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS
+    if model_name.lower().startswith("qdrant/bm")
+}
 
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
@@ -360,6 +365,13 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             assert (
                 sparse_vector_field_name in collection_info.config.params.sparse_vectors
             ), f"Collection have incompatible vector params: {collection_info.config.params.vectors}"
+            if self.sparse_embedding_model_name in IDF_EMBEDDING_MODELS:
+                modifier = collection_info.config.params.sparse_vectors[
+                    sparse_vector_field_name
+                ].modifier
+                assert (
+                    modifier == models.Modifier.IDF
+                ), f"{self.sparse_embedding_model_name} requires modifier IDF, current modifier is {modifier}"
 
     def get_fastembed_vector_params(
         self,
@@ -403,6 +415,8 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Configuration for `vectors_config` argument in `create_collection` method.
         """
         vector_field_name = self.get_sparse_vector_field_name()
+        if self.sparse_embedding_model_name in IDF_EMBEDDING_MODELS:
+            modifier = models.Modifier.IDF if modifier is None else modifier
         if vector_field_name is None:
             return None
         return {
