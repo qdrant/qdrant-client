@@ -421,6 +421,54 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             for request in requests
         ]
 
+    async def query_points_groups(
+        self,
+        collection_name: str,
+        group_by: str,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 3,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        collection = self._get_collection(collection_name)
+        with_lookup_collection = None
+        if with_lookup is not None:
+            if isinstance(with_lookup, str):
+                with_lookup_collection = self._get_collection(with_lookup)
+            else:
+                with_lookup_collection = self._get_collection(with_lookup.collection)
+        return collection.query_groups(
+            query=query,
+            query_filter=query_filter,
+            using=using,
+            prefetch=prefetch,
+            limit=limit,
+            group_by=group_by,
+            group_size=group_size,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            with_lookup=with_lookup,
+            with_lookup_collection=with_lookup_collection,
+        )
+
     async def recommend_batch(
         self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
     ) -> List[List[types.ScoredPoint]]:

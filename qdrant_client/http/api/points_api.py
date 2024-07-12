@@ -77,7 +77,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20015,
+            type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points/batch",
             headers=headers if headers else None,
@@ -111,7 +111,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload/clear",
             headers=headers if headers else None,
@@ -137,7 +137,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20020,
+            type_=m.InlineResponse20019,
             method="POST",
             url="/collections/{collection_name}/points/count",
             headers=headers if headers else None,
@@ -170,7 +170,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload/delete",
             headers=headers if headers else None,
@@ -204,7 +204,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/delete",
             headers=headers if headers else None,
@@ -238,7 +238,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/vectors/delete",
             headers=headers if headers else None,
@@ -272,7 +272,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20018,
+            type_=m.InlineResponse20017,
             method="POST",
             url="/collections/{collection_name}/points/discover/batch",
             headers=headers if headers else None,
@@ -306,7 +306,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20017,
+            type_=m.InlineResponse20016,
             method="POST",
             url="/collections/{collection_name}/points/discover",
             headers=headers if headers else None,
@@ -335,7 +335,7 @@ class _PointsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.InlineResponse20012,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
             headers=headers if headers else None,
@@ -365,7 +365,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20014,
+            type_=m.InlineResponse20013,
             method="POST",
             url="/collections/{collection_name}/points",
             headers=headers if headers else None,
@@ -399,7 +399,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points/payload",
             headers=headers if headers else None,
@@ -433,7 +433,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20022,
+            type_=m.InlineResponse20021,
             method="POST",
             url="/collections/{collection_name}/points/query/batch",
             headers=headers if headers else None,
@@ -467,9 +467,43 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20021,
+            type_=m.InlineResponse20020,
             method="POST",
             url="/collections/{collection_name}/points/query",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
+    def _build_for_query_points_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_groups_request: m.QueryGroupsRequest = None,
+    ):
+        """
+        Universally query points, grouped by a given payload field
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(query_groups_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20018,
+            method="POST",
+            url="/collections/{collection_name}/points/query/groups",
             headers=headers if headers else None,
             path_params=path_params,
             params=query_params,
@@ -501,7 +535,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20018,
+            type_=m.InlineResponse20017,
             method="POST",
             url="/collections/{collection_name}/points/recommend/batch",
             headers=headers if headers else None,
@@ -535,7 +569,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20019,
+            type_=m.InlineResponse20018,
             method="POST",
             url="/collections/{collection_name}/points/recommend/groups",
             headers=headers if headers else None,
@@ -569,7 +603,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20017,
+            type_=m.InlineResponse20016,
             method="POST",
             url="/collections/{collection_name}/points/recommend",
             headers=headers if headers else None,
@@ -600,7 +634,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20016,
+            type_=m.InlineResponse20015,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
             headers=headers if headers else None,
@@ -634,7 +668,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20018,
+            type_=m.InlineResponse20017,
             method="POST",
             url="/collections/{collection_name}/points/search/batch",
             headers=headers if headers else None,
@@ -668,7 +702,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20019,
+            type_=m.InlineResponse20018,
             method="POST",
             url="/collections/{collection_name}/points/search/groups",
             headers=headers if headers else None,
@@ -702,7 +736,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20017,
+            type_=m.InlineResponse20016,
             method="POST",
             url="/collections/{collection_name}/points/search",
             headers=headers if headers else None,
@@ -736,7 +770,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="POST",
             url="/collections/{collection_name}/points/payload",
             headers=headers if headers else None,
@@ -770,7 +804,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points/vectors",
             headers=headers if headers else None,
@@ -804,7 +838,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/points",
             headers=headers if headers else None,
@@ -821,7 +855,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         update_operations: m.UpdateOperations = None,
-    ) -> m.InlineResponse20015:
+    ) -> m.InlineResponse20014:
         """
         Apply a series of update operations for points, vectors and payloads
         """
@@ -838,7 +872,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Remove all payload for specified points
         """
@@ -853,7 +887,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20020:
+    ) -> m.InlineResponse20019:
         """
         Count points which matches given filtering condition
         """
@@ -868,7 +902,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete specified key payload for points
         """
@@ -885,7 +919,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete points
         """
@@ -902,7 +936,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         delete_vectors: m.DeleteVectors = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete named vectors from the given points.
         """
@@ -919,7 +953,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         discover_request_batch: m.DiscoverRequestBatch = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20017:
         """
         Look for points based on target and/or positive and negative example pairs, in batch.
         """
@@ -936,7 +970,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         discover_request: m.DiscoverRequest = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20016:
         """
         Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
         """
@@ -952,7 +986,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20012:
         """
         Retrieve full information of single point by id
         """
@@ -967,7 +1001,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         consistency: m.ReadConsistency = None,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20013:
         """
         Retrieve multiple points by specified IDs
         """
@@ -983,7 +1017,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Replace full payload of points with new one
         """
@@ -1000,7 +1034,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request_batch: m.QueryRequestBatch = None,
-    ) -> m.InlineResponse20022:
+    ) -> m.InlineResponse20021:
         """
         Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -1017,7 +1051,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request: m.QueryRequest = None,
-    ) -> m.InlineResponse20021:
+    ) -> m.InlineResponse20020:
         """
         Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -1028,13 +1062,30 @@ class AsyncPointsApi(_PointsApi):
             query_request=query_request,
         )
 
+    async def query_points_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_groups_request: m.QueryGroupsRequest = None,
+    ) -> m.InlineResponse20018:
+        """
+        Universally query points, grouped by a given payload field
+        """
+        return await self._build_for_query_points_groups(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            query_groups_request=query_groups_request,
+        )
+
     async def recommend_batch_points(
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20017:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -1051,7 +1102,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_groups_request: m.RecommendGroupsRequest = None,
-    ) -> m.InlineResponse20019:
+    ) -> m.InlineResponse20018:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given payload field.
         """
@@ -1068,7 +1119,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20016:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -1084,7 +1135,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         consistency: m.ReadConsistency = None,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20015:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -1100,7 +1151,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_request_batch: m.SearchRequestBatch = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20017:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
@@ -1117,7 +1168,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_groups_request: m.SearchGroupsRequest = None,
-    ) -> m.InlineResponse20019:
+    ) -> m.InlineResponse20018:
         """
         Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given payload field
         """
@@ -1134,7 +1185,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20016:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -1151,7 +1202,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Set payload values for points
         """
@@ -1168,7 +1219,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         update_vectors: m.UpdateVectors = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Update specified named vectors on points, keep unspecified vectors intact.
         """
@@ -1185,7 +1236,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """
@@ -1204,7 +1255,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         update_operations: m.UpdateOperations = None,
-    ) -> m.InlineResponse20015:
+    ) -> m.InlineResponse20014:
         """
         Apply a series of update operations for points, vectors and payloads
         """
@@ -1221,7 +1272,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Remove all payload for specified points
         """
@@ -1236,7 +1287,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20020:
+    ) -> m.InlineResponse20019:
         """
         Count points which matches given filtering condition
         """
@@ -1251,7 +1302,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         delete_payload: m.DeletePayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete specified key payload for points
         """
@@ -1268,7 +1319,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         points_selector: m.PointsSelector = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete points
         """
@@ -1285,7 +1336,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         delete_vectors: m.DeleteVectors = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete named vectors from the given points.
         """
@@ -1302,7 +1353,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         discover_request_batch: m.DiscoverRequestBatch = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20017:
         """
         Look for points based on target and/or positive and negative example pairs, in batch.
         """
@@ -1319,7 +1370,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         discover_request: m.DiscoverRequest = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20016:
         """
         Use context and a target to find the most similar points to the target, constrained by the context. When using only the context (without a target), a special search - called context search - is performed where pairs of points are used to generate a loss that guides the search towards the zone where most positive examples overlap. This means that the score minimizes the scenario of finding a point closer to a negative than to a positive part of a pair. Since the score of a context relates to loss, the maximum score a point can get is 0.0, and it becomes normal that many points can have a score of 0.0. When using target (with or without context), the score behaves a little different: The  integer part of the score represents the rank with respect to the context, while the decimal part of the score relates to the distance to the target. The context part of the score for  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,  and -1 otherwise.
         """
@@ -1335,7 +1386,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20012:
         """
         Retrieve full information of single point by id
         """
@@ -1350,7 +1401,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         consistency: m.ReadConsistency = None,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20013:
         """
         Retrieve multiple points by specified IDs
         """
@@ -1366,7 +1417,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Replace full payload of points with new one
         """
@@ -1383,7 +1434,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request_batch: m.QueryRequestBatch = None,
-    ) -> m.InlineResponse20022:
+    ) -> m.InlineResponse20021:
         """
         Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -1400,7 +1451,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request: m.QueryRequest = None,
-    ) -> m.InlineResponse20021:
+    ) -> m.InlineResponse20020:
         """
         Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -1411,13 +1462,30 @@ class SyncPointsApi(_PointsApi):
             query_request=query_request,
         )
 
+    def query_points_groups(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        query_groups_request: m.QueryGroupsRequest = None,
+    ) -> m.InlineResponse20018:
+        """
+        Universally query points, grouped by a given payload field
+        """
+        return self._build_for_query_points_groups(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            query_groups_request=query_groups_request,
+        )
+
     def recommend_batch_points(
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_request_batch: m.RecommendRequestBatch = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20017:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -1434,7 +1502,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_groups_request: m.RecommendGroupsRequest = None,
-    ) -> m.InlineResponse20019:
+    ) -> m.InlineResponse20018:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples, grouped by a given payload field.
         """
@@ -1451,7 +1519,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         recommend_request: m.RecommendRequest = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20016:
         """
         Look for the points which are closer to stored positive examples and at the same time further to negative examples.
         """
@@ -1467,7 +1535,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         consistency: m.ReadConsistency = None,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20016:
+    ) -> m.InlineResponse20015:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -1483,7 +1551,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_request_batch: m.SearchRequestBatch = None,
-    ) -> m.InlineResponse20018:
+    ) -> m.InlineResponse20017:
         """
         Retrieve by batch the closest points based on vector similarity and given filtering conditions
         """
@@ -1500,7 +1568,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_groups_request: m.SearchGroupsRequest = None,
-    ) -> m.InlineResponse20019:
+    ) -> m.InlineResponse20018:
         """
         Retrieve closest points based on vector similarity and given filtering conditions, grouped by a given payload field
         """
@@ -1517,7 +1585,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         search_request: m.SearchRequest = None,
-    ) -> m.InlineResponse20017:
+    ) -> m.InlineResponse20016:
         """
         Retrieve closest points based on vector similarity and given filtering conditions
         """
@@ -1534,7 +1602,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         set_payload: m.SetPayload = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Set payload values for points
         """
@@ -1551,7 +1619,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         update_vectors: m.UpdateVectors = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Update specified named vectors on points, keep unspecified vectors intact.
         """
@@ -1568,7 +1636,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         point_insert_operations: m.PointInsertOperations = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Perform insert + updates on points. If point with given ID already exists - it will be overwritten.
         """

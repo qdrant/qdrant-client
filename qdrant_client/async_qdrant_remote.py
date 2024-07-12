@@ -566,6 +566,126 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             assert http_res is not None, "Query batch returned None"
             return http_res
 
+    async def query_points_groups(
+        self,
+        collection_name: str,
+        group_by: str,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 3,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        if self._prefer_grpc:
+            if isinstance(query, get_args(models.Query)):
+                query = RestToGrpc.convert_query(query)
+            if isinstance(prefetch, models.Prefetch):
+                prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
+            if isinstance(prefetch, list):
+                prefetch = [
+                    RestToGrpc.convert_prefetch_query(p) if isinstance(p, models.Prefetch) else p
+                    for p in prefetch
+                ]
+            if isinstance(query_filter, models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
+            if isinstance(search_params, models.SearchParams):
+                search_params = RestToGrpc.convert_search_params(search_params)
+            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
+                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
+            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
+                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
+            if isinstance(with_lookup, str):
+                with_lookup = grpc.WithLookup(lookup=with_lookup)
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
+                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            result: grpc.QueryGroupsResponse = (
+                await self.grpc_points.QueryGroups(
+                    grpc.QueryPointGroups(
+                        collection_name=collection_name,
+                        query=query,
+                        prefetch=prefetch,
+                        filter=query_filter,
+                        limit=limit,
+                        with_vectors=with_vectors,
+                        with_payload=with_payload,
+                        params=search_params,
+                        score_threshold=score_threshold,
+                        using=using,
+                        group_by=group_by,
+                        group_size=group_size,
+                        with_lookup=with_lookup,
+                        timeout=timeout,
+                        shard_key_selector=shard_key_selector,
+                        read_consistency=consistency,
+                    ),
+                    timeout=timeout if timeout is None else self._timeout,
+                )
+            ).result
+            return GrpcToRest.convert_query_groups_result(result)
+        else:
+            if isinstance(query, grpc.Query):
+                query = GrpcToRest.convert_query(query)
+            if isinstance(prefetch, grpc.PrefetchQuery):
+                prefetch = GrpcToRest.convert_prefetch_query(prefetch)
+            if isinstance(prefetch, list):
+                prefetch = [
+                    GrpcToRest.convert_prefetch_query(p)
+                    if isinstance(p, grpc.PrefetchQuery)
+                    else p
+                    for p in prefetch
+                ]
+            if isinstance(query_filter, grpc.Filter):
+                query_filter = GrpcToRest.convert_filter(model=query_filter)
+            if isinstance(search_params, grpc.SearchParams):
+                search_params = GrpcToRest.convert_search_params(search_params)
+            if isinstance(with_payload, grpc.WithPayloadSelector):
+                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
+            if isinstance(with_lookup, grpc.WithLookup):
+                with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
+            query_request = models.QueryGroupsRequest(
+                shard_key=shard_key_selector,
+                prefetch=prefetch,
+                query=query,
+                using=using,
+                filter=query_filter,
+                params=search_params,
+                score_threshold=score_threshold,
+                limit=limit,
+                group_by=group_by,
+                group_size=group_size,
+                with_vector=with_vectors,
+                with_payload=with_payload,
+                with_lookup=with_lookup,
+            )
+            query_result = await self.http.points_api.query_points_groups(
+                collection_name=collection_name,
+                consistency=consistency,
+                timeout=timeout,
+                query_groups_request=query_request,
+            )
+            return query_result.result
+
     async def search_groups(
         self,
         collection_name: str,

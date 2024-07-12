@@ -1,7 +1,8 @@
 import numpy as np
+import pytest
 
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.http.models import models
+from qdrant_client.http.models import models, QueryResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     code_vector_size,
@@ -129,8 +130,8 @@ class TestQueryBatchSearcher:
 
 # ---- TESTS  ---- #
 
-
-def test_sparse_query_batch():
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_sparse_query_batch(prefer_grpc):
     fixture_points = generate_sparse_fixtures()
 
     searcher = TestQueryBatchSearcher()
@@ -138,13 +139,14 @@ def test_sparse_query_batch():
     local_client = init_local()
     init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, searcher.sparse_query_batch_text)
 
 
-def test_multivec_query_batch():
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_multivec_query_batch(prefer_grpc):
     fixture_points = generate_multivector_fixtures()
 
     searcher = TestQueryBatchSearcher()
@@ -152,13 +154,14 @@ def test_multivec_query_batch():
     local_client = init_local()
     init_client(local_client, fixture_points, vectors_config=multi_vector_config)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
 
     compare_client_results(local_client, remote_client, searcher.multivec_query_batch_text)
 
 
-def test_dense_query_batch():
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_dense_query_batch(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestQueryBatchSearcher()
@@ -166,7 +169,7 @@ def test_dense_query_batch():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_text)
