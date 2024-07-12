@@ -984,6 +984,12 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_query_groups_result(cls, model: grpc.GroupsResult) -> rest.GroupsResult:
+        return rest.GroupsResult(
+            groups=[cls.convert_point_group(group) for group in model.groups],
+        )
+
+    @classmethod
     def convert_vectors_selector(cls, model: grpc.VectorsSelector) -> List[str]:
         return model.names[:]
 
@@ -2530,8 +2536,8 @@ class RestToGrpc:
     @classmethod
     def convert_recommend_input(cls, model: rest.RecommendInput) -> grpc.RecommendInput:
         return grpc.RecommendInput(
-            positive=[cls.convert_vector_input(vector) for vector in model.positive],
-            negative=[cls.convert_vector_input(vector) for vector in model.negative],
+            positive=[cls.convert_vector_input(vector) for vector in model.positive] if model.positive is not None else None,
+            negative=[cls.convert_vector_input(vector) for vector in model.negative] if model.negative is not None else None,
             strategy=cls.convert_recommend_strategy(model.strategy)
             if model.strategy is not None
             else None,

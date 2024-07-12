@@ -886,6 +886,84 @@ class LocalCollection:
                 score_threshold=score_threshold,
             )
 
+    def query_groups(
+        self,
+        group_by: str,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        group_size: int = 3,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        with_lookup_collection: Optional["LocalCollection"] = None,
+    ) -> models.GroupsResult:
+        points = self.query_points(
+            query=query,
+            query_filter=query_filter,
+            prefetch=prefetch,
+            using=using,
+            limit=len(self.ids_inv),
+            with_payload=True,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+        )
+
+        groups = OrderedDict()
+
+        for point in points.points:
+            if not isinstance(point.payload, dict):
+                continue
+
+            group_values = value_by_key(point.payload, group_by)
+            if group_values is None:
+                continue
+
+            group_values = list(set(v for v in group_values if isinstance(v, (str, int))))
+
+            point.payload = self._process_payload(point.payload, with_payload)
+
+            for group_value in group_values:
+                if group_value not in groups:
+                    groups[group_value] = models.PointGroup(id=group_value, hits=[])
+
+                if len(groups[group_value].hits) >= group_size:
+                    continue
+
+                groups[group_value].hits.append(point)
+
+        groups_result: List[models.PointGroup] = list(groups.values())[:limit]
+
+        if isinstance(with_lookup, str):
+            with_lookup = models.WithLookup(
+                collection=with_lookup,
+                with_payload=None,
+                with_vectors=None,
+            )
+
+        if with_lookup is not None and with_lookup_collection is not None:
+            for group in groups_result:
+                lookup = with_lookup_collection.retrieve(
+                    ids=[group.id],
+                    with_payload=with_lookup.with_payload,
+                    with_vectors=with_lookup.with_vectors,
+                )
+                group.lookup = next(iter(lookup), None)
+
+        return models.GroupsResult(groups=groups_result)
+
     def search_groups(
         self,
         query_vector: Union[
