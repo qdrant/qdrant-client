@@ -39,9 +39,9 @@ SUPPORTED_SPARSE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
 )
 
 IDF_EMBEDDING_MODELS: Set[str] = {
-    model_name
-    for model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS
-    if model_name.lower().startswith("qdrant/bm")
+    model_config["model"]
+    for model_config in SparseTextEmbedding.list_supported_models()
+    if model_config.get("requires_idf", None)
 }
 
 

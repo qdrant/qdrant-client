@@ -27,10 +27,10 @@ grpcio-tools = ">=1.41.0"
 urllib3 = ">=1.26.14,<3"
 portalocker = "^2.7.0"
 fastembed = [
-    { version = "0.3.3", optional = true, python = "<3.13" }
+    { version = "0.3.4", optional = true, python = "<3.13" }
 ]
 fastembed-gpu = [
-    { version = "0.3.3", optional = true, python = "<3.13" }
+    { version = "0.3.4", optional = true, python = "<3.13" }
 ]
 
 [tool.poetry.group.dev.dependencies]
