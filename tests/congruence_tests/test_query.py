@@ -1130,7 +1130,7 @@ def test_search_with_persistence_and_skipped_vectors(prefer_grpc):
                 raise e
 
 
-def test_query_invalid_vector_type(prefer_grpc):
+def test_query_invalid_vector_type():
     fixture_points = generate_fixtures()
 
     local_client = init_local()
