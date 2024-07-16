@@ -2,6 +2,7 @@ from typing import List
 
 import numpy as np
 import pytest
+import pydantic
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -1145,7 +1146,7 @@ def test_query_invalid_vector_type():
             collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
         )
 
-    with pytest.raises(UnexpectedResponse):
+    with pytest.raises(pydantic.error_wrappers.ValidationError):
         remote_client.query_points(
             collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
         )
