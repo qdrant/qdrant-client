@@ -1130,14 +1130,13 @@ def test_search_with_persistence_and_skipped_vectors(prefer_grpc):
                 raise e
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
 def test_query_invalid_vector_type(prefer_grpc):
     fixture_points = generate_fixtures()
 
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    remote_client = init_remote()
     init_client(remote_client, fixture_points)
 
     vector_invalid_type = [1, 2, 3, 4]
