@@ -38,11 +38,15 @@ SUPPORTED_SPARSE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     else {}
 )
 
-IDF_EMBEDDING_MODELS: Set[str] = {
-    model_config["model"]
-    for model_config in SparseTextEmbedding.list_supported_models()
-    if model_config.get("requires_idf", None)
-}
+IDF_EMBEDDING_MODELS: Set[str] = (
+    {
+        model_config["model"]
+        for model_config in SparseTextEmbedding.list_supported_models()
+        if model_config.get("requires_idf", None)
+    }
+    if SparseTextEmbedding
+    else {}
+)
 
 
 class QdrantFastembedMixin(QdrantBase):
