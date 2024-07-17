@@ -36,6 +36,11 @@ class TestSimpleSearcher:
     __test__ = False
 
     def __init__(self):
+        # group by
+        self.group_by = "city.geo"
+        self.group_size = 3
+        self.limit = 2  # number of groups
+
         # dense query vectors
         self.dense_vector_query_text = np.random.random(text_vector_size).tolist()
         self.dense_vector_query_image = np.random.random(image_vector_size).tolist()
@@ -205,9 +210,9 @@ class TestSimpleSearcher:
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,
             using="text",
-            group_by="city.geo",
-            group_size=3,
-            limit=10,
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
             with_payload=True,
         )
 
@@ -221,9 +226,9 @@ class TestSimpleSearcher:
             query=self.dense_vector_query_text,
             query_filter=query_filter,
             using="text",
-            group_by="city.geo",
-            group_size=3,
-            limit=10,
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
             with_payload=True,
         )
 
@@ -239,9 +244,9 @@ class TestSimpleSearcher:
             query=self.dense_vector_query_image,
             using="image",
             with_payload=True,
-            group_by="city.geo",
-            group_size=2,
-            limit=10,
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
         )
 
     def filter_dense_query_text(
@@ -590,6 +595,10 @@ class TestSimpleSearcher:
     @classmethod
     def no_query_no_prefetch(cls, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(collection_name=COLLECTION_NAME, limit=10)
+
+
+def group_by_keys():
+    return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
 
 
 # ---- TESTS  ---- #
@@ -1243,8 +1252,17 @@ def test_query_group(prefer_grpc):
     remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
-    compare_client_results(local_client, remote_client, searcher.dense_query_group)
-    compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group)
+    searcher.group_size = 2
+    searcher.limit = 2
+    for key in group_by_keys():
+        searcher.group_by = key
+        compare_client_results(local_client, remote_client, searcher.dense_query_group)
+        compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group)
+
+    searcher.group_size = 5
+    searcher.limit = 3
+    searcher.group_by = "city.name"
+
     for i in range(100):
         query_filter = one_random_filter_please()
         try:
