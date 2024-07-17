@@ -45,7 +45,7 @@ IDF_EMBEDDING_MODELS: Set[str] = (
         if model_config.get("requires_idf", None)
     }
     if SparseTextEmbedding
-    else {}
+    else set()
 )
 
 
