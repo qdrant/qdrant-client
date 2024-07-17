@@ -232,7 +232,7 @@ class TestSimpleSearcher:
             with_payload=True,
         )
 
-    def dense_queries_rescore_group(self, client: QdrantBase) -> GroupsResult:
+    def dense_queries_rescore_group(self, client: QdrantBase, include_field: str) -> GroupsResult:
         return client.query_points_groups(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -243,7 +243,7 @@ class TestSimpleSearcher:
             ],
             query=self.dense_vector_query_image,
             using="image",
-            with_payload=True,
+            with_payload=models.PayloadSelectorInclude(include=[include_field]),
             group_by=self.group_by,
             group_size=self.group_size,
             limit=self.limit,
@@ -598,7 +598,7 @@ class TestSimpleSearcher:
 
 
 def group_by_keys():
-    return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
+    return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
 
 
 # ---- TESTS  ---- #
@@ -1253,11 +1253,11 @@ def test_query_group(prefer_grpc):
     init_client(remote_client, fixture_points)
 
     searcher.group_size = 2
-    searcher.limit = 2
+    searcher.limit = 3
     for key in group_by_keys():
         searcher.group_by = key
         compare_client_results(local_client, remote_client, searcher.dense_query_group)
-        compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group)
+        compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group, include_field=key)
 
     searcher.group_size = 5
     searcher.limit = 3
