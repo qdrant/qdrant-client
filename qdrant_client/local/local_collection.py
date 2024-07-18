@@ -661,7 +661,6 @@ class LocalCollection:
 
         Assumes all vectors have been homogenized so that there are no ids in the inputs
         """
-        scored_points = []
 
         prefetches = []
         if prefetch is not None:
@@ -784,7 +783,7 @@ class LocalCollection:
                     sources_ids.add(point.id)
 
             if len(sources_ids) == 0:
-                # no need to perform a query if there no matches for the sources
+                # no need to perform a query if there are no matches for the sources
                 return []
             else:
                 filter_with_sources = _include_ids_in_filter(query_filter, list(sources_ids))
@@ -881,6 +880,13 @@ class LocalCollection:
                 with_vectors=with_vectors,
             )
             return [record_to_scored_point(record) for record in records[offset:]]
+        elif query == "random":  # TODO(luis): update with interface
+            return self._sample_randomly(
+                limit=limit + offset,
+                query_filter=query_filter,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+            )
         elif isinstance(query, models.FusionQuery):
             raise AssertionError("Cannot perform fusion without prefetches")
         else:
@@ -1768,6 +1774,49 @@ class LocalCollection:
             )
 
         return result, None
+
+    def _sample_randomly(
+        self,
+        limit: int,
+        query_filter: Optional[types.Filter],
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+    ):
+        payload_mask = calculate_payload_mask(
+            payloads=self.payload,
+            payload_filter=query_filter,
+            ids_inv=self.ids_inv,
+        )
+        # in deleted: 1 - deleted, 0 - not deleted
+        # in payload_mask: 1 - accepted, 0 - rejected
+        # in mask: 1 - ok, 0 - rejected
+        mask = payload_mask & ~self.deleted
+
+        random_scores = np.random.rand(len(self.ids))
+        random_order = np.argsort(random_scores)
+
+        result = []
+        for idx in random_order:
+            if len(result) >= limit:
+                break
+
+            if not mask[idx]:
+                continue
+
+            point_id = self.ids_inv[idx]
+
+            scored_point = construct(
+                models.ScoredPoint,
+                id=point_id,
+                score=float(0),
+                version=0,
+                payload=self._get_payload(idx, with_payload),
+                vector=self._get_vectors(idx, with_vectors),
+            )
+
+            result.append(scored_point)
+
+        return result
 
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
