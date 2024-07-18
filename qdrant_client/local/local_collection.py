@@ -23,7 +23,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
-from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
+from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
@@ -759,21 +759,23 @@ class LocalCollection:
             # Fuse results
             if query.fusion == models.Fusion.RRF:
                 # RRF: Reciprocal Rank Fusion
-                rrf_results = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
-
-                # Fetch payload and vectors
-                ids = [point.id for point in rrf_results]
-                fetched_points = self.retrieve(
-                    ids, with_payload=with_payload, with_vectors=with_vectors
-                )
-                for fetched, scored in zip(fetched_points, rrf_results):
-                    scored.payload = fetched.payload
-                    scored.vector = fetched.vector
-
-                return rrf_results[offset:]
-
+                fused = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
+            elif query.fusion == models.Fusion.DBSF:
+                # DBSF: Distribution-Based Score Fusion
+                fused = distribution_based_score_fusion(responses=sources, limit=limit + offset)
             else:
                 raise ValueError(f"Fusion method {query.fusion} does not exist")
+
+            # Fetch payload and vectors
+            ids = [point.id for point in fused]
+            fetched_points = self.retrieve(
+                ids, with_payload=with_payload, with_vectors=with_vectors
+            )
+            for fetched, scored in zip(fetched_points, fused):
+                scored.payload = fetched.payload
+                scored.vector = fetched.vector
+
+            return fused[offset:]
         else:
             # Re-score
             sources_ids = set()
