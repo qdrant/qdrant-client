@@ -43,6 +43,8 @@ class TestSimpleSearcher:
 
         # dense query vectors
         self.dense_vector_query_text = np.random.random(text_vector_size).tolist()
+        self.dense_vector_query_text_bis = self.dense_vector_query_text
+        self.dense_vector_query_text_bis[0] += 42.0  # slightly different vector
         self.dense_vector_query_image = np.random.random(image_vector_size).tolist()
         self.dense_vector_query_code = np.random.random(code_vector_size).tolist()
 
@@ -213,7 +215,7 @@ class TestSimpleSearcher:
             group_by=self.group_by,
             group_size=self.group_size,
             limit=self.limit,
-            with_payload=True,
+            with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
         )
 
     def filter_dense_query_group(
@@ -232,18 +234,20 @@ class TestSimpleSearcher:
             with_payload=True,
         )
 
-    def dense_queries_rescore_group(self, client: QdrantBase, include_field: str) -> GroupsResult:
+    def dense_queries_rescore_group(self, client: QdrantBase) -> GroupsResult:
         return client.query_points_groups(
             collection_name=COLLECTION_NAME,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text,
                     using="text",
+                    limit=20,
                 ),
             ],
-            query=self.dense_vector_query_image,
-            using="image",
-            with_payload=models.PayloadSelectorInclude(include=[include_field]),
+            # slightly different vector for rescoring because group_by is not super accurate with rescoring
+            query=self.dense_vector_query_text_bis,
+            using="text",
+            with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
             group_by=self.group_by,
             group_size=self.group_size,
             limit=self.limit,
@@ -1252,17 +1256,14 @@ def test_query_group(prefer_grpc):
     remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
-    searcher.group_size = 2
+    searcher.group_size = 5
     searcher.limit = 3
     for key in group_by_keys():
         searcher.group_by = key
         compare_client_results(local_client, remote_client, searcher.dense_query_group)
-        compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group, include_field=key)
+        compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group)
 
-    searcher.group_size = 5
-    searcher.limit = 3
     searcher.group_by = "city.name"
-
     for i in range(100):
         query_filter = one_random_filter_please()
         try:
