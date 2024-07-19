@@ -16,10 +16,9 @@ from typing import (
 from copy import deepcopy
 
 import numpy as np
-from pydantic.version import VERSION as PYDANTIC_VERSION
 
 from qdrant_client import grpc as grpc
-from qdrant_client._pydantic_compat import construct
+from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
@@ -77,15 +76,6 @@ from qdrant_client.local.sparse_distances import (
 DEFAULT_VECTOR_NAME = ""
 EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.html
 # https://github.com/qdrant/qdrant/blob/7164ac4a5987d28f1c93f5712aef8e09e7d93555/lib/segment/src/spaces/simple_avx.rs#L99C10-L99C10
-PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
-
-if PYDANTIC_V2:
-    from pydantic_core import to_jsonable_python as _to_jsonable_python
-else:
-    from pydantic.json import ENCODERS_BY_TYPE
-
-    def _to_jsonable_python(x: Any) -> Any:
-        return ENCODERS_BY_TYPE[type(x)](x)
 
 
 def to_jsonable_python(x: Any) -> Any:
