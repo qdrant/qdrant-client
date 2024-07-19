@@ -550,7 +550,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
-        """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
+        """Universal endpoint to group on any available operation, such as search, recommendation, discovery, context search.
 
         Args:
             collection_name: Collection to search in

@@ -855,7 +855,7 @@ class QdrantRemote(QdrantBase):
                 timeout=timeout,
                 query_groups_request=query_request,
             )
-
+            assert query_result is not None, "Query points groups API returned None"
             return query_result.result
 
     def search_groups(
