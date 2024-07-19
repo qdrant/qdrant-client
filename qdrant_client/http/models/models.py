@@ -653,13 +653,14 @@ class FloatIndexType(str, Enum):
 
 class Fusion(str, Enum):
     """
-    Fusion algorithm allows to combine results of multiple prefetches. Available fusion algorithms: * `rrf` - Rank Reciprocal Fusion
+    Fusion algorithm allows to combine results of multiple prefetches.  Available fusion algorithms:  * `rrf` - Reciprocal Rank Fusion * `dbsf` - Distribution-Based Score Fusion
     """
 
     def __str__(self) -> str:
         return str(self.value)
 
     RRF = "rrf"
+    DBSF = "dbsf"
 
 
 class FusionQuery(BaseModel, extra="forbid"):
@@ -988,6 +989,7 @@ class IntegerIndexParams(BaseModel, extra="forbid"):
     type: "IntegerIndexType" = Field(..., description="")
     lookup: bool = Field(..., description="If true - support direct lookups.")
     range: bool = Field(..., description="If true - support ranges filters.")
+    is_tenant: Optional[bool] = Field(default=None, description="If true - used for tenant optimization.")
 
 
 class IntegerIndexType(str, Enum):
@@ -1012,6 +1014,9 @@ class IsNullCondition(BaseModel, extra="forbid"):
 
 class KeywordIndexParams(BaseModel, extra="forbid"):
     type: "KeywordIndexType" = Field(..., description="")
+    is_tenant: Optional[bool] = Field(
+        default=None, description="If true - used for tenant optimization. Default: false."
+    )
 
 
 class KeywordIndexType(str, Enum):
@@ -1137,11 +1142,19 @@ class MultiVectorConfig(BaseModel, extra="forbid"):
 
 
 class NamedSparseVector(BaseModel, extra="forbid"):
+    """
+    Sparse vector data with name
+    """
+
     name: str = Field(..., description="Name of vector data")
-    vector: "SparseVector" = Field(..., description="")
+    vector: "SparseVector" = Field(..., description="Sparse vector data with name")
 
 
 class NamedVector(BaseModel, extra="forbid"):
+    """
+    Dense vector data with name
+    """
+
     name: str = Field(..., description="Name of vector data")
     vector: List[float] = Field(..., description="Vector data")
 
@@ -1485,6 +1498,10 @@ class QueryGroupsRequest(BaseModel, extra="forbid"):
     )
     with_payload: Optional["WithPayloadInterface"] = Field(
         default=None, description="Options for specifying which payload to include or not. Default is false."
+    )
+    lookup_from: Optional["LookupLocation"] = Field(
+        default=None,
+        description="The location to use for IDs lookup, if not specified - use the current collection and the &#x27;using&#x27; vector Note: the other collection vectors should have the same vector size as the &#x27;using&#x27; vector in the current collection",
     )
     group_by: str = Field(
         ...,
