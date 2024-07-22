@@ -221,6 +221,18 @@ class TestSimpleSearcher:
             with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
         )
 
+    def dense_query_group_with_lookup(self, client: QdrantBase) -> GroupsResult:
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            query=self.dense_vector_query_text,
+            using="text",
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
+            with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
+            with_lookup=SECONDARY_COLLECTION_NAME,
+        )
+
     def filter_dense_query_group(
         self,
         client: QdrantBase,
@@ -1328,6 +1340,7 @@ def test_query_group():
     for key in group_by_keys():
         searcher.group_by = key
         compare_client_results(local_client, remote_client, searcher.dense_query_group)
+        compare_client_results(local_client, remote_client, searcher.dense_query_group_with_lookup)
         compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group)
         compare_client_results(
             local_client,
