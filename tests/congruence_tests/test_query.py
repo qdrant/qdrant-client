@@ -686,10 +686,15 @@ def group_by_keys():
     return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
 
 
+@pytest.fixture(params=[False, True])
+def prefer_grpc(request):
+    return request.param
+
+
 # ---- TESTS  ---- #
 
 
-def test_dense_query_lookup_from_another_collection():
+def test_dense_query_lookup_from_another_collection(prefer_grpc):
     fixture_points = generate_fixtures(10)
 
     secondary_collection_points = generate_fixtures(10)
@@ -700,7 +705,7 @@ def test_dense_query_lookup_from_another_collection():
     init_client(local_client, fixture_points)
     init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
     init_client(remote_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
@@ -772,7 +777,7 @@ def test_dense_query_lookup_from_negative():
         )
 
 
-def test_no_query_no_prefetch():
+def test_no_query_no_prefetch(prefer_grpc):
     major, minor, patch, dev = read_version()
     version_set = major is not None or dev
     if version_set and not dev:
@@ -786,14 +791,14 @@ def test_no_query_no_prefetch():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.no_query_no_prefetch)
     compare_client_results(local_client, remote_client, searcher.query_scroll_offset)
 
 
-def test_dense_query_filtered_prefetch():
+def test_dense_query_filtered_prefetch(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -801,7 +806,7 @@ def test_dense_query_filtered_prefetch():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     for i in range(100):
@@ -818,7 +823,7 @@ def test_dense_query_filtered_prefetch():
             raise e
 
 
-def test_dense_query_prefetch_score_threshold():
+def test_dense_query_prefetch_score_threshold(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -826,7 +831,7 @@ def test_dense_query_prefetch_score_threshold():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(
@@ -834,7 +839,7 @@ def test_dense_query_prefetch_score_threshold():
     )
 
 
-def test_dense_query_prefetch_parametrized():
+def test_dense_query_prefetch_parametrized(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -842,7 +847,7 @@ def test_dense_query_prefetch_parametrized():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(
@@ -871,7 +876,7 @@ def test_dense_query_prefetch_parametrized():
     )
 
 
-def test_dense_query_parametrized():
+def test_dense_query_parametrized(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -879,7 +884,7 @@ def test_dense_query_parametrized():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(
@@ -900,7 +905,7 @@ def test_dense_query_parametrized():
     )
 
 
-def test_sparse_query():
+def test_sparse_query(prefer_grpc):
     fixture_points = generate_sparse_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -908,13 +913,13 @@ def test_sparse_query():
     local_client = init_local()
     init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
 
     compare_client_results(local_client, remote_client, searcher.sparse_query_text)
 
 
-def test_multivec_query():
+def test_multivec_query(prefer_grpc):
     fixture_points = generate_multivector_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -922,13 +927,12 @@ def test_multivec_query():
     local_client = init_local()
     init_client(local_client, fixture_points, vectors_config=multi_vector_config)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
 
     compare_client_results(local_client, remote_client, searcher.multivec_query_text)
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
 def test_dense_query(prefer_grpc):
     fixture_points = generate_fixtures()
 
@@ -970,7 +974,7 @@ def test_dense_query(prefer_grpc):
             raise e
 
 
-def test_dense_query_orderby():
+def test_dense_query_orderby(prefer_grpc):
     fixture_points = generate_fixtures(200)
 
     searcher = TestSimpleSearcher()
@@ -978,7 +982,7 @@ def test_dense_query_orderby():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     remote_client.create_payload_index(
@@ -989,7 +993,7 @@ def test_dense_query_orderby():
     compare_client_results(local_client, remote_client, searcher.deep_dense_queries_orderby)
 
 
-def test_dense_query_recommend():
+def test_dense_query_recommend(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -997,14 +1001,14 @@ def test_dense_query_recommend():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.dense_recommend_image)
     compare_client_results(local_client, remote_client, searcher.dense_many_recommend)
 
 
-def test_dense_query_rescore():
+def test_dense_query_rescore(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -1012,14 +1016,14 @@ def test_dense_query_rescore():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.dense_queries_rescore)
     compare_client_results(local_client, remote_client, searcher.dense_deep_queries_rescore)
 
 
-def test_dense_query_fusion():
+def test_dense_query_fusion(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -1027,7 +1031,7 @@ def test_dense_query_fusion():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.dense_query_rrf)
@@ -1036,7 +1040,7 @@ def test_dense_query_fusion():
     compare_client_results(local_client, remote_client, searcher.deep_dense_queries_dbsf)
 
 
-def test_dense_query_discovery_context():
+def test_dense_query_discovery_context(prefer_grpc):
     n_vectors = 250
     fixture_points = generate_fixtures(n_vectors)
 
@@ -1045,7 +1049,7 @@ def test_dense_query_discovery_context():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.dense_discovery_image)
@@ -1059,7 +1063,7 @@ def test_dense_query_discovery_context():
     )
 
 
-def test_simple_opt_vectors_query():
+def test_simple_opt_vectors_query(prefer_grpc):
     fixture_points = generate_fixtures(skip_vectors=True)
 
     searcher = TestSimpleSearcher()
@@ -1067,7 +1071,7 @@ def test_simple_opt_vectors_query():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.dense_query_text)
@@ -1100,7 +1104,7 @@ def test_simple_opt_vectors_query():
             raise e
 
 
-def test_single_dense_vector():
+def test_single_dense_vector(prefer_grpc):
     fixture_points = generate_fixtures(num=200, vectors_sizes=text_vector_size)
 
     searcher = TestSimpleSearcher()
@@ -1113,7 +1117,7 @@ def test_single_dense_vector():
     local_client = init_local()
     init_client(local_client, fixture_points, vectors_config=vectors_config)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points, vectors_config=vectors_config)
 
     for i in range(100):
@@ -1130,7 +1134,7 @@ def test_single_dense_vector():
             raise e
 
 
-def test_search_with_persistence():
+def test_search_with_persistence(prefer_grpc):
     import tempfile
 
     fixture_points = generate_fixtures()
@@ -1145,7 +1149,7 @@ def test_search_with_persistence():
         del local_client
         local_client_2 = init_local(tmpdir)
 
-        remote_client = init_remote()
+        remote_client = init_remote(prefer_grpc=prefer_grpc)
         init_client(remote_client, fixture_points)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -1168,7 +1172,7 @@ def test_search_with_persistence():
                 raise e
 
 
-def test_search_with_persistence_and_skipped_vectors():
+def test_search_with_persistence_and_skipped_vectors(prefer_grpc):
     import tempfile
 
     fixture_points = generate_fixtures(skip_vectors=True)
@@ -1188,7 +1192,7 @@ def test_search_with_persistence_and_skipped_vectors():
 
         assert count_after_load == count_before_load
 
-        remote_client = init_remote()
+        remote_client = init_remote(prefer_grpc=prefer_grpc)
         init_client(remote_client, fixture_points)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -1232,13 +1236,13 @@ def test_query_invalid_vector_type():
         )
 
 
-def test_query_with_nan():
+def test_query_with_nan(prefer_grpc):
     fixture_points = generate_fixtures()
 
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     vector = np.random.random(text_vector_size)
@@ -1246,8 +1250,9 @@ def test_query_with_nan():
     query = vector.tolist()
     with pytest.raises(AssertionError):
         local_client.query_points(COLLECTION_NAME, query=query, using="text")
-    with pytest.raises(UnexpectedResponse):
-        remote_client.query_points(COLLECTION_NAME, query=query, using="text")
+    if not prefer_grpc:
+        with pytest.raises(UnexpectedResponse):
+            remote_client.query_points(COLLECTION_NAME, query=query, using="text")
 
     single_vector_config = models.VectorParams(
         size=text_vector_size, distance=models.Distance.COSINE
@@ -1260,11 +1265,11 @@ def test_query_with_nan():
 
     with pytest.raises(AssertionError):
         print(local_client.query_points(COLLECTION_NAME, query=query))
-    with pytest.raises(UnexpectedResponse):
-        remote_client.query_points(COLLECTION_NAME, query=query)
+    if not prefer_grpc:
+        with pytest.raises(UnexpectedResponse):
+            remote_client.query_points(COLLECTION_NAME, query=query)
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
 def test_flat_query_dense_interface(prefer_grpc):
     fixture_points = generate_fixtures()
 
@@ -1281,7 +1286,6 @@ def test_flat_query_dense_interface(prefer_grpc):
     compare_client_results(local_client, remote_client, searcher.dense_query_text_by_id)
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
 def test_flat_query_sparse_interface(prefer_grpc):
     fixture_points = generate_sparse_fixtures()
 
@@ -1296,7 +1300,6 @@ def test_flat_query_sparse_interface(prefer_grpc):
     compare_client_results(local_client, remote_client, searcher.sparse_query_text)
 
 
-@pytest.mark.parametrize("prefer_grpc", (True,))
 def test_flat_query_multivector_interface(prefer_grpc):
     fixture_points = generate_multivector_fixtures()
 
@@ -1311,7 +1314,6 @@ def test_flat_query_multivector_interface(prefer_grpc):
     compare_client_results(local_client, remote_client, searcher.multivec_query_text)
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
 def test_query_group(prefer_grpc):
     fixture_points = generate_fixtures()
 
