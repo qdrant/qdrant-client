@@ -984,12 +984,6 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_query_groups_result(cls, model: grpc.GroupsResult) -> rest.GroupsResult:
-        return rest.GroupsResult(
-            groups=[cls.convert_point_group(group) for group in model.groups],
-        )
-
-    @classmethod
     def convert_vectors_selector(cls, model: grpc.VectorsSelector) -> List[str]:
         return model.names[:]
 

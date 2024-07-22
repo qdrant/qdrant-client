@@ -813,7 +813,7 @@ class QdrantRemote(QdrantBase):
                 ),
                 timeout=timeout if timeout is None else self._timeout,
             ).result
-            return GrpcToRest.convert_query_groups_result(result)
+            return GrpcToRest.convert_groups_result(result)
         else:
             if isinstance(query, grpc.Query):
                 query = GrpcToRest.convert_query(query)
