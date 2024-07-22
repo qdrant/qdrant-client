@@ -8,6 +8,9 @@ from tests.congruence_tests.test_common import (
     compare_collections,
     generate_fixtures,
     generate_sparse_fixtures,
+    sparse_vectors_config,
+    generate_multivector_fixtures,
+    multi_vector_config,
     initialize_fixture_collection,
 )
 
@@ -35,6 +38,15 @@ def remote_client() -> QdrantClient:
     client.close()
 
 
+@pytest.fixture
+def second_remote_client() -> QdrantClient:
+    client = QdrantClient(port=6334)
+    delete_collections(client)
+    yield client
+    delete_collections(client)
+    client.close()
+
+
 def delete_collections(client: QdrantClient) -> None:
     collection_names = [collection.name for collection in client.get_collections().collections]
     for collection_name in collection_names:
@@ -47,7 +59,7 @@ def delete_collections(client: QdrantClient) -> None:
         ("local_client", "remote_client"),
         ("remote_client", "local_client"),
         ("local_client", "second_local_client"),
-        # remote - remote requires two launched Qdrant instances and is not tested
+        ("remote_client", "second_remote_client"),
     ],
 )
 def test_single_vector_collection(source_client, dest_client, request) -> None:
@@ -70,7 +82,7 @@ def test_single_vector_collection(source_client, dest_client, request) -> None:
     points = dense_points  # + sparse_points
     source_client.upload_points(collection_name, points, wait=True)
     source_client.migrate(dest_client)
-    dest_client.upload_points(collection_name, points, wait=True)
+    # dest_client.upload_points(collection_name, points, wait=True)
     compare_collections(
         source_client,
         dest_client,
@@ -85,7 +97,7 @@ def test_single_vector_collection(source_client, dest_client, request) -> None:
         ("local_client", "remote_client"),
         ("remote_client", "local_client"),
         ("local_client", "second_local_client"),
-        # remote - remote requires two launched Qdrant instances and is not tested
+        ("remote_client", "second_remote_client"),
     ],
 )
 def test_multiple_vectors_collection(source_client, dest_client, request) -> None:
@@ -97,10 +109,13 @@ def test_multiple_vectors_collection(source_client, dest_client, request) -> Non
     """
     source_client: QdrantClient = request.getfixturevalue(source_client)
     dest_client: QdrantClient = request.getfixturevalue(dest_client)
+    vectors_config = multi_vector_config
     collection_name = "multiple_vectors_collection"
-    initialize_fixture_collection(source_client, collection_name="multiple_vectors_collection")
-    points = generate_fixtures(VECTOR_NUMBER)
-
+    initialize_fixture_collection(
+        source_client, collection_name=collection_name, vectors_config=vectors_config
+    )
+    multi_vectors_points = generate_multivector_fixtures()
+    points = multi_vectors_points
     source_client.upload_points(collection_name, points, wait=True)
     source_client.migrate(dest_client)
     compare_collections(
@@ -117,7 +132,42 @@ def test_multiple_vectors_collection(source_client, dest_client, request) -> Non
         ("local_client", "remote_client"),
         ("remote_client", "local_client"),
         ("local_client", "second_local_client"),
-        # remote - remote requires two launched Qdrant instances and is not tested
+        ("remote_client", "second_remote_client"),
+    ],
+)
+def test_sparse_vector_collection(source_client, dest_client, request) -> None:
+    """
+    Args:
+        source_client: fixture
+        dest_client: fixture
+        request: pytest internal object to get launch fixtures from parametrize
+    """
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
+    collection_name = "sparse_vector_collection"
+    vectors_config = sparse_vectors_config
+    initialize_fixture_collection(
+        source_client, collection_name=collection_name, sparse_vectors_config=vectors_config
+    )
+    sparse_points = generate_sparse_fixtures()
+    points = sparse_points
+    source_client.upload_points(collection_name, points, wait=True)
+    source_client.migrate(dest_client)
+    compare_collections(
+        source_client,
+        dest_client,
+        num_vectors=VECTOR_NUMBER,
+        collection_name=collection_name,
+    )
+
+
+@pytest.mark.parametrize(
+    "source_client,dest_client",
+    [
+        ("local_client", "remote_client"),
+        ("remote_client", "local_client"),
+        ("local_client", "second_local_client"),
+        ("remote_client", "second_remote_client"),
     ],
 )
 def test_migrate_all_collections(source_client, dest_client, request) -> None:
@@ -157,7 +207,7 @@ def test_migrate_all_collections(source_client, dest_client, request) -> None:
         ("local_client", "remote_client"),
         ("remote_client", "local_client"),
         ("local_client", "second_local_client"),
-        # remote - remote requires two launched Qdrant instances and is not tested
+        ("remote_client", "second_remote_client"),
     ],
 )
 def test_migrate_particular_collections(source_client, dest_client, request) -> None:
@@ -201,7 +251,7 @@ def test_migrate_particular_collections(source_client, dest_client, request) -> 
         ("local_client", "remote_client"),
         ("remote_client", "local_client"),
         ("local_client", "second_local_client"),
-        # remote - remote requires two launched Qdrant instances and is not tested
+        ("remote_client", "second_remote_client"),
     ],
 )
 def test_action_on_collision(source_client, dest_client, request) -> None:
