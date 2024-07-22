@@ -660,7 +660,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         `Search for closest points and group results`::
 
-            qdrant.query(
+            qdrant.query_points_groups(
                 collection_name="test_collection",
                 query=[1.0, 0.1, 0.2, 0.7],
                 group_by="color",
