@@ -4,9 +4,6 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, g
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
 
-from qdrant_client._pydantic_compat import construct
-from qdrant_client.conversions.common_types import get_args_subscribed
-
 try:
     from google.protobuf.pyext._message import MessageMapContainer  # type: ignore
 except ImportError:
@@ -15,6 +12,8 @@ except ImportError:
 from qdrant_client import grpc
 from qdrant_client.grpc import ListValue, NullValue, Struct, Value
 from qdrant_client.http.models import models as rest
+from qdrant_client._pydantic_compat import construct, to_jsonable_python
+from qdrant_client.conversions.common_types import get_args_subscribed
 
 
 def has_field(message: Any, field: str) -> bool:
@@ -51,7 +50,7 @@ def json_to_value(payload: Any) -> Value:
             struct_value=Struct(fields=dict((k, json_to_value(v)) for k, v in payload.items()))
         )
     if isinstance(payload, datetime) or isinstance(payload, date):
-        return Value(string_value=payload.isoformat())
+        return Value(string_value=to_jsonable_python(payload))
     raise ValueError(f"Not supported json value: {payload}")  # pragma: no cover
 
 

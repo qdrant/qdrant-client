@@ -18,7 +18,6 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 from tests.fixtures.payload import one_random_payload_please
-from tests.fixtures.points import generate_points
 
 UPLOAD_NUM_VECTORS = 100
 

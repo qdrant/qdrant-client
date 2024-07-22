@@ -1,11 +1,21 @@
-import typing
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, TypeVar
 
 from pydantic import BaseModel
 from pydantic.version import VERSION as PYDANTIC_VERSION
 
 PYDANTIC_V2 = PYDANTIC_VERSION.startswith("2.")
-Model = typing.TypeVar("Model", bound="BaseModel")
+Model = TypeVar("Model", bound="BaseModel")
+
+
+if PYDANTIC_V2:
+    import pydantic_core
+
+    to_jsonable_python = pydantic_core.to_jsonable_python
+else:
+    from pydantic.json import ENCODERS_BY_TYPE
+
+    def to_jsonable_python(x: Any) -> Any:
+        return ENCODERS_BY_TYPE[type(x)](x)
 
 
 def update_forward_refs(model_class: Type[BaseModel], *args: Any, **kwargs: Any) -> None:
