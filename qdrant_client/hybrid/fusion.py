@@ -48,7 +48,7 @@ def distribution_based_score_fusion(
 
         return response
 
-    points_map = {}
+    points_map: dict[models.ExtendedPointId, models.ScoredPoint] = {}
     for response in responses:
         normalized = normalize(response)
         for point in normalized:
