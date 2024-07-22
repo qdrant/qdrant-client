@@ -449,9 +449,15 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
+        if query is not None:
+            (query, mentioned_ids) = self._resolve_query_input(
+                collection_name, query, using, lookup_from
+            )
+            query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
         with_lookup_collection = None
         if with_lookup is not None:
             if isinstance(with_lookup, str):

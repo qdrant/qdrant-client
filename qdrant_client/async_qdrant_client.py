@@ -545,6 +545,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
@@ -601,6 +602,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If specified, each group will contain a record from the specified collection
                 with the same id as the group id. In addition, the parameter allows to specify
                 which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
+            lookup_from:
+                Defines a location (collection and vector field name), used to lookup vectors for recommendations,
+                    discovery and context queries.
+                If `None` - current collection will be used.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
 

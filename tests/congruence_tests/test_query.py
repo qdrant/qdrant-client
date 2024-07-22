@@ -256,6 +256,19 @@ class TestSimpleSearcher:
             limit=self.limit,
         )
 
+    def dense_query_lookup_from_group(self, client: QdrantBase, lookup_from: models.LookupLocation) -> GroupsResult:
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
+            ),
+            using="text",
+            lookup_from=lookup_from,
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
+        )
+
     def filter_dense_query_text(
         self, client: QdrantBase, query_filter: models.Filter
     ) -> models.QueryResponse:
@@ -1298,13 +1311,17 @@ def test_original_input_persistence(prefer_grpc):
 def test_query_group():
     fixture_points = generate_fixtures()
 
+    secondary_collection_points = generate_fixtures(10)
+
     searcher = TestSimpleSearcher()
 
     local_client = init_local()
     init_client(local_client, fixture_points)
+    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
+    init_client(remote_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
     searcher.group_size = 5
     searcher.limit = 3
@@ -1312,6 +1329,12 @@ def test_query_group():
         searcher.group_by = key
         compare_client_results(local_client, remote_client, searcher.dense_query_group)
         compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group)
+        compare_client_results(
+            local_client,
+            remote_client,
+            searcher.dense_query_lookup_from_group,
+            lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
+        )
 
     searcher.group_by = "city.name"
     for i in range(100):

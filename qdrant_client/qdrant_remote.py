@@ -777,6 +777,7 @@ class QdrantRemote(QdrantBase):
             with_vectors: Union[bool, Sequence[str]] = False,
             score_threshold: Optional[float] = None,
             with_lookup: Optional[types.WithLookupInterface] = None,
+            lookup_from: Optional[types.LookupLocation] = None,
             consistency: Optional[types.ReadConsistency] = None,
             shard_key_selector: Optional[types.ShardKeySelector] = None,
             timeout: Optional[int] = None,
@@ -807,8 +808,11 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
                 with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
 
-            if isinstance(with_lookup, str):
-                with_lookup = grpc.WithLookup(lookup=with_lookup)
+            if isinstance(with_lookup, models.WithLookup):
+                with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
+
+            if isinstance(lookup_from, models.LookupLocation):
+                lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
                 consistency = RestToGrpc.convert_read_consistency(consistency)
@@ -831,6 +835,7 @@ class QdrantRemote(QdrantBase):
                     group_by=group_by,
                     group_size=group_size,
                     with_lookup=with_lookup,
+                    lookup_from=lookup_from,
                     timeout=timeout,
                     shard_key_selector=shard_key_selector,
                     read_consistency=consistency,
@@ -865,6 +870,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_lookup, grpc.WithLookup):
                 with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
 
+            if isinstance(lookup_from, grpc.LookupLocation):
+                lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
+
             query_request = models.QueryGroupsRequest(
                 shard_key=shard_key_selector,
                 prefetch=prefetch,
@@ -879,6 +887,7 @@ class QdrantRemote(QdrantBase):
                 with_vector=with_vectors,
                 with_payload=with_payload,
                 with_lookup=with_lookup,
+                lookup_from=lookup_from,
             )
 
             query_result = self.http.points_api.query_points_groups(
