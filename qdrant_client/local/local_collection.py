@@ -880,7 +880,7 @@ class LocalCollection:
                 with_vectors=with_vectors,
             )
             return [record_to_scored_point(record) for record in records[offset:]]
-        elif query == "random":  # TODO(luis): update with interface
+        elif query == models.SampleQuery(sample=models.Sample.RANDOM):
             return self._sample_randomly(
                 limit=limit + offset,
                 query_filter=query_filter,
