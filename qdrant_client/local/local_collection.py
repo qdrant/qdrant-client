@@ -1781,7 +1781,7 @@ class LocalCollection:
         query_filter: Optional[types.Filter],
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-    ):
+    ) -> List[types.ScoredPoint]:
         payload_mask = calculate_payload_mask(
             payloads=self.payload,
             payload_filter=query_filter,
@@ -1795,7 +1795,7 @@ class LocalCollection:
         random_scores = np.random.rand(len(self.ids))
         random_order = np.argsort(random_scores)
 
-        result = []
+        result: list[types.ScoredPoint] = []
         for idx in random_order:
             if len(result) >= limit:
                 break
