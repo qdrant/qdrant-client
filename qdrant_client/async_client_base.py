@@ -123,6 +123,7 @@ class AsyncQdrantBase:
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         with_lookup: Optional[types.WithLookupInterface] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
         raise NotImplementedError()
