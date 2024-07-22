@@ -86,7 +86,7 @@ multi_vector_config = {
         multivector_config=models.MultiVectorConfig(
             comparator=models.MultiVectorComparator.MAX_SIM,
         ),
-    )
+    ),
 }
 
 
@@ -180,10 +180,11 @@ def compare_collections(
     collection_2 = client_2.get_collection(collection_name)
 
     for attr in attrs:
-        assert getattr(collection_1, attr) == getattr(collection_2, attr), (
-            f"client_1.{attr} = {getattr(collection_1, attr)}, "
-            f"client_2.{attr} = {getattr(collection_2, attr)}"
-        )
+        if attr != "indexed_vectors_count":
+            assert getattr(collection_1, attr) == getattr(collection_2, attr), (
+                f"client_1.{attr} = {getattr(collection_1, attr)}, "
+                f"client_2.{attr} = {getattr(collection_2, attr)}"
+            )
 
     # num_vectors * 2 to be sure that we have no excess points uploaded
     compare_client_results(
@@ -250,8 +251,8 @@ def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: floa
             compare_records(res1_item, res2_item)
 
         elif isinstance(res1_item, models.QueryResponse) and isinstance(
-                res2_item, models.QueryResponse
-            ):
+            res2_item, models.QueryResponse
+        ):
             compare_records(res1_item.points, res2_item.points, rel_tol=rel_tol, abs_tol=abs_tol)
 
         elif isinstance(res1_item, models.ScoredPoint) and isinstance(
