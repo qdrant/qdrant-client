@@ -1838,6 +1838,14 @@ class RunningEnvironmentTelemetry(BaseModel):
     cpu_flags: str = Field(..., description="")
 
 
+class Sample(str, Enum):
+    RANDOM = "random"
+
+
+class SampleQuery(BaseModel, extra="forbid"):
+    sample: "Sample" = Field(..., description="")
+
+
 class ScalarQuantization(BaseModel, extra="forbid"):
     scalar: "ScalarQuantizationConfig" = Field(..., description="")
 
@@ -2686,6 +2694,7 @@ Query = Union[
     ContextQuery,
     OrderByQuery,
     FusionQuery,
+    SampleQuery,
 ]
 RangeInterface = Union[
     Range,
