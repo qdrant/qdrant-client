@@ -811,6 +811,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
 
+            if isinstance(with_lookup, str):
+                with_lookup = grpc.WithLookup(collection=with_lookup)
+
             if isinstance(lookup_from, models.LookupLocation):
                 lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
 
@@ -931,7 +934,7 @@ class QdrantRemote(QdrantBase):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
 
             if isinstance(with_lookup, str):
-                with_lookup = grpc.WithLookup(lookup=with_lookup)
+                with_lookup = grpc.WithLookup(collection=with_lookup)
 
             if isinstance(query_vector, types.NamedVector):
                 vector = query_vector.vector

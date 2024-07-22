@@ -874,7 +874,8 @@ def test_multivec_query():
     compare_client_results(local_client, remote_client, searcher.multivec_query_text)
 
 
-def test_dense_query():
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_dense_query(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
@@ -882,7 +883,7 @@ def test_dense_query():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.dense_query_text)
@@ -1320,7 +1321,8 @@ def test_original_input_persistence(prefer_grpc):
     )
 
 
-def test_query_group():
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_query_group(prefer_grpc):
     fixture_points = generate_fixtures()
 
     secondary_collection_points = generate_fixtures(10)
@@ -1331,7 +1333,7 @@ def test_query_group():
     init_client(local_client, fixture_points)
     init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
     init_client(remote_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
