@@ -603,8 +603,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 with the same id as the group id. In addition, the parameter allows to specify
                 which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
             lookup_from:
-                Defines a location (collection and vector field name), used to lookup vectors for recommendations,
-                    discovery and context queries.
+                Defines a location (collection and vector field name), used to lookup vectors being referenced in the query as IDs.
                 If `None` - current collection will be used.
             consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
