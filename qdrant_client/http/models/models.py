@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
+from qdrant_client.embed import *
+
 Payload = Dict[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
@@ -2668,6 +2670,7 @@ BatchVectorStruct = Union[
     List[List[StrictFloat]],
     List[List[List[StrictFloat]]],
     Dict[StrictStr, List[Vector]],
+    List[Document],
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
@@ -2687,11 +2690,13 @@ VectorInput = Union[
     SparseVector,
     List[List[StrictFloat]],
     ExtendedPointId,
+    Document,
 ]
 VectorStruct = Union[
     List[StrictFloat],
     List[List[StrictFloat]],
     Dict[StrictStr, Vector],
+    Document,
 ]
 WithPayloadInterface = Union[
     StrictBool,
