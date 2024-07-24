@@ -95,6 +95,37 @@ def test_multiple_vectors_collection(source_client, dest_client, request) -> Non
     source_client: QdrantClient = request.getfixturevalue(source_client)
     dest_client: QdrantClient = request.getfixturevalue(dest_client)
     collection_name = "multiple_vectors_collection"
+    initialize_fixture_collection(source_client, collection_name="multiple_vectors_collection")
+    points = generate_fixtures(VECTOR_NUMBER)
+
+    source_client.upload_points(collection_name, points, wait=True)
+    source_client.migrate(dest_client)
+    compare_collections(
+        source_client,
+        dest_client,
+        num_vectors=VECTOR_NUMBER,
+        collection_name=collection_name,
+    )
+
+
+@pytest.mark.parametrize(
+    "source_client,dest_client",
+    [
+        ("local_client", "remote_client"),
+        ("remote_client", "local_client"),
+        ("local_client", "second_local_client"),
+    ],
+)
+def test_multivectors_collection(source_client, dest_client, request) -> None:
+    """
+    Args:
+        source_client: fixture
+        dest_client: fixture
+        request: pytest internal object to get launch fixtures from parametrize
+    """
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
+    collection_name = "multivectors_collection"
     initialize_fixture_collection(
         source_client, collection_name=collection_name, vectors_config=multi_vector_config
     )
