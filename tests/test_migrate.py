@@ -116,6 +116,48 @@ def test_multiple_vectors_collection(source_client, dest_client, request) -> Non
         ("local_client", "second_local_client"),
     ],
 )
+def test_single_multivector_collection(source_client, dest_client, request) -> None:
+    """
+    Args:
+        source_client: fixture
+        dest_client: fixture
+        request: pytest internal object to get launch fixtures from parametrize
+    """
+    source_client: QdrantClient = request.getfixturevalue(source_client)
+    dest_client: QdrantClient = request.getfixturevalue(dest_client)
+
+    vector_size = 10
+
+    vectors_config = models.VectorParams(
+        size=vector_size,
+        distance=models.Distance.COSINE,
+        multivector_config=models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM,
+        ),
+    )
+    collection_name = "single_multivector_collection"
+    initialize_fixture_collection(
+        source_client, collection_name=collection_name, vectors_config=vectors_config
+    )
+    multi_vector_points = generate_multivector_fixtures(vectors_sizes=vector_size)
+    source_client.upload_points(collection_name, multi_vector_points, wait=True)
+    source_client.migrate(dest_client)
+    compare_collections(
+        source_client,
+        dest_client,
+        num_vectors=VECTOR_NUMBER,
+        collection_name=collection_name,
+    )
+
+
+@pytest.mark.parametrize(
+    "source_client,dest_client",
+    [
+        ("local_client", "remote_client"),
+        ("remote_client", "local_client"),
+        ("local_client", "second_local_client"),
+    ],
+)
 def test_multivectors_collection(source_client, dest_client, request) -> None:
     """
     Args:

@@ -108,6 +108,9 @@ def generate_points(
 
         if sparse:
             vectors = random_sparse_vectors(vector_sizes, even=even_sparse)
+        elif multivector and isinstance(vector_sizes, int):
+            vec_count = random.randint(1, 10)
+            vectors = generate_random_multivector(vector_sizes, vec_count)
         elif multivector:
             vectors = random_multivectors(vector_sizes)
         else:
