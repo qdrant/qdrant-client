@@ -52,13 +52,19 @@ for type in "${models[@]}"; do
   NEW_TYPES+="    ${type},\n"
 done
 
+NEW_TYPES_DICT=""
+for type in "${models[@]}"; do
+  NEW_TYPES_DICT+="    Dict[StrictStr, ${type}],\n"
+done
+
 NEW_TYPES_BATCH=""
 for type in "${models[@]}"; do
-  NEW_TYPES_BATCH+="    List[${type}],\n"
+  NEW_TYPES_BATCH+="    List[${type}],\n    Dict[StrictStr, List[${type}]],\n"
 done
 
 # Use sed to insert the new types before the last bracket
 sed -i '/^VectorStruct = Union\[/,/^]/ s/\(^]\)/'"$NEW_TYPES"'\1/' $FILE
+sed -i '/^VectorStruct = Union\[/,/^]/ s/\(^]\)/'"$NEW_TYPES_DICT"'\1/' $FILE
 sed -i '/^VectorInput = Union\[/,/^]/ s/\(^]\)/'"$NEW_TYPES"'\1/' $FILE
 sed -i '/^BatchVectorStruct = Union\[/,/^]/ s/\(^]\)/'"${NEW_TYPES_BATCH}"'\1/' $FILE
 # end extend rest queries
