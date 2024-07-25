@@ -1077,12 +1077,19 @@ query_context = grpc.Query(context=context_input)
 query_order_by = grpc.Query(order_by=order_by)
 query_fusion = grpc.Query(fusion=grpc.Fusion.RRF)
 query_fusion_dbsf = grpc.Query(fusion=grpc.Fusion.DBSF)
+query_sample = grpc.Query(sample=grpc.Sample.RANDOM)
 
 deep_prefetch_query = grpc.PrefetchQuery(query=query_recommend)
+deep_sample_prefetch_query = grpc.PrefetchQuery(query=query_sample)
 prefetch_query = grpc.PrefetchQuery(
-    prefetch=[deep_prefetch_query],
+    prefetch=[deep_prefetch_query, deep_sample_prefetch_query],
     filter=filter_,
     query=query_fusion_dbsf,
+)
+prefetch_random_sample = grpc.PrefetchQuery(
+    prefetch=[deep_prefetch_query],
+    filter=filter_,
+    query=grpc.Query(sample=grpc.Sample.RANDOM)
 )
 prefetch_full_query = grpc.PrefetchQuery(
     prefetch=[prefetch_query],
