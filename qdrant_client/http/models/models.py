@@ -2671,6 +2671,7 @@ BatchVectorStruct = Union[
     List[List[List[StrictFloat]]],
     Dict[StrictStr, List[Vector]],
     List[Document],
+    Dict[StrictStr, List[Document]],
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
@@ -2697,6 +2698,7 @@ VectorStruct = Union[
     List[List[StrictFloat]],
     Dict[StrictStr, Vector],
     Document,
+    Dict[StrictStr, Document],
 ]
 WithPayloadInterface = Union[
     StrictBool,
