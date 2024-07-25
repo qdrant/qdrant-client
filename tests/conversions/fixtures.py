@@ -1076,11 +1076,13 @@ query_discover = grpc.Query(discover=discover_input)
 query_context = grpc.Query(context=context_input)
 query_order_by = grpc.Query(order_by=order_by)
 query_fusion = grpc.Query(fusion=grpc.Fusion.RRF)
+query_fusion_dbsf = grpc.Query(fusion=grpc.Fusion.DBSF)
 
 deep_prefetch_query = grpc.PrefetchQuery(query=query_recommend)
 prefetch_query = grpc.PrefetchQuery(
     prefetch=[deep_prefetch_query],
     filter=filter_,
+    query=query_fusion_dbsf,
 )
 prefetch_full_query = grpc.PrefetchQuery(
     prefetch=[prefetch_query],
