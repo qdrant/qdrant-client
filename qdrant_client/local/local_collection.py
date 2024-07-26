@@ -880,13 +880,14 @@ class LocalCollection:
                 with_vectors=with_vectors,
             )
             return [record_to_scored_point(record) for record in records[offset:]]
-        elif query == models.SampleQuery(sample=models.Sample.RANDOM):
-            return self._sample_randomly(
-                limit=limit + offset,
-                query_filter=query_filter,
-                with_payload=with_payload,
-                with_vectors=with_vectors,
-            )
+        elif isinstance(query, models.SampleQuery):
+            if query.sample == models.Sample.RANDOM:
+                return self._sample_randomly(
+                    limit=limit + offset,
+                    query_filter=query_filter,
+                    with_payload=with_payload,
+                    with_vectors=with_vectors,
+                )
         elif isinstance(query, models.FusionQuery):
             raise AssertionError("Cannot perform fusion without prefetches")
         else:

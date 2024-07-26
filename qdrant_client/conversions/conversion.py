@@ -949,7 +949,7 @@ class GrpcToRest:
         if model == grpc.Sample.Random:
             return rest.Sample.RANDOM
 
-        raise ValueError(f"invalid Fusion model: {model}")  # pragma: no cover
+        raise ValueError(f"invalid Sample model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_query(cls, model: grpc.Query) -> rest.Query:
