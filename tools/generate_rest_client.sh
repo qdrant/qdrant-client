@@ -11,7 +11,9 @@ git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdr
 cd qdrant
 git sparse-checkout add docs/redoc/master
 
-OPENAPI_PATH="$(pwd)/docs/redoc/master/openapi.json"
+CLEAN_OPENAPI_PATH="$(pwd)/docs/redoc/master/openapi.json"
+OPENAPI_PATH="$(pwd)/extended-openapi.json"
+bash "$PROJECT_ROOT/tools/generate_inference_structures.sh" "$CLEAN_OPENAPI_PATH" > "extended-openapi.json"
 
 cd $(mktemp -d)
 
@@ -28,43 +30,3 @@ INPUT_YAML=openapi-qdrant.yaml IMPORT_NAME="qdrant_client.http" PACKAGE_NAME=qdr
 
 rm -rf ${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/
 mv scripts/output/qdrant_openapi_client ${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/
-
-# extend rest queries
-python_models=$(python3 -c 'import json; import qdrant_client.embed as e; print(json.dumps(e.__all__))')
-
-models=($(echo "$python_models" | jq -r '.[]'))
-
-FILE=${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/models/models.py
-
-# Define the import statement to add
-IMPORT_STATEMENT="from qdrant_client.embed import *"
-
-# Check if the import statement already exists in the file
-if ! grep -q "$IMPORT_STATEMENT" "$FILE"; then
-  sed -i "1i$IMPORT_STATEMENT" "$FILE"
-fi
-
-isort -w 99 -m 3 --tc --fgw 0 --ca $FILE
-
-# Define the new types to add
-NEW_TYPES=""
-for type in "${models[@]}"; do
-  NEW_TYPES+="    ${type},\n"
-done
-
-NEW_TYPES_DICT=""
-for type in "${models[@]}"; do
-  NEW_TYPES_DICT+="    Dict[StrictStr, ${type}],\n"
-done
-
-NEW_TYPES_BATCH=""
-for type in "${models[@]}"; do
-  NEW_TYPES_BATCH+="    List[${type}],\n    Dict[StrictStr, List[${type}]],\n"
-done
-
-# Use sed to insert the new types before the last bracket
-sed -i '/^VectorStruct = Union\[/,/^]/ s/\(^]\)/'"$NEW_TYPES"'\1/' $FILE
-sed -i '/^VectorStruct = Union\[/,/^]/ s/\(^]\)/'"$NEW_TYPES_DICT"'\1/' $FILE
-sed -i '/^VectorInput = Union\[/,/^]/ s/\(^]\)/'"$NEW_TYPES"'\1/' $FILE
-sed -i '/^BatchVectorStruct = Union\[/,/^]/ s/\(^]\)/'"${NEW_TYPES_BATCH}"'\1/' $FILE
-# end extend rest queries

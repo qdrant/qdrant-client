@@ -5,8 +5,6 @@ from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
-from qdrant_client.embed import *
-
 Payload = Dict[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
@@ -383,7 +381,7 @@ class CreateCollection(BaseModel, extra="forbid"):
     )
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         default=None,
-        description="Custom params for Optimizers.  If none - values from service configuration file are used.",
+        description="Custom params for Optimizers. If none - values from service configuration file are used.",
     )
     init_from: Optional["InitFrom"] = Field(default=None, description="Specify other collection to copy data from.")
     quantization_config: Optional["QuantizationConfig"] = Field(
@@ -570,6 +568,10 @@ class Distance(str, Enum):
     MANHATTAN = "Manhattan"
 
 
+class Document(BaseModel, extra="forbid"):
+    text: str = Field(..., description="Text document to be embedded by FastEmbed or Cloud inference server")
+
+
 class DropReplicaOperation(BaseModel, extra="forbid"):
     drop_replica: "Replica" = Field(..., description="")
 
@@ -630,7 +632,7 @@ class FilterSelector(BaseModel, extra="forbid"):
 
 class Fusion(str, Enum):
     """
-    Fusion algorithm allows to combine results of multiple prefetches. Available fusion algorithms: * `rrf` - Rank Reciprocal Fusion
+    Fusion algorithm allows to combine results of multiple prefetches. Available fusion algorithms: CODE_OF_CONDUCT.md CONTRIBUTING.md Cargo.lock Cargo.toml Dockerfile LICENSE QUICK_START.md QUICK_START_GRPC.md README.md docs extended-openapi.json rustfmt.toml `rrf` - Rank Reciprocal Fusion
     """
 
     def __str__(self) -> str:
@@ -2242,7 +2244,7 @@ class UpdateCollection(BaseModel, extra="forbid"):
     )
     optimizers_config: Optional["OptimizersConfigDiff"] = Field(
         default=None,
-        description="Custom params for Optimizers.  If none - it is left unchanged. This operation is blocking, it will only proceed once all current optimizations are complete",
+        description="Custom params for Optimizers. If none - it is left unchanged. This operation is blocking, it will only proceed once all current optimizations are complete",
     )
     params: Optional["CollectionParamsDiff"] = Field(
         default=None, description="Collection base params. If none - it is left unchanged."
@@ -2648,6 +2650,7 @@ Vector = Union[
     List[StrictFloat],
     SparseVector,
     List[List[StrictFloat]],
+    Document,
 ]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,
@@ -2671,7 +2674,6 @@ BatchVectorStruct = Union[
     List[List[List[StrictFloat]]],
     Dict[StrictStr, List[Vector]],
     List[Document],
-    Dict[StrictStr, List[Document]],
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
@@ -2698,7 +2700,6 @@ VectorStruct = Union[
     List[List[StrictFloat]],
     Dict[StrictStr, Vector],
     Document,
-    Dict[StrictStr, Document],
 ]
 WithPayloadInterface = Union[
     StrictBool,
