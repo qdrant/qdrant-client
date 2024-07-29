@@ -888,6 +888,8 @@ class LocalCollection:
                     with_payload=with_payload,
                     with_vectors=with_vectors,
                 )
+            else:
+                raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):
             raise AssertionError("Cannot perform fusion without prefetches")
         else:
