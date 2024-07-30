@@ -38,37 +38,33 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-SCHEMAS=$(echo $OPENAPI_SOURCE | jq -r ".components.schemas")
-VECTOR_ANY_OF=$(echo $SCHEMAS | jq -r ".Vector.anyOf")
-VECTOR_STRUCT_ANY_OF=$(echo $SCHEMAS | jq -r ".VectorStruct.anyOf")
-BATCH_VECTOR_STRUCT_ANY_OF=$(echo $SCHEMAS | jq -r ".BatchVectorStruct.anyOf")
-VECTOR_INPUT_ANY_OF=$(echo $SCHEMAS | jq -r ".VectorInput.anyOf")
+SCHEMAS=$(echo "$OPENAPI_SOURCE" | jq -r ".components.schemas")
+VECTOR_ANY_OF=$(echo "$SCHEMAS" | jq -c ".Vector.anyOf")
+VECTOR_STRUCT_ANY_OF=$(echo "$SCHEMAS" | jq -c ".VectorStruct.anyOf")
+BATCH_VECTOR_STRUCT_ANY_OF=$(echo "$SCHEMAS" | jq -c ".BatchVectorStruct.anyOf")
+VECTOR_INPUT_ANY_OF=$(echo "$SCHEMAS" | jq -c ".VectorInput.anyOf")
 
 MODIFIED_VECTOR_ANY_OF=$(jq -s 'add' <(echo "$VECTOR_ANY_OF") <(echo "$DOCUMENT_FLAT_EXTENSION"))
 MODIFIED_VECTOR_STRUCT_ANY_OF=$(jq -s 'add' <(echo "$VECTOR_STRUCT_ANY_OF") <(echo "$DOCUMENT_FLAT_EXTENSION"))
 MODIFIED_BATCH_VECTOR_STRUCT_ANY_OF=$(jq -s 'add' <(echo "$BATCH_VECTOR_STRUCT_ANY_OF") <(echo "$DOCUMENT_ARRAY_EXTENSION"))
 MODIFIED_VECTOR_INPUT_ANY_OF=$(jq -s 'add' <(echo "$VECTOR_INPUT_ANY_OF") <(echo "$DOCUMENT_FLAT_EXTENSION"))
 
-MODIFIED=$(cat <<EOF
-{
+MODIFIED=$(jq -n --argjson vector_struct "$MODIFIED_VECTOR_STRUCT_ANY_OF" \
+                  --argjson batch_vector_struct "$MODIFIED_BATCH_VECTOR_STRUCT_ANY_OF" \
+                  --argjson vector_input "$MODIFIED_VECTOR_INPUT_ANY_OF" \
+                  --argjson vector "$MODIFIED_VECTOR_ANY_OF" \
+                  --argjson document "$DOCUMENT_TYPE" \
+                  '{
   "components": {
     "schemas": {
-      "VectorStruct": {"anyOf": $MODIFIED_VECTOR_STRUCT_ANY_OF},
-      "BatchVectorStruct": {"anyOf": $MODIFIED_BATCH_VECTOR_STRUCT_ANY_OF},
-      "VectorInput": {"anyOf": $MODIFIED_VECTOR_INPUT_ANY_OF},
-      "Vector": {"anyOf": $MODIFIED_VECTOR_ANY_OF},
-      "Document": $DOCUMENT_TYPE
+      "VectorStruct": {"anyOf": $vector_struct},
+      "BatchVectorStruct": {"anyOf": $batch_vector_struct},
+      "VectorInput": {"anyOf": $vector_input},
+      "Vector": {"anyOf": $vector},
+      "Document": $document
     }
   }
-}
-EOF
-)
-
-validate_json "$merged_json"
-if [ $? -ne 0 ]; then
-  echo "Invalid JSON: $merged_json"
-  exit 1
-fi
+}')
 
 merged_json=$(jq -s '.[0] * .[1]' <(echo "$OPENAPI_SOURCE") <(echo "$MODIFIED"))
 
@@ -78,4 +74,4 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo $merged_json
+echo "$merged_json"
