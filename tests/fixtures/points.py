@@ -25,14 +25,18 @@ def random_vectors(
         raise ValueError("vector_sizes must be int or dict")
 
 
-def random_multivectors(
-    vector_sizes: Dict[str, int],
-) -> models.VectorStruct:
-    vectors = {}
-    for vector_name, vector_size in vector_sizes.items():
+def random_multivectors(vector_sizes: Union[Dict[str, int], int]) -> models.VectorStruct:
+    if isinstance(vector_sizes, int):
         vec_count = random.randint(1, 10)
-        vectors[vector_name] = generate_random_multivector(vector_size, vec_count)
-    return vectors
+        return generate_random_multivector(vector_sizes, vec_count)
+    elif isinstance(vector_sizes, dict):
+        vectors = {}
+        for vector_name, vector_size in vector_sizes.items():
+            vec_count = random.randint(1, 10)
+            vectors[vector_name] = generate_random_multivector(vector_size, vec_count)
+        return vectors
+    else:
+        raise ValueError("vector_sizes must be int or dict")
 
 
 def generate_random_multivector(vec_size: int, vec_count: int) -> List[List[float]]:
@@ -108,9 +112,6 @@ def generate_points(
 
         if sparse:
             vectors = random_sparse_vectors(vector_sizes, even=even_sparse)
-        elif multivector and isinstance(vector_sizes, int):
-            vec_count = random.randint(1, 10)
-            vectors = generate_random_multivector(vector_sizes, vec_count)
         elif multivector:
             vectors = random_multivectors(vector_sizes)
         else:
