@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 
 from qdrant_client import QdrantClient, models
