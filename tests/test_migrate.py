@@ -13,6 +13,8 @@ from tests.congruence_tests.test_common import (
     multi_vector_config,
     initialize_fixture_collection,
 )
+from tests.utils import read_version
+
 
 VECTOR_NUMBER = 1000
 
@@ -92,6 +94,12 @@ def test_multiple_vectors_collection(source_client, dest_client, request) -> Non
         dest_client: fixture
         request: pytest internal object to get launch fixtures from parametrize
     """
+    major, minor, patch, dev = read_version()
+    version_set = major is not None or dev
+
+    if version_set and not dev:
+        if major == 0 or (major == 1 and minor < 10):
+            pytest.skip("Multivectors are supported as of v1.10.0")
     source_client: QdrantClient = request.getfixturevalue(source_client)
     dest_client: QdrantClient = request.getfixturevalue(dest_client)
     collection_name = "multiple_vectors_collection"
@@ -165,6 +173,12 @@ def test_multivectors_collection(source_client, dest_client, request) -> None:
         dest_client: fixture
         request: pytest internal object to get launch fixtures from parametrize
     """
+    major, minor, patch, dev = read_version()
+    version_set = major is not None or dev
+
+    if version_set and not dev:
+        if major == 0 or (major == 1 and minor < 10):
+            pytest.skip("Multivectors are supported as of v1.10.0")
     source_client: QdrantClient = request.getfixturevalue(source_client)
     dest_client: QdrantClient = request.getfixturevalue(dest_client)
     collection_name = "multivectors_collection"
