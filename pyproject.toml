@@ -27,10 +27,10 @@ grpcio-tools = ">=1.41.0"
 urllib3 = ">=1.26.14,<3"
 portalocker = "^2.7.0"
 fastembed = [
-    { version = "0.2.7", optional = true, python = "<3.13" }
+    { version = "0.3.4", optional = true, python = "<3.13" }
 ]
 fastembed-gpu = [
-    { version = "0.2.7", optional = true, python = "<3.13" }
+    { version = "0.3.4", optional = true, python = "<3.13" }
 ]
 
 [tool.poetry.group.dev.dependencies]
@@ -55,7 +55,7 @@ ipython = "8"
 Pygments= "2.16.1"
 
 [tool.poetry.group.types.dependencies]
-pyright = "^1.1.293"
+pyright = ">=1.1.293,<1.1.371"  # tmp upper bound due to a (reportUnknownMemberType) for grpc structures
 mypy = "^1.0.0"
 types-protobuf = "^4.21.0.5"
 
