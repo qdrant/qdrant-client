@@ -9,7 +9,7 @@ from qdrant_client.http import models
 def upload_with_retry(
     client: QdrantBase,
     collection_name: str,
-    records: Iterable[models.PointStruct],
+    points: Iterable[models.PointStruct],
     max_attempts: int = 3,
     pause: float = 3.0,
 ) -> None:
@@ -18,7 +18,7 @@ def upload_with_retry(
         try:
             client.upload_points(
                 collection_name=collection_name,
-                points=records,
+                points=points,
                 wait=True,
             )
             return
@@ -157,7 +157,7 @@ def _migrate_collection(
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
-    upload_with_retry(client=dest_client, collection_name=collection_name, records=records)  # type: ignore
+    upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
     # upload_records has been deprecated due to the usage of models.Record; models.Record has been deprecated as a
     # structure for uploading due to a `shard_key` field, and now is used only as a result structure.
     # since shard_keys are not supported in migration, we can safely type ignore here and use Records for uploading
@@ -165,7 +165,7 @@ def _migrate_collection(
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
         )
-        upload_with_retry(client=dest_client, collection_name=collection_name, records=records)  # type: ignore
+        upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
     source_client_vectors_count = source_client.count(collection_name).count
     dest_client_vectors_count = dest_client.count(collection_name).count
     assert (
