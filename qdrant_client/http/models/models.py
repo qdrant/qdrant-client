@@ -570,6 +570,7 @@ class Distance(str, Enum):
 
 class Document(BaseModel, extra="forbid"):
     text: str = Field(..., description="Text document to be embedded by FastEmbed or Cloud inference server")
+    model: Optional[str] = Field(default=None, description="Model name to be used for embedding computation")
 
 
 class DropReplicaOperation(BaseModel, extra="forbid"):
