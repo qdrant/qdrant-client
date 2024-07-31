@@ -127,7 +127,7 @@ class QdrantRemote(QdrantBase):
         self._rest_headers = kwargs.pop("metadata", {})
         if api_key is not None:
             if self._scheme == "http":
-                warnings.warn("Api key is used with an insecure connection.")
+                warnings.warn("Api key is used with an insecure connection for url:", url)
 
             # http2 = True
 
