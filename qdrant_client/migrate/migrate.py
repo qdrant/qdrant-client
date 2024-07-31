@@ -52,6 +52,11 @@ def migrate(
         batch_size (int, optional): Batch size for scrolling and uploading vectors. Defaults to 100.
     """
     collection_names = _select_source_collections(source_client, collection_names)
+    if any(
+        _has_custom_shards(source_client, collection_name) for collection_name in collection_names
+    ):
+        raise ValueError("Migration of collections with custom shards is not supported yet")
+
     collisions = _find_collisions(dest_client, collection_names)
     absent_dest_collections = set(collection_names) - set(collisions)
 
@@ -67,6 +72,14 @@ def migrate(
         _migrate_collection(source_client, dest_client, collection_name, batch_size)
 
 
+def _has_custom_shards(source_client: QdrantBase, collection_name: str) -> bool:
+    collection_info = source_client.get_collection(collection_name)
+    return (
+        getattr(collection_info.config.params, "sharding_method", None)
+        == models.ShardingMethod.CUSTOM
+    )
+
+
 def _select_source_collections(
     source_client: QdrantBase, collection_names: Optional[List[str]] = None
 ) -> List[str]:
@@ -79,6 +92,7 @@ def _select_source_collections(
         ), f"Source client does not have collections: {set(collection_names) - set(source_collection_names)}"
     else:
         collection_names = source_collection_names
+
     return collection_names
 
 
@@ -94,12 +108,12 @@ def _recreate_collection(
     dest_client: QdrantBase,
     collection_name: str,
 ) -> None:
-    src_collection_info = source_client.get_collection(collection_name=collection_name)
+    src_collection_info = source_client.get_collection(collection_name)
     src_config = src_collection_info.config
     src_payload_schema = src_collection_info.payload_schema
 
     dest_client.recreate_collection(
-        collection_name=collection_name,
+        collection_name,
         vectors_config=src_config.params.vectors,
         sparse_vectors_config=src_config.params.sparse_vectors,
         shard_number=src_config.params.shard_number,
@@ -122,7 +136,7 @@ def _recreate_payload_schema(
 ) -> None:
     for field_name, field_info in payload_schema.items():
         dest_client.create_payload_index(
-            collection_name=collection_name,
+            collection_name,
             field_name=field_name,
             field_schema=field_info.data_type if field_info.params is None else field_info.params,
         )
