@@ -25,7 +25,11 @@ from tests.congruence_tests.test_common import (
     multi_vector_config,
 )
 from tests.fixtures.filters import one_random_filter_please
-from tests.fixtures.points import generate_random_sparse_vector, generate_random_multivector
+from tests.fixtures.points import (
+    generate_random_sparse_vector,
+    generate_random_multivector,
+    generate_points,
+)
 from tests.utils import read_version
 
 SECONDARY_COLLECTION_NAME = "congruence_secondary_collection"
@@ -1165,3 +1169,69 @@ def test_flat_query_multivector_interface(prefer_grpc):
     init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
 
     compare_client_results(local_client, remote_client, searcher.multivec_query_text)
+
+
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_original_input_persistence(prefer_grpc):
+    num_points = 50
+    vectors_config = {"text": models.VectorParams(size=50, distance=models.Distance.COSINE)}
+    sparse_vectors_config = {"sparse-text": models.SparseVectorParams()}
+    fixture_points = generate_fixtures(vectors_sizes={"text": 50}, num=num_points)
+    sparse_fixture_points = generate_sparse_fixtures(num=num_points)
+    points = [
+        models.PointStruct(
+            id=point.id,
+            payload=point.payload,
+            vector={
+                "text": point.vector["text"],
+                "sparse-text": sparse_point.vector["sparse-text"],
+            },
+        )
+        for point, sparse_point in zip(fixture_points, sparse_fixture_points)
+    ]
+    dense_vector_name = "text"
+    sparse_vector_name = "sparse-text"
+
+    local_client = init_local()
+    init_client(
+        local_client,
+        points,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+    init_client(
+        remote_client,
+        points,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
+
+    point_id = 1
+    shared_instance = models.RecommendInput(positive=[point_id], negative=[])
+    prefetch = [
+        models.Prefetch(
+            query=models.RecommendQuery(recommend=shared_instance),
+            using=sparse_vector_name,
+        ),
+    ]
+    local_client.query_points(
+        collection_name=COLLECTION_NAME,
+        prefetch=prefetch,
+        query=models.RecommendQuery(recommend=shared_instance),
+        using=dense_vector_name,
+    )
+
+    shared_instance = models.RecommendInput(positive=[point_id], negative=[])
+    prefetch = [
+        models.Prefetch(
+            query=models.RecommendQuery(recommend=shared_instance),
+            using=sparse_vector_name,
+        ),
+    ]
+    remote_client.query_points(
+        collection_name=COLLECTION_NAME,
+        prefetch=prefetch,
+        query=models.RecommendQuery(recommend=shared_instance),
+        using=dense_vector_name,
+    )
