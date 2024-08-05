@@ -1,6 +1,7 @@
 import numpy as np
 
 from qdrant_client import QdrantClient
+from qdrant_client.client_base import QdrantBase
 from qdrant_client import models as rest_models
 from qdrant_client.conversions import common_types as types
 from qdrant_client.models import (
@@ -280,3 +281,6 @@ qdrant_client.create_shard_key(
     placement=[23],
 )
 qdrant_client.delete_shard_key(collection_name="zcxzc", shard_key="broken_key")
+qdrant_client.migrate(QdrantBase(), ["collection"])
+qdrant_client.query_batch_points("collection", [rest_models.QueryRequest()])
+qdrant_client.query_points("collection")
