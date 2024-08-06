@@ -114,8 +114,6 @@ async def test_async_qdrant_client(prefer_grpc):
         await client.delete_collection(COLLECTION_NAME)
         await client.create_collection(**collection_params)
 
-    await client.recreate_collection(**collection_params)
-
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
     if not version_set or dev_version or minor_version >= 8:
@@ -356,9 +354,8 @@ async def test_async_qdrant_client_local():
         collection_name=COLLECTION_NAME,
         vectors_config=models.VectorParams(size=10, distance=models.Distance.EUCLID),
     )
-    await client.create_collection(**collection_params)
     await client.delete_collection(COLLECTION_NAME)
-    await client.recreate_collection(**collection_params)
+    await client.create_collection(**collection_params)
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()

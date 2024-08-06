@@ -36,7 +36,7 @@ Create a new collection
 
    from qdrant_client.models import VectorParams, Distance
 
-   client.recreate_collection(
+   client.create_collection(
       collection_name="my_collection",
       vectors_config=VectorParams(size=100, distance=Distance.COSINE),
    )
@@ -172,10 +172,9 @@ Indices and tables
    QdrantClient <qdrant_client.qdrant_client>
    AsyncQdrantClient <qdrant_client.async_qdrant_client>
    FastEmbed Mixin <qdrant_client.qdrant_fastembed>
-   
+
 .. toctree::
    :maxdepth: 1
    :caption: Complete Docs
 
    Complete Client API Docs <qdrant_client>
-   

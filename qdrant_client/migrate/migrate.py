@@ -112,7 +112,8 @@ def _recreate_collection(
     src_config = src_collection_info.config
     src_payload_schema = src_collection_info.payload_schema
 
-    dest_client.recreate_collection(
+    dest_client.delete_collection(collection_name)
+    dest_client.create_collection(
         collection_name,
         vectors_config=src_config.params.vectors,
         sparse_vectors_config=src_config.params.sparse_vectors,

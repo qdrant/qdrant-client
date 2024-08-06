@@ -17,7 +17,8 @@ def get_data(num_vectors: int):
 
 def prepare_collection_rest():
     client = QdrantClient(timeout=30)
-    client.recreate_collection(
+    client.delete_collection(COLLECTION_NAME)
+    client.create_collection(
         COLLECTION_NAME, vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE)
     )
 

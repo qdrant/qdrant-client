@@ -359,8 +359,10 @@ def test_query_with_nan():
     single_vector_config = models.VectorParams(
         size=text_vector_size, distance=models.Distance.COSINE
     )
-    local_client.recreate_collection(COLLECTION_NAME, vectors_config=single_vector_config)
-    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=single_vector_config)
+    local_client.delete_collection(COLLECTION_NAME)
+    local_client.create_collection(COLLECTION_NAME, vectors_config=single_vector_config)
+    remote_client.delete_collection(COLLECTION_NAME)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=single_vector_config)
     fixture_points = generate_fixtures(vectors_sizes=text_vector_size)
     init_client(local_client, fixture_points, vectors_config=single_vector_config)
     init_client(remote_client, fixture_points, vectors_config=single_vector_config)

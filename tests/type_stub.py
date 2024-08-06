@@ -121,30 +121,7 @@ qdrant_client.create_collection(
     None,
     5,
 )
-qdrant_client.recreate_collection(
-    "collection",
-    types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
-    {
-        "field": rest_models.SparseVectorParams(
-            index=rest_models.SparseIndexParams(
-                full_scan_threshold=1000,
-                on_disk=False,
-            )
-        )
-    },
-    2,
-    rest_models.ShardingMethod.AUTO,
-    2,
-    True,
-    True,
-    rest_models.HnswConfigDiff(),
-    rest_models.OptimizersConfigDiff(),
-    rest_models.WalConfigDiff(),
-    rest_models.ScalarQuantization(scalar=ScalarQuantizationConfig(type=ScalarType.INT8)),
-    None,
-    5,
-)
-qdrant_client.recreate_collection(
+qdrant_client.create_collection(
     "collection",
     types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
     {
