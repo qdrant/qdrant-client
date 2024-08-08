@@ -234,9 +234,7 @@ class TestSimpleSearcher:
         )
 
     def filter_dense_query_group(
-        self,
-        client: QdrantBase,
-        query_filter: models.Filter
+        self, client: QdrantBase, query_filter: models.Filter
     ) -> GroupsResult:
         return client.query_points_groups(
             collection_name=COLLECTION_NAME,
@@ -268,7 +266,9 @@ class TestSimpleSearcher:
             limit=self.limit,
         )
 
-    def dense_query_lookup_from_group(self, client: QdrantBase, lookup_from: models.LookupLocation) -> GroupsResult:
+    def dense_query_lookup_from_group(
+        self, client: QdrantBase, lookup_from: models.LookupLocation
+    ) -> GroupsResult:
         return client.query_points_groups(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
@@ -318,7 +318,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_fusion(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_rrf(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -332,7 +332,22 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def deep_dense_queries_fusion(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_dbsf(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                ),
+                models.Prefetch(query=self.dense_vector_query_code, using="code"),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.DBSF),
+            with_payload=True,
+            limit=10,
+        )
+
+    def deep_dense_queries_rrf(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=[
@@ -357,6 +372,35 @@ class TestSimpleSearcher:
                 )
             ],
             query=models.FusionQuery(fusion=models.Fusion.RRF),
+            with_payload=True,
+            limit=10,
+        )
+
+    def deep_dense_queries_dbsf(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_code,
+                    using="code",
+                    limit=30,
+                    prefetch=[
+                        models.Prefetch(
+                            query=self.dense_vector_query_image,
+                            using="image",
+                            limit=40,
+                            prefetch=[
+                                models.Prefetch(
+                                    query=self.dense_vector_query_text,
+                                    using="text",
+                                    limit=50,
+                                )
+                            ],
+                        )
+                    ],
+                )
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.DBSF),
             with_payload=True,
             limit=10,
         )
@@ -634,6 +678,7 @@ def group_by_keys():
 
 
 # ---- TESTS  ---- #
+
 
 def test_dense_query_lookup_from_another_collection():
     fixture_points = generate_fixtures(10)
@@ -976,8 +1021,10 @@ def test_dense_query_fusion():
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
 
-    compare_client_results(local_client, remote_client, searcher.dense_query_fusion)
-    compare_client_results(local_client, remote_client, searcher.deep_dense_queries_fusion)
+    compare_client_results(local_client, remote_client, searcher.dense_query_rrf)
+    compare_client_results(local_client, remote_client, searcher.dense_query_dbsf)
+    compare_client_results(local_client, remote_client, searcher.deep_dense_queries_rrf)
+    compare_client_results(local_client, remote_client, searcher.deep_dense_queries_dbsf)
 
 
 def test_dense_query_discovery_context():
