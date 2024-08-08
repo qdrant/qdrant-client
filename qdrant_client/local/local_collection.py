@@ -1792,7 +1792,7 @@ class LocalCollection:
         random_scores = np.random.rand(len(self.ids))
         random_order = np.argsort(random_scores)
 
-        result: list[types.ScoredPoint] = []
+        result: List[types.ScoredPoint] = []
         for idx in random_order:
             if len(result) >= limit:
                 break
