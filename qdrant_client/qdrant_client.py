@@ -2651,3 +2651,12 @@ class QdrantClient(QdrantFastembedMixin):
             shard_key=shard_key,
             **kwargs,
         )
+
+    def info(self) -> types.VersionInfo:
+        """Returns information about the running Qdrant instance like version and commit id
+
+        Returns:
+            Title, version and optionally commit info
+
+        """
+        return self._client.info()

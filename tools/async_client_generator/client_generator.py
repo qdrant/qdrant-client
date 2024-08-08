@@ -96,6 +96,7 @@ if __name__ == "__main__":
             "migrate",
             "async_grpc_collections",
             "async_grpc_points",
+            "async_grpc_root",
         ],
     )
 

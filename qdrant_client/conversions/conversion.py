@@ -1658,6 +1658,14 @@ class GrpcToRest:
             ),
         )
 
+    @classmethod
+    def convert_health_check_reply(cls, model: grpc.HealthCheckReply) -> rest.VersionInfo:
+        return rest.VersionInfo(
+            title=model.title,
+            version=model.version,
+            commit=model.commit if model.HasField("commit") else None,
+        )
+
 
 # ----------------------------------------
 #
@@ -3328,3 +3336,11 @@ class RestToGrpc:
             return grpc.Custom
         else:
             raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_health_check_reply(cls, model: rest.VersionInfo) -> grpc.HealthCheckReply:
+        return grpc.HealthCheckReply(
+            title=model.title,
+            version=model.version,
+            commit=model.commit,
+        )

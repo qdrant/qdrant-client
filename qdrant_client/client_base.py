@@ -469,3 +469,6 @@ class QdrantBase:
         **kwargs: Any,
     ) -> bool:
         raise NotImplementedError()
+
+    def info(self) -> types.VersionInfo:
+        raise NotImplementedError()
