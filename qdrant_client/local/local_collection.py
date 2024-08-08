@@ -2311,10 +2311,11 @@ def ignore_mentioned_ids_filter(
         query_filter = models.Filter(must_not=[ignore_mentioned_ids])
     else:
         query_filter = deepcopy(query_filter)
-        if query_filter.must_not is None:
-            query_filter.must_not = [ignore_mentioned_ids]
+        # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
+        if query_filter.must_not is None:  # type: ignore[union-attr]
+            query_filter.must_not = [ignore_mentioned_ids]  # type: ignore[union-attr]
         else:
-            query_filter.must_not.append(ignore_mentioned_ids)
+            query_filter.must_not.append(ignore_mentioned_ids)  # type: ignore[union-attr]
 
     return query_filter
 
@@ -2331,10 +2332,11 @@ def _include_ids_in_filter(
         query_filter = models.Filter(must=[include_ids])
     else:
         query_filter = deepcopy(query_filter)
-        if query_filter.must is None:
-            query_filter.must = [include_ids]
+        # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
+        if query_filter.must is None:  # type: ignore[union-attr]
+            query_filter.must = [include_ids]  # type: ignore[union-attr]
         else:
-            query_filter.must.append(include_ids)
+            query_filter.must.append(include_ids)  # type: ignore[union-attr]
 
     return query_filter
 

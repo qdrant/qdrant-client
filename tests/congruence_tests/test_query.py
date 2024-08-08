@@ -28,7 +28,6 @@ from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import (
     generate_random_sparse_vector,
     generate_random_multivector,
-    generate_points,
 )
 from tests.utils import read_version
 
