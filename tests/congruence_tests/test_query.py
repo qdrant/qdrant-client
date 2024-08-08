@@ -1229,6 +1229,8 @@ def test_search_with_persistence_and_skipped_vectors():
 
 
 def test_query_invalid_vector_type():
+    import grpc
+
     fixture_points = generate_fixtures()
 
     local_client, http_client, grpc_client = init_clients(fixture_points)
@@ -1239,12 +1241,12 @@ def test_query_invalid_vector_type():
             collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(UnexpectedResponse):
         http_client.query_points(
             collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
         )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(grpc.RpcError):
         grpc_client.query_points(
             collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
         )
