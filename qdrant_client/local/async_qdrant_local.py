@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import shutil
+from copy import deepcopy
 from io import TextIOWrapper
 from typing import (
     Any,
@@ -290,6 +291,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             else:
                 return vector_input
 
+        query = deepcopy(query)
         if isinstance(query, rest_models.NearestQuery):
             query.nearest = input_into_vector(query.nearest)
         elif isinstance(query, rest_models.RecommendQuery):
@@ -353,6 +355,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.Prefetch:
         if prefetch.query is None:
             return prefetch
+        prefetch = deepcopy(prefetch)
         (query, mentioned_ids) = self._resolve_query_input(
             collection_name, prefetch.query, prefetch.using, prefetch.lookup_from
         )
