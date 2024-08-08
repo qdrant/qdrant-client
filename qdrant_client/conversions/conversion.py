@@ -945,6 +945,13 @@ class GrpcToRest:
         raise ValueError(f"invalid Fusion model: {model}")  # pragma: no cover
 
     @classmethod
+    def convert_sample(cls, model: grpc.Sample) -> rest.Sample:
+        if model == grpc.Sample.Random:
+            return rest.Sample.RANDOM
+
+        raise ValueError(f"invalid Sample model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_query(cls, model: grpc.Query) -> rest.Query:
         name = model.WhichOneof("variant")
         val = getattr(model, name)
@@ -966,6 +973,9 @@ class GrpcToRest:
 
         if name == "fusion":
             return rest.FusionQuery(fusion=cls.convert_fusion(val))
+
+        if name == "sample":
+            return rest.SampleQuery(sample=cls.convert_sample(val))
 
         raise ValueError(f"invalid Query model: {model}")
 
@@ -2580,6 +2590,13 @@ class RestToGrpc:
         raise ValueError(f"invalid Fusion model: {model}")
 
     @classmethod
+    def convert_sample(cls, model: rest.Sample) -> grpc.Sample:
+        if model == rest.Sample.RANDOM:
+            return grpc.Sample.Random
+
+        raise ValueError(f"invalid Sample model: {model}")
+
+    @classmethod
     def convert_query(cls, model: rest.Query) -> grpc.Query:
         if isinstance(model, rest.NearestQuery):
             return grpc.Query(nearest=cls.convert_vector_input(model.nearest))
@@ -2598,6 +2615,9 @@ class RestToGrpc:
 
         if isinstance(model, rest.FusionQuery):
             return grpc.Query(fusion=cls.convert_fusion(model.fusion))
+
+        if isinstance(model, rest.SampleQuery):
+            return grpc.Query(sample=cls.convert_sample(model.sample))
 
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
 

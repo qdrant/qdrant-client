@@ -874,6 +874,16 @@ class LocalCollection:
                 with_vectors=with_vectors,
             )
             return [record_to_scored_point(record) for record in records[offset:]]
+        elif isinstance(query, models.SampleQuery):
+            if query.sample == models.Sample.RANDOM:
+                return self._sample_randomly(
+                    limit=limit + offset,
+                    query_filter=query_filter,
+                    with_payload=with_payload,
+                    with_vectors=with_vectors,
+                )
+            else:
+                raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):
             raise AssertionError("Cannot perform fusion without prefetches")
         else:
@@ -1761,6 +1771,49 @@ class LocalCollection:
             )
 
         return result, None
+
+    def _sample_randomly(
+        self,
+        limit: int,
+        query_filter: Optional[types.Filter],
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+    ) -> List[types.ScoredPoint]:
+        payload_mask = calculate_payload_mask(
+            payloads=self.payload,
+            payload_filter=query_filter,
+            ids_inv=self.ids_inv,
+        )
+        # in deleted: 1 - deleted, 0 - not deleted
+        # in payload_mask: 1 - accepted, 0 - rejected
+        # in mask: 1 - ok, 0 - rejected
+        mask = payload_mask & ~self.deleted
+
+        random_scores = np.random.rand(len(self.ids))
+        random_order = np.argsort(random_scores)
+
+        result: list[types.ScoredPoint] = []
+        for idx in random_order:
+            if len(result) >= limit:
+                break
+
+            if not mask[idx]:
+                continue
+
+            point_id = self.ids_inv[idx]
+
+            scored_point = construct(
+                models.ScoredPoint,
+                id=point_id,
+                score=float(0),
+                version=0,
+                payload=self._get_payload(idx, with_payload),
+                vector=self._get_vectors(idx, with_vectors),
+            )
+
+            result.append(scored_point)
+
+        return result
 
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
