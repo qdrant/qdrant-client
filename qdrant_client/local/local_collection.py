@@ -1866,7 +1866,7 @@ class LocalCollection:
         if self.storage is not None:
             self.storage.persist(point)
 
-    def upsert(self, points: Union[List[models.PointStruct], models.Batch]) -> None:
+    def upsert(self, points: Union[Sequence[models.PointStruct], models.Batch]) -> None:
         if isinstance(points, list):
             for point in points:
                 self._upsert_point(point)
