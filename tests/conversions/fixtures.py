@@ -1095,6 +1095,13 @@ prefetch_many = grpc.PrefetchQuery(
     prefetch=[prefetch_query, prefetch_full_query],
 )
 
+health_check_reply = grpc.HealthCheckReply(
+    title="qdrant - vector search engine",
+    version="1.10.0",
+    commit="851f03bbf6644116da56f6bc7b0baa04274e8057",
+)
+
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config],
@@ -1239,6 +1246,7 @@ fixtures = {
         query_recommend_id,
     ],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
+    "HealthCheckReply": [health_check_reply],
 }
 
 

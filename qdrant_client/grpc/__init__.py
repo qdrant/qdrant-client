@@ -5,3 +5,5 @@ from .json_with_int_pb2 import *
 from .collections_service_pb2_grpc import *
 from .points_service_pb2_grpc import *
 from .snapshots_service_pb2_grpc import *
+from .qdrant_pb2 import *
+from .qdrant_pb2_grpc import *

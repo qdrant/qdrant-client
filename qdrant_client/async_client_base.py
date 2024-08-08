@@ -430,3 +430,6 @@ class AsyncQdrantBase:
         self, collection_name: str, shard_key: types.ShardKey, **kwargs: Any
     ) -> bool:
         raise NotImplementedError()
+
+    async def info(self) -> types.VersionInfo:
+        raise NotImplementedError()
