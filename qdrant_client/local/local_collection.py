@@ -661,8 +661,6 @@ class LocalCollection:
 
         Assumes all vectors have been homogenized so that there are no ids in the inputs
         """
-        scored_points = []
-
         prefetches = []
         if prefetch is not None:
             prefetches = prefetch if isinstance(prefetch, list) else [prefetch]
@@ -709,11 +707,6 @@ class LocalCollection:
             )
 
         if len(inner_prefetches) > 0:
-            # Recursive case: inner prefetches
-            prefetches = (
-                prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
-            )
-
             sources = [
                 self._prefetch(inner_prefetch, offset) for inner_prefetch in inner_prefetches
             ]
@@ -782,7 +775,7 @@ class LocalCollection:
                     sources_ids.add(point.id)
 
             if len(sources_ids) == 0:
-                # no need to perform a query if there no matches for the sources
+                # no need to perform a query if there are no matches for the sources
                 return []
             else:
                 filter_with_sources = _include_ids_in_filter(query_filter, list(sources_ids))
@@ -2173,6 +2166,7 @@ def ignore_mentioned_ids_filter(
     if query_filter is None:
         query_filter = models.Filter(must_not=[ignore_mentioned_ids])
     else:
+        query_filter = deepcopy(query_filter)
         if query_filter.must_not is None:
             query_filter.must_not = [ignore_mentioned_ids]
         else:
@@ -2192,6 +2186,7 @@ def _include_ids_in_filter(
     if query_filter is None:
         query_filter = models.Filter(must=[include_ids])
     else:
+        query_filter = deepcopy(query_filter)
         if query_filter.must is None:
             query_filter.must = [include_ids]
         else:
