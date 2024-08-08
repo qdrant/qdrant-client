@@ -29,3 +29,35 @@ def reciprocal_rank_fusion(
         point.score = score
         sorted_points.append(point)
     return sorted_points
+
+
+def distribution_based_score_fusion(
+    responses: List[List[models.ScoredPoint]], limit: int
+) -> List[models.ScoredPoint]:
+    def normalize(response: List[models.ScoredPoint]) -> List[models.ScoredPoint]:
+        total = sum([point.score for point in response])
+        mean = total / len(response)
+        variance = sum([(point.score - mean) ** 2 for point in response]) / (len(response) - 1)
+        std_dev = variance**0.5
+
+        low = mean - 3 * std_dev
+        high = mean + 3 * std_dev
+
+        for point in response:
+            point.score = (point.score - low) / (high - low)
+
+        return response
+
+    points_map: dict[models.ExtendedPointId, models.ScoredPoint] = {}
+    for response in responses:
+        normalized = normalize(response)
+        for point in normalized:
+            entry = points_map.get(point.id)
+            if entry is None:
+                points_map[point.id] = point
+            else:
+                entry.score += point.score
+
+    sorted_points = sorted(points_map.values(), key=lambda item: item.score, reverse=True)
+
+    return sorted_points[:limit]

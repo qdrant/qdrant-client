@@ -939,6 +939,9 @@ class GrpcToRest:
         if model == grpc.Fusion.RRF:
             return rest.Fusion.RRF
 
+        if model == grpc.Fusion.DBSF:
+            return rest.Fusion.DBSF
+
         raise ValueError(f"invalid Fusion model: {model}")  # pragma: no cover
 
     @classmethod
@@ -2522,8 +2525,12 @@ class RestToGrpc:
     @classmethod
     def convert_recommend_input(cls, model: rest.RecommendInput) -> grpc.RecommendInput:
         return grpc.RecommendInput(
-            positive=[cls.convert_vector_input(vector) for vector in model.positive] if model.positive is not None else None,
-            negative=[cls.convert_vector_input(vector) for vector in model.negative] if model.negative is not None else None,
+            positive=[cls.convert_vector_input(vector) for vector in model.positive]
+            if model.positive is not None
+            else None,
+            negative=[cls.convert_vector_input(vector) for vector in model.negative]
+            if model.negative is not None
+            else None,
             strategy=cls.convert_recommend_strategy(model.strategy)
             if model.strategy is not None
             else None,
@@ -2558,6 +2565,11 @@ class RestToGrpc:
     def convert_fusion(cls, model: rest.Fusion) -> grpc.Fusion:
         if model == rest.Fusion.RRF:
             return grpc.Fusion.RRF
+
+        if model == rest.Fusion.DBSF:
+            return grpc.Fusion.DBSF
+
+        raise ValueError(f"invalid Fusion model: {model}")
 
     @classmethod
     def convert_query(cls, model: rest.Query) -> grpc.Query:
