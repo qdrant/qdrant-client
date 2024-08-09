@@ -13,34 +13,35 @@ def client():
     Sets up multiple collections with a bunch of points
     """
     client = QdrantLocal(":memory:")
-    client.create_collection(
-        "collection_default",
-        vectors_config=models.VectorParams(
-            size=4,
-            distance=models.Distance.DOT,
-        ),
-    )
-
-    client.create_collection(
-        "collection_multiple_vectors",
-        vectors_config={
-            "": models.VectorParams(
+    if not client.collection_exists("collection_default"):
+        client.create_collection(
+            "collection_default",
+            vectors_config=models.VectorParams(
                 size=4,
                 distance=models.Distance.DOT,
             ),
-            "byte": models.VectorParams(
-                size=4, distance=models.Distance.DOT, datatype=models.Datatype.UINT8
-            ),
-            "colbert": models.VectorParams(
-                size=4,
-                distance=models.Distance.DOT,
-                multivector_config=models.MultiVectorConfig(
-                    comparator=models.MultiVectorComparator.MAX_SIM
+        )
+    if not client.collection_exists("collection_multiple_vectors"):
+        client.create_collection(
+            "collection_multiple_vectors",
+            vectors_config={
+                "": models.VectorParams(
+                    size=4,
+                    distance=models.Distance.DOT,
                 ),
-            ),
-        },
-        sparse_vectors_config={"sparse": models.SparseVectorParams()},
-    )
+                "byte": models.VectorParams(
+                    size=4, distance=models.Distance.DOT, datatype=models.Datatype.UINT8
+                ),
+                "colbert": models.VectorParams(
+                    size=4,
+                    distance=models.Distance.DOT,
+                    multivector_config=models.MultiVectorConfig(
+                        comparator=models.MultiVectorComparator.MAX_SIM
+                    ),
+                ),
+            },
+            sparse_vectors_config={"sparse": models.SparseVectorParams()},
+        )
 
     client.upsert(
         "collection_default",
