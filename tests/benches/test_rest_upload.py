@@ -19,11 +19,10 @@ def prepare_collection_rest():
     client = QdrantClient(timeout=30)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(COLLECTION_NAME)
-    else:
-        client.create_collection(
-            COLLECTION_NAME,
-            vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
-        )
+    client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=VectorParams(size=VECTOR_SIZE, distance=Distance.COSINE),
+    )
 
 
 def upload_data(data):

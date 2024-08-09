@@ -36,10 +36,11 @@ Create a new collection
 
    from qdrant_client.models import VectorParams, Distance
 
-   client.create_collection(
-      collection_name="my_collection",
-      vectors_config=VectorParams(size=100, distance=Distance.COSINE),
-   )
+   if not client.collection_exists("my_collection"):
+      client.create_collection(
+         collection_name="my_collection",
+         vectors_config=VectorParams(size=100, distance=Distance.COSINE),
+      )
 
 Insert vectors into a collection
 
@@ -109,10 +110,11 @@ Starting from version 1.6.1, all python client methods are available in async ve
       # Your async code using QdrantClient might be put here
       client = AsyncQdrantClient(url="http://localhost:6333")
 
-      await client.create_collection(
-         collection_name="my_collection",
-         vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
-      )
+      if not await client.collection_exists("my_collection"):
+         await client.create_collection(
+            collection_name="my_collection",
+            vectors_config=models.VectorParams(size=10, distance=models.Distance.COSINE),
+         )
 
       await client.upsert(
          collection_name="my_collection",

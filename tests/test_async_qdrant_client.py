@@ -113,8 +113,7 @@ async def test_async_qdrant_client(prefer_grpc):
     ):
         if await client.collection_exists(COLLECTION_NAME):
             await client.delete_collection(COLLECTION_NAME)
-        else:
-            await client.create_collection(**collection_params)
+        await client.create_collection(**collection_params)
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
@@ -359,8 +358,7 @@ async def test_async_qdrant_client_local():
     )
     if await client.collection_exists(COLLECTION_NAME):
         await client.delete_collection(COLLECTION_NAME)
-    else:
-        await client.create_collection(**collection_params)
+    await client.create_collection(**collection_params)
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()

@@ -11,11 +11,10 @@ def qdrant() -> QdrantClient:
 def test_dense_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     if qdrant.collection_exists("test_collection"):
         qdrant.delete_collection(collection_name="test_collection")
-    else:
-        qdrant.create_collection(
-            collection_name="test_collection",
-            vectors_config=models.VectorParams(size=4, distance=models.Distance.DOT),
-        )
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config=models.VectorParams(size=4, distance=models.Distance.DOT),
+    )
 
     operation_info = qdrant.upsert(
         collection_name="test_collection",
@@ -60,12 +59,11 @@ def test_dense_in_memory_key_filter_returns_results(qdrant: QdrantClient):
 def test_sparse_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     if qdrant.collection_exists("test_collection"):
         qdrant.delete_collection(collection_name="test_collection")
-    else:
-        qdrant.create_collection(
-            collection_name="test_collection",
-            vectors_config={},
-            sparse_vectors_config={"text": models.SparseVectorParams()},
-        )
+    qdrant.create_collection(
+        collection_name="test_collection",
+        vectors_config={},
+        sparse_vectors_config={"text": models.SparseVectorParams()},
+    )
 
     operation_info = qdrant.upsert(
         collection_name="test_collection",

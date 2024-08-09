@@ -159,18 +159,16 @@ def test_not_jsonable_payload():
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(collection_name=COLLECTION_NAME)
-    else:
-        local_client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=vectors_config,
-        )
+    local_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    else:
-        remote_client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=vectors_config,
-        )
+    remote_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
 
     # subset of types from pydantic.json.ENCODERS_BY_TYPE (pydantic v1)
 
@@ -199,18 +197,16 @@ def test_not_jsonable_payload():
 
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(collection_name=COLLECTION_NAME)
-    else:
-        local_client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=vectors_config,
-        )
+    local_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    else:
-        remote_client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=vectors_config,
-        )
+    remote_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
 
     point_ids = []
     for point in points:
@@ -261,18 +257,16 @@ def test_set_payload_with_key():
 
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(collection_name=COLLECTION_NAME)
-    else:
-        local_client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=vectors_config,
-        )
+    local_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    else:
-        remote_client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=vectors_config,
-        )
+    remote_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=vectors_config,
+    )
 
     vector = np.random.rand(vector_size).tolist()
 

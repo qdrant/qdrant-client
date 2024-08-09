@@ -385,10 +385,7 @@ def test_vector_params(
 
     if local_client.collection_exists(collection_name):
         local_client.delete_collection(collection_name=collection_name)
-    else:
-        local_client.create_collection(
-            collection_name=collection_name, vectors_config=vectors_config
-        )
+    local_client.create_collection(collection_name=collection_name, vectors_config=vectors_config)
 
     local_client.migrate(second_local_client)
 

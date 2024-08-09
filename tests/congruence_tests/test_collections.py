@@ -63,12 +63,10 @@ def test_collection_exists():
 
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(COLLECTION_NAME)
-    else:
-        remote_client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(COLLECTION_NAME)
-    else:
-        local_client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
 
     assert remote_client.collection_exists(COLLECTION_NAME)
     assert local_client.collection_exists(COLLECTION_NAME)
@@ -85,16 +83,10 @@ def test_init_from():
 
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    else:
-        remote_client.create_collection(
-            collection_name=COLLECTION_NAME, vectors_config=vector_params
-        )
+    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(collection_name=COLLECTION_NAME)
-    else:
-        local_client.create_collection(
-            collection_name=COLLECTION_NAME, vectors_config=vector_params
-        )
+    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
     remote_client.upload_points(COLLECTION_NAME, points, wait=True)
     local_client.upload_points(COLLECTION_NAME, points)
     compare_collections(remote_client, local_client, len(points), collection_name=COLLECTION_NAME)
@@ -102,16 +94,14 @@ def test_init_from():
     new_collection_name = COLLECTION_NAME + "_new"
     if remote_client.collection_exists(new_collection_name):
         remote_client.delete_collection(new_collection_name)
-    else:
-        remote_client.create_collection(
-            new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
-        )
+    remote_client.create_collection(
+        new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
+    )
     if local_client.collection_exists(new_collection_name):
         local_client.delete_collection(new_collection_name)
-    else:
-        local_client.create_collection(
-            new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
-        )
+    local_client.create_collection(
+        new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
+    )
 
     # init_from is performed asynchronously, so we need to retry
     wait_for(
@@ -124,20 +114,18 @@ def test_init_from():
 
     if remote_client.collection_exists(new_collection_name):
         remote_client.delete_collection(new_collection_name)
-    else:
-        remote_client.create_collection(
-            new_collection_name,
-            vectors_config=vector_params,
-            init_from=models.InitFrom(collection=COLLECTION_NAME),
-        )
+    remote_client.create_collection(
+        new_collection_name,
+        vectors_config=vector_params,
+        init_from=models.InitFrom(collection=COLLECTION_NAME),
+    )
     if local_client.collection_exists(new_collection_name):
         local_client.delete_collection(new_collection_name)
-    else:
-        local_client.create_collection(
-            new_collection_name,
-            vectors_config=vector_params,
-            init_from=models.InitFrom(collection=COLLECTION_NAME),
-        )
+    local_client.create_collection(
+        new_collection_name,
+        vectors_config=vector_params,
+        init_from=models.InitFrom(collection=COLLECTION_NAME),
+    )
 
     # init_from is performed asynchronously, so we need to retry
     wait_for(
