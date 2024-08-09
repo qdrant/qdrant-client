@@ -297,8 +297,6 @@ def test_query_with_nan():
     )
     named_sparse_vector.vector.values[0] = np.nan
 
-    if local_client.collection_exists(COLLECTION_NAME):
-        local_client.delete_collection(COLLECTION_NAME)
     local_client.create_collection(
         COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
     )
