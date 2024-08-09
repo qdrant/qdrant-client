@@ -251,6 +251,7 @@ def test_grpc_payload_scheme_conversion():
         PayloadSchemaType.Text,
         PayloadSchemaType.Bool,
         PayloadSchemaType.Datetime,
+        PayloadSchemaType.Uuid,
     ):
         assert payload_schema == grpc_field_type_to_payload_schema(
             grpc_payload_schema_to_field_type(payload_schema)

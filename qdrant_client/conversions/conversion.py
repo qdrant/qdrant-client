@@ -109,6 +109,8 @@ def grpc_payload_schema_to_field_type(model: grpc.PayloadSchemaType) -> grpc.Fie
         return grpc.FieldType.FieldTypeText
     if model == grpc.PayloadSchemaType.Datetime:
         return grpc.FieldType.FieldTypeDatetime
+    if model == grpc.PayloadSchemaType.Uuid:
+        return grpc.FieldType.FieldTypeUuid
 
     raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
 
@@ -128,6 +130,8 @@ def grpc_field_type_to_payload_schema(model: grpc.FieldType) -> grpc.PayloadSche
         return grpc.PayloadSchemaType.Text
     if model == grpc.FieldType.FieldTypeDatetime:
         return grpc.PayloadSchemaType.Datetime
+    if model == grpc.FieldType.FieldTypeUuid:
+        return grpc.PayloadSchemaType.Uuid
 
     raise ValueError(f"invalid FieldType model: {model}")  # pragma: no cover
 
@@ -351,6 +355,24 @@ class GrpcToRest:
         if model.HasField("integer_index_params"):
             integer_index_params = model.integer_index_params
             return cls.convert_integer_index_params(integer_index_params)
+        if model.HasField("keyword_index_params"):
+            keyword_index_params = model.keyword_index_params
+            return cls.convert_keyword_index_params(keyword_index_params)
+        if model.HasField("float_index_params"):
+            float_index_params = model.float_index_params
+            return cls.convert_float_index_params(float_index_params)
+        if model.HasField("geo_index_params"):
+            geo_index_params = model.geo_index_params
+            return cls.convert_geo_index_params(geo_index_params)
+        if model.HasField("bool_index_params"):
+            bool_index_params = model.bool_index_params
+            return cls.convert_bool_index_params(bool_index_params)
+        if model.HasField("datetime_index_params"):
+            datetime_index_params = model.datetime_index_params
+            return cls.convert_datetime_index_params(datetime_index_params)
+        if model.HasField("uuid_index_params"):
+            uuid_index_params = model.uuid_index_params
+            return cls.convert_uuid_index_params(uuid_index_params)
 
         raise ValueError(f"invalid PayloadIndexParams model: {model}")  # pragma: no cover
 
@@ -370,6 +392,8 @@ class GrpcToRest:
             return rest.PayloadSchemaType.TEXT
         elif model == grpc.PayloadSchemaType.Datetime:
             return rest.PayloadSchemaType.DATETIME
+        elif model == grpc.PayloadSchemaType.Uuid:
+            return rest.PayloadSchemaType.UUID
         else:
             raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
 
@@ -1204,6 +1228,56 @@ class GrpcToRest:
             type=rest.IntegerIndexType.INTEGER,
             range=model.range,
             lookup=model.lookup,
+            is_principal=model.is_principal if model.HasField("is_principal") else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
+        )
+
+    @classmethod
+    def convert_keyword_index_params(
+        cls, model: grpc.KeywordIndexParams
+    ) -> rest.KeywordIndexParams:
+        return rest.KeywordIndexParams(
+            type=rest.KeywordIndexType.KEYWORD,
+            is_tenant=model.is_tenant if model.HasField("is_tenant") else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
+        )
+
+    @classmethod
+    def convert_float_index_params(cls, model: grpc.FloatIndexParams) -> rest.FloatIndexParams:
+        return rest.FloatIndexParams(
+            type=rest.FloatIndexType.FLOAT,
+            is_principal=model.is_principal if model.HasField("is_principal") else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
+        )
+
+    @classmethod
+    def convert_geo_index_params(cls, _: grpc.GeoIndexParams) -> rest.GeoIndexParams:
+        return rest.GeoIndexParams(
+            type=rest.GeoIndexType.GEO,
+        )
+
+    @classmethod
+    def convert_bool_index_params(cls, _: grpc.BoolIndexParams) -> rest.BoolIndexParams:
+        return rest.BoolIndexParams(
+            type=rest.BoolIndexType.BOOL,
+        )
+
+    @classmethod
+    def convert_datetime_index_params(
+        cls, model: grpc.DatetimeIndexParams
+    ) -> rest.DatetimeIndexParams:
+        return rest.DatetimeIndexParams(
+            type=rest.DatetimeIndexType.DATETIME,
+            is_principal=model.is_principal if model.HasField("is_principal") else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
+        )
+
+    @classmethod
+    def convert_uuid_index_params(cls, model: grpc.UuidIndexParams) -> rest.UuidIndexParams:
+        return rest.UuidIndexParams(
+            type=rest.UuidIndexType.UUID,
+            is_tenant=model.is_tenant if model.HasField("is_tenant") else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
         )
 
     @classmethod
@@ -1813,6 +1887,30 @@ class RestToGrpc:
                 integer_index_params=cls.convert_integer_index_params(model)
             )
 
+        if isinstance(model, rest.KeywordIndexParams):
+            return grpc.PayloadIndexParams(
+                keyword_index_params=cls.convert_keyword_index_params(model)
+            )
+
+        if isinstance(model, rest.FloatIndexParams):
+            return grpc.PayloadIndexParams(
+                float_index_params=cls.convert_float_index_params(model)
+            )
+
+        if isinstance(model, rest.GeoIndexParams):
+            return grpc.PayloadIndexParams(geo_index_params=cls.convert_geo_index_params(model))
+
+        if isinstance(model, rest.BoolIndexParams):
+            return grpc.PayloadIndexParams(bool_index_params=cls.convert_bool_index_params(model))
+
+        if isinstance(model, rest.DatetimeIndexParams):
+            return grpc.PayloadIndexParams(
+                datetime_index_params=cls.convert_datetime_index_params(model)
+            )
+
+        if isinstance(model, rest.UuidIndexParams):
+            return grpc.PayloadIndexParams(uuid_index_params=cls.convert_uuid_index_params(model))
+
         raise ValueError(f"invalid PayloadSchemaParams model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1831,6 +1929,8 @@ class RestToGrpc:
             return grpc.PayloadSchemaType.Text
         if model == rest.PayloadSchemaType.DATETIME:
             return grpc.PayloadSchemaType.Datetime
+        if model == rest.PayloadSchemaType.UUID:
+            return grpc.PayloadSchemaType.Uuid
 
         raise ValueError(f"invalid PayloadSchemaType model: {model}")  # pragma: no cover
 
@@ -2867,7 +2967,40 @@ class RestToGrpc:
     def convert_integer_index_params(
         cls, model: rest.IntegerIndexParams
     ) -> grpc.IntegerIndexParams:
-        return grpc.IntegerIndexParams(lookup=model.lookup, range=model.range)
+        return grpc.IntegerIndexParams(
+            lookup=model.lookup,
+            range=model.range,
+            is_principal=model.is_principal,
+            on_disk=model.on_disk,
+        )
+
+    @classmethod
+    def convert_keyword_index_params(
+        cls, model: rest.KeywordIndexParams
+    ) -> grpc.KeywordIndexParams:
+        return grpc.KeywordIndexParams(is_tenant=model.is_tenant, on_disk=model.on_disk)
+
+    @classmethod
+    def convert_float_index_params(cls, model: rest.FloatIndexParams) -> grpc.FloatIndexParams:
+        return grpc.FloatIndexParams(is_principal=model.is_principal, on_disk=model.on_disk)
+
+    @classmethod
+    def convert_geo_index_params(cls, _: rest.GeoIndexParams) -> grpc.GeoIndexParams:
+        return grpc.GeoIndexParams()
+
+    @classmethod
+    def convert_bool_index_params(cls, _: rest.BoolIndexParams) -> grpc.BoolIndexParams:
+        return grpc.BoolIndexParams()
+
+    @classmethod
+    def convert_datetime_index_params(
+        cls, model: rest.DatetimeIndexParams
+    ) -> grpc.DatetimeIndexParams:
+        return grpc.DatetimeIndexParams(is_principal=model.is_principal, on_disk=model.on_disk)
+
+    @classmethod
+    def convert_uuid_index_params(cls, model: rest.UuidIndexParams) -> grpc.UuidIndexParams:
+        return grpc.UuidIndexParams(is_tenant=model.is_tenant, on_disk=model.on_disk)
 
     @classmethod
     def convert_collection_params_diff(

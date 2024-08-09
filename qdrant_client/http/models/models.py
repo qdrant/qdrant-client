@@ -364,7 +364,7 @@ class CreateCollection(BaseModel, extra="forbid"):
     )
     shard_number: Optional[int] = Field(
         default=None,
-        description="For auto sharding: Number of shards in collection. - Default is 1 for standalone, otherwise equal to the number of nodes - Minimum is 1 For custom sharding: Number of shards in collection per shard group. - Default is 1, meaning that each shard key will be mapped to a single shard - Minimum is 1",
+        description="For auto sharding: Number of shards in collection. - Default is 1 for standalone, otherwise equal to the number of nodes - Minimum is 1  For custom sharding: Number of shards in collection per shard group. - Default is 1, meaning that each shard key will be mapped to a single shard - Minimum is 1",
     )
     sharding_method: Optional["ShardingMethod"] = Field(
         default=None,
@@ -434,6 +434,11 @@ class Datatype(str, Enum):
 
 class DatetimeIndexParams(BaseModel, extra="forbid"):
     type: "DatetimeIndexType" = Field(..., description="")
+    is_principal: Optional[bool] = Field(
+        default=None,
+        description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests.",
+    )
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
 
 
 class DatetimeIndexType(str, Enum):
@@ -650,6 +655,11 @@ class FilterSelector(BaseModel, extra="forbid"):
 
 class FloatIndexParams(BaseModel, extra="forbid"):
     type: "FloatIndexType" = Field(..., description="")
+    is_principal: Optional[bool] = Field(
+        default=None,
+        description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests.",
+    )
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
 
 
 class FloatIndexType(str, Enum):
@@ -994,7 +1004,11 @@ class IntegerIndexParams(BaseModel, extra="forbid"):
     type: "IntegerIndexType" = Field(..., description="")
     lookup: bool = Field(..., description="If true - support direct lookups.")
     range: bool = Field(..., description="If true - support ranges filters.")
-    is_tenant: Optional[bool] = Field(default=None, description="If true - used for tenant optimization.")
+    is_principal: Optional[bool] = Field(
+        default=None,
+        description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests.",
+    )
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
 
 
 class IntegerIndexType(str, Enum):
@@ -1022,6 +1036,7 @@ class KeywordIndexParams(BaseModel, extra="forbid"):
     is_tenant: Optional[bool] = Field(
         default=None, description="If true - used for tenant optimization. Default: false."
     )
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
 
 
 class KeywordIndexType(str, Enum):
@@ -1349,6 +1364,7 @@ class PayloadSchemaType(str, Enum):
     TEXT = "text"
     BOOL = "bool"
     DATETIME = "datetime"
+    UUID = "uuid"
 
 
 class PayloadSelectorExclude(BaseModel, extra="forbid"):
@@ -1812,7 +1828,30 @@ class RequestsTelemetry(BaseModel):
     grpc: "GrpcTelemetry" = Field(..., description="")
 
 
+class ReshardingDirectionOneOf(str, Enum):
+    """
+    Scale up, add a new shard
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    UP = "up"
+
+
+class ReshardingDirectionOneOf1(str, Enum):
+    """
+    Scale down, remove a shard
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    DOWN = "down"
+
+
 class ReshardingInfo(BaseModel):
+    direction: "ReshardingDirection" = Field(..., description="")
     shard_id: int = Field(..., description="")
     peer_id: int = Field(..., description="")
     shard_key: Optional["ShardKey"] = Field(default=None, description="")
@@ -2397,6 +2436,16 @@ class UpsertOperation(BaseModel, extra="forbid"):
     upsert: "PointInsertOperations" = Field(..., description="")
 
 
+class UuidIndexParams(BaseModel, extra="forbid"):
+    type: "UuidIndexType" = Field(..., description="")
+    is_tenant: Optional[bool] = Field(default=None, description="If true - used for tenant optimization.")
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
+
+
+class UuidIndexType(str, Enum):
+    UUID = "uuid"
+
+
 class ValuesCount(BaseModel, extra="forbid"):
     """
     Values count filter request
@@ -2533,6 +2582,17 @@ class VectorStorageTypeOneOf2(str, Enum):
     CHUNKEDMMAP = "ChunkedMmap"
 
 
+class VectorStorageTypeOneOf3(str, Enum):
+    """
+    Same as `ChunkedMmap`, but vectors are forced to be locked in RAM In this way we avoid cold requests to disk, but risk to run out of memory  Designed as a replacement for `Memory`, which doesn&#x27;t depend on RocksDB
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    INRAMCHUNKEDMMAP = "InRamChunkedMmap"
+
+
 class VersionInfo(BaseModel):
     title: str = Field(..., description="")
     version: str = Field(..., description="")
@@ -2664,6 +2724,7 @@ PayloadSchemaParams = Union[
     TextIndexParams,
     BoolIndexParams,
     DatetimeIndexParams,
+    UuidIndexParams,
 ]
 PayloadSelector = Union[
     PayloadSelectorInclude,
@@ -2708,6 +2769,10 @@ RangeInterface = Union[
 ReadConsistency = Union[
     StrictInt,
     ReadConsistencyType,
+]
+ReshardingDirection = Union[
+    ReshardingDirectionOneOf,
+    ReshardingDirectionOneOf1,
 ]
 ShardKey = Union[
     StrictInt,
@@ -2765,6 +2830,7 @@ VectorStorageType = Union[
     VectorStorageTypeOneOf,
     VectorStorageTypeOneOf1,
     VectorStorageTypeOneOf2,
+    VectorStorageTypeOneOf3,
 ]
 VectorsConfig = Union[
     VectorParams,
