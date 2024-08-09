@@ -111,8 +111,7 @@ async def test_async_qdrant_client(prefer_grpc):
         qdrant_client.http.exceptions.UnexpectedResponse,
         grpc.aio._call.AioRpcError,
     ):
-        if await client.collection_exists(COLLECTION_NAME):
-            await client.delete_collection(COLLECTION_NAME)
+        await client.delete_collection(COLLECTION_NAME)
         await client.create_collection(**collection_params)
 
     await client.get_collection(COLLECTION_NAME)
@@ -337,8 +336,7 @@ async def test_async_qdrant_client(prefer_grpc):
     assert (await client.retrieve(COLLECTION_NAME, ids=[1]))[0].payload == {}
 
     # region teardown
-    if await client.collection_exists(COLLECTION_NAME):
-        await client.delete_collection(COLLECTION_NAME)
+    await client.delete_collection(COLLECTION_NAME)
     collections = await client.get_collections()
 
     assert all(collection.name != COLLECTION_NAME for collection in collections.collections)
