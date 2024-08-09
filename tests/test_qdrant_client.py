@@ -201,11 +201,11 @@ def test_records_upload(prefer_grpc, parallel):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=parallel)
 
@@ -237,11 +237,11 @@ def test_records_upload(prefer_grpc, parallel):
 
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     client.upload_records(
         collection_name=COLLECTION_NAME, records=records, parallel=parallel, wait=True
@@ -268,11 +268,11 @@ def test_point_upload(prefer_grpc, parallel):
 
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     client.upload_points(collection_name=COLLECTION_NAME, points=points, parallel=parallel)
 
@@ -301,11 +301,11 @@ def test_point_upload(prefer_grpc, parallel):
     assert result_count.count > 100
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     points = (
         PointStruct(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(NUM_VECTORS)
@@ -329,11 +329,11 @@ def test_upload_collection(prefer_grpc, parallel):
 
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=size, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=size, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
     vectors = [
         [1.0, 2.0, 3.0],
         [4.0, 5.0, 6.0],
@@ -355,11 +355,11 @@ def test_upload_collection(prefer_grpc, parallel):
     assert client.get_collection(collection_name=COLLECTION_NAME).points_count == 5
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=size, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=size, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     client.upload_collection(
         collection_name=COLLECTION_NAME,
@@ -392,14 +392,14 @@ def test_multiple_vectors(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config={
-            "image": VectorParams(size=DIM, distance=Distance.DOT),
-            "text": VectorParams(size=DIM * 2, distance=Distance.COSINE),
-        },
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config={
+                "image": VectorParams(size=DIM, distance=Distance.DOT),
+                "text": VectorParams(size=DIM * 2, distance=Distance.COSINE),
+            },
+            timeout=TIMEOUT,
+        )
 
     client.upload_points(collection_name=COLLECTION_NAME, points=points, parallel=1)
 
@@ -452,11 +452,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     if not version_set or (dev_version or minor_version >= 8):
         assert client.collection_exists(collection_name=COLLECTION_NAME)
@@ -1045,13 +1045,13 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config={
-            "text": VectorParams(size=DIM, distance=Distance.DOT),
-        },
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config={
+                "text": VectorParams(size=DIM, distance=Distance.DOT),
+            },
+            timeout=TIMEOUT,
+        )
 
     client.update_collection(
         collection_name=COLLECTION_NAME,
@@ -1106,11 +1106,11 @@ def test_points_crud(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     # Create a single point
     client.upsert(
@@ -1156,18 +1156,18 @@ def test_quantization_config(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        quantization_config=ScalarQuantization(
-            scalar=ScalarQuantizationConfig(
-                type=ScalarType.INT8,
-                quantile=1.0,
-                always_ram=True,
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            quantization_config=ScalarQuantization(
+                scalar=ScalarQuantizationConfig(
+                    type=ScalarType.INT8,
+                    quantile=1.0,
+                    always_ram=True,
+                ),
             ),
-        ),
-        timeout=TIMEOUT,
-    )
+            timeout=TIMEOUT,
+        )
 
     client.upsert(
         collection_name=COLLECTION_NAME,
@@ -1217,11 +1217,11 @@ def test_custom_sharding(prefer_grpc):
     def init_collection():
         if client.collection_exists(COLLECTION_NAME):
             client.delete_collection(collection_name=COLLECTION_NAME)
-        client.create_collection(
-            collection_name=COLLECTION_NAME,
-            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-            sharding_method=models.ShardingMethod.CUSTOM,
-        )
+            client.create_collection(
+                collection_name=COLLECTION_NAME,
+                vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+                sharding_method=models.ShardingMethod.CUSTOM,
+            )
 
         client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=cats_shard_key)
         client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=dogs_shard_key)
@@ -1393,18 +1393,18 @@ def test_sparse_vectors(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config={},
-        sparse_vectors_config={
-            "text": models.SparseVectorParams(
-                index=models.SparseIndexParams(
-                    on_disk=False,
-                    full_scan_threshold=100,
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config={},
+            sparse_vectors_config={
+                "text": models.SparseVectorParams(
+                    index=models.SparseIndexParams(
+                        on_disk=False,
+                        full_scan_threshold=100,
+                    )
                 )
-            )
-        },
-    )
+            },
+        )
 
     client.upsert(
         collection_name=COLLECTION_NAME,
@@ -1473,18 +1473,18 @@ def test_sparse_vectors_batch(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config={},
-        sparse_vectors_config={
-            "text": models.SparseVectorParams(
-                index=models.SparseIndexParams(
-                    on_disk=False,
-                    full_scan_threshold=100,
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config={},
+            sparse_vectors_config={
+                "text": models.SparseVectorParams(
+                    index=models.SparseIndexParams(
+                        on_disk=False,
+                        full_scan_threshold=100,
+                    )
                 )
-            )
-        },
-    )
+            },
+        )
 
     client.upsert(
         collection_name=COLLECTION_NAME,
@@ -1556,11 +1556,11 @@ def test_vector_update(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     uuid1 = str(uuid.uuid4())
     uuid2 = str(uuid.uuid4())
@@ -1616,11 +1616,11 @@ def test_conditional_payload_update(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     uuid1 = str(uuid.uuid4())
     uuid2 = str(uuid.uuid4())
@@ -1656,11 +1656,11 @@ def test_conditional_payload_update_2(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     client.upsert(
         collection_name=COLLECTION_NAME,
@@ -1737,11 +1737,11 @@ def test_locks():
     client = QdrantClient(timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
+            timeout=TIMEOUT,
+        )
 
     client.lock_storage(reason="testing reason")
 
@@ -1784,11 +1784,11 @@ def test_empty_vector(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config={},
-        timeout=TIMEOUT,
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config={},
+            timeout=TIMEOUT,
+        )
 
     client.upsert(
         collection_name=COLLECTION_NAME,
@@ -1854,25 +1854,25 @@ def test_client_close():
     client_http = QdrantClient(timeout=TIMEOUT)
     if client_http.collection_exists("test"):
         client_http.delete_collection("test")
-    client_http.create_collection(
-        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
-    )
+        client_http.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
     client_http.close()
     with pytest.raises(qdrant_exceptions.ResponseHandlingException):
         if client_http.collection_exists("test"):
             client_http.delete_collection("test")
-        client_http.create_collection(
-            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
-        )
+            client_http.create_collection(
+                "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+            )
     # endregion
 
     # region grpc
     client_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
     if client_grpc.collection_exists("test"):
         client_grpc.delete_collection("test")
-    client_grpc.create_collection(
-        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
-    )
+        client_grpc.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
     client_grpc.close()
     with pytest.raises(ValueError):
         client_grpc.get_collection("test")
@@ -1913,9 +1913,9 @@ def test_client_close():
     local_client_in_mem = QdrantClient(":memory:")
     if local_client_in_mem.collection_exists("test"):
         local_client_in_mem.delete_collection("test")
-    local_client_in_mem.create_collection(
-        "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
-    )
+        local_client_in_mem.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
     local_client_in_mem.close()
     assert local_client_in_mem._client.closed is True
 
@@ -1925,9 +1925,10 @@ def test_client_close():
         )
 
     with pytest.raises(RuntimeError):
-        local_client_in_mem.create_collection(
-            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
-        )
+        if not local_client_in_mem.collection_exists("test"):
+            local_client_in_mem.create_collection(
+                "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+            )
 
     with pytest.raises(RuntimeError):
         if local_client_in_mem.collection_exists("test"):
@@ -1939,17 +1940,17 @@ def test_client_close():
         local_client_persist_1 = QdrantClient(path=path)
         if local_client_persist_1.collection_exists("test"):
             local_client_persist_1.delete_collection("test")
-        local_client_persist_1.create_collection(
-            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
-        )
+            local_client_persist_1.create_collection(
+                "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+            )
         local_client_persist_1.close()
 
         local_client_persist_2 = QdrantClient(path=path)
         if local_client_persist_2.collection_exists("test"):
             local_client_persist_2.delete_collection("test")
-        local_client_persist_2.create_collection(
-            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
-        )
+            local_client_persist_2.create_collection(
+                "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+            )
         local_client_persist_2.close()
     # endregion local
 
@@ -1969,13 +1970,15 @@ def test_timeout_propagation():
         client.http.client._client._timeout = Timeout(0.01)
         if client.collection_exists(COLLECTION_NAME):
             client.delete_collection(collection_name=COLLECTION_NAME)
-        client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+            client.create_collection(
+                collection_name=COLLECTION_NAME, vectors_config=vectors_config
+            )
     time.sleep(0.5)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=10)
-    client.create_collection(
-        collection_name=COLLECTION_NAME, vectors_config=vectors_config, timeout=10
-    )
+        client.create_collection(
+            collection_name=COLLECTION_NAME, vectors_config=vectors_config, timeout=10
+        )
 
 
 def test_grpc_options():
@@ -1986,10 +1989,11 @@ def test_grpc_options():
     assert client._client._grpc_options == {"grpc.max_send_message_length": 3}
 
     with pytest.raises(RpcError):
-        client.create_collection(
-            "grpc_collection",
-            vectors_config=models.VectorParams(size=100, distance=models.Distance.COSINE),
-        )
+        if not client.collection_exists("grpc_collection"):
+            client.create_collection(
+                "grpc_collection",
+                vectors_config=models.VectorParams(size=100, distance=models.Distance.COSINE),
+            )
 
 
 def test_grpc_compression():

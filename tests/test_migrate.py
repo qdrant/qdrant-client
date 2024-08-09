@@ -385,7 +385,9 @@ def test_vector_params(
 
     if local_client.collection_exists(collection_name):
         local_client.delete_collection(collection_name=collection_name)
-    local_client.create_collection(collection_name=collection_name, vectors_config=vectors_config)
+        local_client.create_collection(
+            collection_name=collection_name, vectors_config=vectors_config
+        )
 
     local_client.migrate(second_local_client)
 
@@ -485,18 +487,19 @@ def test_recreate_collection(remote_client: QdrantClient):
         )
     )
 
-    remote_client.create_collection(
-        collection_name,
-        vectors_config=vectors_config,
-        shard_number=3,
-        replication_factor=3,
-        write_consistency_factor=2,
-        on_disk_payload=True,
-        hnsw_config=general_hnsw_config,
-        optimizers_config=optimizers_config,
-        wal_config=wal_config,
-        quantization_config=general_quantization_config,
-    )
+    if not remote_client.collection_exists(collection_name):
+        remote_client.create_collection(
+            collection_name,
+            vectors_config=vectors_config,
+            shard_number=3,
+            replication_factor=3,
+            write_consistency_factor=2,
+            on_disk_payload=True,
+            hnsw_config=general_hnsw_config,
+            optimizers_config=optimizers_config,
+            wal_config=wal_config,
+            quantization_config=general_quantization_config,
+        )
 
     remote_client.create_payload_index(
         collection_name,

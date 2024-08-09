@@ -160,12 +160,14 @@ def test_upload_collection_float_list():
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
-    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT)
+        local_client.create_collection(
+            COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+        )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
-    remote_client.create_collection(
-        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
-    )
+        remote_client.create_collection(
+            COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+        )
 
     ids = list(range(len(vectors)))
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
@@ -197,18 +199,18 @@ def test_upload_collection_np_array_2d():
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
-    local_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=vectors_config,
-        timeout=TIMEOUT,
-    )
+        local_client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=vectors_config,
+            timeout=TIMEOUT,
+        )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
-    remote_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=vectors_config,
-        timeout=TIMEOUT,
-    )
+        remote_client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=vectors_config,
+            timeout=TIMEOUT,
+        )
 
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
     remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
@@ -229,18 +231,18 @@ def test_upload_collection_list_np_arrays():
     ids = list(range(len(vectors)))
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
-    local_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=vectors_config,
-        timeout=TIMEOUT,
-    )
+        local_client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=vectors_config,
+            timeout=TIMEOUT,
+        )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
-    remote_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=vectors_config,
-        timeout=TIMEOUT,
-    )
+        remote_client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=vectors_config,
+            timeout=TIMEOUT,
+        )
 
     local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
     remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
@@ -279,18 +281,18 @@ def test_upload_wrong_vectors():
     sparse_vectors_config = {"text-sparse": models.SparseVectorParams()}
     if local_client.collection_exists(collection_name=wrong_vectors_collection):
         local_client.delete_collection(collection_name=wrong_vectors_collection)
-    local_client.create_collection(
-        collection_name=wrong_vectors_collection,
-        vectors_config=vectors_config,
-        sparse_vectors_config=sparse_vectors_config,
-    )
+        local_client.create_collection(
+            collection_name=wrong_vectors_collection,
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
+        )
     if remote_client.collection_exists(collection_name=wrong_vectors_collection):
         remote_client.delete_collection(collection_name=wrong_vectors_collection)
-    remote_client.create_collection(
-        collection_name=wrong_vectors_collection,
-        vectors_config=vectors_config,
-        sparse_vectors_config=sparse_vectors_config,
-    )
+        remote_client.create_collection(
+            collection_name=wrong_vectors_collection,
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
+        )
 
     dense_vector = {"why_am_I_so_dense": [0.1, 0.3]}
     dense_vectors = {"why_am_I_so_dense": [[0.1, 0.3]]}

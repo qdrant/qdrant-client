@@ -25,13 +25,13 @@ def ingest_dense_vector_data(
 
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
-    client.create_collection(
-        collection_name,
-        vectors_config=rest.VectorParams(
-            size=vector_size,
-            distance=rest.Distance.COSINE,
-        ),
-    )
+        client.create_collection(
+            collection_name,
+            vectors_config=rest.VectorParams(
+                size=vector_size,
+                distance=rest.Distance.COSINE,
+            ),
+        )
 
     client.upsert(
         collection_name=collection_name,
@@ -55,15 +55,15 @@ def ingest_sparse_vector_data(
 
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
-    client.create_collection(
-        collection_name,
-        vectors_config={}
-        if not add_dense_to_config
-        else rest.VectorParams(size=1500, distance=rest.Distance.COSINE),
-        sparse_vectors_config={
-            "text": rest.SparseVectorParams(),
-        },
-    )
+        client.create_collection(
+            collection_name,
+            vectors_config={}
+            if not add_dense_to_config
+            else rest.VectorParams(size=1500, distance=rest.Distance.COSINE),
+            sparse_vectors_config={
+                "text": rest.SparseVectorParams(),
+            },
+        )
 
     batch = construct(
         rest.Batch,
