@@ -23,7 +23,8 @@ def ingest_dense_vector_data(
     embeddings = np.random.randn(len(lines), vector_size).tolist()
     client = qdrant_client.QdrantClient(path=path)
 
-    client.delete_collection(collection_name)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name)
     client.create_collection(
         collection_name,
         vectors_config=rest.VectorParams(
@@ -52,7 +53,8 @@ def ingest_sparse_vector_data(
     sparse_vectors = generate_random_sparse_vector_list(vector_count, max_vector_size, 0.2)
     client = qdrant_client.QdrantClient(path=path)
 
-    client.delete_collection(collection_name)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name)
     client.create_collection(
         collection_name,
         vectors_config={}

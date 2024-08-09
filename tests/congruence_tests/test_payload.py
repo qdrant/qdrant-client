@@ -157,12 +157,14 @@ def test_not_jsonable_payload():
 
     vector_size = 2
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
-    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    if local_client.collection_exists(COLLECTION_NAME):
+        local_client.delete_collection(collection_name=COLLECTION_NAME)
     local_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
-    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
     remote_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
@@ -193,12 +195,14 @@ def test_not_jsonable_payload():
 
     compare_collections(local_client, remote_client, len(points))
 
-    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    if local_client.collection_exists(COLLECTION_NAME):
+        local_client.delete_collection(collection_name=COLLECTION_NAME)
     local_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
-    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
     remote_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
@@ -251,12 +255,14 @@ def test_set_payload_with_key():
     vector_size = 2
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
-    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    if local_client.collection_exists(COLLECTION_NAME):
+        local_client.delete_collection(collection_name=COLLECTION_NAME)
     local_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
-    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
     remote_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
