@@ -113,8 +113,6 @@ async def test_async_qdrant_client(prefer_grpc):
         await client.delete_collection(COLLECTION_NAME)
         await client.create_collection(**collection_params)
 
-    await client.recreate_collection(**collection_params)
-
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
     if not version_set or dev_version or minor_version >= 8:
@@ -355,9 +353,9 @@ async def test_async_qdrant_client_local():
         collection_name=COLLECTION_NAME,
         vectors_config=models.VectorParams(size=10, distance=models.Distance.EUCLID),
     )
+    if await client.collection_exists(COLLECTION_NAME):
+        await client.delete_collection(COLLECTION_NAME)
     await client.create_collection(**collection_params)
-    await client.delete_collection(COLLECTION_NAME)
-    await client.recreate_collection(**collection_params)
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
@@ -537,7 +535,8 @@ async def test_async_qdrant_client_local():
     assert (await client.retrieve(COLLECTION_NAME, ids=[1]))[0].payload == {}
 
     # region teardown
-    await client.delete_collection(COLLECTION_NAME)
+    if await client.collection_exists(COLLECTION_NAME):
+        await client.delete_collection(COLLECTION_NAME)
     collections = await client.get_collections()
 
     assert all(collection.name != COLLECTION_NAME for collection in collections.collections)

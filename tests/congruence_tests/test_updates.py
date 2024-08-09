@@ -1,5 +1,4 @@
 import itertools
-import math
 import uuid
 from collections import defaultdict
 from typing import Dict, List
@@ -158,10 +157,11 @@ def test_upload_collection_float_list():
 
     vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim).tolist()
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
-    local_client.recreate_collection(
-        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
-    )
-    remote_client.recreate_collection(
+
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT)
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    remote_client.create_collection(
         COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
     )
 
@@ -193,12 +193,15 @@ def test_upload_collection_np_array_2d():
     vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim)
     ids = list(range(len(vectors)))
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
-    local_client.recreate_collection(
+
+    local_client.create_collection(
         COLLECTION_NAME,
         vectors_config=vectors_config,
         timeout=TIMEOUT,
     )
-    remote_client.recreate_collection(
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    remote_client.create_collection(
         COLLECTION_NAME,
         vectors_config=vectors_config,
         timeout=TIMEOUT,
@@ -221,12 +224,15 @@ def test_upload_collection_list_np_arrays():
     vectors = [np.array(vector) for vector in vectors]
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
     ids = list(range(len(vectors)))
-    local_client.recreate_collection(
+
+    local_client.create_collection(
         COLLECTION_NAME,
         vectors_config=vectors_config,
         timeout=TIMEOUT,
     )
-    remote_client.recreate_collection(
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    remote_client.create_collection(
         COLLECTION_NAME,
         vectors_config=vectors_config,
         timeout=TIMEOUT,
@@ -267,12 +273,15 @@ def test_upload_wrong_vectors():
         "text": models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
     }
     sparse_vectors_config = {"text-sparse": models.SparseVectorParams()}
-    local_client.recreate_collection(
+
+    local_client.create_collection(
         collection_name=wrong_vectors_collection,
         vectors_config=vectors_config,
         sparse_vectors_config=sparse_vectors_config,
     )
-    remote_client.recreate_collection(
+    if remote_client.collection_exists(collection_name=wrong_vectors_collection):
+        remote_client.delete_collection(collection_name=wrong_vectors_collection)
+    remote_client.create_collection(
         collection_name=wrong_vectors_collection,
         vectors_config=vectors_config,
         sparse_vectors_config=sparse_vectors_config,

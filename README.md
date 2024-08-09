@@ -20,7 +20,7 @@
 
 # Python Qdrant Client
 
-Client library and SDK for the [Qdrant](https://github.com/qdrant/qdrant) vector search engine. 
+Client library and SDK for the [Qdrant](https://github.com/qdrant/qdrant) vector search engine.
 
 Library contains type definitions for all Qdrant API and allows to make both Sync and Async requests.
 
@@ -171,7 +171,7 @@ Create a new collection
 ```python
 from qdrant_client.models import Distance, VectorParams
 
-client.recreate_collection(
+client.create_collection(
     collection_name="my_collection",
     vectors_config=VectorParams(size=100, distance=Distance.COSINE),
 )

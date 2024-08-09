@@ -1,9 +1,8 @@
 from time import sleep
 from typing import Callable
 
-import pytest
-
 from qdrant_client.http import models
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     compare_collections,
     generate_fixtures,
@@ -11,6 +10,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
 )
+
 
 COLLECTION_NAME = "test_collection"
 
@@ -52,6 +52,25 @@ def test_get_collection():
     )
 
 
+def test_recreate_collection():
+    # this method has been marked as deprecated and should be removed in qdrant-client v1.12
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    vector_params = models.VectorParams(size=20, distance=models.Distance.COSINE)
+
+    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+    http_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+
+    assert local_client.collection_exists(COLLECTION_NAME)
+    assert http_client.collection_exists(COLLECTION_NAME)
+
+    http_client.delete_collection(COLLECTION_NAME)
+    grpc_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+    assert grpc_client.collection_exists(COLLECTION_NAME)
+
+
 def test_collection_exists():
     remote_client = init_remote()
     local_client = init_local()
@@ -61,8 +80,19 @@ def test_collection_exists():
 
     vector_params = models.VectorParams(size=2, distance=models.Distance.COSINE)
 
-    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
-    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+    try:
+        remote_client.delete_collection(COLLECTION_NAME)
+    except UnexpectedResponse:
+        pass  # collection does not exist
+
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
+
+    try:
+        local_client.delete_collection(COLLECTION_NAME)
+    except ValueError:
+        pass  # collection does not exist
+
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
 
     assert remote_client.collection_exists(COLLECTION_NAME)
     assert local_client.collection_exists(COLLECTION_NAME)
@@ -77,19 +107,28 @@ def test_init_from():
     points = generate_fixtures(vectors_sizes=vector_size)
     vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
-    remote_client.recreate_collection(
-        collection_name=COLLECTION_NAME, vectors_config=vector_params
-    )
-    local_client.recreate_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
+
+    if local_client.collection_exists(COLLECTION_NAME):
+        local_client.delete_collection(collection_name=COLLECTION_NAME)
+    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
+
     remote_client.upload_points(COLLECTION_NAME, points, wait=True)
     local_client.upload_points(COLLECTION_NAME, points)
     compare_collections(remote_client, local_client, len(points), collection_name=COLLECTION_NAME)
 
     new_collection_name = COLLECTION_NAME + "_new"
-    remote_client.recreate_collection(
+    if remote_client.collection_exists(new_collection_name):
+        remote_client.delete_collection(new_collection_name)
+    remote_client.create_collection(
         new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
     )
-    local_client.recreate_collection(
+
+    if local_client.collection_exists(new_collection_name):
+        local_client.delete_collection(new_collection_name)
+    local_client.create_collection(
         new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
     )
 
@@ -102,12 +141,17 @@ def test_init_from():
         collection_name=new_collection_name,
     )
 
-    remote_client.recreate_collection(
+    # try with models.InitFrom
+    if remote_client.collection_exists(new_collection_name):
+        remote_client.delete_collection(new_collection_name)
+    remote_client.create_collection(
         new_collection_name,
         vectors_config=vector_params,
         init_from=models.InitFrom(collection=COLLECTION_NAME),
     )
-    local_client.recreate_collection(
+    if local_client.collection_exists(new_collection_name):
+        local_client.delete_collection(new_collection_name)
+    local_client.create_collection(
         new_collection_name,
         vectors_config=vector_params,
         init_from=models.InitFrom(collection=COLLECTION_NAME),

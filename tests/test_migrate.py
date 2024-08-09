@@ -383,9 +383,7 @@ def test_vector_params(
         ),
     }
 
-    local_client.recreate_collection(
-        collection_name=collection_name, vectors_config=vectors_config
-    )
+    local_client.create_collection(collection_name=collection_name, vectors_config=vectors_config)
 
     local_client.migrate(second_local_client)
 
@@ -485,7 +483,7 @@ def test_recreate_collection(remote_client: QdrantClient):
         )
     )
 
-    remote_client.recreate_collection(
+    remote_client.create_collection(
         collection_name,
         vectors_config=vectors_config,
         shard_number=3,
