@@ -1,7 +1,13 @@
+import datetime
+import random
+import uuid
+
+import numpy as np
 import pytest
 
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
+from qdrant_client.http.models import PointStruct
 from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
@@ -148,20 +154,19 @@ def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient)
 
 
 def test_not_jsonable_payload():
-    import datetime
-    import random
-    import uuid
-
     local_client = init_local()
     remote_client = init_remote()
 
     vector_size = 2
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
-    local_client.recreate_collection(
+
+    local_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
-    remote_client.recreate_collection(
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
@@ -191,11 +196,13 @@ def test_not_jsonable_payload():
 
     compare_collections(local_client, remote_client, len(points))
 
-    local_client.recreate_collection(
+    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    local_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
-    remote_client.recreate_collection(
+    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
@@ -237,21 +244,19 @@ def test_not_jsonable_payload():
 
 
 def test_set_payload_with_key():
-    import numpy as np
-
-    from qdrant_client.models import PointStruct
-
     local_client = init_local()
     remote_client = init_remote()
 
     vector_size = 2
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
-    local_client.recreate_collection(
+    local_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
-    remote_client.recreate_collection(
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=vectors_config,
     )
