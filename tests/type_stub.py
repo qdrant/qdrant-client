@@ -121,7 +121,30 @@ qdrant_client.create_collection(
     None,
     5,
 )
-qdrant_client.create_collection(
+qdrant_client.recreate_collection(
+    "collection",
+    types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
+    {
+        "field": rest_models.SparseVectorParams(
+            index=rest_models.SparseIndexParams(
+                full_scan_threshold=1000,
+                on_disk=False,
+            )
+        )
+    },
+    2,
+    rest_models.ShardingMethod.AUTO,
+    2,
+    True,
+    True,
+    rest_models.HnswConfigDiff(),
+    rest_models.OptimizersConfigDiff(),
+    rest_models.WalConfigDiff(),
+    rest_models.ScalarQuantization(scalar=ScalarQuantizationConfig(type=ScalarType.INT8)),
+    None,
+    5,
+)
+qdrant_client.recreate_collection(
     "collection",
     types.VectorParams(size=128, distance=rest_models.Distance.COSINE),
     {
@@ -257,3 +280,32 @@ qdrant_client.create_shard_key(
     placement=[23],
 )
 qdrant_client.delete_shard_key(collection_name="zcxzc", shard_key="broken_key")
+qdrant_client.migrate(
+    dest_client=QdrantClient(),
+    collection_names=["collection"],
+    batch_size=1,
+    recreate_on_collision=False,
+)
+qdrant_client.query_batch_points(
+    collection_name="collection",
+    requests=[rest_models.QueryRequest()],
+    consistency=None,
+    timeout=1,
+)
+qdrant_client.query_points(
+    collection_name="collection",
+    query=[0.1, 0.1, 0.1],
+    using="",
+    prefetch=None,
+    query_filter=None,
+    search_params=None,
+    limit=10,
+    offset=None,
+    with_payload=True,
+    with_vectors=False,
+    score_threshold=0.9,
+    lookup_from=None,
+    consistency=None,
+    shard_key_selector=None,
+    timeout=1,
+)
