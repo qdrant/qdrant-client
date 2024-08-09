@@ -503,7 +503,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             ids_accumulator=inserted_ids,
             sparse_vectors=encoded_sparse_docs,
         )
-        await self.upload_points(
+        self.upload_points(
             collection_name=collection_name,
             points=points,
             wait=True,
