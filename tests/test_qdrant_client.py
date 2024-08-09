@@ -6,8 +6,10 @@ from tempfile import mkdtemp
 from time import sleep
 from typing import List
 
+
 import numpy as np
 import pytest
+from httpx import Timeout
 from grpc import Compression, RpcError
 
 import qdrant_client.http.exceptions
@@ -235,8 +237,7 @@ def test_records_upload(prefer_grpc, parallel):
 
     records = (Record(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(NUM_VECTORS))
 
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
@@ -299,8 +300,8 @@ def test_point_upload(prefer_grpc, parallel):
 
     assert result_count.count < 900
     assert result_count.count > 100
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+
+    client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
@@ -353,8 +354,8 @@ def test_upload_collection(prefer_grpc, parallel):
     )
 
     assert client.get_collection(collection_name=COLLECTION_NAME).points_count == 5
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+
+    client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=size, distance=Distance.DOT),
@@ -1956,10 +1957,6 @@ def test_client_close():
 
 
 def test_timeout_propagation():
-    import time
-
-    from httpx import Timeout
-
     client = QdrantClient()
     vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
     with pytest.raises(
@@ -1971,7 +1968,7 @@ def test_timeout_propagation():
         if client.collection_exists(COLLECTION_NAME):
             client.delete_collection(collection_name=COLLECTION_NAME)
         client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
-    time.sleep(0.5)
+    sleep(0.5)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=10)
     client.create_collection(
