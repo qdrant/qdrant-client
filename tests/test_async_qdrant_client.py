@@ -1,5 +1,4 @@
 import asyncio
-import os
 import random
 import time
 
@@ -35,7 +34,7 @@ async def test_async_grpc():
         for idx in range(NUM_VECTORS)
     )
 
-    client = QdrantClient(prefer_grpc=True, timeout=3.0)
+    client = QdrantClient(prefer_grpc=True, timeout=3)
 
     grpc_collections = client.async_grpc_collections
 
