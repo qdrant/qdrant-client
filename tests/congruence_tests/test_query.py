@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, Tuple, Callable, Any
 
 import numpy as np
 import pytest
 
+from qdrant_client import QdrantClient
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models, GroupsResult
@@ -689,6 +690,28 @@ def group_by_keys():
     return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
 
 
+def init_clients(fixture_points, **kwargs) -> Tuple[QdrantClient, QdrantClient, QdrantClient]:
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    init_client(local_client, fixture_points, **kwargs)
+    init_client(http_client, fixture_points, **kwargs)
+
+    return local_client, http_client, grpc_client
+
+
+def compare_clients_results(
+    local_client: QdrantClient,
+    http_client: QdrantClient,
+    grpc_client: QdrantClient,
+    foo: Callable[[QdrantBase, Any], Any],
+    **kwargs: Any,
+):
+    compare_client_results(local_client, http_client, foo, **kwargs)
+    compare_client_results(http_client, grpc_client, foo, **kwargs)
+
+
 # ---- TESTS  ---- #
 
 
@@ -699,17 +722,15 @@ def test_dense_query_lookup_from_another_collection():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
     init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    init_client(http_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-    init_client(remote_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
-
-    compare_client_results(
+    compare_clients_results(
         local_client,
-        remote_client,
+        http_client,
+        grpc_client,
         searcher.dense_query_lookup_from,
         lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
     )
@@ -779,21 +800,20 @@ def test_no_query_no_prefetch():
     major, minor, patch, dev = read_version()
     version_set = major is not None or dev
     if version_set and not dev:
-        if major == 0 or (major == 1 and (minor < 10 or (minor == 10 and patch == 0))):
+        if (major, minor, patch) < (1, 10, 1):
             pytest.skip("Works as of version 1.10.1")
 
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.no_query_no_prefetch)
+    compare_clients_results(http_client, grpc_client, grpc_client, searcher.no_query_no_prefetch)
 
-    compare_client_results(local_client, remote_client, searcher.no_query_no_prefetch)
-    compare_client_results(local_client, remote_client, searcher.query_scroll_offset)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.query_scroll_offset)
+    compare_clients_results(http_client, grpc_client, grpc_client, searcher.query_scroll_offset)
 
 
 def test_dense_query_filtered_prefetch():
@@ -801,18 +821,15 @@ def test_dense_query_filtered_prefetch():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
     for i in range(100):
         query_filter = one_random_filter_please()
         try:
-            compare_client_results(
+            compare_clients_results(
                 local_client,
-                remote_client,
+                http_client,
+                grpc_client,
                 searcher.dense_queries_prefetch_filtered,
                 query_filter=query_filter,
             )
@@ -826,14 +843,10 @@ def test_dense_query_prefetch_score_threshold():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(
-        local_client, remote_client, searcher.dense_queries_prefetch_score_threshold
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_queries_prefetch_score_threshold
     )
 
 
@@ -842,33 +855,33 @@ def test_dense_query_prefetch_parametrized():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(
+    compare_clients_results(
         local_client,
-        remote_client,
+        http_client,
+        grpc_client,
         searcher.dense_queries_prefetch_parametrized,
         search_params={"exact": True},
     )
-    compare_client_results(
+    compare_clients_results(
         local_client,
-        remote_client,
+        http_client,
+        grpc_client,
         searcher.dense_queries_prefetch_parametrized,
         search_params={"hnsw_ef": 128},
     )
-    compare_client_results(
+    compare_clients_results(
         local_client,
-        remote_client,
+        http_client,
+        grpc_client,
         searcher.dense_queries_prefetch_parametrized,
         search_params={"indexed_only": True},
     )
-    compare_client_results(
+    compare_clients_results(
         local_client,
-        remote_client,
+        http_client,
+        grpc_client,
         searcher.dense_queries_prefetch_parametrized,
         search_params={"quantization": {"ignore": True, "rescore": True, "oversampling": 2.0}},
     )
@@ -879,21 +892,19 @@ def test_dense_query_parametrized():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(
+    compare_clients_results(
         local_client,
-        remote_client,
+        http_client,
+        grpc_client,
         searcher.dense_queries_parametrized,
         search_params={"exact": True},
     )
-    compare_client_results(
+    compare_clients_results(
         local_client,
-        remote_client,
+        http_client,
+        grpc_client,
         searcher.dense_queries_parametrized,
         search_params={
             "hnsw_ef": 128,
@@ -908,13 +919,11 @@ def test_sparse_query():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, sparse_vectors_config=sparse_vectors_config
+    )
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
-
-    compare_client_results(local_client, remote_client, searcher.sparse_query_text)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.sparse_query_text)
 
 
 def test_multivec_query():
@@ -922,49 +931,54 @@ def test_multivec_query():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, vectors_config=multi_vector_config
+    )
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
-
-    compare_client_results(local_client, remote_client, searcher.multivec_query_text)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.multivec_query_text)
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
-def test_dense_query(prefer_grpc):
+def test_dense_query():
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote(prefer_grpc=prefer_grpc)
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(local_client, remote_client, searcher.dense_query_text)
-    compare_client_results(local_client, remote_client, searcher.dense_query_image)
-    compare_client_results(local_client, remote_client, searcher.dense_query_code)
-    compare_client_results(local_client, remote_client, searcher.dense_query_text_offset)
-    compare_client_results(local_client, remote_client, searcher.dense_query_text_with_vector)
-    compare_client_results(local_client, remote_client, searcher.dense_query_score_threshold)
-    compare_client_results(local_client, remote_client, searcher.dense_query_text_select_payload)
-    compare_client_results(local_client, remote_client, searcher.dense_query_image_select_vector)
-    compare_client_results(local_client, remote_client, searcher.dense_payload_exclude)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_image)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_code)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_offset
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_with_vector
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_score_threshold
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_select_payload
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_image_select_vector
+    )
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_payload_exclude)
 
     for i in range(100):
         query_filter = one_random_filter_please()
         try:
-            compare_client_results(
+            compare_clients_results(
                 local_client,
-                remote_client,
+                http_client,
+                grpc_client,
                 searcher.filter_dense_query_text,
                 query_filter=query_filter,
             )
-            compare_client_results(
+            compare_clients_results(
                 local_client,
-                remote_client,
+                http_client,
+                grpc_client,
                 searcher.filter_query_scroll,
                 query_filter=query_filter,
             )
@@ -978,18 +992,16 @@ def test_dense_query_orderby():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    remote_client.create_payload_index(
+    http_client.create_payload_index(
         COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
     )
 
-    compare_client_results(local_client, remote_client, searcher.dense_queries_orderby)
-    compare_client_results(local_client, remote_client, searcher.deep_dense_queries_orderby)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_queries_orderby)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.deep_dense_queries_orderby
+    )
 
 
 def test_dense_query_recommend():
@@ -997,14 +1009,10 @@ def test_dense_query_recommend():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(local_client, remote_client, searcher.dense_recommend_image)
-    compare_client_results(local_client, remote_client, searcher.dense_many_recommend)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_recommend_image)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_many_recommend)
 
 
 def test_dense_query_rescore():
@@ -1012,14 +1020,12 @@ def test_dense_query_rescore():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(local_client, remote_client, searcher.dense_queries_rescore)
-    compare_client_results(local_client, remote_client, searcher.dense_deep_queries_rescore)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_queries_rescore)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_deep_queries_rescore
+    )
 
 
 def test_dense_query_fusion():
@@ -1027,16 +1033,16 @@ def test_dense_query_fusion():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(local_client, remote_client, searcher.dense_query_rrf)
-    compare_client_results(local_client, remote_client, searcher.dense_query_dbsf)
-    compare_client_results(local_client, remote_client, searcher.deep_dense_queries_rrf)
-    compare_client_results(local_client, remote_client, searcher.deep_dense_queries_dbsf)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_rrf)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_dbsf)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.deep_dense_queries_rrf
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.deep_dense_queries_dbsf
+    )
 
 
 def test_dense_query_discovery_context():
@@ -1045,17 +1051,14 @@ def test_dense_query_discovery_context():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(local_client, remote_client, searcher.dense_discovery_image)
-    compare_client_results(local_client, remote_client, searcher.dense_many_discover)
-    compare_client_results(
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_discovery_image)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_many_discover)
+    compare_clients_results(
         local_client,
-        remote_client,
+        http_client,
+        grpc_client,
         searcher.dense_context_image,
         is_context_search=True,
         limit=n_vectors,
@@ -1067,34 +1070,42 @@ def test_simple_opt_vectors_query():
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(local_client, remote_client, searcher.dense_query_text)
-    compare_client_results(local_client, remote_client, searcher.dense_query_image)
-    compare_client_results(local_client, remote_client, searcher.dense_query_code)
-    compare_client_results(local_client, remote_client, searcher.dense_query_text_offset)
-    compare_client_results(local_client, remote_client, searcher.dense_query_text_with_vector)
-    compare_client_results(local_client, remote_client, searcher.dense_query_score_threshold)
-    compare_client_results(local_client, remote_client, searcher.dense_query_text_select_payload)
-    compare_client_results(local_client, remote_client, searcher.dense_query_image_select_vector)
-    compare_client_results(local_client, remote_client, searcher.dense_payload_exclude)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_image)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_code)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_offset
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_with_vector
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_score_threshold
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_select_payload
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_image_select_vector
+    )
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_payload_exclude)
 
     for i in range(100):
         query_filter = one_random_filter_please()
         try:
-            compare_client_results(
+            compare_clients_results(
                 local_client,
-                remote_client,
+                http_client,
+                grpc_client,
                 searcher.filter_dense_query_text,
                 query_filter=query_filter,
             )
-            compare_client_results(
+            compare_clients_results(
                 local_client,
-                remote_client,
+                http_client,
+                grpc_client,
                 searcher.filter_query_scroll,
                 query_filter=query_filter,
             )
@@ -1113,18 +1124,17 @@ def test_single_dense_vector():
         distance=models.Distance.DOT,
     )
 
-    local_client = init_local()
-    init_client(local_client, fixture_points, vectors_config=vectors_config)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points, vectors_config=vectors_config)
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, vectors_config=vectors_config
+    )
 
     for i in range(100):
         query_filter = one_random_filter_please()
         try:
-            compare_client_results(
+            compare_clients_results(
                 local_client,
-                remote_client,
+                http_client,
+                grpc_client,
                 searcher.filter_dense_query_text_single,
                 query_filter=query_filter,
             )
@@ -1148,21 +1158,23 @@ def test_search_with_persistence():
         del local_client
         local_client_2 = init_local(tmpdir)
 
-        remote_client = init_remote()
-        init_client(remote_client, fixture_points)
+        http_client = init_remote()
+        grpc_client = init_remote(prefer_grpc=True)
+        init_client(http_client, fixture_points)
 
-        remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+        http_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
         payload_update_filter = one_random_filter_please()
         local_client_2.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
-        remote_client.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
+        http_client.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
 
         for i in range(10):
             query_filter = one_random_filter_please()
             try:
-                compare_client_results(
+                compare_clients_results(
                     local_client_2,
-                    remote_client,
+                    http_client,
+                    grpc_client,
                     searcher.filter_dense_query_text,
                     query_filter=query_filter,
                 )
@@ -1191,21 +1203,23 @@ def test_search_with_persistence_and_skipped_vectors():
 
         assert count_after_load == count_before_load
 
-        remote_client = init_remote()
-        init_client(remote_client, fixture_points)
+        http_client = init_remote()
+        grpc_client = init_remote(prefer_grpc=True)
+        init_client(http_client, fixture_points)
 
-        remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+        http_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
         payload_update_filter = one_random_filter_please()
         local_client_2.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
-        remote_client.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
+        http_client.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
 
         for i in range(10):
             query_filter = one_random_filter_please()
             try:
-                compare_client_results(
+                compare_clients_results(
                     local_client_2,
-                    remote_client,
+                    http_client,
+                    grpc_client,
                     searcher.filter_dense_query_text,
                     query_filter=query_filter,
                 )
@@ -1215,13 +1229,11 @@ def test_search_with_persistence_and_skipped_vectors():
 
 
 def test_query_invalid_vector_type():
+    import grpc
+
     fixture_points = generate_fixtures()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
     vector_invalid_type = [1, 2, 3, 4]
     with pytest.raises(ValueError):
@@ -1230,7 +1242,12 @@ def test_query_invalid_vector_type():
         )
 
     with pytest.raises(UnexpectedResponse):
-        remote_client.query_points(
+        http_client.query_points(
+            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
+        )
+
+    with pytest.raises(grpc.RpcError):
+        grpc_client.query_points(
             collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
         )
 
@@ -1238,84 +1255,86 @@ def test_query_invalid_vector_type():
 def test_query_with_nan():
     fixture_points = generate_fixtures()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
     vector = np.random.random(text_vector_size)
     vector[4] = np.nan
     query = vector.tolist()
     with pytest.raises(AssertionError):
         local_client.query_points(COLLECTION_NAME, query=query, using="text")
+
     with pytest.raises(UnexpectedResponse):
-        remote_client.query_points(COLLECTION_NAME, query=query, using="text")
+        http_client.query_points(COLLECTION_NAME, query=query, using="text")
+
+    # TODO: this doesn't fail, instead it returns points with `nan` score
+    # with pytest.raises(UnexpectedResponse):
+    # print(grpc_client.query_points(COLLECTION_NAME, query=query, using="text"))
 
     single_vector_config = models.VectorParams(
         size=text_vector_size, distance=models.Distance.COSINE
     )
     local_client.recreate_collection(COLLECTION_NAME, vectors_config=single_vector_config)
-    remote_client.recreate_collection(COLLECTION_NAME, vectors_config=single_vector_config)
+    http_client.recreate_collection(COLLECTION_NAME, vectors_config=single_vector_config)
     fixture_points = generate_fixtures(vectors_sizes=text_vector_size)
     init_client(local_client, fixture_points, vectors_config=single_vector_config)
-    init_client(remote_client, fixture_points, vectors_config=single_vector_config)
+    init_client(http_client, fixture_points, vectors_config=single_vector_config)
 
     with pytest.raises(AssertionError):
         print(local_client.query_points(COLLECTION_NAME, query=query))
+
     with pytest.raises(UnexpectedResponse):
-        remote_client.query_points(COLLECTION_NAME, query=query)
+        http_client.query_points(COLLECTION_NAME, query=query)
+
+    # TODO: this doesn't fail, instead it returns points with `nan` score
+    # with pytest.raises(UnexpectedResponse):
+    #     print(grpc_client.query_points(COLLECTION_NAME, query=query))
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
-def test_flat_query_dense_interface(prefer_grpc):
+def test_flat_query_dense_interface():
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote(prefer_grpc=prefer_grpc)
-    init_client(remote_client, fixture_points)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_np_array
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_by_id
+    )
 
-    compare_client_results(local_client, remote_client, searcher.dense_query_text)
-    compare_client_results(local_client, remote_client, searcher.dense_query_text_np_array)
-    compare_client_results(local_client, remote_client, searcher.dense_query_text_by_id)
 
-
-@pytest.mark.parametrize("prefer_grpc", (False, True))
-def test_flat_query_sparse_interface(prefer_grpc):
+def test_flat_query_sparse_interface():
     fixture_points = generate_sparse_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, sparse_vectors_config=sparse_vectors_config
+    )
 
-    remote_client = init_remote(prefer_grpc=prefer_grpc)
-    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
-
-    compare_client_results(local_client, remote_client, searcher.sparse_query_text)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.sparse_query_text)
 
 
-@pytest.mark.parametrize("prefer_grpc", (True,))
-def test_flat_query_multivector_interface(prefer_grpc):
+def test_flat_query_multivector_interface():
     fixture_points = generate_multivector_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, vectors_config=multi_vector_config
+    )
 
-    remote_client = init_remote(prefer_grpc=prefer_grpc)
-    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
-
-    compare_client_results(local_client, remote_client, searcher.multivec_query_text)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.multivec_query_text)
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
-def test_original_input_persistence(prefer_grpc):
+def test_original_input_persistence():
+    # this test is not supposed to compare outputs, but to check that we're not modifying input structures
+    # it used to fail when we were modifying input structures in local mode
+    # the reason was that we were replacing point id with a sparse vector, and then, when we needed a dense vector
+    # from the same point id, we already had point id replaced with a sparse vector
     num_points = 50
     vectors_config = {"text": models.VectorParams(size=50, distance=models.Distance.COSINE)}
     sparse_vectors_config = {"sparse-text": models.SparseVectorParams()}
@@ -1334,20 +1353,8 @@ def test_original_input_persistence(prefer_grpc):
     ]
     dense_vector_name = "text"
     sparse_vector_name = "sparse-text"
-
-    local_client = init_local()
-    init_client(
-        local_client,
-        points,
-        vectors_config=vectors_config,
-        sparse_vectors_config=sparse_vectors_config,
-    )
-    remote_client = init_remote(prefer_grpc=prefer_grpc)
-    init_client(
-        remote_client,
-        points,
-        vectors_config=vectors_config,
-        sparse_vectors_config=sparse_vectors_config,
+    local_client, http_client, grpc_client = init_clients(
+        points, vectors_config=vectors_config, sparse_vectors_config=sparse_vectors_config
     )
 
     point_id = 1
@@ -1372,7 +1379,14 @@ def test_original_input_persistence(prefer_grpc):
             using=sparse_vector_name,
         ),
     ]
-    remote_client.query_points(
+    http_client.query_points(
+        collection_name=COLLECTION_NAME,
+        prefetch=prefetch,
+        query=models.RecommendQuery(recommend=shared_instance),
+        using=dense_vector_name,
+    )
+
+    grpc_client.query_points(
         collection_name=COLLECTION_NAME,
         prefetch=prefetch,
         query=models.RecommendQuery(recommend=shared_instance),
@@ -1380,32 +1394,33 @@ def test_original_input_persistence(prefer_grpc):
     )
 
 
-@pytest.mark.parametrize("prefer_grpc", (False, True))
-def test_query_group(prefer_grpc):
+def test_query_group():
     fixture_points = generate_fixtures()
 
     secondary_collection_points = generate_fixtures(10)
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote(prefer_grpc=prefer_grpc)
-    init_client(remote_client, fixture_points)
-    init_client(remote_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    init_client(http_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
 
     searcher.group_size = 5
     searcher.limit = 3
     for key in group_by_keys():
         searcher.group_by = key
-        compare_client_results(local_client, remote_client, searcher.dense_query_group)
-        compare_client_results(local_client, remote_client, searcher.dense_query_group_with_lookup)
-        compare_client_results(local_client, remote_client, searcher.dense_queries_rescore_group)
-        compare_client_results(
+        compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_group)
+        compare_clients_results(
+            local_client, http_client, grpc_client, searcher.dense_query_group_with_lookup
+        )
+        compare_clients_results(
+            local_client, http_client, grpc_client, searcher.dense_queries_rescore_group
+        )
+        compare_clients_results(
             local_client,
-            remote_client,
+            http_client,
+            grpc_client,
             searcher.dense_query_lookup_from_group,
             lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
         )
@@ -1414,9 +1429,10 @@ def test_query_group(prefer_grpc):
     for i in range(100):
         query_filter = one_random_filter_please()
         try:
-            compare_client_results(
+            compare_clients_results(
                 local_client,
-                remote_client,
+                http_client,
+                grpc_client,
                 searcher.filter_dense_query_group,
                 query_filter=query_filter,
             )
@@ -1425,16 +1441,11 @@ def test_query_group(prefer_grpc):
             raise e
 
 
-@pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_random_sampling(prefer_grpc):
+def test_random_sampling():
     fixture_points = generate_fixtures(100)
 
     searcher = TestSimpleSearcher()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
+    local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    remote_client = init_remote(prefer_grpc=prefer_grpc)
-    init_client(remote_client, fixture_points)
-
-    compare_client_results(local_client, remote_client, searcher.random_query)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.random_query)
