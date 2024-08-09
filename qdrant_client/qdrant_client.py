@@ -1069,6 +1069,7 @@ class QdrantClient(QdrantFastembedMixin):
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
@@ -1104,6 +1105,9 @@ class QdrantClient(QdrantFastembedMixin):
                 This parameter allows to specify which shards should be queried.
                 If `None` - query all shards. Only works for collections with `custom` sharding method.
 
+            timeout:
+                Overrides global timeout for this operation. Unit is seconds.
+
         Returns:
             A pair of (List of points) and (optional offset for the next scroll request).
             If next page offset is `None` - there is no more points in the collection to scroll.
@@ -1120,6 +1124,7 @@ class QdrantClient(QdrantFastembedMixin):
             with_vectors=with_vectors,
             consistency=consistency,
             shard_key_selector=shard_key_selector,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -1129,6 +1134,7 @@ class QdrantClient(QdrantFastembedMixin):
         count_filter: Optional[types.Filter] = None,
         exact: bool = True,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.CountResult:
         """Count points in the collection.
@@ -1146,6 +1152,9 @@ class QdrantClient(QdrantFastembedMixin):
                 This parameter allows to specify which shards should be queried.
                 If `None` - query all shards. Only works for collections with `custom` sharding method.
 
+            timeout:
+                Overrides global timeout for this operation. Unit is seconds.
+
         Returns:
             Amount of points in the collection matching the filter.
         """
@@ -1156,6 +1165,7 @@ class QdrantClient(QdrantFastembedMixin):
             count_filter=count_filter,
             exact=exact,
             shard_key_selector=shard_key_selector,
+            timeout=timeout,
             **kwargs,
         )
 
@@ -1311,6 +1321,7 @@ class QdrantClient(QdrantFastembedMixin):
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.Record]:
         """Retrieve stored points by IDs
@@ -1341,6 +1352,9 @@ class QdrantClient(QdrantFastembedMixin):
                 This parameter allows to specify which shards should be queried.
                 If `None` - query all shards. Only works for collections with `custom` sharding method.
 
+            timeout:
+                Overrides global timeout for this operation. Unit is seconds.
+
         Returns:
             List of points
         """
@@ -1353,6 +1367,7 @@ class QdrantClient(QdrantFastembedMixin):
             with_vectors=with_vectors,
             consistency=consistency,
             shard_key_selector=shard_key_selector,
+            timeout=timeout,
             **kwargs,
         )
 
