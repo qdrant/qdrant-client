@@ -2405,7 +2405,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             wait=wait,
         )
 
-    async def upload_points(
+    def upload_points(
         self,
         collection_name: str,
         points: Iterable[types.PointStruct],

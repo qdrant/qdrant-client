@@ -930,7 +930,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             collection_name, vectors_config, init_from, sparse_vectors_config
         )
 
-    async def upload_points(
+    def upload_points(
         self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
     ) -> None:
         self._upload_points(collection_name, points)
