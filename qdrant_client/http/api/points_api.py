@@ -125,7 +125,6 @@ class _PointsApi:
         collection_name: str,
         timeout: int = None,
         count_request: m.CountRequest = None,
-        timeout: Optional[int] = None,
     ):
         """
         Count points which matches given filtering condition
@@ -356,7 +355,6 @@ class _PointsApi:
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         point_request: m.PointRequest = None,
-        timeout: Optional[int] = None,
     ):
         """
         Retrieve multiple points by specified IDs
@@ -629,7 +627,6 @@ class _PointsApi:
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         scroll_request: m.ScrollRequest = None,
-        timeout: Optional[int] = None
     ):
         """
         Scroll request - paginate over all points which matches given filtering condition
@@ -903,7 +900,6 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         timeout: int = None,
         count_request: m.CountRequest = None,
-        timeout: Optional[int] = None
     ) -> m.InlineResponse20019:
         """
         Count points which matches given filtering condition
@@ -912,7 +908,6 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             timeout=timeout,
             count_request=count_request,
-            timeout=timeout
         )
 
     async def delete_payload(
@@ -1021,7 +1016,6 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         point_request: m.PointRequest = None,
-        timeout: Optional[int] = None
     ) -> m.InlineResponse20013:
         """
         Retrieve multiple points by specified IDs
@@ -1031,7 +1025,6 @@ class AsyncPointsApi(_PointsApi):
             consistency=consistency,
             timeout=timeout,
             point_request=point_request,
-            timeout=timeout
         )
 
     async def overwrite_payload(
@@ -1159,7 +1152,6 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         scroll_request: m.ScrollRequest = None,
-        timeout: Optional[int] = None
     ) -> m.InlineResponse20015:
         """
         Scroll request - paginate over all points which matches given filtering condition
@@ -1169,7 +1161,6 @@ class AsyncPointsApi(_PointsApi):
             consistency=consistency,
             timeout=timeout,
             scroll_request=scroll_request,
-            timeout=timeout
         )
 
     async def search_batch_points(
@@ -1315,7 +1306,6 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         timeout: int = None,
         count_request: m.CountRequest = None,
-        timeout: Optional[int] = None
     ) -> m.InlineResponse20019:
         """
         Count points which matches given filtering condition
@@ -1324,7 +1314,6 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             timeout=timeout,
             count_request=count_request,
-            timeout=timeout
         )
 
     def delete_payload(
@@ -1433,7 +1422,6 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         point_request: m.PointRequest = None,
-        timeout: Optional[int] = None
     ) -> m.InlineResponse20013:
         """
         Retrieve multiple points by specified IDs
@@ -1443,7 +1431,6 @@ class SyncPointsApi(_PointsApi):
             consistency=consistency,
             timeout=timeout,
             point_request=point_request,
-            timeout=timeout
         )
 
     def overwrite_payload(
@@ -1571,7 +1558,6 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         scroll_request: m.ScrollRequest = None,
-        timeout: Optional[int] = None
     ) -> m.InlineResponse20015:
         """
         Scroll request - paginate over all points which matches given filtering condition
@@ -1581,7 +1567,6 @@ class SyncPointsApi(_PointsApi):
             consistency=consistency,
             timeout=timeout,
             scroll_request=scroll_request,
-            timeout=timeout
         )
 
     def search_batch_points(
