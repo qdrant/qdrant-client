@@ -33,7 +33,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "nbsphinx",
-    "IPython.sphinxext.ipython_console_highlighting"
+    "IPython.sphinxext.ipython_console_highlighting",
 ]
 
 # prevents sphinx from adding full path to type hints
@@ -69,9 +69,8 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
-    "*qdrant_openapi_client*",
     "*grpc*",
-    "*tests*" # tests are not part of the documentation
+    "*tests*",  # tests are not part of the documentation
 ]
 # -- Options for HTML output -------------------------------------------------
 
