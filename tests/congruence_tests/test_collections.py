@@ -52,6 +52,25 @@ def test_get_collection():
     )
 
 
+def test_recreate_collection():
+    # this method has been marked as deprecated and should be removed in qdrant-client v1.12
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    vector_params = models.VectorParams(size=20, distance=models.Distance.COSINE)
+
+    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+    http_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+
+    assert local_client.collection_exists(COLLECTION_NAME)
+    assert http_client.collection_exists(COLLECTION_NAME)
+
+    http_client.delete_collection(COLLECTION_NAME)
+    grpc_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+    assert grpc_client.collection_exists(COLLECTION_NAME)
+
+
 def test_collection_exists():
     remote_client = init_remote()
     local_client = init_local()
