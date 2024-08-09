@@ -124,6 +124,7 @@ class _PointsApi:
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
+        timeout: Optional[int] = None,
     ):
         """
         Count points which matches given filtering condition
@@ -131,6 +132,10 @@ class _PointsApi:
         path_params = {
             "collection_name": str(collection_name),
         }
+
+        query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(count_request)
@@ -142,6 +147,7 @@ class _PointsApi:
             url="/collections/{collection_name}/points/count",
             headers=headers if headers else None,
             path_params=path_params,
+            params=query_params,
             content=body,
         )
 
@@ -348,6 +354,7 @@ class _PointsApi:
         collection_name: str,
         consistency: m.ReadConsistency = None,
         point_request: m.PointRequest = None,
+        timeout: Optional[int] = None,
     ):
         """
         Retrieve multiple points by specified IDs
@@ -359,6 +366,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(point_request)
@@ -617,6 +626,7 @@ class _PointsApi:
         collection_name: str,
         consistency: m.ReadConsistency = None,
         scroll_request: m.ScrollRequest = None,
+        timeout: Optional[int] = None
     ):
         """
         Scroll request - paginate over all points which matches given filtering condition
@@ -628,6 +638,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(scroll_request)
@@ -887,6 +899,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
+        timeout: Optional[int] = None
     ) -> m.InlineResponse20019:
         """
         Count points which matches given filtering condition
@@ -894,6 +907,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_count_points(
             collection_name=collection_name,
             count_request=count_request,
+            timeout=timeout
         )
 
     async def delete_payload(
@@ -1001,6 +1015,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         consistency: m.ReadConsistency = None,
         point_request: m.PointRequest = None,
+        timeout: Optional[int] = None
     ) -> m.InlineResponse20013:
         """
         Retrieve multiple points by specified IDs
@@ -1009,6 +1024,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             consistency=consistency,
             point_request=point_request,
+            timeout=timeout
         )
 
     async def overwrite_payload(
@@ -1135,6 +1151,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         consistency: m.ReadConsistency = None,
         scroll_request: m.ScrollRequest = None,
+        timeout: Optional[int] = None
     ) -> m.InlineResponse20015:
         """
         Scroll request - paginate over all points which matches given filtering condition
@@ -1143,6 +1160,7 @@ class AsyncPointsApi(_PointsApi):
             collection_name=collection_name,
             consistency=consistency,
             scroll_request=scroll_request,
+            timeout=timeout
         )
 
     async def search_batch_points(
@@ -1287,6 +1305,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         count_request: m.CountRequest = None,
+        timeout: Optional[int] = None
     ) -> m.InlineResponse20019:
         """
         Count points which matches given filtering condition
@@ -1294,6 +1313,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_count_points(
             collection_name=collection_name,
             count_request=count_request,
+            timeout=timeout
         )
 
     def delete_payload(
@@ -1401,6 +1421,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         consistency: m.ReadConsistency = None,
         point_request: m.PointRequest = None,
+        timeout: Optional[int] = None
     ) -> m.InlineResponse20013:
         """
         Retrieve multiple points by specified IDs
@@ -1409,6 +1430,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             consistency=consistency,
             point_request=point_request,
+            timeout=timeout
         )
 
     def overwrite_payload(
@@ -1535,6 +1557,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         consistency: m.ReadConsistency = None,
         scroll_request: m.ScrollRequest = None,
+        timeout: Optional[int] = None
     ) -> m.InlineResponse20015:
         """
         Scroll request - paginate over all points which matches given filtering condition
@@ -1543,6 +1566,7 @@ class SyncPointsApi(_PointsApi):
             collection_name=collection_name,
             consistency=consistency,
             scroll_request=scroll_request,
+            timeout=timeout
         )
 
     def search_batch_points(

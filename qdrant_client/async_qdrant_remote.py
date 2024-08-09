@@ -1151,6 +1151,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> Tuple[List[types.Record], Optional[types.PointId]]:
         if self._prefer_grpc:
@@ -1179,8 +1180,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     limit=limit,
                     read_consistency=consistency,
                     shard_key_selector=shard_key_selector,
+                    timeout=timeout,
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is None else self._timeout,
             )
             return (
                 [GrpcToRest.convert_retrieved_point(point) for point in res.result],
@@ -1210,6 +1212,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         with_vector=with_vectors,
                         shard_key=shard_key_selector,
                     ),
+                    timeout=timeout,
                 )
             ).result
             assert scroll_result is not None, "Scroll points API returned None result"
@@ -1221,6 +1224,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         count_filter: Optional[types.Filter] = None,
         exact: bool = True,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.CountResult:
         if self._prefer_grpc:
@@ -1235,8 +1239,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         filter=count_filter,
                         exact=exact,
                         shard_key_selector=shard_key_selector,
+                        timeout=timeout,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is None else self._timeout,
                 )
             ).result
             return GrpcToRest.convert_count_result(response)
@@ -1248,6 +1253,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 count_request=models.CountRequest(
                     filter=count_filter, exact=exact, shard_key=shard_key_selector
                 ),
+                timeout=timeout,
             )
         ).result
         assert count_result is not None, "Count points returned None result"
@@ -1420,6 +1426,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[types.Record]:
         if self._prefer_grpc:
@@ -1445,8 +1452,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         with_vectors=with_vectors,
                         read_consistency=consistency,
                         shard_key_selector=shard_key_selector,
+                        timeout=timeout,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is None else self._timeout,
                 )
             ).result
             assert result is not None, "Retrieve returned None result"
@@ -1468,6 +1476,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         with_vector=with_vectors,
                         shard_key=shard_key_selector,
                     ),
+                    timeout=timeout,
                 )
             ).result
             assert http_result is not None, "Retrieve API returned None result"
