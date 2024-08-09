@@ -25,6 +25,7 @@ def ingest_dense_vector_data(
 
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
+    else:
         client.create_collection(
             collection_name,
             vectors_config=rest.VectorParams(
@@ -55,6 +56,7 @@ def ingest_sparse_vector_data(
 
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
+    else:
         client.create_collection(
             collection_name,
             vectors_config={}

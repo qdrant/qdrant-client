@@ -159,12 +159,14 @@ def test_not_jsonable_payload():
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(collection_name=COLLECTION_NAME)
+    else:
         local_client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=vectors_config,
         )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    else:
         remote_client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=vectors_config,
@@ -197,12 +199,14 @@ def test_not_jsonable_payload():
 
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(collection_name=COLLECTION_NAME)
+    else:
         local_client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=vectors_config,
         )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    else:
         remote_client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=vectors_config,
@@ -257,12 +261,14 @@ def test_set_payload_with_key():
 
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(collection_name=COLLECTION_NAME)
+    else:
         local_client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=vectors_config,
         )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    else:
         remote_client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=vectors_config,

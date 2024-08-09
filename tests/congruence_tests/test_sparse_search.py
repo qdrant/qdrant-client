@@ -299,11 +299,13 @@ def test_query_with_nan():
 
     if local_client.collection_exists(COLLECTION_NAME):
         local_client.delete_collection(COLLECTION_NAME)
+    else:
         local_client.create_collection(
             COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
         )
     if remote_client.collection_exists(COLLECTION_NAME):
         remote_client.delete_collection(COLLECTION_NAME)
+    else:
         remote_client.create_collection(
             COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
         )
