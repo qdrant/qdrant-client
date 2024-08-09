@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
@@ -158,7 +159,8 @@ def test_multivec_query_batch():
     compare_client_results(local_client, remote_client, searcher.multivec_query_batch_text)
 
 
-def test_dense_query_batch():
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_dense_query_batch(prefer_grpc):
     fixture_points = generate_fixtures()
 
     searcher = TestQueryBatchSearcher()
@@ -166,7 +168,7 @@ def test_dense_query_batch():
     local_client = init_local()
     init_client(local_client, fixture_points)
 
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
     init_client(remote_client, fixture_points)
 
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_text)
