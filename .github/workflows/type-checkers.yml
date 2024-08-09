@@ -28,7 +28,7 @@ jobs:
 
       - name: mypy
         run: |
-          poetry run mypy . --exclude "tools/async_client_generator" --disallow-incomplete-defs --disallow-untyped-defs
+            poetry run mypy . --exclude "tools/async_client_generator" --disallow-incomplete-defs --disallow-untyped-defs
 
       - name: pyright
         run: |

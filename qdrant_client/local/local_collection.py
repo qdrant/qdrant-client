@@ -23,7 +23,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
-from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
+from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
@@ -752,21 +752,23 @@ class LocalCollection:
             # Fuse results
             if query.fusion == models.Fusion.RRF:
                 # RRF: Reciprocal Rank Fusion
-                rrf_results = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
-
-                # Fetch payload and vectors
-                ids = [point.id for point in rrf_results]
-                fetched_points = self.retrieve(
-                    ids, with_payload=with_payload, with_vectors=with_vectors
-                )
-                for fetched, scored in zip(fetched_points, rrf_results):
-                    scored.payload = fetched.payload
-                    scored.vector = fetched.vector
-
-                return rrf_results[offset:]
-
+                fused = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
+            elif query.fusion == models.Fusion.DBSF:
+                # DBSF: Distribution-Based Score Fusion
+                fused = distribution_based_score_fusion(responses=sources, limit=limit + offset)
             else:
                 raise ValueError(f"Fusion method {query.fusion} does not exist")
+
+            # Fetch payload and vectors
+            ids = [point.id for point in fused]
+            fetched_points = self.retrieve(
+                ids, with_payload=with_payload, with_vectors=with_vectors
+            )
+            for fetched, scored in zip(fetched_points, fused):
+                scored.payload = fetched.payload
+                scored.vector = fetched.vector
+
+            return fused[offset:]
         else:
             # Re-score
             sources_ids = set()
@@ -872,6 +874,16 @@ class LocalCollection:
                 with_vectors=with_vectors,
             )
             return [record_to_scored_point(record) for record in records[offset:]]
+        elif isinstance(query, models.SampleQuery):
+            if query.sample == models.Sample.RANDOM:
+                return self._sample_randomly(
+                    limit=limit + offset,
+                    query_filter=query_filter,
+                    with_payload=with_payload,
+                    with_vectors=with_vectors,
+                )
+            else:
+                raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):
             raise AssertionError("Cannot perform fusion without prefetches")
         else:
@@ -885,6 +897,95 @@ class LocalCollection:
                 with_vectors=with_vectors,
                 score_threshold=score_threshold,
             )
+
+    def query_groups(
+        self,
+        group_by: str,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        group_size: int = 3,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        with_lookup_collection: Optional["LocalCollection"] = None,
+    ) -> models.GroupsResult:
+        max_limit = len(self.ids_inv)
+        # rewrite prefetch with larger limit
+        if prefetch is not None:
+            if isinstance(prefetch, list):
+                tmp = []
+                for p in prefetch:
+                    tmp.append(set_prefetch_limit_recursively(p, max_limit))
+                    prefetch = tmp
+            else:
+                prefetch = set_prefetch_limit_recursively(prefetch, max_limit)
+
+        points = self.query_points(
+            query=query,
+            query_filter=query_filter,
+            prefetch=prefetch,
+            using=using,
+            limit=len(self.ids_inv),
+            with_payload=True,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+        )
+
+        groups = OrderedDict()
+
+        for point in points.points:
+            if not isinstance(point.payload, dict):
+                continue
+
+            group_values = value_by_key(point.payload, group_by)
+            if group_values is None:
+                continue
+
+            group_values = list(set(v for v in group_values if isinstance(v, (str, int))))
+
+            point.payload = self._process_payload(point.payload, with_payload)
+
+            for group_value in group_values:
+                if group_value not in groups:
+                    groups[group_value] = models.PointGroup(id=group_value, hits=[])
+
+                if len(groups[group_value].hits) >= group_size:
+                    continue
+
+                groups[group_value].hits.append(point)
+
+        groups_result: List[models.PointGroup] = list(groups.values())[:limit]
+
+        if isinstance(with_lookup, str):
+            with_lookup = models.WithLookup(
+                collection=with_lookup,
+                with_payload=None,
+                with_vectors=None,
+            )
+
+        if with_lookup is not None and with_lookup_collection is not None:
+            for group in groups_result:
+                lookup = with_lookup_collection.retrieve(
+                    ids=[group.id],
+                    with_payload=with_lookup.with_payload,
+                    with_vectors=with_lookup.with_vectors,
+                )
+                group.lookup = next(iter(lookup), None)
+
+        return models.GroupsResult(groups=groups_result)
 
     def search_groups(
         self,
@@ -1671,6 +1772,49 @@ class LocalCollection:
 
         return result, None
 
+    def _sample_randomly(
+        self,
+        limit: int,
+        query_filter: Optional[types.Filter],
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+    ) -> List[types.ScoredPoint]:
+        payload_mask = calculate_payload_mask(
+            payloads=self.payload,
+            payload_filter=query_filter,
+            ids_inv=self.ids_inv,
+        )
+        # in deleted: 1 - deleted, 0 - not deleted
+        # in payload_mask: 1 - accepted, 0 - rejected
+        # in mask: 1 - ok, 0 - rejected
+        mask = payload_mask & ~self.deleted
+
+        random_scores = np.random.rand(len(self.ids))
+        random_order = np.argsort(random_scores)
+
+        result: List[types.ScoredPoint] = []
+        for idx in random_order:
+            if len(result) >= limit:
+                break
+
+            if not mask[idx]:
+                continue
+
+            point_id = self.ids_inv[idx]
+
+            scored_point = construct(
+                models.ScoredPoint,
+                id=point_id,
+                score=float(0),
+                version=0,
+                payload=self._get_payload(idx, with_payload),
+                vector=self._get_vectors(idx, with_vectors),
+            )
+
+            result.append(scored_point)
+
+        return result
+
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
         self.payload[idx] = deepcopy(
@@ -2168,6 +2312,7 @@ def ignore_mentioned_ids_filter(
     else:
         # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
         query_filter = deepcopy(query_filter)
+        # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
         if query_filter.must_not is None:  # type: ignore[union-attr]
             query_filter.must_not = [ignore_mentioned_ids]  # type: ignore[union-attr]
         else:
@@ -2189,6 +2334,7 @@ def _include_ids_in_filter(
     else:
         # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
         query_filter = deepcopy(query_filter)
+        # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
         if query_filter.must is None:  # type: ignore[union-attr]
             query_filter.must = [include_ids]  # type: ignore[union-attr]
         else:
@@ -2206,3 +2352,14 @@ def record_to_scored_point(record: types.Record) -> types.ScoredPoint:
         vector=record.vector,
         order_value=record.order_value,
     )
+
+
+def set_prefetch_limit_recursively(prefetch: types.Prefetch, limit: int) -> types.Prefetch:
+    if prefetch is not None:
+        if isinstance(prefetch.prefetch, list):
+            return types.Prefetch(
+                limit=limit,
+                prefetch=[set_prefetch_limit_recursively(p, limit) for p in prefetch.prefetch],
+            )
+        else:
+            return types.Prefetch(limit=limit, prefetch=list())

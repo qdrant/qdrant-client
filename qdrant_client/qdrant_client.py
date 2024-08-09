@@ -563,6 +563,147 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    def query_points_groups(
+        self,
+        collection_name: str,
+        group_by: str,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 3,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> types.GroupsResult:
+        """Universal endpoint to group on any available operation, such as search, recommendation, discovery, context search.
+
+        Args:
+            collection_name: Collection to search in
+            query:
+                Query for the chosen search type operation.
+                - If `str` - use string as UUID of the existing point as a search query.
+                - If `int` - use integer as ID of the existing point as a search query.
+                - If `List[float]` - use as a dense vector for nearest search.
+                - If `List[List[float]]` - use as a multi-vector for nearest search.
+                - If `SparseVector` - use as a sparse vector for nearest search.
+                - If `Query` - use as a query for specific search type.
+                - If `NumpyArray` - use as a dense vector for nearest search.
+                - If `Document` - infer vector from the document text and use
+                                    it for nearest search (requires `fastembed` package installed).
+                - If `None` - return first `limit` points from the collection.
+            prefetch: prefetch queries to make a selection of the data to be used with the main query
+            query_filter:
+                - Exclude vectors which doesn't fit given conditions.
+                - If `None` - search among all vectors
+            search_params: Additional search params
+            limit: How many results return
+            group_size: How many results return for each group
+            group_by: Name of the payload field to group by.
+                Field must be of type "keyword" or "integer".
+                Nested fields are specified using dot notation, e.g. "nested_field.subfield".
+            with_payload:
+                - Specify which stored payload should be attached to the result.
+                - If `True` - attach all payload
+                - If `False` - do not attach any payload
+                - If List of string - include only specified fields
+                - If `PayloadSelector` - use explicit rules
+            with_vectors:
+                - If `True` - Attach stored vector to the search result.
+                - If `False` - Do not attach vector.
+                - If List of string - include only specified fields
+                - Default: `False`
+            score_threshold:
+                Define a minimal score threshold for the result.
+                If defined, less similar results will not be returned.
+                Score of the returned result might be higher or smaller than the threshold depending
+                on the Distance function used.
+                E.g. for cosine similarity only higher scores will be returned.
+            using:
+                Name of the vectors to use for query.
+                If `None` - use default vectors or provided in named vector structures.
+            with_lookup:
+                Look for points in another collection using the group ids.
+                If specified, each group will contain a record from the specified collection
+                with the same id as the group id. In addition, the parameter allows to specify
+                which parts of the record should be returned, like in `with_payload` and `with_vectors` parameters.
+            lookup_from:
+                Defines a location (collection and vector field name), used to lookup vectors being referenced in the query as IDs.
+                If `None` - current collection will be used.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+            timeout:
+                Overrides global timeout for this search. Unit is seconds.
+
+        Examples:
+
+        `Search for closest points and group results`::
+
+            qdrant.query_points_groups(
+                collection_name="test_collection",
+                query=[1.0, 0.1, 0.2, 0.7],
+                group_by="color",
+                group_size=3,
+            )
+
+         Returns:
+            List of groups with not more than `group_size` hits in each group.
+            Each group also contains an id of the group, which is the value of the payload field.
+        """
+
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        # If the query contains unprocessed documents, we need to embed them and
+        # replace the original query with the embedded vectors.
+        using, query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(
+            query, prefetch, using, limit
+        )
+
+        return self._client.query_points_groups(
+            collection_name=collection_name,
+            query=query,
+            prefetch=prefetch,
+            query_filter=query_filter,
+            search_params=search_params,
+            group_by=group_by,
+            limit=limit,
+            group_size=group_size,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+            using=using,
+            with_lookup=with_lookup,
+            consistency=consistency,
+            shard_key_selector=shard_key_selector,
+            timeout=timeout,
+            **kwargs,
+        )
+
     def search_groups(
         self,
         collection_name: str,
