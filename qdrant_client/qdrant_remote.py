@@ -1483,6 +1483,7 @@ class QdrantRemote(QdrantBase):
                         with_vector=with_vectors,
                         shard_key=shard_key_selector,
                     ),
+                    timeout=timeout,
                 ).result
             )
             assert scroll_result is not None, "Scroll points API returned None result"
@@ -1527,6 +1528,7 @@ class QdrantRemote(QdrantBase):
                 exact=exact,
                 shard_key=shard_key_selector,
             ),
+            timeout=timeout,
         ).result
         assert count_result is not None, "Count points returned None result"
         return count_result
@@ -1769,6 +1771,7 @@ class QdrantRemote(QdrantBase):
                     with_vector=with_vectors,
                     shard_key=shard_key_selector,
                 ),
+                timeout=timeout,
             ).result
             assert http_result is not None, "Retrieve API returned None result"
             return http_result

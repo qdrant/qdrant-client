@@ -1212,6 +1212,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         with_vector=with_vectors,
                         shard_key=shard_key_selector,
                     ),
+                    timeout=timeout,
                 )
             ).result
             assert scroll_result is not None, "Scroll points API returned None result"
@@ -1252,6 +1253,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 count_request=models.CountRequest(
                     filter=count_filter, exact=exact, shard_key=shard_key_selector
                 ),
+                timeout=timeout,
             )
         ).result
         assert count_result is not None, "Count points returned None result"
@@ -1474,6 +1476,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         with_vector=with_vectors,
                         shard_key=shard_key_selector,
                     ),
+                    timeout=timeout,
                 )
             ).result
             assert http_result is not None, "Retrieve API returned None result"
