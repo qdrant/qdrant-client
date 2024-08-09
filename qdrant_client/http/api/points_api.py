@@ -123,6 +123,7 @@ class _PointsApi:
     def _build_for_count_points(
         self,
         collection_name: str,
+        timeout: int = None,
         count_request: m.CountRequest = None,
     ):
         """
@@ -131,6 +132,10 @@ class _PointsApi:
         path_params = {
             "collection_name": str(collection_name),
         }
+
+        query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(count_request)
@@ -142,6 +147,7 @@ class _PointsApi:
             url="/collections/{collection_name}/points/count",
             headers=headers if headers else None,
             path_params=path_params,
+            params=query_params,
             content=body,
         )
 
@@ -347,6 +353,7 @@ class _PointsApi:
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         point_request: m.PointRequest = None,
     ):
         """
@@ -359,6 +366,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(point_request)
@@ -616,6 +625,7 @@ class _PointsApi:
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         scroll_request: m.ScrollRequest = None,
     ):
         """
@@ -628,6 +638,8 @@ class _PointsApi:
         query_params = {}
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(scroll_request)
@@ -886,6 +898,7 @@ class AsyncPointsApi(_PointsApi):
     async def count_points(
         self,
         collection_name: str,
+        timeout: int = None,
         count_request: m.CountRequest = None,
     ) -> m.InlineResponse20019:
         """
@@ -893,6 +906,7 @@ class AsyncPointsApi(_PointsApi):
         """
         return await self._build_for_count_points(
             collection_name=collection_name,
+            timeout=timeout,
             count_request=count_request,
         )
 
@@ -1000,6 +1014,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         point_request: m.PointRequest = None,
     ) -> m.InlineResponse20013:
         """
@@ -1008,6 +1023,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_get_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             point_request=point_request,
         )
 
@@ -1134,6 +1150,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         scroll_request: m.ScrollRequest = None,
     ) -> m.InlineResponse20015:
         """
@@ -1142,6 +1159,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_scroll_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             scroll_request=scroll_request,
         )
 
@@ -1286,6 +1304,7 @@ class SyncPointsApi(_PointsApi):
     def count_points(
         self,
         collection_name: str,
+        timeout: int = None,
         count_request: m.CountRequest = None,
     ) -> m.InlineResponse20019:
         """
@@ -1293,6 +1312,7 @@ class SyncPointsApi(_PointsApi):
         """
         return self._build_for_count_points(
             collection_name=collection_name,
+            timeout=timeout,
             count_request=count_request,
         )
 
@@ -1400,6 +1420,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         point_request: m.PointRequest = None,
     ) -> m.InlineResponse20013:
         """
@@ -1408,6 +1429,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_get_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             point_request=point_request,
         )
 
@@ -1534,6 +1556,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         scroll_request: m.ScrollRequest = None,
     ) -> m.InlineResponse20015:
         """
@@ -1542,6 +1565,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_scroll_points(
             collection_name=collection_name,
             consistency=consistency,
+            timeout=timeout,
             scroll_request=scroll_request,
         )
 

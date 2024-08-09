@@ -360,6 +360,7 @@ payload_schema_bool = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Bo
 payload_schema_datetime = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Datetime, points=0
 )
+payload_schema_uuid = grpc.PayloadSchemaInfo(data_type=grpc.PayloadSchemaType.Uuid, points=0)
 
 text_index_params_1 = grpc.TextIndexParams(
     tokenizer=grpc.TokenizerType.Prefix,
@@ -382,10 +383,26 @@ text_index_params_3 = grpc.TextIndexParams(
 
 text_index_params_4 = grpc.TextIndexParams(tokenizer=grpc.TokenizerType.Multilingual)
 
-integer_index_params_0 = grpc.IntegerIndexParams(lookup=True, range=False)
-integer_index_params_1 = grpc.IntegerIndexParams(lookup=False, range=True)
-integer_index_params_2 = grpc.IntegerIndexParams(lookup=True, range=True)
+integer_index_params_0 = grpc.IntegerIndexParams(lookup=False, range=False)
+integer_index_params_1 = grpc.IntegerIndexParams(
+    lookup=True, range=True, on_disk=True, is_principal=True
+)
 
+keyword_index_params_0 = grpc.KeywordIndexParams()
+keyword_index_params_1 = grpc.KeywordIndexParams(is_tenant=True, on_disk=True)
+
+float_index_params_0 = grpc.FloatIndexParams()
+float_index_params_1 = grpc.FloatIndexParams(on_disk=True, is_principal=True)
+
+bool_index_params = grpc.BoolIndexParams()
+
+geo_index_params = grpc.GeoIndexParams()
+
+datetime_index_params_0 = grpc.DatetimeIndexParams()
+datetime_index_params_1 = grpc.DatetimeIndexParams(on_disk=True, is_principal=True)
+
+uuid_index_params_0 = grpc.UuidIndexParams()
+uuid_index_params_1 = grpc.UuidIndexParams(on_disk=True, is_tenant=True)
 
 payload_schema_text_prefix = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Text,
@@ -409,21 +426,73 @@ payload_schema_text_multilingual = grpc.PayloadSchemaInfo(
     points=0,
 )
 
-payload_schema_integer_lookup = grpc.PayloadSchemaInfo(
+payload_schema_integer_no_disk_not_principal = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Integer,
     params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_0),
     points=0,
 )
 
-payload_schema_integer_range = grpc.PayloadSchemaInfo(
+payload_schema_integer_on_disk_is_principal = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Integer,
     params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_1),
     points=0,
 )
 
-payload_schema_integer_lookup_and_range = grpc.PayloadSchemaInfo(
-    data_type=grpc.PayloadSchemaType.Integer,
-    params=grpc.PayloadIndexParams(integer_index_params=integer_index_params_2),
+payload_schema_keyword_no_disk_not_tenant = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Keyword,
+    params=grpc.PayloadIndexParams(keyword_index_params=keyword_index_params_0),
+    points=0,
+)
+
+payload_schema_keyword_on_disk_is_tenant = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Keyword,
+    params=grpc.PayloadIndexParams(keyword_index_params=keyword_index_params_1),
+    points=0,
+)
+
+payload_schema_float_no_disk_not_principal = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Float,
+    params=grpc.PayloadIndexParams(float_index_params=float_index_params_0),
+    points=0,
+)
+
+payload_schema_float_on_disk_is_principal = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Float,
+    params=grpc.PayloadIndexParams(float_index_params=float_index_params_1),
+    points=0,
+)
+
+payload_schema_bool_w_params = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Bool,
+    params=grpc.PayloadIndexParams(bool_index_params=bool_index_params),
+    points=0,
+)
+
+payload_schema_geo_w_params = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Geo,
+    params=grpc.PayloadIndexParams(geo_index_params=geo_index_params),
+    points=0,
+)
+
+payload_schema_datetime_no_disk_not_principal = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Datetime,
+    params=grpc.PayloadIndexParams(datetime_index_params=datetime_index_params_0),
+    points=0,
+)
+payload_schema_datetime_on_disk_is_principal = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Datetime,
+    params=grpc.PayloadIndexParams(datetime_index_params=datetime_index_params_1),
+    points=0,
+)
+
+payload_schema_uuid_no_disk_not_tenant = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Uuid,
+    params=grpc.PayloadIndexParams(uuid_index_params=uuid_index_params_0),
+    points=0,
+)
+payload_schema_uuid_on_disk_is_tenant = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Uuid,
+    params=grpc.PayloadIndexParams(uuid_index_params=uuid_index_params_1),
     points=0,
 )
 
@@ -448,17 +517,27 @@ collection_info_ok = grpc.CollectionInfo(
         "keyword_field": payload_schema_keyword,
         "integer_field": payload_schema_integer,
         "float_field": payload_schema_float,
+        "bool_field": payload_schema_bool,
         "geo_field": payload_schema_geo,
+        "datetime_field": payload_schema_datetime,
+        "uuid_field": payload_schema_uuid,
         "text_field": payload_schema_text,
         "text_field_prefix": payload_schema_text_prefix,
         "text_field_whitespace": payload_schema_text_whitespace,
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
-        "bool_field": payload_schema_bool,
-        "datetime_field": payload_schema_datetime,
-        "integer_lookup": payload_schema_integer_lookup,
-        "integer_range": payload_schema_integer_range,
-        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
+        "integer_no_disk_not_principal": payload_schema_integer_no_disk_not_principal,
+        "integer_on_disk_is_principal": payload_schema_integer_on_disk_is_principal,
+        "keyword_no_disk_not_tenant": payload_schema_keyword_no_disk_not_tenant,
+        "keyword_on_disk_is_tenant": payload_schema_keyword_on_disk_is_tenant,
+        "float_no_disk_not_principal": payload_schema_float_no_disk_not_principal,
+        "float_on_disk_is_principal": payload_schema_float_on_disk_is_principal,
+        "bool_w_params": payload_schema_bool_w_params,
+        "geo_w_params": payload_schema_geo_w_params,
+        "datetime_no_disk_not_principal": payload_schema_datetime_no_disk_not_principal,
+        "datetime_on_disk_is_principal": payload_schema_datetime_on_disk_is_principal,
+        "uuid_no_disk_not_tenant": payload_schema_uuid_no_disk_not_tenant,
+        "uuid_on_disk_is_tenant": payload_schema_uuid_on_disk_is_tenant,
     },
 )
 
@@ -473,17 +552,27 @@ collection_info = grpc.CollectionInfo(
         "keyword_field": payload_schema_keyword,
         "integer_field": payload_schema_integer,
         "float_field": payload_schema_float,
+        "bool_field": payload_schema_bool,
         "geo_field": payload_schema_geo,
+        "datetime_field": payload_schema_datetime,
+        "uuid_field": payload_schema_uuid,
         "text_field": payload_schema_text,
         "text_field_prefix": payload_schema_text_prefix,
         "text_field_whitespace": payload_schema_text_whitespace,
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
-        "bool_field": payload_schema_bool,
-        "datetime_field": payload_schema_datetime,
-        "integer_lookup": payload_schema_integer_lookup,
-        "integer_range": payload_schema_integer_range,
-        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
+        "integer_no_disk_not_principal": payload_schema_integer_no_disk_not_principal,
+        "integer_on_disk_is_principal": payload_schema_integer_on_disk_is_principal,
+        "keyword_no_disk_not_tenant": payload_schema_keyword_no_disk_not_tenant,
+        "keyword_on_disk_is_tenant": payload_schema_keyword_on_disk_is_tenant,
+        "float_no_disk_not_principal": payload_schema_float_no_disk_not_principal,
+        "float_on_disk_is_principal": payload_schema_float_on_disk_is_principal,
+        "bool_w_params": payload_schema_bool_w_params,
+        "geo_w_params": payload_schema_geo_w_params,
+        "datetime_no_disk_not_principal": payload_schema_datetime_no_disk_not_principal,
+        "datetime_on_disk_is_principal": payload_schema_datetime_on_disk_is_principal,
+        "uuid_no_disk_not_tenant": payload_schema_uuid_no_disk_not_tenant,
+        "uuid_on_disk_is_tenant": payload_schema_uuid_on_disk_is_tenant,
     },
 )
 
@@ -498,17 +587,27 @@ collection_info_red = grpc.CollectionInfo(
         "keyword_field": payload_schema_keyword,
         "integer_field": payload_schema_integer,
         "float_field": payload_schema_float,
+        "bool_field": payload_schema_bool,
         "geo_field": payload_schema_geo,
+        "datetime_field": payload_schema_datetime,
+        "uuid_field": payload_schema_uuid,
         "text_field": payload_schema_text,
         "text_field_prefix": payload_schema_text_prefix,
         "text_field_whitespace": payload_schema_text_whitespace,
         "text_field_word": payload_schema_text_word,
         "text_field_multilingual": payload_schema_text_multilingual,
-        "bool_field": payload_schema_bool,
-        "datetime_field": payload_schema_datetime,
-        "integer_lookup": payload_schema_integer_lookup,
-        "integer_range": payload_schema_integer_range,
-        "integer_lookup_and_range": payload_schema_integer_lookup_and_range,
+        "integer_no_disk_not_principal": payload_schema_integer_no_disk_not_principal,
+        "integer_on_disk_is_principal": payload_schema_integer_on_disk_is_principal,
+        "keyword_no_disk_not_tenant": payload_schema_keyword_no_disk_not_tenant,
+        "keyword_on_disk_is_tenant": payload_schema_keyword_on_disk_is_tenant,
+        "float_no_disk_not_principal": payload_schema_float_no_disk_not_principal,
+        "float_on_disk_is_principal": payload_schema_float_on_disk_is_principal,
+        "bool_w_params": payload_schema_bool_w_params,
+        "geo_w_params": payload_schema_geo_w_params,
+        "datetime_no_disk_not_principal": payload_schema_datetime_no_disk_not_principal,
+        "datetime_on_disk_is_principal": payload_schema_datetime_on_disk_is_principal,
+        "uuid_no_disk_not_tenant": payload_schema_uuid_no_disk_not_tenant,
+        "uuid_on_disk_is_tenant": payload_schema_uuid_on_disk_is_tenant,
     },
 )
 quantization_config = grpc.QuantizationConfig(
@@ -1086,9 +1185,7 @@ prefetch_query = grpc.PrefetchQuery(
     query=query_fusion_dbsf,
 )
 prefetch_random_sample = grpc.PrefetchQuery(
-    prefetch=[deep_prefetch_query],
-    filter=filter_,
-    query=query_sample
+    prefetch=[deep_prefetch_query], filter=filter_, query=query_sample
 )
 prefetch_full_query = grpc.PrefetchQuery(
     prefetch=[prefetch_query],
@@ -1198,7 +1295,6 @@ fixtures = {
     "IntegerIndexParams": [
         integer_index_params_0,
         integer_index_params_1,
-        integer_index_params_2,
     ],
     "CollectionParamsDiff": [collections_params_diff],
     "LookupLocation": [lookup_location_1, lookup_location_2],
