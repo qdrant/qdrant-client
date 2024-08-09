@@ -65,7 +65,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2009,
+            type_=m.InlineResponse2008,
             method="GET",
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
@@ -85,7 +85,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/exists",
             headers=headers if headers else None,
@@ -148,7 +148,7 @@ class _CollectionsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="PUT",
             url="/collections/{collection_name}/index",
             headers=headers if headers else None,
@@ -205,7 +205,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20011,
             method="POST",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
@@ -231,7 +231,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20011,
             method="POST",
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
@@ -288,7 +288,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="DELETE",
             url="/collections/{collection_name}/index/{field_name}",
             headers=headers if headers else None,
@@ -395,7 +395,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2005,
             method="GET",
             url="/collections/{collection_name}",
             headers=headers if headers else None,
@@ -415,7 +415,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.InlineResponse2009,
             method="GET",
             url="/collections/{collection_name}/aliases",
             headers=headers if headers else None,
@@ -430,7 +430,7 @@ class _CollectionsApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2004,
             method="GET",
             url="/collections",
             headers=headers if headers else None,
@@ -444,7 +444,7 @@ class _CollectionsApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.InlineResponse2009,
             method="GET",
             url="/aliases",
             headers=headers if headers else None,
@@ -511,7 +511,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20010,
             method="GET",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
@@ -531,7 +531,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20010,
             method="GET",
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
@@ -770,7 +770,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse2008:
         """
         Get cluster information for a collection
         """
@@ -781,7 +781,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def collection_exists(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Returns \"true\" if the given collection name exists, and \"false\" otherwise
         """
@@ -810,7 +810,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         create_field_index: m.CreateFieldIndex = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Create index for field in collection
         """
@@ -838,7 +838,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot of a shard for a collection
         """
@@ -852,7 +852,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot for a collection
         """
@@ -880,7 +880,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete field index for collection
         """
@@ -938,7 +938,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def get_collection(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2005:
         """
         Get detailed information about specified existing collection
         """
@@ -949,7 +949,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def get_collection_aliases(
         self,
         collection_name: str,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse2009:
         """
         Get list of all aliases for a collection
         """
@@ -959,7 +959,7 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def get_collections(
         self,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2004:
         """
         Get list name of all existing collections
         """
@@ -967,7 +967,7 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def get_collections_aliases(
         self,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse2009:
         """
         Get list of all existing collections aliases
         """
@@ -1005,7 +1005,7 @@ class AsyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         shard_id: int,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots for a shard of a collection
         """
@@ -1017,7 +1017,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots for a collection
         """
@@ -1139,7 +1139,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse2008:
         """
         Get cluster information for a collection
         """
@@ -1150,7 +1150,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def collection_exists(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Returns \"true\" if the given collection name exists, and \"false\" otherwise
         """
@@ -1179,7 +1179,7 @@ class SyncCollectionsApi(_CollectionsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         create_field_index: m.CreateFieldIndex = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Create index for field in collection
         """
@@ -1207,7 +1207,7 @@ class SyncCollectionsApi(_CollectionsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot of a shard for a collection
         """
@@ -1221,7 +1221,7 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot for a collection
         """
@@ -1249,7 +1249,7 @@ class SyncCollectionsApi(_CollectionsApi):
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Delete field index for collection
         """
@@ -1307,7 +1307,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def get_collection(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2005:
         """
         Get detailed information about specified existing collection
         """
@@ -1318,7 +1318,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def get_collection_aliases(
         self,
         collection_name: str,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse2009:
         """
         Get list of all aliases for a collection
         """
@@ -1328,7 +1328,7 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def get_collections(
         self,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2004:
         """
         Get list name of all existing collections
         """
@@ -1336,7 +1336,7 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def get_collections_aliases(
         self,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse2009:
         """
         Get list of all existing collections aliases
         """
@@ -1374,7 +1374,7 @@ class SyncCollectionsApi(_CollectionsApi):
         self,
         collection_name: str,
         shard_id: int,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots for a shard of a collection
         """
@@ -1386,7 +1386,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots for a collection
         """

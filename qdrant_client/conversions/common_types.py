@@ -8,11 +8,10 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-from typing import List, Union, get_args
+from typing import List, Union, get_args, Sequence
 
 from qdrant_client import grpc as grpc
 from qdrant_client.http import models as rest
-from qdrant_client.embed import models as embed
 
 typing_remap = {
     rest.StrictStr: str,
@@ -62,16 +61,16 @@ PayloadSchemaType = Union[
     rest.PayloadSchemaType, rest.PayloadSchemaParams, int, grpc.PayloadIndexParams
 ]  # type(grpc.PayloadSchemaType) == int
 PointStruct: TypeAlias = rest.PointStruct
-Points = Union[rest.Batch, List[Union[rest.PointStruct, grpc.PointStruct]]]
+Points = Union[rest.Batch, Sequence[Union[rest.PointStruct, grpc.PointStruct]]]
 PointsSelector = Union[
     List[PointId], rest.Filter, grpc.Filter, rest.PointsSelector, grpc.PointsSelector
 ]
 LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
 RecommendStrategy: TypeAlias = rest.RecommendStrategy
 RecommendExample: TypeAlias = rest.RecommendExample
-TargetVector: TypeAlias = Union[rest.RecommendExample, grpc.TargetVector]
-ContextExamplePair: TypeAlias = Union[rest.ContextExamplePair, grpc.ContextExamplePair]
-OrderBy: TypeAlias = Union[rest.OrderByInterface, grpc.OrderBy]
+TargetVector = Union[rest.RecommendExample, grpc.TargetVector]
+ContextExamplePair = Union[rest.ContextExamplePair, grpc.ContextExamplePair]
+OrderBy = Union[rest.OrderByInterface, grpc.OrderBy]
 ShardingMethod: TypeAlias = rest.ShardingMethod
 ShardKey: TypeAlias = rest.ShardKey
 ShardKeySelector: TypeAlias = rest.ShardKeySelector
@@ -107,12 +106,12 @@ InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
 Query: TypeAlias = rest.Query
 Prefetch: TypeAlias = rest.Prefetch
-Document: TypeAlias = embed.Document
+Document: TypeAlias = rest.Document
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
-DiscoverRequest: TypeAlias = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
-QueryRequest: TypeAlias = Union[rest.QueryRequest, grpc.QueryPoints]
+DiscoverRequest = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
+QueryRequest = Union[rest.QueryRequest, grpc.QueryPoints]
 
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
@@ -120,6 +119,8 @@ WithLookupInterface: TypeAlias = rest.WithLookupInterface
 
 GroupsResult: TypeAlias = rest.GroupsResult
 QueryResponse: TypeAlias = rest.QueryResponse
+
+VersionInfo: TypeAlias = rest.VersionInfo
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7

@@ -1,5 +1,3 @@
-from pydantic import BaseModel
+from qdrant_client.models import Document  # type: ignore[attr-defined]
 
-
-class Document(BaseModel):
-    text: str
+__all__ = ["Document"]

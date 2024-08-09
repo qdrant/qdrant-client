@@ -1,8 +1,10 @@
+import importlib.metadata
 import itertools
 import json
 import logging
 import os
 import shutil
+from copy import deepcopy
 from io import TextIOWrapper
 from typing import (
     Any,
@@ -305,6 +307,7 @@ class QdrantLocal(QdrantBase):
             else:
                 return vector_input
 
+        query = deepcopy(query)
         if isinstance(query, rest_models.NearestQuery):
             query.nearest = input_into_vector(query.nearest)
 
@@ -375,6 +378,7 @@ class QdrantLocal(QdrantBase):
         if prefetch.query is None:
             return prefetch
 
+        prefetch = deepcopy(prefetch)
         query, mentioned_ids = self._resolve_query_input(
             collection_name,
             prefetch.query,
@@ -1132,4 +1136,10 @@ class QdrantLocal(QdrantBase):
     ) -> bool:
         raise NotImplementedError(
             "Sharding is not supported in the local Qdrant. Please use server Qdrant if you need sharding."
+        )
+
+    def info(self) -> types.VersionInfo:
+        version = importlib.metadata.version("qdrant-client")
+        return rest_models.VersionInfo(
+            title="qdrant - vector search engine", version=version, commit=None
         )

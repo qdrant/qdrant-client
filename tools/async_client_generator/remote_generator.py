@@ -134,10 +134,12 @@ if __name__ == "__main__":
             "async_grpc_collections",
             "async_grpc_points",
             "async_grpc_snapshots",
+            "async_grpc_root",
             "_init_async_grpc_points_client",
             "_init_async_grpc_collections_client",
             "_init_async_grpc_snapshots_client",
             "_init_async_grpc_channel",
+            "_init_async_grpc_root_client",
         ],
     )
 

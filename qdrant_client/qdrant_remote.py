@@ -174,11 +174,13 @@ class QdrantRemote(QdrantBase):
         self._grpc_points_client: Optional[grpc.PointsStub] = None
         self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
+        self._grpc_root_client: Optional[grpc.QdrantStub] = None
 
         self._aio_grpc_channel = None
         self._aio_grpc_points_client: Optional[grpc.PointsStub] = None
         self._aio_grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._aio_grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
+        self._aio_grpc_root_client: Optional[grpc.QdrantStub] = None
 
         self._closed: bool = False
 
@@ -270,6 +272,10 @@ class QdrantRemote(QdrantBase):
         self._init_grpc_channel()
         self._grpc_snapshots_client = grpc.SnapshotsStub(self._grpc_channel)
 
+    def _init_grpc_root_client(self) -> None:
+        self._init_grpc_channel()
+        self._grpc_root_client = grpc.QdrantStub(self._grpc_channel)
+
     def _init_async_grpc_points_client(self) -> None:
         self._init_async_grpc_channel()
         self._aio_grpc_points_client = grpc.PointsStub(self._aio_grpc_channel)
@@ -281,6 +287,10 @@ class QdrantRemote(QdrantBase):
     def _init_async_grpc_snapshots_client(self) -> None:
         self._init_async_grpc_channel()
         self._aio_grpc_snapshots_client = grpc.SnapshotsStub(self._aio_grpc_channel)
+
+    def _init_async_grpc_root_client(self) -> None:
+        self._init_async_grpc_channel()
+        self._aio_grpc_root_client = grpc.QdrantStub(self._aio_grpc_channel)
 
     @property
     def async_grpc_collections(self) -> grpc.CollectionsStub:
@@ -316,6 +326,17 @@ class QdrantRemote(QdrantBase):
         return self._aio_grpc_snapshots_client
 
     @property
+    def async_grpc_root(self) -> grpc.QdrantStub:
+        """gRPC client for info methods
+
+        Returns:
+            An instance of raw gRPC client, generated from Protobuf
+        """
+        if self._aio_grpc_root_client is None:
+            self._init_async_grpc_root_client()
+        return self._aio_grpc_root_client
+
+    @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
 
@@ -347,6 +368,17 @@ class QdrantRemote(QdrantBase):
         if self._grpc_snapshots_client is None:
             self._init_grpc_snapshots_client()
         return self._grpc_snapshots_client
+
+    @property
+    def grpc_root(self) -> grpc.QdrantStub:
+        """gRPC client for info methods
+
+        Returns:
+            An instance of raw gRPC client, generated from Protobuf
+        """
+        if self._grpc_root_client is None:
+            self._init_grpc_root_client()
+        return self._grpc_root_client
 
     @property
     def rest(self) -> SyncApis[ApiClient]:
@@ -2977,3 +3009,12 @@ class QdrantRemote(QdrantBase):
             ).result
             assert result is not None, "Delete shard key returned None"
             return result
+
+    def info(self) -> types.VersionInfo:
+        if self._prefer_grpc:
+            version_info = self.grpc_root.HealthCheck(grpc.HealthCheckRequest())
+            return GrpcToRest.convert_health_check_reply(version_info)
+        version_info = self.rest.service_api.root()
+        print(version_info)
+        assert version_info is not None, "Healthcheck returned None"
+        return version_info

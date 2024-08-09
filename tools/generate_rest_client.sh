@@ -7,10 +7,20 @@ PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
 cd $(mktemp -d)
 
 git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
+
 cd qdrant
 git sparse-checkout add docs/redoc/master
 
-OPENAPI_PATH="$(pwd)/docs/redoc/master/openapi.json"
+CLEAN_OPENAPI_PATH="$(pwd)/docs/redoc/master/openapi.json"
+OPENAPI_PATH="$(pwd)/extended-openapi.json"
+STRUCTURES_PATH="$PROJECT_ROOT/tools/structures.json"
+
+python3 $PROJECT_ROOT/tools/merge_openapi.py "$CLEAN_OPENAPI_PATH" "$STRUCTURES_PATH" $OPENAPI_PATH
+
+if [ $? -ne 0 ]; then
+  echo "Failed to generate inference structures"
+  exit 1
+fi
 
 cd $(mktemp -d)
 

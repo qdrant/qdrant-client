@@ -65,7 +65,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20011,
             method="POST",
             url="/snapshots",
             headers=headers if headers else None,
@@ -92,7 +92,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20011,
             method="POST",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
@@ -118,7 +118,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20011,
             method="POST",
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
@@ -284,7 +284,7 @@ class _SnapshotsApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20010,
             method="GET",
             url="/snapshots",
             headers=headers if headers else None,
@@ -305,7 +305,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20010,
             method="GET",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
@@ -325,7 +325,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20010,
             method="GET",
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
@@ -483,7 +483,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
     async def create_full_snapshot(
         self,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot of the whole storage
         """
@@ -496,7 +496,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot of a shard for a collection
         """
@@ -510,7 +510,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot for a collection
         """
@@ -605,7 +605,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
 
     async def list_full_snapshots(
         self,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots of the whole storage
         """
@@ -615,7 +615,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         shard_id: int,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots for a shard of a collection
         """
@@ -627,7 +627,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
     async def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots for a collection
         """
@@ -712,7 +712,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
     def create_full_snapshot(
         self,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot of the whole storage
         """
@@ -725,7 +725,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot of a shard for a collection
         """
@@ -739,7 +739,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20011:
         """
         Create new snapshot for a collection
         """
@@ -834,7 +834,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
 
     def list_full_snapshots(
         self,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots of the whole storage
         """
@@ -844,7 +844,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         shard_id: int,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots for a shard of a collection
         """
@@ -856,7 +856,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
     def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20010:
         """
         Get list of snapshots for a collection
         """

@@ -2518,3 +2518,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         return await self._client.delete_shard_key(
             collection_name=collection_name, shard_key=shard_key, **kwargs
         )
+
+    async def info(self) -> types.VersionInfo:
+        """Returns information about the running Qdrant instance like version and commit id
+
+        Returns:
+            Title, version and optionally commit info
+
+        """
+        return await self._client.info()
