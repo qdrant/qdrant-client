@@ -1,5 +1,4 @@
 import json
-import random
 
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
@@ -12,9 +11,6 @@ from tests.congruence_tests.test_common import (
 
 
 def test_nested_query():
-    # fix random seed
-    random.seed(42)
-
     fixture_points = generate_fixtures(num=20)
 
     local_client = init_local()
