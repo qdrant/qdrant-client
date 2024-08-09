@@ -1654,7 +1654,7 @@ def test_conditional_payload_update(prefer_grpc):
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_conditional_payload_update_2(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if not client.collection_exists(COLLECTION_NAME):
+    if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
         collection_name=COLLECTION_NAME,
