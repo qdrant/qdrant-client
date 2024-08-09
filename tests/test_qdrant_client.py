@@ -1775,15 +1775,6 @@ def test_empty_vector(prefer_grpc):
     )
 
 
-def test_legacy_imports():
-    try:
-        from qdrant_openapi_client.api.points_api import SyncPointsApi
-        from qdrant_openapi_client.exceptions import UnexpectedResponse
-        from qdrant_openapi_client.models.models import FieldCondition, Filter
-    except ImportError:
-        assert False  # can't import, fail
-
-
 def test_value_serialization():
     v = json_to_value(123)
     print(v)

@@ -4,8 +4,7 @@ version = "1.10.1"
 description = "Client library for the Qdrant vector search engine"
 authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
-    {include = "qdrant_client"},
-    {include = "qdrant_openapi_client"}
+    {include = "qdrant_client"}
 ]
 license = "Apache-2.0"
 readme = "README.md"
