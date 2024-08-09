@@ -2162,7 +2162,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             shard_key_selector=shard_key_selector,
         )
 
-    async def upload_points(
+    def upload_points(
         self,
         collection_name: str,
         points: Iterable[types.PointStruct],
@@ -2198,7 +2198,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.upload_points(
+        return self._client.upload_points(
             collection_name=collection_name,
             points=points,
             batch_size=batch_size,

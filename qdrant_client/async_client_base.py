@@ -342,7 +342,7 @@ class AsyncQdrantBase:
     ) -> None:
         raise NotImplementedError()
 
-    async def upload_points(
+    def upload_points(
         self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
     ) -> None:
         raise NotImplementedError()
