@@ -2136,4 +2136,3 @@ if __name__ == "__main__":
     test_points_crud()
     test_has_id_condition()
     test_insert_float()
-    test_legacy_imports()
