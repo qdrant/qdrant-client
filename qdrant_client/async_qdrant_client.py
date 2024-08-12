@@ -499,8 +499,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             QueryResponse structure containing list of found close points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        (using, query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query, prefetch, using, limit
+        (query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
+            query, prefetch
         )
         return await self._client.query_points(
             collection_name=collection_name,
@@ -634,8 +634,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Each group also contains an id of the group, which is the value of the payload field.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        (using, query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query, prefetch, using, limit
+        (query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
+            query, prefetch
         )
         return await self._client.query_points_groups(
             collection_name=collection_name,

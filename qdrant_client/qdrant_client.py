@@ -540,9 +540,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
-        using, query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query, prefetch, using, limit
-        )
+        query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(query, prefetch)
 
         return self._client.query_points(
             collection_name=collection_name,
@@ -680,8 +678,9 @@ class QdrantClient(QdrantFastembedMixin):
 
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
-        using, query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query, prefetch, using, limit
+        query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(
+            query,
+            prefetch,
         )
 
         return self._client.query_points_groups(
