@@ -574,12 +574,8 @@ class QdrantFastembedMixin(QdrantBase):
             None,
         ],
         prefetch: Union[models.Prefetch, List[models.Prefetch], None] = None,
-        using: Optional[str] = None,
-        limit: int = 10,
-    ) -> Tuple[Optional[str], Optional[models.Query], List[models.Prefetch]]:
-        using, query, extra_prefetch = self._resolve_query_to_embedding_embeddings(
-            query=query, using=using, limit=limit
-        )
+    ) -> Tuple[Optional[models.Query], List[models.Prefetch]]:
+        query = self._resolve_query_to_embedding_embeddings(query=query)
 
         if prefetch is None:
             prefetch = []
@@ -587,9 +583,7 @@ class QdrantFastembedMixin(QdrantBase):
         if not isinstance(prefetch, list):
             prefetch = [prefetch]
 
-        extra_prefetch.extend(prefetch)
-
-        return using, query, extra_prefetch
+        return query, prefetch
 
     def _resolve_query_to_embedding_embeddings(
         self,
@@ -603,65 +597,51 @@ class QdrantFastembedMixin(QdrantBase):
             Document,
             None,
         ],
-        using: Optional[str] = None,
-        limit: int = 10,
-    ) -> Tuple[Optional[str], Optional[models.Query], List[models.Prefetch]]:
+    ) -> Optional[models.Query]:
         if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
-            return using, query, []
+            return query
 
         if isinstance(query, types.SparseVector):
-            return using, models.NearestQuery(nearest=query), []
+            return models.NearestQuery(nearest=query)
 
         if isinstance(query, np.ndarray):
-            return using, models.NearestQuery(nearest=query.tolist()), []
+            return models.NearestQuery(nearest=query.tolist())
         if isinstance(query, list):
-            return using, models.NearestQuery(nearest=query), []
+            return models.NearestQuery(nearest=query)
 
         if isinstance(query, get_args(types.PointId)):
             query = (
                 GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
             )
-            return using, models.NearestQuery(nearest=query), []
+            return models.NearestQuery(nearest=query)
 
         if query is None:
-            return using, None, []
+            return None
 
         # If query is not recognized, try to embed it
 
         if isinstance(query, Document):
-            embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+            model_name = query.model
+            if model_name is None:
+                raise ValueError(
+                    "`query_points` requires explicit model name specification for `Document`"
+                )
 
-            vector_field_name = self.get_vector_field_name()
-            dense_vector = list(embedding_model_inst.embed(documents=[query.text]))[0].tolist()
-
-            if self.sparse_embedding_model_name is None:
-                return using, models.NearestQuery(nearest=dense_vector), []
+            if model_name in SUPPORTED_EMBEDDING_MODELS:
+                self.set_model(model_name)
+                embedding_model_inst = self._get_or_init_model(model_name=model_name)
+                embedding = list(embedding_model_inst.embed(documents=[query.text]))[0].tolist()
+            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+                self.set_sparse_model(model_name)
+                sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
+                embedding = list(sparse_embedding_model_inst.embed(documents=[query.text]))[0]
+                embedding = models.SparseVector(
+                    indices=embedding.indices.tolist(), values=embedding.values.tolist()
+                )
             else:
-                sparse_embedding_model_inst = self._get_or_init_sparse_model(
-                    model_name=self.sparse_embedding_model_name
-                )
-                sparse_vector = list(sparse_embedding_model_inst.embed(documents=[query.text]))[0]
-                return (
-                    None,
-                    models.FusionQuery(fusion=models.Fusion.RRF),
-                    [
-                        models.Prefetch(
-                            query=models.NearestQuery(nearest=dense_vector),
-                            using=vector_field_name,
-                            limit=limit,
-                        ),
-                        models.Prefetch(
-                            query=models.NearestQuery(
-                                nearest=models.SparseVector(
-                                    indices=sparse_vector.indices.tolist(),
-                                    values=sparse_vector.values.tolist(),
-                                )
-                            ),
-                            using=self.get_sparse_vector_field_name(),
-                            limit=limit,
-                        ),
-                    ],
-                )
+                raise ValueError(f"{model_name} is not among supported models")
+
+            return models.NearestQuery(nearest=embedding)
 
         raise ValueError(f"Unsupported query type: {type(query)}")
 

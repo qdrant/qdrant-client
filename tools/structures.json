@@ -1,37 +1,6 @@
 {
   "components": {
     "schemas": {
-      "VectorStruct": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/Document"
-          }
-        ]
-      },
-      "BatchVectorStruct": {
-        "anyOf": [
-          {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Document"
-            }
-          }
-        ]
-      },
-      "VectorInput": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/Document"
-          }
-        ]
-      },
-      "Vector": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/Document"
-          }
-        ]
-      },
       "Document": {
         "type": "object",
         "required": [

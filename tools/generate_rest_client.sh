@@ -13,7 +13,8 @@ git sparse-checkout add docs/redoc/master
 
 CLEAN_OPENAPI_PATH="$(pwd)/docs/redoc/master/openapi.json"
 OPENAPI_PATH="$(pwd)/extended-openapi.json"
-STRUCTURES_PATH="$PROJECT_ROOT/tools/structures.json"
+STRUCTURES_PATH="$PROJECT_ROOT/tools/structures.json"  # todo: overwrite structures.json file with full_structures.json
+# once local inference is implemented
 
 python3 $PROJECT_ROOT/tools/merge_openapi.py "$CLEAN_OPENAPI_PATH" "$STRUCTURES_PATH" $OPENAPI_PATH
 
