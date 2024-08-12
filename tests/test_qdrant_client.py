@@ -434,8 +434,7 @@ def test_multiple_vectors(prefer_grpc):
 @pytest.mark.parametrize("numpy_upload", [False, True])
 @pytest.mark.parametrize("local_mode", [False, True])
 def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
-    _, minor_version, patch_version, dev_version = read_version()
-    version_set = minor_version is not None or dev_version
+    major, minor, patch, dev = read_version()
 
     vectors_path = create_random_vectors()
 
@@ -460,7 +459,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         timeout=TIMEOUT,
     )
 
-    if not version_set or (dev_version or minor_version >= 8):
+    if dev or (major, minor, patch) >= (1, 8, 0):
         assert client.collection_exists(collection_name=COLLECTION_NAME)
         assert not client.collection_exists(collection_name="non_existing_collection")
 
@@ -599,7 +598,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
     assert hits_should == hits_match_any
 
-    if not version_set or dev_version or minor_version >= 8:
+    if dev or (major, minor, patch) >= (1, 8, 0):
         hits_min_should = client.search(
             collection_name=COLLECTION_NAME,
             query_vector=query_vector,
@@ -654,7 +653,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     for hit in hits:
         print(hit)
 
-    if not version_set or dev_version or minor_version >= 10:
+    if dev or (major, minor, patch) >= (1, 10, 0):
         query_response = client.query_points(
             collection_name=COLLECTION_NAME,
             query=query_vector,
@@ -796,7 +795,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert batch_reco_result[1] == reco_result_2
     assert batch_reco_result[2] == reco_result_3
 
-    if not version_set or dev_version or minor_version >= 10:
+    if dev or (major, minor, patch) >= (1, 10, 0):
         query_points_requests = [
             models.QueryRequest(
                 query=query_vector_1,
@@ -927,7 +926,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     positive = [1, 2, query_vector.tolist()]
     negative = []
 
-    if minor_version is not None and minor_version < 6:
+    if minor is not None and minor < 6:
         positive = [1, 2]
         negative = []
 
@@ -1204,15 +1203,12 @@ def test_quantization_config(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_custom_sharding(prefer_grpc):
-    _, minor_version, patch_version, dev_version = read_version()
-    version_set = minor_version is not None or dev_version
+    major, minor, patch, dev = read_version()
+    if minor is not None and not dev:
+        if (major, minor, patch) < (1, 7, 0):
+            pytest.skip("Custom sharding is supported since v1.7.0")
 
-    if minor_version is not None and minor_version < 7:
-        pytest.skip("Custom sharding is supported since v1.7.0")
-
-    query_api_available = (
-        not version_set or dev_version or (minor_version is not None and minor_version >= 10)
-    )
+    query_api_available = dev or (major, minor, patch) >= (1, 10, 0)
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
@@ -1388,9 +1384,10 @@ def test_custom_sharding(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors(prefer_grpc):
-    _, minor_version, patch_version, dev_version = read_version()
-    if minor_version is not None and minor_version < 7:
-        pytest.skip("Sparse vectors are supported since v1.7.0")
+    major, minor, patch, dev = read_version()
+    if minor is not None and not dev:
+        if (major, minor, patch) < (1, 7, 0):
+            pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
@@ -1468,9 +1465,10 @@ def test_sparse_vectors(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors_batch(prefer_grpc):
-    _, minor_version, patch_version, dev_version = read_version()
-    if minor_version is not None and minor_version < 7:
-        pytest.skip("Sparse vectors are supported since v1.7.0")
+    major, minor, patch, dev = read_version()
+    if minor is not None and not dev:
+        if (major, minor, patch) < (1, 7, 0):
+            pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):

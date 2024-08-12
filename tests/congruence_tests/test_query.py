@@ -798,8 +798,7 @@ def test_dense_query_lookup_from_negative():
 
 def test_no_query_no_prefetch():
     major, minor, patch, dev = read_version()
-    version_set = major is not None or dev
-    if version_set and not dev:
+    if major is not None and not dev:
         if (major, minor, patch) < (1, 10, 1):
             pytest.skip("Works as of version 1.10.1")
 
