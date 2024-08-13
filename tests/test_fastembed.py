@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 
 from qdrant_client import QdrantClient, models
@@ -204,3 +206,133 @@ def test_idf_models():
 
     # the only sparse model without IDF is SPLADE, however it's too large for tests, so we don't test how non-idf
     # models work
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_query_embeddings_conversion(prefer_grpc):
+    model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    if not remote_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+
+    plain_document_query = models.Document(text="plain text", model=model_name)
+    nearest_query = models.NearestQuery(
+        nearest=models.Document(text="plain text", model=model_name)
+    )
+    recommend_query = models.RecommendQuery(
+        recommend=models.RecommendInput(
+            positive=[models.Document(text="positive recommend", model=model_name)],
+            negative=[models.Document(text="negative recommend", model=model_name)],
+        )
+    )
+    discover_query = models.DiscoverQuery(
+        discover=models.DiscoverInput(
+            target=models.Document(text="No model discovery target", model=model_name),
+            context=[
+                models.ContextPair(
+                    positive=models.Document(text="No model discovery positive", model=model_name),
+                    negative=models.Document(text="No model discovery negative", model=model_name),
+                )
+            ],
+        )
+    )
+    context_query = models.ContextQuery(
+        context=models.ContextPair(
+            positive=models.Document(text="No model context positive", model=model_name),
+            negative=models.Document(text="No model context negative", model=model_name),
+        )
+    )
+
+    modified_query = remote_client._embed_query_raw_types(plain_document_query)
+    assert isinstance(modified_query, models.NearestQuery) and isinstance(
+        modified_query.nearest, list
+    )
+
+    modified_query = remote_client._embed_query_raw_types(nearest_query)
+    assert isinstance(modified_query.nearest, list)
+
+    modified_query = remote_client._embed_query_raw_types(recommend_query)
+    positives = modified_query.recommend.positive
+    negatives = modified_query.recommend.negative
+    positive = positives[0]
+    negative = negatives[0]
+
+    assert isinstance(positive, list) and isinstance(positive[0], float)
+    assert isinstance(negative, list) and isinstance(negative[0], float)
+    modified_query = remote_client._embed_query_raw_types(discover_query)
+    target = modified_query.discover.target
+    context_pair = modified_query.discover.context[0]
+
+    assert isinstance(target, list) and isinstance(target[0], float)
+
+    positive = context_pair.positive
+    negative = context_pair.negative
+
+    assert isinstance(positive, list) and isinstance(positive[0], float)
+    assert isinstance(negative, list) and isinstance(negative[0], float)
+
+    modified_query = remote_client._embed_query_raw_types(context_query)
+
+    context = modified_query.context
+    assert isinstance(context.positive, list) and isinstance(context.positive[0], float)
+    assert isinstance(context.negative, list) and isinstance(context.negative[0], float)
+
+    order_by_query = models.OrderByQuery(order_by="payload_field")
+    modified_query = remote_client._embed_query_raw_types(order_by_query)
+    assert order_by_query == modified_query
+
+    fusion_query = models.FusionQuery(fusion=models.Fusion.RRF)
+    modified_query = remote_client._embed_query_raw_types(fusion_query)
+    assert fusion_query == modified_query
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_query_embeddings_prefetch(prefer_grpc):
+    def query_is_float_list(pref: models.Prefetch) -> bool:
+        nearest = pref.query.nearest
+        return isinstance(nearest, list) and isinstance(nearest[0], float)
+
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    if not remote_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+
+    empty_list_prefetch = models.Prefetch(query=[0.2, 0.1], prefetch=[])
+    none_prefetch = models.Prefetch(query=[0.2, 0.1], prefetch=None)
+    assert remote_client._embed_prefetch_raw_types(empty_list_prefetch).prefetch == []
+    assert remote_client._embed_prefetch_raw_types(none_prefetch).prefetch is None
+
+    nearest_query = models.NearestQuery(nearest=models.Document(text="nearest on prefetch"))
+    prefetch = models.Prefetch(query=deepcopy(nearest_query))
+    converted_prefetch = remote_client._embed_prefetch_raw_types(deepcopy(prefetch))
+    assert query_is_float_list(converted_prefetch)
+
+    nested_prefetch = models.Prefetch(
+        query=deepcopy(nearest_query),
+        prefetch=models.Prefetch(
+            query=[0.2, 0.3],
+            prefetch=[
+                models.Prefetch(
+                    query=models.Document(text="nested on prefetch"),
+                    prefetch=models.Prefetch(query=models.Document(text="deep text")),
+                ),
+                models.Prefetch(
+                    prefetch=[
+                        models.Prefetch(query=models.Document(text="another deep text")),
+                        models.Prefetch(query=models.Document(text="yet another deep text")),
+                        models.Prefetch(query=[0.2, 0.4]),
+                    ]
+                ),
+            ],
+        ),
+    )
+    converted_nested_prefetch = remote_client._embed_prefetch_raw_types(nested_prefetch)
+    assert query_is_float_list(converted_nested_prefetch)  # nearest_query check
+
+    child_prefetch = converted_nested_prefetch.prefetch
+    grandchild_prefetches = child_prefetch.prefetch
+    assert query_is_float_list(grandchild_prefetches[0])  # "nested on prefetch" check
+    assert query_is_float_list(grandchild_prefetches[0].prefetch)  # "deep text" check
+    assert query_is_float_list(grandchild_prefetches[1].prefetch[0])  # "another deep text" check
+    assert query_is_float_list(
+        grandchild_prefetches[1].prefetch[1]
+    )  # yet another deep text" check

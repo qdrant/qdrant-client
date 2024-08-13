@@ -27,6 +27,7 @@ from typing import (
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.embed.utils import inspect_query_and_prefetch_types
 from qdrant_client.http import AsyncApiClient, AsyncApis
 from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
 from qdrant_client.async_qdrant_fastembed import AsyncQdrantFastembedMixin
@@ -103,6 +104,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         auth_token_provider: Optional[
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
+        cloud_inference: bool = False,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -142,6 +144,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 auth_token_provider=auth_token_provider,
                 **kwargs,
             )
+        self.cloud_inference = cloud_inference
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
@@ -416,6 +419,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.QueryResponse:
         """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
@@ -480,6 +484,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If `None` - query all shards. Only works for collections with `custom` sharding method.
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
+            _cloud_inference: bool - determines whether cloud inference is required or not, set based on the
+                value of `self.cloud_inference` and types contained in passed `query`
 
         Examples:
 
@@ -504,9 +510,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             QueryResponse structure containing list of found close points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        (query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query, prefetch
-        )
+        requires_inference = inspect_query_and_prefetch_types(query, prefetch)
+        if requires_inference and (not self.cloud_inference):
+            query = self._embed_query_raw_types(deepcopy(query))
+            prefetch = self._embed_prefetch_raw_types(deepcopy(prefetch))
         return await self._client.query_points(
             collection_name=collection_name,
             query=query,
@@ -523,6 +530,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             consistency=consistency,
             shard_key_selector=shard_key_selector,
             timeout=timeout,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 

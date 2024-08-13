@@ -561,7 +561,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         return inserted_ids
 
-    def _resolve_query_to_embedding_embeddings_and_prefetch(
+    def _embed_query_raw_types(
         self,
         query: Union[
             types.PointId,
@@ -573,77 +573,86 @@ class QdrantFastembedMixin(QdrantBase):
             Document,
             None,
         ],
-        prefetch: Union[models.Prefetch, List[models.Prefetch], None] = None,
-    ) -> Tuple[Optional[models.Query], List[models.Prefetch]]:
-        query = self._resolve_query_to_embedding_embeddings(query=query)
-
-        if prefetch is None:
-            prefetch = []
-
-        if not isinstance(prefetch, list):
-            prefetch = [prefetch]
-
-        return query, prefetch
-
-    def _resolve_query_to_embedding_embeddings(
-        self,
-        query: Union[
-            types.PointId,
-            List[float],
-            List[List[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            Document,
-            None,
-        ],
-    ) -> Optional[models.Query]:
-        if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
-            return query
-
-        if isinstance(query, types.SparseVector):
-            return models.NearestQuery(nearest=query)
-
-        if isinstance(query, np.ndarray):
-            return models.NearestQuery(nearest=query.tolist())
-        if isinstance(query, list):
-            return models.NearestQuery(nearest=query)
-
-        if isinstance(query, get_args(types.PointId)):
-            query = (
-                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
-            )
-            return models.NearestQuery(nearest=query)
-
-        if query is None:
-            return None
-
-        # If query is not recognized, try to embed it
-
-        if isinstance(query, Document):
-            model_name = query.model
-            if model_name is None:
-                raise ValueError(
-                    "`query_points` requires explicit model name specification for `Document`"
-                )
-
+    ) -> models.Query:
+        def _embed(text: str, model_name: str) -> List[float]:
             if model_name in SUPPORTED_EMBEDDING_MODELS:
                 self.set_model(model_name)
                 embedding_model_inst = self._get_or_init_model(model_name=model_name)
-                embedding = list(embedding_model_inst.embed(documents=[query.text]))[0].tolist()
+                embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
             elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
                 self.set_sparse_model(model_name)
                 sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
-                embedding = list(sparse_embedding_model_inst.embed(documents=[query.text]))[0]
+                embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
                 embedding = models.SparseVector(
                     indices=embedding.indices.tolist(), values=embedding.values.tolist()
                 )
             else:
                 raise ValueError(f"{model_name} is not among supported models")
 
-            return models.NearestQuery(nearest=embedding)
+            return embedding
 
-        raise ValueError(f"Unsupported query type: {type(query)}")
+        def _embed_context(
+            context: Union[List[models.ContextPair], models.ContextPair],
+        ) -> Union[List[models.ContextPair], models.ContextPair]:
+            if isinstance(context, list):
+                for i, context_pair in enumerate(context):
+                    if isinstance(context_pair.positive, types.Document):
+                        context[i].positive = _embed(
+                            context_pair.positive.text, context_pair.positive.model
+                        )
+                    if isinstance(context_pair.negative, types.Document):
+                        context[i].negative = _embed(
+                            context_pair.negative.text, context_pair.negative.model
+                        )
+            else:
+                if isinstance(context.positive, types.Document):
+                    context.positive = _embed(context.positive.text, context.positive.model)
+                if isinstance(context.negative, types.Document):
+                    context.negative = _embed(context.negative.text, context.negative.model)
+            return context
+
+        if isinstance(query, Document):
+            query = models.NearestQuery(nearest=_embed(query.text, query.model))
+
+        elif isinstance(query, models.NearestQuery):
+            if isinstance(query.nearest, models.Document):
+                query.nearest = _embed(query.nearest.text, query.nearest.model)
+
+        elif isinstance(query, models.RecommendQuery):
+            positives = query.recommend.positive or []
+            for i, positive in enumerate(positives):
+                if isinstance(positive, types.Document):
+                    positives[i] = _embed(positive.text, positive.model)
+
+            negatives = query.recommend.negative or []
+            for i, negative in enumerate(negatives):
+                if isinstance(negative, types.Document):
+                    negatives[i] = _embed(negative.text, negative.model)
+
+        elif isinstance(query, models.DiscoverQuery):
+            if isinstance(query.discover.target, types.Document):
+                query.discover.target = _embed(
+                    query.discover.target.text, query.discover.target.model
+                )
+
+            query.discover.context = _embed_context(query.discover.context)
+
+        elif isinstance(query, models.ContextQuery):
+            query.context = _embed_context(query.context)
+
+        return query
+
+    def _embed_prefetch_raw_types(
+        self, prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None
+    ) -> Union[types.Prefetch, List[types.Prefetch], None]:
+        if isinstance(prefetch, types.Prefetch):
+            prefetch.query = self._embed_query_raw_types(prefetch.query)
+            prefetch.prefetch = self._embed_prefetch_raw_types(prefetch.prefetch)
+        elif isinstance(prefetch, list):
+            prefetch = [
+                self._embed_prefetch_raw_types(single_prefetch) for single_prefetch in prefetch
+            ]
+        return prefetch
 
     def query(
         self,

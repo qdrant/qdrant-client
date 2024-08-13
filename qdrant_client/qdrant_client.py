@@ -17,6 +17,7 @@ from typing import (
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.embed.utils import inspect_query_and_prefetch_types
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.migrate import migrate
@@ -94,6 +95,7 @@ class QdrantClient(QdrantFastembedMixin):
         auth_token_provider: Optional[
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
+        cloud_inference: bool = False,
         **kwargs: Any,
     ):
         super().__init__(
@@ -145,6 +147,7 @@ class QdrantClient(QdrantFastembedMixin):
                 auth_token_provider=auth_token_provider,
                 **kwargs,
             )
+        self.cloud_inference = cloud_inference
 
     def __del__(self) -> None:
         self.close()
@@ -463,6 +466,7 @@ class QdrantClient(QdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.QueryResponse:
         """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
@@ -527,6 +531,8 @@ class QdrantClient(QdrantFastembedMixin):
                 If `None` - query all shards. Only works for collections with `custom` sharding method.
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
+            _cloud_inference: bool - determines whether cloud inference is required or not, set based on the
+                value of `self.cloud_inference` and types contained in passed `query`
 
         Examples:
 
@@ -555,7 +561,11 @@ class QdrantClient(QdrantFastembedMixin):
 
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
-        query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(query, prefetch)
+
+        requires_inference = inspect_query_and_prefetch_types(query, prefetch)
+        if requires_inference and not self.cloud_inference:
+            query = self._embed_query_raw_types(deepcopy(query))
+            prefetch = self._embed_prefetch_raw_types(deepcopy(prefetch))
 
         return self._client.query_points(
             collection_name=collection_name,
@@ -573,6 +583,7 @@ class QdrantClient(QdrantFastembedMixin):
             consistency=consistency,
             shard_key_selector=shard_key_selector,
             timeout=timeout,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 

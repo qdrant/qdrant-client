@@ -25,9 +25,11 @@ from uuid import uuid4
 import numpy as np
 import portalocker
 
+from qdrant_client import grpc
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models as rest_models
 from qdrant_client.http.models.models import RecommendExample
 from qdrant_client.local.local_collection import (
@@ -396,7 +398,16 @@ class QdrantLocal(QdrantBase):
     def query_points(
         self,
         collection_name: str,
-        query: Optional[types.Query] = None,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
         using: Optional[str] = None,
         prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
@@ -410,6 +421,27 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.QueryResponse:
         collection = self._get_collection(collection_name)
+
+        if isinstance(query, types.SparseVector):
+            query = rest_models.NearestQuery(nearest=query)
+
+        elif isinstance(query, np.ndarray):
+            query = rest_models.NearestQuery(nearest=query.tolist())
+
+        elif isinstance(query, list):
+            query = rest_models.NearestQuery(nearest=query)
+
+        elif isinstance(query, get_args(types.PointId)):
+            query = (
+                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
+            )
+            query = rest_models.NearestQuery(nearest=query)
+        elif (
+            not isinstance(query, get_args(rest_models.Query))
+            and query is not None
+            and not isinstance(query, List)
+        ):
+            raise TypeError(f"Unexpected query type: {type(query)}")
 
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
