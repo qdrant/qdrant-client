@@ -1,4 +1,5 @@
 import ast
+import sys
 from typing import List, Optional
 
 
@@ -13,14 +14,27 @@ class FunctionDefTransformer(ast.NodeTransformer):
         if self._keep_sync(sync_node.name):
             return self.generic_visit(sync_node)
 
-        async_node = ast.AsyncFunctionDef(
-            name=sync_node.name,
-            args=sync_node.args,
-            body=sync_node.body,
-            decorator_list=sync_node.decorator_list,
-            returns=sync_node.returns,
-            type_comment=sync_node.type_comment,
-        )
+        # Check the Python version
+        if sys.version_info >= (3, 12):
+            async_node = ast.AsyncFunctionDef(
+                name=sync_node.name,
+                args=sync_node.args,
+                body=sync_node.body,
+                decorator_list=sync_node.decorator_list,
+                returns=sync_node.returns,
+                type_comment=sync_node.type_comment,
+                type_params=[],
+            )
+        else:
+            async_node = ast.AsyncFunctionDef(
+                name=sync_node.name,
+                args=sync_node.args,
+                body=sync_node.body,
+                decorator_list=sync_node.decorator_list,
+                returns=sync_node.returns,
+                type_comment=sync_node.type_comment,
+            )
+
         async_node.lineno = sync_node.lineno
         async_node.col_offset = sync_node.col_offset
         async_node.end_lineno = sync_node.end_lineno
