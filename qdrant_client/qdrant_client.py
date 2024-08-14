@@ -17,7 +17,7 @@ from typing import (
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
-from qdrant_client.embed.utils import inspect_query_and_prefetch_types
+from qdrant_client.embed.utils import inspect_query_and_prefetch_types, inspect_points
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.migrate import migrate
@@ -1371,6 +1371,10 @@ class QdrantClient(QdrantFastembedMixin):
             Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        requires_inference = inspect_points(points)
+        if requires_inference and not self.cloud_inference:
+            points = self._embed_raw_points(points)
 
         return self._client.upsert(
             collection_name=collection_name,

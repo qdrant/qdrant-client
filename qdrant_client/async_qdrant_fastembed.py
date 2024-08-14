@@ -12,7 +12,7 @@
 import uuid
 import warnings
 from itertools import tee
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set
 import numpy as np
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
@@ -511,6 +511,28 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         return inserted_ids
 
+    def _embed_raw_data(self, data: Document) -> Union[List[float], models.SparseVector]:
+        if isinstance(data, Document):
+            return self._embed_document(data)
+        raise ValueError(f"Unsupported type: {type(data)}")
+
+    def _embed_document(self, document: Document) -> Union[List[float], models.SparseVector]:
+        model_name = document.model
+        text = document.text
+        if model_name in SUPPORTED_EMBEDDING_MODELS:
+            self.set_model(model_name)
+            embedding_model_inst = self._get_or_init_model(model_name=model_name)
+            return list(embedding_model_inst.embed(documents=[text]))[0].tolist()
+        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            self.set_sparse_model(model_name)
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
+            sparse_embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
+            return models.SparseVector(
+                indices=sparse_embedding.indices.tolist(), values=sparse_embedding.values.tolist()
+            )
+        else:
+            raise ValueError(f"{model_name} is not among supported models")
+
     def _embed_query_raw_types(
         self,
         query: Union[
@@ -524,61 +546,39 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             None,
         ],
     ) -> models.Query:
-        def _embed(text: str, model_name: str) -> List[float]:
-            if model_name in SUPPORTED_EMBEDDING_MODELS:
-                self.set_model(model_name)
-                embedding_model_inst = self._get_or_init_model(model_name=model_name)
-                embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
-            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
-                self.set_sparse_model(model_name)
-                sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
-                embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
-                embedding = models.SparseVector(
-                    indices=embedding.indices.tolist(), values=embedding.values.tolist()
-                )
-            else:
-                raise ValueError(f"{model_name} is not among supported models")
-            return embedding
-
         def _embed_context(
             context: Union[List[models.ContextPair], models.ContextPair],
         ) -> Union[List[models.ContextPair], models.ContextPair]:
             if isinstance(context, list):
                 for i, context_pair in enumerate(context):
                     if isinstance(context_pair.positive, types.Document):
-                        context[i].positive = _embed(
-                            context_pair.positive.text, context_pair.positive.model
-                        )
+                        context[i].positive = self._embed_raw_data(context_pair.positive)
                     if isinstance(context_pair.negative, types.Document):
-                        context[i].negative = _embed(
-                            context_pair.negative.text, context_pair.negative.model
-                        )
+                        context[i].negative = self._embed_raw_data(context_pair.negative)
             else:
                 if isinstance(context.positive, types.Document):
-                    context.positive = _embed(context.positive.text, context.positive.model)
+                    context.positive = self._embed_raw_data(context.positive)
                 if isinstance(context.negative, types.Document):
-                    context.negative = _embed(context.negative.text, context.negative.model)
+                    context.negative = self._embed_raw_data(context.negative)
             return context
 
         if isinstance(query, Document):
-            query = models.NearestQuery(nearest=_embed(query.text, query.model))
+            query = models.NearestQuery(nearest=self._embed_raw_data(query))
         elif isinstance(query, models.NearestQuery):
             if isinstance(query.nearest, models.Document):
-                query.nearest = _embed(query.nearest.text, query.nearest.model)
+                query.nearest = self._embed_raw_data(query.nearest)
         elif isinstance(query, models.RecommendQuery):
             positives = query.recommend.positive or []
             for i, positive in enumerate(positives):
                 if isinstance(positive, types.Document):
-                    positives[i] = _embed(positive.text, positive.model)
+                    positives[i] = self._embed_raw_data(positive)
             negatives = query.recommend.negative or []
             for i, negative in enumerate(negatives):
                 if isinstance(negative, types.Document):
-                    negatives[i] = _embed(negative.text, negative.model)
+                    negatives[i] = self._embed_raw_data(negative)
         elif isinstance(query, models.DiscoverQuery):
             if isinstance(query.discover.target, types.Document):
-                query.discover.target = _embed(
-                    query.discover.target.text, query.discover.target.model
-                )
+                query.discover.target = self._embed_raw_data(query.discover.target)
             query.discover.context = _embed_context(query.discover.context)
         elif isinstance(query, models.ContextQuery):
             query.context = _embed_context(query.context)
@@ -595,6 +595,30 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 self._embed_prefetch_raw_types(single_prefetch) for single_prefetch in prefetch
             ]
         return prefetch
+
+    def _embed_raw_points(
+        self, points: Union[models.Batch, List[models.PointStruct]]
+    ) -> List[models.PointStruct]:
+        embedding_points = []
+        if isinstance(points, models.Batch):
+            (ids, documents, payloads) = (points.ids, points.vectors, points.payloads)
+            for i, document in enumerate(documents):
+                assert isinstance(document, models.Document)
+                embedding_points.append(
+                    models.PointStruct(
+                        id=ids[i], payload=payloads[i], vector=self._embed_raw_data(document)
+                    )
+                )
+        else:
+            for point in points:
+                embedding_points.append(
+                    models.PointStruct(
+                        id=point.id,
+                        payload=point.payload,
+                        vector=self._embed_raw_data(point.vector),
+                    )
+                )
+        return embedding_points
 
     async def query(
         self,

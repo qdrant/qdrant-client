@@ -1,6 +1,7 @@
 from typing import Union, List
 
 from qdrant_client.conversions import common_types as types
+from qdrant_client import models, grpc
 
 
 def inspect_query_and_prefetch_types(
@@ -63,3 +64,26 @@ def inspect_query_types(
 ) -> bool:
     """Check whether query requires inference"""
     return isinstance(query, types.Document)
+
+
+def inspect_points(points: types.Points) -> bool:
+    """Check whether point requires inference"""
+
+    if isinstance(points, models.Batch):
+        vectors = points.vectors
+        if isinstance(vectors, dict):
+            for key, values in vectors.items():
+                if isinstance(next(iter(values)), models.Document):
+                    return True
+            return False
+        else:
+            for vector in points.vectors:
+                return isinstance(vector, types.Document)
+
+    for point in points:
+        if isinstance(point, grpc.PointStruct):
+            return False
+
+        if isinstance(point.vector, types.Document):
+            return True
+    return False

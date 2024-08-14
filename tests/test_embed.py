@@ -1,8 +1,9 @@
-from qdrant_client import models
+from qdrant_client import models, grpc
 from qdrant_client.embed.utils import (
     inspect_query_types,
     inspect_query_and_prefetch_types,
     inspect_prefetch_types,
+    inspect_points,
 )
 
 
@@ -69,3 +70,60 @@ def test_inspect_query_and_prefetch_types():
     assert inspect_query_and_prefetch_types(query, none_prefetch)
     assert inspect_query_and_prefetch_types(none_query, prefetch)
     assert inspect_query_and_prefetch_types(query, prefetch)
+
+
+def test_inspect_points():
+    vector_batch = models.Batch(ids=[1, 2], vectors=[[1.0, 2.0], [3.0, 4.0]])
+    assert not inspect_points(vector_batch)
+
+    document_batch = models.Batch(
+        ids=[1, 2],
+        vectors=[
+            models.Document(text="123", model="Qdrant/bm42"),
+            models.Document(text="324", model="Qdrant/bm42"),
+        ],
+    )
+    assert inspect_points(document_batch)
+
+    vector_points = [models.PointStruct(id=1, vector=[1.0, 2.0])]
+    assert not inspect_points(vector_points)
+
+    document_points = [
+        models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm42"))
+    ]
+    assert inspect_points(document_points)
+
+    mixed_points = [
+        models.PointStruct(id=1, vector=[1.0, 2.0]),
+        models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm42")),
+    ]
+    assert inspect_points(mixed_points)
+
+    grpc_point = [
+        grpc.PointStruct(
+            id=grpc.PointId(num=3), vectors=grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0]))
+        )
+    ]
+    assert not inspect_points(grpc_point)
+
+    dict_batch = models.Batch(ids=[1, 2], vectors={"dense": [[1.0, 2.0]]})
+    assert not inspect_points(dict_batch)
+
+    dict_doc_batch = models.Batch(
+        ids=[1, 2], vectors={"dense": [models.Document(text="123", model="Qdrant/bm42")]}
+    )
+    assert inspect_points(dict_doc_batch)
+
+    multiple_keys_batch = models.Batch(
+        ids=[1, 2], vectors={"dense": [[1.0, 2.0]], "dense-two": [[3.0, 4.0]]}
+    )
+    assert not inspect_points(multiple_keys_batch)
+
+    multiple_keys_mixed_types_batch = models.Batch(
+        ids=[1, 2],
+        vectors={
+            "dense": [[1.0, 2.0]],
+            "dense-two": [models.Document(text="123", model="Qdrant/bm42")],
+        },
+    )
+    assert inspect_points(multiple_keys_mixed_types_batch)

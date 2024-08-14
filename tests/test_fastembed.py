@@ -4,7 +4,7 @@ import pytest
 
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
-from tests.congruence_tests.test_common import compare_client_results
+from tests.congruence_tests.test_common import compare_client_results, compare_collections
 
 from tests.utils import read_version
 
@@ -292,6 +292,7 @@ def test_query_embeddings_prefetch(prefer_grpc):
         nearest = pref.query.nearest
         return isinstance(nearest, list) and isinstance(nearest[0], float)
 
+    model_name = "sentence-transformers/all-MiniLM-L6-v2"
     remote_client = QdrantClient(prefer_grpc=prefer_grpc)
     if not remote_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -301,7 +302,9 @@ def test_query_embeddings_prefetch(prefer_grpc):
     assert remote_client._embed_prefetch_raw_types(empty_list_prefetch).prefetch == []
     assert remote_client._embed_prefetch_raw_types(none_prefetch).prefetch is None
 
-    nearest_query = models.NearestQuery(nearest=models.Document(text="nearest on prefetch"))
+    nearest_query = models.NearestQuery(
+        nearest=models.Document(text="nearest on prefetch", model=model_name)
+    )
     prefetch = models.Prefetch(query=deepcopy(nearest_query))
     converted_prefetch = remote_client._embed_prefetch_raw_types(deepcopy(prefetch))
     assert query_is_float_list(converted_prefetch)
@@ -312,13 +315,19 @@ def test_query_embeddings_prefetch(prefer_grpc):
             query=[0.2, 0.3],
             prefetch=[
                 models.Prefetch(
-                    query=models.Document(text="nested on prefetch"),
-                    prefetch=models.Prefetch(query=models.Document(text="deep text")),
+                    query=models.Document(text="nested on prefetch", model=model_name),
+                    prefetch=models.Prefetch(
+                        query=models.Document(text="deep text", model=model_name)
+                    ),
                 ),
                 models.Prefetch(
                     prefetch=[
-                        models.Prefetch(query=models.Document(text="another deep text")),
-                        models.Prefetch(query=models.Document(text="yet another deep text")),
+                        models.Prefetch(
+                            query=models.Document(text="another deep text", model=model_name)
+                        ),
+                        models.Prefetch(
+                            query=models.Document(text="yet another deep text", model=model_name)
+                        ),
                         models.Prefetch(query=[0.2, 0.4]),
                     ]
                 ),
@@ -336,3 +345,40 @@ def test_query_embeddings_prefetch(prefer_grpc):
     assert query_is_float_list(
         grandchild_prefetches[1].prefetch[1]
     )  # yet another deep text" check
+
+
+def test_upsert():
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient()
+    model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    collection_name = "test-doc-embed"
+    local_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
+    )
+    if remote_client.collection_exists(collection_name):
+        remote_client.delete_collection(collection_name)
+    remote_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
+    )
+
+    points = [
+        models.PointStruct(
+            id=1, vector=models.Document(text="It's a short query", model=model_name)
+        ),
+        models.PointStruct(
+            id=2, vector=models.Document(text="It's another short query", model=model_name)
+        ),
+    ]
+    local_client.upsert(
+        collection_name,
+        points=points,
+    )
+    remote_client.upsert(collection_name, points=points)
+
+    compare_collections(
+        local_client, remote_client, num_vectors=2, collection_name=collection_name
+    )
