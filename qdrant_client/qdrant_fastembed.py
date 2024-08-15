@@ -683,6 +683,19 @@ class QdrantFastembedMixin(QdrantBase):
                 )
         return embedding_points
 
+    def _embed_raw_point_vectors(
+        self, points: Sequence[types.PointVectors]
+    ) -> List[types.PointVectors]:
+        return [
+            types.PointVectors(
+                id=point.id,
+                vector=self._embed_raw_data(point.vector)
+                if isinstance(point.vector, Document)
+                else point.vector,
+            )
+            for point in points
+        ]
+
     def _embed_query_points_requests(
         self, requests: Sequence[types.QueryRequest]
     ) -> Sequence[types.QueryRequest]:
@@ -690,6 +703,22 @@ class QdrantFastembedMixin(QdrantBase):
             request.query = self._embed_query_raw_types(request.query)
             request.prefetch = self._embed_prefetch_raw_types(request.prefetch)
         return requests
+
+    def _embed_update_operations(
+        self, update_operations: Sequence[types.UpdateOperation]
+    ) -> Sequence[types.UpdateOperation]:
+        for update_operation in update_operations:
+            if isinstance(update_operation, models.UpsertOperation):
+                operation = update_operation.upsert
+                if isinstance(operation, models.PointsBatch):
+                    operation.batch = self._embed_raw_points(operation.batch)
+                else:
+                    operation.points = self._embed_raw_points(operation.points)
+            elif isinstance(update_operation, models.UpdateVectorsOperation):
+                operation = update_operation.update_vectors
+                operation.points = self._embed_raw_point_vectors(operation.points)
+
+        return update_operations
 
     def query(
         self,

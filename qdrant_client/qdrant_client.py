@@ -21,6 +21,8 @@ from qdrant_client.embed.utils import (
     inspect_query_and_prefetch_types,
     inspect_points,
     inspect_query_requests,
+    inspect_point_vectors,
+    inspect_update_operations,
 )
 from qdrant_client.http import ApiClient, SyncApis
 from qdrant_client.local.qdrant_local import QdrantLocal
@@ -1436,12 +1438,17 @@ class QdrantClient(QdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
+        requires_inference = inspect_point_vectors(points)
+        if requires_inference and not self.cloud_inference:
+            points = self._embed_raw_point_vectors(points)
+
         return self._client.update_vectors(
             collection_name=collection_name,
             points=points,
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            _cloud_inference=requires_inference and self.cloud_inference,
         )
 
     def delete_vectors(
@@ -1886,11 +1893,16 @@ class QdrantClient(QdrantFastembedMixin):
         """
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        requires_inference = inspect_update_operations(update_operations)
+        if requires_inference and not self.cloud_inference:
+            update_operations = self._embed_update_operations(deepcopy(update_operations))
+
         return self._client.batch_update_points(
             collection_name=collection_name,
             update_operations=update_operations,
             wait=wait,
             ordering=ordering,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 

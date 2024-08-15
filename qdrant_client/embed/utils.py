@@ -67,20 +67,29 @@ def inspect_query_types(
     return isinstance(query, types.Document)
 
 
+def inspect_batch(points: models.Batch) -> bool:
+    vectors = points.vectors
+    if isinstance(vectors, dict):
+        for key, values in vectors.items():
+            if isinstance(next(iter(values)), models.Document):
+                return True
+        return False
+    else:
+        for vector in points.vectors:
+            return isinstance(vector, types.Document)
+    return False
+
+
 def inspect_points(points: types.Points) -> bool:
     """Check whether point requires inference"""
 
     if isinstance(points, models.Batch):
-        vectors = points.vectors
-        if isinstance(vectors, dict):
-            for key, values in vectors.items():
-                if isinstance(next(iter(values)), models.Document):
-                    return True
-            return False
-        else:
-            for vector in points.vectors:
-                return isinstance(vector, types.Document)
+        return inspect_batch(points)
 
+    return inspect_point_structs(points)
+
+
+def inspect_point_structs(points: Sequence[Union[models.PointStruct, grpc.PointStruct]]) -> bool:
     for point in points:
         if isinstance(point, grpc.PointStruct):
             return False
@@ -95,4 +104,33 @@ def inspect_query_requests(requests: Sequence[types.QueryRequest]) -> bool:
     for request in requests:
         if inspect_query_and_prefetch_types(request.query, request.prefetch):
             return True
+    return False
+
+
+def inspect_point_vectors(points: Sequence[types.PointVectors]) -> bool:
+    """Check whether point vectors require inference"""
+    for point_vector in points:
+        if isinstance(point_vector.vector, types.Document):
+            return True
+    return False
+
+
+def inspect_update_operations(update_operations: Sequence[types.UpdateOperation]) -> bool:
+    """Check whether vectors in update_operations require inference"""
+    requires_inference = False
+
+    for update_operation in update_operations:
+        if isinstance(update_operation, models.UpsertOperation):
+            operation = update_operation.upsert
+            if isinstance(operation, models.PointsBatch):
+                requires_inference = inspect_batch(operation.batch)
+            else:
+                requires_inference = inspect_point_structs(operation.points)
+
+        elif isinstance(update_operation, models.UpdateVectorsOperation):
+            operation = update_operation.update_vectors
+            requires_inference = inspect_point_vectors(operation.vectors)
+        if requires_inference:
+            return True
+
     return False
