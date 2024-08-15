@@ -685,7 +685,7 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _embed_query_points_requests(
         self, requests: Sequence[types.QueryRequest]
-    ) -> List[types.QueryRequest]:
+    ) -> Sequence[types.QueryRequest]:
         for request in requests:
             request.query = self._embed_query_raw_types(request.query)
             request.prefetch = self._embed_prefetch_raw_types(request.prefetch)
