@@ -27,7 +27,11 @@ from typing import (
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
-from qdrant_client.embed.utils import inspect_query_and_prefetch_types, inspect_points
+from qdrant_client.embed.utils import (
+    inspect_query_and_prefetch_types,
+    inspect_points,
+    inspect_query_requests,
+)
 from qdrant_client.http import AsyncApiClient, AsyncApis
 from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
 from qdrant_client.async_qdrant_fastembed import AsyncQdrantFastembedMixin
@@ -385,11 +389,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of query responses
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        requires_inference = inspect_query_requests(requests)
+        if requires_inference and (not self.cloud_inference):
+            requests = self._embed_query_points_requests(deepcopy(requests))
         return await self._client.query_batch_points(
             collection_name=collection_name,
             requests=requests,
             consistency=consistency,
             timeout=timeout,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -668,6 +676,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             consistency=consistency,
             shard_key_selector=shard_key_selector,
             timeout=timeout,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -1316,6 +1325,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 

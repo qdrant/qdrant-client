@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Union, List, Sequence
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
@@ -86,5 +86,13 @@ def inspect_points(points: types.Points) -> bool:
             return False
 
         if isinstance(point.vector, types.Document):
+            return True
+    return False
+
+
+def inspect_query_requests(requests: Sequence[types.QueryRequest]) -> bool:
+    """Check whether query request contains queries requiring inference"""
+    for request in requests:
+        if inspect_query_and_prefetch_types(request.query, request.prefetch):
             return True
     return False
