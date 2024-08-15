@@ -1752,6 +1752,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1832,6 +1833,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -2348,6 +2350,7 @@ class QdrantRemote(QdrantBase):
         update_operations: Sequence[types.UpdateOperation],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> List[types.UpdateResult]:
         if self._prefer_grpc:
