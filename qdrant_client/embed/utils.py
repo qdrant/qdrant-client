@@ -1,7 +1,8 @@
 from typing import Union, List
 
 from qdrant_client.conversions import common_types as types
-from qdrant_client import models, grpc
+from qdrant_client.http import models
+from qdrant_client import grpc
 
 
 def inspect_query_and_prefetch_types(

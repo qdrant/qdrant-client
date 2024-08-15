@@ -704,10 +704,10 @@ class QdrantClient(QdrantFastembedMixin):
 
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
-        query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query,
-            prefetch,
-        )
+        requires_inference = inspect_query_and_prefetch_types(query, prefetch)
+        if requires_inference and not self.cloud_inference:
+            query = self._embed_query_raw_types(deepcopy(query))
+            prefetch = self._embed_prefetch_raw_types(deepcopy(prefetch))
 
         return self._client.query_points_groups(
             collection_name=collection_name,

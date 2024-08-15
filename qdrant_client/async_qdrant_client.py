@@ -647,9 +647,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Each group also contains an id of the group, which is the value of the payload field.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        (query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query, prefetch
-        )
+        requires_inference = inspect_query_and_prefetch_types(query, prefetch)
+        if requires_inference and (not self.cloud_inference):
+            query = self._embed_query_raw_types(deepcopy(query))
+            prefetch = self._embed_prefetch_raw_types(deepcopy(prefetch))
         return await self._client.query_points_groups(
             collection_name=collection_name,
             query=query,
