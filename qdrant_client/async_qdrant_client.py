@@ -429,7 +429,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
-        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.QueryResponse:
         """Universal endpoint to run any available operation, such as search, recommendation, discovery, context search.
@@ -494,8 +493,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If `None` - query all shards. Only works for collections with `custom` sharding method.
             timeout:
                 Overrides global timeout for this search. Unit is seconds.
-            _cloud_inference: bool - determines whether cloud inference is required or not, set based on the
-                value of `self.cloud_inference` and types contained in passed `query`
 
         Examples:
 
