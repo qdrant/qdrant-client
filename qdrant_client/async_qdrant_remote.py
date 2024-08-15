@@ -567,6 +567,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         requests: Sequence[types.QueryRequest],
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> List[types.QueryResponse]:
         if self._prefer_grpc:
@@ -637,6 +638,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.GroupsResult:
         if isinstance(query, types.SparseVector):
