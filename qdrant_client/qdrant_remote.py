@@ -299,6 +299,11 @@ class QdrantRemote(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
+        warnings.warn(
+            "async_grpc_collections is deprecated and will be removed in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if self._aio_grpc_collections_client is None:
             self._init_async_grpc_collections_client()
         return self._aio_grpc_collections_client
@@ -310,6 +315,11 @@ class QdrantRemote(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
+        warnings.warn(
+            "async_grpc_points is deprecated and will be removed in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if self._aio_grpc_points_client is None:
             self._init_async_grpc_points_client()
         return self._aio_grpc_points_client
@@ -321,6 +331,11 @@ class QdrantRemote(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
+        warnings.warn(
+            "async_grpc_snapshots is deprecated and will be removed in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if self._aio_grpc_snapshots_client is None:
             self._init_async_grpc_snapshots_client()
         return self._aio_grpc_snapshots_client
@@ -332,6 +347,11 @@ class QdrantRemote(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
+        warnings.warn(
+            "async_grpc_root is deprecated and will be removed in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if self._aio_grpc_root_client is None:
             self._init_async_grpc_root_client()
         return self._aio_grpc_root_client
@@ -754,34 +774,34 @@ class QdrantRemote(QdrantBase):
             return http_res
 
     def query_points_groups(
-            self,
-            collection_name: str,
-            group_by: str,
-            query: Union[
-                types.PointId,
-                List[float],
-                List[List[float]],
-                types.SparseVector,
-                types.Query,
-                types.NumpyArray,
-                types.Document,
-                None,
-            ] = None,
-            using: Optional[str] = None,
-            prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
-            query_filter: Optional[types.Filter] = None,
-            search_params: Optional[types.SearchParams] = None,
-            limit: int = 10,
-            group_size: int = 3,
-            with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-            with_vectors: Union[bool, Sequence[str]] = False,
-            score_threshold: Optional[float] = None,
-            with_lookup: Optional[types.WithLookupInterface] = None,
-            lookup_from: Optional[types.LookupLocation] = None,
-            consistency: Optional[types.ReadConsistency] = None,
-            shard_key_selector: Optional[types.ShardKeySelector] = None,
-            timeout: Optional[int] = None,
-            **kwargs: Any,
+        self,
+        collection_name: str,
+        group_by: str,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
+        using: Optional[str] = None,
+        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        query_filter: Optional[types.Filter] = None,
+        search_params: Optional[types.SearchParams] = None,
+        limit: int = 10,
+        group_size: int = 3,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+        with_lookup: Optional[types.WithLookupInterface] = None,
+        lookup_from: Optional[types.LookupLocation] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
     ) -> types.GroupsResult:
         if self._prefer_grpc:
             if isinstance(query, get_args(models.Query)):
