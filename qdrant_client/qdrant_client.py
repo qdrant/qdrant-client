@@ -213,6 +213,11 @@ class QdrantClient(QdrantFastembedMixin):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
+        warnings.warn(
+            "The 'rest' property is deprecated and will be removed in a future version. Use `http` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if isinstance(self._client, QdrantRemote):
             return self._client.rest
 
