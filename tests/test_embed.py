@@ -4,6 +4,8 @@ from qdrant_client.embed.utils import (
     inspect_query_and_prefetch_types,
     inspect_prefetch_types,
     inspect_points,
+    inspect_query_requests,
+    inspect_update_operations,
 )
 
 
@@ -127,3 +129,95 @@ def test_inspect_points():
         },
     )
     assert inspect_points(multiple_keys_mixed_types_batch)
+
+
+def test_inspect_query_requests():
+    vector_only_query_request = models.QueryRequest(
+        query=[0.2, 0.3],
+    )
+
+    assert not inspect_query_requests([vector_only_query_request])
+
+    vector_only_prefetch_request = models.QueryRequest(prefetch=models.Prefetch(query=[0.2, 0.1]))
+
+    assert not inspect_query_requests([vector_only_prefetch_request])
+
+    document_only_query_request = models.QueryRequest(
+        query=models.Document(text="123", model="Qdrant/bm42"),
+    )
+
+    assert inspect_query_requests([document_only_query_request])
+
+    document_only_prefetch_request = models.QueryRequest(
+        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm42"))
+    )
+
+    assert inspect_query_requests([document_only_prefetch_request])
+
+    assert inspect_query_requests([vector_only_query_request, document_only_query_request])
+
+
+def test_inspect_update_operations():
+    non_relevant_ops = [
+        models.DeleteOperation(delete=models.PointIdsList(points=[1, 2, 3])),
+        models.SetPayloadOperation(set_payload=models.SetPayload(payload={"a": 2})),
+        models.OverwritePayloadOperation(overwrite_payload=models.SetPayload(payload={"b": 3})),
+        models.DeletePayloadOperation(delete_payload=models.DeletePayload(keys=["a", "c"])),
+        models.ClearPayloadOperation(clear_payload=models.PointIdsList(points=[1, 4, 5])),
+        models.DeleteVectorsOperation(delete_vectors=models.DeleteVectors(vector=["dense"])),
+    ]
+    assert not inspect_update_operations(non_relevant_ops)
+
+    plain_points_batch = models.PointsBatch(
+        batch=models.Batch(ids=[1, 2], vectors=[[0.1, 0.2], [0.3, 0.4]])
+    )
+    plain_point_structs = models.PointsList(
+        points=[
+            models.PointStruct(id=1, vector=[1.0, 2.0]),
+            models.PointStruct(id=2, vector=[1.0, 3.0]),
+        ]
+    )
+    doc_points_batch = models.PointsBatch(
+        batch=models.Batch(
+            ids=[1, 2],
+            vectors=[
+                models.Document(text="123", model="Qdrant/bm42"),
+                models.Document(text="321", model="Qdrant/bm42"),
+            ],
+        ),
+    )
+    doc_point_struct = models.PointsList(
+        points=[
+            models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm42")),
+            models.PointStruct(id=2, vector=models.Document(text="321", model="Qdrant/bm42")),
+        ]
+    )
+
+    plain_batch_upsert_op = models.UpsertOperation(upsert=plain_points_batch)
+    plain_structs_upsert_op = models.UpsertOperation(upsert=plain_point_structs)
+    doc_batch_upsert_op = models.UpsertOperation(upsert=doc_points_batch)
+    doc_structs_upsert_op = models.UpsertOperation(upsert=doc_point_struct)
+
+    assert not inspect_update_operations([plain_batch_upsert_op])
+    assert not inspect_update_operations([plain_structs_upsert_op])
+    assert inspect_update_operations([doc_batch_upsert_op])
+    assert inspect_update_operations([doc_structs_upsert_op])
+
+    assert inspect_update_operations([plain_batch_upsert_op, doc_structs_upsert_op])
+
+    plain_point_vectors = models.PointVectors(id=1, vector=[0.2, 0.3])
+    doc_point_vectors = models.PointVectors(
+        id=2, vector=models.Document(text="123", model="Qdrant/bm42")
+    )
+
+    plain_point_vectors_update_op = models.UpdateVectorsOperation(
+        update_vectors=models.UpdateVectors(points=[plain_point_vectors])
+    )
+    doc_point_vectors_update_op = models.UpdateVectorsOperation(
+        update_vectors=models.UpdateVectors(points=[doc_point_vectors])
+    )
+
+    assert not inspect_update_operations([plain_point_vectors_update_op])
+    assert inspect_update_operations([doc_point_vectors_update_op])
+
+    assert inspect_update_operations([plain_point_vectors_update_op, doc_point_vectors_update_op])

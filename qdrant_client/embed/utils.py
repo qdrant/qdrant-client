@@ -80,15 +80,6 @@ def inspect_batch(points: models.Batch) -> bool:
     return False
 
 
-def inspect_points(points: types.Points) -> bool:
-    """Check whether point requires inference"""
-
-    if isinstance(points, models.Batch):
-        return inspect_batch(points)
-
-    return inspect_point_structs(points)
-
-
 def inspect_point_structs(points: Sequence[Union[models.PointStruct, grpc.PointStruct]]) -> bool:
     for point in points:
         if isinstance(point, grpc.PointStruct):
@@ -97,6 +88,15 @@ def inspect_point_structs(points: Sequence[Union[models.PointStruct, grpc.PointS
         if isinstance(point.vector, types.Document):
             return True
     return False
+
+
+def inspect_points(points: types.Points) -> bool:
+    """Check whether point requires inference"""
+
+    if isinstance(points, models.Batch):
+        return inspect_batch(points)
+
+    return inspect_point_structs(points)
 
 
 def inspect_query_requests(requests: Sequence[types.QueryRequest]) -> bool:
