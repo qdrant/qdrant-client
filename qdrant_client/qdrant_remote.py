@@ -299,11 +299,6 @@ class QdrantRemote(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        warnings.warn(
-            "async_grpc_collections is deprecated and will be removed in a future release.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         if self._aio_grpc_collections_client is None:
             self._init_async_grpc_collections_client()
         return self._aio_grpc_collections_client
@@ -315,11 +310,6 @@ class QdrantRemote(QdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        warnings.warn(
-            "async_grpc_points is deprecated and will be removed in a future release.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         if self._aio_grpc_points_client is None:
             self._init_async_grpc_points_client()
         return self._aio_grpc_points_client
@@ -332,7 +322,7 @@ class QdrantRemote(QdrantBase):
             An instance of raw gRPC client, generated from Protobuf
         """
         warnings.warn(
-            "async_grpc_snapshots is deprecated and will be removed in a future release.",
+            "async_grpc_snapshots is deprecated and will be removed in a future release. Use `AsyncQdrantRemote.grpc_snapshots` instead.",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -348,7 +338,7 @@ class QdrantRemote(QdrantBase):
             An instance of raw gRPC client, generated from Protobuf
         """
         warnings.warn(
-            "async_grpc_root is deprecated and will be removed in a future release.",
+            "async_grpc_root is deprecated and will be removed in a future release. Use `AsyncQdrantRemote.grpc_root` instead.",
             DeprecationWarning,
             stacklevel=2,
         )

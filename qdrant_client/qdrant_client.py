@@ -189,6 +189,11 @@ class QdrantClient(QdrantFastembedMixin):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
+        warnings.warn(
+            "async_grpc_points is deprecated and will be removed in a future release. Use `AsyncQdrantRemote.grpc_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if isinstance(self._client, QdrantRemote):
             return self._client.async_grpc_points
 
@@ -201,6 +206,11 @@ class QdrantClient(QdrantFastembedMixin):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
+        warnings.warn(
+            "async_grpc_collections is deprecated and will be removed in a future release. Use `AsyncQdrantRemote.grpc_collections` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if isinstance(self._client, QdrantRemote):
             return self._client.async_grpc_collections
 
