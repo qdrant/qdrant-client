@@ -129,7 +129,7 @@ def inspect_update_operations(update_operations: Sequence[types.UpdateOperation]
 
         elif isinstance(update_operation, models.UpdateVectorsOperation):
             operation = update_operation.update_vectors
-            requires_inference = inspect_point_vectors(operation.vectors)
+            requires_inference = inspect_point_vectors(operation.points)
         if requires_inference:
             return True
 

@@ -616,7 +616,8 @@ class QdrantRemote(QdrantBase):
             assert not isinstance(
                 query, types.Document
             ), "Query document has not been preprocessed. Are cloud inference or fastembed available?"
-            query = RestToGrpc.convert_query_interface(query)
+            if query is not None:
+                query = RestToGrpc.convert_query_interface(query)
 
             if isinstance(prefetch, models.Prefetch):
                 prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
@@ -825,7 +826,8 @@ class QdrantRemote(QdrantBase):
             assert not isinstance(
                 query, types.Document
             ), "Query document has not been preprocessed. Are cloud inference or fastembed available?"
-            query = RestToGrpc.convert_query_interface(query)
+            if query is not None:
+                query = RestToGrpc.convert_query_interface(query)
 
             if isinstance(prefetch, models.Prefetch):
                 prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
