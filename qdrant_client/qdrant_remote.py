@@ -609,30 +609,14 @@ class QdrantRemote(QdrantBase):
         _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.QueryResponse:
-        if isinstance(query, types.SparseVector):
-            query = models.NearestQuery(nearest=query)
-
-        elif isinstance(query, np.ndarray):
-            query = models.NearestQuery(nearest=query.tolist())
-
-        elif isinstance(query, list):
-            query = models.NearestQuery(nearest=query)
-
-        elif isinstance(query, get_args(types.PointId)):
-            query = (
-                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
-            )
-            query = models.NearestQuery(nearest=query)
-        elif (
-            not isinstance(query, get_args(models.Query))
-            and query is not None
-            and not isinstance(query, List)
-        ):
-            raise TypeError(f"Unexpected query type: {type(query)}")
+        if isinstance(query, np.ndarray):
+            query = query.tolist()
 
         if self._prefer_grpc:
-            if isinstance(query, get_args(models.Query)):
-                query = RestToGrpc.convert_query(query)
+            assert not isinstance(
+                query, types.Document
+            ), "Query document has not been preprocessed. Are cloud inference or fastembed available?"
+            query = RestToGrpc.convert_query_interface(query)
 
             if isinstance(prefetch, models.Prefetch):
                 prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
@@ -689,6 +673,14 @@ class QdrantRemote(QdrantBase):
             return models.QueryResponse(points=scored_points)
 
         else:
+            if isinstance(query, get_args(types.PointId)):
+                query = (
+                    GrpcToRest.convert_point_id(query)
+                    if isinstance(query, grpc.PointId)
+                    else query
+                )
+                query = models.NearestQuery(nearest=query)
+
             if isinstance(query, grpc.Query):
                 query = GrpcToRest.convert_query(query)
 
@@ -826,29 +818,14 @@ class QdrantRemote(QdrantBase):
         _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.GroupsResult:
-        if isinstance(query, types.SparseVector):
-            query = models.NearestQuery(nearest=query)
+        if isinstance(query, np.ndarray):
+            query = query.tolist()
 
-        elif isinstance(query, np.ndarray):
-            query = models.NearestQuery(nearest=query.tolist())
-
-        elif isinstance(query, list):
-            query = models.NearestQuery(nearest=query)
-
-        elif isinstance(query, get_args(types.PointId)):
-            query = (
-                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
-            )
-            query = models.NearestQuery(nearest=query)
-        elif (
-            not isinstance(query, get_args(models.Query))
-            and query is not None
-            and not isinstance(query, List)
-        ):
-            raise TypeError(f"Unexpected query type: {type(query)}")
         if self._prefer_grpc:
-            if isinstance(query, get_args(models.Query)):
-                query = RestToGrpc.convert_query(query)
+            assert not isinstance(
+                query, types.Document
+            ), "Query document has not been preprocessed. Are cloud inference or fastembed available?"
+            query = RestToGrpc.convert_query_interface(query)
 
             if isinstance(prefetch, models.Prefetch):
                 prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
@@ -910,6 +887,14 @@ class QdrantRemote(QdrantBase):
             ).result
             return GrpcToRest.convert_groups_result(result)
         else:
+            if isinstance(query, get_args(types.PointId)):
+                query = (
+                    GrpcToRest.convert_point_id(query)
+                    if isinstance(query, grpc.PointId)
+                    else query
+                )
+                query = models.NearestQuery(nearest=query)
+
             if isinstance(query, grpc.Query):
                 query = GrpcToRest.convert_query(query)
 

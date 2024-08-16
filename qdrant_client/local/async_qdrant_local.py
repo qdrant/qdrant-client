@@ -404,12 +404,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
             )
             query = rest_models.NearestQuery(nearest=query)
-        elif (
-            not isinstance(query, get_args(rest_models.Query))
-            and query is not None
-            and (not isinstance(query, List))
-        ):
-            raise TypeError(f"Unexpected query type: {type(query)}")
         if query is not None:
             (query, mentioned_ids) = self._resolve_query_input(
                 collection_name, query, using, lookup_from
@@ -481,6 +475,17 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
+        if isinstance(query, types.SparseVector):
+            query = rest_models.NearestQuery(nearest=query)
+        elif isinstance(query, np.ndarray):
+            query = rest_models.NearestQuery(nearest=query.tolist())
+        elif isinstance(query, list):
+            query = rest_models.NearestQuery(nearest=query)
+        elif isinstance(query, get_args(types.PointId)):
+            query = (
+                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
+            )
+            query = rest_models.NearestQuery(nearest=query)
         if query is not None:
             (query, mentioned_ids) = self._resolve_query_input(
                 collection_name, query, using, lookup_from

@@ -436,12 +436,6 @@ class QdrantLocal(QdrantBase):
                 GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
             )
             query = rest_models.NearestQuery(nearest=query)
-        elif (
-            not isinstance(query, get_args(rest_models.Query))
-            and query is not None
-            and not isinstance(query, List)
-        ):
-            raise TypeError(f"Unexpected query type: {type(query)}")
 
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
@@ -519,11 +513,28 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
+
+        if isinstance(query, types.SparseVector):
+            query = rest_models.NearestQuery(nearest=query)
+
+        elif isinstance(query, np.ndarray):
+            query = rest_models.NearestQuery(nearest=query.tolist())
+
+        elif isinstance(query, list):
+            query = rest_models.NearestQuery(nearest=query)
+
+        elif isinstance(query, get_args(types.PointId)):
+            query = (
+                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
+            )
+            query = rest_models.NearestQuery(nearest=query)
+
         if query is not None:
             query, mentioned_ids = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
+
         with_lookup_collection = None
         if with_lookup is not None:
             if isinstance(with_lookup, str):
