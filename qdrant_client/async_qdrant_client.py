@@ -181,6 +181,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         Returns:
             An instance of raw REST API client, generated from OpenAPI schema
         """
+        warnings.warn(
+            "The 'rest' property is deprecated and will be removed in a future version. Use `http` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if isinstance(self._client, AsyncQdrantRemote):
             return self._client.rest
         raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
