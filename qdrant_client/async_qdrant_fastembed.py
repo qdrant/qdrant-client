@@ -598,27 +598,24 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
 
     def _embed_raw_points(
         self, points: Union[models.Batch, List[models.PointStruct]]
-    ) -> List[models.PointStruct]:
-        embedding_points = []
+    ) -> Union[models.Batch, List[models.PointStruct]]:
         if isinstance(points, models.Batch):
             (ids, documents, payloads) = (points.ids, points.vectors, points.payloads)
-            for i, document in enumerate(documents):
-                assert isinstance(document, models.Document)
-                embedding_points.append(
-                    models.PointStruct(
-                        id=ids[i], payload=payloads[i], vector=self._embed_raw_data(document)
-                    )
-                )
-        else:
-            for point in points:
-                embedding_points.append(
-                    models.PointStruct(
-                        id=point.id,
-                        payload=point.payload,
-                        vector=self._embed_raw_data(point.vector),
-                    )
-                )
-        return embedding_points
+            if not isinstance(next(iter(documents)), models.Document):
+                return points
+            embeddings = [
+                self._embed_raw_data(document)
+                if isinstance(document, models.Document)
+                else document
+                for document in documents
+            ]
+            return models.Batch(ids=ids, vectors=embeddings, payloads=payloads)
+        return [
+            models.PointStruct(
+                id=point.id, payload=point.payload, vector=self._embed_raw_data(point.vector)
+            )
+            for point in points
+        ]
 
     def _embed_raw_point_vectors(
         self, points: Sequence[types.PointVectors]

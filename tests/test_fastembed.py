@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+import numpy as np
 import pytest
 
 from qdrant_client import QdrantClient, models
@@ -342,12 +343,10 @@ def test_query_embeddings_prefetch(prefer_grpc):
     assert query_is_float_list(grandchild_prefetches[0])  # "nested on prefetch" check
     assert query_is_float_list(grandchild_prefetches[0].prefetch)  # "deep text" check
     assert query_is_float_list(grandchild_prefetches[1].prefetch[0])  # "another deep text" check
-    assert query_is_float_list(
-        grandchild_prefetches[1].prefetch[1]
-    )  # yet another deep text" check
+    assert query_is_float_list(grandchild_prefetches[1].prefetch[1])  # yet another deep text check
 
 
-def test_upsert():
+def test_upsert_and_update():
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -372,6 +371,9 @@ def test_upsert():
         models.PointStruct(
             id=2, vector=models.Document(text="It's another short query", model=model_name)
         ),
+        models.PointStruct(
+            id=3, vector=models.Document(text="It's an old good query", model=model_name)
+        ),
     ]
     local_client.upsert(
         collection_name,
@@ -380,5 +382,63 @@ def test_upsert():
     remote_client.upsert(collection_name, points=points)
 
     compare_collections(
-        local_client, remote_client, num_vectors=2, collection_name=collection_name
+        local_client, remote_client, num_vectors=3, collection_name=collection_name
+    )
+
+    prev_vector = local_client.retrieve(collection_name, ids=[1], with_vectors=True)
+    update_vector_points = [
+        models.PointVectors(
+            id=1, vector=models.Document(text="It's a substitution", model=model_name)
+        )
+    ]
+    local_client.update_vectors(collection_name, update_vector_points)
+    remote_client.update_vectors(collection_name, update_vector_points)
+
+    updated_point = local_client.retrieve(collection_name, ids=[1], with_vectors=True)
+
+    assert not np.allclose(updated_point[0].vector, prev_vector[0].vector, atol=10e-4)
+
+    compare_collections(
+        local_client, remote_client, num_vectors=3, collection_name=collection_name
+    )
+
+    operations = [
+        models.UpsertOperation(
+            upsert=models.PointsList(
+                points=[
+                    models.PointStruct(
+                        id=1,
+                        vector=models.Document(text="A completely new document", model=model_name),
+                    )
+                ]
+            )
+        ),
+        models.UpsertOperation(
+            upsert=models.PointsBatch(
+                batch=models.Batch(
+                    ids=[3], vectors=[models.Document(text="A decent document", model=model_name)]
+                )
+            )
+        ),
+        models.UpdateVectorsOperation(
+            update_vectors=models.UpdateVectors(
+                points=[
+                    models.PointVectors(
+                        id=2, vector=models.Document(text="Yet another document", model=model_name)
+                    )
+                ]
+            )
+        ),
+    ]
+    old_points = local_client.retrieve(collection_name, ids=[1, 2, 3], with_vectors=True)
+
+    local_client.batch_update_points(collection_name, operations)
+    remote_client.batch_update_points(collection_name, operations)
+    new_points = local_client.retrieve(collection_name, ids=[1, 2, 3], with_vectors=True)
+
+    assert not np.allclose(new_points[0].vector, old_points[0].vector, atol=10e-4)
+    assert not np.allclose(new_points[1].vector, old_points[1].vector, atol=10e-4)
+    assert not np.allclose(new_points[2].vector, old_points[2].vector, atol=10e-4)
+    compare_collections(
+        local_client, remote_client, num_vectors=3, collection_name=collection_name
     )
