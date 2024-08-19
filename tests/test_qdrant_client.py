@@ -459,7 +459,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         timeout=TIMEOUT,
     )
 
-    if dev or (major, minor, patch) >= (1, 8, 0):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
         assert client.collection_exists(collection_name=COLLECTION_NAME)
         assert not client.collection_exists(collection_name="non_existing_collection")
 
@@ -598,7 +598,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
     assert hits_should == hits_match_any
 
-    if dev or (major, minor, patch) >= (1, 8, 0):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
         hits_min_should = client.search(
             collection_name=COLLECTION_NAME,
             query_vector=query_vector,
@@ -653,7 +653,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     for hit in hits:
         print(hit)
 
-    if dev or (major, minor, patch) >= (1, 10, 0):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
         query_response = client.query_points(
             collection_name=COLLECTION_NAME,
             query=query_vector,
@@ -795,7 +795,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert batch_reco_result[1] == reco_result_2
     assert batch_reco_result[2] == reco_result_3
 
-    if dev or (major, minor, patch) >= (1, 10, 0):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
         query_points_requests = [
             models.QueryRequest(
                 query=query_vector_1,
@@ -1204,11 +1204,12 @@ def test_quantization_config(prefer_grpc):
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_custom_sharding(prefer_grpc):
     major, minor, patch, dev = read_version()
-    if minor is not None and not dev:
-        if (major, minor, patch) < (1, 7, 0):
-            pytest.skip("Custom sharding is supported since v1.7.0")
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
+        pytest.skip("Custom sharding is supported since v1.7.0")
 
-    query_api_available = dev or (major, minor, patch) >= (1, 10, 0)
+    query_api_available = (
+        dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0)
+    )
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
@@ -1385,9 +1386,8 @@ def test_custom_sharding(prefer_grpc):
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors(prefer_grpc):
     major, minor, patch, dev = read_version()
-    if minor is not None and not dev:
-        if (major, minor, patch) < (1, 7, 0):
-            pytest.skip("Sparse vectors are supported since v1.7.0")
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
+        pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
@@ -1466,9 +1466,8 @@ def test_sparse_vectors(prefer_grpc):
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors_batch(prefer_grpc):
     major, minor, patch, dev = read_version()
-    if minor is not None and not dev:
-        if (major, minor, patch) < (1, 7, 0):
-            pytest.skip("Sparse vectors are supported since v1.7.0")
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
+        pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):

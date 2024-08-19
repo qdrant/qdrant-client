@@ -182,9 +182,8 @@ def test_idf_models():
         pytest.skip("FastEmbed is not installed, skipping")
 
     major, minor, patch, dev = read_version()
-    if major is not None and not dev:
-        if (major, minor, patch) < (1, 10, 2):
-            pytest.skip("Works as of version 1.10.2")
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 10, 2):
+        pytest.skip("Works as of version 1.10.2")
 
     for model_name in ("Qdrant/bm25", "Qdrant/bm42-all-minilm-l6-v2-attentions"):
         local_client.set_sparse_model(model_name)

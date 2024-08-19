@@ -114,7 +114,7 @@ async def test_async_qdrant_client(prefer_grpc):
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
-    if dev or (major, minor, patch) >= (1, 8, 0):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
         await client.collection_exists(COLLECTION_NAME)
 
     await client.update_collection(
@@ -216,7 +216,7 @@ async def test_async_qdrant_client(prefer_grpc):
         == 7
     )
 
-    if dev or (major, minor, patch) >= (1, 10, 0):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
         assert (
             len(
                 (
@@ -357,7 +357,7 @@ async def test_async_qdrant_client_local():
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
-    if dev or (major, minor, patch) >= (1, 8, 0):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
         await client.collection_exists(COLLECTION_NAME)
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
@@ -435,7 +435,7 @@ async def test_async_qdrant_client_local():
         == 4
     )
 
-    if dev or (major, minor, patch) >= (1, 10, 0):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
         assert (
             len(
                 (
