@@ -660,25 +660,82 @@ class QdrantFastembedMixin(QdrantBase):
     def _embed_raw_points(
         self, points: Union[models.Batch, List[models.PointStruct]]
     ) -> Union[models.Batch, List[models.PointStruct]]:
+        def contains_documents(docs: models.BatchVectorStruct) -> bool:
+            if isinstance(docs, dict):
+                # check if inner iter is not empty
+                inner = next(iter(docs.values()))
+                if len(inner):
+                    return isinstance(next(iter(inner)), models.Document)
+            return isinstance(next(iter(docs)), models.Document)
+
         if isinstance(points, models.Batch):
             ids, documents, payloads = points.ids, points.vectors, points.payloads
-            if not isinstance(next(iter(documents)), models.Document):
+            if not contains_documents(documents):
                 return points
-            embeddings = [
-                self._embed_raw_data(document)
-                if isinstance(document, models.Document)
-                else document
-                for document in documents
-            ]
+
+            embeddings = []
+            if isinstance(documents, dict):
+                keys = list(documents.keys())
+                lengths = {len(documents[key]) for key in keys}
+
+                if len(lengths) > 1:
+                    raise ValueError(
+                        "All named vectors in batch should contain the same number of vectors"
+                    )
+
+                batch_size = lengths.pop()
+                for i in range(batch_size):
+                    embedding = {}
+                    for key in keys:
+                        document = documents[key][i]
+                        embedding[key] = (
+                            self._embed_raw_data(document)
+                            if isinstance(document, models.Document)
+                            else document
+                        )
+                    embeddings.append(embedding)
+            else:
+                for document in documents:
+                    if isinstance(document, models.Document):
+                        if document.model in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+                            raise TypeError("Sparse vectors must be provided in dict")
+                    embeddings.append(
+                        self._embed_raw_data(document)
+                        if isinstance(document, models.Document)
+                        else document
+                    )
             return models.Batch(ids=ids, vectors=embeddings, payloads=payloads)
-        return [
-            models.PointStruct(
-                id=point.id,
-                payload=point.payload,
-                vector=self._embed_raw_data(point.vector),
-            )
-            for point in points
-        ]
+
+        updated_points = []
+        for point in points:
+            vector = point.vector
+            if isinstance(vector, models.Document):
+                if vector.model in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+                    raise TypeError("Sparse vectors must be provided in dict")
+                updated_points.append(
+                    models.PointStruct(
+                        id=point.id,
+                        payload=point.payload,
+                        vector=(
+                            self._embed_raw_data(vector)
+                            if isinstance(vector, models.Document)
+                            else vector
+                        ),
+                    )
+                )
+            if isinstance(vector, Dict):
+                embedding = {}
+                for key in vector.keys():
+                    current_vector = vector[key]
+                    embedding[key] = (
+                        self._embed_raw_data(current_vector)
+                        if isinstance(current_vector, models.Document)
+                        else current_vector
+                    )
+                updated_points.append(
+                    models.PointStruct(id=point.id, payload=point.payload, vector=embedding)
+                )
+        return updated_points
 
     def _embed_raw_point_vectors(
         self, points: Sequence[types.PointVectors]

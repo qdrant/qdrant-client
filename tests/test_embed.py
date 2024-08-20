@@ -1,4 +1,4 @@
-from qdrant_client import models, grpc
+from qdrant_client import models, grpc, QdrantClient
 from qdrant_client.embed.utils import (
     inspect_query_types,
     inspect_query_and_prefetch_types,
@@ -36,7 +36,51 @@ def test_inspect_query_types():
     )
     assert not inspect_query_types(None)
 
-    assert models.Document(text="123", model="Qdrant/bm42")
+    doc = models.Document(text="123", model="Qdrant/bm25")
+    assert doc
+
+    assert inspect_query_types(models.NearestQuery(nearest=doc))
+    assert inspect_query_types(
+        models.RecommendQuery(
+            recommend=models.RecommendInput(positive=[doc], negative=[[-1.0, -2.0]])
+        )
+    )
+    assert inspect_query_types(
+        models.RecommendQuery(
+            recommend=models.RecommendInput(positive=[[1.0, 2.0]], negative=[doc])
+        )
+    )
+    assert inspect_query_types(
+        models.DiscoverQuery(
+            discover=models.DiscoverInput(
+                target=doc,
+                context=models.ContextPair(positive=[1.0, 2.0], negative=[-1.0, -2.0]),
+            )
+        )
+    )
+    assert inspect_query_types(
+        models.DiscoverQuery(
+            discover=models.DiscoverInput(
+                target=[3.0, 4.0],
+                context=models.ContextPair(positive=doc, negative=[-1.0, -2.0]),
+            )
+        )
+    )
+
+    assert inspect_query_types(
+        models.DiscoverQuery(
+            discover=models.DiscoverInput(
+                target=[3.0, 4.0],
+                context=models.ContextPair(positive=[1.0, 2.0], negative=doc),
+            )
+        )
+    )
+    assert inspect_query_types(
+        models.ContextQuery(context=[models.ContextPair(positive=doc, negative=[-1.0, -2.0])])
+    )
+    assert inspect_query_types(
+        models.ContextQuery(context=[models.ContextPair(positive=[1.0, 2.0], negative=doc)])
+    )
 
 
 def test_inspect_prefetch_types():
@@ -46,18 +90,18 @@ def test_inspect_prefetch_types():
     vector_prefetch = models.Prefetch(query=[1.0, 2.0])
     assert not inspect_prefetch_types(vector_prefetch)
 
-    doc_prefetch = models.Prefetch(query=models.Document(text="123", model="Qdrant/bm42"))
+    doc_prefetch = models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25"))
     assert inspect_prefetch_types(doc_prefetch)
 
     nested_prefetch = models.Prefetch(
         query=None,
-        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm42")),
+        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25")),
     )
     assert inspect_prefetch_types(nested_prefetch)
 
     vector_and_doc_prefetch = models.Prefetch(
         query=[1.0, 2.0],
-        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm42")),
+        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25")),
     )
     assert inspect_prefetch_types(vector_and_doc_prefetch)
 
@@ -65,8 +109,8 @@ def test_inspect_prefetch_types():
 def test_inspect_query_and_prefetch_types():
     none_query = None
     none_prefetch = None
-    query = models.Document(text="123", model="Qdrant/bm42")
-    prefetch = models.Prefetch(query=models.Document(text="123", model="Qdrant/bm42"))
+    query = models.Document(text="123", model="Qdrant/bm25")
+    prefetch = models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25"))
 
     assert not inspect_query_and_prefetch_types(none_query, none_prefetch)
     assert inspect_query_and_prefetch_types(query, none_prefetch)
@@ -81,8 +125,8 @@ def test_inspect_points():
     document_batch = models.Batch(
         ids=[1, 2],
         vectors=[
-            models.Document(text="123", model="Qdrant/bm42"),
-            models.Document(text="324", model="Qdrant/bm42"),
+            models.Document(text="123", model="Qdrant/bm25"),
+            models.Document(text="324", model="Qdrant/bm25"),
         ],
     )
     assert inspect_points(document_batch)
@@ -91,13 +135,13 @@ def test_inspect_points():
     assert not inspect_points(vector_points)
 
     document_points = [
-        models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm42"))
+        models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm25"))
     ]
     assert inspect_points(document_points)
 
     mixed_points = [
         models.PointStruct(id=1, vector=[1.0, 2.0]),
-        models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm42")),
+        models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm25")),
     ]
     assert inspect_points(mixed_points)
 
@@ -112,7 +156,7 @@ def test_inspect_points():
     assert not inspect_points(dict_batch)
 
     dict_doc_batch = models.Batch(
-        ids=[1, 2], vectors={"dense": [models.Document(text="123", model="Qdrant/bm42")]}
+        ids=[1, 2], vectors={"dense": [models.Document(text="123", model="Qdrant/bm25")]}
     )
     assert inspect_points(dict_doc_batch)
 
@@ -125,7 +169,7 @@ def test_inspect_points():
         ids=[1, 2],
         vectors={
             "dense": [[1.0, 2.0]],
-            "dense-two": [models.Document(text="123", model="Qdrant/bm42")],
+            "dense-two": [models.Document(text="123", model="Qdrant/bm25")],
         },
     )
     assert inspect_points(multiple_keys_mixed_types_batch)
@@ -143,13 +187,13 @@ def test_inspect_query_requests():
     assert not inspect_query_requests([vector_only_prefetch_request])
 
     document_only_query_request = models.QueryRequest(
-        query=models.Document(text="123", model="Qdrant/bm42"),
+        query=models.Document(text="123", model="Qdrant/bm25"),
     )
 
     assert inspect_query_requests([document_only_query_request])
 
     document_only_prefetch_request = models.QueryRequest(
-        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm42"))
+        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25"))
     )
 
     assert inspect_query_requests([document_only_prefetch_request])
@@ -181,15 +225,15 @@ def test_inspect_update_operations():
         batch=models.Batch(
             ids=[1, 2],
             vectors=[
-                models.Document(text="123", model="Qdrant/bm42"),
-                models.Document(text="321", model="Qdrant/bm42"),
+                models.Document(text="123", model="Qdrant/bm25"),
+                models.Document(text="321", model="Qdrant/bm25"),
             ],
         ),
     )
     doc_point_struct = models.PointsList(
         points=[
-            models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm42")),
-            models.PointStruct(id=2, vector=models.Document(text="321", model="Qdrant/bm42")),
+            models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm25")),
+            models.PointStruct(id=2, vector=models.Document(text="321", model="Qdrant/bm25")),
         ]
     )
 
@@ -207,7 +251,7 @@ def test_inspect_update_operations():
 
     plain_point_vectors = models.PointVectors(id=1, vector=[0.2, 0.3])
     doc_point_vectors = models.PointVectors(
-        id=2, vector=models.Document(text="123", model="Qdrant/bm42")
+        id=2, vector=models.Document(text="123", model="Qdrant/bm25")
     )
 
     plain_point_vectors_update_op = models.UpdateVectorsOperation(
@@ -221,3 +265,110 @@ def test_inspect_update_operations():
     assert inspect_update_operations([doc_point_vectors_update_op])
 
     assert inspect_update_operations([plain_point_vectors_update_op, doc_point_vectors_update_op])
+
+
+def test_inference_flag():
+    def arg_checker(*args, **kwargs):
+        return args, kwargs
+
+    remote_client = QdrantClient(cloud_inference=True)
+
+    remote_client._client.upsert = arg_checker
+    remote_client._client.query_points = arg_checker
+    remote_client._client.update_vectors = arg_checker
+    remote_client._client.query_points_groups = arg_checker
+    remote_client._client.query_batch_points = arg_checker
+
+    cn = "qwerty"
+    doc = models.Document(text="my text", model="sentence-transformers/all-MiniLM-L6-v2")
+    vec = [0.2, 0.3]
+
+    _, kw = remote_client.upsert(collection_name=cn, points=[models.PointStruct(id=1, vector=doc)])
+    assert kw["_cloud_inference"]
+
+    _, kw = remote_client.upsert(collection_name=cn, points=[models.PointStruct(id=1, vector=vec)])
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_points(collection_name=cn, query=models.NearestQuery(nearest=doc))
+    assert kw["_cloud_inference"]
+
+    _, kw = remote_client.query_points(collection_name=cn, query=models.NearestQuery(nearest=vec))
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_points_groups(
+        collection_name=cn, group_by="text", query=models.NearestQuery(nearest=doc)
+    )
+    assert kw["_cloud_inference"]
+
+    _, kw = remote_client.query_points_groups(
+        collection_name=cn, group_by="text", query=models.NearestQuery(nearest=vec)
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_batch_points(
+        collection_name=cn, requests=[models.QueryRequest(query=models.NearestQuery(nearest=doc))]
+    )
+    assert kw["_cloud_inference"]
+
+    _, kw = remote_client.query_batch_points(
+        collection_name=cn, requests=[models.QueryRequest(query=models.NearestQuery(nearest=vec))]
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.update_vectors(
+        collection_name=cn, points=[models.PointVectors(id=1, vector=doc)]
+    )
+    assert kw["_cloud_inference"]
+
+    _, kw = remote_client.update_vectors(
+        collection_name=cn, points=[models.PointVectors(id=1, vector=vec)]
+    )
+    assert not kw["_cloud_inference"]
+
+    remote_client.cloud_inference = False
+
+    _, kw = remote_client.upsert(
+        collection_name="qwerty", points=[models.PointStruct(id=1, vector=doc)]
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.upsert(
+        collection_name="qwerty", points=[models.PointStruct(id=1, vector=vec)]
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_points(collection_name=cn, query=models.NearestQuery(nearest=doc))
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_points(collection_name=cn, query=models.NearestQuery(nearest=vec))
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_points_groups(
+        collection_name=cn, group_by="text", query=models.NearestQuery(nearest=doc)
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_points_groups(
+        collection_name=cn, group_by="text", query=models.NearestQuery(nearest=vec)
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_batch_points(
+        collection_name=cn, requests=[models.QueryRequest(query=models.NearestQuery(nearest=doc))]
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.query_batch_points(
+        collection_name=cn, requests=[models.QueryRequest(query=models.NearestQuery(nearest=vec))]
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.update_vectors(
+        collection_name=cn, points=[models.PointVectors(id=1, vector=doc)]
+    )
+    assert not kw["_cloud_inference"]
+
+    _, kw = remote_client.update_vectors(
+        collection_name=cn, points=[models.PointVectors(id=1, vector=vec)]
+    )
+    assert not kw["_cloud_inference"]

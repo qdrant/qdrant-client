@@ -1,3 +1,4 @@
+import random
 from copy import deepcopy
 
 import numpy as np
@@ -441,4 +442,54 @@ def test_upsert_and_update():
     assert not np.allclose(new_points[2].vector, old_points[2].vector, atol=10e-4)
     compare_collections(
         local_client, remote_client, num_vectors=3, collection_name=collection_name
+    )
+
+
+def test_query_batch_points():
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient()
+    model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    dim = 384
+    collection_name = "test-doc-embed"
+    local_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=dim, distance=models.Distance.COSINE),
+    )
+    if remote_client.collection_exists(collection_name):
+        remote_client.delete_collection(collection_name)
+    remote_client.create_collection(
+        collection_name,
+        vectors_config=models.VectorParams(size=dim, distance=models.Distance.COSINE),
+    )
+
+    texts = [
+        "It's a short document",
+        "Another short document",
+        "Document to check query requests",
+        "A nonsense document",
+    ]
+    points = [
+        models.PointStruct(id=i, vector=models.Document(text=text, model=model_name))
+        for i, text in enumerate(texts)
+    ]
+    # upload data
+    local_client.upsert(collection_name, points=points)
+    remote_client.upsert(collection_name, points=points)
+    query_requests = [
+        models.QueryRequest(
+            query=models.NearestQuery(
+                nearest=models.Document(text="It's a short query", model=model_name)
+            )
+        ),
+        models.QueryRequest(
+            query=models.NearestQuery(nearest=[random.random() for _ in range(dim)])
+        ),
+    ]
+
+    compare_client_results(
+        remote_client,
+        local_client,
+        lambda c: c.query_batch_points(collection_name, requests=query_requests),
     )

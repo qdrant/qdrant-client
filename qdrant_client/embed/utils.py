@@ -64,7 +64,37 @@ def inspect_query_types(
     ],
 ) -> bool:
     """Check whether query requires inference"""
-    return isinstance(query, types.Document)
+
+    def check_context(ctx: models.ContextInput) -> bool:
+        ctx = ctx if isinstance(ctx, list) else [ctx]
+
+        for pair in ctx:
+            if isinstance(pair.negative, types.Document) or isinstance(
+                pair.positive, types.Document
+            ):
+                return True
+        return False
+
+    if isinstance(query, types.Document):
+        return True
+    elif isinstance(query, models.NearestQuery):
+        return isinstance(query.nearest, types.Document)
+    elif isinstance(query, models.RecommendQuery):
+        for examples in (query.recommend.positive, query.recommend.negative):
+            if isinstance(examples, list) and any(
+                [isinstance(example, types.Document) for example in examples]
+            ):
+                return True
+    elif isinstance(query, models.DiscoverQuery):
+        if isinstance(query.discover.target, types.Document):
+            return True
+
+        return check_context(query.discover.context)
+
+    elif isinstance(query, models.ContextQuery):
+        return check_context(query.context)
+
+    return False
 
 
 def inspect_batch(points: models.Batch) -> bool:
