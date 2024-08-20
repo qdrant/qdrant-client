@@ -448,7 +448,7 @@ def test_upsert_and_update():
 def test_query_batch_points():
     major, minor, patch, dev = read_version()
     if major is not None and (major, minor, patch) < (1, 10, 0):
-        pytest.skip("Works as of version qdrant-client 1.11.1")
+        pytest.skip("Works as of qdrant 1.11.0")
 
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
