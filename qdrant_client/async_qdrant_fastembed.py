@@ -63,6 +63,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     def __init__(self, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
+        self.local_files_only = kwargs.get("local_files_only", False)
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
@@ -117,11 +118,13 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 DeprecationWarning,
                 stacklevel=2,
             )
+        local_files_only = kwargs.pop("local_files_only", self.local_files_only)
         self._get_or_init_model(
             model_name=embedding_model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
+            local_files_only=local_files_only,
             **kwargs,
         )
         self._embedding_model_name = embedding_model_name
@@ -132,6 +135,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
+        **kwargs,
     ) -> None:
         """
         Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
@@ -152,12 +156,15 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Returns:
             None
         """
+        local_files_only = kwargs.pop("local_files_only", self.local_files_only)
         if embedding_model_name is not None:
             self._get_or_init_sparse_model(
                 model_name=embedding_model_name,
                 cache_dir=cache_dir,
                 threads=threads,
                 providers=providers,
+                local_files_only=local_files_only,
+                **kwargs,
             )
         self._sparse_embedding_model_name = embedding_model_name
 

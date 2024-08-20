@@ -204,3 +204,23 @@ def test_idf_models():
 
     # the only sparse model without IDF is SPLADE, however it's too large for tests, so we don't test how non-idf
     # models work
+
+
+def test_local_files_only():
+    local_client = QdrantClient(":memory:")
+
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+
+    model_name = "sentence-transformers/all-MiniLM-L6-v2"
+    sparse_model_name = "Qdrant/bm42-all-minilm-l6-v2-attentions"
+
+    local_client.set_model(model_name)
+    local_client.set_sparse_model(sparse_model_name)
+
+    local_client.close()
+    local_client = QdrantClient(":memory:", local_files_only=True)
+    local_client.set_model(model_name)
+    local_client.set_sparse_model(sparse_model_name)
+    local_client.add("test_collection", **DOCS_EXAMPLE)
+    assert local_client.count("test_collection").count == 2
