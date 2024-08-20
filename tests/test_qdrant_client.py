@@ -56,6 +56,7 @@ from tests.congruence_tests.test_common import (
     generate_fixtures,
     init_client,
     init_remote,
+    initialize_fixture_collection,
 )
 from tests.fixtures.payload import (
     one_random_payload_please,
@@ -2131,8 +2132,84 @@ def test_read_consistency(prefer_grpc):
     )
 
 
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_create_payload_index(prefer_grpc):
+    client = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(client, COLLECTION_NAME, vectors_config={})
+
+    client.create_payload_index(COLLECTION_NAME, "keyword", models.PayloadSchemaType.KEYWORD)
+    client.create_payload_index(COLLECTION_NAME, "integer", models.PayloadSchemaType.INTEGER)
+    client.create_payload_index(COLLECTION_NAME, "float", models.PayloadSchemaType.FLOAT)
+    client.create_payload_index(COLLECTION_NAME, "geo", models.PayloadSchemaType.GEO)
+    client.create_payload_index(COLLECTION_NAME, "text", models.PayloadSchemaType.TEXT)
+    client.create_payload_index(COLLECTION_NAME, "bool", models.PayloadSchemaType.BOOL)
+    client.create_payload_index(COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME)
+    client.create_payload_index(COLLECTION_NAME, "uuid", models.PayloadSchemaType.UUID)
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "keyword_parametrized",
+        models.KeywordIndexParams(
+            type=models.KeywordIndexType.KEYWORD, is_tenant=False, on_disk=True
+        ),
+    )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "integer_parametrized",
+        models.IntegerIndexParams(
+            type=models.IntegerIndexType.INTEGER,
+            lookup=True,
+            range=True,
+            is_principal=False,
+            on_disk=True,
+        ),
+    )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "float_parametrized",
+        models.FloatIndexParams(
+            type=models.FloatIndexType.FLOAT, is_principal=False, on_disk=True
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "text_parametrized",
+        models.TextIndexParams(
+            type=models.TextIndexType.TEXT,
+            tokenizer=models.TokenizerType.PREFIX,
+            min_token_len=3,
+            max_token_len=7,
+            lowercase=True,
+        ),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "datetime_parametrized",
+        models.DatetimeIndexParams(
+            type=models.DatetimeIndexType.DATETIME, is_principal=False, on_disk=True
+        ),
+    )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "uuid_parametrized",
+        models.UuidIndexParams(type=models.UuidIndexType.UUID, is_tenant=False, on_disk=True),
+    )
+
+    client.create_payload_index(
+        COLLECTION_NAME, "geo_parametrized", models.GeoIndexParams(type=models.GeoIndexType.GEO)
+    )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "bool_parametrized",
+        models.BoolIndexParams(type=models.BoolIndexType.BOOL),
+    )
+
+
 if __name__ == "__main__":
     test_qdrant_client_integration()
     test_points_crud()
     test_has_id_condition()
     test_insert_float()
+    test_create_payload_index()
