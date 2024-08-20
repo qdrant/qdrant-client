@@ -627,6 +627,14 @@ sparse_vector_params = grpc.SparseVectorParams(
     modifier=grpc.Modifier.Idf,
 )
 
+sparse_vector_params_none_modifier = grpc.SparseVectorParams(
+    index=grpc.SparseIndexConfig(
+        full_scan_threshold=1000,
+        on_disk=True,
+    ),
+    modifier=getattr(grpc.Modifier, "None"),
+)
+
 sparse_vector_params_datatype = grpc.SparseVectorParams(
     index=grpc.SparseIndexConfig(
         full_scan_threshold=1000,
@@ -640,6 +648,7 @@ sparse_vector_config = grpc.SparseVectorConfig(
     map={
         "sparse": sparse_vector_params,
         "sparse_float16": sparse_vector_params_datatype,
+        "sparse_none": sparse_vector_params_none_modifier,
     }
 )
 

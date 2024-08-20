@@ -1670,6 +1670,8 @@ class GrpcToRest:
     def convert_modifier(cls, model: grpc.Modifier) -> rest.Modifier:
         if model == grpc.Modifier.Idf:
             return rest.Modifier.IDF
+        if model == getattr(grpc.Modifier, "None"):
+            return rest.Modifier.NONE
         raise ValueError(f"invalid Modifier model: {model}")
 
     @classmethod
@@ -3450,6 +3452,8 @@ class RestToGrpc:
     def convert_modifier(cls, model: rest.Modifier) -> grpc.Modifier:
         if model == rest.Modifier.IDF:
             return grpc.Modifier.Idf
+        elif model == rest.Modifier.NONE:
+            return getattr(grpc.Modifier, "None")
         else:
             raise ValueError(f"invalid Modifier model: {model}")
 
