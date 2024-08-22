@@ -2857,15 +2857,36 @@ class QdrantRemote(QdrantBase):
                 # otherwise the value will be corrupted
                 field_schema = grpc_payload_schema_to_field_type(field_schema)
 
-            if isinstance(field_schema, models.TextIndexParams):
-                field_index_params = grpc.PayloadIndexParams(
-                    text_index_params=RestToGrpc.convert_text_index_params(field_schema)
-                )
-                field_schema = grpc.FieldType.FieldTypeText
+            if isinstance(field_schema, get_args(models.PayloadSchemaParams)):
+                field_schema = RestToGrpc.convert_payload_schema_params(field_schema)
 
             if isinstance(field_schema, grpc.PayloadIndexParams):
                 field_index_params = field_schema
-                field_schema = grpc.FieldType.FieldTypeText
+                name = field_index_params.WhichOneof("index_params")
+                index_params = getattr(field_index_params, name)
+                if isinstance(index_params, grpc.TextIndexParams):
+                    field_schema = grpc.FieldType.FieldTypeText
+
+                if isinstance(index_params, grpc.IntegerIndexParams):
+                    field_schema = grpc.FieldType.FieldTypeInteger
+
+                if isinstance(index_params, grpc.KeywordIndexParams):
+                    field_schema = grpc.FieldType.FieldTypeKeyword
+
+                if isinstance(index_params, grpc.FloatIndexParams):
+                    field_schema = grpc.FieldType.FieldTypeFloat
+
+                if isinstance(index_params, grpc.GeoIndexParams):
+                    field_schema = grpc.FieldType.FieldTypeGeo
+
+                if isinstance(index_params, grpc.BoolIndexParams):
+                    field_schema = grpc.FieldType.FieldTypeBool
+
+                if isinstance(index_params, grpc.DatetimeIndexParams):
+                    field_schema = grpc.FieldType.FieldTypeDatetime
+
+                if isinstance(index_params, grpc.UuidIndexParams):
+                    field_schema = grpc.FieldType.FieldTypeUuid
 
             request = grpc.CreateFieldIndexCollection(
                 collection_name=collection_name,
