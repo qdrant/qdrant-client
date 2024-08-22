@@ -926,7 +926,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     positive = [1, 2, query_vector.tolist()]
     negative = []
 
-    if minor is not None and minor < 6:
+    if None not in (major, minor, patch) and (major, minor, patch) < (1, 6, 0):
         positive = [1, 2]
         negative = []
 
