@@ -2144,33 +2144,6 @@ def test_create_payload_index(prefer_grpc):
     client.create_payload_index(COLLECTION_NAME, "text", models.PayloadSchemaType.TEXT)
     client.create_payload_index(COLLECTION_NAME, "bool", models.PayloadSchemaType.BOOL)
     client.create_payload_index(COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME)
-    client.create_payload_index(COLLECTION_NAME, "uuid", models.PayloadSchemaType.UUID)
-
-    client.create_payload_index(
-        COLLECTION_NAME,
-        "keyword_parametrized",
-        models.KeywordIndexParams(
-            type=models.KeywordIndexType.KEYWORD, is_tenant=False, on_disk=True
-        ),
-    )
-    client.create_payload_index(
-        COLLECTION_NAME,
-        "integer_parametrized",
-        models.IntegerIndexParams(
-            type=models.IntegerIndexType.INTEGER,
-            lookup=True,
-            range=True,
-            is_principal=False,
-            on_disk=True,
-        ),
-    )
-    client.create_payload_index(
-        COLLECTION_NAME,
-        "float_parametrized",
-        models.FloatIndexParams(
-            type=models.FloatIndexType.FLOAT, is_principal=False, on_disk=True
-        ),
-    )
 
     client.create_payload_index(
         COLLECTION_NAME,
@@ -2184,27 +2157,60 @@ def test_create_payload_index(prefer_grpc):
         ),
     )
 
-    client.create_payload_index(
-        COLLECTION_NAME,
-        "datetime_parametrized",
-        models.DatetimeIndexParams(
-            type=models.DatetimeIndexType.DATETIME, is_principal=False, on_disk=True
-        ),
-    )
-    client.create_payload_index(
-        COLLECTION_NAME,
-        "uuid_parametrized",
-        models.UuidIndexParams(type=models.UuidIndexType.UUID, is_tenant=False, on_disk=True),
-    )
+    major, minor, patch, dev = read_version()
+    if major is None or dev or (major, minor, patch) >= (1, 11, 0):
+        client.create_payload_index(COLLECTION_NAME, "uuid", models.PayloadSchemaType.UUID)
 
-    client.create_payload_index(
-        COLLECTION_NAME, "geo_parametrized", models.GeoIndexParams(type=models.GeoIndexType.GEO)
-    )
-    client.create_payload_index(
-        COLLECTION_NAME,
-        "bool_parametrized",
-        models.BoolIndexParams(type=models.BoolIndexType.BOOL),
-    )
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "keyword_parametrized",
+            models.KeywordIndexParams(
+                type=models.KeywordIndexType.KEYWORD, is_tenant=False, on_disk=True
+            ),
+        )
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "integer_parametrized",
+            models.IntegerIndexParams(
+                type=models.IntegerIndexType.INTEGER,
+                lookup=True,
+                range=True,
+                is_principal=False,
+                on_disk=True,
+            ),
+        )
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "float_parametrized",
+            models.FloatIndexParams(
+                type=models.FloatIndexType.FLOAT, is_principal=False, on_disk=True
+            ),
+        )
+
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "datetime_parametrized",
+            models.DatetimeIndexParams(
+                type=models.DatetimeIndexType.DATETIME, is_principal=False, on_disk=True
+            ),
+        )
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "uuid_parametrized",
+            models.UuidIndexParams(type=models.UuidIndexType.UUID, is_tenant=False, on_disk=True),
+        )
+
+    if major is None or dev or (major, minor, patch) >= (1, 11, 1):
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "geo_parametrized",
+            models.GeoIndexParams(type=models.GeoIndexType.GEO),
+        )
+        client.create_payload_index(
+            COLLECTION_NAME,
+            "bool_parametrized",
+            models.BoolIndexParams(type=models.BoolIndexType.BOOL),
+        )
 
 
 if __name__ == "__main__":
