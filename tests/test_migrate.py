@@ -95,11 +95,9 @@ def test_multiple_vectors_collection(source_client, dest_client, request) -> Non
         request: pytest internal object to get launch fixtures from parametrize
     """
     major, minor, patch, dev = read_version()
-    version_set = major is not None or dev
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 10, 0):
+        pytest.skip("Multivectors are supported as of v1.10.0")
 
-    if version_set and not dev:
-        if major == 0 or (major == 1 and minor < 10):
-            pytest.skip("Multivectors are supported as of v1.10.0")
     source_client: QdrantClient = request.getfixturevalue(source_client)
     dest_client: QdrantClient = request.getfixturevalue(dest_client)
     collection_name = "multiple_vectors_collection"
@@ -174,11 +172,9 @@ def test_multivectors_collection(source_client, dest_client, request) -> None:
         request: pytest internal object to get launch fixtures from parametrize
     """
     major, minor, patch, dev = read_version()
-    version_set = major is not None or dev
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 10, 0):
+        pytest.skip("Multivectors are supported as of v1.10.0")
 
-    if version_set and not dev:
-        if major == 0 or (major == 1 and minor < 10):
-            pytest.skip("Multivectors are supported as of v1.10.0")
     source_client: QdrantClient = request.getfixturevalue(source_client)
     dest_client: QdrantClient = request.getfixturevalue(dest_client)
     collection_name = "multivectors_collection"
