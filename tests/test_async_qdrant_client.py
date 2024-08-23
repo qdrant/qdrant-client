@@ -96,8 +96,7 @@ async def test_async_grpc():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 async def test_async_qdrant_client(prefer_grpc):
-    _, minor_version, patch_version, dev_version = read_version()
-    version_set = minor_version is not None or dev_version
+    major, minor, patch, dev = read_version()
 
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=15)
     collection_params = dict(
@@ -115,7 +114,7 @@ async def test_async_qdrant_client(prefer_grpc):
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
-    if not version_set or dev_version or minor_version >= 8:
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
         await client.collection_exists(COLLECTION_NAME)
 
     await client.update_collection(
@@ -217,7 +216,7 @@ async def test_async_qdrant_client(prefer_grpc):
         == 7
     )
 
-    if not version_set or dev_version or minor_version >= 10:
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
         assert (
             len(
                 (
@@ -345,8 +344,7 @@ async def test_async_qdrant_client(prefer_grpc):
 
 @pytest.mark.asyncio
 async def test_async_qdrant_client_local():
-    _, minor_version, patch_version, dev_version = read_version()
-    version_set = minor_version is not None or dev_version
+    major, minor, patch, dev = read_version()
     client = AsyncQdrantClient(":memory:")
 
     collection_params = dict(
@@ -359,7 +357,7 @@ async def test_async_qdrant_client_local():
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
-    if not version_set or (dev_version or minor_version >= 8):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
         await client.collection_exists(COLLECTION_NAME)
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
@@ -437,7 +435,7 @@ async def test_async_qdrant_client_local():
         == 4
     )
 
-    if not version_set or dev_version or minor_version >= 10:
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
         assert (
             len(
                 (
