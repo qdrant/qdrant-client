@@ -56,7 +56,7 @@ def test_hybrid_query():
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
-    local_client.set_sparse_model(embedding_model_name="prithvida/Splade_PP_en_v1")
+    local_client.set_sparse_model(embedding_model_name="prithivida/Splade_PP_en_v1")
 
     local_client.add(collection_name=collection_name, **DOCS_EXAMPLE)
 
@@ -94,7 +94,7 @@ def test_query_batch():
     assert len(dense_search_result) == len(query_texts)
     assert all(len(result) > 0 for result in dense_search_result)
 
-    local_client.set_sparse_model(embedding_model_name="prithvida/Splade_PP_en_v1")
+    local_client.set_sparse_model(embedding_model_name="prithivida/Splade_PP_en_v1")
 
     local_client.add(collection_name=hybrid_collection_name, **DOCS_EXAMPLE)
 
