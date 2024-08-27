@@ -50,7 +50,6 @@ class BaseModel(PydanticBaseModel):
         json_dumps = orjson_dumps
 
     def model_dump_json(self, **kwargs: Any) -> str:
-        _ = kwargs.pop("option", None)
         data = self.model_dump(**kwargs)
         return orjson_dumps(data)
 
