@@ -487,6 +487,31 @@ class LocalCollection:
 
         return all_vectors
 
+    def _payload_and_non_deleted_mask(
+        self,
+        payload_filter: Optional[models.Filter],
+        vector_name: Optional[str] = None,
+    ) -> np.ndarray:
+        """
+        Calculate mask for filtered payload and non-deleted points. True - accepted, False - rejected
+        """
+        payload_mask = calculate_payload_mask(
+            payloads=self.payload,
+            payload_filter=payload_filter,
+            ids_inv=self.ids_inv,
+        )
+
+        # in deleted: 1 - deleted, 0 - not deleted
+        # in payload_mask: 1 - accepted, 0 - rejected
+        # in mask: 1 - ok, 0 - rejected
+        mask = payload_mask & ~self.deleted
+
+        if vector_name is not None:
+            # in deleted: 1 - deleted, 0 - not deleted
+            mask = mask & ~self.deleted_per_vector[vector_name]
+
+        return mask
+
     def search(
         self,
         query_vector: Union[
@@ -1067,6 +1092,30 @@ class LocalCollection:
                 group.lookup = next(iter(lookup), None)
 
         return models.GroupsResult(groups=groups_result)
+
+    def facet(self, key: str, facet_filter: Optional[types.Filter] = None) -> models.FacetResult:
+        facet_hits = defaultdict(int)
+
+        mask = self._payload_and_non_deleted_mask(facet_filter)
+
+        for idx, payload in enumerate(self.payload):
+            if not mask[idx]:
+                continue
+
+            if not isinstance(payload, dict):
+                continue
+
+            value = value_by_key(payload, key)
+            if value is None:
+                continue
+
+            if isinstance(value, list):
+                for v in value:
+                    facet_hits[v] += 1
+            else:
+                facet_hits[value] += 1
+
+        return models.FacetResult(hits=facet_hits)
 
     def retrieve(
         self,
