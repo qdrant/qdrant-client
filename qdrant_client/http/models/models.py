@@ -34,7 +34,7 @@ class BaseModel(PydanticBaseModel):
         return orjson.dumps(data, option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY).decode()
 
     @classmethod
-    def parse_raw(cls, b: str | bytes, **kwargs: Any) -> 'BaseModel': # this is deprecated
+    def parse_raw(cls, b: Union[str, bytes], **kwargs: Any) -> 'BaseModel': # this is deprecated
         if isinstance(b, str):
             b = b.encode()
         return cls.model_validate(orjson.loads(b))
