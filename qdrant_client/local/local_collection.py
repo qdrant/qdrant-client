@@ -1085,7 +1085,12 @@ class LocalCollection:
 
         return models.GroupsResult(groups=groups_result)
 
-    def facet(self, key: str, facet_filter: Optional[types.Filter] = None) -> models.FacetResult:
+    def facet(
+        self,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+    ) -> models.FacetResponse:
         facet_hits = defaultdict(int)
 
         mask = self._payload_and_non_deleted_mask(facet_filter)
@@ -1098,16 +1103,24 @@ class LocalCollection:
                 continue
 
             value = value_by_key(payload, key)
+
             if value is None:
                 continue
 
-            if isinstance(value, list):
-                for v in value:
+            for v in value:
+                if isinstance(v, get_args(models.FacetValue)):
                     facet_hits[v] += 1
-            else:
-                facet_hits[value] += 1
 
-        return models.FacetResult(hits=facet_hits)
+        hits = [
+            models.FacetValueHit(value=value, count=count)
+            for value, count in sorted(
+                facet_hits.items(),
+                # order by count descending, then by value ascending
+                key=lambda x: (-x[1], x[0]),
+            )[:limit]
+        ]
+
+        return models.FacetResponse(hits=hits)
 
     def retrieve(
         self,

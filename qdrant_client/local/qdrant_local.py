@@ -718,6 +718,18 @@ class QdrantLocal(QdrantBase):
         collection = self._get_collection(collection_name)
         return collection.count(count_filter=count_filter)
 
+    def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        **kwargs: Any,
+    ):
+        collection = self._get_collection(collection_name)
+        return collection.facet(key=key, facet_filter=facet_filter, limit=limit)
+
     def upsert(
         self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:

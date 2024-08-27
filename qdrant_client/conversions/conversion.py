@@ -140,6 +140,8 @@ class GrpcToRest:
     @classmethod
     def convert_condition(cls, model: grpc.Condition) -> rest.Condition:
         name = model.WhichOneof("condition_one_of")
+        if name is None:
+            raise ValueError(f"invalid Condition model: {model}")
         val = getattr(model, name)
 
         if name == "field":
@@ -487,6 +489,8 @@ class GrpcToRest:
     @classmethod
     def convert_order_value(cls, model: grpc.OrderValue) -> rest.OrderValue:
         name = model.WhichOneof("variant")
+        if name is None:
+            raise ValueError(f"invalid OrderValue model: {model}")
         val = getattr(model, name)
 
         if name == "int":
@@ -582,6 +586,8 @@ class GrpcToRest:
     @classmethod
     def convert_match(cls, model: grpc.Match) -> rest.Match:
         name = model.WhichOneof("match_value")
+        if name is None:
+            raise ValueError(f"invalid Match model: {model}")
         val = getattr(model, name)
 
         if name == "integer":
@@ -712,6 +718,8 @@ class GrpcToRest:
     @classmethod
     def convert_alias_operations(cls, model: grpc.AliasOperations) -> rest.AliasOperations:
         name = model.WhichOneof("action")
+        if name is None:
+            raise ValueError(f"invalid AliasOperations model: {model}")
         val = getattr(model, name)
 
         if name == "rename_alias":
@@ -735,6 +743,8 @@ class GrpcToRest:
         cls, model: grpc.PointsSelector, shard_key_selector: Optional[grpc.ShardKeySelector] = None
     ) -> rest.PointsSelector:
         name = model.WhichOneof("points_selector_one_of")
+        if name is None:
+            raise ValueError(f"invalid PointsSelector model: {model}")
         val = getattr(model, name)
 
         if name == "points":
@@ -754,6 +764,8 @@ class GrpcToRest:
         cls, model: grpc.WithPayloadSelector
     ) -> rest.WithPayloadInterface:
         name = model.WhichOneof("selector_options")
+        if name is None:
+            raise ValueError(f"invalid WithPayloadSelector model: {model}")
         val = getattr(model, name)
 
         if name == "enable":
@@ -862,6 +874,8 @@ class GrpcToRest:
     @classmethod
     def convert_vectors_config(cls, model: grpc.VectorsConfig) -> rest.VectorsConfig:
         name = model.WhichOneof("config")
+        if name is None:
+            raise ValueError(f"invalid VectorsConfig model: {model}")
         val = getattr(model, name)
 
         if name == "params":
@@ -896,7 +910,10 @@ class GrpcToRest:
     @classmethod
     def convert_vectors(cls, model: grpc.Vectors) -> rest.VectorStruct:
         name = model.WhichOneof("vectors_options")
+        if name is None:
+            raise ValueError(f"invalid Vectors model: {model}")
         val = getattr(model, name)
+
         if name == "vector":
             return cls.convert_vector(val)
         if name == "vectors":
@@ -918,6 +935,8 @@ class GrpcToRest:
     @classmethod
     def convert_vector_input(cls, model: grpc.VectorInput) -> rest.VectorInput:
         name = model.WhichOneof("variant")
+        if name is None:
+            raise ValueError(f"invalid VectorInput model: {model}")
         val = getattr(model, name)
 
         if name == "id":
@@ -978,6 +997,8 @@ class GrpcToRest:
     @classmethod
     def convert_query(cls, model: grpc.Query) -> rest.Query:
         name = model.WhichOneof("variant")
+        if name is None:
+            raise ValueError(f"invalid Query model: {model}")
         val = getattr(model, name)
 
         if name == "nearest":
@@ -1027,7 +1048,10 @@ class GrpcToRest:
     @classmethod
     def convert_with_vectors_selector(cls, model: grpc.WithVectorsSelector) -> rest.WithVector:
         name = model.WhichOneof("selector_options")
+        if name is None:
+            raise ValueError(f"invalid WithVectorsSelector model: {model}")
         val = getattr(model, name)
+
         if name == "enable":
             return val
         if name == "include":
@@ -1319,6 +1343,8 @@ class GrpcToRest:
     @classmethod
     def convert_read_consistency(cls, model: grpc.ReadConsistency) -> rest.ReadConsistency:
         name = model.WhichOneof("value")
+        if name is None:
+            raise ValueError(f"invalid ReadConsistency model: {model}")
         val = getattr(model, name)
         if name == "factor":
             return val
@@ -1384,6 +1410,8 @@ class GrpcToRest:
         cls, model: grpc.QuantizationConfig
     ) -> rest.QuantizationConfig:
         name = model.WhichOneof("quantization")
+        if name is None:
+            raise ValueError(f"invalid QuantizationConfig model: {model}")
         val = getattr(model, name)
         if name == "scalar":
             return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
@@ -1427,6 +1455,8 @@ class GrpcToRest:
     @classmethod
     def convert_group_id(cls, model: grpc.GroupId) -> rest.GroupId:
         name = model.WhichOneof("kind")
+        if name is None:
+            raise ValueError(f"invalid GroupId model: {model}")
         val = getattr(model, name)
         return val
 
@@ -1451,6 +1481,8 @@ class GrpcToRest:
         cls, model: grpc.QuantizationConfigDiff
     ) -> rest.QuantizationConfigDiff:
         name = model.WhichOneof("quantization")
+        if name is None:
+            raise ValueError(f"invalid QuantizationConfigDiff model: {model}")
         val = getattr(model, name)
         if name == "scalar":
             return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
@@ -1481,6 +1513,8 @@ class GrpcToRest:
     @classmethod
     def convert_vectors_config_diff(cls, model: grpc.VectorsConfigDiff) -> rest.VectorsConfigDiff:
         name = model.WhichOneof("config")
+        if name is None:
+            raise ValueError(f"invalid VectorsConfigDiff model: {model}")
         val = getattr(model, name)
 
         if name == "params":
@@ -1497,6 +1531,8 @@ class GrpcToRest:
         cls, model: grpc.PointsUpdateOperation
     ) -> rest.UpdateOperation:
         name = model.WhichOneof("operation")
+        if name is None:
+            raise ValueError(f"invalid PointsUpdateOperation model: {model}")
         val = getattr(model, name)
 
         if name == "upsert":
@@ -1698,6 +1734,8 @@ class GrpcToRest:
     @classmethod
     def convert_shard_key(cls, model: grpc.ShardKey) -> rest.ShardKey:
         name = model.WhichOneof("key")
+        if name is None:
+            raise ValueError(f"invalid ShardKey model: {model}")
         val = getattr(model, name)
         return val
 
@@ -1745,6 +1783,28 @@ class GrpcToRest:
             start_from=(
                 cls.convert_start_from(model.start_from) if model.HasField("start_from") else None
             ),
+        )
+
+    @classmethod
+    def convert_facet_value(cls, model: grpc.FacetValue) -> rest.FacetValue:
+        name = model.WhichOneof("variant")
+        if name is None:
+            raise ValueError(f"invalid FacetValue model: {model}")
+
+        val = getattr(model, name)
+        return val
+
+    @classmethod
+    def convert_facet_value_hit(cls, model: grpc.FacetHit) -> rest.FacetValueHit:
+        return rest.FacetValueHit(
+            value=cls.convert_facet_value(model.value),
+            count=model.count,
+        )
+
+    @classmethod
+    def convert_facet_response(cls, model: grpc.FacetResponse) -> rest.FacetResponse:
+        return rest.FacetResponse(
+            hits=[cls.convert_facet_value_hit(hit) for hit in model.hits],
         )
 
     @classmethod
@@ -3272,8 +3332,6 @@ class RestToGrpc:
     def convert_points_update_operation(
         cls, model: rest.UpdateOperation
     ) -> grpc.PointsUpdateOperation:
-        points_selector: rest.PointsSelector
-
         if isinstance(model, rest.UpsertOperation):
             shard_key_selector = (
                 cls.convert_shard_key_selector(model.upsert.shard_key)

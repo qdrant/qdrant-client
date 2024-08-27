@@ -120,6 +120,8 @@ WithLookupInterface: TypeAlias = rest.WithLookupInterface
 GroupsResult: TypeAlias = rest.GroupsResult
 QueryResponse: TypeAlias = rest.QueryResponse
 
+FacetResponse: TypeAlias = rest.FacetResponse
+
 VersionInfo: TypeAlias = rest.VersionInfo
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities

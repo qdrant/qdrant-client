@@ -1324,6 +1324,57 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
+    def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        read_consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        """Facet counts for the collection. For a specific payload key, returns unique values along with their counts.
+        Higher counts come first in the results.
+
+        Args:
+            collection_name: Name of the collection
+            key: Payload field to facet
+            facet_filter: Filter to apply
+            limit: Maximum number of hits to return
+            exact: If `True` - provide the exact count of points matching the filter. If `False` - provide the approximate count of points matching the filter. Works faster.
+
+            read_consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+            timeout: Overrides global timeout for this search. Unit is seconds.
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+
+        Returns:
+            Unique values in the facet and the amount of points that they cover.
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        return self._client.facet(
+            collection_name=collection_name,
+            key=key,
+            facet_filter=facet_filter,
+            limit=limit,
+            exact=exact,
+            read_consistency=read_consistency,
+            timeout=timeout,
+            shard_key_selector=shard_key_selector,
+            **kwargs,
+        )
+
     def upsert(
         self,
         collection_name: str,

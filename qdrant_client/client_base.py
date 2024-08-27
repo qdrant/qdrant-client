@@ -220,6 +220,17 @@ class QdrantBase:
     ) -> types.CountResult:
         raise NotImplementedError()
 
+    def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        raise NotImplementedError()
+
     def upsert(
         self,
         collection_name: str,
