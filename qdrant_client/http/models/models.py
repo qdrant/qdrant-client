@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union, Callable
+from typing import Any, Dict, List, Literal, Optional, Union, Callable, Type
 
 import orjson
 from pydantic import BaseModel as PydanticBaseModel, Field
@@ -13,9 +13,10 @@ VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 def orjson_dumps(v: Any, *, default: Optional[Callable[[Any], Any]] = None) -> str:
     return orjson.dumps(v, default=default, option=orjson.OPT_UTC_Z).decode()
 
+# Define the BaseModel class
 class BaseModel(PydanticBaseModel):
     class Config:
-        json_encoders: dict[type, Callable[[object], str]] = {
+        json_encoders: Dict[Type[Any], Callable[[object], str]] = {
             object: lambda v: orjson_dumps(v)
         }
         json_loads = orjson.loads
