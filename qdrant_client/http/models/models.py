@@ -123,6 +123,7 @@ class ClusterTelemetry(BaseModel):
     enabled: bool = Field(..., description="")
     status: Optional["ClusterStatusTelemetry"] = Field(default=None, description="")
     config: Optional["ClusterConfigTelemetry"] = Field(default=None, description="")
+    peers: Optional[Dict[str, "PeerInfo"]] = Field(default=None, description="")
 
 
 class CollectionClusterInfo(BaseModel):
@@ -246,6 +247,7 @@ class CollectionTelemetry(BaseModel):
     config: "CollectionConfig" = Field(..., description="")
     shards: List["ReplicaSetTelemetry"] = Field(..., description="")
     transfers: List["ShardTransferInfo"] = Field(..., description="")
+    resharding: List["ReshardingInfo"] = Field(..., description="")
 
 
 class CollectionsAggregatedTelemetry(BaseModel):
@@ -590,7 +592,11 @@ class Distance(str, Enum):
     MANHATTAN = "Manhattan"
 
 
-class Document(BaseModel):
+class Document(BaseModel, extra="forbid"):
+    """
+    WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.
+    """
+
     text: str = Field(..., description="Text document to be embedded by FastEmbed or Cloud inference server")
     model: Optional[str] = Field(default=None, description="Model name to be used for embedding computation")
 
@@ -615,6 +621,28 @@ class ErrorResponse(BaseModel):
 
 class ErrorResponseStatus(BaseModel):
     error: Optional[str] = Field(default=None, description="Description of the occurred error.")
+
+
+class FacetRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+    key: str = Field(..., description="Payload key to use for faceting.")
+    limit: Optional[int] = Field(default=None, description="Max number of hits to return. Default is 10.")
+    filter: Optional["Filter"] = Field(
+        default=None, description="Filter conditions - only consider points that satisfy these conditions."
+    )
+    exact: Optional[bool] = Field(
+        default=None,
+        description="Whether to do a more expensive exact count for each of the values in the facet. Default is false.",
+    )
+
+
+class FacetResponse(BaseModel):
+    hits: List["FacetValueHit"] = Field(..., description="")
+
+
+class FacetValueHit(BaseModel):
+    value: "FacetValue" = Field(..., description="")
+    count: int = Field(..., description="")
 
 
 class FieldCondition(BaseModel, extra="forbid"):
@@ -944,13 +972,31 @@ class InlineResponse2002(BaseModel):
 class InlineResponse20020(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["QueryResponse"] = Field(default=None, description="")
+    result: Optional["FacetResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20021(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
+    result: Optional["QueryResponse"] = Field(default=None, description="")
+
+
+class InlineResponse20022(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["QueryResponse"]] = Field(default=None, description="")
+
+
+class InlineResponse20023(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
+
+
+class InlineResponse20024(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["SearchMatrixOffsetsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2003(BaseModel):
@@ -1002,8 +1048,8 @@ class InlineResponse202(BaseModel):
 
 class IntegerIndexParams(BaseModel, extra="forbid"):
     type: "IntegerIndexType" = Field(..., description="")
-    lookup: bool = Field(..., description="If true - support direct lookups.")
-    range: bool = Field(..., description="If true - support ranges filters.")
+    lookup: Optional[bool] = Field(default=None, description="If true - support direct lookups.")
+    range: Optional[bool] = Field(default=None, description="If true - support ranges filters.")
     is_principal: Optional[bool] = Field(
         default=None,
         description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests.",
@@ -1987,6 +2033,41 @@ class SearchGroupsRequest(BaseModel, extra="forbid"):
     )
 
 
+class SearchMatrixOffsetsResponse(BaseModel):
+    offsets_row: List[int] = Field(..., description="Row coordinates of the CRS matrix")
+    offsets_col: List[int] = Field(..., description="Column coordinates ids of the matrix")
+    scores: List[float] = Field(..., description="Scores associate with coordinates")
+    ids: List["ExtendedPointId"] = Field(..., description="Ids of the points in order")
+
+
+class SearchMatrixPair(BaseModel):
+    """
+    Pair of points (a, b) with score
+    """
+
+    a: "ExtendedPointId" = Field(..., description="Pair of points (a, b) with score")
+    b: "ExtendedPointId" = Field(..., description="Pair of points (a, b) with score")
+    score: float = Field(..., description="Pair of points (a, b) with score")
+
+
+class SearchMatrixPairsResponse(BaseModel):
+    pairs: List["SearchMatrixPair"] = Field(..., description="List of pairs of points with scores")
+
+
+class SearchMatrixRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    sample: int = Field(..., description="How many points to select and search within.")
+    limit: int = Field(..., description="How many neighbours per sample to find")
+    using: Optional[str] = Field(
+        default=None,
+        description="Define which vector name to use for querying. If missing, the default vector is used.",
+    )
+
+
 class SearchParams(BaseModel, extra="forbid"):
     """
     Additional parameters of the search
@@ -2685,6 +2766,10 @@ ExtendedPointId = Union[
     StrictInt,
     StrictStr,
 ]
+FacetValue = Union[
+    StrictInt,
+    StrictStr,
+]
 GroupId = Union[
     StrictInt,
     StrictStr,
@@ -2824,6 +2909,7 @@ Vector = Union[
     List[StrictFloat],
     SparseVector,
     List[List[StrictFloat]],
+    Document,
 ]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,
@@ -2847,6 +2933,7 @@ BatchVectorStruct = Union[
     List[List[StrictFloat]],
     List[List[List[StrictFloat]]],
     Dict[StrictStr, List[Vector]],
+    List[Document],
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
@@ -2866,11 +2953,13 @@ VectorInput = Union[
     SparseVector,
     List[List[StrictFloat]],
     ExtendedPointId,
+    Document,
 ]
 VectorStruct = Union[
     List[StrictFloat],
     List[List[StrictFloat]],
     Dict[StrictStr, Vector],
+    Document,
 ]
 WithPayloadInterface = Union[
     StrictBool,
