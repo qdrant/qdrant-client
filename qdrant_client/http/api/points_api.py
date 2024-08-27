@@ -321,6 +321,37 @@ class _PointsApi:
             content=body,
         )
 
+    def _build_for_facet(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        facet_request: m.FacetRequest = None,
+    ):
+        """
+        Count points that satisfy the given filter for each unique value of a payload key.
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(facet_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20020,
+            method="POST",
+            url="/collections/{collection_name}/facet",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
     def _build_for_get_point(
         self,
         collection_name: str,
@@ -442,7 +473,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20021,
+            type_=m.InlineResponse20022,
             method="POST",
             url="/collections/{collection_name}/points/query/batch",
             headers=headers if headers else None,
@@ -476,7 +507,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20020,
+            type_=m.InlineResponse20021,
             method="POST",
             url="/collections/{collection_name}/points/query",
             headers=headers if headers else None,
@@ -757,6 +788,74 @@ class _PointsApi:
             content=body,
         )
 
+    def _build_for_search_points_matrix_offsets(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ):
+        """
+        Retrieve distance matrix with an offset based output format
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(search_matrix_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20024,
+            method="POST",
+            url="/collections/{collection_name}/points/search/matrix/offsets",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
+    def _build_for_search_points_matrix_pairs(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ):
+        """
+        Retrieve distance matrix with a pair based output format
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(search_matrix_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20023,
+            method="POST",
+            url="/collections/{collection_name}/points/search/matrix/pairs",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
     def _build_for_set_payload(
         self,
         collection_name: str,
@@ -995,6 +1094,21 @@ class AsyncPointsApi(_PointsApi):
             discover_request=discover_request,
         )
 
+    async def facet(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        facet_request: m.FacetRequest = None,
+    ) -> m.InlineResponse20020:
+        """
+        Count points that satisfy the given filter for each unique value of a payload key.
+        """
+        return await self._build_for_facet(
+            collection_name=collection_name,
+            timeout=timeout,
+            facet_request=facet_request,
+        )
+
     async def get_point(
         self,
         collection_name: str,
@@ -1050,7 +1164,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request_batch: m.QueryRequestBatch = None,
-    ) -> m.InlineResponse20021:
+    ) -> m.InlineResponse20022:
         """
         Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -1067,7 +1181,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request: m.QueryRequest = None,
-    ) -> m.InlineResponse20020:
+    ) -> m.InlineResponse20021:
         """
         Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -1212,6 +1326,40 @@ class AsyncPointsApi(_PointsApi):
             consistency=consistency,
             timeout=timeout,
             search_request=search_request,
+        )
+
+    async def search_points_matrix_offsets(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ) -> m.InlineResponse20024:
+        """
+        Retrieve distance matrix with an offset based output format
+        """
+        return await self._build_for_search_points_matrix_offsets(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            search_matrix_request=search_matrix_request,
+        )
+
+    async def search_points_matrix_pairs(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ) -> m.InlineResponse20023:
+        """
+        Retrieve distance matrix with a pair based output format
+        """
+        return await self._build_for_search_points_matrix_pairs(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            search_matrix_request=search_matrix_request,
         )
 
     async def set_payload(
@@ -1401,6 +1549,21 @@ class SyncPointsApi(_PointsApi):
             discover_request=discover_request,
         )
 
+    def facet(
+        self,
+        collection_name: str,
+        timeout: int = None,
+        facet_request: m.FacetRequest = None,
+    ) -> m.InlineResponse20020:
+        """
+        Count points that satisfy the given filter for each unique value of a payload key.
+        """
+        return self._build_for_facet(
+            collection_name=collection_name,
+            timeout=timeout,
+            facet_request=facet_request,
+        )
+
     def get_point(
         self,
         collection_name: str,
@@ -1456,7 +1619,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request_batch: m.QueryRequestBatch = None,
-    ) -> m.InlineResponse20021:
+    ) -> m.InlineResponse20022:
         """
         Universally query points in batch. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -1473,7 +1636,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         query_request: m.QueryRequest = None,
-    ) -> m.InlineResponse20020:
+    ) -> m.InlineResponse20021:
         """
         Universally query points. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
         """
@@ -1618,6 +1781,40 @@ class SyncPointsApi(_PointsApi):
             consistency=consistency,
             timeout=timeout,
             search_request=search_request,
+        )
+
+    def search_points_matrix_offsets(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ) -> m.InlineResponse20024:
+        """
+        Retrieve distance matrix with an offset based output format
+        """
+        return self._build_for_search_points_matrix_offsets(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            search_matrix_request=search_matrix_request,
+        )
+
+    def search_points_matrix_pairs(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ) -> m.InlineResponse20023:
+        """
+        Retrieve distance matrix with a pair based output format
+        """
+        return self._build_for_search_points_matrix_pairs(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            search_matrix_request=search_matrix_request,
         )
 
     def set_payload(
