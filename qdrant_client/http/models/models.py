@@ -1,6 +1,8 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, time
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union, Callable, Type
+from decimal import Decimal
+from uuid import UUID
 
 import orjson
 from pydantic import BaseModel as PydanticBaseModel, Field
@@ -10,35 +12,47 @@ Payload = Dict[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
-def orjson_dumps(v: Any, *, default: Optional[Callable[[Any], Any]] = None) -> str:
-    return orjson.dumps(v, default=default, option=orjson.OPT_UTC_Z).decode()
+def timedelta_isoformat(td: timedelta) -> str:
+    total_seconds = td.total_seconds()
+    if total_seconds.is_integer():
+        return f"PT{int(total_seconds)}S"
+    return f"PT{total_seconds:.6f}S".rstrip('0').rstrip('.')
 
-# Define the BaseModel class
+def orjson_dumps(v: Any, *, default: Optional[Callable[[Any], Any]] = None) -> str:
+    def default_handler(obj: Union[Any, frozenset[int]]) -> Union[str, List[Any]]:
+        if isinstance(obj, bytes):
+            return obj.decode()
+        elif isinstance(obj, (date, datetime, time)):
+            return obj.isoformat()
+        elif isinstance(obj, timedelta):
+            return timedelta_isoformat(obj)
+        elif isinstance(obj, (UUID, Decimal)):
+            return str(obj)
+        elif isinstance(obj, (frozenset, set)):
+            return list(obj) 
+        if default is not None:
+            return default(obj)
+        raise TypeError(f"Type is not JSON serializable: {type(obj)}")
+    return orjson.dumps(
+        v, 
+        default=default_handler, 
+        option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY
+    ).decode()
+
+
 class BaseModel(PydanticBaseModel):
     class Config:
-        json_encoders: Dict[Type[Any], Callable[[object], str]] = {
-            object: lambda v: orjson_dumps(v)
+        json_encoders: Dict[Type[Any], Callable[[Any], Any]] = {
+            bytes: lambda v: v.decode(),
+            Decimal: str
         }
         json_loads = orjson.loads
         json_dumps = orjson_dumps
 
-    def json(self, **kwargs: Any) -> str: # this is deprecated
-        _ = kwargs.pop("option", None)
-
-        return orjson.dumps(self.model_dump(), option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY, **kwargs).decode()
-
     def model_dump_json(self, **kwargs: Any) -> str:
         _ = kwargs.pop("option", None)
-
         data = self.model_dump(**kwargs)
-
-        return orjson.dumps(data, option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY).decode()
-
-    @classmethod
-    def parse_raw(cls, b: Union[str, bytes], **kwargs: Any) -> 'BaseModel': # this is deprecated
-        if isinstance(b, str):
-            b = b.encode()
-        return cls.model_validate(orjson.loads(b))
+        return orjson_dumps(data)
 
     @classmethod
     def model_validate_json(cls, json_data: Union[str, bytes, bytearray], **kwargs: Any) -> 'BaseModel':
