@@ -1,13 +1,51 @@
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union, Callable
 
-from pydantic import BaseModel, Field
+import orjson
+from pydantic import BaseModel as PydanticBaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
 Payload = Dict[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
+
+def orjson_dumps(v: Any, *, default: Optional[Callable[[Any], Any]] = None) -> str:
+    return orjson.dumps(v, default=default, option=orjson.OPT_UTC_Z).decode()
+
+class BaseModel(PydanticBaseModel):
+    class Config:
+        json_encoders: dict[type, Callable[[object], str]] = {
+            object: lambda v: orjson_dumps(v)
+        }
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
+
+    def json(self, **kwargs: Any) -> str: # this is deprecated
+        _ = kwargs.pop("option", None)
+
+        return orjson.dumps(self.model_dump(), option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY, **kwargs).decode()
+
+    def model_dump_json(self, **kwargs: Any) -> str:
+        _ = kwargs.pop("option", None)
+
+        data = self.model_dump(**kwargs)
+
+        return orjson.dumps(data, option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY).decode()
+
+    @classmethod
+    def parse_raw(cls, b: str | bytes, **kwargs: Any) -> 'BaseModel': # this is deprecated
+        if isinstance(b, str):
+            b = b.encode()
+        return cls.model_validate(orjson.loads(b))
+
+    @classmethod
+    def model_validate_json(cls, json_data: Union[str, bytes, bytearray], **kwargs: Any) -> 'BaseModel':
+        if isinstance(json_data, str):
+            json_data = json_data.encode()
+        elif isinstance(json_data, bytearray):
+            json_data = bytes(json_data)
+        return cls.model_validate(orjson.loads(json_data))
 
 
 class AbortShardTransfer(BaseModel, extra="forbid"):
