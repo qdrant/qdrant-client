@@ -19,7 +19,7 @@ def timedelta_isoformat(td: timedelta) -> str:
     return f"PT{total_seconds:.6f}S".rstrip('0').rstrip('.')
 
 def orjson_dumps(v: Any, *, default: Optional[Callable[[Any], Any]] = None) -> str:
-    def default_handler(obj: Union[Any, frozenset[int]]) -> Union[str, List[Any]]:
+    def default_handler(obj: Any) -> Union[str, List[Any]]:
         if isinstance(obj, bytes):
             return obj.decode()
         elif isinstance(obj, (date, datetime, time)):
