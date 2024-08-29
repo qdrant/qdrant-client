@@ -20,6 +20,7 @@ import numpy as np
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
@@ -51,7 +52,7 @@ from qdrant_client.local.multi_distances import (
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
 from qdrant_client.local.payload_filters import calculate_payload_mask
-from qdrant_client.local.payload_value_extractor import value_by_key
+from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
@@ -1102,13 +1103,27 @@ class LocalCollection:
             if not isinstance(payload, dict):
                 continue
 
-            value = value_by_key(payload, key)
+            values = value_by_key(payload, key)
 
-            if value is None:
+            if values is None:
                 continue
 
-            for v in value:
-                if isinstance(v, get_args(models.FacetValue)):
+            # Only count the same value for each point once
+            values_set: set[models.FacetValue] = set()
+
+            for v in values:
+                if not isinstance(v, get_args_subscribed(models.FacetValue)):
+                    continue
+
+                # If values are UUIDs, format with hyphens
+                as_uuid = parse_uuid(v)
+                if as_uuid:
+                    v = str(as_uuid)
+
+                values_set.add(v)
+
+            for v in values_set:
+                if isinstance(v, get_args_subscribed(models.FacetValue)):
                     facet_hits[v] += 1
 
         hits = [

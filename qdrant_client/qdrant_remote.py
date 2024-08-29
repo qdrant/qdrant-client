@@ -1726,7 +1726,7 @@ class QdrantRemote(QdrantBase):
                     shard_key_selector=shard_key_selector,
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
-            ).result
+            )
             return GrpcToRest.convert_facet_response(response)
 
         if isinstance(facet_filter, grpc.Filter):
