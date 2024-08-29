@@ -57,6 +57,7 @@ Pygments= "2.16.1"
 pyright = ">=1.1.293"
 mypy = "^1.0.0"
 types-protobuf = "^4.21.0.5"
+mypy-protobuf = "^3.3.0"
 
 [tool.poetry.extras]
 fastembed = ["fastembed"]
