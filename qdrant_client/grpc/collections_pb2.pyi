@@ -18,6 +18,53 @@ else:
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
+class _Datatype:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _DatatypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Datatype.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Default: _Datatype.ValueType  # 0
+    Float32: _Datatype.ValueType  # 1
+    Uint8: _Datatype.ValueType  # 2
+    Float16: _Datatype.ValueType  # 3
+
+class Datatype(_Datatype, metaclass=_DatatypeEnumTypeWrapper): ...
+
+Default: Datatype.ValueType  # 0
+Float32: Datatype.ValueType  # 1
+Uint8: Datatype.ValueType  # 2
+Float16: Datatype.ValueType  # 3
+global___Datatype = Datatype
+
+class _Modifier:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _ModifierEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Modifier.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    Idf: _Modifier.ValueType  # 1
+    """Apply Inverse Document Frequency"""
+
+class Modifier(_Modifier, metaclass=_ModifierEnumTypeWrapper): ...
+
+Idf: Modifier.ValueType  # 1
+"""Apply Inverse Document Frequency"""
+global___Modifier = Modifier
+
+class _MultiVectorComparator:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _MultiVectorComparatorEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_MultiVectorComparator.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    MaxSim: _MultiVectorComparator.ValueType  # 0
+
+class MultiVectorComparator(_MultiVectorComparator, metaclass=_MultiVectorComparatorEnumTypeWrapper): ...
+
+MaxSim: MultiVectorComparator.ValueType  # 0
+global___MultiVectorComparator = MultiVectorComparator
+
 class _Distance:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
@@ -52,6 +99,8 @@ class _CollectionStatusEnumTypeWrapper(google.protobuf.internal.enum_type_wrappe
     """Optimization in process"""
     Red: _CollectionStatus.ValueType  # 3
     """Something went wrong"""
+    Grey: _CollectionStatus.ValueType  # 4
+    """Optimization is pending"""
 
 class CollectionStatus(_CollectionStatus, metaclass=_CollectionStatusEnumTypeWrapper): ...
 
@@ -62,6 +111,8 @@ Yellow: CollectionStatus.ValueType  # 2
 """Optimization in process"""
 Red: CollectionStatus.ValueType  # 3
 """Something went wrong"""
+Grey: CollectionStatus.ValueType  # 4
+"""Optimization is pending"""
 global___CollectionStatus = CollectionStatus
 
 class _PayloadSchemaType:
@@ -78,6 +129,7 @@ class _PayloadSchemaTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapp
     Text: _PayloadSchemaType.ValueType  # 5
     Bool: _PayloadSchemaType.ValueType  # 6
     Datetime: _PayloadSchemaType.ValueType  # 7
+    Uuid: _PayloadSchemaType.ValueType  # 8
 
 class PayloadSchemaType(_PayloadSchemaType, metaclass=_PayloadSchemaTypeEnumTypeWrapper): ...
 
@@ -89,6 +141,7 @@ Geo: PayloadSchemaType.ValueType  # 4
 Text: PayloadSchemaType.ValueType  # 5
 Bool: PayloadSchemaType.ValueType  # 6
 Datetime: PayloadSchemaType.ValueType  # 7
+Uuid: PayloadSchemaType.ValueType  # 8
 global___PayloadSchemaType = PayloadSchemaType
 
 class _QuantizationType:
@@ -184,9 +237,11 @@ class _ReplicaStateEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._E
     Listener: _ReplicaState.ValueType  # 4
     """A shard which receives data, but is not used for search; Useful for backup shards"""
     PartialSnapshot: _ReplicaState.ValueType  # 5
-    """Snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard"""
+    """Deprecated: snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard"""
     Recovery: _ReplicaState.ValueType  # 6
     """Shard is undergoing recovered by an external node; Normally rejects updates, accepts updates if force is true"""
+    Resharding: _ReplicaState.ValueType  # 7
+    """Points are being migrated to this shard as part of resharding"""
 
 class ReplicaState(_ReplicaState, metaclass=_ReplicaStateEnumTypeWrapper): ...
 
@@ -201,9 +256,11 @@ Initializing: ReplicaState.ValueType  # 3
 Listener: ReplicaState.ValueType  # 4
 """A shard which receives data, but is not used for search; Useful for backup shards"""
 PartialSnapshot: ReplicaState.ValueType  # 5
-"""Snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard"""
+"""Deprecated: snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard"""
 Recovery: ReplicaState.ValueType  # 6
 """Shard is undergoing recovered by an external node; Normally rejects updates, accepts updates if force is true"""
+Resharding: ReplicaState.ValueType  # 7
+"""Points are being migrated to this shard as part of resharding"""
 global___ReplicaState = ReplicaState
 
 class _ShardTransferMethod:
@@ -218,6 +275,8 @@ class _ShardTransferMethodEnumTypeWrapper(google.protobuf.internal.enum_type_wra
     """Snapshot the shard and recover it on the target peer"""
     WalDelta: _ShardTransferMethod.ValueType  # 2
     """Resolve WAL delta between peers and transfer the difference"""
+    ReshardingStreamRecords: _ShardTransferMethod.ValueType  # 3
+    """Stream shard records in batches for resharding"""
 
 class ShardTransferMethod(_ShardTransferMethod, metaclass=_ShardTransferMethodEnumTypeWrapper): ...
 
@@ -227,6 +286,8 @@ Snapshot: ShardTransferMethod.ValueType  # 1
 """Snapshot the shard and recover it on the target peer"""
 WalDelta: ShardTransferMethod.ValueType  # 2
 """Resolve WAL delta between peers and transfer the difference"""
+ReshardingStreamRecords: ShardTransferMethod.ValueType  # 3
+"""Stream shard records in batches for resharding"""
 global___ShardTransferMethod = ShardTransferMethod
 
 class VectorParams(google.protobuf.message.Message):
@@ -237,6 +298,8 @@ class VectorParams(google.protobuf.message.Message):
     HNSW_CONFIG_FIELD_NUMBER: builtins.int
     QUANTIZATION_CONFIG_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
+    DATATYPE_FIELD_NUMBER: builtins.int
+    MULTIVECTOR_CONFIG_FIELD_NUMBER: builtins.int
     size: builtins.int
     """Size of the vectors"""
     distance: global___Distance.ValueType
@@ -249,6 +312,11 @@ class VectorParams(google.protobuf.message.Message):
         """Configuration of vector quantization config. If omitted - the collection configuration will be used"""
     on_disk: builtins.bool
     """If true - serve vectors from disk. If set to false, the vectors will be loaded in RAM."""
+    datatype: global___Datatype.ValueType
+    """Data type of the vectors"""
+    @property
+    def multivector_config(self) -> global___MultiVectorConfig:
+        """Configuration for multi-vector search"""
     def __init__(
         self,
         *,
@@ -257,11 +325,17 @@ class VectorParams(google.protobuf.message.Message):
         hnsw_config: global___HnswConfigDiff | None = ...,
         quantization_config: global___QuantizationConfig | None = ...,
         on_disk: builtins.bool | None = ...,
+        datatype: global___Datatype.ValueType | None = ...,
+        multivector_config: global___MultiVectorConfig | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "hnsw_config", b"hnsw_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "distance", b"distance", "hnsw_config", b"hnsw_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config", "size", b"size"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_hnsw_config", b"_hnsw_config", "_multivector_config", b"_multivector_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "datatype", b"datatype", "hnsw_config", b"hnsw_config", "multivector_config", b"multivector_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_hnsw_config", b"_hnsw_config", "_multivector_config", b"_multivector_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "datatype", b"datatype", "distance", b"distance", "hnsw_config", b"hnsw_config", "multivector_config", b"multivector_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config", "size", b"size"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype", b"_datatype"]) -> typing_extensions.Literal["datatype"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_multivector_config", b"_multivector_config"]) -> typing_extensions.Literal["multivector_config"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
     @typing.overload
@@ -411,17 +485,24 @@ class SparseVectorParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     INDEX_FIELD_NUMBER: builtins.int
+    MODIFIER_FIELD_NUMBER: builtins.int
     @property
     def index(self) -> global___SparseIndexConfig:
         """Configuration of sparse index"""
+    modifier: global___Modifier.ValueType
+    """If set - apply modifier to the vector values"""
     def __init__(
         self,
         *,
         index: global___SparseIndexConfig | None = ...,
+        modifier: global___Modifier.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_index", b"_index", "index", b"index"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_index", b"_index", "index", b"index"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_index", b"_index", "_modifier", b"_modifier", "index", b"index", "modifier", b"modifier"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_index", b"_index", "_modifier", b"_modifier", "index", b"index", "modifier", b"modifier"]) -> None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_index", b"_index"]) -> typing_extensions.Literal["index"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_modifier", b"_modifier"]) -> typing_extensions.Literal["modifier"] | None: ...
 
 global___SparseVectorParams = SparseVectorParams
 
@@ -456,6 +537,21 @@ class SparseVectorConfig(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["map", b"map"]) -> None: ...
 
 global___SparseVectorConfig = SparseVectorConfig
+
+class MultiVectorConfig(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    COMPARATOR_FIELD_NUMBER: builtins.int
+    comparator: global___MultiVectorComparator.ValueType
+    """Comparator for multi-vector search"""
+    def __init__(
+        self,
+        *,
+        comparator: global___MultiVectorComparator.ValueType = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["comparator", b"comparator"]) -> None: ...
+
+global___MultiVectorConfig = MultiVectorConfig
 
 class GetCollectionInfoRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -671,6 +767,7 @@ class SparseIndexConfig(google.protobuf.message.Message):
 
     FULL_SCAN_THRESHOLD_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
+    DATATYPE_FIELD_NUMBER: builtins.int
     full_scan_threshold: builtins.int
     """
     Prefer a full scan search upto (excluding) this number of vectors.
@@ -680,14 +777,21 @@ class SparseIndexConfig(google.protobuf.message.Message):
     """
     Store inverted index on disk. If set to false, the index will be stored in RAM.
     """
+    datatype: global___Datatype.ValueType
+    """
+    Datatype used to store weights in the index.
+    """
     def __init__(
         self,
         *,
         full_scan_threshold: builtins.int | None = ...,
         on_disk: builtins.bool | None = ...,
+        datatype: global___Datatype.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_full_scan_threshold", b"_full_scan_threshold", "_on_disk", b"_on_disk", "full_scan_threshold", b"full_scan_threshold", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_full_scan_threshold", b"_full_scan_threshold", "_on_disk", b"_on_disk", "full_scan_threshold", b"full_scan_threshold", "on_disk", b"on_disk"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_full_scan_threshold", b"_full_scan_threshold", "_on_disk", b"_on_disk", "datatype", b"datatype", "full_scan_threshold", b"full_scan_threshold", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_full_scan_threshold", b"_full_scan_threshold", "_on_disk", b"_on_disk", "datatype", b"datatype", "full_scan_threshold", b"full_scan_threshold", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype", b"_datatype"]) -> typing_extensions.Literal["datatype"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_full_scan_threshold", b"_full_scan_threshold"]) -> typing_extensions.Literal["full_scan_threshold"] | None: ...
     @typing.overload
@@ -1290,6 +1394,99 @@ class CollectionConfig(google.protobuf.message.Message):
 
 global___CollectionConfig = CollectionConfig
 
+class KeywordIndexParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    IS_TENANT_FIELD_NUMBER: builtins.int
+    ON_DISK_FIELD_NUMBER: builtins.int
+    is_tenant: builtins.bool
+    """If true - used for tenant optimization."""
+    on_disk: builtins.bool
+    """If true - store index on disk."""
+    def __init__(
+        self,
+        *,
+        is_tenant: builtins.bool | None = ...,
+        on_disk: builtins.bool | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
+
+global___KeywordIndexParams = KeywordIndexParams
+
+class IntegerIndexParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    LOOKUP_FIELD_NUMBER: builtins.int
+    RANGE_FIELD_NUMBER: builtins.int
+    IS_PRINCIPAL_FIELD_NUMBER: builtins.int
+    ON_DISK_FIELD_NUMBER: builtins.int
+    lookup: builtins.bool
+    """If true - support direct lookups."""
+    range: builtins.bool
+    """If true - support ranges filters."""
+    is_principal: builtins.bool
+    """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
+    on_disk: builtins.bool
+    """If true - store index on disk."""
+    def __init__(
+        self,
+        *,
+        lookup: builtins.bool | None = ...,
+        range: builtins.bool | None = ...,
+        is_principal: builtins.bool | None = ...,
+        on_disk: builtins.bool | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_lookup", b"_lookup"]) -> typing_extensions.Literal["lookup"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_range", b"_range"]) -> typing_extensions.Literal["range"] | None: ...
+
+global___IntegerIndexParams = IntegerIndexParams
+
+class FloatIndexParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    ON_DISK_FIELD_NUMBER: builtins.int
+    IS_PRINCIPAL_FIELD_NUMBER: builtins.int
+    on_disk: builtins.bool
+    """If true - store index on disk."""
+    is_principal: builtins.bool
+    """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
+    def __init__(
+        self,
+        *,
+        on_disk: builtins.bool | None = ...,
+        is_principal: builtins.bool | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
+
+global___FloatIndexParams = FloatIndexParams
+
+class GeoIndexParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___GeoIndexParams = GeoIndexParams
+
 class TextIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -1324,45 +1521,113 @@ class TextIndexParams(google.protobuf.message.Message):
 
 global___TextIndexParams = TextIndexParams
 
-class IntegerIndexParams(google.protobuf.message.Message):
+class BoolIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    LOOKUP_FIELD_NUMBER: builtins.int
-    RANGE_FIELD_NUMBER: builtins.int
-    lookup: builtins.bool
-    """If true - support direct lookups."""
-    range: builtins.bool
-    """If true - support ranges filters."""
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___BoolIndexParams = BoolIndexParams
+
+class DatetimeIndexParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    ON_DISK_FIELD_NUMBER: builtins.int
+    IS_PRINCIPAL_FIELD_NUMBER: builtins.int
+    on_disk: builtins.bool
+    """If true - store index on disk."""
+    is_principal: builtins.bool
+    """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
     def __init__(
         self,
         *,
-        lookup: builtins.bool = ...,
-        range: builtins.bool = ...,
+        on_disk: builtins.bool | None = ...,
+        is_principal: builtins.bool | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["lookup", b"lookup", "range", b"range"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
-global___IntegerIndexParams = IntegerIndexParams
+global___DatetimeIndexParams = DatetimeIndexParams
+
+class UuidIndexParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    IS_TENANT_FIELD_NUMBER: builtins.int
+    ON_DISK_FIELD_NUMBER: builtins.int
+    is_tenant: builtins.bool
+    """If true - used for tenant optimization."""
+    on_disk: builtins.bool
+    """If true - store index on disk."""
+    def __init__(
+        self,
+        *,
+        is_tenant: builtins.bool | None = ...,
+        on_disk: builtins.bool | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
+
+global___UuidIndexParams = UuidIndexParams
 
 class PayloadIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    TEXT_INDEX_PARAMS_FIELD_NUMBER: builtins.int
+    KEYWORD_INDEX_PARAMS_FIELD_NUMBER: builtins.int
     INTEGER_INDEX_PARAMS_FIELD_NUMBER: builtins.int
+    FLOAT_INDEX_PARAMS_FIELD_NUMBER: builtins.int
+    GEO_INDEX_PARAMS_FIELD_NUMBER: builtins.int
+    TEXT_INDEX_PARAMS_FIELD_NUMBER: builtins.int
+    BOOL_INDEX_PARAMS_FIELD_NUMBER: builtins.int
+    DATETIME_INDEX_PARAMS_FIELD_NUMBER: builtins.int
+    UUID_INDEX_PARAMS_FIELD_NUMBER: builtins.int
+    @property
+    def keyword_index_params(self) -> global___KeywordIndexParams:
+        """Parameters for keyword index"""
+    @property
+    def integer_index_params(self) -> global___IntegerIndexParams:
+        """Parameters for integer index"""
+    @property
+    def float_index_params(self) -> global___FloatIndexParams:
+        """Parameters for float index"""
+    @property
+    def geo_index_params(self) -> global___GeoIndexParams:
+        """Parameters for geo index"""
     @property
     def text_index_params(self) -> global___TextIndexParams:
         """Parameters for text index"""
     @property
-    def integer_index_params(self) -> global___IntegerIndexParams:
-        """Parameters for integer index"""
+    def bool_index_params(self) -> global___BoolIndexParams:
+        """Parameters for bool index"""
+    @property
+    def datetime_index_params(self) -> global___DatetimeIndexParams:
+        """Parameters for datetime index"""
+    @property
+    def uuid_index_params(self) -> global___UuidIndexParams:
+        """Parameters for uuid index"""
     def __init__(
         self,
         *,
-        text_index_params: global___TextIndexParams | None = ...,
+        keyword_index_params: global___KeywordIndexParams | None = ...,
         integer_index_params: global___IntegerIndexParams | None = ...,
+        float_index_params: global___FloatIndexParams | None = ...,
+        geo_index_params: global___GeoIndexParams | None = ...,
+        text_index_params: global___TextIndexParams | None = ...,
+        bool_index_params: global___BoolIndexParams | None = ...,
+        datetime_index_params: global___DatetimeIndexParams | None = ...,
+        uuid_index_params: global___UuidIndexParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["index_params", b"index_params", "integer_index_params", b"integer_index_params", "text_index_params", b"text_index_params"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["index_params", b"index_params", "integer_index_params", b"integer_index_params", "text_index_params", b"text_index_params"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["index_params", b"index_params"]) -> typing_extensions.Literal["text_index_params", "integer_index_params"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bool_index_params", b"bool_index_params", "datetime_index_params", b"datetime_index_params", "float_index_params", b"float_index_params", "geo_index_params", b"geo_index_params", "index_params", b"index_params", "integer_index_params", b"integer_index_params", "keyword_index_params", b"keyword_index_params", "text_index_params", b"text_index_params", "uuid_index_params", b"uuid_index_params"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bool_index_params", b"bool_index_params", "datetime_index_params", b"datetime_index_params", "float_index_params", b"float_index_params", "geo_index_params", b"geo_index_params", "index_params", b"index_params", "integer_index_params", b"integer_index_params", "keyword_index_params", b"keyword_index_params", "text_index_params", b"text_index_params", "uuid_index_params", b"uuid_index_params"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["index_params", b"index_params"]) -> typing_extensions.Literal["keyword_index_params", "integer_index_params", "float_index_params", "geo_index_params", "text_index_params", "bool_index_params", "datetime_index_params", "uuid_index_params"] | None: ...
 
 global___PayloadIndexParams = PayloadIndexParams
 
@@ -1727,11 +1992,13 @@ class ShardTransferInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SHARD_ID_FIELD_NUMBER: builtins.int
+    TO_SHARD_ID_FIELD_NUMBER: builtins.int
     FROM_FIELD_NUMBER: builtins.int
     TO_FIELD_NUMBER: builtins.int
     SYNC_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+    to_shard_id: builtins.int
     to: builtins.int
     sync: builtins.bool
     """If `true` transfer is a synchronization of a replicas; If `false` transfer is a moving of a shard from one peer to another"""
@@ -1739,12 +2006,38 @@ class ShardTransferInfo(google.protobuf.message.Message):
         self,
         *,
         shard_id: builtins.int = ...,
+        to_shard_id: builtins.int | None = ...,
         to: builtins.int = ...,
         sync: builtins.bool = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["from", b"from", "shard_id", b"shard_id", "sync", b"sync", "to", b"to"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "from", b"from", "shard_id", b"shard_id", "sync", b"sync", "to", b"to", "to_shard_id", b"to_shard_id"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
 
 global___ShardTransferInfo = ShardTransferInfo
+
+class ReshardingInfo(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SHARD_ID_FIELD_NUMBER: builtins.int
+    PEER_ID_FIELD_NUMBER: builtins.int
+    SHARD_KEY_FIELD_NUMBER: builtins.int
+    shard_id: builtins.int
+    peer_id: builtins.int
+    @property
+    def shard_key(self) -> global___ShardKey: ...
+    def __init__(
+        self,
+        *,
+        shard_id: builtins.int = ...,
+        peer_id: builtins.int = ...,
+        shard_key: global___ShardKey | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_shard_key", b"_shard_key", "shard_key", b"shard_key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_shard_key", b"_shard_key", "peer_id", b"peer_id", "shard_id", b"shard_id", "shard_key", b"shard_key"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key", b"_shard_key"]) -> typing_extensions.Literal["shard_key"] | None: ...
+
+global___ReshardingInfo = ReshardingInfo
 
 class CollectionClusterInfoResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
@@ -1784,11 +2077,13 @@ class MoveShard(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SHARD_ID_FIELD_NUMBER: builtins.int
+    TO_SHARD_ID_FIELD_NUMBER: builtins.int
     FROM_PEER_ID_FIELD_NUMBER: builtins.int
     TO_PEER_ID_FIELD_NUMBER: builtins.int
     METHOD_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+    to_shard_id: builtins.int
     from_peer_id: builtins.int
     to_peer_id: builtins.int
     method: global___ShardTransferMethod.ValueType
@@ -1796,25 +2091,89 @@ class MoveShard(google.protobuf.message.Message):
         self,
         *,
         shard_id: builtins.int = ...,
+        to_shard_id: builtins.int | None = ...,
         from_peer_id: builtins.int = ...,
         to_peer_id: builtins.int = ...,
         method: global___ShardTransferMethod.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_method", b"_method", "method", b"method"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_method", b"_method", "from_peer_id", b"from_peer_id", "method", b"method", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_method", b"_method", "_to_shard_id", b"_to_shard_id", "method", b"method", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_method", b"_method", "_to_shard_id", b"_to_shard_id", "from_peer_id", b"from_peer_id", "method", b"method", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id", "to_shard_id", b"to_shard_id"]) -> None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_method", b"_method"]) -> typing_extensions.Literal["method"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
 
 global___MoveShard = MoveShard
+
+class ReplicateShard(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SHARD_ID_FIELD_NUMBER: builtins.int
+    TO_SHARD_ID_FIELD_NUMBER: builtins.int
+    FROM_PEER_ID_FIELD_NUMBER: builtins.int
+    TO_PEER_ID_FIELD_NUMBER: builtins.int
+    METHOD_FIELD_NUMBER: builtins.int
+    shard_id: builtins.int
+    """Local shard id"""
+    to_shard_id: builtins.int
+    from_peer_id: builtins.int
+    to_peer_id: builtins.int
+    method: global___ShardTransferMethod.ValueType
+    def __init__(
+        self,
+        *,
+        shard_id: builtins.int = ...,
+        to_shard_id: builtins.int | None = ...,
+        from_peer_id: builtins.int = ...,
+        to_peer_id: builtins.int = ...,
+        method: global___ShardTransferMethod.ValueType | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_method", b"_method", "_to_shard_id", b"_to_shard_id", "method", b"method", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_method", b"_method", "_to_shard_id", b"_to_shard_id", "from_peer_id", b"from_peer_id", "method", b"method", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id", "to_shard_id", b"to_shard_id"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_method", b"_method"]) -> typing_extensions.Literal["method"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
+
+global___ReplicateShard = ReplicateShard
+
+class AbortShardTransfer(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SHARD_ID_FIELD_NUMBER: builtins.int
+    TO_SHARD_ID_FIELD_NUMBER: builtins.int
+    FROM_PEER_ID_FIELD_NUMBER: builtins.int
+    TO_PEER_ID_FIELD_NUMBER: builtins.int
+    shard_id: builtins.int
+    """Local shard id"""
+    to_shard_id: builtins.int
+    from_peer_id: builtins.int
+    to_peer_id: builtins.int
+    def __init__(
+        self,
+        *,
+        shard_id: builtins.int = ...,
+        to_shard_id: builtins.int | None = ...,
+        from_peer_id: builtins.int = ...,
+        to_peer_id: builtins.int = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "from_peer_id", b"from_peer_id", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id", "to_shard_id", b"to_shard_id"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
+
+global___AbortShardTransfer = AbortShardTransfer
 
 class RestartTransfer(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SHARD_ID_FIELD_NUMBER: builtins.int
+    TO_SHARD_ID_FIELD_NUMBER: builtins.int
     FROM_PEER_ID_FIELD_NUMBER: builtins.int
     TO_PEER_ID_FIELD_NUMBER: builtins.int
     METHOD_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+    to_shard_id: builtins.int
     from_peer_id: builtins.int
     to_peer_id: builtins.int
     method: global___ShardTransferMethod.ValueType
@@ -1822,11 +2181,14 @@ class RestartTransfer(google.protobuf.message.Message):
         self,
         *,
         shard_id: builtins.int = ...,
+        to_shard_id: builtins.int | None = ...,
         from_peer_id: builtins.int = ...,
         to_peer_id: builtins.int = ...,
         method: global___ShardTransferMethod.ValueType = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["from_peer_id", b"from_peer_id", "method", b"method", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "from_peer_id", b"from_peer_id", "method", b"method", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id", "to_shard_id", b"to_shard_id"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
 
 global___RestartTransfer = RestartTransfer
 
@@ -1915,9 +2277,9 @@ class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
     @property
     def move_shard(self) -> global___MoveShard: ...
     @property
-    def replicate_shard(self) -> global___MoveShard: ...
+    def replicate_shard(self) -> global___ReplicateShard: ...
     @property
-    def abort_transfer(self) -> global___MoveShard: ...
+    def abort_transfer(self) -> global___AbortShardTransfer: ...
     @property
     def drop_replica(self) -> global___Replica: ...
     @property
@@ -1933,8 +2295,8 @@ class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
         *,
         collection_name: builtins.str = ...,
         move_shard: global___MoveShard | None = ...,
-        replicate_shard: global___MoveShard | None = ...,
-        abort_transfer: global___MoveShard | None = ...,
+        replicate_shard: global___ReplicateShard | None = ...,
+        abort_transfer: global___AbortShardTransfer | None = ...,
         drop_replica: global___Replica | None = ...,
         create_shard_key: global___CreateShardKey | None = ...,
         delete_shard_key: global___DeleteShardKey | None = ...,

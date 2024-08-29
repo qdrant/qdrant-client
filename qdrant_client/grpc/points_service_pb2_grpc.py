@@ -139,6 +139,11 @@ class PointsStub(object):
                 request_serializer=points__pb2.QueryPointGroups.SerializeToString,
                 response_deserializer=points__pb2.QueryGroupsResponse.FromString,
                 )
+        self.Facet = channel.unary_unary(
+                '/qdrant.Points/Facet',
+                request_serializer=points__pb2.FacetCounts.SerializeToString,
+                response_deserializer=points__pb2.FacetResponse.FromString,
+                )
 
 
 class PointsServicer(object):
@@ -358,6 +363,14 @@ class PointsServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Facet(self, request, context):
+        """
+        Perform facet counts. For each value in the field, count the number of points that have this value and match the conditions.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PointsServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -485,6 +498,11 @@ def add_PointsServicer_to_server(servicer, server):
                     servicer.QueryGroups,
                     request_deserializer=points__pb2.QueryPointGroups.FromString,
                     response_serializer=points__pb2.QueryGroupsResponse.SerializeToString,
+            ),
+            'Facet': grpc.unary_unary_rpc_method_handler(
+                    servicer.Facet,
+                    request_deserializer=points__pb2.FacetCounts.FromString,
+                    response_serializer=points__pb2.FacetResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -918,5 +936,22 @@ class Points(object):
         return grpc.experimental.unary_unary(request, target, '/qdrant.Points/QueryGroups',
             points__pb2.QueryPointGroups.SerializeToString,
             points__pb2.QueryGroupsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Facet(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/qdrant.Points/Facet',
+            points__pb2.FacetCounts.SerializeToString,
+            points__pb2.FacetResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
