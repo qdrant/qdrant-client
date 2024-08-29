@@ -4,8 +4,8 @@ set -e
 
 PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
 
-# pip install grpcio==1.48.2
-# pip install grpcio-tools==1.48.2
+pip install grpcio
+pip install grpcio-tools==1.48.2
 
 cd $(mktemp -d)
 
