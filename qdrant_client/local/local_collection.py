@@ -12,6 +12,7 @@ from typing import (
     Tuple,
     Union,
     get_args,
+    Set,
 )
 from copy import deepcopy
 
@@ -1109,7 +1110,7 @@ class LocalCollection:
                 continue
 
             # Only count the same value for each point once
-            values_set: set[types.FacetValue] = set()
+            values_set: Set[types.FacetValue] = set()
 
             # Sanitize to use only valid values
             for v in values:
