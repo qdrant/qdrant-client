@@ -237,7 +237,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         parallel: Optional[int] = None,
     ) -> Iterable[Tuple[str, List[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
-        (documents_a, documents_b) = tee(documents, 2)
+        documents_a, documents_b = tee(documents, 2)
         if embed_type == "passage":
             vectors_iter = embedding_model.passage_embed(
                 documents_a, batch_size=batch_size, parallel=parallel
@@ -349,7 +349,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             yield models.PointStruct(id=idx, payload=payload, vector=point_vector)
 
     def _validate_collection_info(self, collection_info: models.CollectionInfo) -> None:
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         vector_field_name = self.get_vector_field_name()
         assert isinstance(
             collection_info.config.params.vectors, dict
@@ -395,7 +395,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             Configuration for `vectors_config` argument in `create_collection` method.
         """
         vector_field_name = self.get_vector_field_name()
-        (embeddings_size, distance) = self._get_model_params(model_name=self.embedding_model_name)
+        embeddings_size, distance = self._get_model_params(model_name=self.embedding_model_name)
         return {
             vector_field_name: models.VectorParams(
                 size=embeddings_size,
@@ -651,7 +651,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             with_payload=True,
             **kwargs,
         )
-        (dense_request_response, sparse_request_response) = await self.search_batch(
+        dense_request_response, sparse_request_response = await self.search_batch(
             collection_name=collection_name, requests=[dense_request, sparse_request]
         )
         return self._scored_points_to_query_responses(
@@ -728,6 +728,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         sparse_responses = responses[len(query_texts) :]
         responses = [
             reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
-            for (dense_response, sparse_response) in zip(dense_responses, sparse_responses)
+            for dense_response, sparse_response in zip(dense_responses, sparse_responses)
         ]
         return [self._scored_points_to_query_responses(response) for response in responses]

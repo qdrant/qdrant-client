@@ -88,7 +88,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if url.startswith("localhost"):
                 url = f"//{url}"
             parsed_url: Url = parse_url(url)
-            (self._host, self._port) = (parsed_url.host, parsed_url.port)
+            self._host, self._port = (parsed_url.host, parsed_url.port)
             if parsed_url.scheme:
                 self._https = parsed_url.scheme == "https"
                 self._scheme = parsed_url.scheme
@@ -174,7 +174,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @staticmethod
     def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
         parse_result: Url = parse_url(url)
-        (scheme, host, port, prefix) = (
+        scheme, host, port, prefix = (
             parse_result.scheme,
             parse_result.host,
             parse_result.port,
@@ -1017,7 +1017,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
             if isinstance(with_lookup, str):
-                with_lookup = grpc.WithLookup(lookup_index=with_lookup)
+                with_lookup = grpc.WithLookup(collection=with_lookup)
             positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
             positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
             negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
@@ -1389,6 +1389,58 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         assert count_result is not None, "Count points returned None result"
         return count_result
 
+    async def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        timeout: Optional[int] = None,
+        read_consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        if self._prefer_grpc:
+            if isinstance(facet_filter, models.Filter):
+                facet_filter = RestToGrpc.convert_filter(model=facet_filter)
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
+                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if isinstance(read_consistency, get_args_subscribed(models.ReadConsistency)):
+                read_consistency = RestToGrpc.convert_read_consistency(read_consistency)
+            response = await self.grpc_points.Facet(
+                grpc.FacetCounts(
+                    collection_name=collection_name,
+                    key=key,
+                    filter=facet_filter,
+                    limit=limit,
+                    exact=exact,
+                    timeout=timeout,
+                    read_consistency=read_consistency,
+                    shard_key_selector=shard_key_selector,
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            )
+            return GrpcToRest.convert_facet_response(response)
+        if isinstance(facet_filter, grpc.Filter):
+            facet_filter = GrpcToRest.convert_filter(model=facet_filter)
+        facet_result = (
+            await self.openapi_client.points_api.facet(
+                collection_name=collection_name,
+                consistency=read_consistency,
+                timeout=timeout,
+                facet_request=models.FacetRequest(
+                    shard_key=shard_key_selector,
+                    key=key,
+                    limit=limit,
+                    filter=facet_filter,
+                    exact=exact,
+                ),
+            )
+        ).result
+        assert facet_result is not None, "Facet points returned None result"
+        return facet_result
+
     async def upsert(
         self,
         collection_name: str,
@@ -1511,7 +1563,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1532,7 +1584,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             assert grpc_result is not None, "Delete vectors returned None result"
             return GrpcToRest.convert_update_result(grpc_result)
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             return (
                 await self.openapi_client.points_api.delete_vectors(
                     collection_name=collection_name,
@@ -1681,6 +1733,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         cls, points_selector: grpc.PointsSelector
     ) -> List[grpc.PointId]:
         name = points_selector.WhichOneof("points_selector_one_of")
+        if name is None:
+            return []
         val = getattr(points_selector, name)
         if name == "points":
             return list(val.ids)
@@ -1725,7 +1779,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
             shard_key_selector = shard_key_selector or opt_shard_key_selector
@@ -1774,7 +1828,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1797,7 +1851,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.set_payload(
                     collection_name=collection_name,
@@ -1826,7 +1880,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1848,7 +1902,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.overwrite_payload(
                     collection_name=collection_name,
@@ -1876,7 +1930,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1898,7 +1952,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.delete_payload(
                     collection_name=collection_name,
@@ -1922,7 +1976,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
             shard_key_selector = shard_key_selector or opt_shard_key_selector
