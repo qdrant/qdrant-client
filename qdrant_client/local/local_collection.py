@@ -1091,8 +1091,8 @@ class LocalCollection:
         key: str,
         facet_filter: Optional[types.Filter] = None,
         limit: int = 10,
-    ) -> models.FacetResponse:
-        facet_hits = defaultdict(int)
+    ) -> types.FacetResponse:
+        facet_hits: Dict[types.FacetValue, int] = defaultdict(int)
 
         mask = self._payload_and_non_deleted_mask(facet_filter)
 
@@ -1109,10 +1109,11 @@ class LocalCollection:
                 continue
 
             # Only count the same value for each point once
-            values_set: set[models.FacetValue] = set()
+            values_set: set[types.FacetValue] = set()
 
+            # Sanitize to use only valid values
             for v in values:
-                if not isinstance(v, get_args_subscribed(models.FacetValue)):
+                if not isinstance(v, get_args_subscribed(types.FacetValue)):
                     continue
 
                 # If values are UUIDs, format with hyphens
@@ -1123,8 +1124,7 @@ class LocalCollection:
                 values_set.add(v)
 
             for v in values_set:
-                if isinstance(v, get_args_subscribed(models.FacetValue)):
-                    facet_hits[v] += 1
+                facet_hits[v] += 1
 
         hits = [
             models.FacetValueHit(value=value, count=count)
@@ -1135,7 +1135,7 @@ class LocalCollection:
             )[:limit]
         ]
 
-        return models.FacetResponse(hits=hits)
+        return types.FacetResponse(hits=hits)
 
     def retrieve(
         self,

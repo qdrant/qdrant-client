@@ -1331,7 +1331,7 @@ class QdrantClient(QdrantFastembedMixin):
         facet_filter: Optional[types.Filter] = None,
         limit: int = 10,
         exact: bool = False,
-        read_consistency: Optional[types.ReadConsistency] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
@@ -1346,7 +1346,7 @@ class QdrantClient(QdrantFastembedMixin):
             limit: Maximum number of hits to return
             exact: If `True` - provide the exact count of points matching the filter. If `False` - provide the approximate count of points matching the filter. Works faster.
 
-            read_consistency:
+            consistency:
                 Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
 
                 - int - number of replicas to query, values should present in all queried replicas
@@ -1369,7 +1369,7 @@ class QdrantClient(QdrantFastembedMixin):
             facet_filter=facet_filter,
             limit=limit,
             exact=exact,
-            read_consistency=read_consistency,
+            consistency=consistency,
             timeout=timeout,
             shard_key_selector=shard_key_selector,
             **kwargs,

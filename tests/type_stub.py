@@ -309,3 +309,13 @@ qdrant_client.query_points(
     shard_key_selector=None,
     timeout=1,
 )
+qdrant_client.facet(
+    collection_name="collection",
+    key="field",
+    facet_filter=rest_models.Filter(),
+    exact=True,
+    limit=10,
+    consistency=None,
+    shard_key_selector=None,
+    timeout=1,
+)

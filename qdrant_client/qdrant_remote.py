@@ -1700,7 +1700,7 @@ class QdrantRemote(QdrantBase):
         limit: int = 10,
         exact: bool = False,
         timeout: Optional[int] = None,
-        read_consistency: Optional[types.ReadConsistency] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.FacetResponse:
@@ -1711,8 +1711,8 @@ class QdrantRemote(QdrantBase):
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
-            if isinstance(read_consistency, get_args_subscribed(models.ReadConsistency)):
-                read_consistency = RestToGrpc.convert_read_consistency(read_consistency)
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
 
             response = self.grpc_points.Facet(
                 grpc.FacetCounts(
@@ -1722,7 +1722,7 @@ class QdrantRemote(QdrantBase):
                     limit=limit,
                     exact=exact,
                     timeout=timeout,
-                    read_consistency=read_consistency,
+                    read_consistency=consistency,
                     shard_key_selector=shard_key_selector,
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
@@ -1734,7 +1734,7 @@ class QdrantRemote(QdrantBase):
 
         facet_result = self.openapi_client.points_api.facet(
             collection_name=collection_name,
-            consistency=read_consistency,
+            consistency=consistency,
             timeout=timeout,
             facet_request=models.FacetRequest(
                 shard_key=shard_key_selector,

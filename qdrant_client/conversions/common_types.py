@@ -120,6 +120,7 @@ WithLookupInterface: TypeAlias = rest.WithLookupInterface
 GroupsResult: TypeAlias = rest.GroupsResult
 QueryResponse: TypeAlias = rest.QueryResponse
 
+FacetValue: TypeAlias = rest.FacetValue
 FacetResponse: TypeAlias = rest.FacetResponse
 
 VersionInfo: TypeAlias = rest.VersionInfo

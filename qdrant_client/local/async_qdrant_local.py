@@ -682,7 +682,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         limit: int = 10,
         exact: bool = False,
         **kwargs: Any,
-    ):
+    ) -> types.FacetResponse:
         collection = self._get_collection(collection_name)
         return collection.facet(key=key, facet_filter=facet_filter, limit=limit)
 
