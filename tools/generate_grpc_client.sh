@@ -4,8 +4,8 @@ set -e
 
 PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
 
-pip install grpcio==1.48.2
-pip install grpcio-tools==1.48.2
+# pip install grpcio==1.48.2
+# pip install grpcio-tools==1.48.2
 
 cd $(mktemp -d)
 
@@ -40,7 +40,7 @@ cat $CLIENT_DIR/qdrant.proto \
   > $CLIENT_DIR/qdrant_tmp.proto
 mv $CLIENT_DIR/qdrant_tmp.proto $CLIENT_DIR/qdrant.proto
 
-python -m grpc_tools.protoc --proto_path=qdrant_client/proto/ -I ./qdrant_client/grpc ./qdrant_client/proto/*.proto --python_out=./qdrant_client/grpc --grpc_python_out=./qdrant_client/grpc
+python -m grpc_tools.protoc --proto_path=qdrant_client/proto/ -I ./qdrant_client/grpc ./qdrant_client/proto/*.proto --python_out=./qdrant_client/grpc --grpc_python_out=./qdrant_client/grpc --mypy_out=./qdrant_client/grpc
 
 # maybe I'll remove this crutch when google makes normal imports for issue from 2016
 # https://github.com/protocolbuffers/protobuf/issues/1491
