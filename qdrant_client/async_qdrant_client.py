@@ -108,7 +108,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         super().__init__(**kwargs)
         self._init_options = {
             key: value
-            for key, value in locals().items()
+            for (key, value) in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
         self._init_options.update(deepcopy(kwargs))
@@ -504,7 +504,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             QueryResponse structure containing list of found close points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(query, prefetch)
+        (query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
+            query, prefetch
+        )
         return await self._client.query_points(
             collection_name=collection_name,
             query=query,
@@ -637,7 +639,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Each group also contains an id of the group, which is the value of the payload field.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        query, prefetch = self._resolve_query_to_embedding_embeddings_and_prefetch(query, prefetch)
+        (query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
+            query, prefetch
+        )
         return await self._client.query_points_groups(
             collection_name=collection_name,
             query=query,

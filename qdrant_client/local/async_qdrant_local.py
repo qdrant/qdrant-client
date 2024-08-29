@@ -145,7 +145,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     {
                         "collections": {
                             collection_name: to_dict(collection.config)
-                            for collection_name, collection in self.collections.items()
+                            for (collection_name, collection) in self.collections.items()
                         },
                         "aliases": self.aliases,
                     }
@@ -357,7 +357,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if prefetch.query is None:
             return prefetch
         prefetch = deepcopy(prefetch)
-        query, mentioned_ids = self._resolve_query_input(
+        (query, mentioned_ids) = self._resolve_query_input(
             collection_name, prefetch.query, prefetch.using, prefetch.lookup_from
         )
         prefetch.query = query
@@ -383,7 +383,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.QueryResponse:
         collection = self._get_collection(collection_name)
         if query is not None:
-            query, mentioned_ids = self._resolve_query_input(
+            (query, mentioned_ids) = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
@@ -454,7 +454,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.GroupsResult:
         collection = self._get_collection(collection_name)
         if query is not None:
-            query, mentioned_ids = self._resolve_query_input(
+            (query, mentioned_ids) = self._resolve_query_input(
                 collection_name, query, using, lookup_from
             )
             query_filter = ignore_mentioned_ids_filter(query_filter, list(mentioned_ids))
@@ -814,7 +814,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
-                for alias_name, name in self.aliases.items()
+                for (alias_name, name) in self.aliases.items()
                 if name == collection_name
             ]
         )
@@ -825,7 +825,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsAliasesResponse(
             aliases=[
                 rest_models.AliasDescription(alias_name=alias_name, collection_name=name)
-                for alias_name, name in self.aliases.items()
+                for (alias_name, name) in self.aliases.items()
             ]
         )
 
@@ -835,7 +835,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return types.CollectionsResponse(
             collections=[
                 rest_models.CollectionDescription(name=name)
-                for name, _ in self.collections.items()
+                for (name, _) in self.collections.items()
             ]
         )
 
@@ -876,7 +876,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         del _collection
         self.aliases = {
             alias_name: name
-            for alias_name, name in self.aliases.items()
+            for (alias_name, name) in self.aliases.items()
             if name != collection_name
         }
         collection_path = self._collection_path(collection_name)
@@ -917,12 +917,12 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self.collections[collection_name] = collection
         if src_collection and from_collection_name:
             batch_size = 100
-            records, next_offset = await self.scroll(
+            (records, next_offset) = await self.scroll(
                 from_collection_name, limit=2, with_vectors=True
             )
             self.upload_records(collection_name, records)
             while next_offset is not None:
-                records, next_offset = await self.scroll(
+                (records, next_offset) = await self.scroll(
                     from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True
                 )
                 self.upload_records(collection_name, records)
@@ -998,7 +998,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                     payload=payload or {},
                 )
-                for point_id, vector, payload in zip(
+                for (point_id, vector, payload) in zip(
                     ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
                 )
             ]
