@@ -183,6 +183,8 @@ def test_not_jsonable_payload():
         {"frozenset": frozenset([1, 2])},
         {"set": {1, 2}},
         {"uuid": uuid.uuid4()},
+        {"listvalue": [1, 1]},
+        {"listvalue": (1, 1)},
     ]
 
     points = [
