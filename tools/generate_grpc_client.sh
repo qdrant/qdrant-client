@@ -5,7 +5,7 @@ set -e
 PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
 
 pip install "grpcio>=1.48.2,<2.0.0"
-pip install grpcio-tools==1.48.2 # the expected python version to use is 1.10.10
+pip install grpcio-tools==1.48.2 # the expected python version to use is 3.10.10
 
 cd $(mktemp -d)
 
