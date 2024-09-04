@@ -3,33 +3,26 @@
 isort:skip_file
 """
 import builtins
-import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
-import sys
 import typing
-
-if sys.version_info >= (3, 10):
-    import typing as typing_extensions
-else:
-    import typing_extensions
+import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 class _Datatype:
-    ValueType = typing.NewType("ValueType", builtins.int)
+    ValueType = typing.NewType('ValueType', builtins.int)
     V: typing_extensions.TypeAlias = ValueType
-
-class _DatatypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Datatype.ValueType], builtins.type):  # noqa: F821
+class _DatatypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Datatype.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Default: _Datatype.ValueType  # 0
     Float32: _Datatype.ValueType  # 1
     Uint8: _Datatype.ValueType  # 2
     Float16: _Datatype.ValueType  # 3
-
-class Datatype(_Datatype, metaclass=_DatatypeEnumTypeWrapper): ...
+class Datatype(_Datatype, metaclass=_DatatypeEnumTypeWrapper):
+    pass
 
 Default: Datatype.ValueType  # 0
 Float32: Datatype.ValueType  # 1
@@ -37,47 +30,49 @@ Uint8: Datatype.ValueType  # 2
 Float16: Datatype.ValueType  # 3
 global___Datatype = Datatype
 
-class _Modifier:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _ModifierEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Modifier.ValueType], builtins.type):  # noqa: F821
+class _Modifier:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _ModifierEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Modifier.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Idf: _Modifier.ValueType  # 1
     """Apply Inverse Document Frequency"""
 
-class Modifier(_Modifier, metaclass=_ModifierEnumTypeWrapper): ...
+class Modifier(_Modifier, metaclass=_ModifierEnumTypeWrapper):
+    pass
 
 Idf: Modifier.ValueType  # 1
 """Apply Inverse Document Frequency"""
+
 global___Modifier = Modifier
 
-class _MultiVectorComparator:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _MultiVectorComparatorEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_MultiVectorComparator.ValueType], builtins.type):  # noqa: F821
+class _MultiVectorComparator:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _MultiVectorComparatorEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_MultiVectorComparator.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     MaxSim: _MultiVectorComparator.ValueType  # 0
-
-class MultiVectorComparator(_MultiVectorComparator, metaclass=_MultiVectorComparatorEnumTypeWrapper): ...
+class MultiVectorComparator(_MultiVectorComparator, metaclass=_MultiVectorComparatorEnumTypeWrapper):
+    pass
 
 MaxSim: MultiVectorComparator.ValueType  # 0
 global___MultiVectorComparator = MultiVectorComparator
 
-class _Distance:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _DistanceEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Distance.ValueType], builtins.type):  # noqa: F821
+class _Distance:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _DistanceEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_Distance.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     UnknownDistance: _Distance.ValueType  # 0
     Cosine: _Distance.ValueType  # 1
     Euclid: _Distance.ValueType  # 2
     Dot: _Distance.ValueType  # 3
     Manhattan: _Distance.ValueType  # 4
-
-class Distance(_Distance, metaclass=_DistanceEnumTypeWrapper): ...
+class Distance(_Distance, metaclass=_DistanceEnumTypeWrapper):
+    pass
 
 UnknownDistance: Distance.ValueType  # 0
 Cosine: Distance.ValueType  # 1
@@ -86,40 +81,48 @@ Dot: Distance.ValueType  # 3
 Manhattan: Distance.ValueType  # 4
 global___Distance = Distance
 
-class _CollectionStatus:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _CollectionStatusEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CollectionStatus.ValueType], builtins.type):  # noqa: F821
+class _CollectionStatus:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _CollectionStatusEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CollectionStatus.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     UnknownCollectionStatus: _CollectionStatus.ValueType  # 0
     Green: _CollectionStatus.ValueType  # 1
     """All segments are ready"""
+
     Yellow: _CollectionStatus.ValueType  # 2
     """Optimization in process"""
+
     Red: _CollectionStatus.ValueType  # 3
     """Something went wrong"""
+
     Grey: _CollectionStatus.ValueType  # 4
     """Optimization is pending"""
 
-class CollectionStatus(_CollectionStatus, metaclass=_CollectionStatusEnumTypeWrapper): ...
+class CollectionStatus(_CollectionStatus, metaclass=_CollectionStatusEnumTypeWrapper):
+    pass
 
 UnknownCollectionStatus: CollectionStatus.ValueType  # 0
 Green: CollectionStatus.ValueType  # 1
 """All segments are ready"""
+
 Yellow: CollectionStatus.ValueType  # 2
 """Optimization in process"""
+
 Red: CollectionStatus.ValueType  # 3
 """Something went wrong"""
+
 Grey: CollectionStatus.ValueType  # 4
 """Optimization is pending"""
+
 global___CollectionStatus = CollectionStatus
 
-class _PayloadSchemaType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _PayloadSchemaTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_PayloadSchemaType.ValueType], builtins.type):  # noqa: F821
+class _PayloadSchemaType:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _PayloadSchemaTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_PayloadSchemaType.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     UnknownType: _PayloadSchemaType.ValueType  # 0
     Keyword: _PayloadSchemaType.ValueType  # 1
@@ -130,8 +133,8 @@ class _PayloadSchemaTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapp
     Bool: _PayloadSchemaType.ValueType  # 6
     Datetime: _PayloadSchemaType.ValueType  # 7
     Uuid: _PayloadSchemaType.ValueType  # 8
-
-class PayloadSchemaType(_PayloadSchemaType, metaclass=_PayloadSchemaTypeEnumTypeWrapper): ...
+class PayloadSchemaType(_PayloadSchemaType, metaclass=_PayloadSchemaTypeEnumTypeWrapper):
+    pass
 
 UnknownType: PayloadSchemaType.ValueType  # 0
 Keyword: PayloadSchemaType.ValueType  # 1
@@ -144,34 +147,34 @@ Datetime: PayloadSchemaType.ValueType  # 7
 Uuid: PayloadSchemaType.ValueType  # 8
 global___PayloadSchemaType = PayloadSchemaType
 
-class _QuantizationType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _QuantizationTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_QuantizationType.ValueType], builtins.type):  # noqa: F821
+class _QuantizationType:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _QuantizationTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_QuantizationType.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     UnknownQuantization: _QuantizationType.ValueType  # 0
     Int8: _QuantizationType.ValueType  # 1
-
-class QuantizationType(_QuantizationType, metaclass=_QuantizationTypeEnumTypeWrapper): ...
+class QuantizationType(_QuantizationType, metaclass=_QuantizationTypeEnumTypeWrapper):
+    pass
 
 UnknownQuantization: QuantizationType.ValueType  # 0
 Int8: QuantizationType.ValueType  # 1
 global___QuantizationType = QuantizationType
 
-class _CompressionRatio:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _CompressionRatioEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CompressionRatio.ValueType], builtins.type):  # noqa: F821
+class _CompressionRatio:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _CompressionRatioEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CompressionRatio.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     x4: _CompressionRatio.ValueType  # 0
     x8: _CompressionRatio.ValueType  # 1
     x16: _CompressionRatio.ValueType  # 2
     x32: _CompressionRatio.ValueType  # 3
     x64: _CompressionRatio.ValueType  # 4
-
-class CompressionRatio(_CompressionRatio, metaclass=_CompressionRatioEnumTypeWrapper): ...
+class CompressionRatio(_CompressionRatio, metaclass=_CompressionRatioEnumTypeWrapper):
+    pass
 
 x4: CompressionRatio.ValueType  # 0
 x8: CompressionRatio.ValueType  # 1
@@ -180,38 +183,42 @@ x32: CompressionRatio.ValueType  # 3
 x64: CompressionRatio.ValueType  # 4
 global___CompressionRatio = CompressionRatio
 
-class _ShardingMethod:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _ShardingMethodEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ShardingMethod.ValueType], builtins.type):  # noqa: F821
+class _ShardingMethod:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _ShardingMethodEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ShardingMethod.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Auto: _ShardingMethod.ValueType  # 0
     """Auto-sharding based on record ids"""
+
     Custom: _ShardingMethod.ValueType  # 1
     """Shard by user-defined key"""
 
-class ShardingMethod(_ShardingMethod, metaclass=_ShardingMethodEnumTypeWrapper): ...
+class ShardingMethod(_ShardingMethod, metaclass=_ShardingMethodEnumTypeWrapper):
+    pass
 
 Auto: ShardingMethod.ValueType  # 0
 """Auto-sharding based on record ids"""
+
 Custom: ShardingMethod.ValueType  # 1
 """Shard by user-defined key"""
+
 global___ShardingMethod = ShardingMethod
 
-class _TokenizerType:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _TokenizerTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_TokenizerType.ValueType], builtins.type):  # noqa: F821
+class _TokenizerType:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _TokenizerTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_TokenizerType.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Unknown: _TokenizerType.ValueType  # 0
     Prefix: _TokenizerType.ValueType  # 1
     Whitespace: _TokenizerType.ValueType  # 2
     Word: _TokenizerType.ValueType  # 3
     Multilingual: _TokenizerType.ValueType  # 4
-
-class TokenizerType(_TokenizerType, metaclass=_TokenizerTypeEnumTypeWrapper): ...
+class TokenizerType(_TokenizerType, metaclass=_TokenizerTypeEnumTypeWrapper):
+    pass
 
 Unknown: TokenizerType.ValueType  # 0
 Prefix: TokenizerType.ValueType  # 1
@@ -220,79 +227,103 @@ Word: TokenizerType.ValueType  # 3
 Multilingual: TokenizerType.ValueType  # 4
 global___TokenizerType = TokenizerType
 
-class _ReplicaState:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _ReplicaStateEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ReplicaState.ValueType], builtins.type):  # noqa: F821
+class _ReplicaState:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _ReplicaStateEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ReplicaState.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Active: _ReplicaState.ValueType  # 0
     """Active and sound"""
+
     Dead: _ReplicaState.ValueType  # 1
     """Failed for some reason"""
+
     Partial: _ReplicaState.ValueType  # 2
     """The shard is partially loaded and is currently receiving data from other shards"""
+
     Initializing: _ReplicaState.ValueType  # 3
     """Collection is being created"""
+
     Listener: _ReplicaState.ValueType  # 4
     """A shard which receives data, but is not used for search; Useful for backup shards"""
+
     PartialSnapshot: _ReplicaState.ValueType  # 5
     """Deprecated: snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard"""
+
     Recovery: _ReplicaState.ValueType  # 6
     """Shard is undergoing recovered by an external node; Normally rejects updates, accepts updates if force is true"""
+
     Resharding: _ReplicaState.ValueType  # 7
     """Points are being migrated to this shard as part of resharding"""
 
-class ReplicaState(_ReplicaState, metaclass=_ReplicaStateEnumTypeWrapper): ...
+class ReplicaState(_ReplicaState, metaclass=_ReplicaStateEnumTypeWrapper):
+    pass
 
 Active: ReplicaState.ValueType  # 0
 """Active and sound"""
+
 Dead: ReplicaState.ValueType  # 1
 """Failed for some reason"""
+
 Partial: ReplicaState.ValueType  # 2
 """The shard is partially loaded and is currently receiving data from other shards"""
+
 Initializing: ReplicaState.ValueType  # 3
 """Collection is being created"""
+
 Listener: ReplicaState.ValueType  # 4
 """A shard which receives data, but is not used for search; Useful for backup shards"""
+
 PartialSnapshot: ReplicaState.ValueType  # 5
 """Deprecated: snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard"""
+
 Recovery: ReplicaState.ValueType  # 6
 """Shard is undergoing recovered by an external node; Normally rejects updates, accepts updates if force is true"""
+
 Resharding: ReplicaState.ValueType  # 7
 """Points are being migrated to this shard as part of resharding"""
+
 global___ReplicaState = ReplicaState
 
-class _ShardTransferMethod:
-    ValueType = typing.NewType("ValueType", builtins.int)
-    V: typing_extensions.TypeAlias = ValueType
 
-class _ShardTransferMethodEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ShardTransferMethod.ValueType], builtins.type):  # noqa: F821
+class _ShardTransferMethod:
+    ValueType = typing.NewType('ValueType', builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+class _ShardTransferMethodEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_ShardTransferMethod.ValueType], builtins.type):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     StreamRecords: _ShardTransferMethod.ValueType  # 0
     """Stream shard records in batches"""
+
     Snapshot: _ShardTransferMethod.ValueType  # 1
     """Snapshot the shard and recover it on the target peer"""
+
     WalDelta: _ShardTransferMethod.ValueType  # 2
     """Resolve WAL delta between peers and transfer the difference"""
+
     ReshardingStreamRecords: _ShardTransferMethod.ValueType  # 3
     """Stream shard records in batches for resharding"""
 
-class ShardTransferMethod(_ShardTransferMethod, metaclass=_ShardTransferMethodEnumTypeWrapper): ...
+class ShardTransferMethod(_ShardTransferMethod, metaclass=_ShardTransferMethodEnumTypeWrapper):
+    pass
 
 StreamRecords: ShardTransferMethod.ValueType  # 0
 """Stream shard records in batches"""
+
 Snapshot: ShardTransferMethod.ValueType  # 1
 """Snapshot the shard and recover it on the target peer"""
+
 WalDelta: ShardTransferMethod.ValueType  # 2
 """Resolve WAL delta between peers and transfer the difference"""
+
 ReshardingStreamRecords: ShardTransferMethod.ValueType  # 3
 """Stream shard records in batches for resharding"""
+
 global___ShardTransferMethod = ShardTransferMethod
+
 
 class VectorParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SIZE_FIELD_NUMBER: builtins.int
     DISTANCE_FIELD_NUMBER: builtins.int
     HNSW_CONFIG_FIELD_NUMBER: builtins.int
@@ -302,403 +333,361 @@ class VectorParams(google.protobuf.message.Message):
     MULTIVECTOR_CONFIG_FIELD_NUMBER: builtins.int
     size: builtins.int
     """Size of the vectors"""
+
     distance: global___Distance.ValueType
     """Distance function used for comparing vectors"""
+
     @property
     def hnsw_config(self) -> global___HnswConfigDiff:
         """Configuration of vector HNSW graph. If omitted - the collection configuration will be used"""
+        pass
     @property
     def quantization_config(self) -> global___QuantizationConfig:
         """Configuration of vector quantization config. If omitted - the collection configuration will be used"""
+        pass
     on_disk: builtins.bool
     """If true - serve vectors from disk. If set to false, the vectors will be loaded in RAM."""
+
     datatype: global___Datatype.ValueType
     """Data type of the vectors"""
+
     @property
     def multivector_config(self) -> global___MultiVectorConfig:
         """Configuration for multi-vector search"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
         size: builtins.int = ...,
         distance: global___Distance.ValueType = ...,
-        hnsw_config: global___HnswConfigDiff | None = ...,
-        quantization_config: global___QuantizationConfig | None = ...,
-        on_disk: builtins.bool | None = ...,
-        datatype: global___Datatype.ValueType | None = ...,
-        multivector_config: global___MultiVectorConfig | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_hnsw_config", b"_hnsw_config", "_multivector_config", b"_multivector_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "datatype", b"datatype", "hnsw_config", b"hnsw_config", "multivector_config", b"multivector_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_hnsw_config", b"_hnsw_config", "_multivector_config", b"_multivector_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "datatype", b"datatype", "distance", b"distance", "hnsw_config", b"hnsw_config", "multivector_config", b"multivector_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config", "size", b"size"]) -> None: ...
+        hnsw_config: typing.Optional[global___HnswConfigDiff] = ...,
+        quantization_config: typing.Optional[global___QuantizationConfig] = ...,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        datatype: typing.Optional[global___Datatype.ValueType] = ...,
+        multivector_config: typing.Optional[global___MultiVectorConfig] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_datatype",b"_datatype","_hnsw_config",b"_hnsw_config","_multivector_config",b"_multivector_config","_on_disk",b"_on_disk","_quantization_config",b"_quantization_config","datatype",b"datatype","hnsw_config",b"hnsw_config","multivector_config",b"multivector_config","on_disk",b"on_disk","quantization_config",b"quantization_config"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_datatype",b"_datatype","_hnsw_config",b"_hnsw_config","_multivector_config",b"_multivector_config","_on_disk",b"_on_disk","_quantization_config",b"_quantization_config","datatype",b"datatype","distance",b"distance","hnsw_config",b"hnsw_config","multivector_config",b"multivector_config","on_disk",b"on_disk","quantization_config",b"quantization_config","size",b"size"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype", b"_datatype"]) -> typing_extensions.Literal["datatype"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype",b"_datatype"]) -> typing.Optional[typing_extensions.Literal["datatype"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config",b"_hnsw_config"]) -> typing.Optional[typing_extensions.Literal["hnsw_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_multivector_config", b"_multivector_config"]) -> typing_extensions.Literal["multivector_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_multivector_config",b"_multivector_config"]) -> typing.Optional[typing_extensions.Literal["multivector_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config", b"_quantization_config"]) -> typing_extensions.Literal["quantization_config"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config",b"_quantization_config"]) -> typing.Optional[typing_extensions.Literal["quantization_config"]]: ...
 global___VectorParams = VectorParams
 
 class VectorParamsDiff(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     HNSW_CONFIG_FIELD_NUMBER: builtins.int
     QUANTIZATION_CONFIG_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     @property
     def hnsw_config(self) -> global___HnswConfigDiff:
         """Update params for HNSW index. If empty object - it will be unset"""
+        pass
     @property
     def quantization_config(self) -> global___QuantizationConfigDiff:
         """Update quantization params. If none - it is left unchanged."""
+        pass
     on_disk: builtins.bool
     """If true - serve vectors from disk. If set to false, the vectors will be loaded in RAM."""
-    def __init__(
-        self,
-        *,
-        hnsw_config: global___HnswConfigDiff | None = ...,
-        quantization_config: global___QuantizationConfigDiff | None = ...,
-        on_disk: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "hnsw_config", b"hnsw_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk", b"_on_disk", "_quantization_config", b"_quantization_config", "hnsw_config", b"hnsw_config", "on_disk", b"on_disk", "quantization_config", b"quantization_config"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config", b"_quantization_config"]) -> typing_extensions.Literal["quantization_config"] | None: ...
 
+    def __init__(self,
+        *,
+        hnsw_config: typing.Optional[global___HnswConfigDiff] = ...,
+        quantization_config: typing.Optional[global___QuantizationConfigDiff] = ...,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config",b"_hnsw_config","_on_disk",b"_on_disk","_quantization_config",b"_quantization_config","hnsw_config",b"hnsw_config","on_disk",b"on_disk","quantization_config",b"quantization_config"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config",b"_hnsw_config","_on_disk",b"_on_disk","_quantization_config",b"_quantization_config","hnsw_config",b"hnsw_config","on_disk",b"on_disk","quantization_config",b"quantization_config"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config",b"_hnsw_config"]) -> typing.Optional[typing_extensions.Literal["hnsw_config"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config",b"_quantization_config"]) -> typing.Optional[typing_extensions.Literal["quantization_config"]]: ...
 global___VectorParamsDiff = VectorParamsDiff
 
 class VectorParamsMap(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     class MapEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
         KEY_FIELD_NUMBER: builtins.int
         VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
+        key: typing.Text
         @property
         def value(self) -> global___VectorParams: ...
-        def __init__(
-            self,
+        def __init__(self,
             *,
-            key: builtins.str = ...,
-            value: global___VectorParams | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+            key: typing.Text = ...,
+            value: typing.Optional[global___VectorParams] = ...,
+            ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value",b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key",b"key","value",b"value"]) -> None: ...
 
     MAP_FIELD_NUMBER: builtins.int
     @property
-    def map(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___VectorParams]: ...
-    def __init__(
-        self,
+    def map(self) -> google.protobuf.internal.containers.MessageMap[typing.Text, global___VectorParams]: ...
+    def __init__(self,
         *,
-        map: collections.abc.Mapping[builtins.str, global___VectorParams] | None = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["map", b"map"]) -> None: ...
-
+        map: typing.Optional[typing.Mapping[typing.Text, global___VectorParams]] = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["map",b"map"]) -> None: ...
 global___VectorParamsMap = VectorParamsMap
 
 class VectorParamsDiffMap(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     class MapEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
         KEY_FIELD_NUMBER: builtins.int
         VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
+        key: typing.Text
         @property
         def value(self) -> global___VectorParamsDiff: ...
-        def __init__(
-            self,
+        def __init__(self,
             *,
-            key: builtins.str = ...,
-            value: global___VectorParamsDiff | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+            key: typing.Text = ...,
+            value: typing.Optional[global___VectorParamsDiff] = ...,
+            ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value",b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key",b"key","value",b"value"]) -> None: ...
 
     MAP_FIELD_NUMBER: builtins.int
     @property
-    def map(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___VectorParamsDiff]: ...
-    def __init__(
-        self,
+    def map(self) -> google.protobuf.internal.containers.MessageMap[typing.Text, global___VectorParamsDiff]: ...
+    def __init__(self,
         *,
-        map: collections.abc.Mapping[builtins.str, global___VectorParamsDiff] | None = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["map", b"map"]) -> None: ...
-
+        map: typing.Optional[typing.Mapping[typing.Text, global___VectorParamsDiff]] = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["map",b"map"]) -> None: ...
 global___VectorParamsDiffMap = VectorParamsDiffMap
 
 class VectorsConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     PARAMS_FIELD_NUMBER: builtins.int
     PARAMS_MAP_FIELD_NUMBER: builtins.int
     @property
     def params(self) -> global___VectorParams: ...
     @property
     def params_map(self) -> global___VectorParamsMap: ...
-    def __init__(
-        self,
+    def __init__(self,
         *,
-        params: global___VectorParams | None = ...,
-        params_map: global___VectorParamsMap | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["config", b"config", "params", b"params", "params_map", b"params_map"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["config", b"config", "params", b"params", "params_map", b"params_map"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["config", b"config"]) -> typing_extensions.Literal["params", "params_map"] | None: ...
-
+        params: typing.Optional[global___VectorParams] = ...,
+        params_map: typing.Optional[global___VectorParamsMap] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["config",b"config","params",b"params","params_map",b"params_map"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["config",b"config","params",b"params","params_map",b"params_map"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["config",b"config"]) -> typing.Optional[typing_extensions.Literal["params","params_map"]]: ...
 global___VectorsConfig = VectorsConfig
 
 class VectorsConfigDiff(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     PARAMS_FIELD_NUMBER: builtins.int
     PARAMS_MAP_FIELD_NUMBER: builtins.int
     @property
     def params(self) -> global___VectorParamsDiff: ...
     @property
     def params_map(self) -> global___VectorParamsDiffMap: ...
-    def __init__(
-        self,
+    def __init__(self,
         *,
-        params: global___VectorParamsDiff | None = ...,
-        params_map: global___VectorParamsDiffMap | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["config", b"config", "params", b"params", "params_map", b"params_map"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["config", b"config", "params", b"params", "params_map", b"params_map"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["config", b"config"]) -> typing_extensions.Literal["params", "params_map"] | None: ...
-
+        params: typing.Optional[global___VectorParamsDiff] = ...,
+        params_map: typing.Optional[global___VectorParamsDiffMap] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["config",b"config","params",b"params","params_map",b"params_map"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["config",b"config","params",b"params","params_map",b"params_map"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["config",b"config"]) -> typing.Optional[typing_extensions.Literal["params","params_map"]]: ...
 global___VectorsConfigDiff = VectorsConfigDiff
 
 class SparseVectorParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     INDEX_FIELD_NUMBER: builtins.int
     MODIFIER_FIELD_NUMBER: builtins.int
     @property
     def index(self) -> global___SparseIndexConfig:
         """Configuration of sparse index"""
+        pass
     modifier: global___Modifier.ValueType
     """If set - apply modifier to the vector values"""
-    def __init__(
-        self,
-        *,
-        index: global___SparseIndexConfig | None = ...,
-        modifier: global___Modifier.ValueType | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_index", b"_index", "_modifier", b"_modifier", "index", b"index", "modifier", b"modifier"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_index", b"_index", "_modifier", b"_modifier", "index", b"index", "modifier", b"modifier"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_index", b"_index"]) -> typing_extensions.Literal["index"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_modifier", b"_modifier"]) -> typing_extensions.Literal["modifier"] | None: ...
 
+    def __init__(self,
+        *,
+        index: typing.Optional[global___SparseIndexConfig] = ...,
+        modifier: typing.Optional[global___Modifier.ValueType] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_index",b"_index","_modifier",b"_modifier","index",b"index","modifier",b"modifier"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_index",b"_index","_modifier",b"_modifier","index",b"index","modifier",b"modifier"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_index",b"_index"]) -> typing.Optional[typing_extensions.Literal["index"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_modifier",b"_modifier"]) -> typing.Optional[typing_extensions.Literal["modifier"]]: ...
 global___SparseVectorParams = SparseVectorParams
 
 class SparseVectorConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     class MapEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
         KEY_FIELD_NUMBER: builtins.int
         VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
+        key: typing.Text
         @property
         def value(self) -> global___SparseVectorParams: ...
-        def __init__(
-            self,
+        def __init__(self,
             *,
-            key: builtins.str = ...,
-            value: global___SparseVectorParams | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+            key: typing.Text = ...,
+            value: typing.Optional[global___SparseVectorParams] = ...,
+            ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value",b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key",b"key","value",b"value"]) -> None: ...
 
     MAP_FIELD_NUMBER: builtins.int
     @property
-    def map(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___SparseVectorParams]: ...
-    def __init__(
-        self,
+    def map(self) -> google.protobuf.internal.containers.MessageMap[typing.Text, global___SparseVectorParams]: ...
+    def __init__(self,
         *,
-        map: collections.abc.Mapping[builtins.str, global___SparseVectorParams] | None = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["map", b"map"]) -> None: ...
-
+        map: typing.Optional[typing.Mapping[typing.Text, global___SparseVectorParams]] = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["map",b"map"]) -> None: ...
 global___SparseVectorConfig = SparseVectorConfig
 
 class MultiVectorConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COMPARATOR_FIELD_NUMBER: builtins.int
     comparator: global___MultiVectorComparator.ValueType
     """Comparator for multi-vector search"""
-    def __init__(
-        self,
+
+    def __init__(self,
         *,
         comparator: global___MultiVectorComparator.ValueType = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["comparator", b"comparator"]) -> None: ...
-
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["comparator",b"comparator"]) -> None: ...
 global___MultiVectorConfig = MultiVectorConfig
 
 class GetCollectionInfoRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
-    def __init__(
-        self,
-        *,
-        collection_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["collection_name", b"collection_name"]) -> None: ...
 
+    def __init__(self,
+        *,
+        collection_name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["collection_name",b"collection_name"]) -> None: ...
 global___GetCollectionInfoRequest = GetCollectionInfoRequest
 
 class CollectionExistsRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
-    def __init__(
-        self,
+    collection_name: typing.Text
+    def __init__(self,
         *,
-        collection_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["collection_name", b"collection_name"]) -> None: ...
-
+        collection_name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["collection_name",b"collection_name"]) -> None: ...
 global___CollectionExistsRequest = CollectionExistsRequest
 
 class CollectionExists(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     EXISTS_FIELD_NUMBER: builtins.int
     exists: builtins.bool
-    def __init__(
-        self,
+    def __init__(self,
         *,
         exists: builtins.bool = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["exists", b"exists"]) -> None: ...
-
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["exists",b"exists"]) -> None: ...
 global___CollectionExists = CollectionExists
 
 class CollectionExistsResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     RESULT_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
     @property
     def result(self) -> global___CollectionExists: ...
     time: builtins.float
     """Time spent to process"""
-    def __init__(
-        self,
-        *,
-        result: global___CollectionExists | None = ...,
-        time: builtins.float = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["result", b"result"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
 
+    def __init__(self,
+        *,
+        result: typing.Optional[global___CollectionExists] = ...,
+        time: builtins.float = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["result",b"result"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result",b"result","time",b"time"]) -> None: ...
 global___CollectionExistsResponse = CollectionExistsResponse
 
 class ListCollectionsRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    def __init__(
-        self,
-    ) -> None: ...
-
+    def __init__(self,
+        ) -> None: ...
 global___ListCollectionsRequest = ListCollectionsRequest
 
 class CollectionDescription(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     NAME_FIELD_NUMBER: builtins.int
-    name: builtins.str
+    name: typing.Text
     """Name of the collection"""
-    def __init__(
-        self,
-        *,
-        name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name"]) -> None: ...
 
+    def __init__(self,
+        *,
+        name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["name",b"name"]) -> None: ...
 global___CollectionDescription = CollectionDescription
 
 class GetCollectionInfoResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     RESULT_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
     @property
     def result(self) -> global___CollectionInfo: ...
     time: builtins.float
     """Time spent to process"""
-    def __init__(
-        self,
-        *,
-        result: global___CollectionInfo | None = ...,
-        time: builtins.float = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["result", b"result"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
 
+    def __init__(self,
+        *,
+        result: typing.Optional[global___CollectionInfo] = ...,
+        time: builtins.float = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["result",b"result"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result",b"result","time",b"time"]) -> None: ...
 global___GetCollectionInfoResponse = GetCollectionInfoResponse
 
 class ListCollectionsResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTIONS_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
     @property
     def collections(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___CollectionDescription]: ...
     time: builtins.float
     """Time spent to process"""
-    def __init__(
-        self,
-        *,
-        collections: collections.abc.Iterable[global___CollectionDescription] | None = ...,
-        time: builtins.float = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["collections", b"collections", "time", b"time"]) -> None: ...
 
+    def __init__(self,
+        *,
+        collections: typing.Optional[typing.Iterable[global___CollectionDescription]] = ...,
+        time: builtins.float = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["collections",b"collections","time",b"time"]) -> None: ...
 global___ListCollectionsResponse = ListCollectionsResponse
 
 class OptimizerStatus(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     OK_FIELD_NUMBER: builtins.int
     ERROR_FIELD_NUMBER: builtins.int
     ok: builtins.bool
-    error: builtins.str
-    def __init__(
-        self,
+    error: typing.Text
+    def __init__(self,
         *,
         ok: builtins.bool = ...,
-        error: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["error", b"error", "ok", b"ok"]) -> None: ...
-
+        error: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["error",b"error","ok",b"ok"]) -> None: ...
 global___OptimizerStatus = OptimizerStatus
 
 class HnswConfigDiff(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     M_FIELD_NUMBER: builtins.int
     EF_CONSTRUCT_FIELD_NUMBER: builtins.int
     FULL_SCAN_THRESHOLD_FIELD_NUMBER: builtins.int
@@ -709,10 +698,12 @@ class HnswConfigDiff(google.protobuf.message.Message):
     """
     Number of edges per node in the index graph. Larger the value - more accurate the search, more space required.
     """
+
     ef_construct: builtins.int
     """
     Number of neighbours to consider during the index building. Larger the value - more accurate the search, more time required to build the index.
     """
+
     full_scan_threshold: builtins.int
     """
     Minimal size (in KiloBytes) of vectors for additional payload-based indexing.
@@ -720,6 +711,7 @@ class HnswConfigDiff(google.protobuf.message.Message):
     in this case full-scan search should be preferred by query planner and additional indexing is not required.
     Note: 1 Kb = 1 vector of size 256
     """
+
     max_indexing_threads: builtins.int
     """
     Number of parallel threads used for background index building.
@@ -727,44 +719,44 @@ class HnswConfigDiff(google.protobuf.message.Message):
     Best to keep between 8 and 16 to prevent likelihood of building broken/inefficient HNSW graphs.
     On small CPUs, less threads are used.
     """
+
     on_disk: builtins.bool
     """
     Store HNSW index on disk. If set to false, the index will be stored in RAM.
     """
+
     payload_m: builtins.int
     """
     Number of additional payload-aware links per node in the index graph. If not set - regular M parameter will be used.
     """
-    def __init__(
-        self,
-        *,
-        m: builtins.int | None = ...,
-        ef_construct: builtins.int | None = ...,
-        full_scan_threshold: builtins.int | None = ...,
-        max_indexing_threads: builtins.int | None = ...,
-        on_disk: builtins.bool | None = ...,
-        payload_m: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_ef_construct", b"_ef_construct"]) -> typing_extensions.Literal["ef_construct"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_full_scan_threshold", b"_full_scan_threshold"]) -> typing_extensions.Literal["full_scan_threshold"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_m", b"_m"]) -> typing_extensions.Literal["m"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_indexing_threads", b"_max_indexing_threads"]) -> typing_extensions.Literal["max_indexing_threads"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload_m", b"_payload_m"]) -> typing_extensions.Literal["payload_m"] | None: ...
 
+    def __init__(self,
+        *,
+        m: typing.Optional[builtins.int] = ...,
+        ef_construct: typing.Optional[builtins.int] = ...,
+        full_scan_threshold: typing.Optional[builtins.int] = ...,
+        max_indexing_threads: typing.Optional[builtins.int] = ...,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        payload_m: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ef_construct",b"_ef_construct","_full_scan_threshold",b"_full_scan_threshold","_m",b"_m","_max_indexing_threads",b"_max_indexing_threads","_on_disk",b"_on_disk","_payload_m",b"_payload_m","ef_construct",b"ef_construct","full_scan_threshold",b"full_scan_threshold","m",b"m","max_indexing_threads",b"max_indexing_threads","on_disk",b"on_disk","payload_m",b"payload_m"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ef_construct",b"_ef_construct","_full_scan_threshold",b"_full_scan_threshold","_m",b"_m","_max_indexing_threads",b"_max_indexing_threads","_on_disk",b"_on_disk","_payload_m",b"_payload_m","ef_construct",b"ef_construct","full_scan_threshold",b"full_scan_threshold","m",b"m","max_indexing_threads",b"max_indexing_threads","on_disk",b"on_disk","payload_m",b"payload_m"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_ef_construct",b"_ef_construct"]) -> typing.Optional[typing_extensions.Literal["ef_construct"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_full_scan_threshold",b"_full_scan_threshold"]) -> typing.Optional[typing_extensions.Literal["full_scan_threshold"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_m",b"_m"]) -> typing.Optional[typing_extensions.Literal["m"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_indexing_threads",b"_max_indexing_threads"]) -> typing.Optional[typing_extensions.Literal["max_indexing_threads"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_payload_m",b"_payload_m"]) -> typing.Optional[typing_extensions.Literal["payload_m"]]: ...
 global___HnswConfigDiff = HnswConfigDiff
 
 class SparseIndexConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     FULL_SCAN_THRESHOLD_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     DATATYPE_FIELD_NUMBER: builtins.int
@@ -773,59 +765,58 @@ class SparseIndexConfig(google.protobuf.message.Message):
     Prefer a full scan search upto (excluding) this number of vectors.
     Note: this is number of vectors, not KiloBytes.
     """
+
     on_disk: builtins.bool
     """
     Store inverted index on disk. If set to false, the index will be stored in RAM.
     """
+
     datatype: global___Datatype.ValueType
     """
     Datatype used to store weights in the index.
     """
-    def __init__(
-        self,
-        *,
-        full_scan_threshold: builtins.int | None = ...,
-        on_disk: builtins.bool | None = ...,
-        datatype: global___Datatype.ValueType | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_full_scan_threshold", b"_full_scan_threshold", "_on_disk", b"_on_disk", "datatype", b"datatype", "full_scan_threshold", b"full_scan_threshold", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_datatype", b"_datatype", "_full_scan_threshold", b"_full_scan_threshold", "_on_disk", b"_on_disk", "datatype", b"datatype", "full_scan_threshold", b"full_scan_threshold", "on_disk", b"on_disk"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype", b"_datatype"]) -> typing_extensions.Literal["datatype"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_full_scan_threshold", b"_full_scan_threshold"]) -> typing_extensions.Literal["full_scan_threshold"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
+    def __init__(self,
+        *,
+        full_scan_threshold: typing.Optional[builtins.int] = ...,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        datatype: typing.Optional[global___Datatype.ValueType] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_datatype",b"_datatype","_full_scan_threshold",b"_full_scan_threshold","_on_disk",b"_on_disk","datatype",b"datatype","full_scan_threshold",b"full_scan_threshold","on_disk",b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_datatype",b"_datatype","_full_scan_threshold",b"_full_scan_threshold","_on_disk",b"_on_disk","datatype",b"datatype","full_scan_threshold",b"full_scan_threshold","on_disk",b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_datatype",b"_datatype"]) -> typing.Optional[typing_extensions.Literal["datatype"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_full_scan_threshold",b"_full_scan_threshold"]) -> typing.Optional[typing_extensions.Literal["full_scan_threshold"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
 global___SparseIndexConfig = SparseIndexConfig
 
 class WalConfigDiff(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     WAL_CAPACITY_MB_FIELD_NUMBER: builtins.int
     WAL_SEGMENTS_AHEAD_FIELD_NUMBER: builtins.int
     wal_capacity_mb: builtins.int
     """Size of a single WAL block file"""
+
     wal_segments_ahead: builtins.int
     """Number of segments to create in advance"""
-    def __init__(
-        self,
-        *,
-        wal_capacity_mb: builtins.int | None = ...,
-        wal_segments_ahead: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_wal_capacity_mb", b"_wal_capacity_mb", "_wal_segments_ahead", b"_wal_segments_ahead", "wal_capacity_mb", b"wal_capacity_mb", "wal_segments_ahead", b"wal_segments_ahead"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_wal_capacity_mb", b"_wal_capacity_mb", "_wal_segments_ahead", b"_wal_segments_ahead", "wal_capacity_mb", b"wal_capacity_mb", "wal_segments_ahead", b"wal_segments_ahead"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_capacity_mb", b"_wal_capacity_mb"]) -> typing_extensions.Literal["wal_capacity_mb"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_segments_ahead", b"_wal_segments_ahead"]) -> typing_extensions.Literal["wal_segments_ahead"] | None: ...
 
+    def __init__(self,
+        *,
+        wal_capacity_mb: typing.Optional[builtins.int] = ...,
+        wal_segments_ahead: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_wal_capacity_mb",b"_wal_capacity_mb","_wal_segments_ahead",b"_wal_segments_ahead","wal_capacity_mb",b"wal_capacity_mb","wal_segments_ahead",b"wal_segments_ahead"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_wal_capacity_mb",b"_wal_capacity_mb","_wal_segments_ahead",b"_wal_segments_ahead","wal_capacity_mb",b"wal_capacity_mb","wal_segments_ahead",b"wal_segments_ahead"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_capacity_mb",b"_wal_capacity_mb"]) -> typing.Optional[typing_extensions.Literal["wal_capacity_mb"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_segments_ahead",b"_wal_segments_ahead"]) -> typing.Optional[typing_extensions.Literal["wal_segments_ahead"]]: ...
 global___WalConfigDiff = WalConfigDiff
 
 class OptimizersConfigDiff(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     DELETED_THRESHOLD_FIELD_NUMBER: builtins.int
     VACUUM_MIN_VECTOR_NUMBER_FIELD_NUMBER: builtins.int
     DEFAULT_SEGMENT_NUMBER_FIELD_NUMBER: builtins.int
@@ -838,10 +829,12 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     """
     The minimal fraction of deleted vectors in a segment, required to perform segment optimization
     """
+
     vacuum_min_vector_number: builtins.int
     """
     The minimal number of vectors in a segment, required to perform segment optimization
     """
+
     default_segment_number: builtins.int
     """
     Target amount of segments the optimizer will try to keep.
@@ -853,6 +846,7 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     It is recommended to select the default number of segments as a factor of the number of search threads,
     so that each segment would be handled evenly by one of the threads.
     """
+
     max_segment_size: builtins.int
     """
     Do not create segments larger this size (in kilobytes).
@@ -864,6 +858,7 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     Note: 1Kb = 1 vector of size 256
     If not set, will be automatically selected considering the number of available CPUs.
     """
+
     memmap_threshold: builtins.int
     """
     Maximum size (in kilobytes) of vectors to store in-memory per segment.
@@ -875,6 +870,7 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
 
     Note: 1Kb = 1 vector of size 256
     """
+
     indexing_threshold: builtins.int
     """
     Maximum size (in kilobytes) of vectors allowed for plain index, exceeding this threshold will enable vector indexing
@@ -885,10 +881,12 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
 
     Note: 1kB = 1 vector of size 256.
     """
+
     flush_interval_sec: builtins.int
     """
     Interval between forced flushes.
     """
+
     max_optimization_threads: builtins.int
     """
     Max number of threads (jobs) for running optimizations per shard.
@@ -896,108 +894,103 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     If null - have no limit and choose dynamically to saturate CPU.
     If 0 - no optimization threads, optimizations will be disabled.
     """
-    def __init__(
-        self,
-        *,
-        deleted_threshold: builtins.float | None = ...,
-        vacuum_min_vector_number: builtins.int | None = ...,
-        default_segment_number: builtins.int | None = ...,
-        max_segment_size: builtins.int | None = ...,
-        memmap_threshold: builtins.int | None = ...,
-        indexing_threshold: builtins.int | None = ...,
-        flush_interval_sec: builtins.int | None = ...,
-        max_optimization_threads: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_default_segment_number", b"_default_segment_number", "_deleted_threshold", b"_deleted_threshold", "_flush_interval_sec", b"_flush_interval_sec", "_indexing_threshold", b"_indexing_threshold", "_max_optimization_threads", b"_max_optimization_threads", "_max_segment_size", b"_max_segment_size", "_memmap_threshold", b"_memmap_threshold", "_vacuum_min_vector_number", b"_vacuum_min_vector_number", "default_segment_number", b"default_segment_number", "deleted_threshold", b"deleted_threshold", "flush_interval_sec", b"flush_interval_sec", "indexing_threshold", b"indexing_threshold", "max_optimization_threads", b"max_optimization_threads", "max_segment_size", b"max_segment_size", "memmap_threshold", b"memmap_threshold", "vacuum_min_vector_number", b"vacuum_min_vector_number"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_default_segment_number", b"_default_segment_number", "_deleted_threshold", b"_deleted_threshold", "_flush_interval_sec", b"_flush_interval_sec", "_indexing_threshold", b"_indexing_threshold", "_max_optimization_threads", b"_max_optimization_threads", "_max_segment_size", b"_max_segment_size", "_memmap_threshold", b"_memmap_threshold", "_vacuum_min_vector_number", b"_vacuum_min_vector_number", "default_segment_number", b"default_segment_number", "deleted_threshold", b"deleted_threshold", "flush_interval_sec", b"flush_interval_sec", "indexing_threshold", b"indexing_threshold", "max_optimization_threads", b"max_optimization_threads", "max_segment_size", b"max_segment_size", "memmap_threshold", b"memmap_threshold", "vacuum_min_vector_number", b"vacuum_min_vector_number"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_default_segment_number", b"_default_segment_number"]) -> typing_extensions.Literal["default_segment_number"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_deleted_threshold", b"_deleted_threshold"]) -> typing_extensions.Literal["deleted_threshold"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_flush_interval_sec", b"_flush_interval_sec"]) -> typing_extensions.Literal["flush_interval_sec"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexing_threshold", b"_indexing_threshold"]) -> typing_extensions.Literal["indexing_threshold"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_optimization_threads", b"_max_optimization_threads"]) -> typing_extensions.Literal["max_optimization_threads"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_segment_size", b"_max_segment_size"]) -> typing_extensions.Literal["max_segment_size"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memmap_threshold", b"_memmap_threshold"]) -> typing_extensions.Literal["memmap_threshold"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vacuum_min_vector_number", b"_vacuum_min_vector_number"]) -> typing_extensions.Literal["vacuum_min_vector_number"] | None: ...
 
+    def __init__(self,
+        *,
+        deleted_threshold: typing.Optional[builtins.float] = ...,
+        vacuum_min_vector_number: typing.Optional[builtins.int] = ...,
+        default_segment_number: typing.Optional[builtins.int] = ...,
+        max_segment_size: typing.Optional[builtins.int] = ...,
+        memmap_threshold: typing.Optional[builtins.int] = ...,
+        indexing_threshold: typing.Optional[builtins.int] = ...,
+        flush_interval_sec: typing.Optional[builtins.int] = ...,
+        max_optimization_threads: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_default_segment_number",b"_default_segment_number","_deleted_threshold",b"_deleted_threshold","_flush_interval_sec",b"_flush_interval_sec","_indexing_threshold",b"_indexing_threshold","_max_optimization_threads",b"_max_optimization_threads","_max_segment_size",b"_max_segment_size","_memmap_threshold",b"_memmap_threshold","_vacuum_min_vector_number",b"_vacuum_min_vector_number","default_segment_number",b"default_segment_number","deleted_threshold",b"deleted_threshold","flush_interval_sec",b"flush_interval_sec","indexing_threshold",b"indexing_threshold","max_optimization_threads",b"max_optimization_threads","max_segment_size",b"max_segment_size","memmap_threshold",b"memmap_threshold","vacuum_min_vector_number",b"vacuum_min_vector_number"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_default_segment_number",b"_default_segment_number","_deleted_threshold",b"_deleted_threshold","_flush_interval_sec",b"_flush_interval_sec","_indexing_threshold",b"_indexing_threshold","_max_optimization_threads",b"_max_optimization_threads","_max_segment_size",b"_max_segment_size","_memmap_threshold",b"_memmap_threshold","_vacuum_min_vector_number",b"_vacuum_min_vector_number","default_segment_number",b"default_segment_number","deleted_threshold",b"deleted_threshold","flush_interval_sec",b"flush_interval_sec","indexing_threshold",b"indexing_threshold","max_optimization_threads",b"max_optimization_threads","max_segment_size",b"max_segment_size","memmap_threshold",b"memmap_threshold","vacuum_min_vector_number",b"vacuum_min_vector_number"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_default_segment_number",b"_default_segment_number"]) -> typing.Optional[typing_extensions.Literal["default_segment_number"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_deleted_threshold",b"_deleted_threshold"]) -> typing.Optional[typing_extensions.Literal["deleted_threshold"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_flush_interval_sec",b"_flush_interval_sec"]) -> typing.Optional[typing_extensions.Literal["flush_interval_sec"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexing_threshold",b"_indexing_threshold"]) -> typing.Optional[typing_extensions.Literal["indexing_threshold"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_optimization_threads",b"_max_optimization_threads"]) -> typing.Optional[typing_extensions.Literal["max_optimization_threads"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_segment_size",b"_max_segment_size"]) -> typing.Optional[typing_extensions.Literal["max_segment_size"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_memmap_threshold",b"_memmap_threshold"]) -> typing.Optional[typing_extensions.Literal["memmap_threshold"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vacuum_min_vector_number",b"_vacuum_min_vector_number"]) -> typing.Optional[typing_extensions.Literal["vacuum_min_vector_number"]]: ...
 global___OptimizersConfigDiff = OptimizersConfigDiff
 
 class ScalarQuantization(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     TYPE_FIELD_NUMBER: builtins.int
     QUANTILE_FIELD_NUMBER: builtins.int
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
     type: global___QuantizationType.ValueType
     """Type of quantization"""
+
     quantile: builtins.float
     """Number of bits to use for quantization"""
+
     always_ram: builtins.bool
     """If true - quantized vectors always will be stored in RAM, ignoring the config of main storage"""
-    def __init__(
-        self,
+
+    def __init__(self,
         *,
         type: global___QuantizationType.ValueType = ...,
-        quantile: builtins.float | None = ...,
-        always_ram: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_quantile", b"_quantile", "always_ram", b"always_ram", "quantile", b"quantile"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_quantile", b"_quantile", "always_ram", b"always_ram", "quantile", b"quantile", "type", b"type"]) -> None: ...
+        quantile: typing.Optional[builtins.float] = ...,
+        always_ram: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram",b"_always_ram","_quantile",b"_quantile","always_ram",b"always_ram","quantile",b"quantile"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram",b"_always_ram","_quantile",b"_quantile","always_ram",b"always_ram","quantile",b"quantile","type",b"type"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram",b"_always_ram"]) -> typing.Optional[typing_extensions.Literal["always_ram"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantile", b"_quantile"]) -> typing_extensions.Literal["quantile"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantile",b"_quantile"]) -> typing.Optional[typing_extensions.Literal["quantile"]]: ...
 global___ScalarQuantization = ScalarQuantization
 
 class ProductQuantization(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COMPRESSION_FIELD_NUMBER: builtins.int
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
     compression: global___CompressionRatio.ValueType
     """Compression ratio"""
+
     always_ram: builtins.bool
     """If true - quantized vectors always will be stored in RAM, ignoring the config of main storage"""
-    def __init__(
-        self,
+
+    def __init__(self,
         *,
         compression: global___CompressionRatio.ValueType = ...,
-        always_ram: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "always_ram", b"always_ram"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "always_ram", b"always_ram", "compression", b"compression"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
-
+        always_ram: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram",b"_always_ram","always_ram",b"always_ram"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram",b"_always_ram","always_ram",b"always_ram","compression",b"compression"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram",b"_always_ram"]) -> typing.Optional[typing_extensions.Literal["always_ram"]]: ...
 global___ProductQuantization = ProductQuantization
 
 class BinaryQuantization(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
     always_ram: builtins.bool
     """If true - quantized vectors always will be stored in RAM, ignoring the config of main storage"""
-    def __init__(
-        self,
-        *,
-        always_ram: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "always_ram", b"always_ram"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "always_ram", b"always_ram"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
 
+    def __init__(self,
+        *,
+        always_ram: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram",b"_always_ram","always_ram",b"always_ram"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram",b"_always_ram","always_ram",b"always_ram"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram",b"_always_ram"]) -> typing.Optional[typing_extensions.Literal["always_ram"]]: ...
 global___BinaryQuantization = BinaryQuantization
 
 class QuantizationConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SCALAR_FIELD_NUMBER: builtins.int
     PRODUCT_FIELD_NUMBER: builtins.int
     BINARY_FIELD_NUMBER: builtins.int
@@ -1007,31 +1000,25 @@ class QuantizationConfig(google.protobuf.message.Message):
     def product(self) -> global___ProductQuantization: ...
     @property
     def binary(self) -> global___BinaryQuantization: ...
-    def __init__(
-        self,
+    def __init__(self,
         *,
-        scalar: global___ScalarQuantization | None = ...,
-        product: global___ProductQuantization | None = ...,
-        binary: global___BinaryQuantization | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "product", b"product", "quantization", b"quantization", "scalar", b"scalar"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "product", b"product", "quantization", b"quantization", "scalar", b"scalar"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["quantization", b"quantization"]) -> typing_extensions.Literal["scalar", "product", "binary"] | None: ...
-
+        scalar: typing.Optional[global___ScalarQuantization] = ...,
+        product: typing.Optional[global___ProductQuantization] = ...,
+        binary: typing.Optional[global___BinaryQuantization] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["binary",b"binary","product",b"product","quantization",b"quantization","scalar",b"scalar"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["binary",b"binary","product",b"product","quantization",b"quantization","scalar",b"scalar"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["quantization",b"quantization"]) -> typing.Optional[typing_extensions.Literal["scalar","product","binary"]]: ...
 global___QuantizationConfig = QuantizationConfig
 
 class Disabled(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    def __init__(
-        self,
-    ) -> None: ...
-
+    def __init__(self,
+        ) -> None: ...
 global___Disabled = Disabled
 
 class QuantizationConfigDiff(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SCALAR_FIELD_NUMBER: builtins.int
     PRODUCT_FIELD_NUMBER: builtins.int
     DISABLED_FIELD_NUMBER: builtins.int
@@ -1044,23 +1031,20 @@ class QuantizationConfigDiff(google.protobuf.message.Message):
     def disabled(self) -> global___Disabled: ...
     @property
     def binary(self) -> global___BinaryQuantization: ...
-    def __init__(
-        self,
+    def __init__(self,
         *,
-        scalar: global___ScalarQuantization | None = ...,
-        product: global___ProductQuantization | None = ...,
-        disabled: global___Disabled | None = ...,
-        binary: global___BinaryQuantization | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "disabled", b"disabled", "product", b"product", "quantization", b"quantization", "scalar", b"scalar"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "disabled", b"disabled", "product", b"product", "quantization", b"quantization", "scalar", b"scalar"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["quantization", b"quantization"]) -> typing_extensions.Literal["scalar", "product", "disabled", "binary"] | None: ...
-
+        scalar: typing.Optional[global___ScalarQuantization] = ...,
+        product: typing.Optional[global___ProductQuantization] = ...,
+        disabled: typing.Optional[global___Disabled] = ...,
+        binary: typing.Optional[global___BinaryQuantization] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["binary",b"binary","disabled",b"disabled","product",b"product","quantization",b"quantization","scalar",b"scalar"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["binary",b"binary","disabled",b"disabled","product",b"product","quantization",b"quantization","scalar",b"scalar"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["quantization",b"quantization"]) -> typing.Optional[typing_extensions.Literal["scalar","product","disabled","binary"]]: ...
 global___QuantizationConfigDiff = QuantizationConfigDiff
 
 class StrictModeConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     ENABLED_FIELD_NUMBER: builtins.int
     MAX_QUERY_LIMIT_FIELD_NUMBER: builtins.int
     MAX_TIMEOUT_FIELD_NUMBER: builtins.int
@@ -1077,42 +1061,39 @@ class StrictModeConfig(google.protobuf.message.Message):
     search_max_hnsw_ef: builtins.int
     search_allow_exact: builtins.bool
     search_max_oversampling: builtins.float
-    def __init__(
-        self,
+    def __init__(self,
         *,
-        enabled: builtins.bool | None = ...,
-        max_query_limit: builtins.int | None = ...,
-        max_timeout: builtins.int | None = ...,
-        unindexed_filtering_retrieve: builtins.bool | None = ...,
-        unindexed_filtering_update: builtins.bool | None = ...,
-        search_max_hnsw_ef: builtins.int | None = ...,
-        search_allow_exact: builtins.bool | None = ...,
-        search_max_oversampling: builtins.float | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_enabled", b"_enabled", "_max_query_limit", b"_max_query_limit", "_max_timeout", b"_max_timeout", "_search_allow_exact", b"_search_allow_exact", "_search_max_hnsw_ef", b"_search_max_hnsw_ef", "_search_max_oversampling", b"_search_max_oversampling", "_unindexed_filtering_retrieve", b"_unindexed_filtering_retrieve", "_unindexed_filtering_update", b"_unindexed_filtering_update", "enabled", b"enabled", "max_query_limit", b"max_query_limit", "max_timeout", b"max_timeout", "search_allow_exact", b"search_allow_exact", "search_max_hnsw_ef", b"search_max_hnsw_ef", "search_max_oversampling", b"search_max_oversampling", "unindexed_filtering_retrieve", b"unindexed_filtering_retrieve", "unindexed_filtering_update", b"unindexed_filtering_update"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_enabled", b"_enabled", "_max_query_limit", b"_max_query_limit", "_max_timeout", b"_max_timeout", "_search_allow_exact", b"_search_allow_exact", "_search_max_hnsw_ef", b"_search_max_hnsw_ef", "_search_max_oversampling", b"_search_max_oversampling", "_unindexed_filtering_retrieve", b"_unindexed_filtering_retrieve", "_unindexed_filtering_update", b"_unindexed_filtering_update", "enabled", b"enabled", "max_query_limit", b"max_query_limit", "max_timeout", b"max_timeout", "search_allow_exact", b"search_allow_exact", "search_max_hnsw_ef", b"search_max_hnsw_ef", "search_max_oversampling", b"search_max_oversampling", "unindexed_filtering_retrieve", b"unindexed_filtering_retrieve", "unindexed_filtering_update", b"unindexed_filtering_update"]) -> None: ...
+        enabled: typing.Optional[builtins.bool] = ...,
+        max_query_limit: typing.Optional[builtins.int] = ...,
+        max_timeout: typing.Optional[builtins.int] = ...,
+        unindexed_filtering_retrieve: typing.Optional[builtins.bool] = ...,
+        unindexed_filtering_update: typing.Optional[builtins.bool] = ...,
+        search_max_hnsw_ef: typing.Optional[builtins.int] = ...,
+        search_allow_exact: typing.Optional[builtins.bool] = ...,
+        search_max_oversampling: typing.Optional[builtins.float] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enabled",b"_enabled","_max_query_limit",b"_max_query_limit","_max_timeout",b"_max_timeout","_search_allow_exact",b"_search_allow_exact","_search_max_hnsw_ef",b"_search_max_hnsw_ef","_search_max_oversampling",b"_search_max_oversampling","_unindexed_filtering_retrieve",b"_unindexed_filtering_retrieve","_unindexed_filtering_update",b"_unindexed_filtering_update","enabled",b"enabled","max_query_limit",b"max_query_limit","max_timeout",b"max_timeout","search_allow_exact",b"search_allow_exact","search_max_hnsw_ef",b"search_max_hnsw_ef","search_max_oversampling",b"search_max_oversampling","unindexed_filtering_retrieve",b"unindexed_filtering_retrieve","unindexed_filtering_update",b"unindexed_filtering_update"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enabled",b"_enabled","_max_query_limit",b"_max_query_limit","_max_timeout",b"_max_timeout","_search_allow_exact",b"_search_allow_exact","_search_max_hnsw_ef",b"_search_max_hnsw_ef","_search_max_oversampling",b"_search_max_oversampling","_unindexed_filtering_retrieve",b"_unindexed_filtering_retrieve","_unindexed_filtering_update",b"_unindexed_filtering_update","enabled",b"enabled","max_query_limit",b"max_query_limit","max_timeout",b"max_timeout","search_allow_exact",b"search_allow_exact","search_max_hnsw_ef",b"search_max_hnsw_ef","search_max_oversampling",b"search_max_oversampling","unindexed_filtering_retrieve",b"unindexed_filtering_retrieve","unindexed_filtering_update",b"unindexed_filtering_update"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enabled", b"_enabled"]) -> typing_extensions.Literal["enabled"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enabled",b"_enabled"]) -> typing.Optional[typing_extensions.Literal["enabled"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_query_limit", b"_max_query_limit"]) -> typing_extensions.Literal["max_query_limit"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_query_limit",b"_max_query_limit"]) -> typing.Optional[typing_extensions.Literal["max_query_limit"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_timeout", b"_max_timeout"]) -> typing_extensions.Literal["max_timeout"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_timeout",b"_max_timeout"]) -> typing.Optional[typing_extensions.Literal["max_timeout"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_allow_exact", b"_search_allow_exact"]) -> typing_extensions.Literal["search_allow_exact"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_allow_exact",b"_search_allow_exact"]) -> typing.Optional[typing_extensions.Literal["search_allow_exact"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_max_hnsw_ef", b"_search_max_hnsw_ef"]) -> typing_extensions.Literal["search_max_hnsw_ef"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_max_hnsw_ef",b"_search_max_hnsw_ef"]) -> typing.Optional[typing_extensions.Literal["search_max_hnsw_ef"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_max_oversampling", b"_search_max_oversampling"]) -> typing_extensions.Literal["search_max_oversampling"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_search_max_oversampling",b"_search_max_oversampling"]) -> typing.Optional[typing_extensions.Literal["search_max_oversampling"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_unindexed_filtering_retrieve", b"_unindexed_filtering_retrieve"]) -> typing_extensions.Literal["unindexed_filtering_retrieve"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_unindexed_filtering_retrieve",b"_unindexed_filtering_retrieve"]) -> typing.Optional[typing_extensions.Literal["unindexed_filtering_retrieve"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_unindexed_filtering_update", b"_unindexed_filtering_update"]) -> typing_extensions.Literal["unindexed_filtering_update"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_unindexed_filtering_update",b"_unindexed_filtering_update"]) -> typing.Optional[typing_extensions.Literal["unindexed_filtering_update"]]: ...
 global___StrictModeConfig = StrictModeConfig
 
 class CreateCollection(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     HNSW_CONFIG_FIELD_NUMBER: builtins.int
     WAL_CONFIG_FIELD_NUMBER: builtins.int
@@ -1128,98 +1109,110 @@ class CreateCollection(google.protobuf.message.Message):
     SHARDING_METHOD_FIELD_NUMBER: builtins.int
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     STRICT_MODE_CONFIG_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
+
     @property
     def hnsw_config(self) -> global___HnswConfigDiff:
         """Configuration of vector index"""
+        pass
     @property
     def wal_config(self) -> global___WalConfigDiff:
         """Configuration of the Write-Ahead-Log"""
+        pass
     @property
     def optimizers_config(self) -> global___OptimizersConfigDiff:
         """Configuration of the optimizers"""
+        pass
     shard_number: builtins.int
     """Number of shards in the collection, default is 1 for standalone, otherwise equal to the number of nodes. Minimum is 1"""
+
     on_disk_payload: builtins.bool
     """If true - point's payload will not be stored in memory"""
+
     timeout: builtins.int
     """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
+
     @property
     def vectors_config(self) -> global___VectorsConfig:
         """Configuration for vectors"""
+        pass
     replication_factor: builtins.int
     """Number of replicas of each shard that network tries to maintain, default = 1"""
+
     write_consistency_factor: builtins.int
     """How many replicas should apply the operation for us to consider it successful, default = 1"""
-    init_from_collection: builtins.str
+
+    init_from_collection: typing.Text
     """Specify name of the other collection to copy data from"""
+
     @property
     def quantization_config(self) -> global___QuantizationConfig:
         """Quantization configuration of vector"""
+        pass
     sharding_method: global___ShardingMethod.ValueType
     """Sharding method"""
+
     @property
     def sparse_vectors_config(self) -> global___SparseVectorConfig:
         """Configuration for sparse vectors"""
+        pass
     @property
     def strict_mode_config(self) -> global___StrictModeConfig:
         """Configuration for strict mode"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
-        collection_name: builtins.str = ...,
-        hnsw_config: global___HnswConfigDiff | None = ...,
-        wal_config: global___WalConfigDiff | None = ...,
-        optimizers_config: global___OptimizersConfigDiff | None = ...,
-        shard_number: builtins.int | None = ...,
-        on_disk_payload: builtins.bool | None = ...,
-        timeout: builtins.int | None = ...,
-        vectors_config: global___VectorsConfig | None = ...,
-        replication_factor: builtins.int | None = ...,
-        write_consistency_factor: builtins.int | None = ...,
-        init_from_collection: builtins.str | None = ...,
-        quantization_config: global___QuantizationConfig | None = ...,
-        sharding_method: global___ShardingMethod.ValueType | None = ...,
-        sparse_vectors_config: global___SparseVectorConfig | None = ...,
-        strict_mode_config: global___StrictModeConfig | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_init_from_collection", b"_init_from_collection", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "hnsw_config", b"hnsw_config", "init_from_collection", b"init_from_collection", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_init_from_collection", b"_init_from_collection", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "init_from_collection", b"init_from_collection", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+        collection_name: typing.Text = ...,
+        hnsw_config: typing.Optional[global___HnswConfigDiff] = ...,
+        wal_config: typing.Optional[global___WalConfigDiff] = ...,
+        optimizers_config: typing.Optional[global___OptimizersConfigDiff] = ...,
+        shard_number: typing.Optional[builtins.int] = ...,
+        on_disk_payload: typing.Optional[builtins.bool] = ...,
+        timeout: typing.Optional[builtins.int] = ...,
+        vectors_config: typing.Optional[global___VectorsConfig] = ...,
+        replication_factor: typing.Optional[builtins.int] = ...,
+        write_consistency_factor: typing.Optional[builtins.int] = ...,
+        init_from_collection: typing.Optional[typing.Text] = ...,
+        quantization_config: typing.Optional[global___QuantizationConfig] = ...,
+        sharding_method: typing.Optional[global___ShardingMethod.ValueType] = ...,
+        sparse_vectors_config: typing.Optional[global___SparseVectorConfig] = ...,
+        strict_mode_config: typing.Optional[global___StrictModeConfig] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config",b"_hnsw_config","_init_from_collection",b"_init_from_collection","_on_disk_payload",b"_on_disk_payload","_optimizers_config",b"_optimizers_config","_quantization_config",b"_quantization_config","_replication_factor",b"_replication_factor","_shard_number",b"_shard_number","_sharding_method",b"_sharding_method","_sparse_vectors_config",b"_sparse_vectors_config","_strict_mode_config",b"_strict_mode_config","_timeout",b"_timeout","_vectors_config",b"_vectors_config","_wal_config",b"_wal_config","_write_consistency_factor",b"_write_consistency_factor","hnsw_config",b"hnsw_config","init_from_collection",b"init_from_collection","on_disk_payload",b"on_disk_payload","optimizers_config",b"optimizers_config","quantization_config",b"quantization_config","replication_factor",b"replication_factor","shard_number",b"shard_number","sharding_method",b"sharding_method","sparse_vectors_config",b"sparse_vectors_config","strict_mode_config",b"strict_mode_config","timeout",b"timeout","vectors_config",b"vectors_config","wal_config",b"wal_config","write_consistency_factor",b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config",b"_hnsw_config","_init_from_collection",b"_init_from_collection","_on_disk_payload",b"_on_disk_payload","_optimizers_config",b"_optimizers_config","_quantization_config",b"_quantization_config","_replication_factor",b"_replication_factor","_shard_number",b"_shard_number","_sharding_method",b"_sharding_method","_sparse_vectors_config",b"_sparse_vectors_config","_strict_mode_config",b"_strict_mode_config","_timeout",b"_timeout","_vectors_config",b"_vectors_config","_wal_config",b"_wal_config","_write_consistency_factor",b"_write_consistency_factor","collection_name",b"collection_name","hnsw_config",b"hnsw_config","init_from_collection",b"init_from_collection","on_disk_payload",b"on_disk_payload","optimizers_config",b"optimizers_config","quantization_config",b"quantization_config","replication_factor",b"replication_factor","shard_number",b"shard_number","sharding_method",b"sharding_method","sparse_vectors_config",b"sparse_vectors_config","strict_mode_config",b"strict_mode_config","timeout",b"timeout","vectors_config",b"vectors_config","wal_config",b"wal_config","write_consistency_factor",b"write_consistency_factor"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config",b"_hnsw_config"]) -> typing.Optional[typing_extensions.Literal["hnsw_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_init_from_collection", b"_init_from_collection"]) -> typing_extensions.Literal["init_from_collection"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_init_from_collection",b"_init_from_collection"]) -> typing.Optional[typing_extensions.Literal["init_from_collection"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload"]) -> typing_extensions.Literal["on_disk_payload"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload",b"_on_disk_payload"]) -> typing.Optional[typing_extensions.Literal["on_disk_payload"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_optimizers_config", b"_optimizers_config"]) -> typing_extensions.Literal["optimizers_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_optimizers_config",b"_optimizers_config"]) -> typing.Optional[typing_extensions.Literal["optimizers_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config", b"_quantization_config"]) -> typing_extensions.Literal["quantization_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config",b"_quantization_config"]) -> typing.Optional[typing_extensions.Literal["quantization_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor", b"_replication_factor"]) -> typing_extensions.Literal["replication_factor"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor",b"_replication_factor"]) -> typing.Optional[typing_extensions.Literal["replication_factor"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_number", b"_shard_number"]) -> typing_extensions.Literal["shard_number"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_number",b"_shard_number"]) -> typing.Optional[typing_extensions.Literal["shard_number"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sharding_method", b"_sharding_method"]) -> typing_extensions.Literal["sharding_method"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sharding_method",b"_sharding_method"]) -> typing.Optional[typing_extensions.Literal["sharding_method"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sparse_vectors_config", b"_sparse_vectors_config"]) -> typing_extensions.Literal["sparse_vectors_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sparse_vectors_config",b"_sparse_vectors_config"]) -> typing.Optional[typing_extensions.Literal["sparse_vectors_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_strict_mode_config", b"_strict_mode_config"]) -> typing_extensions.Literal["strict_mode_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_strict_mode_config",b"_strict_mode_config"]) -> typing.Optional[typing_extensions.Literal["strict_mode_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout",b"_timeout"]) -> typing.Optional[typing_extensions.Literal["timeout"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vectors_config", b"_vectors_config"]) -> typing_extensions.Literal["vectors_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vectors_config",b"_vectors_config"]) -> typing.Optional[typing_extensions.Literal["vectors_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_config", b"_wal_config"]) -> typing_extensions.Literal["wal_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_config",b"_wal_config"]) -> typing.Optional[typing_extensions.Literal["wal_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_write_consistency_factor", b"_write_consistency_factor"]) -> typing_extensions.Literal["write_consistency_factor"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_write_consistency_factor",b"_write_consistency_factor"]) -> typing.Optional[typing_extensions.Literal["write_consistency_factor"]]: ...
 global___CreateCollection = CreateCollection
 
 class UpdateCollection(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     OPTIMIZERS_CONFIG_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
@@ -1228,102 +1221,105 @@ class UpdateCollection(google.protobuf.message.Message):
     VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     QUANTIZATION_CONFIG_FIELD_NUMBER: builtins.int
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
+
     @property
     def optimizers_config(self) -> global___OptimizersConfigDiff:
         """New configuration parameters for the collection. This operation is blocking, it will only proceed once all current optimizations are complete"""
+        pass
     timeout: builtins.int
     """Wait timeout for operation commit in seconds if blocking, if not specified - default value will be supplied"""
+
     @property
     def params(self) -> global___CollectionParamsDiff:
         """New configuration parameters for the collection"""
+        pass
     @property
     def hnsw_config(self) -> global___HnswConfigDiff:
         """New HNSW parameters for the collection index"""
+        pass
     @property
     def vectors_config(self) -> global___VectorsConfigDiff:
         """New vector parameters"""
+        pass
     @property
     def quantization_config(self) -> global___QuantizationConfigDiff:
         """Quantization configuration of vector"""
+        pass
     @property
     def sparse_vectors_config(self) -> global___SparseVectorConfig:
         """New sparse vector parameters"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
-        collection_name: builtins.str = ...,
-        optimizers_config: global___OptimizersConfigDiff | None = ...,
-        timeout: builtins.int | None = ...,
-        params: global___CollectionParamsDiff | None = ...,
-        hnsw_config: global___HnswConfigDiff | None = ...,
-        vectors_config: global___VectorsConfigDiff | None = ...,
-        quantization_config: global___QuantizationConfigDiff | None = ...,
-        sparse_vectors_config: global___SparseVectorConfig | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_optimizers_config", b"_optimizers_config", "_params", b"_params", "_quantization_config", b"_quantization_config", "_sparse_vectors_config", b"_sparse_vectors_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "hnsw_config", b"hnsw_config", "optimizers_config", b"optimizers_config", "params", b"params", "quantization_config", b"quantization_config", "sparse_vectors_config", b"sparse_vectors_config", "timeout", b"timeout", "vectors_config", b"vectors_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_optimizers_config", b"_optimizers_config", "_params", b"_params", "_quantization_config", b"_quantization_config", "_sparse_vectors_config", b"_sparse_vectors_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "optimizers_config", b"optimizers_config", "params", b"params", "quantization_config", b"quantization_config", "sparse_vectors_config", b"sparse_vectors_config", "timeout", b"timeout", "vectors_config", b"vectors_config"]) -> None: ...
+        collection_name: typing.Text = ...,
+        optimizers_config: typing.Optional[global___OptimizersConfigDiff] = ...,
+        timeout: typing.Optional[builtins.int] = ...,
+        params: typing.Optional[global___CollectionParamsDiff] = ...,
+        hnsw_config: typing.Optional[global___HnswConfigDiff] = ...,
+        vectors_config: typing.Optional[global___VectorsConfigDiff] = ...,
+        quantization_config: typing.Optional[global___QuantizationConfigDiff] = ...,
+        sparse_vectors_config: typing.Optional[global___SparseVectorConfig] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config",b"_hnsw_config","_optimizers_config",b"_optimizers_config","_params",b"_params","_quantization_config",b"_quantization_config","_sparse_vectors_config",b"_sparse_vectors_config","_timeout",b"_timeout","_vectors_config",b"_vectors_config","hnsw_config",b"hnsw_config","optimizers_config",b"optimizers_config","params",b"params","quantization_config",b"quantization_config","sparse_vectors_config",b"sparse_vectors_config","timeout",b"timeout","vectors_config",b"vectors_config"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config",b"_hnsw_config","_optimizers_config",b"_optimizers_config","_params",b"_params","_quantization_config",b"_quantization_config","_sparse_vectors_config",b"_sparse_vectors_config","_timeout",b"_timeout","_vectors_config",b"_vectors_config","collection_name",b"collection_name","hnsw_config",b"hnsw_config","optimizers_config",b"optimizers_config","params",b"params","quantization_config",b"quantization_config","sparse_vectors_config",b"sparse_vectors_config","timeout",b"timeout","vectors_config",b"vectors_config"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config",b"_hnsw_config"]) -> typing.Optional[typing_extensions.Literal["hnsw_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_optimizers_config", b"_optimizers_config"]) -> typing_extensions.Literal["optimizers_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_optimizers_config",b"_optimizers_config"]) -> typing.Optional[typing_extensions.Literal["optimizers_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_params", b"_params"]) -> typing_extensions.Literal["params"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_params",b"_params"]) -> typing.Optional[typing_extensions.Literal["params"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config", b"_quantization_config"]) -> typing_extensions.Literal["quantization_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config",b"_quantization_config"]) -> typing.Optional[typing_extensions.Literal["quantization_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sparse_vectors_config", b"_sparse_vectors_config"]) -> typing_extensions.Literal["sparse_vectors_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sparse_vectors_config",b"_sparse_vectors_config"]) -> typing.Optional[typing_extensions.Literal["sparse_vectors_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout",b"_timeout"]) -> typing.Optional[typing_extensions.Literal["timeout"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vectors_config", b"_vectors_config"]) -> typing_extensions.Literal["vectors_config"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vectors_config",b"_vectors_config"]) -> typing.Optional[typing_extensions.Literal["vectors_config"]]: ...
 global___UpdateCollection = UpdateCollection
 
 class DeleteCollection(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
+
     timeout: builtins.int
     """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
-    def __init__(
-        self,
-        *,
-        collection_name: builtins.str = ...,
-        timeout: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "timeout", b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "collection_name", b"collection_name", "timeout", b"timeout"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
 
+    def __init__(self,
+        *,
+        collection_name: typing.Text = ...,
+        timeout: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","timeout",b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","collection_name",b"collection_name","timeout",b"timeout"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout",b"_timeout"]) -> typing.Optional[typing_extensions.Literal["timeout"]]: ...
 global___DeleteCollection = DeleteCollection
 
 class CollectionOperationResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     RESULT_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
     result: builtins.bool
     """if operation made changes"""
+
     time: builtins.float
     """Time spent to process"""
-    def __init__(
-        self,
+
+    def __init__(self,
         *,
         result: builtins.bool = ...,
         time: builtins.float = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
-
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result",b"result","time",b"time"]) -> None: ...
 global___CollectionOperationResponse = CollectionOperationResponse
 
 class CollectionParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_NUMBER_FIELD_NUMBER: builtins.int
     ON_DISK_PAYLOAD_FIELD_NUMBER: builtins.int
     VECTORS_CONFIG_FIELD_NUMBER: builtins.int
@@ -1334,90 +1330,96 @@ class CollectionParams(google.protobuf.message.Message):
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     shard_number: builtins.int
     """Number of shards in collection"""
+
     on_disk_payload: builtins.bool
     """If true - point's payload will not be stored in memory"""
+
     @property
     def vectors_config(self) -> global___VectorsConfig:
         """Configuration for vectors"""
+        pass
     replication_factor: builtins.int
     """Number of replicas of each shard that network tries to maintain"""
+
     write_consistency_factor: builtins.int
     """How many replicas should apply the operation for us to consider it successful"""
+
     read_fan_out_factor: builtins.int
     """Fan-out every read request to these many additional remote nodes (and return first available response)"""
+
     sharding_method: global___ShardingMethod.ValueType
     """Sharding method"""
+
     @property
     def sparse_vectors_config(self) -> global___SparseVectorConfig:
         """Configuration for sparse vectors"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
         shard_number: builtins.int = ...,
         on_disk_payload: builtins.bool = ...,
-        vectors_config: global___VectorsConfig | None = ...,
-        replication_factor: builtins.int | None = ...,
-        write_consistency_factor: builtins.int | None = ...,
-        read_fan_out_factor: builtins.int | None = ...,
-        sharding_method: global___ShardingMethod.ValueType | None = ...,
-        sparse_vectors_config: global___SparseVectorConfig | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_vectors_config", b"_vectors_config", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "vectors_config", b"vectors_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+        vectors_config: typing.Optional[global___VectorsConfig] = ...,
+        replication_factor: typing.Optional[builtins.int] = ...,
+        write_consistency_factor: typing.Optional[builtins.int] = ...,
+        read_fan_out_factor: typing.Optional[builtins.int] = ...,
+        sharding_method: typing.Optional[global___ShardingMethod.ValueType] = ...,
+        sparse_vectors_config: typing.Optional[global___SparseVectorConfig] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_read_fan_out_factor",b"_read_fan_out_factor","_replication_factor",b"_replication_factor","_sharding_method",b"_sharding_method","_sparse_vectors_config",b"_sparse_vectors_config","_vectors_config",b"_vectors_config","_write_consistency_factor",b"_write_consistency_factor","read_fan_out_factor",b"read_fan_out_factor","replication_factor",b"replication_factor","sharding_method",b"sharding_method","sparse_vectors_config",b"sparse_vectors_config","vectors_config",b"vectors_config","write_consistency_factor",b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_read_fan_out_factor",b"_read_fan_out_factor","_replication_factor",b"_replication_factor","_sharding_method",b"_sharding_method","_sparse_vectors_config",b"_sparse_vectors_config","_vectors_config",b"_vectors_config","_write_consistency_factor",b"_write_consistency_factor","on_disk_payload",b"on_disk_payload","read_fan_out_factor",b"read_fan_out_factor","replication_factor",b"replication_factor","shard_number",b"shard_number","sharding_method",b"sharding_method","sparse_vectors_config",b"sparse_vectors_config","vectors_config",b"vectors_config","write_consistency_factor",b"write_consistency_factor"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_factor", b"_read_fan_out_factor"]) -> typing_extensions.Literal["read_fan_out_factor"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_factor",b"_read_fan_out_factor"]) -> typing.Optional[typing_extensions.Literal["read_fan_out_factor"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor", b"_replication_factor"]) -> typing_extensions.Literal["replication_factor"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor",b"_replication_factor"]) -> typing.Optional[typing_extensions.Literal["replication_factor"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sharding_method", b"_sharding_method"]) -> typing_extensions.Literal["sharding_method"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sharding_method",b"_sharding_method"]) -> typing.Optional[typing_extensions.Literal["sharding_method"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sparse_vectors_config", b"_sparse_vectors_config"]) -> typing_extensions.Literal["sparse_vectors_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sparse_vectors_config",b"_sparse_vectors_config"]) -> typing.Optional[typing_extensions.Literal["sparse_vectors_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vectors_config", b"_vectors_config"]) -> typing_extensions.Literal["vectors_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vectors_config",b"_vectors_config"]) -> typing.Optional[typing_extensions.Literal["vectors_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_write_consistency_factor", b"_write_consistency_factor"]) -> typing_extensions.Literal["write_consistency_factor"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_write_consistency_factor",b"_write_consistency_factor"]) -> typing.Optional[typing_extensions.Literal["write_consistency_factor"]]: ...
 global___CollectionParams = CollectionParams
 
 class CollectionParamsDiff(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     REPLICATION_FACTOR_FIELD_NUMBER: builtins.int
     WRITE_CONSISTENCY_FACTOR_FIELD_NUMBER: builtins.int
     ON_DISK_PAYLOAD_FIELD_NUMBER: builtins.int
     READ_FAN_OUT_FACTOR_FIELD_NUMBER: builtins.int
     replication_factor: builtins.int
     """Number of replicas of each shard that network tries to maintain"""
+
     write_consistency_factor: builtins.int
     """How many replicas should apply the operation for us to consider it successful"""
+
     on_disk_payload: builtins.bool
     """If true - point's payload will not be stored in memory"""
+
     read_fan_out_factor: builtins.int
     """Fan-out every read request to these many additional remote nodes (and return first available response)"""
-    def __init__(
-        self,
-        *,
-        replication_factor: builtins.int | None = ...,
-        write_consistency_factor: builtins.int | None = ...,
-        on_disk_payload: builtins.bool | None = ...,
-        read_fan_out_factor: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload", "_read_fan_out_factor", b"_read_fan_out_factor", "_replication_factor", b"_replication_factor", "_write_consistency_factor", b"_write_consistency_factor", "on_disk_payload", b"on_disk_payload", "read_fan_out_factor", b"read_fan_out_factor", "replication_factor", b"replication_factor", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload"]) -> typing_extensions.Literal["on_disk_payload"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_factor", b"_read_fan_out_factor"]) -> typing_extensions.Literal["read_fan_out_factor"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor", b"_replication_factor"]) -> typing_extensions.Literal["replication_factor"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_write_consistency_factor", b"_write_consistency_factor"]) -> typing_extensions.Literal["write_consistency_factor"] | None: ...
 
+    def __init__(self,
+        *,
+        replication_factor: typing.Optional[builtins.int] = ...,
+        write_consistency_factor: typing.Optional[builtins.int] = ...,
+        on_disk_payload: typing.Optional[builtins.bool] = ...,
+        read_fan_out_factor: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_on_disk_payload",b"_on_disk_payload","_read_fan_out_factor",b"_read_fan_out_factor","_replication_factor",b"_replication_factor","_write_consistency_factor",b"_write_consistency_factor","on_disk_payload",b"on_disk_payload","read_fan_out_factor",b"read_fan_out_factor","replication_factor",b"replication_factor","write_consistency_factor",b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_on_disk_payload",b"_on_disk_payload","_read_fan_out_factor",b"_read_fan_out_factor","_replication_factor",b"_replication_factor","_write_consistency_factor",b"_write_consistency_factor","on_disk_payload",b"on_disk_payload","read_fan_out_factor",b"read_fan_out_factor","replication_factor",b"replication_factor","write_consistency_factor",b"write_consistency_factor"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload",b"_on_disk_payload"]) -> typing.Optional[typing_extensions.Literal["on_disk_payload"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_fan_out_factor",b"_read_fan_out_factor"]) -> typing.Optional[typing_extensions.Literal["read_fan_out_factor"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor",b"_replication_factor"]) -> typing.Optional[typing_extensions.Literal["replication_factor"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_write_consistency_factor",b"_write_consistency_factor"]) -> typing.Optional[typing_extensions.Literal["write_consistency_factor"]]: ...
 global___CollectionParamsDiff = CollectionParamsDiff
 
 class CollectionConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     PARAMS_FIELD_NUMBER: builtins.int
     HNSW_CONFIG_FIELD_NUMBER: builtins.int
     OPTIMIZER_CONFIG_FIELD_NUMBER: builtins.int
@@ -1427,227 +1429,222 @@ class CollectionConfig(google.protobuf.message.Message):
     @property
     def params(self) -> global___CollectionParams:
         """Collection parameters"""
+        pass
     @property
     def hnsw_config(self) -> global___HnswConfigDiff:
         """Configuration of vector index"""
+        pass
     @property
     def optimizer_config(self) -> global___OptimizersConfigDiff:
         """Configuration of the optimizers"""
+        pass
     @property
     def wal_config(self) -> global___WalConfigDiff:
         """Configuration of the Write-Ahead-Log"""
+        pass
     @property
     def quantization_config(self) -> global___QuantizationConfig:
         """Configuration of the vector quantization"""
+        pass
     @property
     def strict_mode_config(self) -> global___StrictModeConfig:
         """Configuration of strict mode."""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
-        params: global___CollectionParams | None = ...,
-        hnsw_config: global___HnswConfigDiff | None = ...,
-        optimizer_config: global___OptimizersConfigDiff | None = ...,
-        wal_config: global___WalConfigDiff | None = ...,
-        quantization_config: global___QuantizationConfig | None = ...,
-        strict_mode_config: global___StrictModeConfig | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_quantization_config", b"_quantization_config", "_strict_mode_config", b"_strict_mode_config", "hnsw_config", b"hnsw_config", "optimizer_config", b"optimizer_config", "params", b"params", "quantization_config", b"quantization_config", "strict_mode_config", b"strict_mode_config", "wal_config", b"wal_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_quantization_config", b"_quantization_config", "_strict_mode_config", b"_strict_mode_config", "hnsw_config", b"hnsw_config", "optimizer_config", b"optimizer_config", "params", b"params", "quantization_config", b"quantization_config", "strict_mode_config", b"strict_mode_config", "wal_config", b"wal_config"]) -> None: ...
+        params: typing.Optional[global___CollectionParams] = ...,
+        hnsw_config: typing.Optional[global___HnswConfigDiff] = ...,
+        optimizer_config: typing.Optional[global___OptimizersConfigDiff] = ...,
+        wal_config: typing.Optional[global___WalConfigDiff] = ...,
+        quantization_config: typing.Optional[global___QuantizationConfig] = ...,
+        strict_mode_config: typing.Optional[global___StrictModeConfig] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_quantization_config",b"_quantization_config","_strict_mode_config",b"_strict_mode_config","hnsw_config",b"hnsw_config","optimizer_config",b"optimizer_config","params",b"params","quantization_config",b"quantization_config","strict_mode_config",b"strict_mode_config","wal_config",b"wal_config"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_quantization_config",b"_quantization_config","_strict_mode_config",b"_strict_mode_config","hnsw_config",b"hnsw_config","optimizer_config",b"optimizer_config","params",b"params","quantization_config",b"quantization_config","strict_mode_config",b"strict_mode_config","wal_config",b"wal_config"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config", b"_quantization_config"]) -> typing_extensions.Literal["quantization_config"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config",b"_quantization_config"]) -> typing.Optional[typing_extensions.Literal["quantization_config"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_strict_mode_config", b"_strict_mode_config"]) -> typing_extensions.Literal["strict_mode_config"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_strict_mode_config",b"_strict_mode_config"]) -> typing.Optional[typing_extensions.Literal["strict_mode_config"]]: ...
 global___CollectionConfig = CollectionConfig
 
 class KeywordIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     IS_TENANT_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     is_tenant: builtins.bool
     """If true - used for tenant optimization."""
+
     on_disk: builtins.bool
     """If true - store index on disk."""
-    def __init__(
-        self,
-        *,
-        is_tenant: builtins.bool | None = ...,
-        on_disk: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
+    def __init__(self,
+        *,
+        is_tenant: typing.Optional[builtins.bool] = ...,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_tenant",b"_is_tenant","_on_disk",b"_on_disk","is_tenant",b"is_tenant","on_disk",b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_tenant",b"_is_tenant","_on_disk",b"_on_disk","is_tenant",b"is_tenant","on_disk",b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant",b"_is_tenant"]) -> typing.Optional[typing_extensions.Literal["is_tenant"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
 global___KeywordIndexParams = KeywordIndexParams
 
 class IntegerIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     LOOKUP_FIELD_NUMBER: builtins.int
     RANGE_FIELD_NUMBER: builtins.int
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     lookup: builtins.bool
     """If true - support direct lookups."""
+
     range: builtins.bool
     """If true - support ranges filters."""
+
     is_principal: builtins.bool
     """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
+
     on_disk: builtins.bool
     """If true - store index on disk."""
-    def __init__(
-        self,
-        *,
-        lookup: builtins.bool | None = ...,
-        range: builtins.bool | None = ...,
-        is_principal: builtins.bool | None = ...,
-        on_disk: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_lookup", b"_lookup", "_on_disk", b"_on_disk", "_range", b"_range", "is_principal", b"is_principal", "lookup", b"lookup", "on_disk", b"on_disk", "range", b"range"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_lookup", b"_lookup"]) -> typing_extensions.Literal["lookup"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_range", b"_range"]) -> typing_extensions.Literal["range"] | None: ...
 
+    def __init__(self,
+        *,
+        lookup: typing.Optional[builtins.bool] = ...,
+        range: typing.Optional[builtins.bool] = ...,
+        is_principal: typing.Optional[builtins.bool] = ...,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_principal",b"_is_principal","_lookup",b"_lookup","_on_disk",b"_on_disk","_range",b"_range","is_principal",b"is_principal","lookup",b"lookup","on_disk",b"on_disk","range",b"range"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_principal",b"_is_principal","_lookup",b"_lookup","_on_disk",b"_on_disk","_range",b"_range","is_principal",b"is_principal","lookup",b"lookup","on_disk",b"on_disk","range",b"range"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal",b"_is_principal"]) -> typing.Optional[typing_extensions.Literal["is_principal"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_lookup",b"_lookup"]) -> typing.Optional[typing_extensions.Literal["lookup"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_range",b"_range"]) -> typing.Optional[typing_extensions.Literal["range"]]: ...
 global___IntegerIndexParams = IntegerIndexParams
 
 class FloatIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     ON_DISK_FIELD_NUMBER: builtins.int
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """If true - store index on disk."""
+
     is_principal: builtins.bool
     """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
-    def __init__(
-        self,
-        *,
-        on_disk: builtins.bool | None = ...,
-        is_principal: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
+    def __init__(self,
+        *,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        is_principal: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_principal",b"_is_principal","_on_disk",b"_on_disk","is_principal",b"is_principal","on_disk",b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_principal",b"_is_principal","_on_disk",b"_on_disk","is_principal",b"is_principal","on_disk",b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal",b"_is_principal"]) -> typing.Optional[typing_extensions.Literal["is_principal"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
 global___FloatIndexParams = FloatIndexParams
 
 class GeoIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    def __init__(
-        self,
-    ) -> None: ...
-
+    def __init__(self,
+        ) -> None: ...
 global___GeoIndexParams = GeoIndexParams
 
 class TextIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     TOKENIZER_FIELD_NUMBER: builtins.int
     LOWERCASE_FIELD_NUMBER: builtins.int
     MIN_TOKEN_LEN_FIELD_NUMBER: builtins.int
     MAX_TOKEN_LEN_FIELD_NUMBER: builtins.int
     tokenizer: global___TokenizerType.ValueType
     """Tokenizer type"""
+
     lowercase: builtins.bool
     """If true - all tokens will be lowercase"""
+
     min_token_len: builtins.int
     """Minimal token length"""
+
     max_token_len: builtins.int
     """Maximal token length"""
-    def __init__(
-        self,
+
+    def __init__(self,
         *,
         tokenizer: global___TokenizerType.ValueType = ...,
-        lowercase: builtins.bool | None = ...,
-        min_token_len: builtins.int | None = ...,
-        max_token_len: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "tokenizer", b"tokenizer"]) -> None: ...
+        lowercase: typing.Optional[builtins.bool] = ...,
+        min_token_len: typing.Optional[builtins.int] = ...,
+        max_token_len: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_lowercase",b"_lowercase","_max_token_len",b"_max_token_len","_min_token_len",b"_min_token_len","lowercase",b"lowercase","max_token_len",b"max_token_len","min_token_len",b"min_token_len"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_lowercase",b"_lowercase","_max_token_len",b"_max_token_len","_min_token_len",b"_min_token_len","lowercase",b"lowercase","max_token_len",b"max_token_len","min_token_len",b"min_token_len","tokenizer",b"tokenizer"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_lowercase", b"_lowercase"]) -> typing_extensions.Literal["lowercase"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_lowercase",b"_lowercase"]) -> typing.Optional[typing_extensions.Literal["lowercase"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_token_len", b"_max_token_len"]) -> typing_extensions.Literal["max_token_len"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_token_len",b"_max_token_len"]) -> typing.Optional[typing_extensions.Literal["max_token_len"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_min_token_len", b"_min_token_len"]) -> typing_extensions.Literal["min_token_len"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_min_token_len",b"_min_token_len"]) -> typing.Optional[typing_extensions.Literal["min_token_len"]]: ...
 global___TextIndexParams = TextIndexParams
 
 class BoolIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    def __init__(
-        self,
-    ) -> None: ...
-
+    def __init__(self,
+        ) -> None: ...
 global___BoolIndexParams = BoolIndexParams
 
 class DatetimeIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     ON_DISK_FIELD_NUMBER: builtins.int
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     on_disk: builtins.bool
     """If true - store index on disk."""
+
     is_principal: builtins.bool
     """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
-    def __init__(
-        self,
-        *,
-        on_disk: builtins.bool | None = ...,
-        is_principal: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_principal", b"_is_principal", "_on_disk", b"_on_disk", "is_principal", b"is_principal", "on_disk", b"on_disk"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal", b"_is_principal"]) -> typing_extensions.Literal["is_principal"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
+    def __init__(self,
+        *,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        is_principal: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_principal",b"_is_principal","_on_disk",b"_on_disk","is_principal",b"is_principal","on_disk",b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_principal",b"_is_principal","_on_disk",b"_on_disk","is_principal",b"is_principal","on_disk",b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_principal",b"_is_principal"]) -> typing.Optional[typing_extensions.Literal["is_principal"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
 global___DatetimeIndexParams = DatetimeIndexParams
 
 class UuidIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     IS_TENANT_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     is_tenant: builtins.bool
     """If true - used for tenant optimization."""
+
     on_disk: builtins.bool
     """If true - store index on disk."""
-    def __init__(
-        self,
-        *,
-        is_tenant: builtins.bool | None = ...,
-        on_disk: builtins.bool | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_is_tenant", b"_is_tenant", "_on_disk", b"_on_disk", "is_tenant", b"is_tenant", "on_disk", b"on_disk"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant", b"_is_tenant"]) -> typing_extensions.Literal["is_tenant"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
 
+    def __init__(self,
+        *,
+        is_tenant: typing.Optional[builtins.bool] = ...,
+        on_disk: typing.Optional[builtins.bool] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_is_tenant",b"_is_tenant","_on_disk",b"_on_disk","is_tenant",b"is_tenant","on_disk",b"on_disk"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_is_tenant",b"_is_tenant","_on_disk",b"_on_disk","is_tenant",b"is_tenant","on_disk",b"on_disk"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_is_tenant",b"_is_tenant"]) -> typing.Optional[typing_extensions.Literal["is_tenant"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk",b"_on_disk"]) -> typing.Optional[typing_extensions.Literal["on_disk"]]: ...
 global___UuidIndexParams = UuidIndexParams
 
 class PayloadIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     KEYWORD_INDEX_PARAMS_FIELD_NUMBER: builtins.int
     INTEGER_INDEX_PARAMS_FIELD_NUMBER: builtins.int
     FLOAT_INDEX_PARAMS_FIELD_NUMBER: builtins.int
@@ -1659,93 +1656,96 @@ class PayloadIndexParams(google.protobuf.message.Message):
     @property
     def keyword_index_params(self) -> global___KeywordIndexParams:
         """Parameters for keyword index"""
+        pass
     @property
     def integer_index_params(self) -> global___IntegerIndexParams:
         """Parameters for integer index"""
+        pass
     @property
     def float_index_params(self) -> global___FloatIndexParams:
         """Parameters for float index"""
+        pass
     @property
     def geo_index_params(self) -> global___GeoIndexParams:
         """Parameters for geo index"""
+        pass
     @property
     def text_index_params(self) -> global___TextIndexParams:
         """Parameters for text index"""
+        pass
     @property
     def bool_index_params(self) -> global___BoolIndexParams:
         """Parameters for bool index"""
+        pass
     @property
     def datetime_index_params(self) -> global___DatetimeIndexParams:
         """Parameters for datetime index"""
+        pass
     @property
     def uuid_index_params(self) -> global___UuidIndexParams:
         """Parameters for uuid index"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
-        keyword_index_params: global___KeywordIndexParams | None = ...,
-        integer_index_params: global___IntegerIndexParams | None = ...,
-        float_index_params: global___FloatIndexParams | None = ...,
-        geo_index_params: global___GeoIndexParams | None = ...,
-        text_index_params: global___TextIndexParams | None = ...,
-        bool_index_params: global___BoolIndexParams | None = ...,
-        datetime_index_params: global___DatetimeIndexParams | None = ...,
-        uuid_index_params: global___UuidIndexParams | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bool_index_params", b"bool_index_params", "datetime_index_params", b"datetime_index_params", "float_index_params", b"float_index_params", "geo_index_params", b"geo_index_params", "index_params", b"index_params", "integer_index_params", b"integer_index_params", "keyword_index_params", b"keyword_index_params", "text_index_params", b"text_index_params", "uuid_index_params", b"uuid_index_params"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bool_index_params", b"bool_index_params", "datetime_index_params", b"datetime_index_params", "float_index_params", b"float_index_params", "geo_index_params", b"geo_index_params", "index_params", b"index_params", "integer_index_params", b"integer_index_params", "keyword_index_params", b"keyword_index_params", "text_index_params", b"text_index_params", "uuid_index_params", b"uuid_index_params"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["index_params", b"index_params"]) -> typing_extensions.Literal["keyword_index_params", "integer_index_params", "float_index_params", "geo_index_params", "text_index_params", "bool_index_params", "datetime_index_params", "uuid_index_params"] | None: ...
-
+        keyword_index_params: typing.Optional[global___KeywordIndexParams] = ...,
+        integer_index_params: typing.Optional[global___IntegerIndexParams] = ...,
+        float_index_params: typing.Optional[global___FloatIndexParams] = ...,
+        geo_index_params: typing.Optional[global___GeoIndexParams] = ...,
+        text_index_params: typing.Optional[global___TextIndexParams] = ...,
+        bool_index_params: typing.Optional[global___BoolIndexParams] = ...,
+        datetime_index_params: typing.Optional[global___DatetimeIndexParams] = ...,
+        uuid_index_params: typing.Optional[global___UuidIndexParams] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bool_index_params",b"bool_index_params","datetime_index_params",b"datetime_index_params","float_index_params",b"float_index_params","geo_index_params",b"geo_index_params","index_params",b"index_params","integer_index_params",b"integer_index_params","keyword_index_params",b"keyword_index_params","text_index_params",b"text_index_params","uuid_index_params",b"uuid_index_params"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bool_index_params",b"bool_index_params","datetime_index_params",b"datetime_index_params","float_index_params",b"float_index_params","geo_index_params",b"geo_index_params","index_params",b"index_params","integer_index_params",b"integer_index_params","keyword_index_params",b"keyword_index_params","text_index_params",b"text_index_params","uuid_index_params",b"uuid_index_params"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["index_params",b"index_params"]) -> typing.Optional[typing_extensions.Literal["keyword_index_params","integer_index_params","float_index_params","geo_index_params","text_index_params","bool_index_params","datetime_index_params","uuid_index_params"]]: ...
 global___PayloadIndexParams = PayloadIndexParams
 
 class PayloadSchemaInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     DATA_TYPE_FIELD_NUMBER: builtins.int
     PARAMS_FIELD_NUMBER: builtins.int
     POINTS_FIELD_NUMBER: builtins.int
     data_type: global___PayloadSchemaType.ValueType
     """Field data type"""
+
     @property
     def params(self) -> global___PayloadIndexParams:
         """Field index parameters"""
+        pass
     points: builtins.int
     """Number of points indexed within this field indexed"""
-    def __init__(
-        self,
+
+    def __init__(self,
         *,
         data_type: global___PayloadSchemaType.ValueType = ...,
-        params: global___PayloadIndexParams | None = ...,
-        points: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_params", b"_params", "_points", b"_points", "params", b"params", "points", b"points"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_params", b"_params", "_points", b"_points", "data_type", b"data_type", "params", b"params", "points", b"points"]) -> None: ...
+        params: typing.Optional[global___PayloadIndexParams] = ...,
+        points: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_params",b"_params","_points",b"_points","params",b"params","points",b"points"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_params",b"_params","_points",b"_points","data_type",b"data_type","params",b"params","points",b"points"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_params", b"_params"]) -> typing_extensions.Literal["params"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_params",b"_params"]) -> typing.Optional[typing_extensions.Literal["params"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_points", b"_points"]) -> typing_extensions.Literal["points"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_points",b"_points"]) -> typing.Optional[typing_extensions.Literal["points"]]: ...
 global___PayloadSchemaInfo = PayloadSchemaInfo
 
 class CollectionInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     class PayloadSchemaEntry(google.protobuf.message.Message):
         DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
         KEY_FIELD_NUMBER: builtins.int
         VALUE_FIELD_NUMBER: builtins.int
-        key: builtins.str
+        key: typing.Text
         @property
         def value(self) -> global___PayloadSchemaInfo: ...
-        def __init__(
-            self,
+        def __init__(self,
             *,
-            key: builtins.str = ...,
-            value: global___PayloadSchemaInfo | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+            key: typing.Text = ...,
+            value: typing.Optional[global___PayloadSchemaInfo] = ...,
+            ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value",b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key",b"key","value",b"value"]) -> None: ...
 
     STATUS_FIELD_NUMBER: builtins.int
     OPTIMIZER_STATUS_FIELD_NUMBER: builtins.int
@@ -1757,71 +1757,75 @@ class CollectionInfo(google.protobuf.message.Message):
     INDEXED_VECTORS_COUNT_FIELD_NUMBER: builtins.int
     status: global___CollectionStatus.ValueType
     """operating condition of the collection"""
+
     @property
     def optimizer_status(self) -> global___OptimizerStatus:
         """status of collection optimizers"""
+        pass
     vectors_count: builtins.int
     """Approximate number of vectors in the collection"""
+
     segments_count: builtins.int
     """Number of independent segments"""
+
     @property
     def config(self) -> global___CollectionConfig:
         """Configuration"""
+        pass
     @property
-    def payload_schema(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___PayloadSchemaInfo]:
+    def payload_schema(self) -> google.protobuf.internal.containers.MessageMap[typing.Text, global___PayloadSchemaInfo]:
         """Collection data types"""
+        pass
     points_count: builtins.int
     """Approximate number of points in the collection"""
+
     indexed_vectors_count: builtins.int
     """Approximate number of indexed vectors in the collection."""
-    def __init__(
-        self,
+
+    def __init__(self,
         *,
         status: global___CollectionStatus.ValueType = ...,
-        optimizer_status: global___OptimizerStatus | None = ...,
-        vectors_count: builtins.int | None = ...,
+        optimizer_status: typing.Optional[global___OptimizerStatus] = ...,
+        vectors_count: typing.Optional[builtins.int] = ...,
         segments_count: builtins.int = ...,
-        config: global___CollectionConfig | None = ...,
-        payload_schema: collections.abc.Mapping[builtins.str, global___PayloadSchemaInfo] | None = ...,
-        points_count: builtins.int | None = ...,
-        indexed_vectors_count: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "_vectors_count", b"_vectors_count", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "points_count", b"points_count", "vectors_count", b"vectors_count"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count", "_points_count", b"_points_count", "_vectors_count", b"_vectors_count", "config", b"config", "indexed_vectors_count", b"indexed_vectors_count", "optimizer_status", b"optimizer_status", "payload_schema", b"payload_schema", "points_count", b"points_count", "segments_count", b"segments_count", "status", b"status", "vectors_count", b"vectors_count"]) -> None: ...
+        config: typing.Optional[global___CollectionConfig] = ...,
+        payload_schema: typing.Optional[typing.Mapping[typing.Text, global___PayloadSchemaInfo]] = ...,
+        points_count: typing.Optional[builtins.int] = ...,
+        indexed_vectors_count: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_indexed_vectors_count",b"_indexed_vectors_count","_points_count",b"_points_count","_vectors_count",b"_vectors_count","config",b"config","indexed_vectors_count",b"indexed_vectors_count","optimizer_status",b"optimizer_status","points_count",b"points_count","vectors_count",b"vectors_count"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_indexed_vectors_count",b"_indexed_vectors_count","_points_count",b"_points_count","_vectors_count",b"_vectors_count","config",b"config","indexed_vectors_count",b"indexed_vectors_count","optimizer_status",b"optimizer_status","payload_schema",b"payload_schema","points_count",b"points_count","segments_count",b"segments_count","status",b"status","vectors_count",b"vectors_count"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexed_vectors_count", b"_indexed_vectors_count"]) -> typing_extensions.Literal["indexed_vectors_count"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_indexed_vectors_count",b"_indexed_vectors_count"]) -> typing.Optional[typing_extensions.Literal["indexed_vectors_count"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_points_count", b"_points_count"]) -> typing_extensions.Literal["points_count"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_points_count",b"_points_count"]) -> typing.Optional[typing_extensions.Literal["points_count"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vectors_count", b"_vectors_count"]) -> typing_extensions.Literal["vectors_count"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_vectors_count",b"_vectors_count"]) -> typing.Optional[typing_extensions.Literal["vectors_count"]]: ...
 global___CollectionInfo = CollectionInfo
 
 class ChangeAliases(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     ACTIONS_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
     @property
     def actions(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___AliasOperations]:
         """List of actions"""
+        pass
     timeout: builtins.int
     """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
-    def __init__(
-        self,
-        *,
-        actions: collections.abc.Iterable[global___AliasOperations] | None = ...,
-        timeout: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "timeout", b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "actions", b"actions", "timeout", b"timeout"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
 
+    def __init__(self,
+        *,
+        actions: typing.Optional[typing.Iterable[global___AliasOperations]] = ...,
+        timeout: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","timeout",b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","actions",b"actions","timeout",b"timeout"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout",b"_timeout"]) -> typing.Optional[typing_extensions.Literal["timeout"]]: ...
 global___ChangeAliases = ChangeAliases
 
 class AliasOperations(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     CREATE_ALIAS_FIELD_NUMBER: builtins.int
     RENAME_ALIAS_FIELD_NUMBER: builtins.int
     DELETE_ALIAS_FIELD_NUMBER: builtins.int
@@ -1831,233 +1835,217 @@ class AliasOperations(google.protobuf.message.Message):
     def rename_alias(self) -> global___RenameAlias: ...
     @property
     def delete_alias(self) -> global___DeleteAlias: ...
-    def __init__(
-        self,
+    def __init__(self,
         *,
-        create_alias: global___CreateAlias | None = ...,
-        rename_alias: global___RenameAlias | None = ...,
-        delete_alias: global___DeleteAlias | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["action", b"action", "create_alias", b"create_alias", "delete_alias", b"delete_alias", "rename_alias", b"rename_alias"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["action", b"action", "create_alias", b"create_alias", "delete_alias", b"delete_alias", "rename_alias", b"rename_alias"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["action", b"action"]) -> typing_extensions.Literal["create_alias", "rename_alias", "delete_alias"] | None: ...
-
+        create_alias: typing.Optional[global___CreateAlias] = ...,
+        rename_alias: typing.Optional[global___RenameAlias] = ...,
+        delete_alias: typing.Optional[global___DeleteAlias] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["action",b"action","create_alias",b"create_alias","delete_alias",b"delete_alias","rename_alias",b"rename_alias"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["action",b"action","create_alias",b"create_alias","delete_alias",b"delete_alias","rename_alias",b"rename_alias"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["action",b"action"]) -> typing.Optional[typing_extensions.Literal["create_alias","rename_alias","delete_alias"]]: ...
 global___AliasOperations = AliasOperations
 
 class CreateAlias(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     ALIAS_NAME_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
-    alias_name: builtins.str
-    """New name of the alias"""
-    def __init__(
-        self,
-        *,
-        collection_name: builtins.str = ...,
-        alias_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["alias_name", b"alias_name", "collection_name", b"collection_name"]) -> None: ...
 
+    alias_name: typing.Text
+    """New name of the alias"""
+
+    def __init__(self,
+        *,
+        collection_name: typing.Text = ...,
+        alias_name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["alias_name",b"alias_name","collection_name",b"collection_name"]) -> None: ...
 global___CreateAlias = CreateAlias
 
 class RenameAlias(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     OLD_ALIAS_NAME_FIELD_NUMBER: builtins.int
     NEW_ALIAS_NAME_FIELD_NUMBER: builtins.int
-    old_alias_name: builtins.str
+    old_alias_name: typing.Text
     """Name of the alias to rename"""
-    new_alias_name: builtins.str
-    """Name of the alias"""
-    def __init__(
-        self,
-        *,
-        old_alias_name: builtins.str = ...,
-        new_alias_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["new_alias_name", b"new_alias_name", "old_alias_name", b"old_alias_name"]) -> None: ...
 
+    new_alias_name: typing.Text
+    """Name of the alias"""
+
+    def __init__(self,
+        *,
+        old_alias_name: typing.Text = ...,
+        new_alias_name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["new_alias_name",b"new_alias_name","old_alias_name",b"old_alias_name"]) -> None: ...
 global___RenameAlias = RenameAlias
 
 class DeleteAlias(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     ALIAS_NAME_FIELD_NUMBER: builtins.int
-    alias_name: builtins.str
+    alias_name: typing.Text
     """Name of the alias"""
-    def __init__(
-        self,
-        *,
-        alias_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["alias_name", b"alias_name"]) -> None: ...
 
+    def __init__(self,
+        *,
+        alias_name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["alias_name",b"alias_name"]) -> None: ...
 global___DeleteAlias = DeleteAlias
 
 class ListAliasesRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    def __init__(
-        self,
-    ) -> None: ...
-
+    def __init__(self,
+        ) -> None: ...
 global___ListAliasesRequest = ListAliasesRequest
 
 class ListCollectionAliasesRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
-    def __init__(
-        self,
-        *,
-        collection_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["collection_name", b"collection_name"]) -> None: ...
 
+    def __init__(self,
+        *,
+        collection_name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["collection_name",b"collection_name"]) -> None: ...
 global___ListCollectionAliasesRequest = ListCollectionAliasesRequest
 
 class AliasDescription(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     ALIAS_NAME_FIELD_NUMBER: builtins.int
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
-    alias_name: builtins.str
+    alias_name: typing.Text
     """Name of the alias"""
-    collection_name: builtins.str
-    """Name of the collection"""
-    def __init__(
-        self,
-        *,
-        alias_name: builtins.str = ...,
-        collection_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["alias_name", b"alias_name", "collection_name", b"collection_name"]) -> None: ...
 
+    collection_name: typing.Text
+    """Name of the collection"""
+
+    def __init__(self,
+        *,
+        alias_name: typing.Text = ...,
+        collection_name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["alias_name",b"alias_name","collection_name",b"collection_name"]) -> None: ...
 global___AliasDescription = AliasDescription
 
 class ListAliasesResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     ALIASES_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
     @property
     def aliases(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___AliasDescription]: ...
     time: builtins.float
     """Time spent to process"""
-    def __init__(
-        self,
-        *,
-        aliases: collections.abc.Iterable[global___AliasDescription] | None = ...,
-        time: builtins.float = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["aliases", b"aliases", "time", b"time"]) -> None: ...
 
+    def __init__(self,
+        *,
+        aliases: typing.Optional[typing.Iterable[global___AliasDescription]] = ...,
+        time: builtins.float = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["aliases",b"aliases","time",b"time"]) -> None: ...
 global___ListAliasesResponse = ListAliasesResponse
 
 class CollectionClusterInfoRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
-    def __init__(
-        self,
-        *,
-        collection_name: builtins.str = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["collection_name", b"collection_name"]) -> None: ...
 
+    def __init__(self,
+        *,
+        collection_name: typing.Text = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["collection_name",b"collection_name"]) -> None: ...
 global___CollectionClusterInfoRequest = CollectionClusterInfoRequest
 
 class ShardKey(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     KEYWORD_FIELD_NUMBER: builtins.int
     NUMBER_FIELD_NUMBER: builtins.int
-    keyword: builtins.str
+    keyword: typing.Text
     """String key"""
+
     number: builtins.int
     """Number key"""
-    def __init__(
-        self,
-        *,
-        keyword: builtins.str = ...,
-        number: builtins.int = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["key", b"key", "keyword", b"keyword", "number", b"number"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "keyword", b"keyword", "number", b"number"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["key", b"key"]) -> typing_extensions.Literal["keyword", "number"] | None: ...
 
+    def __init__(self,
+        *,
+        keyword: typing.Text = ...,
+        number: builtins.int = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["key",b"key","keyword",b"keyword","number",b"number"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["key",b"key","keyword",b"keyword","number",b"number"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["key",b"key"]) -> typing.Optional[typing_extensions.Literal["keyword","number"]]: ...
 global___ShardKey = ShardKey
 
 class LocalShardInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     POINTS_COUNT_FIELD_NUMBER: builtins.int
     STATE_FIELD_NUMBER: builtins.int
     SHARD_KEY_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+
     points_count: builtins.int
     """Number of points in the shard"""
+
     state: global___ReplicaState.ValueType
     """Is replica active"""
+
     @property
     def shard_key(self) -> global___ShardKey:
         """User-defined shard key"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
         points_count: builtins.int = ...,
         state: global___ReplicaState.ValueType = ...,
-        shard_key: global___ShardKey | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_shard_key", b"_shard_key", "shard_key", b"shard_key"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_shard_key", b"_shard_key", "points_count", b"points_count", "shard_id", b"shard_id", "shard_key", b"shard_key", "state", b"state"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key", b"_shard_key"]) -> typing_extensions.Literal["shard_key"] | None: ...
-
+        shard_key: typing.Optional[global___ShardKey] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_shard_key",b"_shard_key","shard_key",b"shard_key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_shard_key",b"_shard_key","points_count",b"points_count","shard_id",b"shard_id","shard_key",b"shard_key","state",b"state"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key",b"_shard_key"]) -> typing.Optional[typing_extensions.Literal["shard_key"]]: ...
 global___LocalShardInfo = LocalShardInfo
 
 class RemoteShardInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     PEER_ID_FIELD_NUMBER: builtins.int
     STATE_FIELD_NUMBER: builtins.int
     SHARD_KEY_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+
     peer_id: builtins.int
     """Remote peer id"""
+
     state: global___ReplicaState.ValueType
     """Is replica active"""
+
     @property
     def shard_key(self) -> global___ShardKey:
         """User-defined shard key"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
         peer_id: builtins.int = ...,
         state: global___ReplicaState.ValueType = ...,
-        shard_key: global___ShardKey | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_shard_key", b"_shard_key", "shard_key", b"shard_key"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_shard_key", b"_shard_key", "peer_id", b"peer_id", "shard_id", b"shard_id", "shard_key", b"shard_key", "state", b"state"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key", b"_shard_key"]) -> typing_extensions.Literal["shard_key"] | None: ...
-
+        shard_key: typing.Optional[global___ShardKey] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_shard_key",b"_shard_key","shard_key",b"shard_key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_shard_key",b"_shard_key","peer_id",b"peer_id","shard_id",b"shard_id","shard_key",b"shard_key","state",b"state"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key",b"_shard_key"]) -> typing.Optional[typing_extensions.Literal["shard_key"]]: ...
 global___RemoteShardInfo = RemoteShardInfo
 
 class ShardTransferInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     TO_SHARD_ID_FIELD_NUMBER: builtins.int
     FROM_FIELD_NUMBER: builtins.int
@@ -2065,27 +2053,26 @@ class ShardTransferInfo(google.protobuf.message.Message):
     SYNC_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+
     to_shard_id: builtins.int
     to: builtins.int
     sync: builtins.bool
     """If `true` transfer is a synchronization of a replicas; If `false` transfer is a moving of a shard from one peer to another"""
-    def __init__(
-        self,
+
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
-        to_shard_id: builtins.int | None = ...,
+        to_shard_id: typing.Optional[builtins.int] = ...,
         to: builtins.int = ...,
         sync: builtins.bool = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "from", b"from", "shard_id", b"shard_id", "sync", b"sync", "to", b"to", "to_shard_id", b"to_shard_id"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
-
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id",b"_to_shard_id","to_shard_id",b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id",b"_to_shard_id","from",b"from","shard_id",b"shard_id","sync",b"sync","to",b"to","to_shard_id",b"to_shard_id"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id",b"_to_shard_id"]) -> typing.Optional[typing_extensions.Literal["to_shard_id"]]: ...
 global___ShardTransferInfo = ShardTransferInfo
 
 class ReshardingInfo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     PEER_ID_FIELD_NUMBER: builtins.int
     SHARD_KEY_FIELD_NUMBER: builtins.int
@@ -2093,22 +2080,19 @@ class ReshardingInfo(google.protobuf.message.Message):
     peer_id: builtins.int
     @property
     def shard_key(self) -> global___ShardKey: ...
-    def __init__(
-        self,
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
         peer_id: builtins.int = ...,
-        shard_key: global___ShardKey | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_shard_key", b"_shard_key", "shard_key", b"shard_key"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_shard_key", b"_shard_key", "peer_id", b"peer_id", "shard_id", b"shard_id", "shard_key", b"shard_key"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key", b"_shard_key"]) -> typing_extensions.Literal["shard_key"] | None: ...
-
+        shard_key: typing.Optional[global___ShardKey] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_shard_key",b"_shard_key","shard_key",b"shard_key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_shard_key",b"_shard_key","peer_id",b"peer_id","shard_id",b"shard_id","shard_key",b"shard_key"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key",b"_shard_key"]) -> typing.Optional[typing_extensions.Literal["shard_key"]]: ...
 global___ReshardingInfo = ReshardingInfo
 
 class CollectionClusterInfoResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     PEER_ID_FIELD_NUMBER: builtins.int
     SHARD_COUNT_FIELD_NUMBER: builtins.int
     LOCAL_SHARDS_FIELD_NUMBER: builtins.int
@@ -2116,33 +2100,35 @@ class CollectionClusterInfoResponse(google.protobuf.message.Message):
     SHARD_TRANSFERS_FIELD_NUMBER: builtins.int
     peer_id: builtins.int
     """ID of this peer"""
+
     shard_count: builtins.int
     """Total number of shards"""
+
     @property
     def local_shards(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___LocalShardInfo]:
         """Local shards"""
+        pass
     @property
     def remote_shards(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___RemoteShardInfo]:
         """Remote shards"""
+        pass
     @property
     def shard_transfers(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ShardTransferInfo]:
         """Shard transfers"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
         peer_id: builtins.int = ...,
         shard_count: builtins.int = ...,
-        local_shards: collections.abc.Iterable[global___LocalShardInfo] | None = ...,
-        remote_shards: collections.abc.Iterable[global___RemoteShardInfo] | None = ...,
-        shard_transfers: collections.abc.Iterable[global___ShardTransferInfo] | None = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["local_shards", b"local_shards", "peer_id", b"peer_id", "remote_shards", b"remote_shards", "shard_count", b"shard_count", "shard_transfers", b"shard_transfers"]) -> None: ...
-
+        local_shards: typing.Optional[typing.Iterable[global___LocalShardInfo]] = ...,
+        remote_shards: typing.Optional[typing.Iterable[global___RemoteShardInfo]] = ...,
+        shard_transfers: typing.Optional[typing.Iterable[global___ShardTransferInfo]] = ...,
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["local_shards",b"local_shards","peer_id",b"peer_id","remote_shards",b"remote_shards","shard_count",b"shard_count","shard_transfers",b"shard_transfers"]) -> None: ...
 global___CollectionClusterInfoResponse = CollectionClusterInfoResponse
 
 class MoveShard(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     TO_SHARD_ID_FIELD_NUMBER: builtins.int
     FROM_PEER_ID_FIELD_NUMBER: builtins.int
@@ -2150,31 +2136,29 @@ class MoveShard(google.protobuf.message.Message):
     METHOD_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+
     to_shard_id: builtins.int
     from_peer_id: builtins.int
     to_peer_id: builtins.int
     method: global___ShardTransferMethod.ValueType
-    def __init__(
-        self,
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
-        to_shard_id: builtins.int | None = ...,
+        to_shard_id: typing.Optional[builtins.int] = ...,
         from_peer_id: builtins.int = ...,
         to_peer_id: builtins.int = ...,
-        method: global___ShardTransferMethod.ValueType | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_method", b"_method", "_to_shard_id", b"_to_shard_id", "method", b"method", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_method", b"_method", "_to_shard_id", b"_to_shard_id", "from_peer_id", b"from_peer_id", "method", b"method", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id", "to_shard_id", b"to_shard_id"]) -> None: ...
+        method: typing.Optional[global___ShardTransferMethod.ValueType] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_method",b"_method","_to_shard_id",b"_to_shard_id","method",b"method","to_shard_id",b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_method",b"_method","_to_shard_id",b"_to_shard_id","from_peer_id",b"from_peer_id","method",b"method","shard_id",b"shard_id","to_peer_id",b"to_peer_id","to_shard_id",b"to_shard_id"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_method", b"_method"]) -> typing_extensions.Literal["method"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_method",b"_method"]) -> typing.Optional[typing_extensions.Literal["method"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id",b"_to_shard_id"]) -> typing.Optional[typing_extensions.Literal["to_shard_id"]]: ...
 global___MoveShard = MoveShard
 
 class ReplicateShard(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     TO_SHARD_ID_FIELD_NUMBER: builtins.int
     FROM_PEER_ID_FIELD_NUMBER: builtins.int
@@ -2182,57 +2166,53 @@ class ReplicateShard(google.protobuf.message.Message):
     METHOD_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+
     to_shard_id: builtins.int
     from_peer_id: builtins.int
     to_peer_id: builtins.int
     method: global___ShardTransferMethod.ValueType
-    def __init__(
-        self,
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
-        to_shard_id: builtins.int | None = ...,
+        to_shard_id: typing.Optional[builtins.int] = ...,
         from_peer_id: builtins.int = ...,
         to_peer_id: builtins.int = ...,
-        method: global___ShardTransferMethod.ValueType | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_method", b"_method", "_to_shard_id", b"_to_shard_id", "method", b"method", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_method", b"_method", "_to_shard_id", b"_to_shard_id", "from_peer_id", b"from_peer_id", "method", b"method", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id", "to_shard_id", b"to_shard_id"]) -> None: ...
+        method: typing.Optional[global___ShardTransferMethod.ValueType] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_method",b"_method","_to_shard_id",b"_to_shard_id","method",b"method","to_shard_id",b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_method",b"_method","_to_shard_id",b"_to_shard_id","from_peer_id",b"from_peer_id","method",b"method","shard_id",b"shard_id","to_peer_id",b"to_peer_id","to_shard_id",b"to_shard_id"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_method", b"_method"]) -> typing_extensions.Literal["method"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_method",b"_method"]) -> typing.Optional[typing_extensions.Literal["method"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id",b"_to_shard_id"]) -> typing.Optional[typing_extensions.Literal["to_shard_id"]]: ...
 global___ReplicateShard = ReplicateShard
 
 class AbortShardTransfer(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     TO_SHARD_ID_FIELD_NUMBER: builtins.int
     FROM_PEER_ID_FIELD_NUMBER: builtins.int
     TO_PEER_ID_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+
     to_shard_id: builtins.int
     from_peer_id: builtins.int
     to_peer_id: builtins.int
-    def __init__(
-        self,
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
-        to_shard_id: builtins.int | None = ...,
+        to_shard_id: typing.Optional[builtins.int] = ...,
         from_peer_id: builtins.int = ...,
         to_peer_id: builtins.int = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "from_peer_id", b"from_peer_id", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id", "to_shard_id", b"to_shard_id"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
-
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id",b"_to_shard_id","to_shard_id",b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id",b"_to_shard_id","from_peer_id",b"from_peer_id","shard_id",b"shard_id","to_peer_id",b"to_peer_id","to_shard_id",b"to_shard_id"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id",b"_to_shard_id"]) -> typing.Optional[typing_extensions.Literal["to_shard_id"]]: ...
 global___AbortShardTransfer = AbortShardTransfer
 
 class RestartTransfer(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     TO_SHARD_ID_FIELD_NUMBER: builtins.int
     FROM_PEER_ID_FIELD_NUMBER: builtins.int
@@ -2240,45 +2220,40 @@ class RestartTransfer(google.protobuf.message.Message):
     METHOD_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     """Local shard id"""
+
     to_shard_id: builtins.int
     from_peer_id: builtins.int
     to_peer_id: builtins.int
     method: global___ShardTransferMethod.ValueType
-    def __init__(
-        self,
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
-        to_shard_id: builtins.int | None = ...,
+        to_shard_id: typing.Optional[builtins.int] = ...,
         from_peer_id: builtins.int = ...,
         to_peer_id: builtins.int = ...,
         method: global___ShardTransferMethod.ValueType = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "to_shard_id", b"to_shard_id"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id", b"_to_shard_id", "from_peer_id", b"from_peer_id", "method", b"method", "shard_id", b"shard_id", "to_peer_id", b"to_peer_id", "to_shard_id", b"to_shard_id"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id", b"_to_shard_id"]) -> typing_extensions.Literal["to_shard_id"] | None: ...
-
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_to_shard_id",b"_to_shard_id","to_shard_id",b"to_shard_id"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_to_shard_id",b"_to_shard_id","from_peer_id",b"from_peer_id","method",b"method","shard_id",b"shard_id","to_peer_id",b"to_peer_id","to_shard_id",b"to_shard_id"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_to_shard_id",b"_to_shard_id"]) -> typing.Optional[typing_extensions.Literal["to_shard_id"]]: ...
 global___RestartTransfer = RestartTransfer
 
 class Replica(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_ID_FIELD_NUMBER: builtins.int
     PEER_ID_FIELD_NUMBER: builtins.int
     shard_id: builtins.int
     peer_id: builtins.int
-    def __init__(
-        self,
+    def __init__(self,
         *,
         shard_id: builtins.int = ...,
         peer_id: builtins.int = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["peer_id", b"peer_id", "shard_id", b"shard_id"]) -> None: ...
-
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["peer_id",b"peer_id","shard_id",b"shard_id"]) -> None: ...
 global___Replica = Replica
 
 class CreateShardKey(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_KEY_FIELD_NUMBER: builtins.int
     SHARDS_NUMBER_FIELD_NUMBER: builtins.int
     REPLICATION_FACTOR_FIELD_NUMBER: builtins.int
@@ -2286,50 +2261,49 @@ class CreateShardKey(google.protobuf.message.Message):
     @property
     def shard_key(self) -> global___ShardKey:
         """User-defined shard key"""
+        pass
     shards_number: builtins.int
     """Number of shards to create per shard key"""
+
     replication_factor: builtins.int
     """Number of replicas of each shard to create"""
+
     @property
     def placement(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]:
         """List of peer ids, allowed to create shards. If empty - all peers are allowed"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
-        shard_key: global___ShardKey | None = ...,
-        shards_number: builtins.int | None = ...,
-        replication_factor: builtins.int | None = ...,
-        placement: collections.abc.Iterable[builtins.int] | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_replication_factor", b"_replication_factor", "_shards_number", b"_shards_number", "replication_factor", b"replication_factor", "shard_key", b"shard_key", "shards_number", b"shards_number"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_replication_factor", b"_replication_factor", "_shards_number", b"_shards_number", "placement", b"placement", "replication_factor", b"replication_factor", "shard_key", b"shard_key", "shards_number", b"shards_number"]) -> None: ...
+        shard_key: typing.Optional[global___ShardKey] = ...,
+        shards_number: typing.Optional[builtins.int] = ...,
+        replication_factor: typing.Optional[builtins.int] = ...,
+        placement: typing.Optional[typing.Iterable[builtins.int]] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_replication_factor",b"_replication_factor","_shards_number",b"_shards_number","replication_factor",b"replication_factor","shard_key",b"shard_key","shards_number",b"shards_number"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_replication_factor",b"_replication_factor","_shards_number",b"_shards_number","placement",b"placement","replication_factor",b"replication_factor","shard_key",b"shard_key","shards_number",b"shards_number"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor", b"_replication_factor"]) -> typing_extensions.Literal["replication_factor"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor",b"_replication_factor"]) -> typing.Optional[typing_extensions.Literal["replication_factor"]]: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shards_number", b"_shards_number"]) -> typing_extensions.Literal["shards_number"] | None: ...
-
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shards_number",b"_shards_number"]) -> typing.Optional[typing_extensions.Literal["shards_number"]]: ...
 global___CreateShardKey = CreateShardKey
 
 class DeleteShardKey(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     SHARD_KEY_FIELD_NUMBER: builtins.int
     @property
     def shard_key(self) -> global___ShardKey:
         """Shard key to delete"""
-    def __init__(
-        self,
+        pass
+    def __init__(self,
         *,
-        shard_key: global___ShardKey | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["shard_key", b"shard_key"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["shard_key", b"shard_key"]) -> None: ...
-
+        shard_key: typing.Optional[global___ShardKey] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["shard_key",b"shard_key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["shard_key",b"shard_key"]) -> None: ...
 global___DeleteShardKey = DeleteShardKey
 
 class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     MOVE_SHARD_FIELD_NUMBER: builtins.int
     REPLICATE_SHARD_FIELD_NUMBER: builtins.int
@@ -2339,8 +2313,9 @@ class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
     DELETE_SHARD_KEY_FIELD_NUMBER: builtins.int
     RESTART_TRANSFER_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
+
     @property
     def move_shard(self) -> global___MoveShard: ...
     @property
@@ -2357,118 +2332,108 @@ class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
     def restart_transfer(self) -> global___RestartTransfer: ...
     timeout: builtins.int
     """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
-    def __init__(
-        self,
-        *,
-        collection_name: builtins.str = ...,
-        move_shard: global___MoveShard | None = ...,
-        replicate_shard: global___ReplicateShard | None = ...,
-        abort_transfer: global___AbortShardTransfer | None = ...,
-        drop_replica: global___Replica | None = ...,
-        create_shard_key: global___CreateShardKey | None = ...,
-        delete_shard_key: global___DeleteShardKey | None = ...,
-        restart_transfer: global___RestartTransfer | None = ...,
-        timeout: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "abort_transfer", b"abort_transfer", "create_shard_key", b"create_shard_key", "delete_shard_key", b"delete_shard_key", "drop_replica", b"drop_replica", "move_shard", b"move_shard", "operation", b"operation", "replicate_shard", b"replicate_shard", "restart_transfer", b"restart_transfer", "timeout", b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "abort_transfer", b"abort_transfer", "collection_name", b"collection_name", "create_shard_key", b"create_shard_key", "delete_shard_key", b"delete_shard_key", "drop_replica", b"drop_replica", "move_shard", b"move_shard", "operation", b"operation", "replicate_shard", b"replicate_shard", "restart_transfer", b"restart_transfer", "timeout", b"timeout"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["operation", b"operation"]) -> typing_extensions.Literal["move_shard", "replicate_shard", "abort_transfer", "drop_replica", "create_shard_key", "delete_shard_key", "restart_transfer"] | None: ...
 
+    def __init__(self,
+        *,
+        collection_name: typing.Text = ...,
+        move_shard: typing.Optional[global___MoveShard] = ...,
+        replicate_shard: typing.Optional[global___ReplicateShard] = ...,
+        abort_transfer: typing.Optional[global___AbortShardTransfer] = ...,
+        drop_replica: typing.Optional[global___Replica] = ...,
+        create_shard_key: typing.Optional[global___CreateShardKey] = ...,
+        delete_shard_key: typing.Optional[global___DeleteShardKey] = ...,
+        restart_transfer: typing.Optional[global___RestartTransfer] = ...,
+        timeout: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","abort_transfer",b"abort_transfer","create_shard_key",b"create_shard_key","delete_shard_key",b"delete_shard_key","drop_replica",b"drop_replica","move_shard",b"move_shard","operation",b"operation","replicate_shard",b"replicate_shard","restart_transfer",b"restart_transfer","timeout",b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","abort_transfer",b"abort_transfer","collection_name",b"collection_name","create_shard_key",b"create_shard_key","delete_shard_key",b"delete_shard_key","drop_replica",b"drop_replica","move_shard",b"move_shard","operation",b"operation","replicate_shard",b"replicate_shard","restart_transfer",b"restart_transfer","timeout",b"timeout"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout",b"_timeout"]) -> typing.Optional[typing_extensions.Literal["timeout"]]: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["operation",b"operation"]) -> typing.Optional[typing_extensions.Literal["move_shard","replicate_shard","abort_transfer","drop_replica","create_shard_key","delete_shard_key","restart_transfer"]]: ...
 global___UpdateCollectionClusterSetupRequest = UpdateCollectionClusterSetupRequest
 
 class UpdateCollectionClusterSetupResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     RESULT_FIELD_NUMBER: builtins.int
     result: builtins.bool
-    def __init__(
-        self,
+    def __init__(self,
         *,
         result: builtins.bool = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result"]) -> None: ...
-
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result",b"result"]) -> None: ...
 global___UpdateCollectionClusterSetupResponse = UpdateCollectionClusterSetupResponse
 
 class CreateShardKeyRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     REQUEST_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
+
     @property
     def request(self) -> global___CreateShardKey:
         """Request to create shard key"""
+        pass
     timeout: builtins.int
     """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
-    def __init__(
-        self,
-        *,
-        collection_name: builtins.str = ...,
-        request: global___CreateShardKey | None = ...,
-        timeout: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "request", b"request", "timeout", b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "collection_name", b"collection_name", "request", b"request", "timeout", b"timeout"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
 
+    def __init__(self,
+        *,
+        collection_name: typing.Text = ...,
+        request: typing.Optional[global___CreateShardKey] = ...,
+        timeout: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","request",b"request","timeout",b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","collection_name",b"collection_name","request",b"request","timeout",b"timeout"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout",b"_timeout"]) -> typing.Optional[typing_extensions.Literal["timeout"]]: ...
 global___CreateShardKeyRequest = CreateShardKeyRequest
 
 class DeleteShardKeyRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     REQUEST_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    collection_name: builtins.str
+    collection_name: typing.Text
     """Name of the collection"""
+
     @property
     def request(self) -> global___DeleteShardKey:
         """Request to delete shard key"""
+        pass
     timeout: builtins.int
     """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
-    def __init__(
-        self,
-        *,
-        collection_name: builtins.str = ...,
-        request: global___DeleteShardKey | None = ...,
-        timeout: builtins.int | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "request", b"request", "timeout", b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "collection_name", b"collection_name", "request", b"request", "timeout", b"timeout"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
 
+    def __init__(self,
+        *,
+        collection_name: typing.Text = ...,
+        request: typing.Optional[global___DeleteShardKey] = ...,
+        timeout: typing.Optional[builtins.int] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","request",b"request","timeout",b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_timeout",b"_timeout","collection_name",b"collection_name","request",b"request","timeout",b"timeout"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout",b"_timeout"]) -> typing.Optional[typing_extensions.Literal["timeout"]]: ...
 global___DeleteShardKeyRequest = DeleteShardKeyRequest
 
 class CreateShardKeyResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     RESULT_FIELD_NUMBER: builtins.int
     result: builtins.bool
-    def __init__(
-        self,
+    def __init__(self,
         *,
         result: builtins.bool = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result"]) -> None: ...
-
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result",b"result"]) -> None: ...
 global___CreateShardKeyResponse = CreateShardKeyResponse
 
 class DeleteShardKeyResponse(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     RESULT_FIELD_NUMBER: builtins.int
     result: builtins.bool
-    def __init__(
-        self,
+    def __init__(self,
         *,
         result: builtins.bool = ...,
-    ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result"]) -> None: ...
-
+        ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result",b"result"]) -> None: ...
 global___DeleteShardKeyResponse = DeleteShardKeyResponse

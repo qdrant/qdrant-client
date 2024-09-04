@@ -5,42 +5,32 @@ isort:skip_file
 import builtins
 import google.protobuf.descriptor
 import google.protobuf.message
-import sys
-
-if sys.version_info >= (3, 8):
-    import typing as typing_extensions
-else:
-    import typing_extensions
+import typing
+import typing_extensions
 
 DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
 
 class HealthCheckRequest(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
-    def __init__(
-        self,
-    ) -> None: ...
-
+    def __init__(self,
+        ) -> None: ...
 global___HealthCheckRequest = HealthCheckRequest
 
 class HealthCheckReply(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
-
     TITLE_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
     COMMIT_FIELD_NUMBER: builtins.int
-    title: builtins.str
-    version: builtins.str
-    commit: builtins.str
-    def __init__(
-        self,
+    title: typing.Text
+    version: typing.Text
+    commit: typing.Text
+    def __init__(self,
         *,
-        title: builtins.str = ...,
-        version: builtins.str = ...,
-        commit: builtins.str | None = ...,
-    ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_commit", b"_commit", "commit", b"commit"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_commit", b"_commit", "commit", b"commit", "title", b"title", "version", b"version"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_commit", b"_commit"]) -> typing_extensions.Literal["commit"] | None: ...
-
+        title: typing.Text = ...,
+        version: typing.Text = ...,
+        commit: typing.Optional[typing.Text] = ...,
+        ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_commit",b"_commit","commit",b"commit"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_commit",b"_commit","commit",b"commit","title",b"title","version",b"version"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_commit",b"_commit"]) -> typing.Optional[typing_extensions.Literal["commit"]]: ...
 global___HealthCheckReply = HealthCheckReply
