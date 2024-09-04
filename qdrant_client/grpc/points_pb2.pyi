@@ -2595,6 +2595,140 @@ class FacetHit(google.protobuf.message.Message):
 
 global___FacetHit = FacetHit
 
+class SearchMatrixPoints(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    COLLECTION_NAME_FIELD_NUMBER: builtins.int
+    FILTER_FIELD_NUMBER: builtins.int
+    SAMPLE_FIELD_NUMBER: builtins.int
+    LIMIT_FIELD_NUMBER: builtins.int
+    USING_FIELD_NUMBER: builtins.int
+    TIMEOUT_FIELD_NUMBER: builtins.int
+    READ_CONSISTENCY_FIELD_NUMBER: builtins.int
+    SHARD_KEY_SELECTOR_FIELD_NUMBER: builtins.int
+    collection_name: builtins.str
+    """Name of the collection"""
+    @property
+    def filter(self) -> global___Filter:
+        """Filter conditions - return only those points that satisfy the specified conditions."""
+    sample: builtins.int
+    """How many points to select and search within. Default is 10."""
+    limit: builtins.int
+    """How many neighbours per sample to find. Default is 3."""
+    using: builtins.str
+    """Define which vector to use for querying. If missing, the default vector is is used."""
+    timeout: builtins.int
+    """If set, overrides global timeout setting for this request. Unit is seconds."""
+    @property
+    def read_consistency(self) -> global___ReadConsistency:
+        """Options for specifying read consistency guarantees"""
+    @property
+    def shard_key_selector(self) -> global___ShardKeySelector:
+        """Specify in which shards to look for the points, if not specified - look in all shards"""
+    def __init__(
+        self,
+        *,
+        collection_name: builtins.str = ...,
+        filter: global___Filter | None = ...,
+        sample: builtins.int | None = ...,
+        limit: builtins.int | None = ...,
+        using: builtins.str | None = ...,
+        timeout: builtins.int | None = ...,
+        read_consistency: global___ReadConsistency | None = ...,
+        shard_key_selector: global___ShardKeySelector | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_filter", b"_filter", "_limit", b"_limit", "_read_consistency", b"_read_consistency", "_sample", b"_sample", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_using", b"_using", "filter", b"filter", "limit", b"limit", "read_consistency", b"read_consistency", "sample", b"sample", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "using", b"using"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_filter", b"_filter", "_limit", b"_limit", "_read_consistency", b"_read_consistency", "_sample", b"_sample", "_shard_key_selector", b"_shard_key_selector", "_timeout", b"_timeout", "_using", b"_using", "collection_name", b"collection_name", "filter", b"filter", "limit", b"limit", "read_consistency", b"read_consistency", "sample", b"sample", "shard_key_selector", b"shard_key_selector", "timeout", b"timeout", "using", b"using"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_filter", b"_filter"]) -> typing_extensions.Literal["filter"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_limit", b"_limit"]) -> typing_extensions.Literal["limit"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_read_consistency", b"_read_consistency"]) -> typing_extensions.Literal["read_consistency"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sample", b"_sample"]) -> typing_extensions.Literal["sample"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector"]) -> typing_extensions.Literal["shard_key_selector"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_using", b"_using"]) -> typing_extensions.Literal["using"] | None: ...
+
+global___SearchMatrixPoints = SearchMatrixPoints
+
+class SearchMatrixPairs(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    PAIRS_FIELD_NUMBER: builtins.int
+    @property
+    def pairs(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___SearchMatrixPair]:
+        """List of pairs of points with scores"""
+    def __init__(
+        self,
+        *,
+        pairs: collections.abc.Iterable[global___SearchMatrixPair] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["pairs", b"pairs"]) -> None: ...
+
+global___SearchMatrixPairs = SearchMatrixPairs
+
+class SearchMatrixPair(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    A_FIELD_NUMBER: builtins.int
+    B_FIELD_NUMBER: builtins.int
+    SCORE_FIELD_NUMBER: builtins.int
+    @property
+    def a(self) -> global___PointId:
+        """first id of the pair"""
+    @property
+    def b(self) -> global___PointId:
+        """second id of the pair"""
+    score: builtins.float
+    """score of the pair"""
+    def __init__(
+        self,
+        *,
+        a: global___PointId | None = ...,
+        b: global___PointId | None = ...,
+        score: builtins.float = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["a", b"a", "b", b"b"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["a", b"a", "b", b"b", "score", b"score"]) -> None: ...
+
+global___SearchMatrixPair = SearchMatrixPair
+
+class SearchMatrixOffsets(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    OFFSETS_ROW_FIELD_NUMBER: builtins.int
+    OFFSETS_COL_FIELD_NUMBER: builtins.int
+    SCORES_FIELD_NUMBER: builtins.int
+    IDS_FIELD_NUMBER: builtins.int
+    @property
+    def offsets_row(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]:
+        """Row coordinates of the CRS matrix"""
+    @property
+    def offsets_col(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]:
+        """Column coordinates ids of the matrix"""
+    @property
+    def scores(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.float]:
+        """Scores associate with coordinates"""
+    @property
+    def ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___PointId]:
+        """Ids of the points in order"""
+    def __init__(
+        self,
+        *,
+        offsets_row: collections.abc.Iterable[builtins.int] | None = ...,
+        offsets_col: collections.abc.Iterable[builtins.int] | None = ...,
+        scores: collections.abc.Iterable[builtins.float] | None = ...,
+        ids: collections.abc.Iterable[global___PointId] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["ids", b"ids", "offsets_col", b"offsets_col", "offsets_row", b"offsets_row", "scores", b"scores"]) -> None: ...
+
+global___SearchMatrixOffsets = SearchMatrixOffsets
+
 class PointsUpdateOperation(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -3521,6 +3655,46 @@ class FacetResponse(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["hits", b"hits", "time", b"time"]) -> None: ...
 
 global___FacetResponse = FacetResponse
+
+class SearchMatrixPairsResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    RESULT_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
+    @property
+    def result(self) -> global___SearchMatrixPairs: ...
+    time: builtins.float
+    """Time spent to process"""
+    def __init__(
+        self,
+        *,
+        result: global___SearchMatrixPairs | None = ...,
+        time: builtins.float = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["result", b"result"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
+
+global___SearchMatrixPairsResponse = SearchMatrixPairsResponse
+
+class SearchMatrixOffsetsResponse(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    RESULT_FIELD_NUMBER: builtins.int
+    TIME_FIELD_NUMBER: builtins.int
+    @property
+    def result(self) -> global___SearchMatrixOffsets: ...
+    time: builtins.float
+    """Time spent to process"""
+    def __init__(
+        self,
+        *,
+        result: global___SearchMatrixOffsets | None = ...,
+        time: builtins.float = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["result", b"result"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
+
+global___SearchMatrixOffsetsResponse = SearchMatrixOffsetsResponse
 
 class Filter(google.protobuf.message.Message):
     """---------------------------------------------

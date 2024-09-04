@@ -89,10 +89,10 @@ service Points {
   Since the score of a context relates to loss, the maximum score a point can get is 0.0,
   and it becomes normal that many points can have a score of 0.0.
 
-  When using target (with or without context), the score behaves a little different: The
+  When using target (with or without context), the score behaves a little different: The 
   integer part of the score represents the rank with respect to the context, while the
-  decimal part of the score relates to the distance to the target. The context part of the score for
-  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair,
+  decimal part of the score relates to the distance to the target. The context part of the score for 
+  each pair is calculated +1 if the point is closer to a positive than to a negative part of a pair, 
   and -1 otherwise.
   */
   rpc Discover (DiscoverPoints) returns (DiscoverResponse) {}
@@ -125,4 +125,12 @@ service Points {
   Perform facet counts. For each value in the field, count the number of points that have this value and match the conditions.
   */
   rpc Facet (FacetCounts) returns (FacetResponse) {}
+  /*
+  Compute distance matrix with a pair based output format
+  */
+  rpc SearchMatrixPairs (SearchMatrixPoints) returns (SearchMatrixPairsResponse) {}
+  /*
+  Compute distance matrix with an offset based output format
+  */
+  rpc SearchMatrixOffsets (SearchMatrixPoints) returns (SearchMatrixOffsetsResponse) {}
 }

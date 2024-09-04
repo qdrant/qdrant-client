@@ -9,7 +9,7 @@ pip install grpcio-tools==1.48.2 # the expected python version to use is 1.10.10
 
 cd $(mktemp -d)
 
-git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
+git clone --sparse --filter=blob:none --depth=1 -b distance-matrix-gRPC-API git@github.com:qdrant/qdrant.git
 cd qdrant
 git sparse-checkout add lib/api/src/grpc/proto
 
