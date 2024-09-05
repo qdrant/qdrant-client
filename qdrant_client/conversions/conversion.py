@@ -1809,6 +1809,30 @@ class GrpcToRest:
             commit=model.commit if model.HasField("commit") else None,
         )
 
+    @classmethod
+    def convert_search_matrix_pair_(cls, model: grpc.SearchMatrixPair) -> rest.SearchMatrixPair:
+        return rest.SearchMatrixPair(
+            a=model.a,
+            b=model.b,
+            score=model.score,
+        )
+
+
+    @classmethod
+    def convert_search_matrix_pairs_response(cls, model: grpc.SearchMatrixPairsResponse) -> rest.SearchMatrixPairsResponse:
+        return rest.SearchMatrixPairsResponse(
+            pairs=[cls.convert_search_matrix_pair_(pair) for pair in model.pairs],
+        )
+
+    @classmethod
+    def convert_search_matrix_offsets_response(cls, model: grpc.SearchMatrixOffsetsResponse) -> rest.SearchMatrixOffsetsResponse:
+        return rest.SearchMatrixOffsetsResponse(
+            offsets_row=model.offsets_row,
+            offsets_col=model.offsets_col,
+            scores=model.offets_scores,
+            ids=model.ids,
+        )
+
 
 # ----------------------------------------
 #

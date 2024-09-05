@@ -60,6 +60,28 @@ class QdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
+    def search_distance_matrix_offsets(
+        self,
+        collection_name: str,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+     raise NotImplementedError()
+
+    def search_distance_matrix_pairs(
+        self,
+        collection_name: str,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixPairsResponse:
+     raise NotImplementedError()
+
     def query_batch_points(
         self,
         collection_name: str,
