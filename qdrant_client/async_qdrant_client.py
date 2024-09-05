@@ -912,6 +912,98 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             **kwargs,
         )
 
+    async def search_distance_matrix_pairs(
+        self,
+        collection_name: str,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixPairsResponse:
+        """Compute distance matrix for sampled points with a pair-based output format.
+        Args:
+            collection_name: Name of the collection
+            search_filter: Filter to apply
+            limit: How many neighbours per sample to find
+            sample: How many points to select and search within
+            using: Name of the vectors to use for search.
+                If `None` - use default vectors.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+            timeout: Overrides global timeout for this search. Unit is seconds.
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+        Returns:
+            Return distance matrix using a pair-based encoding.
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        return await self._client.search_distance_matrix_pairs(
+            collection_name=collection_name,
+            search_filter=search_filter,
+            limit=limit,
+            sample=sample,
+            using=using,
+            consistency=consistency,
+            timeout=timeout,
+            shard_key_selector=shard_key_selector,
+            **kwargs,
+        )
+
+    async def search_distance_matrix_offsets(
+        self,
+        collection_name: str,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        timeout: Optional[int] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+        """Compute distance matrix for sampled points with an offset-based output format.
+        Args:
+            collection_name: Name of the collection
+            search_filter: Filter to apply
+            limit: How many neighbours per sample to find
+            sample: How many points to select and search within
+            using: Name of the vectors to use for search.
+                If `None` - use default vectors.
+            consistency:
+                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+                - int - number of replicas to query, values should present in all queried replicas
+                - 'majority' - query all replicas, but return values present in the majority of replicas
+                - 'quorum' - query the majority of replicas, return values present in all of them
+                - 'all' - query all replicas, and return values present in all replicas
+            timeout: Overrides global timeout for this search. Unit is seconds.
+            shard_key_selector:
+                This parameter allows to specify which shards should be queried.
+                If `None` - query all shards. Only works for collections with `custom` sharding method.
+        Returns:
+            Return distance matrix using an offset-based encoding.
+        """
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        return await self._client.search_distance_matrix_offsets(
+            collection_name=collection_name,
+            search_filter=search_filter,
+            limit=limit,
+            sample=sample,
+            using=using,
+            consistency=consistency,
+            timeout=timeout,
+            shard_key_selector=shard_key_selector,
+            **kwargs,
+        )
+
     async def recommend_groups(
         self,
         collection_name: str,
