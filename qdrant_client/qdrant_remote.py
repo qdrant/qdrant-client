@@ -1080,7 +1080,7 @@ class QdrantRemote(QdrantBase):
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             )
-            return GrpcToRest.convert_search_matrix_pairs_response(response)
+            return GrpcToRest.convert_search_matrix_pairs_response(response.result)
 
         if isinstance(search_filter, grpc.Filter):
             search_filter = GrpcToRest.convert_filter(model=search_filter)
@@ -1093,6 +1093,7 @@ class QdrantRemote(QdrantBase):
                 shard_key=shard_key_selector,
                 limit=limit,
                 sample=sample,
+                using=using,
                 filter=search_filter,
             ),
         ).result
@@ -1135,7 +1136,7 @@ class QdrantRemote(QdrantBase):
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             )
-            return GrpcToRest.convert_search_matrix_offsets_response(response)
+            return GrpcToRest.convert_search_matrix_offsets_response(response.result)
 
         if isinstance(search_filter, grpc.Filter):
             search_filter = GrpcToRest.convert_filter(model=search_filter)
@@ -1148,6 +1149,7 @@ class QdrantRemote(QdrantBase):
                 shard_key=shard_key_selector,
                 limit=limit,
                 sample=sample,
+                using=using,
                 filter=search_filter,
             ),
         ).result

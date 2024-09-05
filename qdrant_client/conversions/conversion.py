@@ -1812,8 +1812,8 @@ class GrpcToRest:
     @classmethod
     def convert_search_matrix_pair_(cls, model: grpc.SearchMatrixPair) -> rest.SearchMatrixPair:
         return rest.SearchMatrixPair(
-            a=model.a,
-            b=model.b,
+            a=cls.convert_point_id(model.a),
+            b=cls.convert_point_id(model.b),
             score=model.score,
         )
 
@@ -1826,10 +1826,10 @@ class GrpcToRest:
     @classmethod
     def convert_search_matrix_offsets_response(cls, model: grpc.SearchMatrixOffsetsResponse) -> rest.SearchMatrixOffsetsResponse:
         return rest.SearchMatrixOffsetsResponse(
-            offsets_row=model.offsets_row,
-            offsets_col=model.offsets_col,
-            scores=model.offets_scores,
-            ids=model.ids,
+            offsets_row=list(model.offsets_row),
+            offsets_col=list(model.offsets_col),
+            scores=list(model.scores),
+            ids=[cls.convert_point_id(p_id) for p_id in model.ids],
         )
 
 

@@ -311,6 +311,12 @@ def compare_client_results(
             compare_records(sorted_1, sorted_2, abs_tol=1e-5)
         else:
             compare_records(res1.points, res2.points)
+    elif isinstance(res1, models.SearchMatrixOffsetsResponse):
+        assert res1.ids == res2.ids, f"res1.ids = {res1.ids}, res2.ids = {res2.ids}"
+        assert res1.offsets_row == res2.offsets_row, f"res1.offsets_row = {res1.offsets_row}, res2.offsets_row = {res2.offsets_row}"
+        assert res1.offsets_col == res2.offsets_col, f"res1.offsets_col = {res1.offsets_col}, res2.offsets_col = {res2.offsets_col}"
+        # compare scores with margin
+        assert np.allclose(res1.scores, res2.scores, atol=1e-4), f"res1.scores = {res1.scores}, res2.scores = {res2.scores}"
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
         groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))
