@@ -211,6 +211,30 @@ class QdrantLocal(QdrantBase):
             score_threshold=score_threshold,
         )
 
+    def search_distance_matrix_offsets(
+        self,
+        collection_name: str,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+        collection = self._get_collection(collection_name)
+        return collection.search_distance_matrix_offsets(search_filter=search_filter, limit=limit, sample=sample, using=using)
+
+    def search_distance_matrix_pairs(
+        self,
+        collection_name: str,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixPairsResponse:
+        collection = self._get_collection(collection_name)
+        return collection.search_distance_matrix_pairs(search_filter=search_filter, limit=limit, sample=sample, using=using)
+
     def search_groups(
         self,
         collection_name: str,

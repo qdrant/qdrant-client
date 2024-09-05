@@ -1454,6 +1454,36 @@ class LocalCollection:
             with_lookup_collection=with_lookup_collection,
         )
 
+    def search_distance_matrix_offsets(
+        self,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+        pass
+
+    def search_distance_matrix(
+        self,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+        pass
+
+    def search_distance_matrix_pairs(
+        self,
+        search_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixPairsResponse:
+        pass
+
     @staticmethod
     def _preprocess_target(
         target: Optional[models.VectorInput], collection: "LocalCollection", vector_name: str
