@@ -313,10 +313,19 @@ def compare_client_results(
             compare_records(res1.points, res2.points)
     elif isinstance(res1, models.SearchMatrixOffsetsResponse):
         assert res1.ids == res2.ids, f"res1.ids = {res1.ids}, res2.ids = {res2.ids}"
-        assert res1.offsets_row == res2.offsets_row, f"res1.offsets_row = {res1.offsets_row}, res2.offsets_row = {res2.offsets_row}"
-        assert res1.offsets_col == res2.offsets_col, f"res1.offsets_col = {res1.offsets_col}, res2.offsets_col = {res2.offsets_col}"
         # compare scores with margin
         assert np.allclose(res1.scores, res2.scores, atol=1e-4), f"res1.scores = {res1.scores}, res2.scores = {res2.scores}"
+        assert res1.offsets_row == res2.offsets_row, f"res1.offsets_row = {res1.offsets_row}, res2.offsets_row = {res2.offsets_row}"
+        assert res1.offsets_col == res2.offsets_col, f"res1.offsets_col = {res1.offsets_col}, res2.offsets_col = {res2.offsets_col}"
+    elif isinstance(res1, models.SearchMatrixPairsResponse):
+        assert len(res1.pairs) == len(res2.pairs), f"len(res1.pairs) = {len(res1.pairs)}, len(res2.pairs) = {len(res2.pairs)}"
+        for i in range(len(res1.pairs)):
+            pair_1 = res1.pairs[i]
+            pair_2 = res2.pairs[i]
+            assert pair_1.a == pair_2.a, f"pair_1.a = {pair_1.a}, pair_2.a = {pair_2.a}"
+            assert pair_1.b == pair_2.b, f"pair_1.b = {pair_1.b}, pair_2.b = {pair_2.b}"
+            # compare scores with margin
+            assert math.isclose(pair_1.score, pair_2.score, rel_tol=1e-4), f"pair_1.score = {pair_1.score}, pair_2.score = {pair_2.score}"
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
         groups_2 = sorted(res2.groups, key=lambda x: (x.hits[0].score, x.id))

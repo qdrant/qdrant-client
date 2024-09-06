@@ -13,9 +13,12 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 
+# to keep the test deterministic we sample all the points available
+TEST_NUM_POINTS = 100
+
 @pytest.fixture(scope="module")
 def fixture_points() -> List[models.PointStruct]:
-    return generate_fixtures(num=10)
+    return generate_fixtures(num=TEST_NUM_POINTS)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -46,7 +49,7 @@ def test_no_filter(
     def search_offsets(client: QdrantBase) -> models.SearchMatrixOffsetsResponse:
         return client.search_distance_matrix_offsets(
             collection_name=COLLECTION_NAME,
-            sample=1000,
+            sample=TEST_NUM_POINTS,
             limit=3,
             using="text",
         )
@@ -54,7 +57,7 @@ def test_no_filter(
     def search_pairs(client: QdrantBase) -> models.SearchMatrixPairsResponse:
         return client.search_distance_matrix_pairs(
             collection_name=COLLECTION_NAME,
-            sample=1000,
+            sample=TEST_NUM_POINTS,
             limit=3,
             using="text",
         )

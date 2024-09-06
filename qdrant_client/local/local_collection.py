@@ -1528,7 +1528,7 @@ class LocalCollection:
         candidates = self._sample_randomly(len(self.ids), search_filter, False, search_in_vector_name)
         for candidate in candidates:
             # check if enough samples are collected
-            if len(samples) >= sample:
+            if len(samples) == sample:
                 break
             # check if the candidate has a vector
             if candidate.vector is not None:
@@ -1536,18 +1536,19 @@ class LocalCollection:
 
         # sort samples by id
         samples = sorted(samples, key=lambda x: x.id)
-
         # extract the ids
         ids = [sample.id for sample in samples]
-        scores: List[List[ScoredPoint]] = [[]]
+        scores: List[List[ScoredPoint]] = []
 
         # Query `limit` neighbors for each sample
         for sampled in samples:
-            ids_to_includes = [x for i, x in enumerate(ids) if i != ids.index(sampled.id)]
-            search_filter = _include_ids_in_filter(search_filter, ids_to_includes)
+            sampled_id_index = ids.index(sampled.id)
+            ids_to_includes = [x for (i, x) in enumerate(ids) if i != sampled_id_index]
+            sampling_filter = _include_ids_in_filter(search_filter, ids_to_includes)
+            search_vector = sampled.vector[search_in_vector_name]
             samples_scores = self.search(
-                query_vector=(using, sampled.vector[search_in_vector_name]),
-                query_filter=search_filter,
+                query_vector=(search_in_vector_name, search_vector),
+                query_filter=sampling_filter,
                 limit=limit,
                 with_payload=False,
                 with_vectors=False,
