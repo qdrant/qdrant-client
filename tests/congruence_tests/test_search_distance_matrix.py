@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Callable, Any
 
 import pytest
 
@@ -12,6 +12,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
 )
+from tests.fixtures.filters import one_random_filter_please
 
 # to keep the test deterministic we sample all the points available
 TEST_NUM_POINTS = 100
@@ -41,12 +42,22 @@ def grpc_client(fixture_points) -> QdrantClient:
     return client
 
 
-def test_no_filter(
+def compare_all_clients_results(
+    local_client: QdrantClient,
+    http_client: QdrantClient,
+    grpc_client: QdrantClient,
+    foo: Callable[[QdrantBase, Any], Any],
+    **kwargs: Any,
+):
+    compare_client_results(local_client, http_client, foo, **kwargs)
+    compare_client_results(http_client, grpc_client, foo, **kwargs)
+
+def test_search_offsets_no_filter(
     local_client,
     http_client,
     grpc_client,
 ):
-    def search_offsets(client: QdrantBase) -> models.SearchMatrixOffsetsResponse:
+    def search_offsets_no_filter(client: QdrantBase) -> models.SearchMatrixOffsetsResponse:
         return client.search_distance_matrix_offsets(
             collection_name=COLLECTION_NAME,
             sample=TEST_NUM_POINTS,
@@ -54,7 +65,15 @@ def test_no_filter(
             using="text",
         )
 
-    def search_pairs(client: QdrantBase) -> models.SearchMatrixPairsResponse:
+    compare_all_clients_results(local_client, http_client, grpc_client, search_offsets_no_filter)
+
+
+def test_search_pairs_no_filter(
+        local_client,
+        http_client,
+        grpc_client,
+):
+    def search_pairs_no_filter(client: QdrantBase) -> models.SearchMatrixPairsResponse:
         return client.search_distance_matrix_pairs(
             collection_name=COLLECTION_NAME,
             sample=TEST_NUM_POINTS,
@@ -62,11 +81,60 @@ def test_no_filter(
             using="text",
         )
 
-    # compare offsets output
-    compare_client_results(grpc_client, http_client, search_offsets)
-    compare_client_results(local_client, http_client, search_offsets)
+    compare_all_clients_results(local_client, http_client, grpc_client, search_pairs_no_filter)
 
-    # compare pairs output
-    compare_client_results(grpc_client, http_client, search_pairs)
-    compare_client_results(local_client, http_client, search_pairs)
+def test_search_offsets_filter(
+        local_client,
+        http_client,
+        grpc_client,
+):
+    def search_offsets_filter(client: QdrantBase, query_filter: models.Filter) -> models.SearchMatrixOffsetsResponse:
+        return client.search_distance_matrix_offsets(
+            collection_name=COLLECTION_NAME,
+            sample=TEST_NUM_POINTS,
+            limit=3,
+            using="text",
+            query_filter=query_filter,
+        )
 
+    for i in range(10):
+        query_filter = one_random_filter_please()
+        try:
+            compare_all_clients_results(
+                local_client,
+                http_client,
+                grpc_client,
+                search_offsets_filter,
+                query_filter=query_filter,
+            )
+        except AssertionError as e:
+            print(f"\nAttempt {i} failed with filter {query_filter}")
+            raise e
+
+def test_search_pairs_filter(
+        local_client,
+        http_client,
+        grpc_client,
+):
+    def search_pairs_filter(client: QdrantBase, query_filter: models.Filter) -> models.SearchMatrixPairsResponse:
+        return client.search_distance_matrix_pairs(
+            collection_name=COLLECTION_NAME,
+            sample=TEST_NUM_POINTS,
+            limit=3,
+            using="text",
+            query_filter=query_filter,
+        )
+
+    for i in range(10):
+        query_filter = one_random_filter_please()
+        try:
+            compare_all_clients_results(
+                local_client,
+                http_client,
+                grpc_client,
+                search_pairs_filter,
+                query_filter=query_filter,
+            )
+        except AssertionError as e:
+            print(f"\nAttempt {i} failed with filter {query_filter}")
+            raise e

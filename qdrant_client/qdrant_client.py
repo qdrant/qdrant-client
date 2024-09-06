@@ -974,7 +974,7 @@ class QdrantClient(QdrantFastembedMixin):
     def search_distance_matrix_pairs(
         self,
         collection_name: str,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
@@ -986,7 +986,7 @@ class QdrantClient(QdrantFastembedMixin):
         """Compute distance matrix for sampled points with a pair-based output format.
         Args:
             collection_name: Name of the collection
-            search_filter: Filter to apply
+            query_filter: Filter to apply
             limit: How many neighbours per sample to find
             sample: How many points to select and search within
             using: Name of the vectors to use for search.
@@ -1008,7 +1008,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         return self._client.search_distance_matrix_pairs(
             collection_name=collection_name,
-            search_filter=search_filter,
+            query_filter=query_filter,
             limit=limit,
             sample=sample,
             using=using,
@@ -1021,7 +1021,7 @@ class QdrantClient(QdrantFastembedMixin):
     def search_distance_matrix_offsets(
         self,
         collection_name: str,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
@@ -1033,7 +1033,7 @@ class QdrantClient(QdrantFastembedMixin):
         """Compute distance matrix for sampled points with an offset-based output format.
         Args:
             collection_name: Name of the collection
-            search_filter: Filter to apply
+            query_filter: Filter to apply
             limit: How many neighbours per sample to find
             sample: How many points to select and search within
             using: Name of the vectors to use for search.
@@ -1055,7 +1055,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         return self._client.search_distance_matrix_offsets(
             collection_name=collection_name,
-            search_filter=search_filter,
+            query_filter=query_filter,
             limit=limit,
             sample=sample,
             using=using,

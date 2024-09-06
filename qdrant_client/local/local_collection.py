@@ -1457,13 +1457,13 @@ class LocalCollection:
 
     def search_distance_matrix_offsets(
         self,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
     ) -> types.SearchMatrixOffsetsResponse:
         ids, all_scores = self._search_distance_matrix(
-            search_filter=search_filter, limit=limit, sample=sample, using=using
+            query_filter=query_filter, limit=limit, sample=sample, using=using
         )
 
         offsets_row = []
@@ -1491,13 +1491,13 @@ class LocalCollection:
 
     def search_distance_matrix_pairs(
         self,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
     ) -> types.SearchMatrixPairsResponse:
         ids, all_scores = self._search_distance_matrix(
-            search_filter=search_filter, limit=limit, sample=sample, using=using
+            query_filter=query_filter, limit=limit, sample=sample, using=using
         )
         pairs = []
         for sample_id, sample_scores in list(zip(ids, all_scores)):
@@ -1516,7 +1516,7 @@ class LocalCollection:
 
     def _search_distance_matrix(
         self,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
@@ -1525,7 +1525,7 @@ class LocalCollection:
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         # Sample random points from the whole collection to filter out the ones without vectors
         # TODO: use search_filter once with have an HasVector like condition
-        candidates = self._sample_randomly(len(self.ids), search_filter, False, search_in_vector_name)
+        candidates = self._sample_randomly(len(self.ids), query_filter, False, search_in_vector_name)
         for candidate in candidates:
             # check if enough samples are collected
             if len(samples) == sample:
@@ -1544,7 +1544,7 @@ class LocalCollection:
         for sampled in samples:
             sampled_id_index = ids.index(sampled.id)
             ids_to_includes = [x for (i, x) in enumerate(ids) if i != sampled_id_index]
-            sampling_filter = _include_ids_in_filter(search_filter, ids_to_includes)
+            sampling_filter = _include_ids_in_filter(query_filter, ids_to_includes)
             search_vector = sampled.vector[search_in_vector_name]
             samples_scores = self.search(
                 query_vector=(search_in_vector_name, search_vector),

@@ -832,7 +832,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def search_distance_matrix_pairs(
         self,
         collection_name: str,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
@@ -842,8 +842,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.SearchMatrixPairsResponse:
         if self._prefer_grpc:
-            if isinstance(search_filter, models.Filter):
-                search_filter = RestToGrpc.convert_filter(model=search_filter)
+            if isinstance(query_filter, models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
@@ -851,7 +851,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             response = await self.grpc_points.SearchMatrixPairs(
                 grpc.SearchMatrixPoints(
                     collection_name=collection_name,
-                    filter=search_filter,
+                    filter=query_filter,
                     sample=sample,
                     limit=limit,
                     using=using,
@@ -862,8 +862,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 timeout=timeout if timeout is not None else self._timeout,
             )
             return GrpcToRest.convert_search_matrix_pairs_response(response.result)
-        if isinstance(search_filter, grpc.Filter):
-            search_filter = GrpcToRest.convert_filter(model=search_filter)
+        if isinstance(query_filter, grpc.Filter):
+            search_filter = GrpcToRest.convert_filter(model=query_filter)
         search_matrix_result = (
             await self.openapi_client.points_api.search_points_matrix_pairs(
                 collection_name=collection_name,
@@ -874,7 +874,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     limit=limit,
                     sample=sample,
                     using=using,
-                    filter=search_filter,
+                    filter=query_filter,
                 ),
             )
         ).result
@@ -884,7 +884,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def search_distance_matrix_offsets(
         self,
         collection_name: str,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
@@ -894,8 +894,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
         if self._prefer_grpc:
-            if isinstance(search_filter, models.Filter):
-                search_filter = RestToGrpc.convert_filter(model=search_filter)
+            if isinstance(query_filter, models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
             if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
@@ -903,7 +903,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             response = await self.grpc_points.SearchMatrixOffsets(
                 grpc.SearchMatrixPoints(
                     collection_name=collection_name,
-                    filter=search_filter,
+                    filter=query_filter,
                     sample=sample,
                     limit=limit,
                     using=using,
@@ -914,8 +914,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 timeout=timeout if timeout is not None else self._timeout,
             )
             return GrpcToRest.convert_search_matrix_offsets_response(response.result)
-        if isinstance(search_filter, grpc.Filter):
-            search_filter = GrpcToRest.convert_filter(model=search_filter)
+        if isinstance(query_filter, grpc.Filter):
+            search_filter = GrpcToRest.convert_filter(model=query_filter)
         search_matrix_result = (
             await self.openapi_client.points_api.search_points_matrix_offsets(
                 collection_name=collection_name,
@@ -926,7 +926,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     limit=limit,
                     sample=sample,
                     using=using,
-                    filter=search_filter,
+                    filter=query_filter,
                 ),
             )
         ).result

@@ -63,7 +63,7 @@ class QdrantBase:
     def search_distance_matrix_offsets(
         self,
         collection_name: str,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
@@ -74,7 +74,7 @@ class QdrantBase:
     def search_distance_matrix_pairs(
         self,
         collection_name: str,
-        search_filter: Optional[types.Filter] = None,
+        query_filter: Optional[types.Filter] = None,
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
