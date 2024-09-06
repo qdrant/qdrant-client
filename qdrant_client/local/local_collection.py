@@ -1534,6 +1534,10 @@ class LocalCollection:
             if candidate.vector is not None:
                 samples.append(candidate)
 
+        # can't build a matrix with less than 2 results
+        if len(samples) < 2:
+            return [], []
+
         # sort samples by id
         samples = sorted(samples, key=lambda x: x.id)
         # extract the ids
