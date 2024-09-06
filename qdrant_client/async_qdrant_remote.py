@@ -861,7 +861,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             )
-            return GrpcToRest.convert_search_matrix_pairs_response(response)
+            return GrpcToRest.convert_search_matrix_pairs_response(response.result)
         if isinstance(search_filter, grpc.Filter):
             search_filter = GrpcToRest.convert_filter(model=search_filter)
         search_matrix_result = (
@@ -870,7 +870,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 consistency=consistency,
                 timeout=timeout,
                 search_matrix_request=models.SearchMatrixRequest(
-                    shard_key=shard_key_selector, limit=limit, sample=sample, filter=search_filter
+                    shard_key=shard_key_selector,
+                    limit=limit,
+                    sample=sample,
+                    using=using,
+                    filter=search_filter,
                 ),
             )
         ).result
@@ -909,7 +913,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             )
-            return GrpcToRest.convert_search_matrix_offsets_response(response)
+            return GrpcToRest.convert_search_matrix_offsets_response(response.result)
         if isinstance(search_filter, grpc.Filter):
             search_filter = GrpcToRest.convert_filter(model=search_filter)
         search_matrix_result = (
@@ -918,7 +922,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 consistency=consistency,
                 timeout=timeout,
                 search_matrix_request=models.SearchMatrixRequest(
-                    shard_key=shard_key_selector, limit=limit, sample=sample, filter=search_filter
+                    shard_key=shard_key_selector,
+                    limit=limit,
+                    sample=sample,
+                    using=using,
+                    filter=search_filter,
                 ),
             )
         ).result
