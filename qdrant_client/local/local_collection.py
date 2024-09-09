@@ -80,8 +80,7 @@ EPSILON = 1.1920929e-7  # https://doc.rust-lang.org/std/f32/constant.EPSILON.htm
 
 def to_jsonable_python(x: Any) -> Any:
     try:
-        json.dumps(x, allow_nan=True)
-        return x
+        return json.loads(json.dumps(x, allow_nan=True))
     except Exception:
         return json.loads(json.dumps(x, allow_nan=True, default=_to_jsonable_python))
 
