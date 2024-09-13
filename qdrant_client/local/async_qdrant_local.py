@@ -349,7 +349,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             )
         elif isinstance(prefetch, Sequence):
             prefetches = list(prefetch)
-        return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches if prefetch is not None]
+        return [
+            self._resolve_prefetch_input(prefetch, collection_name)
+            for prefetch in prefetches
+            if prefetch is not None
+        ]
 
     def _resolve_prefetch_input(
         self, prefetch: types.Prefetch, collection_name: str
