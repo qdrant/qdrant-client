@@ -456,7 +456,7 @@ class LocalCollection:
     def _get_vectors(
         self, idx: int, with_vectors: Union[bool, Sequence[str]] = False
     ) -> Optional[models.VectorStruct]:
-        if not with_vectors and with_vectors != DEFAULT_VECTOR_NAME:
+        if with_vectors is False:
             return None
 
         dense_vectors = {
