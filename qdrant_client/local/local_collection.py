@@ -456,7 +456,7 @@ class LocalCollection:
     def _get_vectors(
         self, idx: int, with_vectors: Union[bool, Sequence[str]] = False
     ) -> Optional[models.VectorStruct]:
-        if not with_vectors:
+        if not with_vectors and with_vectors != DEFAULT_VECTOR_NAME:
             return None
 
         dense_vectors = {
@@ -478,9 +478,7 @@ class LocalCollection:
         }
 
         # merge vectors
-        all_vectors = dense_vectors.copy()
-        all_vectors.update(sparse_vectors)
-        all_vectors.update(multivectors)
+        all_vectors = {**dense_vectors, **sparse_vectors, **multivectors}
 
         if isinstance(with_vectors, list):
             all_vectors = {name: all_vectors[name] for name in with_vectors if name in all_vectors}
