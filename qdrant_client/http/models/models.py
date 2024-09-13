@@ -952,6 +952,7 @@ class InlineResponse20021(BaseModel):
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["QueryResponse"]] = Field(default=None, description="")
 
+
 class InlineResponse2003(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
