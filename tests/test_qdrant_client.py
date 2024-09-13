@@ -2134,13 +2134,21 @@ def test_create_payload_index(prefer_grpc):
     client = init_remote(prefer_grpc=prefer_grpc)
     initialize_fixture_collection(client, COLLECTION_NAME, vectors_config={})
 
-    client.create_payload_index(COLLECTION_NAME, "keyword", models.PayloadSchemaType.KEYWORD)
-    client.create_payload_index(COLLECTION_NAME, "integer", models.PayloadSchemaType.INTEGER)
-    client.create_payload_index(COLLECTION_NAME, "float", models.PayloadSchemaType.FLOAT)
-    client.create_payload_index(COLLECTION_NAME, "geo", models.PayloadSchemaType.GEO)
-    client.create_payload_index(COLLECTION_NAME, "text", models.PayloadSchemaType.TEXT)
-    client.create_payload_index(COLLECTION_NAME, "bool", models.PayloadSchemaType.BOOL)
-    client.create_payload_index(COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME)
+    client.create_payload_index(
+        COLLECTION_NAME, "keyword", models.PayloadSchemaType.KEYWORD, wait=True
+    )
+    client.create_payload_index(
+        COLLECTION_NAME, "integer", models.PayloadSchemaType.INTEGER, wait=True
+    )
+    client.create_payload_index(
+        COLLECTION_NAME, "float", models.PayloadSchemaType.FLOAT, wait=True
+    )
+    client.create_payload_index(COLLECTION_NAME, "geo", models.PayloadSchemaType.GEO, wait=True)
+    client.create_payload_index(COLLECTION_NAME, "text", models.PayloadSchemaType.TEXT, wait=True)
+    client.create_payload_index(COLLECTION_NAME, "bool", models.PayloadSchemaType.BOOL, wait=True)
+    client.create_payload_index(
+        COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME, wait=True
+    )
 
     client.create_payload_index(
         COLLECTION_NAME,
@@ -2152,11 +2160,14 @@ def test_create_payload_index(prefer_grpc):
             max_token_len=7,
             lowercase=True,
         ),
+        wait=True,
     )
 
     major, minor, patch, dev = read_version()
     if major is None or dev or (major, minor, patch) >= (1, 11, 0):
-        client.create_payload_index(COLLECTION_NAME, "uuid", models.PayloadSchemaType.UUID)
+        client.create_payload_index(
+            COLLECTION_NAME, "uuid", models.PayloadSchemaType.UUID, wait=True
+        )
 
         client.create_payload_index(
             COLLECTION_NAME,
@@ -2164,24 +2175,40 @@ def test_create_payload_index(prefer_grpc):
             models.KeywordIndexParams(
                 type=models.KeywordIndexType.KEYWORD, is_tenant=False, on_disk=True
             ),
+            wait=True,
         )
+        payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
+        assert payload_schema["keyword_parametrized"].params.is_tenant is False
+        assert payload_schema["keyword_parametrized"].params.on_disk is True
+
         client.create_payload_index(
             COLLECTION_NAME,
             "integer_parametrized",
             models.IntegerIndexParams(
                 type=models.IntegerIndexType.INTEGER,
                 lookup=True,
-                range=True,
+                range=False,
                 is_principal=False,
                 on_disk=True,
             ),
+            wait=True,
         )
+        if prefer_grpc:
+            rest_client = QdrantClient()
+            _ = rest_client.get_collection(COLLECTION_NAME).payload_schema
+        payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
+        assert payload_schema["integer_parametrized"].params.lookup is True
+        assert payload_schema["integer_parametrized"].params.range is False
+        assert payload_schema["integer_parametrized"].params.is_principal is False
+        assert payload_schema["integer_parametrized"].params.on_disk is True
+
         client.create_payload_index(
             COLLECTION_NAME,
             "float_parametrized",
             models.FloatIndexParams(
                 type=models.FloatIndexType.FLOAT, is_principal=False, on_disk=True
             ),
+            wait=True,
         )
 
         client.create_payload_index(
@@ -2190,11 +2217,13 @@ def test_create_payload_index(prefer_grpc):
             models.DatetimeIndexParams(
                 type=models.DatetimeIndexType.DATETIME, is_principal=False, on_disk=True
             ),
+            wait=True,
         )
         client.create_payload_index(
             COLLECTION_NAME,
             "uuid_parametrized",
             models.UuidIndexParams(type=models.UuidIndexType.UUID, is_tenant=False, on_disk=True),
+            wait=True,
         )
 
     if major is None or dev or (major, minor, patch) >= (1, 11, 1):
@@ -2202,11 +2231,13 @@ def test_create_payload_index(prefer_grpc):
             COLLECTION_NAME,
             "geo_parametrized",
             models.GeoIndexParams(type=models.GeoIndexType.GEO),
+            wait=True,
         )
         client.create_payload_index(
             COLLECTION_NAME,
             "bool_parametrized",
             models.BoolIndexParams(type=models.BoolIndexType.BOOL),
+            wait=True,
         )
 
 
