@@ -454,9 +454,9 @@ class LocalCollection:
         return deepcopy(processed_payload) if return_copy else processed_payload
 
     def _get_vectors(
-        self, idx: int, with_vectors: Union[bool, Sequence[str]] = False
+        self, idx: int, with_vectors: Union[bool, Sequence[str], None] = False
     ) -> Optional[models.VectorStruct]:
-        if with_vectors is False:
+        if with_vectors is False or with_vectors is None:
             return None
 
         dense_vectors = {
