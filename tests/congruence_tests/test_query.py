@@ -832,9 +832,6 @@ def test_no_query_no_prefetch():
 
 
 def test_dense_query_nested_prefetch():
-    major, minor, patch, dev = read_version()
-    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 10, 0):
-        pytest.skip("Works as of version 1.10.0")
 
     fixture_points = generate_fixtures()
 
