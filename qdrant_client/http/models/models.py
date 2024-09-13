@@ -1002,8 +1002,8 @@ class InlineResponse202(BaseModel):
 
 class IntegerIndexParams(BaseModel, extra="forbid"):
     type: "IntegerIndexType" = Field(..., description="")
-    lookup: bool = Field(..., description="If true - support direct lookups.")
-    range: bool = Field(..., description="If true - support ranges filters.")
+    lookup: Optional[bool] = Field(default=None, description="If true - support direct lookups.")
+    range: Optional[bool] = Field(default=None, description="If true - support ranges filters.")
     is_principal: Optional[bool] = Field(
         default=None,
         description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests.",
