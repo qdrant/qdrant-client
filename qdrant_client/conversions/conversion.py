@@ -43,7 +43,7 @@ def json_to_value(payload: Any) -> Value:
         return Value(double_value=payload)
     if isinstance(payload, str):
         return Value(string_value=payload)
-    if isinstance(payload, list):
+    if isinstance(payload, (list, tuple)):
         return Value(list_value=ListValue(values=[json_to_value(v) for v in payload]))
     if isinstance(payload, dict):
         return Value(
