@@ -583,6 +583,23 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_query_text_nested_prefetch(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    prefetch=models.Prefetch(
+                        query=self.dense_vector_query_text,
+                        using="text"
+                    ),
+                    query=self.dense_vector_query_text,
+                    using="text"
+                ),
+            ],
+            query=self.dense_vector_query_text,
+            using="text"
+        )
+
     @classmethod
     def dense_recommend_image(cls, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
@@ -812,6 +829,20 @@ def test_no_query_no_prefetch():
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.query_scroll_offset)
     compare_clients_results(http_client, grpc_client, grpc_client, searcher.query_scroll_offset)
+
+
+def test_dense_query_nested_prefetch():
+    major, minor, patch, dev = read_version()
+    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 10, 0):
+        pytest.skip("Works as of version 1.10.0")
+
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text_nested_prefetch)
 
 
 def test_dense_query_filtered_prefetch():
