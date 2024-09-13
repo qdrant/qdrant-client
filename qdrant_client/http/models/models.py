@@ -31,6 +31,7 @@ class AppBuildTelemetry(BaseModel):
     features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
     system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
     jwt_rbac: Optional[bool] = Field(default=None, description="")
+    hide_jwt_dashboard: Optional[bool] = Field(default=None, description="")
     startup: Union[datetime, date] = Field(..., description="")
 
 
@@ -124,6 +125,7 @@ class ClusterTelemetry(BaseModel):
     status: Optional["ClusterStatusTelemetry"] = Field(default=None, description="")
     config: Optional["ClusterConfigTelemetry"] = Field(default=None, description="")
     peers: Optional[Dict[str, "PeerInfo"]] = Field(default=None, description="")
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="")
 
 
 class CollectionClusterInfo(BaseModel):
@@ -136,7 +138,7 @@ class CollectionClusterInfo(BaseModel):
     local_shards: List["LocalShardInfo"] = Field(..., description="Local shards")
     remote_shards: List["RemoteShardInfo"] = Field(..., description="Remote shards")
     shard_transfers: List["ShardTransferInfo"] = Field(..., description="Shard transfers")
-    resharding_operations: List["ReshardingInfo"] = Field(..., description="Resharding operations")
+    resharding_operations: Optional[List["ReshardingInfo"]] = Field(default=None, description="Resharding operations")
 
 
 class CollectionConfig(BaseModel):
@@ -229,7 +231,7 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
 
 class CollectionStatus(str, Enum):
     """
-    Current state of the collection. `Green` - all good. `Yellow` - optimization is running, `Red` - some operations failed and was not recovered
+    Current state of the collection. `Green` - all good. `Yellow` - optimization is running, &#x27;Grey&#x27; - optimizations are possible but not triggered, `Red` - some operations failed and was not recovered
     """
 
     def __str__(self) -> str:
@@ -1098,6 +1100,8 @@ class LocalShardInfo(BaseModel):
 
 class LocalShardTelemetry(BaseModel):
     variant_name: Optional[str] = Field(default=None, description="")
+    status: Optional["ShardStatus"] = Field(default=None, description="")
+    total_optimized_points: int = Field(..., description="Total number of optimized points since the last start.")
     segments: List["SegmentTelemetry"] = Field(..., description="")
     optimizations: "OptimizerTelemetry" = Field(..., description="")
 
@@ -2034,9 +2038,9 @@ class SearchGroupsRequest(BaseModel, extra="forbid"):
 
 
 class SearchMatrixOffsetsResponse(BaseModel):
-    offsets_row: List[int] = Field(..., description="Row coordinates of the CRS matrix")
-    offsets_col: List[int] = Field(..., description="Column coordinates ids of the matrix")
-    scores: List[float] = Field(..., description="Scores associate with coordinates")
+    offsets_row: List[int] = Field(..., description="Row indices of the matrix")
+    offsets_col: List[int] = Field(..., description="Column indices of the matrix")
+    scores: List[float] = Field(..., description="Scores associated with matrix coordinates")
     ids: List["ExtendedPointId"] = Field(..., description="Ids of the points in order")
 
 
@@ -2060,8 +2064,10 @@ class SearchMatrixRequest(BaseModel, extra="forbid"):
         description="Specify in which shards to look for the points, if not specified - look in all shards",
     )
     filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
-    sample: int = Field(..., description="How many points to select and search within.")
-    limit: int = Field(..., description="How many neighbours per sample to find")
+    sample: Optional[int] = Field(
+        default=None, description="How many points to select and search within. Default is 10."
+    )
+    limit: Optional[int] = Field(default=None, description="How many neighbours per sample to find. Default is 3.")
     using: Optional[str] = Field(
         default=None,
         description="Define which vector name to use for querying. If missing, the default vector is used.",
@@ -2202,6 +2208,20 @@ class ShardSnapshotRecover(BaseModel, extra="forbid"):
     api_key: Optional[str] = Field(
         default=None, description="Optional API key used when fetching the snapshot from a remote URL."
     )
+
+
+class ShardStatus(str, Enum):
+    """
+    Current state of the shard (supports same states as the collection) `Green` - all good. `Yellow` - optimization is running, &#x27;Grey&#x27; - optimizations are possible but not triggered, `Red` - some operations failed and was not recovered
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    GREEN = "green"
+    YELLOW = "yellow"
+    GREY = "grey"
+    RED = "red"
 
 
 class ShardTransferInfo(BaseModel):

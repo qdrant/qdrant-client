@@ -383,7 +383,7 @@ class PointsServicer(object):
 
     def SearchMatrixPairs(self, request, context):
         """
-        Compute distance matrix with a pair based output format
+        Compute distance matrix for sampled points with a pair based output format
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -391,7 +391,7 @@ class PointsServicer(object):
 
     def SearchMatrixOffsets(self, request, context):
         """
-        Compute distance matrix with an offset based output format
+        Compute distance matrix for sampled points with an offset based output format
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
