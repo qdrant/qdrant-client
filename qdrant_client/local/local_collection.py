@@ -453,9 +453,9 @@ class LocalCollection:
         return deepcopy(processed_payload) if return_copy else processed_payload
 
     def _get_vectors(
-        self, idx: int, with_vectors: Union[bool, Sequence[str]] = False
+        self, idx: int, with_vectors: Union[bool, Sequence[str], None] = False
     ) -> Optional[models.VectorStruct]:
-        if not with_vectors:
+        if with_vectors is False or with_vectors is None:
             return None
 
         dense_vectors = {
@@ -477,9 +477,7 @@ class LocalCollection:
         }
 
         # merge vectors
-        all_vectors = dense_vectors.copy()
-        all_vectors.update(sparse_vectors)
-        all_vectors.update(multivectors)
+        all_vectors = {**dense_vectors, **sparse_vectors, **multivectors}
 
         if isinstance(with_vectors, list):
             all_vectors = {name: all_vectors[name] for name in with_vectors if name in all_vectors}
