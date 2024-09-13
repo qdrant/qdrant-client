@@ -325,6 +325,7 @@ class _PointsApi:
         self,
         collection_name: str,
         timeout: int = None,
+        consistency: m.ReadConsistency = None,
         facet_request: m.FacetRequest = None,
     ):
         """
@@ -337,6 +338,8 @@ class _PointsApi:
         query_params = {}
         if timeout is not None:
             query_params["timeout"] = str(timeout)
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
 
         headers = {}
         body = jsonable_encoder(facet_request)
@@ -796,7 +799,7 @@ class _PointsApi:
         search_matrix_request: m.SearchMatrixRequest = None,
     ):
         """
-        Retrieve distance matrix with an offset based output format
+        Compute distance matrix for sampled points with an offset based output format
         """
         path_params = {
             "collection_name": str(collection_name),
@@ -830,7 +833,7 @@ class _PointsApi:
         search_matrix_request: m.SearchMatrixRequest = None,
     ):
         """
-        Retrieve distance matrix with a pair based output format
+        Compute distance matrix for sampled points with a pair based output format
         """
         path_params = {
             "collection_name": str(collection_name),
@@ -1098,6 +1101,7 @@ class AsyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         timeout: int = None,
+        consistency: m.ReadConsistency = None,
         facet_request: m.FacetRequest = None,
     ) -> m.InlineResponse20020:
         """
@@ -1106,6 +1110,7 @@ class AsyncPointsApi(_PointsApi):
         return await self._build_for_facet(
             collection_name=collection_name,
             timeout=timeout,
+            consistency=consistency,
             facet_request=facet_request,
         )
 
@@ -1336,7 +1341,7 @@ class AsyncPointsApi(_PointsApi):
         search_matrix_request: m.SearchMatrixRequest = None,
     ) -> m.InlineResponse20024:
         """
-        Retrieve distance matrix with an offset based output format
+        Compute distance matrix for sampled points with an offset based output format
         """
         return await self._build_for_search_points_matrix_offsets(
             collection_name=collection_name,
@@ -1353,7 +1358,7 @@ class AsyncPointsApi(_PointsApi):
         search_matrix_request: m.SearchMatrixRequest = None,
     ) -> m.InlineResponse20023:
         """
-        Retrieve distance matrix with a pair based output format
+        Compute distance matrix for sampled points with a pair based output format
         """
         return await self._build_for_search_points_matrix_pairs(
             collection_name=collection_name,
@@ -1553,6 +1558,7 @@ class SyncPointsApi(_PointsApi):
         self,
         collection_name: str,
         timeout: int = None,
+        consistency: m.ReadConsistency = None,
         facet_request: m.FacetRequest = None,
     ) -> m.InlineResponse20020:
         """
@@ -1561,6 +1567,7 @@ class SyncPointsApi(_PointsApi):
         return self._build_for_facet(
             collection_name=collection_name,
             timeout=timeout,
+            consistency=consistency,
             facet_request=facet_request,
         )
 
@@ -1791,7 +1798,7 @@ class SyncPointsApi(_PointsApi):
         search_matrix_request: m.SearchMatrixRequest = None,
     ) -> m.InlineResponse20024:
         """
-        Retrieve distance matrix with an offset based output format
+        Compute distance matrix for sampled points with an offset based output format
         """
         return self._build_for_search_points_matrix_offsets(
             collection_name=collection_name,
@@ -1808,7 +1815,7 @@ class SyncPointsApi(_PointsApi):
         search_matrix_request: m.SearchMatrixRequest = None,
     ) -> m.InlineResponse20023:
         """
-        Retrieve distance matrix with a pair based output format
+        Compute distance matrix for sampled points with a pair based output format
         """
         return self._build_for_search_points_matrix_pairs(
             collection_name=collection_name,
