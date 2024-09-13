@@ -953,6 +953,18 @@ class InlineResponse20021(BaseModel):
     result: Optional[List["QueryResponse"]] = Field(default=None, description="")
 
 
+class InlineResponse20022(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
+
+
+class InlineResponse20023(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["SearchMatrixOffsetsResponse"] = Field(default=None, description="")
+
+
 class InlineResponse2003(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
@@ -1002,8 +1014,8 @@ class InlineResponse202(BaseModel):
 
 class IntegerIndexParams(BaseModel, extra="forbid"):
     type: "IntegerIndexType" = Field(..., description="")
-    lookup: bool = Field(..., description="If true - support direct lookups.")
-    range: bool = Field(..., description="If true - support ranges filters.")
+    lookup: Optional[bool] = Field(default=None, description="If true - support direct lookups.")
+    range: Optional[bool] = Field(default=None, description="If true - support ranges filters.")
     is_principal: Optional[bool] = Field(
         default=None,
         description="If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests.",
@@ -1984,6 +1996,41 @@ class SearchGroupsRequest(BaseModel, extra="forbid"):
     limit: int = Field(..., description="Maximum amount of groups to return")
     with_lookup: Optional["WithLookupInterface"] = Field(
         default=None, description="Look for points in another collection using the group ids"
+    )
+
+
+class SearchMatrixOffsetsResponse(BaseModel):
+    offsets_row: List[int] = Field(..., description="Row coordinates of the CRS matrix")
+    offsets_col: List[int] = Field(..., description="Column coordinates ids of the matrix")
+    scores: List[float] = Field(..., description="Scores associate with coordinates")
+    ids: List["ExtendedPointId"] = Field(..., description="Ids of the points in order")
+
+
+class SearchMatrixPair(BaseModel):
+    """
+    Pair of points (a, b) with score
+    """
+
+    a: "ExtendedPointId" = Field(..., description="Pair of points (a, b) with score")
+    b: "ExtendedPointId" = Field(..., description="Pair of points (a, b) with score")
+    score: float = Field(..., description="Pair of points (a, b) with score")
+
+
+class SearchMatrixPairsResponse(BaseModel):
+    pairs: List["SearchMatrixPair"] = Field(..., description="List of pairs of points with scores")
+
+
+class SearchMatrixRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    sample: int = Field(..., description="How many points to select and search within.")
+    limit: int = Field(..., description="How many neighbours per sample to find")
+    using: Optional[str] = Field(
+        default=None,
+        description="Define which vector name to use for querying. If missing, the default vector is used.",
     )
 
 
