@@ -217,6 +217,7 @@ def one_random_payload_please(idx: int) -> Dict[str, Any]:
         ],
         "two_words": [random_real_word(), random_real_word()],
         "city": random_city(),
+        "rand_tuple": tuple(random.randint(0, 100) for _ in range(random.randint(1, 5))),
     }
 
     if random.random() < 0.5:
