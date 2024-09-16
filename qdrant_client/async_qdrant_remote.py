@@ -1421,7 +1421,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             )
-            return GrpcToRest.convert_facet_response(response)
+            return types.FacetResponse(
+                hits=[GrpcToRest.convert_facet_value_hit(hit) for hit in response.hits]
+            )
         if isinstance(facet_filter, grpc.Filter):
             facet_filter = GrpcToRest.convert_filter(model=facet_filter)
         facet_result = (
