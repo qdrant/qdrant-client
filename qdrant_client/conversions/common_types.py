@@ -10,7 +10,7 @@ else:
 
 from typing import List, Union, get_args, Sequence
 
-from qdrant_client import grpc as grpc
+from qdrant_client import grpc
 from qdrant_client.http import models as rest
 
 typing_remap = {
@@ -58,12 +58,19 @@ WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
 QuantizationConfig = Union[rest.QuantizationConfig, grpc.QuantizationConfig]
 PointId = Union[int, str, grpc.PointId]
 PayloadSchemaType = Union[
-    rest.PayloadSchemaType, rest.PayloadSchemaParams, int, grpc.PayloadIndexParams
+    rest.PayloadSchemaType,
+    rest.PayloadSchemaParams,
+    int,
+    grpc.PayloadIndexParams,
 ]  # type(grpc.PayloadSchemaType) == int
 PointStruct: TypeAlias = rest.PointStruct
 Points = Union[rest.Batch, Sequence[Union[rest.PointStruct, grpc.PointStruct]]]
 PointsSelector = Union[
-    List[PointId], rest.Filter, grpc.Filter, rest.PointsSelector, grpc.PointsSelector
+    List[PointId],
+    rest.Filter,
+    grpc.Filter,
+    rest.PointsSelector,
+    grpc.PointsSelector,
 ]
 LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
 RecommendStrategy: TypeAlias = rest.RecommendStrategy

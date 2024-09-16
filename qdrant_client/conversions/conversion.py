@@ -1802,12 +1802,6 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_facet_response(cls, model: grpc.FacetResponse) -> rest.FacetResponse:
-        return rest.FacetResponse(
-            hits=[cls.convert_facet_value_hit(hit) for hit in model.hits],
-        )
-
-    @classmethod
     def convert_health_check_reply(cls, model: grpc.HealthCheckReply) -> rest.VersionInfo:
         return rest.VersionInfo(
             title=model.title,
@@ -2513,6 +2507,22 @@ class RestToGrpc:
         if isinstance(model, rest.OrderBy):
             return cls.convert_order_by(model)
         raise ValueError(f"invalid OrderByInterface model: {model}")
+
+    @classmethod
+    def convert_facet_value(cls, model: rest.FacetValue) -> grpc.FacetValue:
+        if isinstance(model, str):
+            return grpc.FacetValue(string_value=model)
+        if isinstance(model, int):
+            return grpc.FacetValue(integer_value=model)
+
+        raise ValueError(f"invalid FacetValue model: {model}")
+
+    @classmethod
+    def convert_facet_value_hit(cls, model: rest.FacetValueHit) -> grpc.FacetHit:
+        return grpc.FacetHit(
+            value=cls.convert_facet_value(model.value),
+            count=model.count,
+        )
 
     @classmethod
     def convert_record(cls, model: rest.Record) -> grpc.RetrievedPoint:

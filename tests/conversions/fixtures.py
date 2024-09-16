@@ -1209,6 +1209,16 @@ prefetch_many = grpc.PrefetchQuery(
     prefetch=[prefetch_query, prefetch_full_query, prefetch_random_sample],
 )
 
+facet_string_hit = grpc.FacetHit(
+    value=grpc.FacetValue(string_value="abc"),
+    count=123,
+)
+
+facet_integer_hit = grpc.FacetHit(
+    value=grpc.FacetValue(integer_value=123),
+    count=123,
+)
+
 health_check_reply = grpc.HealthCheckReply(
     title="qdrant - vector search engine",
     version="1.10.0",
@@ -1358,6 +1368,7 @@ fixtures = {
         query_fusion,
         query_recommend_id,
     ],
+    "FacetValueHit": [facet_string_hit, facet_integer_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
     "HealthCheckReply": [health_check_reply],
 }

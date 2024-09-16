@@ -181,3 +181,24 @@ def test_exact_filtered(
             compare_client_results(
                 local_client, http_client, f, facet_key=key, facet_filter=filter_
             )
+
+
+def test_other_types_in_local():
+    collection_name = "test_collection"
+    client = init_local()
+    client.create_collection(collection_name=collection_name, vectors_config={})
+    client.upsert(
+        collection_name=collection_name,
+        points=[models.PointStruct(id=1, vector={}, payload={"a": True})],
+    )
+    client.upsert(
+        collection_name=collection_name,
+        points=[models.PointStruct(id=2, vector={}, payload={"a": 12.444})],
+    )
+    client.upsert(
+        collection_name=collection_name,
+        points=[models.PointStruct(id=3, vector={}, payload={"a": {"b": 1}})],
+    )
+
+    # Assertion is that it doesn't raise an exception
+    client.facet(collection_name=collection_name, key="a")

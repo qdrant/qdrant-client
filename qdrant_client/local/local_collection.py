@@ -1114,7 +1114,7 @@ class LocalCollection:
 
             # Sanitize to use only valid values
             for v in values:
-                if not isinstance(v, get_args_subscribed(types.FacetValue)):
+                if type(v) not in get_args_subscribed(types.FacetValue):
                     continue
 
                 # If values are UUIDs, format with hyphens
