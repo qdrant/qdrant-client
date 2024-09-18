@@ -1080,7 +1080,7 @@ class QdrantRemote(QdrantBase):
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             )
-            return GrpcToRest.convert_search_matrix_pairs_response(response.result)
+            return GrpcToRest.convert_search_matrix_pairs(response.result)
 
         if isinstance(query_filter, grpc.Filter):
             search_filter = GrpcToRest.convert_filter(model=query_filter)
@@ -1136,7 +1136,7 @@ class QdrantRemote(QdrantBase):
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             )
-            return GrpcToRest.convert_search_matrix_offsets_response(response.result)
+            return GrpcToRest.convert_search_matrix_offsets(response.result)
 
         if isinstance(query_filter, grpc.Filter):
             search_filter = GrpcToRest.convert_filter(model=query_filter)

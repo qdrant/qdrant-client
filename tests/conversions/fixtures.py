@@ -1225,7 +1225,7 @@ health_check_reply = grpc.HealthCheckReply(
     commit="851f03bbf6644116da56f6bc7b0baa04274e8057",
 )
 
-search_matrix_pairs_response = grpc.SearchMatrixPairsResponse(
+search_matrix_pairs = grpc.SearchMatrixPairs(
     pairs=[
         grpc.SearchMatrixPair(
             a=point_id_1,
@@ -1235,7 +1235,7 @@ search_matrix_pairs_response = grpc.SearchMatrixPairsResponse(
     ]
 )
 
-search_matrix_offsets_response = grpc.SearchMatrixOffsetsResponse(
+search_matrix_offsets = grpc.SearchMatrixOffsets(
     offsets_row=[0, 1],
     offsets_col=[0, 1],
     scores=[0.99, 0.98],
@@ -1388,8 +1388,8 @@ fixtures = {
     "FacetValueHit": [facet_string_hit, facet_integer_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
     "HealthCheckReply": [health_check_reply],
-    "SearchMatrixPairsResponse": [search_matrix_pairs_response],
-    "SearchMatrixOffsetsResponse": [search_matrix_offsets_response],
+    "SearchMatrixPairs": [search_matrix_pairs],
+    "SearchMatrixOffsets": [search_matrix_offsets],
 }
 
 

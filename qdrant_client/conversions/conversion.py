@@ -1818,13 +1818,13 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_search_matrix_pairs_response(cls, model: grpc.SearchMatrixPairsResponse) -> rest.SearchMatrixPairsResponse:
+    def convert_search_matrix_pairs(cls, model: grpc.SearchMatrixPairs) -> rest.SearchMatrixPairsResponse:
         return rest.SearchMatrixPairsResponse(
             pairs=[cls.convert_search_matrix_pair(pair) for pair in model.pairs],
         )
 
     @classmethod
-    def convert_search_matrix_offsets_response(cls, model: grpc.SearchMatrixOffsetsResponse) -> rest.SearchMatrixOffsetsResponse:
+    def convert_search_matrix_offsets(cls, model: grpc.SearchMatrixOffsets) -> rest.SearchMatrixOffsetsResponse:
         return rest.SearchMatrixOffsetsResponse(
             offsets_row=list(model.offsets_row),
             offsets_col=list(model.offsets_col),
@@ -3614,14 +3614,14 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_search_matrix_pairs_response(cls, model: rest.SearchMatrixPairsResponse) -> grpc.SearchMatrixPairsResponse:
-        return grpc.SearchMatrixPairsResponse(
+    def convert_search_matrix_pairs(cls, model: rest.SearchMatrixPairsResponse) -> grpc.SearchMatrixPairs:
+        return grpc.SearchMatrixPairs(
             pairs=[cls.convert_search_matrix_pair(pair) for pair in model.pairs],
         )
 
     @classmethod
-    def convert_search_matrix_offsets_response(cls, model: rest.SearchMatrixOffsetsResponse) -> grpc.SearchMatrixOffsetsResponse:
-        return grpc.SearchMatrixOffsetsResponse(
+    def convert_search_matrix_offsets(cls, model: rest.SearchMatrixOffsetsResponse) -> grpc.SearchMatrixOffsets:
+        return grpc.SearchMatrixOffsets(
             offsets_row=list(model.offsets_row),
             offsets_col=list(model.offsets_col),
             scores=list(model.scores),
