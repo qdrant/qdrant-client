@@ -1810,7 +1810,7 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_search_matrix_pair_(cls, model: grpc.SearchMatrixPair) -> rest.SearchMatrixPair:
+    def convert_search_matrix_pair(cls, model: grpc.SearchMatrixPair) -> rest.SearchMatrixPair:
         return rest.SearchMatrixPair(
             a=cls.convert_point_id(model.a),
             b=cls.convert_point_id(model.b),
@@ -1820,7 +1820,7 @@ class GrpcToRest:
     @classmethod
     def convert_search_matrix_pairs_response(cls, model: grpc.SearchMatrixPairsResponse) -> rest.SearchMatrixPairsResponse:
         return rest.SearchMatrixPairsResponse(
-            pairs=[cls.convert_search_matrix_pair_(pair) for pair in model.pairs],
+            pairs=[cls.convert_search_matrix_pair(pair) for pair in model.pairs],
         )
 
     @classmethod
@@ -3603,4 +3603,27 @@ class RestToGrpc:
             title=model.title,
             version=model.version,
             commit=model.commit,
+        )
+
+    @classmethod
+    def convert_search_matrix_pair(cls, model: rest.SearchMatrixPair) -> grpc.SearchMatrixPair:
+        return grpc.SearchMatrixPair(
+            a=cls.convert_extended_point_id(model.a),
+            b=cls.convert_extended_point_id(model.b),
+            score=model.score,
+        )
+
+    @classmethod
+    def convert_search_matrix_pairs_response(cls, model: rest.SearchMatrixPairsResponse) -> grpc.SearchMatrixPairsResponse:
+        return grpc.SearchMatrixPairsResponse(
+            pairs=[cls.convert_search_matrix_pair(pair) for pair in model.pairs],
+        )
+
+    @classmethod
+    def convert_search_matrix_offsets_response(cls, model: rest.SearchMatrixOffsetsResponse) -> grpc.SearchMatrixOffsetsResponse:
+        return grpc.SearchMatrixOffsetsResponse(
+            offsets_row=list(model.offsets_row),
+            offsets_col=list(model.offsets_col),
+            scores=list(model.scores),
+            ids=[cls.convert_extended_point_id(p_id) for p_id in model.ids],
         )
