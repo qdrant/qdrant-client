@@ -319,9 +319,7 @@ def compare_client_results(
         assert res1.offsets_col == res2.offsets_col, f"res1.offsets_col = {res1.offsets_col}, res2.offsets_col = {res2.offsets_col}"
     elif isinstance(res1, models.SearchMatrixPairsResponse):
         assert len(res1.pairs) == len(res2.pairs), f"len(res1.pairs) = {len(res1.pairs)}, len(res2.pairs) = {len(res2.pairs)}"
-        for i in range(len(res1.pairs)):
-            pair_1 = res1.pairs[i]
-            pair_2 = res2.pairs[i]
+        for pair_1, pair_2 in zip(res1.pairs, res2.pairs):
             assert pair_1.a == pair_2.a, f"pair_1.a = {pair_1.a}, pair_2.a = {pair_2.a}"
             assert pair_1.b == pair_2.b, f"pair_1.b = {pair_1.b}, pair_2.b = {pair_2.b}"
             # compare scores with margin
