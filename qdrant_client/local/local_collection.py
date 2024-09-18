@@ -1545,8 +1545,7 @@ class LocalCollection:
         scores: List[List[ScoredPoint]] = []
 
         # Query `limit` neighbors for each sample
-        for sampled in samples:
-            sampled_id_index = ids.index(sampled.id)
+        for sampled_id_index, sampled in enumerate(samples):
             ids_to_includes = [x for (i, x) in enumerate(ids) if i != sampled_id_index]
             sampling_filter = _include_ids_in_filter(query_filter, ids_to_includes)
             search_vector = sampled.vector[search_in_vector_name]
