@@ -3138,18 +3138,16 @@ class QdrantRemote(QdrantBase):
             if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
 
-            request = grpc.CreateShardKey(
-                shard_key=shard_key,
-                shards_number=shards_number,
-                replication_factor=replication_factor,
-                placement=placement or [],
-            )
-
             return self.grpc_collections.CreateShardKey(
                 grpc.CreateShardKeyRequest(
                     collection_name=collection_name,
                     timeout=timeout,
-                    request=request,
+                    request=grpc.CreateShardKey(
+                        shard_key=shard_key,
+                        shards_number=shards_number,
+                        replication_factor=replication_factor,
+                        placement=placement or [],
+                    ),
                 ),
                 timeout=self._timeout,
             ).result
