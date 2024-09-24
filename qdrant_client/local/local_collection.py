@@ -615,7 +615,7 @@ class LocalCollection:
 
             score = scores[idx]
             # skip undefined scores from sparse vectors
-            if sparse_scoring and score == - np.inf:
+            if sparse_scoring and score == -np.inf:
                 continue
             point_id = self.ids_inv[idx]
 
