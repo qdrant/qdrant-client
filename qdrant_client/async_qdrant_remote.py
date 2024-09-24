@@ -2765,16 +2765,17 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
-            request = await grpc.CreateShardKey(
-                shard_key=shard_key,
-                shards_number=shards_number,
-                replication_factor=replication_factor,
-                placement=placement or [],
-            )
             return (
                 await self.grpc_collections.CreateShardKey(
                     grpc.CreateShardKeyRequest(
-                        collection_name=collection_name, timeout=timeout, request=request
+                        collection_name=collection_name,
+                        timeout=timeout,
+                        request=grpc.CreateShardKey(
+                            shard_key=shard_key,
+                            shards_number=shards_number,
+                            replication_factor=replication_factor,
+                            placement=placement or [],
+                        ),
                     ),
                     timeout=self._timeout,
                 )
