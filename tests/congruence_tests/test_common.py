@@ -204,6 +204,9 @@ def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], 
         return
 
     if isinstance(vec1, dict):
+        assert (
+            vec1.keys() == vec2.keys()
+        ), f"res1[{i}].vectors.keys() = {list(vec1.keys())}, res2[{i}].vectors.keys() = {list(vec2.keys())}"
         for key, value in vec1.items():
             if isinstance(value, SparseVector):
                 assert vec1[key].indices == vec2[key].indices, (
