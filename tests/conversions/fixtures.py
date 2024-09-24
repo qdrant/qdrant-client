@@ -218,6 +218,7 @@ collection_params = grpc.CollectionParams(
     vectors_config=single_vector_config,
     shard_number=10,
     on_disk_payload=True,
+    sharding_method=grpc.ShardingMethod.Custom,
 )
 
 collection_params_2 = grpc.CollectionParams(
