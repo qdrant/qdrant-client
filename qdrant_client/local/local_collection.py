@@ -2043,6 +2043,7 @@ class LocalCollection:
                 self.vectors[vector_name][idx] = np.array(vector)
             else:
                 self.multivectors[vector_name][idx] = np.array(vector)
+            self.deleted_per_vector[vector_name][idx] = 0
 
     def update_vectors(self, points: Sequence[types.PointVectors]) -> None:
         for point in points:
