@@ -635,6 +635,9 @@ class GrpcToRest:
             sparse_vectors=cls.convert_sparse_vector_config(model.sparse_vectors_config)
             if model.HasField("sparse_vectors_config")
             else None,
+            sharding_method=cls.convert_sharding_method(model.sharding_method)
+            if model.HasField("sharding_method")
+            else None,
         )
 
     @classmethod
@@ -2151,6 +2154,11 @@ class RestToGrpc:
             sparse_vectors_config=(
                 cls.convert_sparse_vector_config(model.sparse_vectors)
                 if model.sparse_vectors is not None
+                else None
+            ),
+            sharding_method=(
+                cls.convert_sharding_method(model.sharding_method)
+                if model.sharding_method is not None
                 else None
             ),
         )
