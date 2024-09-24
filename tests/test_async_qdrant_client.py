@@ -609,3 +609,25 @@ async def test_async_auth():
 
     await client.unlock_storage()
     assert sync_token == "token_2"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+async def test_custom_sharding(prefer_grpc):
+    client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
+
+    if await client.collection_exists(COLLECTION_NAME):
+        await client.delete_collection(collection_name=COLLECTION_NAME)
+    await client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        sharding_method=models.ShardingMethod.CUSTOM,
+    )
+
+    await client.create_shard_key(collection_name=COLLECTION_NAME, shard_key="cats")
+    await client.create_shard_key(collection_name=COLLECTION_NAME, shard_key="dogs")
+
+    collection_info = await client.get_collection(COLLECTION_NAME)
+
+    assert collection_info.config.params.shard_number == 1
+    # assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM  # todo: fix in grpc
