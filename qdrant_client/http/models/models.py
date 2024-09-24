@@ -135,7 +135,7 @@ class CollectionClusterInfo(BaseModel):
     local_shards: List["LocalShardInfo"] = Field(..., description="Local shards")
     remote_shards: List["RemoteShardInfo"] = Field(..., description="Remote shards")
     shard_transfers: List["ShardTransferInfo"] = Field(..., description="Shard transfers")
-    resharding_operations: List["ReshardingInfo"] = Field(..., description="Resharding operations")
+    resharding_operations: Optional[List["ReshardingInfo"]] = Field(default=None, description="Resharding operations")
 
 
 class CollectionConfig(BaseModel):
