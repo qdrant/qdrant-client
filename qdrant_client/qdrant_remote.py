@@ -3199,7 +3199,7 @@ class QdrantRemote(QdrantBase):
 
     def info(self) -> types.VersionInfo:
         if self._prefer_grpc:
-            version_info = self.grpc_root.HealthCheck(grpc.HealthCheckRequest())
+            version_info = await self.grpc_root.HealthCheck(grpc.HealthCheckRequest())
             return GrpcToRest.convert_health_check_reply(version_info)
         version_info = self.rest.service_api.root()
         assert version_info is not None, "Healthcheck returned None"
