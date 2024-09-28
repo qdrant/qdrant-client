@@ -75,7 +75,7 @@ Local mode is useful for development, prototyping and testing.
 ## Fast Embeddings + Simpler API
 
 ```
-pip install qdrant-client[fastembed]
+pip install fastembed
 ```
 
 FastEmbed is a library for creating fast vector embeddings on CPU. It is based on ONNX Runtime and allows to run inference on CPU with GPU-like performance.
