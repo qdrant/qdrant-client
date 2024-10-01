@@ -2435,9 +2435,10 @@ class TelemetryData(BaseModel):
 class TextIndexParams(BaseModel, extra="forbid"):
     type: "TextIndexType" = Field(..., description="")
     tokenizer: Optional["TokenizerType"] = Field(default=None, description="")
-    min_token_len: Optional[int] = Field(default=None, description="")
-    max_token_len: Optional[int] = Field(default=None, description="")
+    min_token_len: Optional[int] = Field(default=None, description="Minimum characters to be tokenized.")
+    max_token_len: Optional[int] = Field(default=None, description="Maximum characters to be tokenized.")
     lowercase: Optional[bool] = Field(default=None, description="If true, lowercase all tokens. Default: true.")
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
 
 
 class TextIndexType(str, Enum):
@@ -2787,6 +2788,7 @@ ExtendedPointId = Union[
     StrictStr,
 ]
 FacetValue = Union[
+    StrictBool,
     StrictInt,
     StrictStr,
 ]

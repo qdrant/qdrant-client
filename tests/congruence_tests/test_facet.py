@@ -21,10 +21,11 @@ INT_ID_KEY = "id"
 UUID_KEY = "text_array"
 STRING_ID_KEY = "id_str"
 STRING_KEY = "city.name"
+BOOL_KEY = "rand_bool"
 
 
 def all_facet_keys() -> List[str]:
-    return [INT_KEY, INT_ID_KEY, UUID_KEY, STRING_ID_KEY, STRING_KEY]
+    return [INT_KEY, INT_ID_KEY, UUID_KEY, STRING_ID_KEY, STRING_KEY, BOOL_KEY]
 
 
 @pytest.fixture(scope="module")
@@ -67,6 +68,11 @@ def http_client(fixture_points) -> QdrantClient:
         collection_name=COLLECTION_NAME,
         field_name=STRING_ID_KEY,
         field_schema=models.PayloadSchemaType.KEYWORD,
+    )
+    client.create_payload_index(
+        collection_name=COLLECTION_NAME,
+        field_name=BOOL_KEY,
+        field_schema=models.PayloadSchemaType.BOOL,
     )
     return client
 
