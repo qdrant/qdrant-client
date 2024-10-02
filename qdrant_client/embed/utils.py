@@ -7,7 +7,7 @@ class Path(BaseModel):
     current: str
     tail: Optional[list["Path"]] = Field(default=None)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         >>> print(Path(current='a', tail=[Path(current='b', tail=[Path(current='c'), Path(current='d')])]))
         a.b.c
@@ -15,7 +15,7 @@ class Path(BaseModel):
         """
 
         # Recursive function to collect all paths
-        def collect_paths(path, prefix=""):
+        def collect_paths(path: Path, prefix="") -> List[str]:
             current_path = prefix + path.current
             if not path.tail:
                 return [current_path]
