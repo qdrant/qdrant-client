@@ -37,3 +37,10 @@ def to_dict(model: BaseModel, *args: Any, **kwargs: Any) -> Dict[Any, Any]:
         return model.model_dump(*args, **kwargs)
     else:
         return model.dict(*args, **kwargs)
+
+
+def model_fields_set(model: BaseModel) -> set:
+    if PYDANTIC_V2:
+        return model.model_fields_set
+    else:
+        return model.__fields_set__
