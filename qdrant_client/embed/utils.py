@@ -15,7 +15,7 @@ class Path(BaseModel):
         """
 
         # Recursive function to collect all paths
-        def collect_paths(path: Path, prefix="") -> List[str]:
+        def collect_paths(path: Path, prefix: str = "") -> List[str]:
             current_path = prefix + path.current
             if not path.tail:
                 return [current_path]
