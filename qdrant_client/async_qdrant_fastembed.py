@@ -12,13 +12,13 @@
 import uuid
 import warnings
 from itertools import tee
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, get_args, Set
-import numpy as np
-from qdrant_client import grpc
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set
+from copy import deepcopy
+from pydantic import BaseModel
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
-from qdrant_client.conversions.conversion import GrpcToRest
-from qdrant_client.embed.models import Document
+from qdrant_client.embed.embed_inspector import InspectorEmbed
+from qdrant_client.embed.utils import Path
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
@@ -63,6 +63,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     def __init__(self, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
+        self._embed_inspector = InspectorEmbed()
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
@@ -517,77 +518,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         return inserted_ids
 
-    def _resolve_query_to_embedding_embeddings_and_prefetch(
-        self,
-        query: Union[
-            types.PointId,
-            List[float],
-            List[List[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            Document,
-            None,
-        ],
-        prefetch: Union[models.Prefetch, List[models.Prefetch], None] = None,
-    ) -> Tuple[Optional[models.Query], List[models.Prefetch]]:
-        query = self._resolve_query_to_embedding_embeddings(query=query)
-        if prefetch is None:
-            prefetch = []
-        if not isinstance(prefetch, list):
-            prefetch = [prefetch]
-        return (query, prefetch)
-
-    def _resolve_query_to_embedding_embeddings(
-        self,
-        query: Union[
-            types.PointId,
-            List[float],
-            List[List[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            Document,
-            None,
-        ],
-    ) -> Optional[models.Query]:
-        if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
-            return query
-        if isinstance(query, types.SparseVector):
-            return models.NearestQuery(nearest=query)
-        if isinstance(query, np.ndarray):
-            return models.NearestQuery(nearest=query.tolist())
-        if isinstance(query, list):
-            return models.NearestQuery(nearest=query)
-        if isinstance(query, get_args(types.PointId)):
-            query = (
-                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
-            )
-            return models.NearestQuery(nearest=query)
-        if query is None:
-            return None
-        if isinstance(query, Document):
-            model_name = query.model
-            if model_name is None:
-                raise ValueError(
-                    "`query_points` requires explicit model name specification for `Document`"
-                )
-            if model_name in SUPPORTED_EMBEDDING_MODELS:
-                self.set_model(model_name)
-                embedding_model_inst = self._get_or_init_model(model_name=model_name)
-                embedding = list(embedding_model_inst.embed(documents=[query.text]))[0].tolist()
-            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
-                self.set_sparse_model(model_name)
-                sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
-                embedding = list(sparse_embedding_model_inst.embed(documents=[query.text]))[0]
-                embedding = models.SparseVector(
-                    indices=embedding.indices.tolist(), values=embedding.values.tolist()
-                )
-            else:
-                raise ValueError(f"{model_name} is not among supported models")
-            return models.NearestQuery(nearest=embedding)
-        raise ValueError(f"Unsupported query type: {type(query)}")
-
     async def query(
         self,
         collection_name: str,
@@ -735,3 +665,64 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             for (dense_response, sparse_response) in zip(dense_responses, sparse_responses)
         ]
         return [self._scored_points_to_query_responses(response) for response in responses]
+
+    def _embed_models(
+        self, model: BaseModel, paths: Optional[List[Path]] = None, is_query=False
+    ) -> Union[BaseModel, Union[List[float], models.SparseVector]]:
+        if paths is None:
+            if isinstance(model, models.Document):
+                return self._embed_raw_data(model, is_query=is_query)
+            model = deepcopy(model)
+            paths = self._embed_inspector.inspect(model)
+        for path in paths:
+            list_model = [model] if not isinstance(model, list) else model
+            for item in list_model:
+                current_model = getattr(item, path.current)
+                if path.tail:
+                    self._embed_models(current_model, path.tail, is_query=is_query)
+                else:
+                    was_list = isinstance(current_model, list)
+                    current_model = (
+                        [current_model] if not isinstance(current_model, list) else current_model
+                    )
+                    embeddings = [
+                        self._embed_raw_data(data, is_query=True) for data in current_model
+                    ]
+                    if was_list:
+                        setattr(item, path.current, embeddings)
+                    else:
+                        setattr(item, path.current, embeddings[0])
+        return model
+
+    def _embed_raw_data(
+        self, data: models.Document, is_query: bool = False
+    ) -> Union[List[float], models.SparseVector]:
+        if isinstance(data, models.Document):
+            return self._embed_document(data, is_query=is_query)
+        return data
+
+    def _embed_document(
+        self, document: models.Document, is_query: bool = False
+    ) -> Union[List[float], models.SparseVector]:
+        model_name = document.model
+        text = document.text
+        if model_name in SUPPORTED_EMBEDDING_MODELS:
+            self.set_model(model_name)
+            embedding_model_inst = self._get_or_init_model(model_name=model_name)
+            if not is_query:
+                embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
+            else:
+                embedding = list(embedding_model_inst.query_embed(query=text))[0].tolist()
+            return embedding
+        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            self.set_sparse_model(model_name)
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
+            if not is_query:
+                sparse_embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
+            else:
+                sparse_embedding = list(sparse_embedding_model_inst.query_embed(query=text))[0]
+            return models.SparseVector(
+                indices=sparse_embedding.indices.tolist(), values=sparse_embedding.values.tolist()
+            )
+        else:
+            raise ValueError(f"{model_name} is not among supported models")
