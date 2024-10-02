@@ -583,7 +583,16 @@ class QdrantRemote(QdrantBase):
     def query_points(
         self,
         collection_name: str,
-        query: Optional[types.Query] = None,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
         using: Optional[str] = None,
         prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
@@ -597,11 +606,15 @@ class QdrantRemote(QdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.QueryResponse:
+        if isinstance(query, np.ndarray):
+            query = query.tolist()
+
         if self._prefer_grpc:
-            if isinstance(query, get_args(models.Query)):
-                query = RestToGrpc.convert_query(query)
+            if query is not None:
+                query = RestToGrpc.convert_query_interface(query)
 
             if isinstance(prefetch, models.Prefetch):
                 prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
@@ -658,6 +671,14 @@ class QdrantRemote(QdrantBase):
             return models.QueryResponse(points=scored_points)
 
         else:
+            if isinstance(query, get_args(types.PointId)):
+                query = (
+                    GrpcToRest.convert_point_id(query)
+                    if isinstance(query, grpc.PointId)
+                    else query
+                )
+                query = models.NearestQuery(nearest=query)
+
             if isinstance(query, grpc.Query):
                 query = GrpcToRest.convert_query(query)
 
@@ -716,6 +737,7 @@ class QdrantRemote(QdrantBase):
         requests: Sequence[types.QueryRequest],
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> List[types.QueryResponse]:
         if self._prefer_grpc:
@@ -791,11 +813,15 @@ class QdrantRemote(QdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.GroupsResult:
+        if isinstance(query, np.ndarray):
+            query = query.tolist()
+
         if self._prefer_grpc:
-            if isinstance(query, get_args(models.Query)):
-                query = RestToGrpc.convert_query(query)
+            if query is not None:
+                query = RestToGrpc.convert_query_interface(query)
 
             if isinstance(prefetch, models.Prefetch):
                 prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
@@ -857,6 +883,14 @@ class QdrantRemote(QdrantBase):
             ).result
             return GrpcToRest.convert_groups_result(result)
         else:
+            if isinstance(query, get_args(types.PointId)):
+                query = (
+                    GrpcToRest.convert_point_id(query)
+                    if isinstance(query, grpc.PointId)
+                    else query
+                )
+                query = models.NearestQuery(nearest=query)
+
             if isinstance(query, grpc.Query):
                 query = GrpcToRest.convert_query(query)
 
@@ -1870,6 +1904,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1950,6 +1985,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -2469,6 +2505,7 @@ class QdrantRemote(QdrantBase):
         update_operations: Sequence[types.UpdateOperation],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
+        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> List[types.UpdateResult]:
         if self._prefer_grpc:

@@ -27,6 +27,7 @@ from typing import (
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.embed.type_inspector import Inspector
 from qdrant_client.http import AsyncApiClient, AsyncApis
 from qdrant_client.local.async_qdrant_local import AsyncQdrantLocal
 from qdrant_client.async_qdrant_fastembed import AsyncQdrantFastembedMixin
@@ -103,6 +104,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         auth_token_provider: Optional[
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
+        cloud_inference: bool = False,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -142,6 +144,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 auth_token_provider=auth_token_provider,
                 **kwargs,
             )
+        self.cloud_inference = cloud_inference
+        self._inference_inspector = Inspector()
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
@@ -382,11 +386,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of query responses
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        requires_inference = self._inference_inspector.inspect(requests)
+        if requires_inference and (not self.cloud_inference):
+            requests = [self._embed_models(request) for request in requests]
         return await self._client.query_batch_points(
             collection_name=collection_name,
             requests=requests,
             consistency=consistency,
             timeout=timeout,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -503,9 +511,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             QueryResponse structure containing list of found close points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        (query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query, prefetch
-        )
+        requires_inference = self._inference_inspector.inspect([query, prefetch])
+        if requires_inference and (not self.cloud_inference):
+            query = self._embed_models(query, is_query=True)
+            prefetch = self._embed_models(prefetch, is_query=True)
         return await self._client.query_points(
             collection_name=collection_name,
             query=query,
@@ -522,6 +531,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             consistency=consistency,
             shard_key_selector=shard_key_selector,
             timeout=timeout,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -636,9 +646,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Each group also contains an id of the group, which is the value of the payload field.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        (query, prefetch) = self._resolve_query_to_embedding_embeddings_and_prefetch(
-            query, prefetch
-        )
+        requires_inference = self._inference_inspector.inspect([query, prefetch])
+        if requires_inference and (not self.cloud_inference):
+            query = self._embed_models(query, is_query=True)
+            prefetch = self._embed_models(prefetch, is_query=True)
         return await self._client.query_points_groups(
             collection_name=collection_name,
             query=query,
@@ -656,6 +667,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             consistency=consistency,
             shard_key_selector=shard_key_selector,
             timeout=timeout,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -1437,12 +1449,19 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        requires_inference = self._inference_inspector.inspect(points)
+        if requires_inference and (not self.cloud_inference):
+            if isinstance(points, List):
+                points = [self._embed_models(point, is_query=False) for point in points]
+            else:
+                points = self._embed_models(points, is_query=False)
         return await self._client.upsert(
             collection_name=collection_name,
             points=points,
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -1485,12 +1504,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        requires_inference = self._inference_inspector.inspect(points)
+        if requires_inference and (not self.cloud_inference):
+            points = [self._embed_models(point, is_query=False) for point in points]
         return await self._client.update_vectors(
             collection_name=collection_name,
             points=points,
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            _cloud_inference=requires_inference and self.cloud_inference,
         )
 
     async def delete_vectors(
@@ -1922,11 +1945,17 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation results
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        requires_inference = self._inference_inspector.inspect(update_operations)
+        if requires_inference and (not self.cloud_inference):
+            update_operations = [
+                self._embed_models(op, is_query=False) for op in update_operations
+            ]
         return await self._client.batch_update_points(
             collection_name=collection_name,
             update_operations=update_operations,
             wait=wait,
             ordering=ordering,
+            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
