@@ -742,7 +742,7 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         model: BaseModel,
         paths: Optional[List[Path]] = None,
-        is_query=False,
+        is_query: bool = False,
     ) -> Union[BaseModel, Union[List[float], models.SparseVector]]:
         if paths is None:
             if isinstance(model, models.Document):

@@ -1,5 +1,5 @@
 from copy import copy
-from typing import List, Type, Dict
+from typing import List, Type, Dict, Union, Any, Set, Optional
 
 from pydantic import BaseModel
 
@@ -7,23 +7,28 @@ from qdrant_client.embed.utils import Path, convert_paths
 
 
 class OpenApiSchemaParser:
-    def __init__(self):
-        self._defs = {}
-        self._cache = {}
-        self._recursive_refs = set()
-        self._not_document_recursive_refs = {
+    def __init__(self) -> None:
+        self._defs: Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]] = {}
+        self._cache: Dict[str, List[str]] = {}
+        self._recursive_refs: Set[str] = set()
+        self._not_document_recursive_refs: Set[str] = {
             "Filter"
         }  # initialize with a known time-consuming model
-        self.path_cache = {}
-        self._doc_recursive_paths = set()
-        self.name_recursive_ref_mapping = {}
+        self.path_cache: Dict[str, List[Path]] = {}
+        self._doc_recursive_paths: Set[str] = set()
+        self.name_recursive_ref_mapping: Dict[str, str] = {}
 
     def convert_to_paths(self) -> Dict[str, List[Path]]:
         path_cache = {model: convert_paths(paths) for model, paths in self._cache.items()}
         self.path_cache = path_cache
         return path_cache
 
-    def replace_refs(self, schema, parent=None, seen_refs=None):
+    def replace_refs(
+        self,
+        schema: Union[Dict[str, Any], List[Dict[str, Any]]],
+        parent: Optional[str] = None,
+        seen_refs: Optional[set] = None,
+    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         parent = parent if parent else None
         seen_refs = seen_refs if seen_refs else set()
 
@@ -48,16 +53,20 @@ class OpenApiSchemaParser:
             return schemes
         elif isinstance(schema, list):
             return [
-                self.replace_refs(schema=item, parent=parent, seen_refs=copy(seen_refs))
+                self.replace_refs(schema=item, parent=parent, seen_refs=copy(seen_refs))  # type: ignore
                 for item in schema
             ]
         else:
             return schema
 
     def find_document_paths(
-        self, schema, current_path="", after_properties=False, seen_refs=None
+        self,
+        schema: Union[Dict[str, Any], List[Dict[str, Any]]],
+        current_path: str = "",
+        after_properties: bool = False,
+        seen_refs: Optional[Set] = None,
     ) -> List[str]:
-        document_paths = []
+        document_paths: List[str] = []
         seen_recursive_refs = seen_refs if seen_refs is not None else set()
 
         parts = current_path.split(".")
