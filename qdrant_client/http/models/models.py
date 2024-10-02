@@ -598,7 +598,6 @@ class Document(BaseModel, extra="forbid"):
     """
     WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.
     """
-
     text: str = Field(..., description="Text document to be embedded by FastEmbed or Cloud inference server")
     model: Optional[str] = Field(default=None, description="Model name to be used for embedding computation")
 
