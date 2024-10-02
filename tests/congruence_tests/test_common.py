@@ -198,7 +198,7 @@ def compare_collections(
 
 
 def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], i: int) -> None:
-    assert type(vec1) == type(vec2)
+    assert type(vec1) is type(vec2)
 
     if vec1 is None:
         return

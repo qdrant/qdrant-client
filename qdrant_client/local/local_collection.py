@@ -12,6 +12,7 @@ from typing import (
     Tuple,
     Union,
     get_args,
+    Set,
 )
 from copy import deepcopy
 
@@ -20,6 +21,7 @@ import numpy as np
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
@@ -51,7 +53,7 @@ from qdrant_client.local.multi_distances import (
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
 from qdrant_client.local.payload_filters import calculate_payload_mask
-from qdrant_client.local.payload_value_extractor import value_by_key
+from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
 from qdrant_client.local.sparse import (
@@ -487,6 +489,31 @@ class LocalCollection:
 
         return all_vectors
 
+    def _payload_and_non_deleted_mask(
+        self,
+        payload_filter: Optional[models.Filter],
+        vector_name: Optional[str] = None,
+    ) -> np.ndarray:
+        """
+        Calculate mask for filtered payload and non-deleted points. True - accepted, False - rejected
+        """
+        payload_mask = calculate_payload_mask(
+            payloads=self.payload,
+            payload_filter=payload_filter,
+            ids_inv=self.ids_inv,
+        )
+
+        # in deleted: 1 - deleted, 0 - not deleted
+        # in payload_mask: 1 - accepted, 0 - rejected
+        # in mask: 1 - ok, 0 - rejected
+        mask = payload_mask & ~self.deleted
+
+        if vector_name is not None:
+            # in deleted: 1 - deleted, 0 - not deleted
+            mask = mask & ~self.deleted_per_vector[vector_name]
+
+        return mask
+
     def search(
         self,
         query_vector: Union[
@@ -511,11 +538,6 @@ class LocalCollection:
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
     ) -> List[models.ScoredPoint]:
-        payload_mask = calculate_payload_mask(
-            payloads=self.payload,
-            payload_filter=query_filter,
-            ids_inv=self.ids_inv,
-        )
         name, query_vector = self._resolve_query_vector_name(query_vector)
 
         result: List[models.ScoredPoint] = []
@@ -584,10 +606,7 @@ class LocalCollection:
         else:
             raise (ValueError(f"Unsupported query vector type {type(query_vector)}"))
 
-        # in deleted: 1 - deleted, 0 - not deleted
-        # in payload_mask: 1 - accepted, 0 - rejected
-        # in mask: 1 - ok, 0 - rejected
-        mask = payload_mask & ~self.deleted & ~self.deleted_per_vector[name]
+        mask = self._payload_and_non_deleted_mask(query_filter, vector_name=name)
 
         required_order = distance_to_order(distance)
 
@@ -1067,6 +1086,57 @@ class LocalCollection:
                 group.lookup = next(iter(lookup), None)
 
         return models.GroupsResult(groups=groups_result)
+
+    def facet(
+        self,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+    ) -> types.FacetResponse:
+        facet_hits: Dict[types.FacetValue, int] = defaultdict(int)
+
+        mask = self._payload_and_non_deleted_mask(facet_filter)
+
+        for idx, payload in enumerate(self.payload):
+            if not mask[idx]:
+                continue
+
+            if not isinstance(payload, dict):
+                continue
+
+            values = value_by_key(payload, key)
+
+            if values is None:
+                continue
+
+            # Only count the same value for each point once
+            values_set: Set[types.FacetValue] = set()
+
+            # Sanitize to use only valid values
+            for v in values:
+                if type(v) not in get_args_subscribed(types.FacetValue):
+                    continue
+
+                # If values are UUIDs, format with hyphens
+                as_uuid = parse_uuid(v)
+                if as_uuid:
+                    v = str(as_uuid)
+
+                values_set.add(v)
+
+            for v in values_set:
+                facet_hits[v] += 1
+
+        hits = [
+            models.FacetValueHit(value=value, count=count)
+            for value, count in sorted(
+                facet_hits.items(),
+                # order by count descending, then by value ascending
+                key=lambda x: (-x[1], x[0]),
+            )[:limit]
+        ]
+
+        return types.FacetResponse(hits=hits)
 
     def retrieve(
         self,
@@ -1647,12 +1717,8 @@ class LocalCollection:
         )
 
     def count(self, count_filter: Optional[types.Filter] = None) -> models.CountResult:
-        payload_mask = calculate_payload_mask(
-            payloads=self.payload,
-            payload_filter=count_filter,
-            ids_inv=self.ids_inv,
-        )
-        mask = payload_mask & ~self.deleted
+        mask = self._payload_and_non_deleted_mask(count_filter)
+
         return models.CountResult(count=np.count_nonzero(mask))
 
     def _scroll_by_id(
@@ -1667,13 +1733,7 @@ class LocalCollection:
 
         result: List[types.Record] = []
 
-        payload_mask = calculate_payload_mask(
-            payloads=self.payload,
-            payload_filter=scroll_filter,
-            ids_inv=self.ids_inv,
-        )
-
-        mask = payload_mask & ~self.deleted
+        mask = self._payload_and_non_deleted_mask(scroll_filter)
 
         for point_id, idx in sorted_ids:
             if offset is not None and self._universal_id(point_id) < self._universal_id(offset):
@@ -1732,13 +1792,7 @@ class LocalCollection:
         # sort by value only
         value_and_ids.sort(key=lambda x: x[0], reverse=should_reverse)
 
-        payload_mask = calculate_payload_mask(
-            payloads=self.payload,
-            payload_filter=scroll_filter,
-            ids_inv=self.ids_inv,
-        )
-
-        mask = payload_mask & ~self.deleted
+        mask = self._payload_and_non_deleted_mask(scroll_filter)
 
         result: List[types.Record] = []
 
@@ -1776,15 +1830,7 @@ class LocalCollection:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
     ) -> List[types.ScoredPoint]:
-        payload_mask = calculate_payload_mask(
-            payloads=self.payload,
-            payload_filter=query_filter,
-            ids_inv=self.ids_inv,
-        )
-        # in deleted: 1 - deleted, 0 - not deleted
-        # in payload_mask: 1 - accepted, 0 - rejected
-        # in mask: 1 - ok, 0 - rejected
-        mask = payload_mask & ~self.deleted
+        mask = self._payload_and_non_deleted_mask(query_filter)
 
         random_scores = np.random.rand(len(self.ids))
         random_order = np.argsort(random_scores)
@@ -2083,12 +2129,7 @@ class LocalCollection:
                 self.storage.delete(point_id)
 
     def _filter_to_ids(self, delete_filter: types.Filter) -> List[models.ExtendedPointId]:
-        mask = calculate_payload_mask(
-            payloads=self.payload,
-            payload_filter=delete_filter,
-            ids_inv=self.ids_inv,
-        )
-        mask = mask & ~self.deleted
+        mask = self._payload_and_non_deleted_mask(delete_filter)
         ids = [point_id for point_id, idx in self.ids.items() if mask[idx]]
         return ids
 

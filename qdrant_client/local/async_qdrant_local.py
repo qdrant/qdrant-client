@@ -674,6 +674,18 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection = self._get_collection(collection_name)
         return collection.count(count_filter=count_filter)
 
+    async def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        collection = self._get_collection(collection_name)
+        return collection.facet(key=key, facet_filter=facet_filter, limit=limit)
+
     async def upsert(
         self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:

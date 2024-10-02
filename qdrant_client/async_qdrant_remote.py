@@ -1017,7 +1017,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
             if isinstance(with_lookup, str):
-                with_lookup = grpc.WithLookup(lookup_index=with_lookup)
+                with_lookup = grpc.WithLookup(collection=with_lookup)
             positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
             positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
             negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
@@ -1389,6 +1389,60 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         assert count_result is not None, "Count points returned None result"
         return count_result
 
+    async def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        timeout: Optional[int] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        if self._prefer_grpc:
+            if isinstance(facet_filter, models.Filter):
+                facet_filter = RestToGrpc.convert_filter(model=facet_filter)
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
+                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+            response = await self.grpc_points.Facet(
+                grpc.FacetCounts(
+                    collection_name=collection_name,
+                    key=key,
+                    filter=facet_filter,
+                    limit=limit,
+                    exact=exact,
+                    timeout=timeout,
+                    read_consistency=consistency,
+                    shard_key_selector=shard_key_selector,
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            )
+            return types.FacetResponse(
+                hits=[GrpcToRest.convert_facet_value_hit(hit) for hit in response.hits]
+            )
+        if isinstance(facet_filter, grpc.Filter):
+            facet_filter = GrpcToRest.convert_filter(model=facet_filter)
+        facet_result = (
+            await self.openapi_client.points_api.facet(
+                collection_name=collection_name,
+                consistency=consistency,
+                timeout=timeout,
+                facet_request=models.FacetRequest(
+                    shard_key=shard_key_selector,
+                    key=key,
+                    limit=limit,
+                    filter=facet_filter,
+                    exact=exact,
+                ),
+            )
+        ).result
+        assert facet_result is not None, "Facet points returned None result"
+        return facet_result
+
     async def upsert(
         self,
         collection_name: str,
@@ -1681,6 +1735,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         cls, points_selector: grpc.PointsSelector
     ) -> List[grpc.PointId]:
         name = points_selector.WhichOneof("points_selector_one_of")
+        if name is None:
+            return []
         val = getattr(points_selector, name)
         if name == "points":
             return list(val.ids)

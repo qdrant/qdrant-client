@@ -218,6 +218,17 @@ class AsyncQdrantBase:
     ) -> types.CountResult:
         raise NotImplementedError()
 
+    async def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        raise NotImplementedError()
+
     async def upsert(
         self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:
