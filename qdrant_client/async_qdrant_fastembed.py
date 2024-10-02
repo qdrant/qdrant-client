@@ -667,7 +667,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         return [self._scored_points_to_query_responses(response) for response in responses]
 
     def _embed_models(
-        self, model: BaseModel, paths: Optional[List[Path]] = None, is_query=False
+        self, model: BaseModel, paths: Optional[List[Path]] = None, is_query: bool = False
     ) -> Union[BaseModel, Union[List[float], models.SparseVector]]:
         if paths is None:
             if isinstance(model, models.Document):
