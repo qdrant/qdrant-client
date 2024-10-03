@@ -590,9 +590,16 @@ class Distance(str, Enum):
     MANHATTAN = "Manhattan"
 
 
-class Document(BaseModel):
-    text: str = Field(..., description="Text document to be embedded by FastEmbed or Cloud inference server")
-    model: Optional[str] = Field(default=None, description="Model name to be used for embedding computation")
+class Document(BaseModel, extra="forbid"):
+    """
+    WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.
+    """
+
+    text: str = Field(..., description="Text of the document This field will be used as input for the embedding model")
+    model: Optional[str] = Field(
+        default=None,
+        description="Name of the model used to generate the vector List of available models depends on a provider",
+    )
 
 
 class DropReplicaOperation(BaseModel, extra="forbid"):
@@ -2824,6 +2831,7 @@ Vector = Union[
     List[StrictFloat],
     SparseVector,
     List[List[StrictFloat]],
+    Document,
 ]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,
@@ -2847,6 +2855,7 @@ BatchVectorStruct = Union[
     List[List[StrictFloat]],
     List[List[List[StrictFloat]]],
     Dict[StrictStr, List[Vector]],
+    List[Document],
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
@@ -2866,11 +2875,13 @@ VectorInput = Union[
     SparseVector,
     List[List[StrictFloat]],
     ExtendedPointId,
+    Document,
 ]
 VectorStruct = Union[
     List[StrictFloat],
     List[List[StrictFloat]],
     Dict[StrictStr, Vector],
+    Document,
 ]
 WithPayloadInterface = Union[
     StrictBool,
