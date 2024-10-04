@@ -24,6 +24,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
+from qdrant_client.http.models import PointIdsList, ScoredPoint
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 from qdrant_client.local.distances import (
@@ -1453,6 +1454,111 @@ class LocalCollection:
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
         )
+
+    def search_distance_matrix_offsets(
+        self,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+    ) -> types.SearchMatrixOffsetsResponse:
+        ids, all_scores = self._search_distance_matrix(
+            query_filter=query_filter, limit=limit, sample=sample, using=using
+        )
+
+        offsets_row = []
+        offsets_col = []
+
+        offset_by_id = {point_id: idx for idx, point_id in enumerate(ids)}
+
+        for row_offset, scored_points in enumerate(all_scores):
+            for scored_point in scored_points:
+                offsets_row.append(row_offset)
+                offsets_col.append(offset_by_id[scored_point.id])
+
+        # flatten the scores
+        scores = []
+        for sample_scores in all_scores:
+            for score in sample_scores:
+                scores.append(score.score)
+
+        return types.SearchMatrixOffsetsResponse(
+            offsets_row=offsets_row,
+            offsets_col=offsets_col,
+            scores=scores,
+            ids=ids,
+        )
+
+    def search_distance_matrix_pairs(
+        self,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+    ) -> types.SearchMatrixPairsResponse:
+        ids, all_scores = self._search_distance_matrix(
+            query_filter=query_filter, limit=limit, sample=sample, using=using
+        )
+        pairs = []
+        for sample_id, sample_scores in list(zip(ids, all_scores)):
+            for sample_score in sample_scores:
+                pairs.append(
+                   types.SearchMatrixPair(
+                        a=sample_id,
+                        b=sample_score.id,
+                        score=sample_score.score
+                    )
+                )
+
+        return types.SearchMatrixPairsResponse(
+            pairs=pairs,
+        )
+
+    def _search_distance_matrix(
+        self,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+    ) -> Tuple[List[ExtendedPointId], List[List[ScoredPoint]]]:
+        samples: List[ScoredPoint] = []
+        search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
+        # Sample random points from the whole collection to filter out the ones without vectors
+        # TODO: use search_filter once with have an HasVector like condition
+        candidates = self._sample_randomly(len(self.ids), query_filter, False, search_in_vector_name)
+        for candidate in candidates:
+            # check if enough samples are collected
+            if len(samples) == sample:
+                break
+            # check if the candidate has a vector
+            if candidate.vector is not None:
+                samples.append(candidate)
+
+        # can't build a matrix with less than 2 results
+        if len(samples) < 2:
+            return [], []
+
+        # sort samples by id
+        samples = sorted(samples, key=lambda x: x.id)
+        # extract the ids
+        ids = [sample.id for sample in samples]
+        scores: List[List[ScoredPoint]] = []
+
+        # Query `limit` neighbors for each sample
+        for sampled_id_index, sampled in enumerate(samples):
+            ids_to_includes = [x for (i, x) in enumerate(ids) if i != sampled_id_index]
+            sampling_filter = _include_ids_in_filter(query_filter, ids_to_includes)
+            search_vector = sampled.vector[search_in_vector_name]
+            samples_scores = self.search(
+                query_vector=(search_in_vector_name, search_vector),
+                query_filter=sampling_filter,
+                limit=limit,
+                with_payload=False,
+                with_vectors=False,
+            )
+            scores.append(samples_scores)
+
+        return ids, scores
 
     @staticmethod
     def _preprocess_target(

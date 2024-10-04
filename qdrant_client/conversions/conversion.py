@@ -1809,6 +1809,29 @@ class GrpcToRest:
             commit=model.commit if model.HasField("commit") else None,
         )
 
+    @classmethod
+    def convert_search_matrix_pair(cls, model: grpc.SearchMatrixPair) -> rest.SearchMatrixPair:
+        return rest.SearchMatrixPair(
+            a=cls.convert_point_id(model.a),
+            b=cls.convert_point_id(model.b),
+            score=model.score,
+        )
+
+    @classmethod
+    def convert_search_matrix_pairs(cls, model: grpc.SearchMatrixPairs) -> rest.SearchMatrixPairsResponse:
+        return rest.SearchMatrixPairsResponse(
+            pairs=[cls.convert_search_matrix_pair(pair) for pair in model.pairs],
+        )
+
+    @classmethod
+    def convert_search_matrix_offsets(cls, model: grpc.SearchMatrixOffsets) -> rest.SearchMatrixOffsetsResponse:
+        return rest.SearchMatrixOffsetsResponse(
+            offsets_row=list(model.offsets_row),
+            offsets_col=list(model.offsets_col),
+            scores=list(model.scores),
+            ids=[cls.convert_point_id(p_id) for p_id in model.ids],
+        )
+
 
 # ----------------------------------------
 #
@@ -3580,4 +3603,27 @@ class RestToGrpc:
             title=model.title,
             version=model.version,
             commit=model.commit,
+        )
+
+    @classmethod
+    def convert_search_matrix_pair(cls, model: rest.SearchMatrixPair) -> grpc.SearchMatrixPair:
+        return grpc.SearchMatrixPair(
+            a=cls.convert_extended_point_id(model.a),
+            b=cls.convert_extended_point_id(model.b),
+            score=model.score,
+        )
+
+    @classmethod
+    def convert_search_matrix_pairs(cls, model: rest.SearchMatrixPairsResponse) -> grpc.SearchMatrixPairs:
+        return grpc.SearchMatrixPairs(
+            pairs=[cls.convert_search_matrix_pair(pair) for pair in model.pairs],
+        )
+
+    @classmethod
+    def convert_search_matrix_offsets(cls, model: rest.SearchMatrixOffsetsResponse) -> grpc.SearchMatrixOffsets:
+        return grpc.SearchMatrixOffsets(
+            offsets_row=list(model.offsets_row),
+            offsets_col=list(model.offsets_col),
+            scores=list(model.scores),
+            ids=[cls.convert_extended_point_id(p_id) for p_id in model.ids],
         )
