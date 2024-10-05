@@ -1210,10 +1210,37 @@ prefetch_many = grpc.PrefetchQuery(
     prefetch=[prefetch_query, prefetch_full_query, prefetch_random_sample],
 )
 
+facet_string_hit = grpc.FacetHit(
+    value=grpc.FacetValue(string_value="abc"),
+    count=123,
+)
+
+facet_integer_hit = grpc.FacetHit(
+    value=grpc.FacetValue(integer_value=123),
+    count=123,
+)
+
 health_check_reply = grpc.HealthCheckReply(
     title="qdrant - vector search engine",
     version="1.10.0",
     commit="851f03bbf6644116da56f6bc7b0baa04274e8057",
+)
+
+search_matrix_pairs = grpc.SearchMatrixPairs(
+    pairs=[
+        grpc.SearchMatrixPair(
+            a=point_id_1,
+            b=point_id_2,
+            score=0.99,
+        )
+    ]
+)
+
+search_matrix_offsets = grpc.SearchMatrixOffsets(
+    offsets_row=[0, 1],
+    offsets_col=[0, 1],
+    scores=[0.99, 0.98],
+    ids=[point_id_1, point_id_2],
 )
 
 
@@ -1359,8 +1386,11 @@ fixtures = {
         query_fusion,
         query_recommend_id,
     ],
+    "FacetValueHit": [facet_string_hit, facet_integer_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
     "HealthCheckReply": [health_check_reply],
+    "SearchMatrixPairs": [search_matrix_pairs],
+    "SearchMatrixOffsets": [search_matrix_offsets],
 }
 
 

@@ -829,6 +829,110 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             ).result
 
+    async def search_distance_matrix_pairs(
+        self,
+        collection_name: str,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixPairsResponse:
+        if self._prefer_grpc:
+            if isinstance(query_filter, models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
+                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+            response = await self.grpc_points.SearchMatrixPairs(
+                grpc.SearchMatrixPoints(
+                    collection_name=collection_name,
+                    filter=query_filter,
+                    sample=sample,
+                    limit=limit,
+                    using=using,
+                    timeout=timeout,
+                    read_consistency=consistency,
+                    shard_key_selector=shard_key_selector,
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            )
+            return GrpcToRest.convert_search_matrix_pairs(response.result)
+        if isinstance(query_filter, grpc.Filter):
+            search_filter = GrpcToRest.convert_filter(model=query_filter)
+        search_matrix_result = (
+            await self.openapi_client.points_api.search_points_matrix_pairs(
+                collection_name=collection_name,
+                consistency=consistency,
+                timeout=timeout,
+                search_matrix_request=models.SearchMatrixRequest(
+                    shard_key=shard_key_selector,
+                    limit=limit,
+                    sample=sample,
+                    using=using,
+                    filter=query_filter,
+                ),
+            )
+        ).result
+        assert search_matrix_result is not None, "Search matrix pairs returned None result"
+        return search_matrix_result
+
+    async def search_distance_matrix_offsets(
+        self,
+        collection_name: str,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+        if self._prefer_grpc:
+            if isinstance(query_filter, models.Filter):
+                query_filter = RestToGrpc.convert_filter(model=query_filter)
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
+                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+            response = await self.grpc_points.SearchMatrixOffsets(
+                grpc.SearchMatrixPoints(
+                    collection_name=collection_name,
+                    filter=query_filter,
+                    sample=sample,
+                    limit=limit,
+                    using=using,
+                    timeout=timeout,
+                    read_consistency=consistency,
+                    shard_key_selector=shard_key_selector,
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            )
+            return GrpcToRest.convert_search_matrix_offsets(response.result)
+        if isinstance(query_filter, grpc.Filter):
+            search_filter = GrpcToRest.convert_filter(model=query_filter)
+        search_matrix_result = (
+            await self.openapi_client.points_api.search_points_matrix_offsets(
+                collection_name=collection_name,
+                consistency=consistency,
+                timeout=timeout,
+                search_matrix_request=models.SearchMatrixRequest(
+                    shard_key=shard_key_selector,
+                    limit=limit,
+                    sample=sample,
+                    using=using,
+                    filter=query_filter,
+                ),
+            )
+        ).result
+        assert search_matrix_result is not None, "Search matrix offsets returned None result"
+        return search_matrix_result
+
     async def recommend_batch(
         self,
         collection_name: str,
@@ -1017,7 +1121,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if isinstance(with_lookup, models.WithLookup):
                 with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
             if isinstance(with_lookup, str):
-                with_lookup = grpc.WithLookup(lookup_index=with_lookup)
+                with_lookup = grpc.WithLookup(collection=with_lookup)
             positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
             positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
             negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
@@ -1389,6 +1493,60 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         assert count_result is not None, "Count points returned None result"
         return count_result
 
+    async def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        timeout: Optional[int] = None,
+        consistency: Optional[types.ReadConsistency] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        if self._prefer_grpc:
+            if isinstance(facet_filter, models.Filter):
+                facet_filter = RestToGrpc.convert_filter(model=facet_filter)
+            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
+                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
+            response = await self.grpc_points.Facet(
+                grpc.FacetCounts(
+                    collection_name=collection_name,
+                    key=key,
+                    filter=facet_filter,
+                    limit=limit,
+                    exact=exact,
+                    timeout=timeout,
+                    read_consistency=consistency,
+                    shard_key_selector=shard_key_selector,
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            )
+            return types.FacetResponse(
+                hits=[GrpcToRest.convert_facet_value_hit(hit) for hit in response.hits]
+            )
+        if isinstance(facet_filter, grpc.Filter):
+            facet_filter = GrpcToRest.convert_filter(model=facet_filter)
+        facet_result = (
+            await self.openapi_client.points_api.facet(
+                collection_name=collection_name,
+                consistency=consistency,
+                timeout=timeout,
+                facet_request=models.FacetRequest(
+                    shard_key=shard_key_selector,
+                    key=key,
+                    limit=limit,
+                    filter=facet_filter,
+                    exact=exact,
+                ),
+            )
+        ).result
+        assert facet_result is not None, "Facet points returned None result"
+        return facet_result
+
     async def upsert(
         self,
         collection_name: str,
@@ -1681,6 +1839,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         cls, points_selector: grpc.PointsSelector
     ) -> List[grpc.PointId]:
         name = points_selector.WhichOneof("points_selector_one_of")
+        if name is None:
+            return []
         val = getattr(points_selector, name)
         if name == "points":
             return list(val.ids)
