@@ -60,6 +60,28 @@ class QdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
+    def search_distance_matrix_offsets(
+        self,
+        collection_name: str,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+     raise NotImplementedError()
+
+    def search_distance_matrix_pairs(
+        self,
+        collection_name: str,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixPairsResponse:
+     raise NotImplementedError()
+
     def query_batch_points(
         self,
         collection_name: str,
@@ -218,6 +240,17 @@ class QdrantBase:
         exact: bool = True,
         **kwargs: Any,
     ) -> types.CountResult:
+        raise NotImplementedError()
+
+    def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
         raise NotImplementedError()
 
     def upsert(

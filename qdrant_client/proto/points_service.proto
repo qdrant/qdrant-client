@@ -121,4 +121,16 @@ service Points {
   Universally query points in a group fashion. This endpoint covers all capabilities of search, recommend, discover, filters. But also enables hybrid and multi-stage queries.
   */
   rpc QueryGroups (QueryPointGroups) returns (QueryGroupsResponse) {}
+  /*
+  Perform facet counts. For each value in the field, count the number of points that have this value and match the conditions.
+  */
+  rpc Facet (FacetCounts) returns (FacetResponse) {}
+  /*
+  Compute distance matrix for sampled points with a pair based output format
+  */
+  rpc SearchMatrixPairs (SearchMatrixPoints) returns (SearchMatrixPairsResponse) {}
+  /*
+  Compute distance matrix for sampled points with an offset based output format
+  */
+  rpc SearchMatrixOffsets (SearchMatrixPoints) returns (SearchMatrixOffsetsResponse) {}
 }

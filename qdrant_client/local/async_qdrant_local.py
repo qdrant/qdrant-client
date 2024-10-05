@@ -208,6 +208,34 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             score_threshold=score_threshold,
         )
 
+    async def search_distance_matrix_offsets(
+        self,
+        collection_name: str,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+        collection = self._get_collection(collection_name)
+        return collection.search_distance_matrix_offsets(
+            query_filter=query_filter, limit=limit, sample=sample, using=using
+        )
+
+    async def search_distance_matrix_pairs(
+        self,
+        collection_name: str,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixPairsResponse:
+        collection = self._get_collection(collection_name)
+        return collection.search_distance_matrix_pairs(
+            query_filter=query_filter, limit=limit, sample=sample, using=using
+        )
+
     async def search_groups(
         self,
         collection_name: str,
@@ -677,6 +705,18 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     ) -> types.CountResult:
         collection = self._get_collection(collection_name)
         return collection.count(count_filter=count_filter)
+
+    async def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        collection = self._get_collection(collection_name)
+        return collection.facet(key=key, facet_filter=facet_filter, limit=limit)
 
     async def upsert(
         self, collection_name: str, points: types.Points, **kwargs: Any

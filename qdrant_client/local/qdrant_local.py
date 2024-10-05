@@ -211,6 +211,30 @@ class QdrantLocal(QdrantBase):
             score_threshold=score_threshold,
         )
 
+    def search_distance_matrix_offsets(
+        self,
+        collection_name: str,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixOffsetsResponse:
+        collection = self._get_collection(collection_name)
+        return collection.search_distance_matrix_offsets(query_filter=query_filter, limit=limit, sample=sample, using=using)
+
+    def search_distance_matrix_pairs(
+        self,
+        collection_name: str,
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 3,
+        sample: int = 10,
+        using: Optional[str] = None,
+        **kwargs: Any,
+    ) -> types.SearchMatrixPairsResponse:
+        collection = self._get_collection(collection_name)
+        return collection.search_distance_matrix_pairs(query_filter=query_filter, limit=limit, sample=sample, using=using)
+
     def search_groups(
         self,
         collection_name: str,
@@ -717,6 +741,18 @@ class QdrantLocal(QdrantBase):
     ) -> types.CountResult:
         collection = self._get_collection(collection_name)
         return collection.count(count_filter=count_filter)
+
+    def facet(
+        self,
+        collection_name: str,
+        key: str,
+        facet_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        exact: bool = False,
+        **kwargs: Any,
+    ) -> types.FacetResponse:
+        collection = self._get_collection(collection_name)
+        return collection.facet(key=key, facet_filter=facet_filter, limit=limit)
 
     def upsert(
         self, collection_name: str, points: types.Points, **kwargs: Any

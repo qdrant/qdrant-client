@@ -1,3 +1,4 @@
+import uuid
 from typing import Any, List, Optional
 
 from qdrant_client.local.json_path_parser import (
@@ -77,3 +78,15 @@ def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[An
 
     _get_value(payload, keys)
     return result if result else None
+
+
+def parse_uuid(value: Any) -> Optional[uuid.UUID]:
+    """
+    Parse UUID from value.
+    Args:
+        value: arbitrary value
+    """
+    try:
+        return uuid.UUID(str(value))
+    except ValueError:
+        return None

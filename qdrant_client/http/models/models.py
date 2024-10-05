@@ -31,6 +31,7 @@ class AppBuildTelemetry(BaseModel):
     features: Optional["AppFeaturesTelemetry"] = Field(default=None, description="")
     system: Optional["RunningEnvironmentTelemetry"] = Field(default=None, description="")
     jwt_rbac: Optional[bool] = Field(default=None, description="")
+    hide_jwt_dashboard: Optional[bool] = Field(default=None, description="")
     startup: Union[datetime, date] = Field(..., description="")
 
 
@@ -123,6 +124,8 @@ class ClusterTelemetry(BaseModel):
     enabled: bool = Field(..., description="")
     status: Optional["ClusterStatusTelemetry"] = Field(default=None, description="")
     config: Optional["ClusterConfigTelemetry"] = Field(default=None, description="")
+    peers: Optional[Dict[str, "PeerInfo"]] = Field(default=None, description="")
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="")
 
 
 class CollectionClusterInfo(BaseModel):
@@ -228,7 +231,7 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
 
 class CollectionStatus(str, Enum):
     """
-    Current state of the collection. `Green` - all good. `Yellow` - optimization is running, `Red` - some operations failed and was not recovered
+    Current state of the collection. `Green` - all good. `Yellow` - optimization is running, &#x27;Grey&#x27; - optimizations are possible but not triggered, `Red` - some operations failed and was not recovered
     """
 
     def __str__(self) -> str:
@@ -246,6 +249,7 @@ class CollectionTelemetry(BaseModel):
     config: "CollectionConfig" = Field(..., description="")
     shards: List["ReplicaSetTelemetry"] = Field(..., description="")
     transfers: List["ShardTransferInfo"] = Field(..., description="")
+    resharding: List["ReshardingInfo"] = Field(..., description="")
 
 
 class CollectionsAggregatedTelemetry(BaseModel):
@@ -590,7 +594,11 @@ class Distance(str, Enum):
     MANHATTAN = "Manhattan"
 
 
-class Document(BaseModel):
+class Document(BaseModel, extra="forbid"):
+    """
+    WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.
+    """
+
     text: str = Field(..., description="Text document to be embedded by FastEmbed or Cloud inference server")
     model: Optional[str] = Field(default=None, description="Model name to be used for embedding computation")
 
@@ -615,6 +623,28 @@ class ErrorResponse(BaseModel):
 
 class ErrorResponseStatus(BaseModel):
     error: Optional[str] = Field(default=None, description="Description of the occurred error.")
+
+
+class FacetRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+    key: str = Field(..., description="Payload key to use for faceting.")
+    limit: Optional[int] = Field(default=None, description="Max number of hits to return. Default is 10.")
+    filter: Optional["Filter"] = Field(
+        default=None, description="Filter conditions - only consider points that satisfy these conditions."
+    )
+    exact: Optional[bool] = Field(
+        default=None,
+        description="Whether to do a more expensive exact count for each of the values in the facet. Default is false.",
+    )
+
+
+class FacetResponse(BaseModel):
+    hits: List["FacetValueHit"] = Field(..., description="")
+
+
+class FacetValueHit(BaseModel):
+    value: "FacetValue" = Field(..., description="")
+    count: int = Field(..., description="")
 
 
 class FieldCondition(BaseModel, extra="forbid"):
@@ -944,13 +974,31 @@ class InlineResponse2002(BaseModel):
 class InlineResponse20020(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["QueryResponse"] = Field(default=None, description="")
+    result: Optional["FacetResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20021(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
+    result: Optional["QueryResponse"] = Field(default=None, description="")
+
+
+class InlineResponse20022(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
     result: Optional[List["QueryResponse"]] = Field(default=None, description="")
+
+
+class InlineResponse20023(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
+
+
+class InlineResponse20024(BaseModel):
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["SearchMatrixOffsetsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2003(BaseModel):
@@ -1052,6 +1100,8 @@ class LocalShardInfo(BaseModel):
 
 class LocalShardTelemetry(BaseModel):
     variant_name: Optional[str] = Field(default=None, description="")
+    status: Optional["ShardStatus"] = Field(default=None, description="")
+    total_optimized_points: int = Field(..., description="Total number of optimized points since the last start.")
     segments: List["SegmentTelemetry"] = Field(..., description="")
     optimizations: "OptimizerTelemetry" = Field(..., description="")
 
@@ -1987,6 +2037,43 @@ class SearchGroupsRequest(BaseModel, extra="forbid"):
     )
 
 
+class SearchMatrixOffsetsResponse(BaseModel):
+    offsets_row: List[int] = Field(..., description="Row indices of the matrix")
+    offsets_col: List[int] = Field(..., description="Column indices of the matrix")
+    scores: List[float] = Field(..., description="Scores associated with matrix coordinates")
+    ids: List["ExtendedPointId"] = Field(..., description="Ids of the points in order")
+
+
+class SearchMatrixPair(BaseModel):
+    """
+    Pair of points (a, b) with score
+    """
+
+    a: "ExtendedPointId" = Field(..., description="Pair of points (a, b) with score")
+    b: "ExtendedPointId" = Field(..., description="Pair of points (a, b) with score")
+    score: float = Field(..., description="Pair of points (a, b) with score")
+
+
+class SearchMatrixPairsResponse(BaseModel):
+    pairs: List["SearchMatrixPair"] = Field(..., description="List of pairs of points with scores")
+
+
+class SearchMatrixRequest(BaseModel, extra="forbid"):
+    shard_key: Optional["ShardKeySelector"] = Field(
+        default=None,
+        description="Specify in which shards to look for the points, if not specified - look in all shards",
+    )
+    filter: Optional["Filter"] = Field(default=None, description="Look only for points which satisfies this conditions")
+    sample: Optional[int] = Field(
+        default=None, description="How many points to select and search within. Default is 10."
+    )
+    limit: Optional[int] = Field(default=None, description="How many neighbours per sample to find. Default is 3.")
+    using: Optional[str] = Field(
+        default=None,
+        description="Define which vector name to use for querying. If missing, the default vector is used.",
+    )
+
+
 class SearchParams(BaseModel, extra="forbid"):
     """
     Additional parameters of the search
@@ -2121,6 +2208,20 @@ class ShardSnapshotRecover(BaseModel, extra="forbid"):
     api_key: Optional[str] = Field(
         default=None, description="Optional API key used when fetching the snapshot from a remote URL."
     )
+
+
+class ShardStatus(str, Enum):
+    """
+    Current state of the shard (supports same states as the collection) `Green` - all good. `Yellow` - optimization is running, &#x27;Grey&#x27; - optimizations are possible but not triggered, `Red` - some operations failed and was not recovered
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    GREEN = "green"
+    YELLOW = "yellow"
+    GREY = "grey"
+    RED = "red"
 
 
 class ShardTransferInfo(BaseModel):
@@ -2334,9 +2435,10 @@ class TelemetryData(BaseModel):
 class TextIndexParams(BaseModel, extra="forbid"):
     type: "TextIndexType" = Field(..., description="")
     tokenizer: Optional["TokenizerType"] = Field(default=None, description="")
-    min_token_len: Optional[int] = Field(default=None, description="")
-    max_token_len: Optional[int] = Field(default=None, description="")
+    min_token_len: Optional[int] = Field(default=None, description="Minimum characters to be tokenized.")
+    max_token_len: Optional[int] = Field(default=None, description="Maximum characters to be tokenized.")
     lowercase: Optional[bool] = Field(default=None, description="If true, lowercase all tokens. Default: true.")
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
 
 
 class TextIndexType(str, Enum):
@@ -2685,6 +2787,11 @@ ExtendedPointId = Union[
     StrictInt,
     StrictStr,
 ]
+FacetValue = Union[
+    StrictBool,
+    StrictInt,
+    StrictStr,
+]
 GroupId = Union[
     StrictInt,
     StrictStr,
@@ -2824,6 +2931,7 @@ Vector = Union[
     List[StrictFloat],
     SparseVector,
     List[List[StrictFloat]],
+    Document,
 ]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,
@@ -2847,6 +2955,7 @@ BatchVectorStruct = Union[
     List[List[StrictFloat]],
     List[List[List[StrictFloat]]],
     Dict[StrictStr, List[Vector]],
+    List[Document],
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
@@ -2866,11 +2975,13 @@ VectorInput = Union[
     SparseVector,
     List[List[StrictFloat]],
     ExtendedPointId,
+    Document,
 ]
 VectorStruct = Union[
     List[StrictFloat],
     List[List[StrictFloat]],
     Dict[StrictStr, Vector],
+    Document,
 ]
 WithPayloadInterface = Union[
     StrictBool,
