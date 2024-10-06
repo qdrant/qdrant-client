@@ -4,10 +4,13 @@ from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overl
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
+from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
 from qdrant_client.http.api.beta_api import AsyncBetaApi, SyncBetaApi
-from qdrant_client.http.api.cluster_api import AsyncClusterApi, SyncClusterApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
+from qdrant_client.http.api.distributed_api import AsyncDistributedApi, SyncDistributedApi
+from qdrant_client.http.api.indexes_api import AsyncIndexesApi, SyncIndexesApi
 from qdrant_client.http.api.points_api import AsyncPointsApi, SyncPointsApi
+from qdrant_client.http.api.search_api import AsyncSearchApi, SyncSearchApi
 from qdrant_client.http.api.service_api import AsyncServiceApi, SyncServiceApi
 from qdrant_client.http.api.snapshots_api import AsyncSnapshotsApi, SyncSnapshotsApi
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
@@ -20,12 +23,16 @@ class AsyncApis(Generic[AsyncClientT]):
     def __init__(self, host: str = None, **kwargs: Any):
         self.client = AsyncApiClient(host, **kwargs)
 
+        self.aliases_api = AsyncAliasesApi(self.client)
         self.beta_api = AsyncBetaApi(self.client)
-        self.cluster_api = AsyncClusterApi(self.client)
         self.collections_api = AsyncCollectionsApi(self.client)
+        self.distributed_api = AsyncDistributedApi(self.client)
+        self.indexes_api = AsyncIndexesApi(self.client)
         self.points_api = AsyncPointsApi(self.client)
+        self.search_api = AsyncSearchApi(self.client)
         self.service_api = AsyncServiceApi(self.client)
         self.snapshots_api = AsyncSnapshotsApi(self.client)
+        self.points_api = AsyncPointsApi(self.client)
 
     async def aclose(self) -> None:
         await self.client.aclose()
@@ -35,12 +42,16 @@ class SyncApis(Generic[ClientT]):
     def __init__(self, host: str = None, **kwargs: Any):
         self.client = ApiClient(host, **kwargs)
 
+        self.aliases_api = SyncAliasesApi(self.client)
         self.beta_api = SyncBetaApi(self.client)
-        self.cluster_api = SyncClusterApi(self.client)
         self.collections_api = SyncCollectionsApi(self.client)
+        self.distributed_api = SyncDistributedApi(self.client)
+        self.indexes_api = SyncIndexesApi(self.client)
         self.points_api = SyncPointsApi(self.client)
+        self.search_api = SyncSearchApi(self.client)
         self.service_api = SyncServiceApi(self.client)
         self.snapshots_api = SyncSnapshotsApi(self.client)
+        self.points_api = SyncPointsApi(self.client)
 
     def close(self) -> None:
         self.client.close()

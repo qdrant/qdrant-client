@@ -2789,7 +2789,6 @@ ExtendedPointId = Union[
     StrictStr,
 ]
 FacetValue = Union[
-    StrictBool,
     StrictInt,
     StrictStr,
 ]
