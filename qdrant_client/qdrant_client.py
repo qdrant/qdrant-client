@@ -971,7 +971,7 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
-    def search_distance_matrix_pairs(
+    def search_matrix_pairs(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -1006,7 +1006,7 @@ class QdrantClient(QdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.search_distance_matrix_pairs(
+        return self._client.search_matrix_pairs(
             collection_name=collection_name,
             query_filter=query_filter,
             limit=limit,
@@ -1018,7 +1018,7 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
-    def search_distance_matrix_offsets(
+    def search_matrix_offsets(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -1053,7 +1053,7 @@ class QdrantClient(QdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        return self._client.search_distance_matrix_offsets(
+        return self._client.search_matrix_offsets(
             collection_name=collection_name,
             query_filter=query_filter,
             limit=limit,

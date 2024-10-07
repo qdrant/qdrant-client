@@ -211,7 +211,7 @@ class QdrantLocal(QdrantBase):
             score_threshold=score_threshold,
         )
 
-    def search_distance_matrix_offsets(
+    def search_matrix_offsets(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -221,9 +221,11 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
         collection = self._get_collection(collection_name)
-        return collection.search_distance_matrix_offsets(query_filter=query_filter, limit=limit, sample=sample, using=using)
+        return collection.search_matrix_offsets(
+            query_filter=query_filter, limit=limit, sample=sample, using=using
+        )
 
-    def search_distance_matrix_pairs(
+    def search_matrix_pairs(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -233,7 +235,9 @@ class QdrantLocal(QdrantBase):
         **kwargs: Any,
     ) -> types.SearchMatrixPairsResponse:
         collection = self._get_collection(collection_name)
-        return collection.search_distance_matrix_pairs(query_filter=query_filter, limit=limit, sample=sample, using=using)
+        return collection.search_matrix_pairs(
+            query_filter=query_filter, limit=limit, sample=sample, using=using
+        )
 
     def search_groups(
         self,
@@ -394,7 +398,11 @@ class QdrantLocal(QdrantBase):
         elif isinstance(prefetch, Sequence):
             prefetches = list(prefetch)
 
-        return [self._resolve_prefetch_input(prefetch, collection_name) for prefetch in prefetches if prefetch is not None]
+        return [
+            self._resolve_prefetch_input(prefetch, collection_name)
+            for prefetch in prefetches
+            if prefetch is not None
+        ]
 
     def _resolve_prefetch_input(
         self, prefetch: types.Prefetch, collection_name: str

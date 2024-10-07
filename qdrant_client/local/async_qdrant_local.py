@@ -208,7 +208,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             score_threshold=score_threshold,
         )
 
-    async def search_distance_matrix_offsets(
+    async def search_matrix_offsets(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -218,11 +218,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
         collection = self._get_collection(collection_name)
-        return collection.search_distance_matrix_offsets(
+        return collection.search_matrix_offsets(
             query_filter=query_filter, limit=limit, sample=sample, using=using
         )
 
-    async def search_distance_matrix_pairs(
+    async def search_matrix_pairs(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -232,7 +232,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.SearchMatrixPairsResponse:
         collection = self._get_collection(collection_name)
-        return collection.search_distance_matrix_pairs(
+        return collection.search_matrix_pairs(
             query_filter=query_filter, limit=limit, sample=sample, using=using
         )
 

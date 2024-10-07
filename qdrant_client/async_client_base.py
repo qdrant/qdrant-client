@@ -67,7 +67,7 @@ class AsyncQdrantBase:
     ) -> types.GroupsResult:
         raise NotImplementedError()
 
-    async def search_distance_matrix_offsets(
+    async def search_matrix_offsets(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -78,7 +78,7 @@ class AsyncQdrantBase:
     ) -> types.SearchMatrixOffsetsResponse:
         raise NotImplementedError()
 
-    async def search_distance_matrix_pairs(
+    async def search_matrix_pairs(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
