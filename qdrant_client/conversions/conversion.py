@@ -1278,9 +1278,10 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_geo_index_params(cls, _: grpc.GeoIndexParams) -> rest.GeoIndexParams:
+    def convert_geo_index_params(cls, model: grpc.GeoIndexParams) -> rest.GeoIndexParams:
         return rest.GeoIndexParams(
             type=rest.GeoIndexType.GEO,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
         )
 
     @classmethod
@@ -1821,13 +1822,17 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_search_matrix_pairs(cls, model: grpc.SearchMatrixPairs) -> rest.SearchMatrixPairsResponse:
+    def convert_search_matrix_pairs(
+        cls, model: grpc.SearchMatrixPairs
+    ) -> rest.SearchMatrixPairsResponse:
         return rest.SearchMatrixPairsResponse(
             pairs=[cls.convert_search_matrix_pair(pair) for pair in model.pairs],
         )
 
     @classmethod
-    def convert_search_matrix_offsets(cls, model: grpc.SearchMatrixOffsets) -> rest.SearchMatrixOffsetsResponse:
+    def convert_search_matrix_offsets(
+        cls, model: grpc.SearchMatrixOffsets
+    ) -> rest.SearchMatrixOffsetsResponse:
         return rest.SearchMatrixOffsetsResponse(
             offsets_row=list(model.offsets_row),
             offsets_col=list(model.offsets_col),
@@ -3088,8 +3093,8 @@ class RestToGrpc:
         return grpc.FloatIndexParams(is_principal=model.is_principal, on_disk=model.on_disk)
 
     @classmethod
-    def convert_geo_index_params(cls, _: rest.GeoIndexParams) -> grpc.GeoIndexParams:
-        return grpc.GeoIndexParams()
+    def convert_geo_index_params(cls, model: rest.GeoIndexParams) -> grpc.GeoIndexParams:
+        return grpc.GeoIndexParams(on_disk=model.on_disk)
 
     @classmethod
     def convert_bool_index_params(cls, _: rest.BoolIndexParams) -> grpc.BoolIndexParams:
@@ -3622,13 +3627,17 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_search_matrix_pairs(cls, model: rest.SearchMatrixPairsResponse) -> grpc.SearchMatrixPairs:
+    def convert_search_matrix_pairs(
+        cls, model: rest.SearchMatrixPairsResponse
+    ) -> grpc.SearchMatrixPairs:
         return grpc.SearchMatrixPairs(
             pairs=[cls.convert_search_matrix_pair(pair) for pair in model.pairs],
         )
 
     @classmethod
-    def convert_search_matrix_offsets(cls, model: rest.SearchMatrixOffsetsResponse) -> grpc.SearchMatrixOffsets:
+    def convert_search_matrix_offsets(
+        cls, model: rest.SearchMatrixOffsetsResponse
+    ) -> grpc.SearchMatrixOffsets:
         return grpc.SearchMatrixOffsets(
             offsets_row=list(model.offsets_row),
             offsets_col=list(model.offsets_col),
