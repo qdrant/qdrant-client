@@ -134,6 +134,7 @@ class QdrantFastembedMixin(QdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
+        **kwargs: Any,
     ) -> None:
         """
         Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
@@ -160,6 +161,7 @@ class QdrantFastembedMixin(QdrantBase):
                 cache_dir=cache_dir,
                 threads=threads,
                 providers=providers,
+                **kwargs,
             )
         self._sparse_embedding_model_name = embedding_model_name
 
