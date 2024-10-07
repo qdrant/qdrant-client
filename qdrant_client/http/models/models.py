@@ -729,6 +729,7 @@ class GeoBoundingBox(BaseModel, extra="forbid"):
 
 class GeoIndexParams(BaseModel, extra="forbid"):
     type: "GeoIndexType" = Field(..., description="")
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
 
 
 class GeoIndexType(str, Enum):
