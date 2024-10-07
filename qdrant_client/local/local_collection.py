@@ -1455,7 +1455,7 @@ class LocalCollection:
             with_lookup_collection=with_lookup_collection,
         )
 
-    def search_distance_matrix_offsets(
+    def search_matrix_offsets(
         self,
         query_filter: Optional[types.Filter] = None,
         limit: int = 3,
@@ -1489,7 +1489,7 @@ class LocalCollection:
             ids=ids,
         )
 
-    def search_distance_matrix_pairs(
+    def search_matrix_pairs(
         self,
         query_filter: Optional[types.Filter] = None,
         limit: int = 3,
@@ -1503,10 +1503,8 @@ class LocalCollection:
         for sample_id, sample_scores in list(zip(ids, all_scores)):
             for sample_score in sample_scores:
                 pairs.append(
-                   types.SearchMatrixPair(
-                        a=sample_id,
-                        b=sample_score.id,
-                        score=sample_score.score
+                    types.SearchMatrixPair(
+                        a=sample_id, b=sample_score.id, score=sample_score.score
                     )
                 )
 
@@ -1525,7 +1523,9 @@ class LocalCollection:
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         # Sample random points from the whole collection to filter out the ones without vectors
         # TODO: use search_filter once with have an HasVector like condition
-        candidates = self._sample_randomly(len(self.ids), query_filter, False, search_in_vector_name)
+        candidates = self._sample_randomly(
+            len(self.ids), query_filter, False, search_in_vector_name
+        )
         for candidate in candidates:
             # check if enough samples are collected
             if len(samples) == sample:

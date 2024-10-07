@@ -912,7 +912,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             **kwargs,
         )
 
-    async def search_distance_matrix_pairs(
+    async def search_matrix_pairs(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -946,7 +946,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Return distance matrix using a pair-based encoding.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.search_distance_matrix_pairs(
+        return await self._client.search_matrix_pairs(
             collection_name=collection_name,
             query_filter=query_filter,
             limit=limit,
@@ -958,7 +958,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             **kwargs,
         )
 
-    async def search_distance_matrix_offsets(
+    async def search_matrix_offsets(
         self,
         collection_name: str,
         query_filter: Optional[types.Filter] = None,
@@ -992,7 +992,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Return distance matrix using an offset-based encoding.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.search_distance_matrix_offsets(
+        return await self._client.search_matrix_offsets(
             collection_name=collection_name,
             query_filter=query_filter,
             limit=limit,
