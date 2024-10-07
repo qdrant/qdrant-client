@@ -2,7 +2,7 @@ import ast
 import inspect
 from typing import Dict, List, Optional
 
-from qdrant_client.grpc import CollectionsStub, PointsStub, SnapshotsStub
+from qdrant_client.grpc import CollectionsStub, PointsStub, SnapshotsStub, QdrantStub
 from qdrant_client.http import AsyncApiClient
 from qdrant_client.http.api.cluster_api import AsyncClusterApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi
@@ -94,7 +94,7 @@ class RemoteGenerator(BaseGenerator):
             ):
                 self._async_methods.extend(self.get_async_methods(cls_))
 
-            for cls_ in (PointsStub, SnapshotsStub, CollectionsStub):
+            for cls_ in (PointsStub, SnapshotsStub, CollectionsStub, QdrantStub):
                 self._async_methods.extend(self._get_grpc_methods(cls_))
 
         return self._async_methods
