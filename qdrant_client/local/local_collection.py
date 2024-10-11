@@ -1548,7 +1548,12 @@ class LocalCollection:
         for sampled_id_index, sampled in enumerate(samples):
             ids_to_includes = [x for (i, x) in enumerate(ids) if i != sampled_id_index]
             sampling_filter = _include_ids_in_filter(query_filter, ids_to_includes)
-            search_vector = sampled.vector[search_in_vector_name]
+            sampled_vector = sampled.vector
+            search_vector = (
+                sampled_vector[search_in_vector_name]
+                if isinstance(sampled_vector, dict)
+                else sampled_vector
+            )
             samples_scores = self.search(
                 query_vector=(search_in_vector_name, search_vector),
                 query_filter=sampling_filter,
