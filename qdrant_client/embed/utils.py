@@ -7,11 +7,10 @@ class Path(BaseModel):
     current: str
     tail: Optional[list["Path"]] = Field(default=None)
 
-    def __str__(self) -> str:
+    def as_str_list(self) -> List[str]:
         """
-        >>> print(Path(current='a', tail=[Path(current='b', tail=[Path(current='c'), Path(current='d')])]))
-        a.b.c
-        a.b.d
+        >>> Path(current='a', tail=[Path(current='b', tail=[Path(current='c'), Path(current='d')])]).as_str_list()
+        ['a.b.c', 'a.b.d']
         """
 
         # Recursive function to collect all paths
@@ -26,10 +25,20 @@ class Path(BaseModel):
                 return paths
 
         # Collect all paths starting from this object
-        return "\n".join(collect_paths(self))
+        return collect_paths(self)
 
 
 def convert_paths(paths: List[str]) -> List[Path]:
+    """Convert string paths into Path objects
+
+    Paths which share the same root are grouped together.
+
+    Args:
+        paths: List[str]: List of str paths containing "." as separator
+
+    Returns:
+        List[Path]: List of Path objects
+    """
     sorted_paths = sorted(paths)
     prev_root = None
     converted_paths = []
