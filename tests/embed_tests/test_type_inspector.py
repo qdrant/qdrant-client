@@ -1,20 +1,42 @@
+import numpy as np
+
 from qdrant_client import models, grpc
 from qdrant_client.embed.type_inspector import Inspector
 
 
 def test_inspect_query_types():
     inspector = Inspector()
-    assert not inspector.inspect(1)
-    assert not inspector.inspect("1")
+
+    # region negative cases
+    # region ExtendedPointId
+    assert not inspector.inspect(1)  # type: ignore
+    assert not inspector.inspect("1")  # type: ignore
+    # endregion
+
+    # region plain vectors
     assert not inspector.inspect([1.0, 2.0, 3.0])
     assert not inspector.inspect([[1.0, 2.0, 3.0]])
     assert not inspector.inspect(models.SparseVector(indices=[0, 1], values=[2.0, 3.0]))
+    assert not inspector.inspect(np.array([1.0, 2.0, 3.0]))
+    assert not inspector.inspect(np.array([[1.0, 2.0, 3.0]]))
+    # endregion
+
+    # region NearestQuery
     assert not inspector.inspect(models.NearestQuery(nearest=[1.0, 2.0]))
+    assert not inspector.inspect(models.NearestQuery(nearest=[[1.0, 2.0], [3.0, 4.0]]))
+    assert not inspector.inspect(models.NearestQuery(nearest=1))
+    assert not inspector.inspect(models.NearestQuery(nearest="1"))
+    # endregion
+
+    # region RecommendQuery
     assert not inspector.inspect(
         models.RecommendQuery(
             recommend=models.RecommendInput(positive=[[1.0, 2.0]], negative=[[-1.0, -2.0]])
         )
     )
+    # endregion
+
+    # region DiscoverQuery
     assert not inspector.inspect(
         models.DiscoverQuery(
             discover=models.DiscoverInput(
@@ -23,17 +45,34 @@ def test_inspect_query_types():
             )
         )
     )
+    # endregion
+
+    # region ContextQuery
     assert not inspector.inspect(
         models.ContextQuery(
             context=[models.ContextPair(positive=[1.0, 2.0], negative=[-1.0, -2.0])]
         )
     )
-    assert not inspector.inspect(None)
+    # endregion
 
+    # region Non-vector queries
+    assert not inspector.inspect(models.OrderByQuery(order_by="1"))
+    assert not inspector.inspect(
+        models.OrderByQuery(order_by=models.OrderBy(key="1", direction="asc"))
+    )
+
+    assert not inspector.inspect(models.FusionQuery(fusion=models.Fusion.DBSF))
+
+    assert not inspector.inspect(models.SampleQuery(sample=models.Sample.RANDOM))
+    # endregion negative cases
+
+    # region positive cases
     doc = models.Document(text="123", model="Qdrant/bm25")
-    assert doc
+    assert inspector.inspect(doc)
 
     assert inspector.inspect(models.NearestQuery(nearest=doc))
+
+    # region RecommendQuery
     assert inspector.inspect(
         models.RecommendQuery(
             recommend=models.RecommendInput(positive=[doc], negative=[[-1.0, -2.0]])
@@ -44,6 +83,9 @@ def test_inspect_query_types():
             recommend=models.RecommendInput(positive=[[1.0, 2.0]], negative=[doc])
         )
     )
+    # endregion
+
+    # region DiscoverQuery
     assert inspector.inspect(
         models.DiscoverQuery(
             discover=models.DiscoverInput(
@@ -69,138 +111,294 @@ def test_inspect_query_types():
             )
         )
     )
+    # endregion
+
+    # region ContextQuery
+    assert inspector.inspect(
+        models.ContextQuery(context=models.ContextPair(positive=doc, negative=[-1.0, -2.0]))
+    )
+    assert inspector.inspect(
+        models.ContextQuery(context=models.ContextPair(positive=[1.0, 2.0], negative=doc))
+    )
     assert inspector.inspect(
         models.ContextQuery(context=[models.ContextPair(positive=doc, negative=[-1.0, -2.0])])
     )
     assert inspector.inspect(
         models.ContextQuery(context=[models.ContextPair(positive=[1.0, 2.0], negative=doc)])
     )
+    # endregion
+    # endregion positive cases
 
 
 def test_inspect_prefetch_types():
     inspector = Inspector()
+
+    # region negative cases
     none_prefetch = models.Prefetch(query=None, prefetch=None)
     assert not inspector.inspect(none_prefetch)
 
     vector_prefetch = models.Prefetch(query=[1.0, 2.0])
     assert not inspector.inspect(vector_prefetch)
 
-    doc_prefetch = models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25"))
+    deep_nested_prefetch_wo_doc = models.Prefetch(
+        query=[[0.1, 0.2]],
+        prefetch=models.Prefetch(
+            query=[[0.2, 0.3]],
+            prefetch=models.Prefetch(
+                query=[[0.3, 0.4]], prefetch=models.Prefetch(query=[0.2, 0.3])
+            ),
+        ),
+    )
+    assert not inspector.inspect(deep_nested_prefetch_wo_doc)
+    assert not inspector.inspect([None, deep_nested_prefetch_wo_doc])
+    # endregion
+
+    # region positive cases
+    doc = models.Document(text="123", model="Qdrant/bm25")
+
+    doc_prefetch = models.Prefetch(query=doc)
     assert inspector.inspect(doc_prefetch)
 
     nested_prefetch = models.Prefetch(
         query=None,
-        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25")),
+        prefetch=models.Prefetch(query=doc),
     )
     assert inspector.inspect(nested_prefetch)
 
     vector_and_doc_prefetch = models.Prefetch(
         query=[1.0, 2.0],
-        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25")),
+        prefetch=models.Prefetch(query=doc),
     )
     assert inspector.inspect(vector_and_doc_prefetch)
 
+    deep_nested_prefetch = models.Prefetch(
+        query=[[0.1, 0.2]],
+        prefetch=models.Prefetch(
+            query=[[0.2, 0.3]],
+            prefetch=models.Prefetch(query=[[0.3, 0.4]], prefetch=models.Prefetch(query=doc)),
+        ),
+    )
+    assert inspector.inspect(deep_nested_prefetch)
+    assert inspector.inspect([None, deep_nested_prefetch])
+    # endregion
 
-def test_inspect_query_and_prefetch_types():
+
+def test_inspect_query_requests():
     inspector = Inspector()
-    none_query = None
-    none_prefetch = None
-    query = models.Document(text="123", model="Qdrant/bm25")
-    prefetch = models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25"))
 
-    assert not inspector.inspect([none_query, none_prefetch])
-    assert inspector.inspect([query, none_prefetch])
-    assert inspector.inspect([none_query, prefetch])
-    assert inspector.inspect([query, prefetch])
+    # region negative cases
+    vector = [0.2, 0.3]
+    nearest_query = models.NearestQuery(nearest=vector)
+
+    query_request_vector = models.QueryRequest(
+        query=vector,
+    )
+    assert not inspector.inspect(query_request_vector)
+
+    query_request_nearest_vector = models.QueryRequest(
+        query=nearest_query,
+    )
+    assert not inspector.inspect(query_request_nearest_vector)
+
+    vector_only_prefetch_request = models.QueryRequest(prefetch=models.Prefetch(query=[0.2, 0.1]))
+    assert not inspector.inspect([vector_only_prefetch_request])
+
+    deep_nested_prefetch_vector = models.Prefetch(
+        query=[[0.1, 0.2]],
+        prefetch=models.Prefetch(
+            query=[[0.2, 0.3]],
+            prefetch=models.Prefetch(
+                query=[[0.3, 0.4]], prefetch=models.Prefetch(query=[0.2, 0.3])
+            ),
+        ),
+    )
+    deep_nested_prefetch_vector_request = models.QueryRequest(
+        prefetch=deep_nested_prefetch_vector,
+    )
+    assert not inspector.inspect(deep_nested_prefetch_vector_request)
+
+    query_groups_request_vector = models.QueryGroupsRequest(
+        query=nearest_query,
+        group_by="k",
+    )
+    assert not inspector.inspect(query_groups_request_vector)
+
+    query_groups_request_prefetch_vector = models.QueryGroupsRequest(
+        prefetch=models.Prefetch(query=nearest_query),
+        group_by="k",
+    )
+    assert not inspector.inspect(query_groups_request_prefetch_vector)
+
+    query_groups_request_deep_nested_prefetch_vector = models.QueryGroupsRequest(
+        prefetch=deep_nested_prefetch_vector,
+        group_by="k",
+    )
+    assert not inspector.inspect(query_groups_request_deep_nested_prefetch_vector)
+
+    query_batch_request_vector = models.QueryRequestBatch(searches=[query_request_vector])
+    assert not inspector.inspect(query_batch_request_vector)
+
+    query_batch_request_nearest_vector = models.QueryRequestBatch(
+        searches=[query_request_nearest_vector]
+    )
+    assert not inspector.inspect(query_batch_request_nearest_vector)
+
+    query_batch_request_prefetch_vector = models.QueryRequestBatch(
+        searches=[vector_only_prefetch_request]
+    )
+    assert not inspector.inspect(query_batch_request_prefetch_vector)
+
+    query_batch_request_deep_nested_prefetch_vector = models.QueryRequestBatch(
+        searches=[deep_nested_prefetch_vector_request]
+    )
+    assert not inspector.inspect(query_batch_request_deep_nested_prefetch_vector)
+    # endregion
+
+    # region positive cases
+    doc = models.Document(text="123", model="Qdrant/bm25")
+
+    document_only_query_request = models.QueryRequest(
+        query=doc,
+    )
+    assert inspector.inspect([document_only_query_request])
+
+    document_only_prefetch_request = models.QueryRequest(prefetch=models.Prefetch(query=doc))
+    assert inspector.inspect([document_only_prefetch_request])
+    assert inspector.inspect([query_request_vector, document_only_query_request])
+
+    deep_nested_prefetch_doc = models.Prefetch(
+        query=[[0.1, 0.2]],
+        prefetch=models.Prefetch(
+            query=[[0.2, 0.3]],
+            prefetch=models.Prefetch(query=[[0.3, 0.4]], prefetch=models.Prefetch(query=doc)),
+        ),
+    )
+    deep_nested_prefetch_doc_request = models.QueryRequest(
+        prefetch=deep_nested_prefetch_doc,
+    )
+    assert inspector.inspect(deep_nested_prefetch_doc_request)
+
+    query_groups_request_doc = models.QueryGroupsRequest(
+        query=doc,
+        group_by="k",
+    )
+    assert inspector.inspect(query_groups_request_doc)
+
+    query_groups_request_prefetch_doc = models.QueryGroupsRequest(
+        prefetch=models.Prefetch(query=doc),
+        group_by="k",
+    )
+    assert inspector.inspect(query_groups_request_prefetch_doc)
+
+    query_groups_request_deep_nested_prefetch_doc = models.QueryGroupsRequest(
+        prefetch=deep_nested_prefetch_doc,
+        group_by="k",
+    )
+    assert inspector.inspect(query_groups_request_deep_nested_prefetch_doc)
+
+    query_batch_request_doc = models.QueryRequestBatch(searches=[document_only_query_request])
+    assert inspector.inspect(query_batch_request_doc)
+
+    query_batch_request_prefetch_doc = models.QueryRequestBatch(
+        searches=[document_only_prefetch_request]
+    )
+
+    assert inspector.inspect(query_batch_request_prefetch_doc)
+    assert inspector.inspect([query_batch_request_vector, query_batch_request_doc])
+
+    query_batch_request_deep_nested_prefetch_doc = models.QueryRequestBatch(
+        searches=[deep_nested_prefetch_doc_request]
+    )
+    assert inspector.inspect(query_batch_request_deep_nested_prefetch_doc)
+    # endregion
 
 
-def test_inspect_points():
+def test_inspect_upsert_points():
     inspector = Inspector()
+
+    # region negative cases
     vector_batch = models.Batch(ids=[1, 2], vectors=[[1.0, 2.0], [3.0, 4.0]])
     assert not inspector.inspect(vector_batch)
 
-    document_batch = models.Batch(
-        ids=[1, 2],
-        vectors=[
-            models.Document(text="123", model="Qdrant/bm25"),
-            models.Document(text="324", model="Qdrant/bm25"),
-        ],
-    )
-    assert inspector.inspect(document_batch)
-
-    vector_points = [models.PointStruct(id=1, vector=[1.0, 2.0])]
+    vector_points = [
+        models.PointStruct(id=1, vector=[1.0, 2.0]),
+        models.PointStruct(id=2, vector=[3.0, 3.0]),
+    ]
     assert not inspector.inspect(vector_points)
 
-    document_points = [
-        models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm25"))
-    ]
-    assert inspector.inspect(document_points)
-
-    mixed_points = [
-        models.PointStruct(id=1, vector=[1.0, 2.0]),
-        models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm25")),
-    ]
-    assert inspector.inspect(mixed_points)
-
-    grpc_point = [
+    grpc_points = [
         grpc.PointStruct(
             id=grpc.PointId(num=3), vectors=grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0]))
-        )
+        ),
+        grpc.PointStruct(
+            id=grpc.PointId(num=4), vectors=grpc.Vectors(vector=grpc.Vector(data=[3.0, 3.0]))
+        ),
     ]
-    assert not inspector.inspect(grpc_point)
-
-    dict_batch = models.Batch(ids=[1, 2], vectors={"dense": [[1.0, 2.0]]})
-    assert not inspector.inspect(dict_batch)
-
-    dict_doc_batch = models.Batch(
-        ids=[1, 2], vectors={"dense": [models.Document(text="123", model="Qdrant/bm25")]}
-    )
-    assert inspector.inspect(dict_doc_batch)
+    assert not inspector.inspect(grpc_points)
 
     multiple_keys_batch = models.Batch(
         ids=[1, 2], vectors={"dense": [[1.0, 2.0]], "dense-two": [[3.0, 4.0]]}
     )
     assert not inspector.inspect(multiple_keys_batch)
 
-    multiple_keys_mixed_types_batch = models.Batch(
+    dict_vector_points = [
+        models.PointStruct(id=1, vector={"dense": [1.0, 2.0]}),
+        models.PointStruct(id=2, vector={"dense": [2.0, 3.0]}),
+    ]
+    assert not inspector.inspect(dict_vector_points)
+
+    multiple_keys_points = [
+        models.PointStruct(id=1, vector={"dense": [1.0, 2.0], "dense-two": [3.0, 4.0]}),
+        models.PointStruct(id=2, vector={"dense": [2.0, 3.0]}),
+    ]
+    assert not inspector.inspect(multiple_keys_points)
+    # endregion negative cases
+
+    # region positive cases
+    doc_1 = models.Document(text="123", model="Qdrant/bm25")
+    doc_2 = models.Document(text="321", model="Qdrant/bm25")
+
+    document_batch = models.Batch(
         ids=[1, 2],
-        vectors={
-            "dense": [[1.0, 2.0]],
-            "dense-two": [models.Document(text="123", model="Qdrant/bm25")],
-        },
+        vectors=[
+            doc_1,
+            doc_2,
+        ],
     )
-    assert inspector.inspect(multiple_keys_mixed_types_batch)
+    assert inspector.inspect(document_batch)
 
+    document_points = [
+        models.PointStruct(id=1, vector=doc_1),
+        models.PointStruct(id=2, vector=doc_2),
+    ]
+    assert inspector.inspect(document_points)
 
-def test_inspect_query_requests():
-    inspector = Inspector()
-    vector_only_query_request = models.QueryRequest(
-        query=[0.2, 0.3],
+    mixed_points_doc_first = [
+        models.PointStruct(id=1, vector=doc_1),
+        models.PointStruct(id=2, vector=[0.2, 0.3]),
+    ]
+    assert inspector.inspect(mixed_points_doc_first)
+
+    mixed_points_doc_second = [
+        models.PointStruct(id=1, vector=[0.2, 0.3]),
+        models.PointStruct(id=2, vector=doc_2),
+    ]
+    assert inspector.inspect(mixed_points_doc_second)
+
+    dict_doc_batch = models.Batch(ids=[1], vectors={"dense": [doc_1]})
+    assert inspector.inspect(dict_doc_batch)
+
+    dict_mixed_batch = models.Batch(
+        ids=[1, 2], vectors={"dense": [[1.0, 2.0]], "dense-two": [doc_1]}
     )
-
-    assert not inspector.inspect([vector_only_query_request])
-
-    vector_only_prefetch_request = models.QueryRequest(prefetch=models.Prefetch(query=[0.2, 0.1]))
-
-    assert not inspector.inspect([vector_only_prefetch_request])
-
-    document_only_query_request = models.QueryRequest(
-        query=models.Document(text="123", model="Qdrant/bm25"),
-    )
-
-    assert inspector.inspect([document_only_query_request])
-
-    document_only_prefetch_request = models.QueryRequest(
-        prefetch=models.Prefetch(query=models.Document(text="123", model="Qdrant/bm25"))
-    )
-
-    assert inspector.inspect([document_only_prefetch_request])
-
-    assert inspector.inspect([vector_only_query_request, document_only_query_request])
+    assert inspector.inspect(dict_mixed_batch)
+    # endregion
 
 
 def test_inspect_update_operations():
     inspector = Inspector()
+
+    # region negative cases
     non_relevant_ops = [
         models.DeleteOperation(delete=models.PointIdsList(points=[1, 2, 3])),
         models.SetPayloadOperation(set_payload=models.SetPayload(payload={"a": 2})),
@@ -214,488 +412,90 @@ def test_inspect_update_operations():
     plain_points_batch = models.PointsBatch(
         batch=models.Batch(ids=[1, 2], vectors=[[0.1, 0.2], [0.3, 0.4]])
     )
-    plain_point_structs = models.PointsList(
+    assert not inspector.inspect(plain_points_batch)
+
+    plain_point_list = models.PointsList(
         points=[
             models.PointStruct(id=1, vector=[1.0, 2.0]),
             models.PointStruct(id=2, vector=[1.0, 3.0]),
         ]
     )
-    doc_points_batch = models.PointsBatch(
-        batch=models.Batch(
-            ids=[1, 2],
-            vectors=[
-                models.Document(text="123", model="Qdrant/bm25"),
-                models.Document(text="321", model="Qdrant/bm25"),
-            ],
-        ),
-    )
-    doc_point_struct = models.PointsList(
-        points=[
-            models.PointStruct(id=1, vector=models.Document(text="123", model="Qdrant/bm25")),
-            models.PointStruct(id=2, vector=models.Document(text="321", model="Qdrant/bm25")),
-        ]
-    )
-
-    plain_batch_upsert_op = models.UpsertOperation(upsert=plain_points_batch)
-    plain_structs_upsert_op = models.UpsertOperation(upsert=plain_point_structs)
-    doc_batch_upsert_op = models.UpsertOperation(upsert=doc_points_batch)
-    doc_structs_upsert_op = models.UpsertOperation(upsert=doc_point_struct)
-
-    assert not inspector.inspect([plain_batch_upsert_op])
-    assert not inspector.inspect([plain_structs_upsert_op])
-    assert inspector.inspect([doc_batch_upsert_op])
-    assert inspector.inspect([doc_structs_upsert_op])
-
-    assert inspector.inspect([plain_batch_upsert_op, doc_structs_upsert_op])
+    assert not inspector.inspect(plain_point_list)
 
     plain_point_vectors = models.PointVectors(id=1, vector=[0.2, 0.3])
-    doc_point_vectors = models.PointVectors(
-        id=2, vector=models.Document(text="123", model="Qdrant/bm25")
-    )
+    assert not inspector.inspect(plain_point_vectors)
+
+    plain_batch_upsert_op = models.UpsertOperation(upsert=plain_points_batch)
+    assert not inspector.inspect([plain_batch_upsert_op])
+
+    plain_structs_upsert_op = models.UpsertOperation(upsert=plain_point_list)
+    assert not inspector.inspect([plain_structs_upsert_op])
 
     plain_point_vectors_update_op = models.UpdateVectorsOperation(
         update_vectors=models.UpdateVectors(points=[plain_point_vectors])
     )
-    doc_point_vectors_update_op = models.UpdateVectorsOperation(
-        update_vectors=models.UpdateVectors(points=[doc_point_vectors])
-    )
-
     assert not inspector.inspect([plain_point_vectors_update_op])
-    assert inspector.inspect([doc_point_vectors_update_op])
+    # endregion
 
-    assert inspector.inspect([plain_point_vectors_update_op, doc_point_vectors_update_op])
+    # region positive cases
+    doc_1 = models.Document(text="123", model="Qdrant/bm25")
+    doc_2 = models.Document(text="321", model="Qdrant/bm25")
 
-
-def test_inspector():
-    inspector = Inspector()
-
-    doc = models.Document(text="123", model="Qd")
-    assert inspector.inspect(doc)
-
-    s = [
-        models.PointVectors(id=3, vector=[0.2, 0.3]),
-        models.PointVectors(id=2, vector=models.Document(text="123", model="Qd")),
-    ]
-    assert inspector.inspect(s)
-
-    c = models.ContextPair(positive=[0.2, 0.3], negative=[0.3, 0.4])
-    assert not inspector.inspect(c)
-
-    c2 = models.ContextPair(
-        positive=[0.2, 0.3], negative=models.Document(text="sdas", model="qwert")
-    )
-    assert inspector.inspect(c2)
-
-    cq = models.ContextQuery(context=c)
-    assert not inspector.inspect(cq)
-
-    cq2 = models.ContextQuery(context=c2)
-    assert inspector.inspect(cq2)
-
-    cl = [c, c2]
-    cq3 = models.ContextQuery(context=cl)
-    assert inspector.inspect(cq3)
-
-    di = models.DiscoverInput(target=[0.2, 0.3], context=c)
-    assert not inspector.inspect(di)
-
-    di2 = models.DiscoverInput(target=models.Document(text="qwert", model="scx"), context=c)
-    assert inspector.inspect(di2)
-
-    di3 = models.DiscoverInput(target=models.Document(text="dasd", model="aaa"), context=c2)
-    assert inspector.inspect(di3)
-
-    dq = models.DiscoverQuery(discover=di)
-    assert not inspector.inspect(dq)
-
-    dq2 = models.DiscoverQuery(discover=di2)
-    assert inspector.inspect(dq2)
-
-    dq3 = models.DiscoverQuery(discover=di3)
-    assert inspector.inspect(dq3)
-
-    nq = models.NearestQuery(nearest=[[0.2, 0.3]])
-    assert not inspector.inspect(nq)
-
-    nq2 = models.NearestQuery(nearest=[0.3, 0.4])
-    assert not inspector.inspect(nq2)
-
-    nq3 = models.NearestQuery(nearest=models.Document(text="qwdas", model="xczxc"))
-    assert inspector.inspect(nq3)
-
-    ps = models.PointStruct(id=2, vector=[0.2, 0.3])
-    assert not inspector.inspect(ps)
-
-    ps2 = models.PointStruct(id=2, vector=models.Document(text="qwert", model="scx"))
-    assert inspector.inspect(ps2)
-
-    pv = models.PointVectors(id=2, vector=[0.2, 0.3])
-    assert not inspector.inspect(pv)
-
-    pv2 = models.PointVectors(id=2, vector=models.Document(text="qwert", model="scx"))
-    assert inspector.inspect(pv2)
-
-    pb = models.PointsBatch(batch=models.Batch(ids=[1, 2, 3], vectors=[[0.2, 0.3]]))
-    assert not inspector.inspect(pb)
-
-    pb2 = models.PointsBatch(
-        batch=models.Batch(ids=[1, 2, 3], vectors=[models.Document(text="qwert", model="scx")])
-    )
-
-    assert inspector.inspect(pb2)
-
-    pb3 = models.PointsBatch(batch=models.Batch(ids=[1, 2, 3], vectors=[[[0.2, 0.3], [0.4, 0.5]]]))
-    assert not inspector.inspect(pb3)
-
-    pb4 = models.PointsBatch(
-        batch=models.Batch(ids=[1, 2, 3], vectors={"Q": [[[0.3, 0.4], [0.2, 0.3]]]})
-    )
-    assert not inspector.inspect(pb4)
-
-    pb5 = models.PointsBatch(
+    doc_points_batch = models.PointsBatch(
         batch=models.Batch(
-            ids=[1, 2, 3],
-            vectors={
-                "Q": [
-                    models.Document(text="qwert", model="scx"),
-                    models.Document(text="qwert", model="scx"),
-                ]
-            },
-        )
+            ids=[1, 2],
+            vectors=[
+                doc_1,
+                doc_2,
+            ],
+        ),
     )
-    assert inspector.inspect(pb5)
+    assert inspector.inspect(doc_points_batch)
 
-    pl = models.PointsList(points=[models.PointStruct(id=1, vector=[0.2, 0.3])])
-    assert not inspector.inspect(pl)
-    pl2 = models.PointsList(
-        points=[models.PointStruct(id=2, vector=models.Document(text="asdf", model="wesd"))]
+    doc_points_list = models.PointsList(
+        points=[
+            models.PointStruct(id=1, vector=doc_1),
+            models.PointStruct(id=2, vector=doc_2),
+        ]
     )
-    assert inspector.inspect(pl2)
-    pl3 = models.PointsList(
+    assert inspector.inspect(doc_points_list)
+
+    mixed_points_list = models.PointsList(
         points=[
             models.PointStruct(id=1, vector=[0.2, 0.3]),
-            models.PointStruct(id=2, vector=models.Document(text="asdf", model="wesd")),
+            models.PointStruct(id=2, vector=doc_2),
         ]
     )
-    assert inspector.inspect(pl3)
-    pl4 = models.PointsList(
-        points=[models.PointStruct(id=1, vector={"W": [0.3, 0.4], "E": [0.2, 0.1]})]
+    assert inspector.inspect(mixed_points_list)
+
+    doc_point_vectors = [models.PointVectors(id=2, vector=doc_1)]
+    assert inspector.inspect(doc_point_vectors)
+
+    mixed_point_vectors = [
+        models.PointVectors(id=2, vector=[0.2, 0.3]),
+        models.PointVectors(id=3, vector=doc_2),
+    ]
+    assert inspector.inspect(mixed_point_vectors)
+
+    doc_batch_upsert_op = models.UpsertOperation(upsert=doc_points_batch)
+    assert inspector.inspect([doc_batch_upsert_op])
+
+    doc_points_list_upsert_op = models.UpsertOperation(upsert=doc_points_list)
+    assert inspector.inspect([doc_points_list_upsert_op])
+
+    mixed_points_list_upsert_op = models.UpsertOperation(upsert=mixed_points_list)
+    assert inspector.inspect([mixed_points_list_upsert_op])
+
+    assert inspector.inspect([plain_batch_upsert_op, doc_points_list_upsert_op])
+
+    doc_point_vectors_update_op = models.UpdateVectorsOperation(
+        update_vectors=models.UpdateVectors(points=doc_point_vectors)
     )
-    assert not inspector.inspect(pl4)
-    pl5 = models.PointsList(
-        points=[models.PointStruct(id=1, vector={"D": models.Document(text="aas", model="dzcz")})]
+    assert inspector.inspect([doc_point_vectors_update_op])
+    assert inspector.inspect([plain_point_vectors_update_op, doc_point_vectors_update_op])
+
+    mixed_point_vectors_update_op = models.UpdateVectorsOperation(
+        update_vectors=models.UpdateVectors(points=mixed_point_vectors)
     )
-    assert inspector.inspect(pl5)
-    pl6 = models.PointsList(
-        points=[
-            models.PointStruct(
-                id=1,
-                vector={
-                    "W": [0.3, 0.4],
-                    "E": [0.2, 0.1],
-                    "D": models.Document(text="aas", model="dzcz"),
-                },
-            )
-        ]
-    )
-    assert inspector.inspect(pl6)
-
-    ri = models.RecommendInput()
-    assert not inspector.inspect(ri)
-
-    ri1 = models.RecommendInput(positive=[[0.2, 0.3]])
-    assert not inspector.inspect(ri1)
-    ri2 = models.RecommendInput(negative=[[0.2, 0.3]])
-    assert not inspector.inspect(ri2)
-    ri3 = models.RecommendInput(
-        positive=[[0.2, 0.3]], negative=[models.Document(text="wrap", model="wrap2")]
-    )
-    assert inspector.inspect(ri3)
-    ri4 = models.RecommendInput(positive=[[[0.2, 0.3]]])
-    assert not inspector.inspect(ri4)
-    ri5 = models.RecommendInput(
-        positive=[[0.2, 0.3]], negative=[[0.2, 0.3], models.Document(text="wrap", model="wrap2")]
-    )
-    assert inspector.inspect(ri5)
-
-    rq = models.RecommendQuery(recommend=ri)
-    assert not inspector.inspect(rq)
-
-    rq1 = models.RecommendQuery(recommend=ri1)
-    assert not inspector.inspect(rq1)
-
-    rq2 = models.RecommendQuery(recommend=ri2)
-    assert not inspector.inspect(rq2)
-
-    rq3 = models.RecommendQuery(recommend=ri3)
-    assert inspector.inspect(rq3)
-
-    rq4 = models.RecommendQuery(recommend=ri4)
-    assert not inspector.inspect(rq4)
-
-    rq5 = models.RecommendQuery(recommend=ri5)
-    assert inspector.inspect(rq5)
-
-    uv = models.UpdateVectors(points=[pv])
-    assert not inspector.inspect(uv)
-
-    uv1 = models.UpdateVectors(
-        points=[models.PointVectors(id=2, vector=models.Document(text="qwert", model="scx"))]
-    )
-    assert inspector.inspect(pv2)
-
-    uv2 = models.UpdateVectors(
-        points=[
-            models.PointVectors(id=3, vector={"W": models.Document(text="qwert", model="scx")})
-        ]
-    )
-    assert inspector.inspect(uv2)
-
-    uv3 = models.UpdateVectors(
-        points=[models.PointVectors(id=3, vector={"W": [0.3, 0.4], "E": [0.2, 0.1]})]
-    )
-    assert not inspector.inspect(uv3)
-
-    uvo = models.UpdateVectorsOperation(update_vectors=uv)
-    assert not inspector.inspect(uvo)
-
-    uvo1 = models.UpdateVectorsOperation(update_vectors=uv1)
-    assert inspector.inspect(uvo1)
-
-    uvo2 = models.UpdateVectorsOperation(update_vectors=uv2)
-    assert inspector.inspect(uvo2)
-
-    uvo3 = models.UpdateVectorsOperation(update_vectors=uv3)
-    assert not inspector.inspect(uvo3)
-
-    uopb = models.UpsertOperation(upsert=pb)
-    assert not inspector.inspect(uopb)
-
-    uopb2 = models.UpsertOperation(upsert=pb2)
-    assert inspector.inspect(uopb2)
-
-    uopb3 = models.UpsertOperation(upsert=pb3)
-    assert not inspector.inspect(uopb3)
-
-    uopb4 = models.UpsertOperation(upsert=pb4)
-    assert not inspector.inspect(uopb4)
-
-    uopb5 = models.UpsertOperation(upsert=pb5)
-    assert inspector.inspect(uopb5)
-
-    uopl = models.UpsertOperation(upsert=pl)
-    assert not inspector.inspect(uopl)
-
-    uopl2 = models.UpsertOperation(upsert=pl2)
-    assert inspector.inspect(uopl2)
-
-    uopl3 = models.UpsertOperation(upsert=pl3)
-    assert inspector.inspect(uopl3)
-
-    uopl4 = models.UpsertOperation(upsert=pl4)
-    assert not inspector.inspect(uopl4)
-
-    uopl5 = models.UpsertOperation(upsert=pl5)
-    assert inspector.inspect(uopl5)
-
-    uopl6 = models.UpsertOperation(upsert=pl6)
-    assert inspector.inspect(uopl6)
-
-    uo = models.UpdateOperations(operations=[])
-    assert not inspector.inspect(uo)
-
-    do = models.DeleteOperation(delete=models.PointIdsList(points=[1, 2, 3]))
-    uo1 = models.UpdateOperations(operations=[do])
-    assert not inspector.inspect(uo1)
-
-    uo2 = models.UpdateOperations(operations=[do, uopl5])
-    assert inspector.inspect(uo2)
-
-    uo3 = models.UpdateOperations(operations=[uopb2])
-    assert inspector.inspect(uo3)
-
-    p = models.Prefetch()
-    assert not inspector.inspect(p)
-
-    p1 = models.Prefetch(query=nq)
-    assert not inspector.inspect(p1)
-
-    p2 = models.Prefetch(query=nq3)
-    assert inspector.inspect(p2)
-
-    p3 = models.Prefetch(query=nq, prefetch=models.Prefetch(query=nq))
-    assert not inspector.inspect(p3)
-
-    p4 = models.Prefetch(query=nq, prefetch=models.Prefetch(query=nq3))
-    assert inspector.inspect(p4)
-
-    p5 = models.Prefetch(query=nq3, prefetch=models.Prefetch(query=nq))
-    assert inspector.inspect(p5)
-
-    p6 = models.Prefetch(prefetch=models.Prefetch(query=nq))
-    assert not inspector.inspect(p6)
-
-    p7 = models.Prefetch(prefetch=models.Prefetch(query=nq3))
-    assert inspector.inspect(p7)
-
-    p8 = models.Prefetch(
-        prefetch=models.Prefetch(prefetch=models.Prefetch(prefetch=models.Prefetch(query=nq)))
-    )
-    assert not inspector.inspect(p8)
-
-    p9 = models.Prefetch(
-        prefetch=models.Prefetch(prefetch=models.Prefetch(prefetch=models.Prefetch(query=nq3)))
-    )
-    assert inspector.inspect(p9)
-
-    p10 = models.Prefetch(prefetch=[models.Prefetch(query=nq3)])
-    assert inspector.inspect(p10)
-
-    p11 = models.Prefetch(prefetch=[models.Prefetch(query=nq2)])
-    assert not inspector.inspect(p11)
-
-    p12 = models.Prefetch(
-        query=nq2,
-        prefetch=[
-            models.Prefetch(query=nq2),
-            models.Prefetch(prefetch=[models.Prefetch(query=nq3)]),
-        ],
-    )
-    assert inspector.inspect(p12)
-
-    qgr = models.QueryGroupsRequest(
-        query=nq,
-        group_by="k",
-    )
-    assert not inspector.inspect(qgr)
-    qgr1 = models.QueryGroupsRequest(query=nq3, group_by="k")
-    assert inspector.inspect(qgr1)
-    qgr2 = models.QueryGroupsRequest(prefetch=p, group_by="k")
-    assert not inspector.inspect(qgr2)
-    qgr3 = models.QueryGroupsRequest(prefetch=p1, group_by="k")
-    assert not inspector.inspect(qgr3)
-    qgr4 = models.QueryGroupsRequest(prefetch=p2, group_by="k")
-    assert inspector.inspect(qgr4)
-    qgr5 = models.QueryGroupsRequest(prefetch=p3, group_by="k")
-    assert not inspector.inspect(qgr5)
-    qgr6 = models.QueryGroupsRequest(prefetch=p4, group_by="k")
-    assert inspector.inspect(qgr6)
-    qgr7 = models.QueryGroupsRequest(prefetch=p5, group_by="k")
-    assert inspector.inspect(qgr7)
-    qgr8 = models.QueryGroupsRequest(prefetch=p6, group_by="k")
-    assert not inspector.inspect(qgr8)
-    qgr9 = models.QueryGroupsRequest(prefetch=p7, group_by="k")
-    assert inspector.inspect(qgr9)
-    qgr10 = models.QueryGroupsRequest(prefetch=p8, group_by="k")
-    assert not inspector.inspect(qgr10)
-    qgr11 = models.QueryGroupsRequest(prefetch=p9, group_by="k")
-    assert inspector.inspect(qgr11)
-    qgr12 = models.QueryGroupsRequest(prefetch=p10, group_by="k")
-    assert inspector.inspect(qgr12)
-    qgr13 = models.QueryGroupsRequest(prefetch=p11, group_by="k")
-    assert not inspector.inspect(qgr13)
-
-    qr = models.QueryRequest(
-        query=nq,
-    )
-    assert not inspector.inspect(qr)
-    qr1 = models.QueryRequest(
-        query=nq3,
-    )
-    assert inspector.inspect(qr1)
-    qr2 = models.QueryRequest(
-        prefetch=p,
-    )
-    assert not inspector.inspect(qr2)
-    qr3 = models.QueryRequest(
-        prefetch=p1,
-    )
-    assert not inspector.inspect(qr3)
-    qr4 = models.QueryRequest(
-        prefetch=p2,
-    )
-    assert inspector.inspect(qr4)
-    qr5 = models.QueryRequest(
-        prefetch=p3,
-    )
-    assert not inspector.inspect(qr5)
-    qr6 = models.QueryRequest(
-        prefetch=p4,
-    )
-    assert inspector.inspect(qr6)
-    qr7 = models.QueryRequest(
-        prefetch=p5,
-    )
-    assert inspector.inspect(qr7)
-    qr8 = models.QueryRequest(
-        prefetch=p6,
-    )
-    assert not inspector.inspect(qr8)
-    qr9 = models.QueryRequest(
-        prefetch=p7,
-    )
-    assert inspector.inspect(qr9)
-    qr10 = models.QueryRequest(
-        prefetch=p8,
-    )
-    assert not inspector.inspect(qr10)
-    qr11 = models.QueryRequest(
-        prefetch=p9,
-    )
-    assert inspector.inspect(qr11)
-    qr12 = models.QueryRequest(
-        prefetch=p10,
-    )
-    assert inspector.inspect(qr12)
-    qr13 = models.QueryRequest(
-        prefetch=p11,
-    )
-    assert not inspector.inspect(qr13)
-
-    qrb = models.QueryRequestBatch(searches=[])
-    assert not inspector.inspect(qrb)
-
-    qrb1 = models.QueryRequestBatch(searches=[qr1])
-    assert inspector.inspect(qrb1)
-
-    qrb2 = models.QueryRequestBatch(searches=[qr2])
-    assert not inspector.inspect(qrb2)
-
-    qrb3 = models.QueryRequestBatch(searches=[qr3])
-    assert not inspector.inspect(qrb3)
-
-    qrb4 = models.QueryRequestBatch(searches=[qr4])
-    assert inspector.inspect(qrb4)
-
-    qrb5 = models.QueryRequestBatch(searches=[qr5])
-    assert not inspector.inspect(qrb5)
-
-    qrb6 = models.QueryRequestBatch(searches=[qr6])
-    assert inspector.inspect(qrb6)
-
-    qrb7 = models.QueryRequestBatch(searches=[qr7])
-    assert inspector.inspect(qrb7)
-
-    qrb8 = models.QueryRequestBatch(searches=[qr8])
-    assert not inspector.inspect(qrb8)
-
-    qrb9 = models.QueryRequestBatch(searches=[qr9])
-    assert inspector.inspect(qrb9)
-
-    qrb10 = models.QueryRequestBatch(searches=[qr10])
-    assert not inspector.inspect(qrb10)  # takes a lot of time
-
-    qrb11 = models.QueryRequestBatch(searches=[qr11])
-    assert inspector.inspect(qrb11)
-
-    qrb12 = models.QueryRequestBatch(searches=[qr12])
-    assert inspector.inspect(qrb12)
-
-    qrb13 = models.QueryRequestBatch(searches=[qr13])
-    assert not inspector.inspect(qrb13)
-
-    qrb14 = models.QueryRequestBatch(searches=[qr, qr2, qr3])
-    assert not inspector.inspect(qrb14)
-
-    qrb15 = models.QueryRequestBatch(searches=[qr, qr2, qr3, qr4, qr5])
-    assert inspector.inspect(qrb15)
+    assert inspector.inspect([mixed_point_vectors_update_op])
+    # endregion
