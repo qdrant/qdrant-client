@@ -19,7 +19,7 @@ class InspectorEmbed:
         points = [points] if not isinstance(points, list) else points
         for point in points:
             if isinstance(point, BaseModel):
-                self.parser.check_model(point.__class__)
+                self.parser.parse_model(point.__class__)
                 paths.extend(self._inspect_model(point))
 
         paths = sorted(set(paths))
@@ -29,11 +29,7 @@ class InspectorEmbed:
     def _inspect_model(
         self, mod: BaseModel, paths: Optional[List[Path]] = None, accum: Optional[str] = None
     ) -> List[str]:
-        if paths is None:
-            paths = self.parser.path_cache.get(mod.__class__.__name__, None)
-
-        if paths is None:
-            return []
+        paths = self.parser.path_cache.get(mod.__class__.__name__, []) if paths is None else paths
 
         found_paths = []
         for path in paths:
@@ -47,28 +43,28 @@ class InspectorEmbed:
     def _inspect_inner_models(
         self,
         original_model: BaseModel,
-        current: str,
+        current_path: str,
         tail: List[Path],
         accum: Optional[str] = None,
     ) -> List[str]:
         found_paths = []
         if accum is None:
-            accum = current
+            accum = current_path
         else:
-            accum += f".{current}"
+            accum += f".{current_path}"
 
-        def inspect_recursive(member: BaseModel, accum: str) -> List[str]:
+        def inspect_recursive(member: BaseModel, accumulator: str) -> List[str]:
             recursive_paths = []
             for field in model_fields_set(member):
                 if field in self.parser.name_recursive_ref_mapping:
                     mapped_field = self.parser.name_recursive_ref_mapping[field]
                     if mapped_field not in self.parser.path_cache:
-                        self.parser.check_model(getattr(models, mapped_field))
+                        self.parser.parse_model(getattr(models, mapped_field))
                     recursive_paths.extend(self.parser.path_cache[mapped_field])
 
-            return self._inspect_model(member, copy(recursive_paths), accum)
+            return self._inspect_model(member, copy(recursive_paths), accumulator)
 
-        model = getattr(original_model, current, None)
+        model = getattr(original_model, current_path, None)
         if model is None:
             return []
 
@@ -123,7 +119,7 @@ class InspectorEmbed:
                     found_paths.extend(inspect_recursive(current_model, accum))
 
                 for next_path in tail:
-                    for current_model in model:
+                    for current_model in values:
                         found_paths.extend(
                             self._inspect_inner_models(
                                 current_model,

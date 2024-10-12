@@ -123,7 +123,7 @@ class OpenApiSchemaParser:
 
         return sorted(set(document_paths))
 
-    def check_model(self, model: Type[BaseModel]) -> List[str]:
+    def parse_model(self, model: Type[BaseModel]) -> List[str]:
         model_name = model.__name__
 
         if model_name in self._cache:

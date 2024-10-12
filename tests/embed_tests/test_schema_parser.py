@@ -44,7 +44,7 @@ def check_path_recursive(plain_path_parts: list[str], paths: List[Path]) -> bool
 )
 def test_parser(model):
     parser = OpenApiSchemaParser()
-    parser.check_model(model)
+    parser.parse_model(model)
 
     for model_name, plain_paths in parser._cache.items():
         count = 0
