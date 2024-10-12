@@ -606,7 +606,6 @@ class QdrantRemote(QdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
-        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.QueryResponse:
         if isinstance(query, np.ndarray):
@@ -737,7 +736,6 @@ class QdrantRemote(QdrantBase):
         requests: Sequence[types.QueryRequest],
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
-        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> List[types.QueryResponse]:
         if self._prefer_grpc:
@@ -813,7 +811,6 @@ class QdrantRemote(QdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
-        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.GroupsResult:
         if isinstance(query, np.ndarray):
@@ -1904,7 +1901,6 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
-        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1985,7 +1981,6 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
-        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -2505,7 +2500,6 @@ class QdrantRemote(QdrantBase):
         update_operations: Sequence[types.UpdateOperation],
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
-        _cloud_inference: bool = False,
         **kwargs: Any,
     ) -> List[types.UpdateResult]:
         if self._prefer_grpc:

@@ -442,7 +442,6 @@ class QdrantClient(QdrantFastembedMixin):
             requests=requests,
             consistency=consistency,
             timeout=timeout,
-            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -585,7 +584,6 @@ class QdrantClient(QdrantFastembedMixin):
             consistency=consistency,
             shard_key_selector=shard_key_selector,
             timeout=timeout,
-            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -728,7 +726,6 @@ class QdrantClient(QdrantFastembedMixin):
             consistency=consistency,
             shard_key_selector=shard_key_selector,
             timeout=timeout,
-            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -1533,7 +1530,6 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
-            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
@@ -1587,7 +1583,6 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
-            _cloud_inference=requires_inference and self.cloud_inference,
         )
 
     def delete_vectors(
@@ -2043,7 +2038,6 @@ class QdrantClient(QdrantFastembedMixin):
             update_operations=update_operations,
             wait=wait,
             ordering=ordering,
-            _cloud_inference=requires_inference and self.cloud_inference,
             **kwargs,
         )
 
