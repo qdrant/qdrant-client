@@ -386,6 +386,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             List of query responses
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        requests = self._resolve_query_batch_request(requests)
         requires_inference = self._inference_inspector.inspect(requests)
         if requires_inference and (not self.cloud_inference):
             requests = [self._embed_models(request) for request in requests]
@@ -510,6 +511,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             QueryResponse structure containing list of found close points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and (not self.cloud_inference):
             query = self._embed_models(query, is_query=True)
@@ -644,6 +646,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Each group also contains an id of the group, which is the value of the payload field.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and (not self.cloud_inference):
             query = self._embed_models(query, is_query=True)
