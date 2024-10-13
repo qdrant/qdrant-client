@@ -266,18 +266,21 @@ def test_inspect_prefetch_types():
         query=[[0.1, 0.2]],
         prefetch=models.Prefetch(
             query=[[0.2, 0.3]],
-            prefetch=models.Prefetch(query=[[0.3, 0.4]], prefetch=models.Prefetch(query=doc)),
+            prefetch=models.Prefetch(query=[doc], prefetch=models.Prefetch(query=doc)),
         ),
     )
     assert inspector.inspect(deep_nested_prefetch)
     paths = inspector_embed.inspect(deep_nested_prefetch)
-    assert len(paths) == 1 and paths[0].as_str_list() == ["prefetch.prefetch.prefetch.query"]
+    assert len(paths) == 1 and set(paths[0].as_str_list()) == {
+        "prefetch.prefetch.prefetch.query",
+        "prefetch.prefetch.query",
+    }
 
     assert inspector.inspect([None, deep_nested_prefetch])
     paths = inspector_embed.inspect([None, deep_nested_prefetch])
-    assert len(paths) == 1 and paths[0].as_str_list() == [
-        "prefetch.prefetch.prefetch.query"
-    ]  # todo: should return a list per model
+    assert len(paths) == 1 and set(paths[0].as_str_list()) == {
+        "prefetch.prefetch.prefetch.query" "prefetch.prefetch.query"
+    }  # todo: should return a list per model
 
     # endregion
 
@@ -388,21 +391,25 @@ def test_inspect_query_requests():
         query=[[0.1, 0.2]],
         prefetch=models.Prefetch(
             query=[[0.2, 0.3]],
-            prefetch=models.Prefetch(query=[[0.3, 0.4]], prefetch=models.Prefetch(query=doc)),
+            prefetch=models.Prefetch(query=doc, prefetch=models.Prefetch(query=doc)),
         ),
     )
     assert inspector.inspect(deep_nested_prefetch_doc)
     paths = inspector_embed.inspect(deep_nested_prefetch_doc)
-    assert len(paths) == 1 and paths[0].as_str_list() == ["prefetch.prefetch.prefetch.query"]
+    assert len(paths) == 1 and set(paths[0].as_str_list()) == {
+        "prefetch.prefetch.prefetch.query",
+        "prefetch.prefetch.query",
+    }
 
     deep_nested_prefetch_doc_request = models.QueryRequest(
         prefetch=deep_nested_prefetch_doc,
     )
     assert inspector.inspect(deep_nested_prefetch_doc_request)
     paths = inspector_embed.inspect(deep_nested_prefetch_doc_request)
-    assert len(paths) == 1 and paths[0].as_str_list() == [
-        "prefetch.prefetch.prefetch.prefetch.query"
-    ]
+    assert len(paths) == 1 and set(paths[0].as_str_list()) == {
+        "prefetch.prefetch.prefetch.prefetch.query",
+        "prefetch.prefetch.prefetch.query",
+    }
 
     query_groups_request_doc = models.QueryGroupsRequest(
         query=doc,
@@ -426,9 +433,10 @@ def test_inspect_query_requests():
     )
     assert inspector.inspect(query_groups_request_deep_nested_prefetch_doc)
     paths = inspector_embed.inspect(query_groups_request_deep_nested_prefetch_doc)
-    assert len(paths) == 1 and paths[0].as_str_list() == [
-        "prefetch.prefetch.prefetch.prefetch.query"
-    ]
+    assert len(paths) == 1 and set(paths[0].as_str_list()) == {
+        "prefetch.prefetch.prefetch.prefetch.query",
+        "prefetch.prefetch.prefetch.query",
+    }
 
     query_batch_request_doc = models.QueryRequestBatch(searches=[document_only_query_request])
     assert inspector.inspect(query_batch_request_doc)
@@ -450,9 +458,10 @@ def test_inspect_query_requests():
     )
     assert inspector.inspect(query_batch_request_deep_nested_prefetch_doc)
     paths = inspector_embed.inspect(query_batch_request_deep_nested_prefetch_doc)
-    assert len(paths) == 1 and paths[0].as_str_list() == [
-        "searches.prefetch.prefetch.prefetch.prefetch.query"
-    ]
+    assert len(paths) == 1 and set(paths[0].as_str_list()) == {
+        "searches.prefetch.prefetch.prefetch.prefetch.query",
+        "searches.prefetch.prefetch.prefetch.query",
+    }
     # endregion
 
 
