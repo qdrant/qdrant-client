@@ -433,6 +433,7 @@ class QdrantClient(QdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
+        requests = self._resolve_query_batch_request(requests)
         requires_inference = self._inference_inspector.inspect(requests)
         if requires_inference and not self.cloud_inference:
             requests = [self._embed_models(request) for request in requests]
@@ -563,6 +564,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
+        query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
             query = self._embed_models(query, is_query=True)
@@ -704,6 +706,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
+        query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
             query = self._embed_models(query, is_query=True)
