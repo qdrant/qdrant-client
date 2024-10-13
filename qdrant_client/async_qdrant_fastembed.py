@@ -701,7 +701,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 raise ValueError(
                     "`query_points` requires explicit model name specification for `Document`"
                 )
-            return models.NearestQuery(nearest=query.text)
+            return models.NearestQuery(nearest=query)
         if query is None:
             return None
         raise ValueError(f"Unsupported query type: {type(query)}")
