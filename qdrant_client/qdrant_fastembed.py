@@ -818,7 +818,7 @@ class QdrantFastembedMixin(QdrantBase):
                         [current_model] if not isinstance(current_model, list) else current_model
                     )
                     embeddings = [
-                        self._embed_raw_data(data, is_query=True) for data in current_model
+                        self._embed_raw_data(data, is_query=is_query) for data in current_model
                     ]
                     if was_list:
                         setattr(item, path.current, embeddings)
@@ -830,9 +830,15 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         data: models.Document,
         is_query: bool = False,
-    ) -> Union[List[float], models.SparseVector]:
+    ) -> Union[
+        Dict[str, Union[List[float], models.SparseVector]], List[float], models.SparseVector
+    ]:
         if isinstance(data, models.Document):
             return self._embed_document(data, is_query=is_query)
+        elif isinstance(data, dict):
+            return {
+                key: self._embed_raw_data(value, is_query=is_query) for key, value in data.items()
+            }
         return data
 
     def _embed_document(
