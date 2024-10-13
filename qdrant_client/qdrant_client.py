@@ -147,6 +147,11 @@ class QdrantClient(QdrantFastembedMixin):
                 auth_token_provider=auth_token_provider,
                 **kwargs,
             )
+
+        if isinstance(self._client, QdrantLocal) and cloud_inference:
+            raise ValueError(
+                "Cloud inference is not supported for local Qdrant, consider using FastEmbed or switch to Qdrant Cloud"
+            )
         self.cloud_inference = cloud_inference
         self._inference_inspector = Inspector()
 
