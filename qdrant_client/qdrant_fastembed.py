@@ -778,7 +778,7 @@ class QdrantFastembedMixin(QdrantBase):
                 raise ValueError(
                     "`query_points` requires explicit model name specification for `Document`"
                 )
-            return models.NearestQuery(nearest=query.text)
+            return models.NearestQuery(nearest=query)
 
         if query is None:
             return None
