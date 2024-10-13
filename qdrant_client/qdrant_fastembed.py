@@ -839,6 +839,8 @@ class QdrantFastembedMixin(QdrantBase):
             return {
                 key: self._embed_raw_data(value, is_query=is_query) for key, value in data.items()
             }
+        elif isinstance(data, list):
+            return [self._embed_raw_data(value, is_query=is_query) for value in data]
         return data
 
     def _embed_document(
