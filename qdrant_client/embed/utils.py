@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class Path(BaseModel):
     current: str
-    tail: Optional[list["Path"]] = Field(default=None)
+    tail: Optional[List["Path"]] = Field(default=None)
 
     def as_str_list(self) -> List[str]:
         """
