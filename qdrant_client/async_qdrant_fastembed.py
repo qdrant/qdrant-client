@@ -12,16 +12,19 @@
 import uuid
 import warnings
 from itertools import tee
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set, get_args
 from copy import deepcopy
+import numpy as np
 from pydantic import BaseModel
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.embed_inspector import InspectorEmbed
 from qdrant_client.embed.utils import Path
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
+from qdrant_client import grpc
 
 try:
     from fastembed import SparseTextEmbedding, TextEmbedding
@@ -665,6 +668,53 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             for (dense_response, sparse_response) in zip(dense_responses, sparse_responses)
         ]
         return [self._scored_points_to_query_responses(response) for response in responses]
+
+    @staticmethod
+    def _resolve_query(
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            models.Document,
+            None,
+        ],
+    ) -> Optional[models.Query]:
+        if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
+            return query
+        if isinstance(query, types.SparseVector):
+            return models.NearestQuery(nearest=query)
+        if isinstance(query, np.ndarray):
+            return models.NearestQuery(nearest=query.tolist())
+        if isinstance(query, list):
+            return models.NearestQuery(nearest=query)
+        if isinstance(query, get_args(types.PointId)):
+            query = (
+                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
+            )
+            return models.NearestQuery(nearest=query)
+        if isinstance(query, models.Document):
+            model_name = query.model
+            if model_name is None:
+                raise ValueError(
+                    "`query_points` requires explicit model name specification for `Document`"
+                )
+            return models.NearestQuery(nearest=query.text)
+        if query is None:
+            return None
+        raise ValueError(f"Unsupported query type: {type(query)}")
+
+    def _resolve_query_request(self, query: models.QueryRequest) -> models.QueryRequest:
+        query = deepcopy(query)
+        query.query = self._resolve_query(query.query)
+        return query
+
+    def _resolve_query_batch_request(
+        self, requests: Sequence[models.QueryRequest]
+    ) -> Sequence[models.QueryRequest]:
+        return [self._resolve_query_request(query) for query in requests]
 
     def _embed_models(
         self, model: BaseModel, paths: Optional[List[Path]] = None, is_query: bool = False
