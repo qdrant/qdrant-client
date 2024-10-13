@@ -7,7 +7,7 @@ from qdrant_client.embed.schema_parser import OpenApiSchemaParser
 from qdrant_client.embed.utils import Path
 
 
-def check_path_recursive(plain_path_parts: list[str], paths: List[Path]) -> bool:
+def check_path_recursive(plain_path_parts: List[str], paths: List[Path]) -> bool:
     if not plain_path_parts:
         return True
 
