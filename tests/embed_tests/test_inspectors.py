@@ -266,7 +266,7 @@ def test_inspect_prefetch_types():
         query=[[0.1, 0.2]],
         prefetch=models.Prefetch(
             query=[[0.2, 0.3]],
-            prefetch=models.Prefetch(query=[doc], prefetch=models.Prefetch(query=doc)),
+            prefetch=models.Prefetch(query=doc, prefetch=models.Prefetch(query=doc)),
         ),
     )
     assert inspector.inspect(deep_nested_prefetch)
@@ -279,7 +279,8 @@ def test_inspect_prefetch_types():
     assert inspector.inspect([None, deep_nested_prefetch])
     paths = inspector_embed.inspect([None, deep_nested_prefetch])
     assert len(paths) == 1 and set(paths[0].as_str_list()) == {
-        "prefetch.prefetch.prefetch.query" "prefetch.prefetch.query"
+        "prefetch.prefetch.prefetch.query",
+        "prefetch.prefetch.query",
     }  # todo: should return a list per model
 
     # endregion
