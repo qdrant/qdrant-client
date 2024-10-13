@@ -608,12 +608,9 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.QueryResponse:
-        if isinstance(query, np.ndarray):
-            query = query.tolist()
-
         if self._prefer_grpc:
             if query is not None:
-                query = RestToGrpc.convert_query_interface(query)
+                query = RestToGrpc.convert_query(query)
 
             if isinstance(prefetch, models.Prefetch):
                 prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
@@ -670,14 +667,6 @@ class QdrantRemote(QdrantBase):
             return models.QueryResponse(points=scored_points)
 
         else:
-            if isinstance(query, get_args(types.PointId)):
-                query = (
-                    GrpcToRest.convert_point_id(query)
-                    if isinstance(query, grpc.PointId)
-                    else query
-                )
-                query = models.NearestQuery(nearest=query)
-
             if isinstance(query, grpc.Query):
                 query = GrpcToRest.convert_query(query)
 
@@ -813,12 +802,9 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
-        if isinstance(query, np.ndarray):
-            query = query.tolist()
-
         if self._prefer_grpc:
             if query is not None:
-                query = RestToGrpc.convert_query_interface(query)
+                query = RestToGrpc.convert_query(query)
 
             if isinstance(prefetch, models.Prefetch):
                 prefetch = [RestToGrpc.convert_prefetch_query(prefetch)]
@@ -880,14 +866,6 @@ class QdrantRemote(QdrantBase):
             ).result
             return GrpcToRest.convert_groups_result(result)
         else:
-            if isinstance(query, get_args(types.PointId)):
-                query = (
-                    GrpcToRest.convert_point_id(query)
-                    if isinstance(query, grpc.PointId)
-                    else query
-                )
-                query = models.NearestQuery(nearest=query)
-
             if isinstance(query, grpc.Query):
                 query = GrpcToRest.convert_query(query)
 
