@@ -446,7 +446,7 @@ def test_update_vectors(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_query_points(prefer_grpc):
+def test_query_points_and_query_points_groups(prefer_grpc):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -454,6 +454,9 @@ def test_query_points(prefer_grpc):
     local_kwargs = {}
     local_client._client.query_points = arg_interceptor(
         local_client._client.query_points, local_kwargs
+    )
+    local_client._client.query_points_groups = arg_interceptor(
+        local_client._client.query_points_groups, local_kwargs
     )
 
     sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
@@ -463,7 +466,7 @@ def test_query_points(prefer_grpc):
     sparse_doc_5 = models.Document(text="good morning world", model=SPARSE_MODEL_NAME)
 
     points = [
-        models.PointStruct(id=i, vector={"text": doc})
+        models.PointStruct(id=i, vector={"text": doc}, payload={"content": doc.text})
         for i, doc in enumerate(
             [sparse_doc_1, sparse_doc_2, sparse_doc_3, sparse_doc_4, sparse_doc_5]
         )
@@ -471,6 +474,49 @@ def test_query_points(prefer_grpc):
 
     populate_sparse_collection(local_client, points, vector_name="text")
     populate_sparse_collection(remote_client, points, vector_name="text")
+
+    # region query_points_groups
+    local_client.query_points_groups(
+        COLLECTION_NAME, group_by="content", query=sparse_doc_1, using="text"
+    )
+    remote_client.query_points_groups(
+        COLLECTION_NAME, group_by="content", query=sparse_doc_1, using="text"
+    )
+    current_query = local_kwargs["query"]
+    assert isinstance(current_query.nearest, models.SparseVector)
+    doc_point = local_client.retrieve(COLLECTION_NAME, ids=[0], with_vectors=True)[0]
+    # assert that we generate different embeddings for doc and query
+    assert not (
+        np.allclose(doc_point.vector["text"].values, current_query.nearest.values, atol=1e-3)
+    )
+
+    prefetch_1 = models.Prefetch(
+        query=models.NearestQuery(nearest=sparse_doc_2), using="text", limit=3
+    )
+    prefetch_2 = models.Prefetch(
+        query=models.NearestQuery(nearest=sparse_doc_3), using="text", limit=3
+    )
+
+    local_client.query_points_groups(
+        COLLECTION_NAME,
+        group_by="content",
+        query=sparse_doc_1,
+        prefetch=[prefetch_1, prefetch_2],
+        using="text",
+    )
+    remote_client.query_points_groups(
+        COLLECTION_NAME,
+        group_by="content",
+        query=sparse_doc_1,
+        prefetch=[prefetch_1, prefetch_2],
+        using="text",
+    )
+    current_query = local_kwargs["query"]
+    current_prefetch = local_kwargs["prefetch"]
+    assert isinstance(current_query.nearest, models.SparseVector)
+    assert isinstance(current_prefetch[0].query.nearest, models.SparseVector)
+    assert isinstance(current_prefetch[1].query.nearest, models.SparseVector)
+    # endregion
 
     # region non-prefetch queries
     local_client.query_points(COLLECTION_NAME, sparse_doc_1, using="text")
@@ -572,142 +618,93 @@ def test_query_points(prefer_grpc):
     contexts = current_query.context
     assert all(isinstance(context.positive, models.SparseVector) for context in contexts)
     assert all(isinstance(context.negative, models.SparseVector) for context in contexts)
-
-    local_client.delete_collection(COLLECTION_NAME)
-    remote_client.delete_collection(COLLECTION_NAME)
     # endregion
 
     # region prefetch queries
+    prefetch = models.Prefetch(
+        query=nearest_query,
+        prefetch=models.Prefetch(
+            query=nearest_query,
+            prefetch=models.Prefetch(
+                query=nearest_query,
+                prefetch=[
+                    models.Prefetch(query=discover_query_list, limit=5, using="text"),
+                    models.Prefetch(query=nearest_query, using="text", limit=5),
+                ],
+                using="text",
+                limit=4,
+            ),
+            using="text",
+            limit=3,
+        ),
+        using="text",
+        limit=2,
+    )
+    # todo: uncomment once paths are returned for each element separately
+    # local_client.query_points(COLLECTION_NAME, query=nearest_query, prefetch=prefetch, limit=1, using="text")
+    # remote_client.query_points(COLLECTION_NAME, query=nearest_query, prefetch=prefetch, limit=1, using="text")
+    # current_query = local_kwargs["query"]
+    # current_prefetch = local_kwargs["prefetch"]
+    # assert isinstance(current_query.nearest, models.SparseVector)
+    # assert isinstance(current_prefetch.query.nearest, models.SparseVector)
+    # assert isinstance(current_prefetch.prefetch.query.nearest, models.SparseVector)
+    # assert isinstance(current_prefetch.prefetch.prefetch.query.nearest, models.SparseVector)
+    # assert isinstance(current_prefetch.prefetch.prefetch.prefetch[0].query.discover.target, models.SparseVector)
+    # context_pairs = current_prefetch.prefetch.prefetch.prefetch[0].query.discover.context
+    # assert all(isinstance(pair.positive, models.SparseVector) for pair in context_pairs)
+    # assert all(isinstance(pair.negative, models.SparseVector) for pair in context_pairs)
+
+    # assert isinstance(current_prefetch.prefetch.prefetch.prefetch[1].query.nearest, models.SparseVector)
+
     # endregion
 
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
 
-@pytest.mark.skip(reason="Not implemented")
+
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_query_batch_points(prefer_grpc):
-    pass
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    local_kwargs = {}
+    local_client._client.query_batch_points = arg_interceptor(
+        local_client._client.query_batch_points, local_kwargs
+    )
 
+    dense_doc_1 = models.Document(text="hello world", model=DENSE_MODEL_NAME)
+    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
+    dense_doc_3 = models.Document(text="goodbye world", model=DENSE_MODEL_NAME)
+    dense_doc_4 = models.Document(text="good afternoon world", model=DENSE_MODEL_NAME)
+    dense_doc_5 = models.Document(text="good morning world", model=DENSE_MODEL_NAME)
 
-@pytest.mark.skip(reason="Not implemented")
-@pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_query_points_groups(prefer_grpc):
-    pass
+    points = [
+        models.PointStruct(id=i, vector=dense_doc)
+        for i, dense_doc in enumerate(
+            [dense_doc_1, dense_doc_2, dense_doc_3, dense_doc_4, dense_doc_5]
+        )
+    ]
 
+    populate_dense_collection(local_client, points)
+    populate_dense_collection(remote_client, points)
 
-@pytest.mark.skip(reason="Not implemented")
-def test_is_query_embed():
-    pass
+    prefetch_1 = models.Prefetch(query=models.NearestQuery(nearest=dense_doc_2), limit=3)
+    prefetch_2 = models.Prefetch(query=models.NearestQuery(nearest=dense_doc_3), limit=3)
 
+    query_requests = [
+        models.QueryRequest(query=models.NearestQuery(nearest=dense_doc_1)),
+        models.QueryRequest(
+            query=models.NearestQuery(nearest=dense_doc_2), prefetch=[prefetch_1, prefetch_2]
+        ),
+    ]
 
-# @pytest.mark.parametrize("prefer_grpc", [False, True])
-# def test_query_embeddings_prefetch(prefer_grpc):
-#     def query_is_float_list(pref: BaseModel) -> bool:
-#         nearest = pref.query
-#         if isinstance(nearest, models.NearestQuery):
-#             nearest = nearest.nearest
-#         return isinstance(nearest, list) and isinstance(nearest[0], float)
-#
-#     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-#     remote_client = QdrantClient(prefer_grpc=prefer_grpc)
-#     if not remote_client._FASTEMBED_INSTALLED:
-#         pytest.skip("FastEmbed is not installed, skipping")
-#
-#     empty_list_prefetch = models.Prefetch(query=[0.2, 0.1], prefetch=[])
-#     none_prefetch = models.Prefetch(query=[0.2, 0.1], prefetch=None)
-#     assert remote_client._embed_models(empty_list_prefetch).prefetch == []
-#     assert remote_client._embed_models(none_prefetch).prefetch is None
-#
-#     nearest_query = models.NearestQuery(
-#         nearest=models.Document(text="nearest on prefetch", model=model_name)
-#     )
-#     prefetch = models.Prefetch(query=nearest_query)
-#     converted_prefetch = remote_client._embed_models(prefetch)
-#     assert query_is_float_list(converted_prefetch)
-#
-#     nested_prefetch = models.Prefetch(
-#         query=nearest_query,
-#         prefetch=models.Prefetch(
-#             query=[0.2, 0.3],
-#             prefetch=[
-#                 models.Prefetch(
-#                     query=models.Document(text="nested on prefetch", model=model_name),
-#                     prefetch=models.Prefetch(
-#                         query=models.Document(text="deep text", model=model_name)
-#                     ),
-#                 ),
-#                 models.Prefetch(
-#                     prefetch=[
-#                         models.Prefetch(
-#                             query=models.Document(text="another deep text", model=model_name)
-#                         ),
-#                         models.Prefetch(
-#                             query=models.Document(text="yet another deep text", model=model_name)
-#                         ),
-#                         models.Prefetch(query=[0.2, 0.4]),
-#                     ]
-#                 ),
-#             ],
-#         ),
-#     )
-#     converted_nested_prefetch = remote_client._embed_models(nested_prefetch)
-#     assert query_is_float_list(converted_nested_prefetch)  # nearest_query check
-#
-#     child_prefetch = converted_nested_prefetch.prefetch
-#     grandchild_prefetches = child_prefetch.prefetch
-#     assert query_is_float_list(grandchild_prefetches[0])  # "nested on prefetch" check
-#     assert query_is_float_list(grandchild_prefetches[0].prefetch)  # "deep text" check
-#     assert query_is_float_list(grandchild_prefetches[1].prefetch[0])  # "another deep text" check
-#     assert query_is_float_list(grandchild_prefetches[1].prefetch[1])  # yet another deep text check
-#
-#
-# def test_query_batch_points():
-#     major, minor, patch, dev = read_version()
-#     if major is not None and (major, minor, patch) < (1, 10, 0):
-#         pytest.skip("Works as of qdrant 1.11.0")
-#
-#     local_client = QdrantClient(":memory:")
-#     if not local_client._FASTEMBED_INSTALLED:
-#         pytest.skip("FastEmbed is not installed, skipping")
-#     remote_client = QdrantClient()
-#     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-#     dim = 384
-#     collection_name = "test-doc-embed"
-#     local_client.create_collection(
-#         collection_name,
-#         vectors_config=models.VectorParams(size=dim, distance=models.Distance.COSINE),
-#     )
-#     if remote_client.collection_exists(collection_name):
-#         remote_client.delete_collection(collection_name)
-#     remote_client.create_collection(
-#         collection_name,
-#         vectors_config=models.VectorParams(size=dim, distance=models.Distance.COSINE),
-#     )
-#
-#     texts = [
-#         "It's a short document",
-#         "Another short document",
-#         "Document to check query requests",
-#         "A nonsense document",
-#     ]
-#     points = [
-#         models.PointStruct(id=i, vector=models.Document(text=text, model=model_name))
-#         for i, text in enumerate(texts)
-#     ]
-#     # upload data
-#     local_client.upsert(collection_name, points=points)
-#     remote_client.upsert(collection_name, points=points)
-#     query_requests = [
-#         models.QueryRequest(
-#             query=models.NearestQuery(
-#                 nearest=models.Document(text="It's a short query", model=model_name)
-#             )
-#         ),
-#         models.QueryRequest(
-#             query=models.NearestQuery(nearest=[random.random() for _ in range(dim)])
-#         ),
-#     ]
-#
-#     compare_client_results(
-#         remote_client,
-#         local_client,
-#         lambda c: c.query_batch_points(collection_name, requests=query_requests),
-#     )
+    # todo: uncomment once query_batch_points passes the correct offset type
+    # local_client.query_batch_points(COLLECTION_NAME, query_requests)
+    remote_client.query_batch_points(COLLECTION_NAME, query_requests)
+    current_requests = local_kwargs["requests"]
+    # assert all([isinstance(request.query.nearest, list) for request in current_requests])
+    # assert all([isinstance(prefetch.query.nearest, list) for prefetch in current_requests[1].prefetch])
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
