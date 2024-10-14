@@ -133,14 +133,13 @@ def test_upsert(prefer_grpc):
         COLLECTION_NAME,
         vectors_config={
             "text": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
-            # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-            # "multi-text": models.VectorParams(
-            #     size=COLBERT_DIM,
-            #     distance=models.Distance.COSINE,
-            #     multivector_config=models.MultiVectorConfig(
-            #         comparator=models.MultiVectorComparator.MAX_SIM
-            #     ),
-            # ),
+            "multi-text": models.VectorParams(
+                size=COLBERT_DIM,
+                distance=models.Distance.COSINE,
+                multivector_config=models.MultiVectorConfig(
+                    comparator=models.MultiVectorComparator.MAX_SIM
+                ),
+            ),
         },
         sparse_vectors_config={
             "sparse-text": models.SparseVectorParams(modifier=models.Modifier.IDF)
@@ -150,14 +149,13 @@ def test_upsert(prefer_grpc):
         COLLECTION_NAME,
         vectors_config={
             "text": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
-            # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-            # "multi-text": models.VectorParams(
-            #     size=COLBERT_DIM,
-            #     distance=models.Distance.COSINE,
-            #     multivector_config=models.MultiVectorConfig(
-            #         comparator=models.MultiVectorComparator.MAX_SIM
-            #     ),
-            # ),
+            "multi-text": models.VectorParams(
+                size=COLBERT_DIM,
+                distance=models.Distance.COSINE,
+                multivector_config=models.MultiVectorConfig(
+                    comparator=models.MultiVectorComparator.MAX_SIM
+                ),
+            ),
         },
         sparse_vectors_config={
             "sparse-text": models.SparseVectorParams(modifier=models.Modifier.IDF)
@@ -168,8 +166,7 @@ def test_upsert(prefer_grpc):
             id=1,
             vector={
                 "text": dense_doc_1,
-                # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-                # "multi-text": multi_doc_1,
+                "multi-text": multi_doc_1,
                 "sparse-text": sparse_doc_1,
             },
         ),
@@ -177,8 +174,7 @@ def test_upsert(prefer_grpc):
             id=2,
             vector={
                 "text": dense_doc_2,
-                # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-                # "multi-text": multi_doc_2,
+                "multi-text": multi_doc_2,
                 "sparse-text": sparse_doc_2,
             },
         ),
@@ -190,8 +186,7 @@ def test_upsert(prefer_grpc):
     for vec_point in vec_points:
         assert isinstance(vec_point.vector, dict)
         assert isinstance(vec_point.vector["text"], list)
-        # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-        # assert isinstance(vec_point.vector["multi-text"], list)
+        assert isinstance(vec_point.vector["multi-text"], list)
         assert isinstance(vec_point.vector["sparse-text"], models.SparseVector)
 
     compare_collections(
@@ -202,8 +197,7 @@ def test_upsert(prefer_grpc):
         ids=[1, 2],
         vectors={
             "text": [dense_doc_1, dense_doc_2],
-            # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-            # "multi-text": [multi_doc_1, multi_doc_2],
+            "multi-text": [multi_doc_1, multi_doc_2],
             "sparse-text": [sparse_doc_1, sparse_doc_2],
         },
     )
@@ -214,8 +208,7 @@ def test_upsert(prefer_grpc):
     vectors = batch.vectors
     assert isinstance(vectors, dict)
     assert all([isinstance(vector, list) for vector in vectors["text"]])
-    # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-    # assert all([isinstance(vector, list) for vector in vec_point["multi-text"]])
+    assert all([isinstance(vector, list) for vector in vectors["multi-text"]])
     assert all([isinstance(vector, models.SparseVector) for vector in vectors["sparse-text"]])
 
     local_client.delete_collection(COLLECTION_NAME)
