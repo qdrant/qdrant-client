@@ -56,7 +56,7 @@ def populate_dense_collection(
 
 def populate_sparse_collection(
     client: QdrantBase,
-    points: list[models.PointStruct],
+    points: List[models.PointStruct],
     vector_name: str,
     collection_name: str = COLLECTION_NAME,
     recreate: bool = True,
