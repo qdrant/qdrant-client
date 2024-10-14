@@ -1,14 +1,18 @@
 # import random
+from typing import Optional
 
 # import numpy as np
 import pytest
+
 # from pydantic import BaseModel
 
 from qdrant_client import QdrantClient, models
+from qdrant_client.client_base import QdrantBase
 from tests.congruence_tests.test_common import (
     compare_collections,
     # compare_client_results
 )
+
 # from tests.utils import read_version
 
 
@@ -30,6 +34,22 @@ def arg_interceptor(func, kwarg_storage):
     return wrapper
 
 
+def populate_dense_collection(
+    client: QdrantBase,
+    points: list[models.PointStruct],
+    vector_name: Optional[str] = None,
+    collection_name: str = COLLECTION_NAME,
+    recreate: bool = True,
+) -> None:
+    if recreate:
+        if client.collection_exists(collection_name):
+            client.delete_collection(collection_name)
+        vector_params = models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE)
+        vectors_config = {vector_name: vector_params} if vector_name else vector_params
+        client.create_collection(collection_name, vectors_config=vectors_config)
+    client.upsert(collection_name, points)
+
+
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_upsert(prefer_grpc):
     local_client = QdrantClient(":memory:")
@@ -49,19 +69,8 @@ def test_upsert(prefer_grpc):
         models.PointStruct(id=2, vector=dense_doc_2),
     ]
 
-    local_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
-    )
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(COLLECTION_NAME)
-    remote_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
-    )
-
-    local_client.upsert(COLLECTION_NAME, points)
-    remote_client.upsert(COLLECTION_NAME, points)
+    populate_dense_collection(local_client, points)
+    populate_dense_collection(remote_client, points)
 
     vec_points = local_kwargs["points"]
     assert all([isinstance(vec_point.vector, list) for vec_point in vec_points])
@@ -294,24 +303,13 @@ def test_batch_update_points(prefer_grpc):
     dense_doc_2 = models.Document(text="bye world", model="sentence-transformers/all-MiniLM-L6-v2")
 
     # region unnamed
-    local_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
-    )
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(COLLECTION_NAME)
-    remote_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
-    )
-
     points = [
         models.PointStruct(id=1, vector=dense_doc_1),
         models.PointStruct(id=2, vector=dense_doc_2),
     ]
 
-    local_client.upsert(COLLECTION_NAME, points=points)
-    remote_client.upsert(COLLECTION_NAME, points=points)
+    populate_dense_collection(local_client, points)
+    populate_dense_collection(remote_client, points)
 
     batch = models.Batch(ids=[2, 3], vectors=[dense_doc_1, dense_doc_2])
     upsert_operation = models.UpsertOperation(upsert=models.PointsBatch(batch=batch))
@@ -327,21 +325,191 @@ def test_batch_update_points(prefer_grpc):
         num_vectors=10,
         collection_name=COLLECTION_NAME,
     )
+
+    new_points = [
+        models.PointStruct(id=3, vector=dense_doc_1),
+        models.PointStruct(id=4, vector=dense_doc_2),
+    ]
+    upsert_operation = models.UpsertOperation(upsert=models.PointsList(points=new_points))
+    local_client.batch_update_points(COLLECTION_NAME, [upsert_operation])
+    remote_client.batch_update_points(COLLECTION_NAME, [upsert_operation])
+    current_operation = local_kwargs["update_operations"][0]
+    current_batch = current_operation.upsert.points
+    assert all([isinstance(vector.vector, list) for vector in current_batch])
+
+    update_vectors_operation = models.UpdateVectorsOperation(
+        update_vectors=models.UpdateVectors(points=[models.PointVectors(id=1, vector=dense_doc_2)])
+    )
+    upsert_operation = models.UpsertOperation(
+        upsert=models.PointsList(points=[models.PointStruct(id=5, vector=dense_doc_2)])
+    )
+    local_client.batch_update_points(COLLECTION_NAME, [update_vectors_operation, upsert_operation])
+    remote_client.batch_update_points(
+        COLLECTION_NAME, [update_vectors_operation, upsert_operation]
+    )
+    current_update_operation = local_kwargs["update_operations"][0]
+    current_upsert_operation = local_kwargs["update_operations"][1]
+
+    assert all(
+        [
+            isinstance(vector.vector, list)
+            for vector in current_update_operation.update_vectors.points
+        ]
+    )
+    assert all(
+        [isinstance(vector.vector, list) for vector in current_upsert_operation.upsert.points]
+    )
+
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
 
-    # todo: complete
-    # models.UpsertOperation(upsert=models.PointsBatch(batch=...))
-    # models.UpsertOperation(upsert=models.PointsList(points=[models.PointStruct(...)]))
-    # models.UpdateVectorsOperation(update_vectors=models.UpdateVectors(points=[models.PointVectors(id=..., vector=...)]))
+    # region named
 
+    points = [
+        models.PointStruct(id=1, vector={"text": dense_doc_1}),
+        models.PointStruct(id=2, vector={"text": dense_doc_2}),
+    ]
+
+    populate_dense_collection(local_client, points, vector_name="text")
+    populate_dense_collection(remote_client, points, vector_name="text")
+
+    batch = models.Batch(ids=[2, 3], vectors={"text": [dense_doc_1, dense_doc_2]})
+    upsert_operation = models.UpsertOperation(upsert=models.PointsBatch(batch=batch))
+    local_client.batch_update_points(COLLECTION_NAME, [upsert_operation])
+    remote_client.batch_update_points(COLLECTION_NAME, [upsert_operation])
+    current_operation = local_kwargs["update_operations"][0]
+    current_batch = current_operation.upsert.batch
+    assert all([isinstance(vector, list) for vector in current_batch.vectors.values()])
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    new_points = [
+        models.PointStruct(id=3, vector={"text": dense_doc_1}),
+        models.PointStruct(id=4, vector={"text": dense_doc_2}),
+    ]
+    upsert_operation = models.UpsertOperation(upsert=models.PointsList(points=new_points))
+    local_client.batch_update_points(COLLECTION_NAME, [upsert_operation])
+    remote_client.batch_update_points(COLLECTION_NAME, [upsert_operation])
+    current_operation = local_kwargs["update_operations"][0]
+    current_batch = current_operation.upsert.points
+    assert all([isinstance(vector.vector["text"], list) for vector in current_batch])
+
+    update_vectors_operation = models.UpdateVectorsOperation(
+        update_vectors=models.UpdateVectors(
+            points=[models.PointVectors(id=1, vector={"text": dense_doc_2})]
+        )
+    )
+    upsert_operation = models.UpsertOperation(
+        upsert=models.PointsList(points=[models.PointStruct(id=5, vector={"text": dense_doc_2})])
+    )
+    local_client.batch_update_points(COLLECTION_NAME, [update_vectors_operation, upsert_operation])
+    remote_client.batch_update_points(
+        COLLECTION_NAME, [update_vectors_operation, upsert_operation]
+    )
+    current_update_operation = local_kwargs["update_operations"][0]
+    current_upsert_operation = local_kwargs["update_operations"][1]
+
+    assert all(
+        [
+            isinstance(vector.vector["text"], list)
+            for vector in current_update_operation.update_vectors.points
+        ]
+    )
+    assert all(
+        [
+            isinstance(vector.vector["text"], list)
+            for vector in current_upsert_operation.upsert.points
+        ]
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
     # endregion
 
 
-@pytest.mark.skip(reason="Not implemented")
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_update_vectors(prefer_grpc):
-    pass
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    local_kwargs = {}
+    local_client._client.update_vectors = arg_interceptor(
+        local_client._client.update_vectors, local_kwargs
+    )
+
+    dense_doc_1 = models.Document(
+        text="hello world", model="sentence-transformers/all-MiniLM-L6-v2"
+    )
+    dense_doc_2 = models.Document(text="bye world", model="sentence-transformers/all-MiniLM-L6-v2")
+    dense_doc_3 = models.Document(
+        text="goodbye world", model="sentence-transformers/all-MiniLM-L6-v2"
+    )
+    # region unnamed
+    points = [
+        models.PointStruct(id=1, vector=dense_doc_1),
+        models.PointStruct(id=2, vector=dense_doc_2),
+    ]
+
+    populate_dense_collection(local_client, points)
+    populate_dense_collection(remote_client, points)
+
+    point_vectors = [
+        models.PointVectors(id=1, vector=dense_doc_2),
+        models.PointVectors(id=2, vector=dense_doc_3),
+    ]
+
+    local_client.update_vectors(COLLECTION_NAME, point_vectors)
+    remote_client.update_vectors(COLLECTION_NAME, point_vectors)
+    current_vectors = local_kwargs["points"]
+    assert all([isinstance(vector.vector, list) for vector in current_vectors])
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
+
+    # region named
+    points = [
+        models.PointStruct(id=1, vector={"text": dense_doc_1}),
+        models.PointStruct(id=2, vector={"text": dense_doc_2}),
+    ]
+
+    populate_dense_collection(local_client, points, vector_name="text")
+    populate_dense_collection(remote_client, points, vector_name="text")
+
+    point_vectors = [
+        models.PointVectors(id=1, vector={"text": dense_doc_2}),
+        models.PointVectors(id=2, vector={"text": dense_doc_3}),
+    ]
+
+    local_client.update_vectors(COLLECTION_NAME, point_vectors)
+    remote_client.update_vectors(COLLECTION_NAME, point_vectors)
+    current_vectors = local_kwargs["points"]
+    assert all([isinstance(vector.vector["text"], list) for vector in current_vectors])
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
 
 
 @pytest.mark.skip(reason="Not implemented")
@@ -498,104 +666,6 @@ def test_query_points_groups(prefer_grpc):
 #     assert query_is_float_list(grandchild_prefetches[0].prefetch)  # "deep text" check
 #     assert query_is_float_list(grandchild_prefetches[1].prefetch[0])  # "another deep text" check
 #     assert query_is_float_list(grandchild_prefetches[1].prefetch[1])  # yet another deep text check
-#
-#
-# def test_upsert_and_update():
-#     local_client = QdrantClient(":memory:")
-#     if not local_client._FASTEMBED_INSTALLED:
-#         pytest.skip("FastEmbed is not installed, skipping")
-#     remote_client = QdrantClient()
-#     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-#     collection_name = "test-doc-embed"
-#     local_client.create_collection(
-#         collection_name,
-#         vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
-#     )
-#     if remote_client.collection_exists(collection_name):
-#         remote_client.delete_collection(collection_name)
-#     remote_client.create_collection(
-#         collection_name,
-#         vectors_config=models.VectorParams(size=384, distance=models.Distance.COSINE),
-#     )
-#
-#     points = [
-#         models.PointStruct(
-#             id=1, vector=models.Document(text="It's a short query", model=model_name)
-#         ),
-#         models.PointStruct(
-#             id=2, vector=models.Document(text="It's another short query", model=model_name)
-#         ),
-#         models.PointStruct(
-#             id=3, vector=models.Document(text="It's an old good query", model=model_name)
-#         ),
-#     ]
-#     local_client.upsert(
-#         collection_name,
-#         points=points,
-#     )
-#     remote_client.upsert(collection_name, points=points)
-#
-#     compare_collections(
-#         local_client, remote_client, num_vectors=3, collection_name=collection_name
-#     )
-#
-#     prev_vector = local_client.retrieve(collection_name, ids=[1], with_vectors=True)
-#     update_vector_points = [
-#         models.PointVectors(
-#             id=1, vector=models.Document(text="It's a substitution", model=model_name)
-#         )
-#     ]
-#     local_client.update_vectors(collection_name, update_vector_points)
-#     remote_client.update_vectors(collection_name, update_vector_points)
-#
-#     updated_point = local_client.retrieve(collection_name, ids=[1], with_vectors=True)
-#
-#     assert not np.allclose(updated_point[0].vector, prev_vector[0].vector, atol=10e-4)
-#
-#     compare_collections(
-#         local_client, remote_client, num_vectors=3, collection_name=collection_name
-#     )
-#
-#     operations = [
-#         models.UpsertOperation(
-#             upsert=models.PointsList(
-#                 points=[
-#                     models.PointStruct(
-#                         id=1,
-#                         vector=models.Document(text="A completely new document", model=model_name),
-#                     )
-#                 ]
-#             )
-#         ),
-#         models.UpsertOperation(
-#             upsert=models.PointsBatch(
-#                 batch=models.Batch(
-#                     ids=[3], vectors=[models.Document(text="A decent document", model=model_name)]
-#                 )
-#             )
-#         ),
-#         models.UpdateVectorsOperation(
-#             update_vectors=models.UpdateVectors(
-#                 points=[
-#                     models.PointVectors(
-#                         id=2, vector=models.Document(text="Yet another document", model=model_name)
-#                     )
-#                 ]
-#             )
-#         ),
-#     ]
-#     old_points = local_client.retrieve(collection_name, ids=[1, 2, 3], with_vectors=True)
-#
-#     local_client.batch_update_points(collection_name, operations)
-#     remote_client.batch_update_points(collection_name, operations)
-#     new_points = local_client.retrieve(collection_name, ids=[1, 2, 3], with_vectors=True)
-#
-#     assert not np.allclose(new_points[0].vector, old_points[0].vector, atol=10e-4)
-#     assert not np.allclose(new_points[1].vector, old_points[1].vector, atol=10e-4)
-#     assert not np.allclose(new_points[2].vector, old_points[2].vector, atol=10e-4)
-#     compare_collections(
-#         local_client, remote_client, num_vectors=3, collection_name=collection_name
-#     )
 #
 #
 # def test_query_batch_points():
