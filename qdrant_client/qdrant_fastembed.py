@@ -18,7 +18,7 @@ from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 from qdrant_client import grpc
 
 try:
-    from fastembed import SparseTextEmbedding, TextEmbedding
+    from fastembed import SparseTextEmbedding, TextEmbedding, LateInteractionTextEmbedding
     from fastembed.common import OnnxProvider
 except ImportError:
     TextEmbedding = None
@@ -51,13 +51,19 @@ IDF_EMBEDDING_MODELS: Set[str] = (
     else set()
 )
 
+_LATE_INTERACTION_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+    {model["model"]: model for model in LateInteractionTextEmbedding.list_supported_models()}
+    if LateInteractionTextEmbedding
+    else {}
+)
+
 
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
 
     embedding_models: Dict[str, "TextEmbedding"] = {}
     sparse_embedding_models: Dict[str, "SparseTextEmbedding"] = {}
-
+    late_interaction_embedding_models: Dict[str, "LateInteractionTextEmbedding"] = {}
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, **kwargs: Any):
@@ -248,6 +254,34 @@ class QdrantFastembedMixin(QdrantBase):
             **kwargs,
         )
         return cls.sparse_embedding_models[model_name]
+
+    @classmethod
+    def _get_or_init_late_interaction_model(
+        cls,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
+        **kwargs: Any,
+    ) -> "LateInteractionTextEmbedding":
+        if model_name in cls.late_interaction_embedding_models:
+            return cls.late_interaction_embedding_models[model_name]
+
+        cls._import_fastembed()
+
+        if model_name not in _LATE_INTERACTION_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_EMBEDDING_MODELS}"
+            )
+
+        cls.late_interaction_embedding_models[model_name] = LateInteractionTextEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            providers=providers,
+            **kwargs,
+        )
+        return cls.late_interaction_embedding_models[model_name]
 
     def _embed_documents(
         self,
@@ -870,5 +904,14 @@ class QdrantFastembedMixin(QdrantBase):
             return models.SparseVector(
                 indices=sparse_embedding.indices.tolist(), values=sparse_embedding.values.tolist()
             )
+        elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
+            li_embedding_model_inst = self._get_or_init_late_interaction_model(
+                model_name=model_name
+            )
+            if not is_query:
+                embedding = list(li_embedding_model_inst.embed(documents=[text]))[0].tolist()
+            else:
+                embedding = list(li_embedding_model_inst.query_embed(query=text))[0].tolist()
+            return embedding
         else:
             raise ValueError(f"{model_name} is not among supported models")
