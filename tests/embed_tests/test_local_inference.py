@@ -1,6 +1,8 @@
 # import random
 from typing import Optional
 
+import numpy as np
+
 # import numpy as np
 import pytest
 
@@ -10,8 +12,10 @@ from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
 from tests.congruence_tests.test_common import (
     compare_collections,
+    compare_client_results,
     # compare_client_results
 )
+from qdrant_client.qdrant_fastembed import IDF_EMBEDDING_MODELS
 
 # from tests.utils import read_version
 
@@ -50,6 +54,29 @@ def populate_dense_collection(
     client.upsert(collection_name, points)
 
 
+def populate_sparse_collection(
+    client: QdrantBase,
+    points: list[models.PointStruct],
+    vector_name: str,
+    collection_name: str = COLLECTION_NAME,
+    recreate: bool = True,
+    model_name: str = SPARSE_MODEL_NAME,
+) -> None:
+    if recreate:
+        if client.collection_exists(collection_name):
+            client.delete_collection(collection_name)
+        sparse_vector_params = models.SparseVectorParams(
+            modifier=(
+                models.Modifier.IDF if model_name in IDF_EMBEDDING_MODELS else models.Modifier.NONE
+            )
+        )
+        sparse_vectors_config = {vector_name: sparse_vector_params}
+        client.create_collection(
+            collection_name, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+        )
+    client.upsert(collection_name, points)
+
+
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_upsert(prefer_grpc):
     local_client = QdrantClient(":memory:")
@@ -59,16 +86,18 @@ def test_upsert(prefer_grpc):
     local_kwargs = {}
     local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
 
+    dense_doc_1 = models.Document(text="hello world", model=DENSE_MODEL_NAME)
+    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
+    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
+    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
+    multi_doc_1 = models.Document(text="hello world", model=COLBERT_MODEL_NAME)
+    multi_doc_2 = models.Document(text="bye world", model=COLBERT_MODEL_NAME)
+
     # region dense unnamed
-    dense_doc_1 = models.Document(
-        text="hello world", model="sentence-transformers/all-MiniLM-L6-v2"
-    )
-    dense_doc_2 = models.Document(text="bye world", model="sentence-transformers/all-MiniLM-L6-v2")
     points = [
         models.PointStruct(id=1, vector=dense_doc_1),
         models.PointStruct(id=2, vector=dense_doc_2),
     ]
-
     populate_dense_collection(local_client, points)
     populate_dense_collection(remote_client, points)
 
@@ -95,98 +124,6 @@ def test_upsert(prefer_grpc):
         collection_name=COLLECTION_NAME,
     )
 
-    local_client.delete_collection(COLLECTION_NAME)
-    remote_client.delete_collection(COLLECTION_NAME)
-    # endregion
-
-    # region sparse
-    local_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config={},
-        sparse_vectors_config={"text": models.SparseVectorParams(modifier=models.Modifier.IDF)},
-    )
-    remote_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config={},
-        sparse_vectors_config={"text": models.SparseVectorParams(modifier=models.Modifier.IDF)},
-    )
-
-    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
-    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
-    points = [
-        models.PointStruct(id=1, vector={"text": sparse_doc_1}),
-        models.PointStruct(id=2, vector={"text": sparse_doc_2}),
-    ]
-
-    local_client.upsert(COLLECTION_NAME, points)
-    remote_client.upsert(COLLECTION_NAME, points)
-
-    vec_points = local_kwargs["points"]
-    for vec_point in vec_points:
-        assert isinstance(vec_point.vector, dict)
-        assert isinstance(vec_point.vector["text"], models.SparseVector)
-
-    compare_collections(
-        local_client, remote_client, num_vectors=10, collection_name=COLLECTION_NAME
-    )
-    batch = models.Batch(ids=[1, 2], vectors={"text": [sparse_doc_1, sparse_doc_2]})
-    local_client.upsert(COLLECTION_NAME, batch)
-    remote_client.upsert(COLLECTION_NAME, batch)
-
-    batch = local_kwargs["points"]
-    vectors = batch.vectors
-    assert isinstance(vectors, dict)
-    assert all([isinstance(vector, models.SparseVector) for vector in vectors["text"]])
-
-    local_client.delete_collection(COLLECTION_NAME)
-    remote_client.delete_collection(COLLECTION_NAME)
-    # endregion
-
-    # region multi unnamed
-    local_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=models.VectorParams(
-            size=COLBERT_DIM,
-            distance=models.Distance.COSINE,
-            multivector_config=models.MultiVectorConfig(
-                comparator=models.MultiVectorComparator.MAX_SIM
-            ),
-        ),
-    )
-    remote_client.create_collection(
-        COLLECTION_NAME,
-        vectors_config=models.VectorParams(
-            size=COLBERT_DIM,
-            distance=models.Distance.COSINE,
-            multivector_config=models.MultiVectorConfig(
-                comparator=models.MultiVectorComparator.MAX_SIM
-            ),
-        ),
-    )
-    multi_doc_1 = models.Document(text="hello world", model=COLBERT_MODEL_NAME)
-    multi_doc_2 = models.Document(text="bye world", model=COLBERT_MODEL_NAME)
-
-    points = [
-        models.PointStruct(id=1, vector=multi_doc_1),
-        models.PointStruct(id=2, vector=multi_doc_2),
-    ]
-
-    # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-    # local_client.upsert(COLLECTION_NAME, points)
-    # remote_client.upsert(COLLECTION_NAME, points)
-    #
-    # vec_points = local_kwargs["points"]
-    # assert all([isinstance(vec_point.vector, list) for vec_point in vec_points])
-    #
-    # compare_collections(local_client, remote_client, num_vectors=10, collection_name=COLLECTION_NAME)
-    batch = models.Batch(ids=[1, 2], vectors=[multi_doc_1, multi_doc_2])
-    # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-    # local_client.upsert(COLLECTION_NAME, batch)
-    # remote_client.upsert(COLLECTION_NAME, batch)
-
-    batch = local_kwargs["points"]
-    # todo: uncomment once late interaction models are supported in qdrant-client fastembed mixin
-    # assert all([isinstance(vec_point, list) for vec_point in batch.vectors])
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
     # endregion
@@ -297,10 +234,8 @@ def test_batch_update_points(prefer_grpc):
         local_client._client.batch_update_points, local_kwargs
     )
 
-    dense_doc_1 = models.Document(
-        text="hello world", model="sentence-transformers/all-MiniLM-L6-v2"
-    )
-    dense_doc_2 = models.Document(text="bye world", model="sentence-transformers/all-MiniLM-L6-v2")
+    dense_doc_1 = models.Document(text="hello world", model=DENSE_MODEL_NAME)
+    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
 
     # region unnamed
     points = [
@@ -365,7 +300,6 @@ def test_batch_update_points(prefer_grpc):
     # endregion
 
     # region named
-
     points = [
         models.PointStruct(id=1, vector={"text": dense_doc_1}),
         models.PointStruct(id=2, vector={"text": dense_doc_2}),
@@ -445,12 +379,11 @@ def test_update_vectors(prefer_grpc):
     )
 
     dense_doc_1 = models.Document(
-        text="hello world", model="sentence-transformers/all-MiniLM-L6-v2"
+        text="hello world",
+        model=DENSE_MODEL_NAME,
     )
-    dense_doc_2 = models.Document(text="bye world", model="sentence-transformers/all-MiniLM-L6-v2")
-    dense_doc_3 = models.Document(
-        text="goodbye world", model="sentence-transformers/all-MiniLM-L6-v2"
-    )
+    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
+    dense_doc_3 = models.Document(text="goodbye world", model=DENSE_MODEL_NAME)
     # region unnamed
     points = [
         models.PointStruct(id=1, vector=dense_doc_1),
@@ -512,10 +445,140 @@ def test_update_vectors(prefer_grpc):
     # endregion
 
 
-@pytest.mark.skip(reason="Not implemented")
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_query_points(prefer_grpc):
-    pass
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    local_kwargs = {}
+    local_client._client.query_points = arg_interceptor(
+        local_client._client.query_points, local_kwargs
+    )
+
+    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
+    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
+    sparse_doc_3 = models.Document(text="goodbye world", model=SPARSE_MODEL_NAME)
+    sparse_doc_4 = models.Document(text="good afternoon world", model=SPARSE_MODEL_NAME)
+    sparse_doc_5 = models.Document(text="good morning world", model=SPARSE_MODEL_NAME)
+
+    points = [
+        models.PointStruct(id=i, vector={"text": doc})
+        for i, doc in enumerate(
+            [sparse_doc_1, sparse_doc_2, sparse_doc_3, sparse_doc_4, sparse_doc_5]
+        )
+    ]
+
+    populate_sparse_collection(local_client, points, vector_name="text")
+    populate_sparse_collection(remote_client, points, vector_name="text")
+
+    # region non-prefetch queries
+    local_client.query_points(COLLECTION_NAME, sparse_doc_1, using="text")
+    remote_client.query_points(COLLECTION_NAME, sparse_doc_1, using="text")
+    current_query = local_kwargs["query"]
+    assert isinstance(current_query.nearest, models.SparseVector)
+    doc_point = local_client.retrieve(COLLECTION_NAME, ids=[0], with_vectors=True)[0]
+    # assert that we generate different embeddings for doc and query
+    assert not (
+        np.allclose(doc_point.vector["text"].values, current_query.nearest.values, atol=1e-3)
+    )
+
+    nearest_query = models.NearestQuery(nearest=sparse_doc_1)
+    local_client.query_points(COLLECTION_NAME, nearest_query, using="text")
+    remote_client.query_points(COLLECTION_NAME, nearest_query, using="text")
+    current_query = local_kwargs["query"]
+    assert isinstance(current_query.nearest, models.SparseVector)
+
+    recommend_query = models.RecommendQuery(
+        recommend=models.RecommendInput(
+            positive=[sparse_doc_1],
+            negative=[sparse_doc_1],
+        )
+    )
+    local_client.query_points(COLLECTION_NAME, recommend_query, using="text")
+    remote_client.query_points(COLLECTION_NAME, recommend_query, using="text")
+    current_query = local_kwargs["query"]
+    assert all(
+        isinstance(vector, models.SparseVector) for vector in current_query.recommend.positive
+    )
+    assert all(
+        isinstance(vector, models.SparseVector) for vector in current_query.recommend.negative
+    )
+
+    discover_query = models.DiscoverQuery(
+        discover=models.DiscoverInput(
+            target=sparse_doc_1,
+            context=models.ContextPair(
+                positive=sparse_doc_2,
+                negative=sparse_doc_3,
+            ),
+        )
+    )
+    local_client.query_points(COLLECTION_NAME, discover_query, using="text")
+    remote_client.query_points(COLLECTION_NAME, discover_query, using="text")
+    current_query = local_kwargs["query"]
+    assert isinstance(current_query.discover.target, models.SparseVector)
+    context_pair = current_query.discover.context
+    assert isinstance(context_pair.positive, models.SparseVector)
+    assert isinstance(context_pair.negative, models.SparseVector)
+
+    discover_query_list = models.DiscoverQuery(
+        discover=models.DiscoverInput(
+            target=sparse_doc_1,
+            context=[
+                models.ContextPair(
+                    positive=sparse_doc_2,
+                    negative=sparse_doc_3,
+                )
+            ],
+        )
+    )
+    local_client.query_points(COLLECTION_NAME, discover_query_list, using="text")
+    remote_client.query_points(COLLECTION_NAME, discover_query_list, using="text")
+    current_query = local_kwargs["query"]
+    assert isinstance(current_query.discover.target, models.SparseVector)
+    context_pairs = current_query.discover.context
+    assert all(isinstance(pair.positive, models.SparseVector) for pair in context_pairs)
+    assert all(isinstance(pair.negative, models.SparseVector) for pair in context_pairs)
+
+    context_query = models.ContextQuery(
+        context=models.ContextPair(
+            positive=sparse_doc_1,
+            negative=sparse_doc_2,
+        )
+    )
+    local_client.query_points(COLLECTION_NAME, context_query, using="text")
+    remote_client.query_points(COLLECTION_NAME, context_query, using="text")
+    current_query = local_kwargs["query"]
+    context = current_query.context
+    assert isinstance(context.positive, models.SparseVector)
+    assert isinstance(context.negative, models.SparseVector)
+
+    context_query_list = models.ContextQuery(
+        context=[
+            models.ContextPair(
+                positive=sparse_doc_1,
+                negative=sparse_doc_2,
+            ),
+            models.ContextPair(
+                positive=sparse_doc_3,
+                negative=sparse_doc_4,
+            ),
+        ]
+    )
+    local_client.query_points(COLLECTION_NAME, context_query_list, using="text")
+    remote_client.query_points(COLLECTION_NAME, context_query_list, using="text")
+    current_query = local_kwargs["query"]
+    contexts = current_query.context
+    assert all(isinstance(context.positive, models.SparseVector) for context in contexts)
+    assert all(isinstance(context.negative, models.SparseVector) for context in contexts)
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
+
+    # region prefetch queries
+    # endregion
 
 
 @pytest.mark.skip(reason="Not implemented")
@@ -530,83 +593,11 @@ def test_query_points_groups(prefer_grpc):
     pass
 
 
-#
-# @pytest.mark.parametrize("prefer_grpc", [False, True])
-# def test_query_embeddings_conversion(prefer_grpc):
-#     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-#     remote_client = QdrantClient(prefer_grpc=prefer_grpc)
-#     if not remote_client._FASTEMBED_INSTALLED:
-#         pytest.skip("FastEmbed is not installed, skipping")
-#
-#     plain_document_query = models.Document(text="plain text", model=model_name)
-#     nearest_query = models.NearestQuery(
-#         nearest=models.Document(text="plain text", model=model_name)
-#     )
-#     recommend_query = models.RecommendQuery(
-#         recommend=models.RecommendInput(
-#             positive=[models.Document(text="positive recommend", model=model_name)],
-#             negative=[models.Document(text="negative recommend", model=model_name)],
-#         )
-#     )
-#     discover_query = models.DiscoverQuery(
-#         discover=models.DiscoverInput(
-#             target=models.Document(text="No model discovery target", model=model_name),
-#             context=[
-#                 models.ContextPair(
-#                     positive=models.Document(text="No model discovery positive", model=model_name),
-#                     negative=models.Document(text="No model discovery negative", model=model_name),
-#                 )
-#             ],
-#         )
-#     )
-#     context_query = models.ContextQuery(
-#         context=models.ContextPair(
-#             positive=models.Document(text="No model context positive", model=model_name),
-#             negative=models.Document(text="No model context negative", model=model_name),
-#         )
-#     )
-#
-#     modified_query = remote_client._embed_models(plain_document_query)
-#     assert isinstance(modified_query, list)
-#
-#     modified_query = remote_client._embed_models(nearest_query)
-#     assert isinstance(modified_query.nearest, list)
-#
-#     modified_query = remote_client._embed_models(recommend_query)
-#     positives = modified_query.recommend.positive
-#     negatives = modified_query.recommend.negative
-#     positive = positives[0]
-#     negative = negatives[0]
-#
-#     assert isinstance(positive, list) and isinstance(positive[0], float)
-#     assert isinstance(negative, list) and isinstance(negative[0], float)
-#     modified_query = remote_client._embed_models(discover_query)
-#     target = modified_query.discover.target
-#     context_pair = modified_query.discover.context[0]
-#
-#     assert isinstance(target, list) and isinstance(target[0], float)
-#
-#     positive = context_pair.positive
-#     negative = context_pair.negative
-#
-#     assert isinstance(positive, list) and isinstance(positive[0], float)
-#     assert isinstance(negative, list) and isinstance(negative[0], float)
-#
-#     modified_query = remote_client._embed_models(context_query)
-#
-#     context = modified_query.context
-#     assert isinstance(context.positive, list) and isinstance(context.positive[0], float)
-#     assert isinstance(context.negative, list) and isinstance(context.negative[0], float)
-#
-#     order_by_query = models.OrderByQuery(order_by="payload_field")
-#     modified_query = remote_client._embed_models(order_by_query)
-#     assert order_by_query == modified_query
-#
-#     fusion_query = models.FusionQuery(fusion=models.Fusion.RRF)
-#     modified_query = remote_client._embed_models(fusion_query)
-#     assert fusion_query == modified_query
-#
-#
+@pytest.mark.skip(reason="Not implemented")
+def test_is_query_embed():
+    pass
+
+
 # @pytest.mark.parametrize("prefer_grpc", [False, True])
 # def test_query_embeddings_prefetch(prefer_grpc):
 #     def query_is_float_list(pref: BaseModel) -> bool:
