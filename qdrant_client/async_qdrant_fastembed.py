@@ -33,6 +33,7 @@ except ImportError:
     TextEmbedding = None
     SparseTextEmbedding = None
     OnnxProvider = None
+    LateInteractionTextEmbedding = None
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     {
         model["model"]: (model["dim"], models.Distance.COSINE)
