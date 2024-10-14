@@ -2901,9 +2901,12 @@ class RestToGrpc:
     def convert_query_request(
         cls, model: rest.QueryRequest, collection_name: str
     ) -> grpc.QueryPoints:
+        prefetch = (
+            [model.prefetch] if isinstance(model.prefetch, rest.Prefetch) else model.prefetch
+        )
         return grpc.QueryPoints(
             collection_name=collection_name,
-            prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
+            prefetch=[cls.convert_prefetch_query(p) for p in prefetch]
             if model.prefetch is not None
             else None,
             query=cls.convert_query_interface(model.query) if model.query is not None else None,
