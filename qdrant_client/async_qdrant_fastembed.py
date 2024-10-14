@@ -757,6 +757,8 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 for (key, value) in data.items()
             }
         elif isinstance(data, list):
+            if data and isinstance(data[0], float):
+                return data
             return [self._embed_raw_data(value, is_query=is_query) for value in data]
         return data
 

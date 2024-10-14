@@ -840,6 +840,9 @@ class QdrantFastembedMixin(QdrantBase):
                 key: self._embed_raw_data(value, is_query=is_query) for key, value in data.items()
             }
         elif isinstance(data, list):
+            # we don't want to iterate over a vector
+            if data and isinstance(data[0], float):
+                return data
             return [self._embed_raw_data(value, is_query=is_query) for value in data]
         return data
 
