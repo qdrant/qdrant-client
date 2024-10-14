@@ -1,5 +1,5 @@
 # import random
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 
