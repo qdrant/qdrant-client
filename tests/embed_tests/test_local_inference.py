@@ -40,7 +40,7 @@ def arg_interceptor(func, kwarg_storage):
 
 def populate_dense_collection(
     client: QdrantBase,
-    points: list[models.PointStruct],
+    points: List[models.PointStruct],
     vector_name: Optional[str] = None,
     collection_name: str = COLLECTION_NAME,
     recreate: bool = True,
