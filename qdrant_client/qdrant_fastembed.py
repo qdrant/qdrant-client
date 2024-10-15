@@ -844,7 +844,9 @@ class QdrantFastembedMixin(QdrantBase):
         for path in paths:
             list_model = [model] if not isinstance(model, list) else model
             for item in list_model:
-                current_model = getattr(item, path.current)
+                current_model = getattr(item, path.current, None)
+                if current_model is None:
+                    continue
                 if path.tail:
                     self._embed_models(current_model, path.tail, is_query=is_query)
                 else:
