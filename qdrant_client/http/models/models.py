@@ -1,13 +1,65 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, time
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union, Callable, Type
+from decimal import Decimal
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+import orjson
+from pydantic import BaseModel as PydanticBaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
 Payload = Dict[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
+
+def timedelta_isoformat(td: timedelta) -> str:
+    total_seconds = td.total_seconds()
+    if total_seconds.is_integer():
+        return f"PT{int(total_seconds)}S"
+    return f"PT{total_seconds:.6f}S".rstrip('0').rstrip('.')
+
+def orjson_dumps(v: Any, *, default: Optional[Callable[[Any], Any]] = None) -> str:
+    def default_handler(obj: Any) -> Union[str, List[Any]]:
+        if isinstance(obj, bytes):
+            return obj.decode()
+        elif isinstance(obj, (date, datetime, time)):
+            return obj.isoformat()
+        elif isinstance(obj, timedelta):
+            return timedelta_isoformat(obj)
+        elif isinstance(obj, (UUID, Decimal)):
+            return str(obj)
+        elif isinstance(obj, (frozenset, set)):
+            return list(obj) 
+        if default is not None:
+            return default(obj)
+        raise TypeError(f"Type is not JSON serializable: {type(obj)}")
+    return orjson.dumps(
+        v, 
+        default=default_handler, 
+        option=orjson.OPT_UTC_Z | orjson.OPT_SERIALIZE_NUMPY
+    ).decode()
+
+
+class BaseModel(PydanticBaseModel):
+    class Config:
+        json_encoders: Dict[Type[Any], Callable[[Any], Any]] = {
+            bytes: lambda v: v.decode(),
+            Decimal: str
+        }
+        json_loads = orjson.loads
+        json_dumps = orjson_dumps
+
+    def model_dump_json(self, **kwargs: Any) -> str:
+        data = self.model_dump(**kwargs)
+        return orjson_dumps(data)
+
+    @classmethod
+    def model_validate_json(cls, json_data: Union[str, bytes, bytearray], **kwargs: Any) -> 'BaseModel':
+        if isinstance(json_data, str):
+            json_data = json_data.encode()
+        elif isinstance(json_data, bytearray):
+            json_data = bytes(json_data)
+        return cls.model_validate(orjson.loads(json_data))
 
 
 class AbortShardTransfer(BaseModel, extra="forbid"):
