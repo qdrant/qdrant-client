@@ -722,6 +722,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
+        if not collection.vectors_config:
+            raise ValueError("Wrong input: Not existing vector name error")
         collection.upsert(points)
         return self._default_update_result()
 
