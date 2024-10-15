@@ -1,23 +1,14 @@
-# import random
 from typing import Optional, List
 
 import numpy as np
-
-# import numpy as np
 import pytest
-
-# from pydantic import BaseModel
 
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
 from tests.congruence_tests.test_common import (
     compare_collections,
-    compare_client_results,
-    # compare_client_results
 )
 from qdrant_client.qdrant_fastembed import IDF_EMBEDDING_MODELS
-
-# from tests.utils import read_version
 
 
 COLLECTION_NAME = "inference_collection"
@@ -633,21 +624,28 @@ def test_query_points_and_query_points_groups(prefer_grpc):
         using="text",
         limit=2,
     )
-    # todo: uncomment once paths are returned for each element separately
-    # local_client.query_points(COLLECTION_NAME, query=nearest_query, prefetch=prefetch, limit=1, using="text")
-    # remote_client.query_points(COLLECTION_NAME, query=nearest_query, prefetch=prefetch, limit=1, using="text")
-    # current_query = local_kwargs["query"]
-    # current_prefetch = local_kwargs["prefetch"]
-    # assert isinstance(current_query.nearest, models.SparseVector)
-    # assert isinstance(current_prefetch.query.nearest, models.SparseVector)
-    # assert isinstance(current_prefetch.prefetch.query.nearest, models.SparseVector)
-    # assert isinstance(current_prefetch.prefetch.prefetch.query.nearest, models.SparseVector)
-    # assert isinstance(current_prefetch.prefetch.prefetch.prefetch[0].query.discover.target, models.SparseVector)
-    # context_pairs = current_prefetch.prefetch.prefetch.prefetch[0].query.discover.context
-    # assert all(isinstance(pair.positive, models.SparseVector) for pair in context_pairs)
-    # assert all(isinstance(pair.negative, models.SparseVector) for pair in context_pairs)
+    local_client.query_points(
+        COLLECTION_NAME, query=nearest_query, prefetch=prefetch, limit=1, using="text"
+    )
+    remote_client.query_points(
+        COLLECTION_NAME, query=nearest_query, prefetch=prefetch, limit=1, using="text"
+    )
+    current_query = local_kwargs["query"]
+    current_prefetch = local_kwargs["prefetch"]
+    assert isinstance(current_query.nearest, models.SparseVector)
+    assert isinstance(current_prefetch.query.nearest, models.SparseVector)
+    assert isinstance(current_prefetch.prefetch.query.nearest, models.SparseVector)
+    assert isinstance(current_prefetch.prefetch.prefetch.query.nearest, models.SparseVector)
+    assert isinstance(
+        current_prefetch.prefetch.prefetch.prefetch[0].query.discover.target, models.SparseVector
+    )
+    context_pairs = current_prefetch.prefetch.prefetch.prefetch[0].query.discover.context
+    assert all(isinstance(pair.positive, models.SparseVector) for pair in context_pairs)
+    assert all(isinstance(pair.negative, models.SparseVector) for pair in context_pairs)
 
-    # assert isinstance(current_prefetch.prefetch.prefetch.prefetch[1].query.nearest, models.SparseVector)
+    assert isinstance(
+        current_prefetch.prefetch.prefetch.prefetch[1].query.nearest, models.SparseVector
+    )
 
     # endregion
 

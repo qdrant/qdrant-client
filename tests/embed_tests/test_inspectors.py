@@ -281,7 +281,7 @@ def test_inspect_prefetch_types():
     assert len(paths) == 1 and set(paths[0].as_str_list()) == {
         "prefetch.prefetch.prefetch.query",
         "prefetch.prefetch.query",
-    }  # todo: should return a list per model
+    }
 
     # endregion
 
