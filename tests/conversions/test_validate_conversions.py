@@ -355,3 +355,25 @@ def test_convert_flat_filter():
     assert recovered.must[0] == rest_filter.must
     assert recovered.should[0] == rest_filter.should
     assert recovered.must_not[0] == rest_filter.must_not
+
+
+def test_query_points():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    prefetch = models.Prefetch(query=models.NearestQuery(nearest=[1.0, 2.0]))
+    query_request = models.QueryRequest(
+        query=1,
+        limit=5,
+        using="test",
+        with_payload=True,
+        prefetch=prefetch,
+    )
+    grpc_query_request = RestToGrpc.convert_query_request(query_request, "check")
+    recovered = GrpcToRest.convert_query_points(grpc_query_request)
+
+    assert recovered.query == models.NearestQuery(nearest=query_request.query)
+    assert recovered.limit == query_request.limit
+    assert recovered.using == query_request.using
+    assert recovered.with_payload == query_request.with_payload
+    assert recovered.prefetch[0] == query_request.prefetch
