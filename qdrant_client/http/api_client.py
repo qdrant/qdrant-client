@@ -32,7 +32,6 @@ class AsyncApis(Generic[AsyncClientT]):
         self.search_api = AsyncSearchApi(self.client)
         self.service_api = AsyncServiceApi(self.client)
         self.snapshots_api = AsyncSnapshotsApi(self.client)
-        self.points_api = AsyncPointsApi(self.client)
 
     async def aclose(self) -> None:
         await self.client.aclose()
@@ -51,7 +50,6 @@ class SyncApis(Generic[ClientT]):
         self.search_api = SyncSearchApi(self.client)
         self.service_api = SyncServiceApi(self.client)
         self.snapshots_api = SyncSnapshotsApi(self.client)
-        self.points_api = SyncPointsApi(self.client)
 
     def close(self) -> None:
         self.client.close()
