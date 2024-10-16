@@ -448,7 +448,7 @@ class QdrantRemote(QdrantBase):
                 for r in requests
             ]
             http_res: Optional[List[List[models.ScoredPoint]]] = (
-                self.http.points_api.search_batch_points(
+                self.http.search_api.search_batch_points(
                     collection_name=collection_name,
                     consistency=consistency,
                     timeout=timeout,
@@ -560,7 +560,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
 
-            search_result = self.http.points_api.search_points(
+            search_result = self.http.search_api.search_points(
                 collection_name=collection_name,
                 consistency=consistency,
                 timeout=timeout,
@@ -699,7 +699,7 @@ class QdrantRemote(QdrantBase):
                 lookup_from=lookup_from,
             )
 
-            query_result = self.http.points_api.query_points(
+            query_result = self.http.search_api.query_points(
                 collection_name=collection_name,
                 consistency=consistency,
                 timeout=timeout,
@@ -753,7 +753,7 @@ class QdrantRemote(QdrantBase):
                 for r in requests
             ]
             http_res: Optional[List[models.QueryResponse]] = (
-                self.http.points_api.query_batch_points(
+                self.http.search_api.query_batch_points(
                     collection_name=collection_name,
                     consistency=consistency,
                     timeout=timeout,
@@ -903,7 +903,7 @@ class QdrantRemote(QdrantBase):
                 lookup_from=lookup_from,
             )
 
-            query_result = self.http.points_api.query_points_groups(
+            query_result = self.http.search_api.query_points_groups(
                 collection_name=collection_name,
                 consistency=consistency,
                 timeout=timeout,
@@ -1038,7 +1038,7 @@ class QdrantRemote(QdrantBase):
                 shard_key=shard_key_selector,
             )
 
-            return self.openapi_client.points_api.search_point_groups(
+            return self.openapi_client.search_api.search_point_groups(
                 search_groups_request=search_groups_request,
                 collection_name=collection_name,
                 consistency=consistency,
@@ -1085,7 +1085,7 @@ class QdrantRemote(QdrantBase):
         if isinstance(query_filter, grpc.Filter):
             query_filter = GrpcToRest.convert_filter(model=query_filter)
 
-        search_matrix_result = self.openapi_client.points_api.search_matrix_pairs(
+        search_matrix_result = self.openapi_client.search_api.search_matrix_pairs(
             collection_name=collection_name,
             consistency=consistency,
             timeout=timeout,
@@ -1141,7 +1141,7 @@ class QdrantRemote(QdrantBase):
         if isinstance(query_filter, grpc.Filter):
             query_filter = GrpcToRest.convert_filter(model=query_filter)
 
-        search_matrix_result = self.openapi_client.points_api.search_matrix_offsets(
+        search_matrix_result = self.openapi_client.search_api.search_matrix_offsets(
             collection_name=collection_name,
             consistency=consistency,
             timeout=timeout,
@@ -1200,7 +1200,7 @@ class QdrantRemote(QdrantBase):
                 )
                 for r in requests
             ]
-            http_res: List[List[models.ScoredPoint]] = self.http.points_api.recommend_batch_points(
+            http_res: List[List[models.ScoredPoint]] = self.http.search_api.recommend_batch_points(
                 collection_name=collection_name,
                 consistency=consistency,
                 recommend_request_batch=models.RecommendRequestBatch(searches=requests),
@@ -1320,7 +1320,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(lookup_from, grpc.LookupLocation):
                 lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
 
-            result = self.openapi_client.points_api.recommend_points(
+            result = self.openapi_client.search_api.recommend_points(
                 collection_name=collection_name,
                 consistency=consistency,
                 timeout=timeout,
@@ -1467,7 +1467,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(lookup_from, grpc.LookupLocation):
                 lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
 
-            result = self.openapi_client.points_api.recommend_point_groups(
+            result = self.openapi_client.search_api.recommend_point_groups(
                 collection_name=collection_name,
                 consistency=consistency,
                 timeout=timeout,
@@ -1602,7 +1602,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(lookup_from, grpc.LookupLocation):
                 lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
 
-            result = self.openapi_client.points_api.discover_points(
+            result = self.openapi_client.search_api.discover_points(
                 collection_name=collection_name,
                 consistency=consistency,
                 timeout=timeout,
@@ -1663,7 +1663,7 @@ class QdrantRemote(QdrantBase):
                 )
                 for r in requests
             ]
-            http_res: List[List[models.ScoredPoint]] = self.http.points_api.discover_batch_points(
+            http_res: List[List[models.ScoredPoint]] = self.http.search_api.discover_batch_points(
                 collection_name=collection_name,
                 discover_request_batch=models.DiscoverRequestBatch(searches=requests),
                 consistency=consistency,
@@ -2534,7 +2534,7 @@ class QdrantRemote(QdrantBase):
             )
             for operation in change_aliases_operations
         ]
-        result: Optional[bool] = self.http.collections_api.update_aliases(
+        result: Optional[bool] = self.http.aliases_api.update_aliases(
             timeout=timeout,
             change_aliases_operation=models.ChangeAliasesOperation(
                 actions=change_aliases_operation
@@ -2558,9 +2558,7 @@ class QdrantRemote(QdrantBase):
             )
 
         result: Optional[types.CollectionsAliasesResponse] = (
-            self.http.collections_api.get_collection_aliases(
-                collection_name=collection_name
-            ).result
+            self.http.aliases_api.get_collection_aliases(collection_name=collection_name).result
         )
         assert result is not None, "Get collection aliases returned None"
         return result
@@ -2576,7 +2574,7 @@ class QdrantRemote(QdrantBase):
                 ]
             )
         result: Optional[types.CollectionsAliasesResponse] = (
-            self.http.collections_api.get_collections_aliases().result
+            self.http.aliases_api.get_collections_aliases().result
         )
         assert result is not None, "Get aliases returned None"
         return result
@@ -3080,16 +3078,14 @@ class QdrantRemote(QdrantBase):
         if isinstance(field_schema, grpc.PayloadIndexParams):
             field_schema = GrpcToRest.convert_payload_schema_params(field_schema)
 
-        result: Optional[types.UpdateResult] = (
-            self.openapi_client.collections_api.create_field_index(
-                collection_name=collection_name,
-                create_field_index=models.CreateFieldIndex(
-                    field_name=field_name, field_schema=field_schema
-                ),
-                wait=wait,
-                ordering=ordering,
-            ).result
-        )
+        result: Optional[types.UpdateResult] = self.openapi_client.indexes_api.create_field_index(
+            collection_name=collection_name,
+            create_field_index=models.CreateFieldIndex(
+                field_name=field_name, field_schema=field_schema
+            ),
+            wait=wait,
+            ordering=ordering,
+        ).result
         assert result is not None, "Create field index returned None"
         return result
 
@@ -3112,14 +3108,12 @@ class QdrantRemote(QdrantBase):
                 self.grpc_points.DeleteFieldIndex(request).result
             )
 
-        result: Optional[types.UpdateResult] = (
-            self.openapi_client.collections_api.delete_field_index(
-                collection_name=collection_name,
-                field_name=field_name,
-                wait=wait,
-                ordering=ordering,
-            ).result
-        )
+        result: Optional[types.UpdateResult] = self.openapi_client.indexes_api.delete_field_index(
+            collection_name=collection_name,
+            field_name=field_name,
+            wait=wait,
+            ordering=ordering,
+        ).result
         assert result is not None, "Delete field index returned None"
         return result
 
@@ -3132,7 +3126,7 @@ class QdrantRemote(QdrantBase):
             ).snapshot_descriptions
             return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
 
-        snapshots = self.openapi_client.collections_api.list_snapshots(
+        snapshots = self.openapi_client.snapshots_api.list_snapshots(
             collection_name=collection_name
         ).result
         assert snapshots is not None, "List snapshots API returned None result"
@@ -3147,7 +3141,7 @@ class QdrantRemote(QdrantBase):
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot)
 
-        return self.openapi_client.collections_api.create_snapshot(
+        return self.openapi_client.snapshots_api.create_snapshot(
             collection_name=collection_name, wait=wait
         ).result
 
@@ -3162,7 +3156,7 @@ class QdrantRemote(QdrantBase):
             )
             return True
 
-        return self.openapi_client.collections_api.delete_snapshot(
+        return self.openapi_client.snapshots_api.delete_snapshot(
             collection_name=collection_name,
             snapshot_name=snapshot_name,
             wait=wait,
@@ -3326,7 +3320,7 @@ class QdrantRemote(QdrantBase):
                 timeout=self._timeout,
             ).result
         else:
-            result = self.openapi_client.cluster_api.create_shard_key(
+            result = self.openapi_client.distributed_api.create_shard_key(
                 collection_name=collection_name,
                 timeout=timeout,
                 create_sharding_key=models.CreateShardingKey(
@@ -3361,7 +3355,7 @@ class QdrantRemote(QdrantBase):
                 timeout=self._timeout,
             ).result
         else:
-            result = self.openapi_client.cluster_api.delete_shard_key(
+            result = self.openapi_client.distributed_api.delete_shard_key(
                 collection_name=collection_name,
                 timeout=timeout,
                 drop_sharding_key=models.DropShardingKey(
