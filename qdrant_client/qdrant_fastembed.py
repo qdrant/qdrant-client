@@ -11,7 +11,7 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.embed_inspector import InspectorEmbed
-from qdrant_client.embed.models import NumericVectorInput
+from qdrant_client.embed.models import NumericVectorInput, NumericVector, NumericVectorStruct
 from qdrant_client.embed.utils import Path
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
@@ -791,6 +791,17 @@ class QdrantFastembedMixin(QdrantBase):
             None,
         ],
     ) -> Optional[models.Query]:
+        """Resolves query interface into a models.Query object
+
+        Args:
+            query: models.QueryInterface - query as a model or a plain structure like List[float]
+
+        Returns:
+            Optional[models.Query]: query as it was, models.Query(nearest=query) or None
+
+        Raises:
+            ValueError: if query is not of supported type or query is models.Document without `model` field
+        """
         if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
             return query
 
@@ -820,6 +831,14 @@ class QdrantFastembedMixin(QdrantBase):
         raise ValueError(f"Unsupported query type: {type(query)}")
 
     def _resolve_query_request(self, query: models.QueryRequest) -> models.QueryRequest:
+        """Resolve QueryRequest query field
+
+        Args:
+            query: models.QueryRequest - query request to resolve
+
+        Returns:
+            models.QueryRequest: A deepcopy of the query request with resolved query field
+        """
         query = deepcopy(query)
         query.query = self._resolve_query(query.query)
         return query
@@ -827,6 +846,14 @@ class QdrantFastembedMixin(QdrantBase):
     def _resolve_query_batch_request(
         self, requests: Sequence[models.QueryRequest]
     ) -> Sequence[models.QueryRequest]:
+        """Resolve query field for each query request in a batch
+
+        Args:
+            requests: Sequence[models.QueryRequest] - query requests to resolve
+
+        Returns:
+            Sequence[models.QueryRequest]: A list of deep copied query requests with resolved query fields
+        """
         return [self._resolve_query_request(query) for query in requests]
 
     def _embed_models(
@@ -834,7 +861,17 @@ class QdrantFastembedMixin(QdrantBase):
         model: BaseModel,
         paths: Optional[List[Path]] = None,
         is_query: bool = False,
-    ) -> Union[BaseModel, Union[List[float], models.SparseVector]]:
+    ) -> Union[BaseModel, NumericVector]:
+        """Embed model's fields requiring inference
+
+        Args:
+            model: Qdrant model containing fields to embed
+            paths: Path to fields to embed. E.g. [Path(current="recommend", tail=[Path(current="negative", tail=None)])]
+            is_query: Flag to determine which embed method to use. Defaults to False.
+
+        Returns:
+            A deepcopy of the method with embedded fields
+        """
         if paths is None:
             if isinstance(model, models.Document):
                 return self._embed_raw_data(model, is_query=is_query)
@@ -864,9 +901,9 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _embed_raw_data(
         self,
-        data: models.VectorInput,
+        data: models.VectorStruct,
         is_query: bool = False,
-    ) -> NumericVectorInput:
+    ) -> NumericVectorStruct:
         if isinstance(data, models.Document):
             return self._embed_document(data, is_query=is_query)
         elif isinstance(data, dict):
