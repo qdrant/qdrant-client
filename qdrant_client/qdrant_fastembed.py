@@ -11,6 +11,7 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.embed_inspector import InspectorEmbed
+from qdrant_client.embed.models import NumericVectorInput
 from qdrant_client.embed.utils import Path
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
@@ -863,11 +864,9 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _embed_raw_data(
         self,
-        data: models.Document,
+        data: models.VectorInput,
         is_query: bool = False,
-    ) -> Union[
-        Dict[str, Union[List[float], models.SparseVector]], List[float], models.SparseVector
-    ]:
+    ) -> NumericVectorInput:
         if isinstance(data, models.Document):
             return self._embed_document(data, is_query=is_query)
         elif isinstance(data, dict):
