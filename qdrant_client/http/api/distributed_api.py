@@ -48,7 +48,7 @@ if TYPE_CHECKING:
     from qdrant_client.http.api_client import ApiClient
 
 
-class _ClusterApi:
+class _DistributedApi:
     def __init__(self, api_client: "Union[ApiClient, AsyncApiClient]"):
         self.api_client = api_client
 
@@ -208,7 +208,7 @@ class _ClusterApi:
         )
 
 
-class AsyncClusterApi(_ClusterApi):
+class AsyncDistributedApi(_DistributedApi):
     async def cluster_status(
         self,
     ) -> m.InlineResponse2003:
@@ -283,7 +283,7 @@ class AsyncClusterApi(_ClusterApi):
         )
 
 
-class SyncClusterApi(_ClusterApi):
+class SyncDistributedApi(_DistributedApi):
     def cluster_status(
         self,
     ) -> m.InlineResponse2003:
