@@ -904,6 +904,15 @@ class QdrantFastembedMixin(QdrantBase):
         data: models.VectorStruct,
         is_query: bool = False,
     ) -> NumericVectorStruct:
+        """Iterates over the data and calls inference on the fields requiring it
+
+        Args:
+            data: models.VectorStruct - data to embed, if it's not a field which requires inference, leave it as is
+            is_query: Flag to determine which embed method to use. Defaults to False.
+
+        Returns:
+            NumericVectorStruct: Embedded data
+        """
         if isinstance(data, models.Document):
             return self._embed_document(data, is_query=is_query)
         elif isinstance(data, dict):
@@ -917,9 +926,19 @@ class QdrantFastembedMixin(QdrantBase):
             return [self._embed_raw_data(value, is_query=is_query) for value in data]
         return data
 
-    def _embed_document(
-        self, document: models.Document, is_query: bool = False
-    ) -> Union[List[float], models.SparseVector]:
+    def _embed_document(self, document: models.Document, is_query: bool = False) -> NumericVector:
+        """Embed a document using the specified embedding model
+
+        Args:
+            document: Document to embed
+            is_query: Flag to determine which embed method to use. Defaults to False.
+
+        Returns:
+            NumericVector: Document's embedding
+
+        Raises:
+            ValueError: If model is not supported
+        """
         model_name = document.model
         text = document.text
         if model_name in SUPPORTED_EMBEDDING_MODELS:
