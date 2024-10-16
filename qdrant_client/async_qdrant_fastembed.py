@@ -730,9 +730,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         if isinstance(query, models.Document):
             model_name = query.model
             if model_name is None:
-                raise ValueError(
-                    "`query_points` requires explicit model name specification for `Document`"
-                )
+                raise ValueError("`model` field has to be set explicitly in the `Document`")
             return models.NearestQuery(nearest=query)
         if query is None:
             return None
