@@ -42,6 +42,9 @@ class TestQueryBatchSearcher:
             self.dense_vector_query_batch_text.append(
                 models.QueryRequest(
                     query=np.random.random(text_vector_size).tolist(),
+                    prefetch=models.Prefetch(
+                        query=np.random.random(text_vector_size).tolist(), limit=5, using="text"
+                    ),
                     limit=5,
                     using="text",
                     with_payload=True,

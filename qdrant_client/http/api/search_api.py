@@ -358,6 +358,74 @@ class _SearchApi:
             content=body,
         )
 
+    def _build_for_search_matrix_offsets(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ):
+        """
+        Compute distance matrix for sampled points with an offset based output format
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(search_matrix_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20024,
+            method="POST",
+            url="/collections/{collection_name}/points/search/matrix/offsets",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
+    def _build_for_search_matrix_pairs(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ):
+        """
+        Compute distance matrix for sampled points with a pair based output format
+        """
+        path_params = {
+            "collection_name": str(collection_name),
+        }
+
+        query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
+
+        headers = {}
+        body = jsonable_encoder(search_matrix_request)
+        if "Content-Type" not in headers:
+            headers["Content-Type"] = "application/json"
+        return self.api_client.request(
+            type_=m.InlineResponse20023,
+            method="POST",
+            url="/collections/{collection_name}/points/search/matrix/pairs",
+            headers=headers if headers else None,
+            path_params=path_params,
+            params=query_params,
+            content=body,
+        )
+
     def _build_for_search_point_groups(
         self,
         collection_name: str,
@@ -581,6 +649,40 @@ class AsyncSearchApi(_SearchApi):
             search_request_batch=search_request_batch,
         )
 
+    async def search_matrix_offsets(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ) -> m.InlineResponse20024:
+        """
+        Compute distance matrix for sampled points with an offset based output format
+        """
+        return await self._build_for_search_matrix_offsets(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            search_matrix_request=search_matrix_request,
+        )
+
+    async def search_matrix_pairs(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ) -> m.InlineResponse20023:
+        """
+        Compute distance matrix for sampled points with a pair based output format
+        """
+        return await self._build_for_search_matrix_pairs(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            search_matrix_request=search_matrix_request,
+        )
+
     async def search_point_groups(
         self,
         collection_name: str,
@@ -768,6 +870,40 @@ class SyncSearchApi(_SearchApi):
             consistency=consistency,
             timeout=timeout,
             search_request_batch=search_request_batch,
+        )
+
+    def search_matrix_offsets(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ) -> m.InlineResponse20024:
+        """
+        Compute distance matrix for sampled points with an offset based output format
+        """
+        return self._build_for_search_matrix_offsets(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            search_matrix_request=search_matrix_request,
+        )
+
+    def search_matrix_pairs(
+        self,
+        collection_name: str,
+        consistency: m.ReadConsistency = None,
+        timeout: int = None,
+        search_matrix_request: m.SearchMatrixRequest = None,
+    ) -> m.InlineResponse20023:
+        """
+        Compute distance matrix for sampled points with a pair based output format
+        """
+        return self._build_for_search_matrix_pairs(
+            collection_name=collection_name,
+            consistency=consistency,
+            timeout=timeout,
+            search_matrix_request=search_matrix_request,
         )
 
     def search_point_groups(
