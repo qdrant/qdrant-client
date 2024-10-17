@@ -24,4 +24,4 @@ NumericVectorStruct = Union[
     Dict[StrictStr, NumericVector],
 ]
 
-__all__ = ["Document", "NumericVectorInput"]
+__all__ = ["Document", "NumericVector", "NumericVectorInput", "NumericVectorStruct"]
