@@ -2,14 +2,14 @@ from typing import Union, List, Optional, Iterable
 
 from pydantic import BaseModel
 
-from qdrant_client.embed.schema_parser import OpenApiSchemaParser
+from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.embed.utils import Path
 from qdrant_client.http import models
 
 
 class Inspector:
-    def __init__(self, parser: Optional[OpenApiSchemaParser] = None) -> None:
-        self.parser = OpenApiSchemaParser() if parser is None else parser
+    def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
+        self.parser = ModelSchemaParser() if parser is None else parser
 
     def inspect(self, points: Union[Iterable[BaseModel], BaseModel, List]) -> bool:
         if isinstance(points, BaseModel):

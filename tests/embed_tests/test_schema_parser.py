@@ -3,7 +3,7 @@ from typing import List
 import pytest
 
 from qdrant_client import models
-from qdrant_client.embed.schema_parser import OpenApiSchemaParser
+from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.embed.utils import Path
 
 
@@ -43,7 +43,7 @@ def check_path_recursive(plain_path_parts: List[str], paths: List[Path]) -> bool
     ],
 )
 def test_parser(model):
-    parser = OpenApiSchemaParser()
+    parser = ModelSchemaParser()
     parser.parse_model(model)
 
     for model_name, plain_paths in parser._cache.items():
