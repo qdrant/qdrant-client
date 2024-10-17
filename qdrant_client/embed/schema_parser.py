@@ -180,7 +180,7 @@ class ModelSchemaParser:
 
         return sorted(set(document_paths))
 
-    def parse_model(self, model: Type[BaseModel]) -> None:
+    def parse_model(self, model: Type[BaseModel]) -> List[str]:
         """Parse model schema to retrieve paths to objects requiring inference.
 
         Checks model json schema, extracts definitions and finds paths to objects requiring inference.
@@ -190,7 +190,7 @@ class ModelSchemaParser:
             model: model to parse
 
         Returns:
-            None
+            List of string dot separated paths to objects requiring inference
         """
         model_name = model.__name__
         if model_name in self._cache:
