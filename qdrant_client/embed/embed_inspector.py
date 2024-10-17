@@ -11,16 +11,33 @@ from qdrant_client.http import models
 
 
 class InspectorEmbed:
+    """Inspector which collects paths to objects requiring inference in the received models
+
+    Attributes:
+        parser: ModelSchemaParser instance
+    """
+
     def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
         self.parser = ModelSchemaParser() if parser is None else parser
 
-    def inspect(self, points: Union[Iterable[BaseModel], BaseModel, List]) -> List[Path]:
+    def inspect(self, points: Union[Iterable[BaseModel], BaseModel]) -> List[Path]:
+        """Looks for all the paths to objects requiring inference in the received models
+
+        Args:
+            points: models to inspect
+
+        Returns:
+            list of Path objects
+        """
         paths = []
-        points = [points] if not isinstance(points, list) else points
-        for point in points:
-            if isinstance(point, BaseModel):
-                self.parser.parse_model(point.__class__)
-                paths.extend(self._inspect_model(point))
+        if isinstance(points, BaseModel):
+            self.parser.parse_model(points.__class__)
+            paths.extend(self._inspect_model(points))
+        else:
+            for point in points:
+                if isinstance(point, BaseModel):
+                    self.parser.parse_model(point.__class__)
+                    paths.extend(self._inspect_model(point))
 
         paths = sorted(set(paths))
 
@@ -29,6 +46,16 @@ class InspectorEmbed:
     def _inspect_model(
         self, mod: BaseModel, paths: Optional[List[Path]] = None, accum: Optional[str] = None
     ) -> List[str]:
+        """Looks for all the paths to objects requiring inference in the received model
+
+        Args:
+            mod: model to inspect
+            paths: list of paths to the fields possibly containing objects for inference
+            accum: accumulator for the path. Path is a dot separated string of field names which we assemble recursively
+
+        Returns:
+            list of paths to the model fields containing objects for inference
+        """
         paths = self.parser.path_cache.get(mod.__class__.__name__, []) if paths is None else paths
 
         found_paths = []
@@ -47,6 +74,17 @@ class InspectorEmbed:
         tail: List[Path],
         accum: Optional[str] = None,
     ) -> List[str]:
+        """Looks for all the paths to objects requiring inference in the received model
+
+        Args:
+            original_model: model to inspect
+            current_path: the field to inspect on the current iteration
+            tail: list of Path objects to the fields possibly containing objects for inference
+            accum: accumulator for the path. Path is a dot separated string of field names which we assemble recursively
+
+        Returns:
+            list of paths to the model fields containing objects for inference
+        """
         found_paths = []
         if accum is None:
             accum = current_path
@@ -54,6 +92,12 @@ class InspectorEmbed:
             accum += f".{current_path}"
 
         def inspect_recursive(member: BaseModel, accumulator: str) -> List[str]:
+            """Iterates over the set model fields, expand recursive ones and find paths to objects requiring inference
+
+            Args:
+                member: currently inspected model, which may or may not contain recursive fields
+                accumulator: accumulator for the path, which is a dot separated string assembled recursively
+            """
             recursive_paths = []
             for field in model_fields_set(member):
                 if field in self.parser.name_recursive_ref_mapping:

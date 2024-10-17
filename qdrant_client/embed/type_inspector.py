@@ -8,10 +8,26 @@ from qdrant_client.http import models
 
 
 class Inspector:
+    """Inspector which tries to find at least one occurrence of an object requiring inference
+
+    Inspector is stateful and accumulates parsed model schemes in its parser.
+
+    Attributes:
+        parser: ModelSchemaParser instance to inspect model json schemas
+    """
+
     def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
         self.parser = ModelSchemaParser() if parser is None else parser
 
-    def inspect(self, points: Union[Iterable[BaseModel], BaseModel, List]) -> bool:
+    def inspect(self, points: Union[Iterable[BaseModel], BaseModel]) -> bool:
+        """Looks for at least one occurrence of an object requiring inference in the received models
+
+        Args:
+            points: models to inspect
+
+        Returns:
+            True if at least one object requiring inference is found, False otherwise
+        """
         if isinstance(points, BaseModel):
             self.parser.parse_model(points.__class__)
             return self._inspect_model(points)
