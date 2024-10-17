@@ -11,7 +11,7 @@ from qdrant_client.http import models
 
 
 class InspectorEmbed:
-    def __init__(self):
+    def __init__(self) -> None:
         self.parser = OpenApiSchemaParser()
 
     def inspect(self, points: Union[Iterable[BaseModel], BaseModel, List]) -> List[Path]:
