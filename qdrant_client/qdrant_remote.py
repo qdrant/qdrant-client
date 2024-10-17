@@ -583,7 +583,16 @@ class QdrantRemote(QdrantBase):
     def query_points(
         self,
         collection_name: str,
-        query: Optional[types.Query] = None,
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            types.Document,
+            None,
+        ] = None,
         using: Optional[str] = None,
         prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
@@ -600,7 +609,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.QueryResponse:
         if self._prefer_grpc:
-            if isinstance(query, get_args(models.Query)):
+            if query is not None:
                 query = RestToGrpc.convert_query(query)
 
             if isinstance(prefetch, models.Prefetch):
@@ -794,7 +803,7 @@ class QdrantRemote(QdrantBase):
         **kwargs: Any,
     ) -> types.GroupsResult:
         if self._prefer_grpc:
-            if isinstance(query, get_args(models.Query)):
+            if query is not None:
                 query = RestToGrpc.convert_query(query)
 
             if isinstance(prefetch, models.Prefetch):
