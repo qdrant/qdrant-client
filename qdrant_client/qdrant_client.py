@@ -571,8 +571,10 @@ class QdrantClient(QdrantFastembedMixin):
         query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
-            query = self._embed_models(query, is_query=True)
-            prefetch = self._embed_models(prefetch, is_query=True)
+            query = self._embed_models(query, is_query=True) if query is not None else None
+            prefetch = (
+                self._embed_models(prefetch, is_query=True) if prefetch is not None else None
+            )
 
         return self._client.query_points(
             collection_name=collection_name,
@@ -711,8 +713,10 @@ class QdrantClient(QdrantFastembedMixin):
         query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
-            query = self._embed_models(query, is_query=True)
-            prefetch = self._embed_models(prefetch, is_query=True)
+            query = self._embed_models(query, is_query=True) if query is not None else None
+            prefetch = (
+                self._embed_models(prefetch, is_query=True) if prefetch is not None else None
+            )
 
         return self._client.query_points_groups(
             collection_name=collection_name,
