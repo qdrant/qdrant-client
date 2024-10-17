@@ -98,8 +98,9 @@ class QdrantClient(QdrantFastembedMixin):
         cloud_inference: bool = False,
         **kwargs: Any,
     ):
+        self._inference_inspector = Inspector()
         super().__init__(
-            **kwargs
+            parser=self._inference_inspector.parser, **kwargs
         )  # If we want to pass any kwargs to the parent class or ignore unexpected kwargs,
         # we will need to pop them from **kwargs. Otherwise, they might be passed to QdrantRemote as httpx kwargs.
         # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
@@ -153,7 +154,6 @@ class QdrantClient(QdrantFastembedMixin):
                 "Cloud inference is not supported for local Qdrant, consider using FastEmbed or switch to Qdrant Cloud"
             )
         self.cloud_inference = cloud_inference
-        self._inference_inspector = Inspector()
 
     def __del__(self) -> None:
         self.close()

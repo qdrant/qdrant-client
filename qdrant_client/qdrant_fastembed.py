@@ -11,7 +11,8 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.embed_inspector import InspectorEmbed
-from qdrant_client.embed.models import NumericVectorInput, NumericVector, NumericVectorStruct
+from qdrant_client.embed.models import NumericVector, NumericVectorStruct
+from qdrant_client.embed.schema_parser import OpenApiSchemaParser
 from qdrant_client.embed.utils import Path
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
@@ -68,10 +69,10 @@ class QdrantFastembedMixin(QdrantBase):
     late_interaction_embedding_models: Dict[str, "LateInteractionTextEmbedding"] = {}
     _FASTEMBED_INSTALLED: bool
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, parser: OpenApiSchemaParser, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
-        self._embed_inspector = InspectorEmbed()
+        self._embed_inspector = InspectorEmbed(parser=parser)
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 

@@ -107,7 +107,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         cloud_inference: bool = False,
         **kwargs: Any,
     ):
-        super().__init__(**kwargs)
+        self._inference_inspector = Inspector()
+        super().__init__(parser=self._inference_inspector.parser, **kwargs)
         self._init_options = {
             key: value
             for (key, value) in locals().items()
@@ -149,7 +150,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 "Cloud inference is not supported for local Qdrant, consider using FastEmbed or switch to Qdrant Cloud"
             )
         self.cloud_inference = cloud_inference
-        self._inference_inspector = Inspector()
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
