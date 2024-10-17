@@ -53,8 +53,9 @@ class ModelSchemaParser:
         self._cache: Dict[str, List[str]] = {}
         self._recursive_refs: Set[str] = set()
         self._not_document_recursive_refs: Set[str] = {"Filter"}
-        self.path_cache: Dict[str, List[Path]] = {}
         self._doc_recursive_paths: Set[str] = set()
+
+        self.path_cache: Dict[str, List[Path]] = {}
         self.name_recursive_ref_mapping: Dict[str, str] = {}
 
     def _replace_refs(
@@ -180,7 +181,7 @@ class ModelSchemaParser:
 
         return sorted(set(document_paths))
 
-    def parse_model(self, model: Type[BaseModel]) -> List[str]:
+    def parse_model(self, model: Type[BaseModel]) -> None:
         """Parse model schema to retrieve paths to objects requiring inference.
 
         Checks model json schema, extracts definitions and finds paths to objects requiring inference.
@@ -190,11 +191,11 @@ class ModelSchemaParser:
             model: model to parse
 
         Returns:
-            List of string dot separated paths to objects requiring inference
+            None
         """
         model_name = model.__name__
         if model_name in self._cache:
-            return self._cache[model_name]
+            return None
 
         schema = model.model_json_schema()
         self._defs.update(schema.get("$defs", {}))
@@ -213,4 +214,3 @@ class ModelSchemaParser:
 
         # convert str paths to Path objects which group path parts and reduce the time of the traversal
         self.path_cache = {model: convert_paths(paths) for model, paths in self._cache.items()}
-        return self._cache[model.__name__]
