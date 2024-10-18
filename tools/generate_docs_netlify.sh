@@ -7,6 +7,8 @@ cd "$(dirname "$0")/../"
 
 brew install pandoc
 
+pip install --upgrade "virtualenv>=20.26.6"
+
 curl -sSL https://install.python-poetry.org | python3 -
 export PATH="/opt/buildhome/.local/bin:$PATH"
 poetry install
