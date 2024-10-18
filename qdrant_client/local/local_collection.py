@@ -2148,6 +2148,8 @@ class LocalCollection:
                     "Wrong input: Unnamed vectors are not allowed when a collection has named vectors or multivectors: "
                     f"{vector_names}, {multivector_names}"
                 )
+            if not self.vectors and not self.multivectors:
+                raise ValueError(f"Wrong input: Not existing vector name error")
 
         if point.id in self.ids:
             self._update_point(point)
