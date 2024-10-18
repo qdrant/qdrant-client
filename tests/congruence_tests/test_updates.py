@@ -338,3 +338,24 @@ def test_upload_wrong_vectors():
             wrong_vectors_collection,
             points=[models.PointStruct(id=1, vector=unnamed_vector)],
         )
+
+
+def test_upsert_without_vector_name():
+    local_client = init_local()
+    remote_client = init_remote()
+
+    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config={})
+    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config={})
+
+    with pytest.raises(ValueError, match="Not existing vector name error"):
+        local_client.upsert(
+            COLLECTION_NAME, points=[models.PointStruct(id=1, vector=[0.1, 0.2, 0.3])]
+        )
+    with pytest.raises(
+        qdrant_client.http.exceptions.UnexpectedResponse, match="Not existing vector name error"
+    ):
+        remote_client.upsert(
+            COLLECTION_NAME, points=[models.PointStruct(id=1, vector=[0.1, 0.2, 0.3])]
+        )
