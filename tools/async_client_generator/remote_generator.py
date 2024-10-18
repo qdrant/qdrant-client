@@ -4,7 +4,10 @@ from typing import Dict, List, Optional
 
 from qdrant_client.grpc import CollectionsStub, PointsStub, SnapshotsStub, QdrantStub
 from qdrant_client.http import AsyncApiClient
-from qdrant_client.http.api.cluster_api import AsyncClusterApi
+from qdrant_client.http.api.distributed_api import AsyncDistributedApi
+from qdrant_client.http.api.aliases_api import AsyncAliasesApi
+from qdrant_client.http.api.indexes_api import AsyncIndexesApi
+from qdrant_client.http.api.search_api import AsyncSearchApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi
 from qdrant_client.http.api.points_api import AsyncPointsApi
 from qdrant_client.http.api.service_api import AsyncServiceApi
@@ -85,11 +88,14 @@ class RemoteGenerator(BaseGenerator):
             self._async_methods = []
             for cls_ in (
                 AsyncQdrantBase,
-                AsyncClusterApi,
+                AsyncDistributedApi,
                 AsyncCollectionsApi,
                 AsyncPointsApi,
                 AsyncServiceApi,
                 AsyncSnapshotsApi,
+                AsyncIndexesApi,
+                AsyncAliasesApi,
+                AsyncSearchApi,
                 AsyncApiClient,
             ):
                 self._async_methods.extend(self.get_async_methods(cls_))
