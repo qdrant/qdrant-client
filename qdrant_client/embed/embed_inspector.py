@@ -33,7 +33,7 @@ class InspectorEmbed:
         if isinstance(points, BaseModel):
             self.parser.parse_model(points.__class__)
             paths.extend(self._inspect_model(points))
-        else:
+        elif isinstance(points, Iterable):
             for point in points:
                 if isinstance(point, BaseModel):
                     self.parser.parse_model(point.__class__)
