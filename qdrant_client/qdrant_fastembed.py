@@ -93,12 +93,13 @@ class QdrantFastembedMixin(QdrantBase):
     ) -> None:
         """
         Set embedding model to use for encoding documents and queries.
+
         Args:
             embedding_model_name: One of the supported embedding models. See `SUPPORTED_EMBEDDING_MODELS` for details.
             max_length (int, optional): Deprecated. Defaults to None.
             cache_dir (str, optional): The path to the cache directory.
-                                       Can be set using the `FASTEMBED_CACHE_PATH` env variable.
-                                       Defaults to `fastembed_cache` in the system's temp directory.
+                Can be set using the `FASTEMBED_CACHE_PATH` env variable.
+                Defaults to `fastembed_cache` in the system's temp directory.
             threads (int, optional): The number of threads single onnxruntime session can use. Defaults to None.
             providers: The list of onnx providers (with or without options) to use. Defaults to None.
                 Example configuration:
@@ -138,6 +139,7 @@ class QdrantFastembedMixin(QdrantBase):
     ) -> None:
         """
         Set sparse embedding model to use for hybrid search over documents in combination with dense embeddings.
+
         Args:
             embedding_model_name: One of the supported sparse embedding models. See `SUPPORTED_SPARSE_EMBEDDING_MODELS` for details.
                         If None, sparse embeddings will not be used.
