@@ -478,8 +478,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `SparseVector` - use as a sparse vector for nearest search.
                 - If `Query` - use as a query for specific search type.
                 - If `NumpyArray` - use as a dense vector for nearest search.
-                - If `Document` - infer vector from the document text and use
-                                    it for nearest search (requires `fastembed` package installed).
+                - If `Document` - infer vector from the document text and use it for nearest search (requires `fastembed` package installed).
                 - If `None` - return first `limit` points from the collection.
             prefetch: prefetch queries to make a selection of the data to be used with the main query
             query_filter:
@@ -619,8 +618,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `SparseVector` - use as a sparse vector for nearest search.
                 - If `Query` - use as a query for specific search type.
                 - If `NumpyArray` - use as a dense vector for nearest search.
-                - If `Document` - infer vector from the document text and use
-                                    it for nearest search (requires `fastembed` package installed).
+                - If `Document` - infer vector from the document text and use it for nearest search (requires `fastembed` package installed).
                 - If `None` - return first `limit` points from the collection.
             prefetch: prefetch queries to make a selection of the data to be used with the main query
             query_filter:
@@ -629,8 +627,7 @@ class QdrantClient(QdrantFastembedMixin):
             search_params: Additional search params
             limit: How many results return
             group_size: How many results return for each group
-            group_by: Name of the payload field to group by.
-                Field must be of type "keyword" or "integer".
+            group_by: Name of the payload field to group by. Field must be of type "keyword" or "integer".
                 Nested fields are specified using dot notation, e.g. "nested_field.subfield".
             with_payload:
                 - Specify which stored payload should be attached to the result.
@@ -983,27 +980,28 @@ class QdrantClient(QdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.SearchMatrixPairsResponse:
-        """Compute distance matrix for sampled points with a pair-based output format.
-        Args:
-            collection_name: Name of the collection
-            query_filter: Filter to apply
-            limit: How many neighbours per sample to find
-            sample: How many points to select and search within
-            using: Name of the vectors to use for search.
-                If `None` - use default vectors.
-            consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
-                - int - number of replicas to query, values should present in all queried replicas
-                - 'majority' - query all replicas, but return values present in the majority of replicas
-                - 'quorum' - query the majority of replicas, return values present in all of them
-                - 'all' - query all replicas, and return values present in all replicas
-            timeout: Overrides global timeout for this search. Unit is seconds.
-            shard_key_selector:
-                This parameter allows to specify which shards should be queried.
-                If `None` - query all shards. Only works for collections with `custom` sharding method.
-        Returns:
-            Return distance matrix using a pair-based encoding.
         """
+        Compute distance matrix for sampled points with a pair-based output format.
+
+        Args:
+            collection_name: Name of the collection.
+            query_filter: Filter to apply.
+            limit: How many neighbors per sample to find.
+            sample: How many points to select and search within.
+            using: Name of the vectors to use for search. If `None`, use default vectors.
+            consistency: Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+                - int: Number of replicas to query, values should be present in all queried replicas.
+                - 'majority': Query all replicas, but return values present in the majority of replicas.
+                - 'quorum': Query the majority of replicas, return values present in all of them.
+                - 'all': Query all replicas, and return values present in all replicas.
+            timeout: Overrides global timeout for this search. Unit is seconds.
+            shard_key_selector: This parameter allows specifying which shards should be queried.
+                If `None`, query all shards. Only works for collections with the `custom` sharding method.
+
+        Returns:
+            Distance matrix using a pair-based encoding.
+        """
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.search_matrix_pairs(
@@ -1030,27 +1028,28 @@ class QdrantClient(QdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.SearchMatrixOffsetsResponse:
-        """Compute distance matrix for sampled points with an offset-based output format.
-        Args:
-            collection_name: Name of the collection
-            query_filter: Filter to apply
-            limit: How many neighbours per sample to find
-            sample: How many points to select and search within
-            using: Name of the vectors to use for search.
-                If `None` - use default vectors.
-            consistency:
-                Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
-                - int - number of replicas to query, values should present in all queried replicas
-                - 'majority' - query all replicas, but return values present in the majority of replicas
-                - 'quorum' - query the majority of replicas, return values present in all of them
-                - 'all' - query all replicas, and return values present in all replicas
-            timeout: Overrides global timeout for this search. Unit is seconds.
-            shard_key_selector:
-                This parameter allows to specify which shards should be queried.
-                If `None` - query all shards. Only works for collections with `custom` sharding method.
-        Returns:
-            Return distance matrix using an offset-based encoding.
         """
+        Compute distance matrix for sampled points with an offset-based output format.
+
+        Args:
+            collection_name: Name of the collection.
+            query_filter: Filter to apply.
+            limit: How many neighbors per sample to find.
+            sample: How many points to select and search within.
+            using: Name of the vectors to use for search. If `None`, use default vectors.
+            consistency: Read consistency of the search. Defines how many replicas should be queried before returning the result. Values:
+                - int: Number of replicas to query, values should present in all queried replicas.
+                - 'majority': Query all replicas, but return values present in the majority of replicas.
+                - 'quorum': Query the majority of replicas, return values present in all of them.
+                - 'all': Query all replicas and return values present in all replicas.
+            timeout: Overrides global timeout for this search. Unit is seconds.
+            shard_key_selector: This parameter allows specifying which shards should be queried.
+                If `None`, query all shards. Only works for collections with the `custom` sharding method.
+
+        Returns:
+            Distance matrix using an offset-based encoding.
+        """
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.search_matrix_offsets(
@@ -1580,7 +1579,7 @@ class QdrantClient(QdrantFastembedMixin):
             collection_name (str): Name of the collection to delete vector from
             vectors: List of names of the vectors to delete. Use `""` to delete the default vector. At least one vector should be specified.
             points (Point): Selects points based on list of IDs or filter
-                Examples
+                Examples:
 
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
@@ -1689,7 +1688,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             points_selector: Selects points based on list of IDs or filter.
-                Examples
+                Examples:
 
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
@@ -1729,82 +1728,78 @@ class QdrantClient(QdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
-        """Modifies payload of the specified points
+        """
+        Modifies payload of the specified points.
 
         Examples:
 
-        `Set payload`::
+            `Set payload`::
 
-            # Assign payload value with key `"key"` to points 1, 2, 3.
-            # If payload value with specified key already exists - it will be overwritten
-            qdrant_client.set_payload(
-                collection_name="test_collection",
-                wait=True,
-                payload={
-                    "key": "value"
-                },
-                points=[1,2,3]
-            )
+                # Assign payload value with key `"key"` to points 1, 2, 3.
+                # If payload value with specified key already exists - it will be overwritten
+                qdrant_client.set_payload(
+                    collection_name="test_collection",
+                    wait=True,
+                    payload={
+                        "key": "value"
+                    },
+                    points=[1, 2, 3]
+                )
 
         Args:
-            collection_name: Name of the collection
+            collection_name: Name of the collection.
             wait: Await for the results to be processed.
-
-                - If `true`, result will be returned only when all changes are applied
-                - If `false`, result will be returned immediately after the confirmation of receiving.
-            payload: Key-value pairs of payload to assign
-            points: List of affected points, filter or points selector
-                Example
-
+                - If `true`, the result will be returned only when all changes are applied.
+                - If `false`, the result will be returned immediately after confirmation of receipt.
+            payload: Key-value pairs of payload to assign.
+            points: List of affected points, filter, or points selector.
+                Example:
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
+                - `weak` (default): Write operations may be reordered, works faster.
+                - `medium`: Write operations go through a dynamically selected leader, may be inconsistent for a short period of time in case of leader change.
+                - `strong`: Write operations go through the permanent leader, consistent, but may be unavailable if the leader is down.
+            shard_key_selector: Defines the shard groups that should be used to write updates into.
+                If multiple shard keys are provided, the update will be written to each of them.
+                Only works for collections with the `custom` sharding method.
+            key: Path to the nested field in the payload to modify. If not specified, modifies the root of the payload.
+                E.g.::
 
-                - `weak` (default) - write operations may be reordered, works faster
-                - `medium` - write operations go through dynamically selected leader, may be inconsistent for a short period of time in case of leader change
-                - `strong` - Write operations go through the permanent leader, consistent, but may be unavailable if leader is down
-
-            shard_key_selector:
-                Defines the shard groups that should be used to write updates into.
-                If multiple shard_keys are provided, the update will be written to each of them.
-                Only works for collections with `custom` sharding method.
-
-            key: Path to the nested field in the payload to modify. If not specified - modify the root of the
-                payload. E.g.:
-
-                PointStruct(
-                    id=42,
-                    vector=[...],
-                    payload={
-                        "recipe": {
-                            "fruits": {"apple": "100g"}
-                        }
-                    }
-                )
-
-                qdrant_client.set_payload(
-                    ...,
-                    payload = {"cinnamon": "2g"},
-                    key = "recipe.fruits",
-                    points=[42]
-                )
-
-                PointStruct(
-                    id=42,
-                    vector=[...],
-                    payload={
-                        "recipe": {
-                            "fruits": {
-                                "apple": "100g",
-                                "cinnamon": "2g"
+                    PointStruct(
+                        id=42,
+                        vector=[...],
+                        payload={
+                            "recipe": {
+                                "fruits": {"apple": "100g"}
                             }
                         }
-                    }
-                )
+                    )
+
+                    qdrant_client.set_payload(
+                        ...,
+                        payload={"cinnamon": "2g"},
+                        key="recipe.fruits",
+                        points=[42]
+                    )
+
+                    PointStruct(
+                        id=42,
+                        vector=[...],
+                        payload={
+                            "recipe": {
+                                "fruits": {
+                                    "apple": "100g",
+                                    "cinnamon": "2g"
+                                }
+                            }
+                        }
+                    )
 
         Returns:
-            Operation result
+            Operation result.
         """
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         return self._client.set_payload(
@@ -1855,7 +1850,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             payload: Key-value pairs of payload to assign
             points: List of affected points, filter or points selector.
-                Example
+                Example:
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
 
@@ -1905,7 +1900,7 @@ class QdrantClient(QdrantFastembedMixin):
                 - If `false`, result will be returned immediately after the confirmation of receiving.
             keys: List of payload keys to remove
             points: List of affected points, filter or points selector.
-                Example
+                Example:
                     - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                     - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
@@ -1950,7 +1945,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait: Await for the results to be processed.
                 - If `true`, result will be returned only when all changes are applied
                 - If `false`, result will be returned immediately after the confirmation of receiving.
-            points_selector: List of affected points, filter or points selector. Example
+            points_selector: List of affected points, filter or points selector. Example:
                 - `points=[1, 2, 3, "cd3b53f0-11a7-449f-bc50-d06310e7ed90"]`
                 - `points=Filter(must=[FieldCondition(key='rand_number', range=Range(gte=0.7))])`
             ordering (Optional[WriteOrdering]): Define strategy for ordering of the points. Possible values:
