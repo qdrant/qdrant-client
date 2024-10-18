@@ -7,7 +7,7 @@ cd "$(dirname "$0")/../"
 
 brew install pandoc
 
-curl -sSL https://install.python-poetry.org | python3 -
+curl -sSL https://install.python-poetry.org | python3 - --version 1.8.3
 export PATH="/opt/buildhome/.local/bin:$PATH"
 poetry install
 
