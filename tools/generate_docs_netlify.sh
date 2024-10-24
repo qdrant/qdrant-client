@@ -1,12 +1,13 @@
 #!/usr/bin/env sh
 
 set -xe
+
 # Ensure current path is project root
 cd "$(dirname "$0")/../"
 
 brew install pandoc
 
-curl -sSL https://install.python-poetry.org | python3 - --version 1.8.3
+curl -sSL https://install.python-poetry.org | python3 - --version 1.7.1
 export PATH="/opt/buildhome/.local/bin:$PATH"
 poetry install
 
