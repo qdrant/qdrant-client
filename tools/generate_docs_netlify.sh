@@ -8,10 +8,9 @@ brew install pandoc
 
 pip install --upgrade "virtualenv==20.26.6"
 pip freeze | grep virtualenv
-curl -sSL https://install.python-poetry.org | python3 - 2> curl_error.log
-
-# Display the contents of the error log file, if any
-cat curl_error.log
+curl -sSL https://install.python-poetry.org | python3 -
+error_log=$(find /opt/build/repo/ -name 'poetry-installer-error-*.log' | head -n 1)
+cat "$error_log"
 
 export PATH="/opt/buildhome/.local/bin:$PATH"
 poetry install
