@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 
+set -x
 # Ensure current path is project root
 cd "$(dirname "$0")/../"
 
