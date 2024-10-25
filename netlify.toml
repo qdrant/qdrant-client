@@ -1,6 +1,3 @@
 [build]
 publish = "docs/html"
 command = "bash -x tools/generate_docs_netlify.sh"
-
-[build.environment]
-  PYTHON_VERSION = "3.8"
