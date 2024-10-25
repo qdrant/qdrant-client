@@ -332,6 +332,18 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_query_rrf_plain_prefetch(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(
+                query=self.dense_vector_query_text,
+                using="text",
+            ),
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            with_payload=True,
+            limit=10,
+        )
+
     def dense_query_dbsf(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -588,16 +600,13 @@ class TestSimpleSearcher:
             collection_name=COLLECTION_NAME,
             prefetch=[
                 models.Prefetch(
-                    prefetch=models.Prefetch(
-                        query=self.dense_vector_query_text,
-                        using="text"
-                    ),
+                    prefetch=models.Prefetch(query=self.dense_vector_query_text, using="text"),
                     query=self.dense_vector_query_text,
-                    using="text"
+                    using="text",
                 ),
             ],
             query=self.dense_vector_query_text,
-            using="text"
+            using="text",
         )
 
     @classmethod
@@ -832,14 +841,15 @@ def test_no_query_no_prefetch():
 
 
 def test_dense_query_nested_prefetch():
-
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
     local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text_nested_prefetch)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_text_nested_prefetch
+    )
 
 
 def test_dense_query_filtered_prefetch():
@@ -1062,6 +1072,9 @@ def test_dense_query_fusion():
     local_client, http_client, grpc_client = init_clients(fixture_points)
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_rrf)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_rrf_plain_prefetch
+    )
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_dbsf)
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.deep_dense_queries_rrf
