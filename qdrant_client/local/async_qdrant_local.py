@@ -372,7 +372,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             return []
         prefetches = []
         if isinstance(prefetch, types.Prefetch):
-            prefetches = (
+            prefetches = [prefetch]
+            prefetches.extend(
                 prefetch.prefetch if isinstance(prefetch.prefetch, list) else [prefetch.prefetch]
             )
         elif isinstance(prefetch, Sequence):
