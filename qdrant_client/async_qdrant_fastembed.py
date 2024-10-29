@@ -12,24 +12,30 @@
 import uuid
 import warnings
 from itertools import tee
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, get_args, Set
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set, get_args
+from copy import deepcopy
 import numpy as np
-from qdrant_client import grpc
+from pydantic import BaseModel
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
-from qdrant_client.embed.models import Document
+from qdrant_client.embed.embed_inspector import InspectorEmbed
+from qdrant_client.embed.models import NumericVector, NumericVectorStruct
+from qdrant_client.embed.schema_parser import ModelSchemaParser
+from qdrant_client.embed.utils import Path
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
+from qdrant_client import grpc
 
 try:
-    from fastembed import SparseTextEmbedding, TextEmbedding
+    from fastembed import SparseTextEmbedding, TextEmbedding, LateInteractionTextEmbedding
     from fastembed.common import OnnxProvider
 except ImportError:
     TextEmbedding = None
     SparseTextEmbedding = None
     OnnxProvider = None
+    LateInteractionTextEmbedding = None
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     {
         model["model"]: (model["dim"], models.Distance.COSINE)
@@ -52,17 +58,24 @@ IDF_EMBEDDING_MODELS: Set[str] = (
     if SparseTextEmbedding
     else set()
 )
+_LATE_INTERACTION_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+    {model["model"]: model for model in LateInteractionTextEmbedding.list_supported_models()}
+    if LateInteractionTextEmbedding
+    else {}
+)
 
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
     embedding_models: Dict[str, "TextEmbedding"] = {}
     sparse_embedding_models: Dict[str, "SparseTextEmbedding"] = {}
+    late_interaction_embedding_models: Dict[str, "LateInteractionTextEmbedding"] = {}
     _FASTEMBED_INSTALLED: bool
 
-    def __init__(self, **kwargs: Any):
+    def __init__(self, parser: ModelSchemaParser, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
+        self._embed_inspector = InspectorEmbed(parser=parser)
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
@@ -231,6 +244,31 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             **kwargs,
         )
         return cls.sparse_embedding_models[model_name]
+
+    @classmethod
+    def _get_or_init_late_interaction_model(
+        cls,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
+        **kwargs: Any,
+    ) -> "LateInteractionTextEmbedding":
+        if model_name in cls.late_interaction_embedding_models:
+            return cls.late_interaction_embedding_models[model_name]
+        cls._import_fastembed()
+        if model_name not in _LATE_INTERACTION_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_EMBEDDING_MODELS}"
+            )
+        cls.late_interaction_embedding_models[model_name] = LateInteractionTextEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            providers=providers,
+            **kwargs,
+        )
+        return cls.late_interaction_embedding_models[model_name]
 
     def _embed_documents(
         self,
@@ -517,77 +555,6 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         )
         return inserted_ids
 
-    def _resolve_query_to_embedding_embeddings_and_prefetch(
-        self,
-        query: Union[
-            types.PointId,
-            List[float],
-            List[List[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            Document,
-            None,
-        ],
-        prefetch: Union[models.Prefetch, List[models.Prefetch], None] = None,
-    ) -> Tuple[Optional[models.Query], List[models.Prefetch]]:
-        query = self._resolve_query_to_embedding_embeddings(query=query)
-        if prefetch is None:
-            prefetch = []
-        if not isinstance(prefetch, list):
-            prefetch = [prefetch]
-        return (query, prefetch)
-
-    def _resolve_query_to_embedding_embeddings(
-        self,
-        query: Union[
-            types.PointId,
-            List[float],
-            List[List[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            Document,
-            None,
-        ],
-    ) -> Optional[models.Query]:
-        if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
-            return query
-        if isinstance(query, types.SparseVector):
-            return models.NearestQuery(nearest=query)
-        if isinstance(query, np.ndarray):
-            return models.NearestQuery(nearest=query.tolist())
-        if isinstance(query, list):
-            return models.NearestQuery(nearest=query)
-        if isinstance(query, get_args(types.PointId)):
-            query = (
-                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
-            )
-            return models.NearestQuery(nearest=query)
-        if query is None:
-            return None
-        if isinstance(query, Document):
-            model_name = query.model
-            if model_name is None:
-                raise ValueError(
-                    "`query_points` requires explicit model name specification for `Document`"
-                )
-            if model_name in SUPPORTED_EMBEDDING_MODELS:
-                self.set_model(model_name)
-                embedding_model_inst = self._get_or_init_model(model_name=model_name)
-                embedding = list(embedding_model_inst.embed(documents=[query.text]))[0].tolist()
-            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
-                self.set_sparse_model(model_name)
-                sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
-                embedding = list(sparse_embedding_model_inst.embed(documents=[query.text]))[0]
-                embedding = models.SparseVector(
-                    indices=embedding.indices.tolist(), values=embedding.values.tolist()
-                )
-            else:
-                raise ValueError(f"{model_name} is not among supported models")
-            return models.NearestQuery(nearest=embedding)
-        raise ValueError(f"Unsupported query type: {type(query)}")
-
     async def query(
         self,
         collection_name: str,
@@ -735,3 +702,185 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             for (dense_response, sparse_response) in zip(dense_responses, sparse_responses)
         ]
         return [self._scored_points_to_query_responses(response) for response in responses]
+
+    @staticmethod
+    def _resolve_query(
+        query: Union[
+            types.PointId,
+            List[float],
+            List[List[float]],
+            types.SparseVector,
+            types.Query,
+            types.NumpyArray,
+            models.Document,
+            None,
+        ],
+    ) -> Optional[models.Query]:
+        """Resolves query interface into a models.Query object
+
+        Args:
+            query: models.QueryInterface - query as a model or a plain structure like List[float]
+
+        Returns:
+            Optional[models.Query]: query as it was, models.Query(nearest=query) or None
+
+        Raises:
+            ValueError: if query is not of supported type or query is models.Document without `model` field
+        """
+        if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
+            return query
+        if isinstance(query, types.SparseVector):
+            return models.NearestQuery(nearest=query)
+        if isinstance(query, np.ndarray):
+            return models.NearestQuery(nearest=query.tolist())
+        if isinstance(query, list):
+            return models.NearestQuery(nearest=query)
+        if isinstance(query, get_args(types.PointId)):
+            query = (
+                GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
+            )
+            return models.NearestQuery(nearest=query)
+        if isinstance(query, models.Document):
+            model_name = query.model
+            if model_name is None:
+                raise ValueError("`model` field has to be set explicitly in the `Document`")
+            return models.NearestQuery(nearest=query)
+        if query is None:
+            return None
+        raise ValueError(f"Unsupported query type: {type(query)}")
+
+    def _resolve_query_request(self, query: models.QueryRequest) -> models.QueryRequest:
+        """Resolve QueryRequest query field
+
+        Args:
+            query: models.QueryRequest - query request to resolve
+
+        Returns:
+            models.QueryRequest: A deepcopy of the query request with resolved query field
+        """
+        query = deepcopy(query)
+        query.query = self._resolve_query(query.query)
+        return query
+
+    def _resolve_query_batch_request(
+        self, requests: Sequence[models.QueryRequest]
+    ) -> Sequence[models.QueryRequest]:
+        """Resolve query field for each query request in a batch
+
+        Args:
+            requests: Sequence[models.QueryRequest] - query requests to resolve
+
+        Returns:
+            Sequence[models.QueryRequest]: A list of deep copied query requests with resolved query fields
+        """
+        return [self._resolve_query_request(query) for query in requests]
+
+    def _embed_models(
+        self, model: BaseModel, paths: Optional[List[Path]] = None, is_query: bool = False
+    ) -> Union[BaseModel, NumericVector]:
+        """Embed model's fields requiring inference
+
+        Args:
+            model: Qdrant model containing fields to embed
+            paths: Path to fields to embed. E.g. [Path(current="recommend", tail=[Path(current="negative", tail=None)])]
+            is_query: Flag to determine which embed method to use. Defaults to False.
+
+        Returns:
+            A deepcopy of the method with embedded fields
+        """
+        if paths is None:
+            if isinstance(model, models.Document):
+                return self._embed_raw_data(model, is_query=is_query)
+            model = deepcopy(model)
+            paths = self._embed_inspector.inspect(model)
+        for path in paths:
+            list_model = [model] if not isinstance(model, list) else model
+            for item in list_model:
+                current_model = getattr(item, path.current, None)
+                if current_model is None:
+                    continue
+                if path.tail:
+                    self._embed_models(current_model, path.tail, is_query=is_query)
+                else:
+                    was_list = isinstance(current_model, list)
+                    current_model = (
+                        [current_model] if not isinstance(current_model, list) else current_model
+                    )
+                    embeddings = [
+                        self._embed_raw_data(data, is_query=is_query) for data in current_model
+                    ]
+                    if was_list:
+                        setattr(item, path.current, embeddings)
+                    else:
+                        setattr(item, path.current, embeddings[0])
+        return model
+
+    def _embed_raw_data(
+        self, data: models.VectorStruct, is_query: bool = False
+    ) -> NumericVectorStruct:
+        """Iterates over the data and calls inference on the fields requiring it
+
+        Args:
+            data: models.VectorStruct - data to embed, if it's not a field which requires inference, leave it as is
+            is_query: Flag to determine which embed method to use. Defaults to False.
+
+        Returns:
+            NumericVectorStruct: Embedded data
+        """
+        if isinstance(data, models.Document):
+            return self._embed_document(data, is_query=is_query)
+        elif isinstance(data, dict):
+            return {
+                key: self._embed_raw_data(value, is_query=is_query)
+                for (key, value) in data.items()
+            }
+        elif isinstance(data, list):
+            if data and isinstance(data[0], float):
+                return data
+            return [self._embed_raw_data(value, is_query=is_query) for value in data]
+        return data
+
+    def _embed_document(self, document: models.Document, is_query: bool = False) -> NumericVector:
+        """Embed a document using the specified embedding model
+
+        Args:
+            document: Document to embed
+            is_query: Flag to determine which embed method to use. Defaults to False.
+
+        Returns:
+            NumericVector: Document's embedding
+
+        Raises:
+            ValueError: If model is not supported
+        """
+        model_name = document.model
+        text = document.text
+        if model_name in SUPPORTED_EMBEDDING_MODELS:
+            self.set_model(model_name)
+            embedding_model_inst = self._get_or_init_model(model_name=model_name)
+            if not is_query:
+                embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
+            else:
+                embedding = list(embedding_model_inst.query_embed(query=text))[0].tolist()
+            return embedding
+        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            self.set_sparse_model(model_name)
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
+            if not is_query:
+                sparse_embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
+            else:
+                sparse_embedding = list(sparse_embedding_model_inst.query_embed(query=text))[0]
+            return models.SparseVector(
+                indices=sparse_embedding.indices.tolist(), values=sparse_embedding.values.tolist()
+            )
+        elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
+            li_embedding_model_inst = self._get_or_init_late_interaction_model(
+                model_name=model_name
+            )
+            if not is_query:
+                embedding = list(li_embedding_model_inst.embed(documents=[text]))[0].tolist()
+            else:
+                embedding = list(li_embedding_model_inst.query_embed(query=text))[0].tolist()
+            return embedding
+        else:
+            raise ValueError(f"{model_name} is not among supported models")
