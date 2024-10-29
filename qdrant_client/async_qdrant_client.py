@@ -26,6 +26,7 @@ from typing import (
 )
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
+from qdrant_client.common.deprecations import deprecation_warning_once
 from qdrant_client.conversions import common_types as types
 from qdrant_client.embed.type_inspector import Inspector
 from qdrant_client.http import AsyncApiClient, AsyncApis
@@ -1457,6 +1458,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        if len(points) > 0 and isinstance(points[0], grpc.PointStruct):
+            deprecation_warning_once(
+                "\n            Usage of `grpc.PointStruct` is deprecated. Please use `models.PointStruct` instead.\n            ",
+                idx="grpc-input",
+            )
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and (not self.cloud_inference):
             if isinstance(points, List):
