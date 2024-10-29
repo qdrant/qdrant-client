@@ -339,6 +339,12 @@ class CountResult(BaseModel):
     count: int = Field(..., description="Number of points which satisfy the conditions")
 
 
+class CpuEndian(str, Enum):
+    LITTLE = "little"
+    BIG = "big"
+    OTHER = "other"
+
+
 class CreateAlias(BaseModel, extra="forbid"):
     """
     Create alternative name for a collection. Collection will be available under both names for search, retrieve,
@@ -403,6 +409,7 @@ class CreateCollection(BaseModel, extra="forbid"):
     sparse_vectors: Optional[Dict[str, "SparseVectorParams"]] = Field(
         default=None, description="Sparse vector data config."
     )
+    strict_mode_config: Optional["StrictModeConfig"] = Field(default=None, description="Strict-mode config.")
 
 
 class CreateFieldIndex(BaseModel, extra="forbid"):
@@ -600,6 +607,9 @@ class Document(BaseModel, extra="forbid"):
     """
     text: str = Field(..., description="Text document to be embedded by FastEmbed or Cloud inference server")
     model: Optional[str] = Field(default=None, description="Model name to be used for embedding computation")
+    options: Optional[Dict[str, Any]] = Field(
+        default=None, description="Parameters for the model Values of the parameters are model-specific"
+    )
 
 
 class DropReplicaOperation(BaseModel, extra="forbid"):
@@ -853,6 +863,21 @@ class HnswConfigDiff(BaseModel, extra="forbid"):
     )
 
 
+class Image(BaseModel, extra="forbid"):
+    """
+    WARN: Work-in-progress, unimplemented  Image object for embedding. Requires inference infrastructure, unimplemented.
+    """
+
+    image: str = Field(..., description="Image data: base64 encoded image or an URL")
+    model: Optional[str] = Field(
+        default=None,
+        description="Name of the model used to generate the vector List of available models depends on a provider",
+    )
+    options: Optional[Dict[str, Any]] = Field(
+        default=None, description="Parameters for the model Values of the parameters are model-specific"
+    )
+
+
 class IndexesOneOf(BaseModel):
     """
     Do not use any index, scan whole vector collection during search. Guarantee 100% precision, but may be time consuming on large collections.
@@ -880,6 +905,24 @@ class IndexesOneOf1(BaseModel):
     options: "HnswConfig" = Field(
         ...,
         description="Use filterable HNSW index for approximate search. Is very fast even on a very huge collections, but require additional space to store index and additional time to build it.",
+    )
+
+
+class InferenceObject(BaseModel, extra="forbid"):
+    """
+    WARN: Work-in-progress, unimplemented  Custom object for embedding. Requires inference infrastructure, unimplemented.
+    """
+
+    object: Any = Field(
+        ...,
+        description="Arbitrary data, used as input for the embedding model Used if the model requires more than one input or a custom input",
+    )
+    model: Optional[str] = Field(
+        default=None,
+        description="Name of the model used to generate the vector List of available models depends on a provider",
+    )
+    options: Optional[Dict[str, Any]] = Field(
+        default=None, description="Parameters for the model Values of the parameters are model-specific"
     )
 
 
@@ -1795,7 +1838,7 @@ class Record(BaseModel):
 
     id: "ExtendedPointId" = Field(..., description="Point data")
     payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
-    vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
+    vector: Optional["VectorStructOutput"] = Field(default=None, description="Vector of the point")
     shard_key: Optional["ShardKey"] = Field(default=None, description="Shard Key")
     order_value: Optional["OrderValue"] = Field(default=None, description="Point data")
 
@@ -1930,6 +1973,7 @@ class RunningEnvironmentTelemetry(BaseModel):
     ram_size: Optional[int] = Field(default=None, description="")
     disk_size: Optional[int] = Field(default=None, description="")
     cpu_flags: str = Field(..., description="")
+    cpu_endian: Optional["CpuEndian"] = Field(default=None, description="")
 
 
 class Sample(str, Enum):
@@ -1969,7 +2013,7 @@ class ScoredPoint(BaseModel):
     version: int = Field(..., description="Point version")
     score: float = Field(..., description="Points vector distance to the query vector")
     payload: Optional["Payload"] = Field(default=None, description="Payload - values assigned to the point")
-    vector: Optional["VectorStruct"] = Field(default=None, description="Vector of the point")
+    vector: Optional["VectorStructOutput"] = Field(default=None, description="Vector of the point")
     shard_key: Optional["ShardKey"] = Field(default=None, description="Shard Key")
     order_value: Optional["OrderValue"] = Field(default=None, description="Order-by value")
 
@@ -2212,7 +2256,7 @@ class ShardSnapshotRecover(BaseModel, extra="forbid"):
 
 class ShardStatus(str, Enum):
     """
-    Current state of the shard (supports same states as the collection) `Green` - all good. `Yellow` - optimization is running, &#x27;Grey&#x27; - optimizations are possible but not triggered, `Red` - some operations failed and was not recovered
+    Current state of the shard (supports same states as the collection)  `Green` - all good. `Yellow` - optimization is running, &#x27;Grey&#x27; - optimizations are possible but not triggered, `Red` - some operations failed and was not recovered
     """
 
     def __str__(self) -> str:
@@ -2285,7 +2329,7 @@ class SnapshotDescription(BaseModel):
 
 class SnapshotPriority(str, Enum):
     """
-    Defines source of truth for snapshot recovery: `NoSync` means - restore snapshot without *any* additional synchronization. `Snapshot` means - prefer snapshot data over the current state. `Replica` means - prefer existing data over the snapshot.
+    Defines source of truth for snapshot recovery:  `NoSync` means - restore snapshot without *any* additional synchronization. `Snapshot` means - prefer snapshot data over the current state. `Replica` means - prefer existing data over the snapshot.
     """
 
     def __str__(self) -> str:
@@ -2424,6 +2468,25 @@ class StateRole(str, Enum):
     PRECANDIDATE = "PreCandidate"
 
 
+class StrictModeConfig(BaseModel, extra="forbid"):
+    enabled: Optional[bool] = Field(default=None, description="Whether strict mode is enabled for a collection or not.")
+    max_query_limit: Optional[int] = Field(
+        default=None, description="Max allowed `limit` parameter for all APIs that don&#x27;t have their own max limit."
+    )
+    max_timeout: Optional[int] = Field(default=None, description="Max allowed `timeout` parameter.")
+    unindexed_filtering_retrieve: Optional[bool] = Field(
+        default=None, description="Allow usage of unindexed fields in retrieval based (eg. search) filters."
+    )
+    unindexed_filtering_update: Optional[bool] = Field(
+        default=None, description="Allow usage of unindexed fields in filtered updates (eg. delete by payload)."
+    )
+    search_max_hnsw_ef: Optional[int] = Field(default=None, description="Max HNSW value allowed in search parameters.")
+    search_allow_exact: Optional[bool] = Field(default=None, description="Whether exact search is allowed or not.")
+    search_max_oversampling: Optional[float] = Field(
+        default=None, description="Max oversampling value allowed in search."
+    )
+
+
 class TelemetryData(BaseModel):
     id: str = Field(..., description="")
     app: "AppBuildTelemetry" = Field(..., description="")
@@ -2501,6 +2564,9 @@ class UpdateCollection(BaseModel, extra="forbid"):
     )
     sparse_vectors: Optional["SparseVectorsConfig"] = Field(
         default=None, description="Map of sparse vector data parameters to update for each sparse vector."
+    )
+    strict_mode_config: Optional["StrictModeConfig"] = Field(
+        default=None, description="Operation for updating parameters of the existing collection"
     )
 
 
@@ -2932,6 +2998,13 @@ Vector = Union[
     SparseVector,
     List[List[StrictFloat]],
     Document,
+    Image,
+    InferenceObject,
+]
+VectorOutput = Union[
+    List[StrictFloat],
+    SparseVector,
+    List[List[StrictFloat]],
 ]
 VectorStorageType = Union[
     VectorStorageTypeOneOf,
@@ -2956,6 +3029,8 @@ BatchVectorStruct = Union[
     List[List[List[StrictFloat]]],
     Dict[StrictStr, List[Vector]],
     List[Document],
+    List[Image],
+    List[InferenceObject],
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
@@ -2976,12 +3051,21 @@ VectorInput = Union[
     List[List[StrictFloat]],
     ExtendedPointId,
     Document,
+    Image,
+    InferenceObject,
 ]
 VectorStruct = Union[
     List[StrictFloat],
     List[List[StrictFloat]],
     Dict[StrictStr, Vector],
     Document,
+    Image,
+    InferenceObject,
+]
+VectorStructOutput = Union[
+    List[StrictFloat],
+    List[List[StrictFloat]],
+    Dict[StrictStr, VectorOutput],
 ]
 WithPayloadInterface = Union[
     StrictBool,
