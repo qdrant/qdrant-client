@@ -700,3 +700,27 @@ def test_query_batch_points(prefer_grpc):
 
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_propagate_options(prefer_grpc):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    local_kwargs = {}
+    local_client._client.query_batch_points = arg_interceptor(
+        local_client._client.query_batch_points, local_kwargs
+    )
+    dense_doc_1 = models.Document(
+        text="hello world", model=DENSE_MODEL_NAME, options={"lazy_load": True}
+    )
+    points = [
+        models.PointStruct(id=i, vector=dense_doc) for i, dense_doc in enumerate([dense_doc_1])
+    ]
+
+    populate_dense_collection(local_client, points)
+    populate_dense_collection(remote_client, points)
+
+    assert local_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
+    assert remote_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
