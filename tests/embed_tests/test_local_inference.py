@@ -690,12 +690,13 @@ def test_query_batch_points(prefer_grpc):
         ),
     ]
 
-    # todo: uncomment once query_batch_points passes the correct offset type
-    # local_client.query_batch_points(COLLECTION_NAME, query_requests)
+    local_client.query_batch_points(COLLECTION_NAME, query_requests)
     remote_client.query_batch_points(COLLECTION_NAME, query_requests)
-    # current_requests = local_kwargs["requests"]
-    # assert all([isinstance(request.query.nearest, list) for request in current_requests])
-    # assert all([isinstance(prefetch.query.nearest, list) for prefetch in current_requests[1].prefetch])
+    current_requests = local_kwargs["requests"]
+    assert all([isinstance(request.query.nearest, list) for request in current_requests])
+    assert all(
+        [isinstance(prefetch.query.nearest, list) for prefetch in current_requests[1].prefetch]
+    )
 
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
