@@ -211,6 +211,9 @@ CACHE_STR_PATH = {
     "VectorParamsDiff": [],
     "WalConfigDiff": [],
     "WithLookup": [],
+    "Image": [],
+    "InferenceObject": [],
+    "StrictModeConfig": [],
 }
 DEFS = {
     "AbortShardTransfer": {
