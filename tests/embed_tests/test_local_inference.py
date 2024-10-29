@@ -715,12 +715,55 @@ def test_propagate_options(prefer_grpc):
     dense_doc_1 = models.Document(
         text="hello world", model=DENSE_MODEL_NAME, options={"lazy_load": True}
     )
+    sparse_doc_1 = models.Document(
+        text="hello world", model=SPARSE_MODEL_NAME, options={"lazy_load": True}
+    )
+
+    multi_doc_1 = models.Document(
+        text="hello world", model=COLBERT_MODEL_NAME, options={"lazy_load": True}
+    )
+
     points = [
-        models.PointStruct(id=i, vector=dense_doc) for i, dense_doc in enumerate([dense_doc_1])
+        models.PointStruct(
+            id=1,
+            vector={
+                "text": dense_doc_1,
+                "multi-text": multi_doc_1,
+                "sparse-text": sparse_doc_1,
+            },
+        )
     ]
 
-    populate_dense_collection(local_client, points)
-    populate_dense_collection(remote_client, points)
+    vectors_config = {
+        "text": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
+        "multi-text": models.VectorParams(
+            size=COLBERT_DIM,
+            distance=models.Distance.COSINE,
+            multivector_config=models.MultiVectorConfig(
+                comparator=models.MultiVectorComparator.MAX_SIM
+            ),
+        ),
+    }
+    sparse_vectors_config = {
+        "sparse-text": models.SparseVectorParams(modifier=models.Modifier.IDF)
+    }
+    local_client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(COLLECTION_NAME)
+
+    remote_client.create_collection(
+        COLLECTION_NAME,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
+
+    local_client.upsert(COLLECTION_NAME, points)
+    remote_client.upsert(COLLECTION_NAME, points)
 
     assert local_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
-    assert remote_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
+    assert local_client.sparse_embedding_models[SPARSE_MODEL_NAME].model.lazy_load
+    assert local_client.late_interaction_embedding_models[COLBERT_MODEL_NAME].model.lazy_load
