@@ -880,16 +880,18 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         model_name = document.model
         text = document.text
         if model_name in SUPPORTED_EMBEDDING_MODELS:
-            self.set_model(model_name, **document.options or {})
-            embedding_model_inst = self._get_or_init_model(model_name=model_name)
+            embedding_model_inst = self._get_or_init_model(
+                model_name=model_name, **document.options or {}
+            )
             if not is_query:
                 embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
             else:
                 embedding = list(embedding_model_inst.query_embed(query=text))[0].tolist()
             return embedding
         elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
-            self.set_sparse_model(model_name, **document.options or {})
-            sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(
+                model_name=model_name, **document.options or {}
+            )
             if not is_query:
                 sparse_embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
             else:
