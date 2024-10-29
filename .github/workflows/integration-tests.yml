@@ -42,6 +42,17 @@ jobs:
             ./tests/async-client-consistency-check.sh
           fi
         shell: bash
+      - name: Run inspection cache population tests
+        run: |
+          if [[ ${{ matrix.python-version }} == "3.10.x" ]]; then
+            ./tests/inspection-cache-consistency-check.sh
+          fi
+        shell: bash
+      - name: Check conversion coverage
+        run: |
+          export RUNNER_OS=${{ runner.os }}
+          ./tests/coverage-test.sh
+        shell: bash
       - name: Run Python doc tests
         run: |
           python -m doctest qdrant_client/local/local_collection.py
@@ -58,9 +69,4 @@ jobs:
         run: |
           pip3 uninstall fastembed -y
           pytest tests/test_fastembed.py
-        shell: bash
-      - name: Check conversion coverage
-        run: |
-          export RUNNER_OS=${{ runner.os }}
-          ./tests/coverage-test.sh
         shell: bash
