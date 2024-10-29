@@ -1529,11 +1529,18 @@ class QdrantClient(QdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        if len(points) > 0 and isinstance(points[0], grpc.PointStruct):
+        if (
+            not isinstance(points, types.Batch)
+            and len(points) > 0
+            and isinstance(points[0], grpc.PointStruct)
+        ):
             # gRPC structures won't support local inference feature, so we deprecated it
-            deprecation_warning_once("""
+            deprecation_warning_once(
+                """
             Usage of `grpc.PointStruct` is deprecated. Please use `models.PointStruct` instead.
-            """, idx="grpc-input")
+            """,
+                idx="grpc-input",
+            )
 
         requires_inference = self._inference_inspector.inspect(points)
 
