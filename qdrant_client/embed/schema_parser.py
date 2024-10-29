@@ -1,9 +1,27 @@
-from copy import copy
+from copy import copy, deepcopy
 from typing import List, Type, Dict, Union, Any, Set, Optional
 
 from pydantic import BaseModel
 
 from qdrant_client.embed.utils import Path, convert_paths
+
+
+try:
+    from qdrant_client.embed._inspection_cache import (
+        DEFS,
+        CACHE_STR_PATH,
+        RECURSIVE_REFS,
+        EXCLUDED_RECURSIVE_REFS,
+        INCLUDED_RECURSIVE_REFS,
+        NAME_RECURSIVE_REF_MAPPING,
+    )
+except ImportError as e:
+    DEFS = {}
+    CACHE_STR_PATH = {}
+    RECURSIVE_REFS = set()
+    EXCLUDED_RECURSIVE_REFS = {"Filter"}
+    INCLUDED_RECURSIVE_REFS = set()
+    NAME_RECURSIVE_REF_MAPPING = {}
 
 
 class ModelSchemaParser:
@@ -15,9 +33,9 @@ class ModelSchemaParser:
         _defs: definitions extracted from json schemas
         _recursive_refs: set of recursive refs found in the processed schemas, e.g.:
             {"Filter", "Prefetch"}
-        _not_document_recursive_refs: predefined time-consuming recursive refs which don't have inference objects, e.g.:
+        _excluded_recursive_refs: predefined time-consuming recursive refs which don't have inference objects, e.g.:
             {"Filter"}
-        _doc_recursive_paths: set of recursive refs which have inference objects, e.g.:
+        _included_recursive_refs: set of recursive refs which have inference objects, e.g.:
             {"Prefetch"}
         _cache: cache of string paths for models containing objects for inference, e.g.:
             {"Prefetch": ['prefetch.query', 'prefetch.query.context.negative', ...]}
@@ -48,15 +66,22 @@ class ModelSchemaParser:
             {"prefetch": "Prefetch"}
     """
 
-    def __init__(self) -> None:
-        self._defs: Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]] = {}
-        self._cache: Dict[str, List[str]] = {}
-        self._recursive_refs: Set[str] = set()
-        self._not_document_recursive_refs: Set[str] = {"Filter"}
-        self._doc_recursive_paths: Set[str] = set()
+    CACHE_PATH = "_inspection_cache.py"
 
-        self.path_cache: Dict[str, List[Path]] = {}
-        self.name_recursive_ref_mapping: Dict[str, str] = {}
+    def __init__(self) -> None:
+        self._defs: Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]] = deepcopy(DEFS)
+        self._cache: Dict[str, List[str]] = deepcopy(CACHE_STR_PATH)
+
+        self._recursive_refs: Set[str] = set(RECURSIVE_REFS)
+        self._excluded_recursive_refs: Set[str] = set(EXCLUDED_RECURSIVE_REFS)
+        self._included_recursive_refs: Set[str] = set(INCLUDED_RECURSIVE_REFS)
+
+        self.name_recursive_ref_mapping: Dict[str, str] = {
+            k: v for k, v in NAME_RECURSIVE_REF_MAPPING.items()
+        }
+        self.path_cache: Dict[str, List[Path]] = {
+            model: convert_paths(paths) for model, paths in self._cache.items()
+        }
 
     def _replace_refs(
         self,
@@ -146,7 +171,7 @@ class ModelSchemaParser:
                 model_name = value.split("/")[-1]
 
                 value = self._defs[model_name]
-                if model_name in self._not_document_recursive_refs:
+                if model_name in self._excluded_recursive_refs:
                     continue
 
                 if model_name in self._recursive_refs:
@@ -204,13 +229,39 @@ class ModelSchemaParser:
         self._cache[model_name] = self._find_document_paths(defs)
 
         for ref in self._recursive_refs:
-            if ref in self._not_document_recursive_refs or ref in self._doc_recursive_paths:
+            if ref in self._excluded_recursive_refs or ref in self._included_recursive_refs:
                 continue
 
             if self._find_document_paths(self._defs[ref]):
-                self._doc_recursive_paths.add(ref)
+                self._included_recursive_refs.add(ref)
             else:
-                self._not_document_recursive_refs.add(ref)
+                self._excluded_recursive_refs.add(ref)
 
         # convert str paths to Path objects which group path parts and reduce the time of the traversal
         self.path_cache = {model: convert_paths(paths) for model, paths in self._cache.items()}
+
+    def _persist(self, output_path: Union[Path, str] = CACHE_PATH) -> None:
+        """Persist the parser state to a file
+
+        Args:
+            output_path: path to the file to save the parser state
+
+        Returns:
+            None
+        """
+        with open(output_path, "w") as f:
+            f.write(f"CACHE_STR_PATH = {self._cache}\n")
+            f.write(f"DEFS = {self._defs}\n")
+            # `sorted is required` to use `diff` in comparisons
+            f.write(f"RECURSIVE_REFS = {sorted(self._recursive_refs)}\n")
+            f.write(f"INCLUDED_RECURSIVE_REFS = {sorted(self._included_recursive_refs)}\n")
+            f.write(f"EXCLUDED_RECURSIVE_REFS = {sorted(self._excluded_recursive_refs)}\n")
+            f.write(f"NAME_RECURSIVE_REF_MAPPING = {self.name_recursive_ref_mapping}\n")
+
+
+if __name__ == "__main__":
+    from qdrant_client import models
+
+    parser = ModelSchemaParser()
+    parser.parse_model(models.Prefetch)
+    parser._persist()
