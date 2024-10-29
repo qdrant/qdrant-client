@@ -64,7 +64,8 @@ PayloadSchemaType = Union[
     grpc.PayloadIndexParams,
 ]  # type(grpc.PayloadSchemaType) == int
 PointStruct: TypeAlias = rest.PointStruct
-Points = Union[rest.Batch, Sequence[Union[rest.PointStruct, grpc.PointStruct]]]
+Batch = rest.Batch
+Points = Union[Batch, Sequence[Union[rest.PointStruct, grpc.PointStruct]]]
 PointsSelector = Union[
     List[PointId],
     rest.Filter,

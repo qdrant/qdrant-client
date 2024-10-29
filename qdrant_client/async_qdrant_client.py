@@ -1458,7 +1458,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation Result(UpdateResult)
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        if len(points) > 0 and isinstance(points[0], grpc.PointStruct):
+        if (
+            not isinstance(points, types.Batch)
+            and len(points) > 0
+            and isinstance(points[0], grpc.PointStruct)
+        ):
             deprecation_warning_once(
                 "\n            Usage of `grpc.PointStruct` is deprecated. Please use `models.PointStruct` instead.\n            ",
                 idx="grpc-input",
