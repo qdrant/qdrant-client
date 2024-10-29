@@ -1,14 +1,16 @@
 import importlib.util
 import sys
 from pathlib import Path
+from typing import Union
 
 from pydantic import BaseModel
 
 from qdrant_client import models
 from qdrant_client.embed.schema_parser import ModelSchemaParser
+from types import ModuleType
 
 
-def dynamic_import(file_path, module_name):
+def dynamic_import(file_path: Union[str, Path], module_name: str) -> ModuleType:
     # Create a module spec from the file path
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None:
@@ -18,7 +20,7 @@ def dynamic_import(file_path, module_name):
     module = importlib.util.module_from_spec(spec)
 
     # Execute the module to load its contents
-    spec.loader.exec_module(module)
+    spec.loader.exec_module(module)  # type: ignore
 
     # Optionally, add the module to sys.modules to access it globally
     sys.modules[module_name] = module
@@ -32,10 +34,13 @@ if __name__ == "__main__":
             continue
 
         model = getattr(models, model_name)
-        if not isinstance(model, type) or not issubclass(model, BaseModel) or model == BaseModel:
+        if not isinstance(model, type):
             continue
 
-        if "extra" not in model.model_config or model.model_config["extra"] != "forbid":
+        if not issubclass(model, BaseModel) or model == BaseModel:
+            continue
+
+        if "extra" not in model.model_config or model.model_config["extra"] != "forbid":  # type: ignore
             continue
 
         parser.parse_model(model)

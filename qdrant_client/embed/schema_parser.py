@@ -18,9 +18,9 @@ try:
 except ImportError as e:
     DEFS = {}
     CACHE_STR_PATH = {}
-    RECURSIVE_REFS = set()
-    EXCLUDED_RECURSIVE_REFS = {"Filter"}
-    INCLUDED_RECURSIVE_REFS = set()
+    RECURSIVE_REFS = set()  # type: ignore
+    EXCLUDED_RECURSIVE_REFS = {"Filter"}  # type: ignore
+    INCLUDED_RECURSIVE_REFS = set()  # type: ignore
     NAME_RECURSIVE_REF_MAPPING = {}
 
 
@@ -69,7 +69,7 @@ class ModelSchemaParser:
     CACHE_PATH = "_inspection_cache.py"
 
     def __init__(self) -> None:
-        self._defs: Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]] = deepcopy(DEFS)
+        self._defs: Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]] = deepcopy(DEFS)  # type: ignore[arg-type]
         self._cache: Dict[str, List[str]] = deepcopy(CACHE_STR_PATH)
 
         self._recursive_refs: Set[str] = set(RECURSIVE_REFS)
@@ -257,11 +257,3 @@ class ModelSchemaParser:
             f.write(f"INCLUDED_RECURSIVE_REFS = {sorted(self._included_recursive_refs)}\n")
             f.write(f"EXCLUDED_RECURSIVE_REFS = {sorted(self._excluded_recursive_refs)}\n")
             f.write(f"NAME_RECURSIVE_REF_MAPPING = {self.name_recursive_ref_mapping}\n")
-
-
-if __name__ == "__main__":
-    from qdrant_client import models
-
-    parser = ModelSchemaParser()
-    parser.parse_model(models.Prefetch)
-    parser._persist()
