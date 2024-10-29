@@ -102,6 +102,9 @@ class QdrantFastembedMixin(QdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -117,6 +120,12 @@ class QdrantFastembedMixin(QdrantBase):
             providers: The list of onnx providers (with or without options) to use. Defaults to None.
                 Example configuration:
                 https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#configuration-options
+            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to False.
+            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
+                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
         Raises:
             ValueError: If embedding model is not supported.
             ImportError: If fastembed is not installed.
@@ -138,6 +147,9 @@ class QdrantFastembedMixin(QdrantBase):
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
+            cuda=cuda,
+            device_ids=device_ids,
+            lazy_load=lazy_load,
             **kwargs,
         )
         self._embedding_model_name = embedding_model_name
@@ -148,6 +160,9 @@ class QdrantFastembedMixin(QdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
+        cuda: bool = False,
+        device_ids: Optional[List[int]] = None,
+        lazy_load: bool = False,
         **kwargs: Any,
     ) -> None:
         """
@@ -163,6 +178,12 @@ class QdrantFastembedMixin(QdrantBase):
             providers: The list of onnx providers (with or without options) to use. Defaults to None.
                 Example configuration:
                 https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#configuration-options
+            cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
+                Defaults to False.
+            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+                workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
+            lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
+                Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
         Raises:
             ValueError: If embedding model is not supported.
             ImportError: If fastembed is not installed.
@@ -176,6 +197,9 @@ class QdrantFastembedMixin(QdrantBase):
                 cache_dir=cache_dir,
                 threads=threads,
                 providers=providers,
+                cuda=cuda,
+                device_ids=device_ids,
+                lazy_load=lazy_load,
                 **kwargs,
             )
         self._sparse_embedding_model_name = embedding_model_name
@@ -944,7 +968,9 @@ class QdrantFastembedMixin(QdrantBase):
         text = document.text
         if model_name in SUPPORTED_EMBEDDING_MODELS:
             self.set_model(model_name)
-            embedding_model_inst = self._get_or_init_model(model_name=model_name)
+            embedding_model_inst = self._get_or_init_model(
+                model_name=model_name, **(document.options or {})
+            )
             if not is_query:
                 embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
             else:
@@ -952,7 +978,9 @@ class QdrantFastembedMixin(QdrantBase):
             return embedding
         elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
             self.set_sparse_model(model_name)
-            sparse_embedding_model_inst = self._get_or_init_sparse_model(model_name=model_name)
+            sparse_embedding_model_inst = self._get_or_init_sparse_model(
+                model_name=model_name, **(document.options or {})
+            )
             if not is_query:
                 sparse_embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
             else:
@@ -963,7 +991,7 @@ class QdrantFastembedMixin(QdrantBase):
             )
         elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
             li_embedding_model_inst = self._get_or_init_late_interaction_model(
-                model_name=model_name
+                model_name=model_name, **(document.options or {})
             )
             if not is_query:
                 embedding = list(li_embedding_model_inst.embed(documents=[text]))[0].tolist()
