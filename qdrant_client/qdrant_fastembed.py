@@ -1,10 +1,14 @@
+import base64
+import io
 import uuid
 import warnings
 from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set, get_args
 from copy import deepcopy
 
+
 import numpy as np
+
 from pydantic import BaseModel
 
 from qdrant_client.client_base import QdrantBase
@@ -27,12 +31,14 @@ try:
         ImageEmbedding,
     )
     from fastembed.common import OnnxProvider
+    from PIL import Image as PilImage
 except ImportError:
     TextEmbedding = None
     SparseTextEmbedding = None
     OnnxProvider = None
     LateInteractionTextEmbedding = None
     ImageEmbedding = None
+    PilImage = None
 
 
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
@@ -1056,10 +1062,12 @@ class QdrantFastembedMixin(QdrantBase):
             ValueError: If model is not supported
         """
         model_name = image.model
-        text = image.image
         if model_name in _IMAGE_EMBEDDING_MODELS:
             embedding_model_inst = self._get_or_init_image_model(model_name=model_name)
-            embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
+            image_data = base64.b64decode(image.image)
+            with io.BytesIO(image_data) as buffer:
+                with PilImage.open(buffer) as image:
+                    embedding = list(embedding_model_inst.embed(images=[image]))[0].tolist()
             return embedding
 
         raise ValueError(f"{model_name} is not among supported models")

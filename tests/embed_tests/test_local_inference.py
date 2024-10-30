@@ -1,4 +1,5 @@
 from typing import Optional, List
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -17,6 +18,10 @@ DENSE_DIM = 384
 SPARSE_MODEL_NAME = "Qdrant/bm42-all-minilm-l6-v2-attentions"
 COLBERT_MODEL_NAME = "colbert-ir/colbertv2.0"
 COLBERT_DIM = 128
+DENSE_IMAGE_MODEL_NAME = "Qdrant/resnet50-onnx"
+DENSE_IMAGE_DIM = 2048
+
+TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "test_image.txt"
 
 
 # todo: remove once we don't store models in class variables
@@ -716,7 +721,6 @@ def test_propagate_options(prefer_grpc):
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
     remote_client = QdrantClient(prefer_grpc=prefer_grpc)
-
     dense_doc_1 = models.Document(
         text="hello world", model=DENSE_MODEL_NAME, options={"lazy_load": True}
     )
@@ -772,3 +776,41 @@ def test_propagate_options(prefer_grpc):
     assert local_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
     assert local_client.sparse_embedding_models[SPARSE_MODEL_NAME].model.lazy_load
     assert local_client.late_interaction_embedding_models[COLBERT_MODEL_NAME].model.lazy_load
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_image(prefer_grpc):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    local_kwargs = {}
+    local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
+
+    with open(TEST_IMAGE_PATH, "r") as f:
+        base64_string = f.read()
+
+    dense_image_1 = models.Image(image=base64_string, model=DENSE_IMAGE_MODEL_NAME)
+    points = [
+        models.PointStruct(id=i, vector=dense_img) for i, dense_img in enumerate([dense_image_1])
+    ]
+
+    for client in local_client, remote_client:
+        if client.collection_exists(COLLECTION_NAME):
+            client.delete_collection(COLLECTION_NAME)
+        vector_params = models.VectorParams(size=DENSE_IMAGE_DIM, distance=models.Distance.COSINE)
+        client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
+        client.upsert(COLLECTION_NAME, points)
+
+    vec_points = local_kwargs["points"]
+    assert all([isinstance(vec_point.vector, list) for vec_point in vec_points])
+    assert local_client.scroll(COLLECTION_NAME, limit=1, with_vectors=True)[0]
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
