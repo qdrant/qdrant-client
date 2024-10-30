@@ -19,6 +19,14 @@ COLBERT_MODEL_NAME = "colbert-ir/colbertv2.0"
 COLBERT_DIM = 128
 
 
+# todo: remove once we don't store models in class variables
+@pytest.fixture(autouse=True)
+def reset_cls_model_storage():
+    QdrantClient.embedding_models = {}
+    QdrantClient.sparse_embedding_models = {}
+    QdrantClient.late_interaction_embedding_models = {}
+
+
 def arg_interceptor(func, kwarg_storage):
     kwarg_storage.clear()
 
@@ -708,10 +716,7 @@ def test_propagate_options(prefer_grpc):
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
     remote_client = QdrantClient(prefer_grpc=prefer_grpc)
-    local_kwargs = {}
-    local_client._client.query_batch_points = arg_interceptor(
-        local_client._client.query_batch_points, local_kwargs
-    )
+
     dense_doc_1 = models.Document(
         text="hello world", model=DENSE_MODEL_NAME, options={"lazy_load": True}
     )
