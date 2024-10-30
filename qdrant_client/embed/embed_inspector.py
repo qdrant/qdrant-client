@@ -17,6 +17,8 @@ class InspectorEmbed:
         parser: ModelSchemaParser instance
     """
 
+    INFERENCE_OBJECT_TYPES = models.Document, models.Image
+
     def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
         self.parser = ModelSchemaParser() if parser is None else parser
 
@@ -112,7 +114,7 @@ class InspectorEmbed:
         if model is None:
             return []
 
-        if isinstance(model, models.Document):
+        if isinstance(model, self.INFERENCE_OBJECT_TYPES):
             return [accum]
 
         if isinstance(model, BaseModel):
@@ -132,7 +134,7 @@ class InspectorEmbed:
                 if not isinstance(current_model, BaseModel):
                     continue
 
-                if isinstance(current_model, models.Document):
+                if isinstance(current_model, self.INFERENCE_OBJECT_TYPES):
                     found_paths.append(accum)
 
                 found_paths.extend(inspect_recursive(current_model, accum))
@@ -157,7 +159,7 @@ class InspectorEmbed:
                     if not isinstance(current_model, BaseModel):
                         continue
 
-                    if isinstance(current_model, models.Document):
+                    if isinstance(current_model, self.INFERENCE_OBJECT_TYPES):
                         found_paths.append(accum)
 
                     found_paths.extend(inspect_recursive(current_model, accum))

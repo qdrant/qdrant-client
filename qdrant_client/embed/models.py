@@ -2,9 +2,8 @@ from typing import Union, List, Dict
 
 from pydantic import StrictFloat, StrictStr
 
-from qdrant_client.grpc import SparseVector
-from qdrant_client.http.models import ExtendedPointId
-from qdrant_client.models import Document  # type: ignore[attr-defined]
+from qdrant_client.http.models import ExtendedPointId, SparseVector
+from qdrant_client.models import Document, Image  # type: ignore[attr-defined]
 
 
 NumericVector = Union[
@@ -24,4 +23,4 @@ NumericVectorStruct = Union[
     Dict[StrictStr, NumericVector],
 ]
 
-__all__ = ["Document", "NumericVector", "NumericVectorInput", "NumericVectorStruct"]
+__all__ = ["NumericVector", "NumericVectorInput", "NumericVectorStruct"]

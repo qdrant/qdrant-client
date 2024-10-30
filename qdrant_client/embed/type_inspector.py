@@ -16,6 +16,8 @@ class Inspector:
         parser: ModelSchemaParser instance to inspect model json schemas
     """
 
+    INFERENCE_OBJECT_TYPES = models.Document, models.Image
+
     def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
         self.parser = ModelSchemaParser() if parser is None else parser
 
@@ -41,7 +43,7 @@ class Inspector:
         return False
 
     def _inspect_model(self, model: BaseModel, paths: Optional[List[Path]] = None) -> bool:
-        if isinstance(model, models.Document):
+        if isinstance(model, self.INFERENCE_OBJECT_TYPES):
             return True
 
         paths = (
@@ -80,7 +82,7 @@ class Inspector:
         if model is None:
             return False
 
-        if isinstance(model, models.Document):
+        if isinstance(model, self.INFERENCE_OBJECT_TYPES):
             return True
 
         if isinstance(model, BaseModel):
@@ -98,7 +100,7 @@ class Inspector:
 
         elif isinstance(model, list):
             for current_model in model:
-                if isinstance(current_model, models.Document):
+                if isinstance(current_model, self.INFERENCE_OBJECT_TYPES):
                     return True
 
                 if not isinstance(current_model, BaseModel):
@@ -121,7 +123,7 @@ class Inspector:
             for key, values in model.items():
                 values = [values] if not isinstance(values, list) else values
                 for current_model in values:
-                    if isinstance(current_model, models.Document):
+                    if isinstance(current_model, self.INFERENCE_OBJECT_TYPES):
                         return True
 
                     if not isinstance(current_model, BaseModel):
