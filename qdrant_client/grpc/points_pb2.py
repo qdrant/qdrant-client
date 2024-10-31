@@ -18,7 +18,7 @@ from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__
 from . import json_with_int_pb2 as json__with__int__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cpoints.proto\x12\x06qdrant\x1a\x11\x63ollections.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13json_with_int.proto\"8\n\rWriteOrdering\x12\'\n\x04type\x18\x01 \x01(\x0e\x32\x19.qdrant.WriteOrderingType\"Y\n\x0fReadConsistency\x12+\n\x04type\x18\x01 \x01(\x0e\x32\x1b.qdrant.ReadConsistencyTypeH\x00\x12\x10\n\x06\x66\x61\x63tor\x18\x02 \x01(\x04H\x00\x42\x07\n\x05value\"<\n\x07PointId\x12\r\n\x03num\x18\x01 \x01(\x04H\x00\x12\x0e\n\x04uuid\x18\x02 \x01(\tH\x00\x42\x12\n\x10point_id_options\"\x1d\n\rSparseIndices\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\r\"}\n\x06Vector\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\x12+\n\x07indices\x18\x02 \x01(\x0b\x32\x15.qdrant.SparseIndicesH\x00\x88\x01\x01\x12\x1a\n\rvectors_count\x18\x03 \x01(\rH\x01\x88\x01\x01\x42\n\n\x08_indicesB\x10\n\x0e_vectors_count\"\x1b\n\x0b\x44\x65nseVector\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\"/\n\x0cSparseVector\x12\x0e\n\x06values\x18\x01 \x03(\x02\x12\x0f\n\x07indices\x18\x02 \x03(\r\"8\n\x10MultiDenseVector\x12$\n\x07vectors\x18\x01 \x03(\x0b\x32\x13.qdrant.DenseVector\"\xb6\x01\n\x0bVectorInput\x12\x1d\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointIdH\x00\x12$\n\x05\x64\x65nse\x18\x02 \x01(\x0b\x32\x13.qdrant.DenseVectorH\x00\x12&\n\x06sparse\x18\x03 \x01(\x0b\x32\x14.qdrant.SparseVectorH\x00\x12/\n\x0bmulti_dense\x18\x04 \x01(\x0b\x32\x18.qdrant.MultiDenseVectorH\x00\x42\t\n\x07variant\"8\n\x10ShardKeySelector\x12$\n\nshard_keys\x18\x01 \x03(\x0b\x32\x10.qdrant.ShardKey\"\xf5\x01\n\x0cUpsertPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12#\n\x06points\x18\x03 \x03(\x0b\x32\x13.qdrant.PointStruct\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"\xf8\x01\n\x0c\x44\x65letePoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12&\n\x06points\x18\x03 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"\x85\x03\n\tGetPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x1c\n\x03ids\x18\x02 \x03(\x0b\x32\x0f.qdrant.PointId\x12\x31\n\x0cwith_payload\x18\x04 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12\x36\n\x0cwith_vectors\x18\x05 \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x00\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x06 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x07 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x12\x14\n\x07timeout\x18\x08 \x01(\x04H\x03\x88\x01\x01\x42\x0f\n\r_with_vectorsB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selectorB\n\n\x08_timeoutJ\x04\x08\x03\x10\x04\"\xfc\x01\n\x12UpdatePointVectors\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12$\n\x06points\x18\x03 \x03(\x0b\x32\x14.qdrant.PointVectors\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"M\n\x0cPointVectors\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12 \n\x07vectors\x18\x02 \x01(\x0b\x32\x0f.qdrant.Vectors\"\xb1\x02\n\x12\x44\x65letePointVectors\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12/\n\x0fpoints_selector\x18\x03 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12(\n\x07vectors\x18\x04 \x01(\x0b\x32\x17.qdrant.VectorsSelector\x12,\n\x08ordering\x18\x05 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x06 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"\xb5\x03\n\x10SetPayloadPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x36\n\x07payload\x18\x03 \x03(\x0b\x32%.qdrant.SetPayloadPoints.PayloadEntry\x12\x34\n\x0fpoints_selector\x18\x05 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x01\x88\x01\x01\x12,\n\x08ordering\x18\x06 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x02\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x07 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x03\x88\x01\x01\x12\x10\n\x03key\x18\x08 \x01(\tH\x04\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x07\n\x05_waitB\x12\n\x10_points_selectorB\x0b\n\t_orderingB\x15\n\x13_shard_key_selectorB\x06\n\x04_keyJ\x04\x08\x04\x10\x05\"\xb5\x02\n\x13\x44\x65letePayloadPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x0c\n\x04keys\x18\x03 \x03(\t\x12\x34\n\x0fpoints_selector\x18\x05 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x01\x88\x01\x01\x12,\n\x08ordering\x18\x06 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x02\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x07 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x03\x88\x01\x01\x42\x07\n\x05_waitB\x12\n\x10_points_selectorB\x0b\n\t_orderingB\x15\n\x13_shard_key_selectorJ\x04\x08\x04\x10\x05\"\xfe\x01\n\x12\x43learPayloadPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12&\n\x06points\x18\x03 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"\xaf\x02\n\x1a\x43reateFieldIndexCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x12\n\nfield_name\x18\x03 \x01(\t\x12*\n\nfield_type\x18\x04 \x01(\x0e\x32\x11.qdrant.FieldTypeH\x01\x88\x01\x01\x12;\n\x12\x66ield_index_params\x18\x05 \x01(\x0b\x32\x1a.qdrant.PayloadIndexParamsH\x02\x88\x01\x01\x12,\n\x08ordering\x18\x06 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x03\x88\x01\x01\x42\x07\n\x05_waitB\r\n\x0b_field_typeB\x15\n\x13_field_index_paramsB\x0b\n\t_ordering\"\xa0\x01\n\x1a\x44\x65leteFieldIndexCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x12\n\nfield_name\x18\x03 \x01(\t\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_ordering\"(\n\x16PayloadIncludeSelector\x12\x0e\n\x06\x66ields\x18\x01 \x03(\t\"(\n\x16PayloadExcludeSelector\x12\x0e\n\x06\x66ields\x18\x01 \x03(\t\"\xa1\x01\n\x13WithPayloadSelector\x12\x10\n\x06\x65nable\x18\x01 \x01(\x08H\x00\x12\x31\n\x07include\x18\x02 \x01(\x0b\x32\x1e.qdrant.PayloadIncludeSelectorH\x00\x12\x31\n\x07\x65xclude\x18\x03 \x01(\x0b\x32\x1e.qdrant.PayloadExcludeSelectorH\x00\x42\x12\n\x10selector_options\"\x82\x01\n\x0cNamedVectors\x12\x32\n\x07vectors\x18\x01 \x03(\x0b\x32!.qdrant.NamedVectors.VectorsEntry\x1a>\n\x0cVectorsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1d\n\x05value\x18\x02 \x01(\x0b\x32\x0e.qdrant.Vector:\x02\x38\x01\"g\n\x07Vectors\x12 \n\x06vector\x18\x01 \x01(\x0b\x32\x0e.qdrant.VectorH\x00\x12\'\n\x07vectors\x18\x02 \x01(\x0b\x32\x14.qdrant.NamedVectorsH\x00\x42\x11\n\x0fvectors_options\" \n\x0fVectorsSelector\x12\r\n\x05names\x18\x01 \x03(\t\"g\n\x13WithVectorsSelector\x12\x10\n\x06\x65nable\x18\x01 \x01(\x08H\x00\x12*\n\x07include\x18\x02 \x01(\x0b\x32\x17.qdrant.VectorsSelectorH\x00\x42\x12\n\x10selector_options\"\x88\x01\n\x18QuantizationSearchParams\x12\x13\n\x06ignore\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x14\n\x07rescore\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12\x19\n\x0coversampling\x18\x03 \x01(\x01H\x02\x88\x01\x01\x42\t\n\x07_ignoreB\n\n\x08_rescoreB\x0f\n\r_oversampling\"\xc8\x01\n\x0cSearchParams\x12\x14\n\x07hnsw_ef\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x12\n\x05\x65xact\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12;\n\x0cquantization\x18\x03 \x01(\x0b\x32 .qdrant.QuantizationSearchParamsH\x02\x88\x01\x01\x12\x19\n\x0cindexed_only\x18\x04 \x01(\x08H\x03\x88\x01\x01\x42\n\n\x08_hnsw_efB\x08\n\x06_exactB\x0f\n\r_quantizationB\x0f\n\r_indexed_only\"\x92\x05\n\x0cSearchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x0e\n\x06vector\x18\x02 \x03(\x02\x12\x1e\n\x06\x66ilter\x18\x03 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x04 \x01(\x04\x12\x31\n\x0cwith_payload\x18\x06 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x07 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x1c\n\x0fscore_threshold\x18\x08 \x01(\x02H\x00\x88\x01\x01\x12\x13\n\x06offset\x18\t \x01(\x04H\x01\x88\x01\x01\x12\x18\n\x0bvector_name\x18\n \x01(\tH\x02\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\x0b \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x03\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x0c \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x04\x88\x01\x01\x12\x14\n\x07timeout\x18\r \x01(\x04H\x05\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x0e \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x06\x88\x01\x01\x12\x32\n\x0esparse_indices\x18\x0f \x01(\x0b\x32\x15.qdrant.SparseIndicesH\x07\x88\x01\x01\x42\x12\n\x10_score_thresholdB\t\n\x07_offsetB\x0e\n\x0c_vector_nameB\x0f\n\r_with_vectorsB\x13\n\x11_read_consistencyB\n\n\x08_timeoutB\x15\n\x13_shard_key_selectorB\x11\n\x0f_sparse_indicesJ\x04\x08\x05\x10\x06\"\xc8\x01\n\x11SearchBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12+\n\rsearch_points\x18\x02 \x03(\x0b\x32\x14.qdrant.SearchPoints\x12\x36\n\x10read_consistency\x18\x03 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x04 \x01(\x04H\x01\x88\x01\x01\x42\x13\n\x11_read_consistencyB\n\n\x08_timeout\"\xb2\x01\n\nWithLookup\x12\x12\n\ncollection\x18\x01 \x01(\t\x12\x36\n\x0cwith_payload\x18\x02 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelectorH\x00\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\x03 \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x01\x88\x01\x01\x42\x0f\n\r_with_payloadB\x0f\n\r_with_vectors\"\xd5\x05\n\x11SearchPointGroups\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x0e\n\x06vector\x18\x02 \x03(\x02\x12\x1e\n\x06\x66ilter\x18\x03 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x04 \x01(\r\x12\x31\n\x0cwith_payload\x18\x05 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x06 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x1c\n\x0fscore_threshold\x18\x07 \x01(\x02H\x00\x88\x01\x01\x12\x18\n\x0bvector_name\x18\x08 \x01(\tH\x01\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\t \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x02\x88\x01\x01\x12\x10\n\x08group_by\x18\n \x01(\t\x12\x12\n\ngroup_size\x18\x0b \x01(\r\x12\x36\n\x10read_consistency\x18\x0c \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x03\x88\x01\x01\x12,\n\x0bwith_lookup\x18\r \x01(\x0b\x32\x12.qdrant.WithLookupH\x04\x88\x01\x01\x12\x14\n\x07timeout\x18\x0e \x01(\x04H\x05\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x0f \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x06\x88\x01\x01\x12\x32\n\x0esparse_indices\x18\x10 \x01(\x0b\x32\x15.qdrant.SparseIndicesH\x07\x88\x01\x01\x42\x12\n\x10_score_thresholdB\x0e\n\x0c_vector_nameB\x0f\n\r_with_vectorsB\x13\n\x11_read_consistencyB\x0e\n\x0c_with_lookupB\n\n\x08_timeoutB\x15\n\x13_shard_key_selectorB\x11\n\x0f_sparse_indices\"}\n\tStartFrom\x12\x0f\n\x05\x66loat\x18\x01 \x01(\x01H\x00\x12\x11\n\x07integer\x18\x02 \x01(\x03H\x00\x12/\n\ttimestamp\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x12\x12\n\x08\x64\x61tetime\x18\x04 \x01(\tH\x00\x42\x07\n\x05value\"\x8a\x01\n\x07OrderBy\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\tdirection\x18\x02 \x01(\x0e\x32\x11.qdrant.DirectionH\x00\x88\x01\x01\x12*\n\nstart_from\x18\x03 \x01(\x0b\x32\x11.qdrant.StartFromH\x01\x88\x01\x01\x42\x0c\n\n_directionB\r\n\x0b_start_from\"\x8e\x04\n\x0cScrollPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x1e\n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.Filter\x12$\n\x06offset\x18\x03 \x01(\x0b\x32\x0f.qdrant.PointIdH\x00\x88\x01\x01\x12\x12\n\x05limit\x18\x04 \x01(\rH\x01\x88\x01\x01\x12\x31\n\x0cwith_payload\x18\x06 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12\x36\n\x0cwith_vectors\x18\x07 \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x02\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x08 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x03\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\t \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x04\x88\x01\x01\x12&\n\x08order_by\x18\n \x01(\x0b\x32\x0f.qdrant.OrderByH\x05\x88\x01\x01\x12\x14\n\x07timeout\x18\x0b \x01(\x04H\x06\x88\x01\x01\x42\t\n\x07_offsetB\x08\n\x06_limitB\x0f\n\r_with_vectorsB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selectorB\x0b\n\t_order_byB\n\n\x08_timeoutJ\x04\x08\x05\x10\x06\"\xa5\x01\n\x0eLookupLocation\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x18\n\x0bvector_name\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x01\x88\x01\x01\x42\x0e\n\x0c_vector_nameB\x15\n\x13_shard_key_selector\"\xcd\x06\n\x0fRecommendPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12!\n\x08positive\x18\x02 \x03(\x0b\x32\x0f.qdrant.PointId\x12!\n\x08negative\x18\x03 \x03(\x0b\x32\x0f.qdrant.PointId\x12\x1e\n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x05 \x01(\x04\x12\x31\n\x0cwith_payload\x18\x07 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x08 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x1c\n\x0fscore_threshold\x18\t \x01(\x02H\x00\x88\x01\x01\x12\x13\n\x06offset\x18\n \x01(\x04H\x01\x88\x01\x01\x12\x12\n\x05using\x18\x0b \x01(\tH\x02\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\x0c \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x03\x88\x01\x01\x12\x30\n\x0blookup_from\x18\r \x01(\x0b\x32\x16.qdrant.LookupLocationH\x04\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x0e \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x05\x88\x01\x01\x12\x30\n\x08strategy\x18\x10 \x01(\x0e\x32\x19.qdrant.RecommendStrategyH\x06\x88\x01\x01\x12(\n\x10positive_vectors\x18\x11 \x03(\x0b\x32\x0e.qdrant.Vector\x12(\n\x10negative_vectors\x18\x12 \x03(\x0b\x32\x0e.qdrant.Vector\x12\x14\n\x07timeout\x18\x13 \x01(\x04H\x07\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x14 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x08\x88\x01\x01\x42\x12\n\x10_score_thresholdB\t\n\x07_offsetB\x08\n\x06_usingB\x0f\n\r_with_vectorsB\x0e\n\x0c_lookup_fromB\x13\n\x11_read_consistencyB\x0b\n\t_strategyB\n\n\x08_timeoutB\x15\n\x13_shard_key_selectorJ\x04\x08\x06\x10\x07\"\xd1\x01\n\x14RecommendBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x31\n\x10recommend_points\x18\x02 \x03(\x0b\x32\x17.qdrant.RecommendPoints\x12\x36\n\x10read_consistency\x18\x03 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x04 \x01(\x04H\x01\x88\x01\x01\x42\x13\n\x11_read_consistencyB\n\n\x08_timeout\"\x90\x07\n\x14RecommendPointGroups\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12!\n\x08positive\x18\x02 \x03(\x0b\x32\x0f.qdrant.PointId\x12!\n\x08negative\x18\x03 \x03(\x0b\x32\x0f.qdrant.PointId\x12\x1e\n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x05 \x01(\r\x12\x31\n\x0cwith_payload\x18\x06 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x07 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x1c\n\x0fscore_threshold\x18\x08 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05using\x18\t \x01(\tH\x01\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\n \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x02\x88\x01\x01\x12\x30\n\x0blookup_from\x18\x0b \x01(\x0b\x32\x16.qdrant.LookupLocationH\x03\x88\x01\x01\x12\x10\n\x08group_by\x18\x0c \x01(\t\x12\x12\n\ngroup_size\x18\r \x01(\r\x12\x36\n\x10read_consistency\x18\x0e \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x04\x88\x01\x01\x12,\n\x0bwith_lookup\x18\x0f \x01(\x0b\x32\x12.qdrant.WithLookupH\x05\x88\x01\x01\x12\x30\n\x08strategy\x18\x11 \x01(\x0e\x32\x19.qdrant.RecommendStrategyH\x06\x88\x01\x01\x12(\n\x10positive_vectors\x18\x12 \x03(\x0b\x32\x0e.qdrant.Vector\x12(\n\x10negative_vectors\x18\x13 \x03(\x0b\x32\x0e.qdrant.Vector\x12\x14\n\x07timeout\x18\x14 \x01(\x04H\x07\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x15 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x08\x88\x01\x01\x42\x12\n\x10_score_thresholdB\x08\n\x06_usingB\x0f\n\r_with_vectorsB\x0e\n\x0c_lookup_fromB\x13\n\x11_read_consistencyB\x0e\n\x0c_with_lookupB\x0b\n\t_strategyB\n\n\x08_timeoutB\x15\n\x13_shard_key_selector\"A\n\x0cTargetVector\x12\'\n\x06single\x18\x01 \x01(\x0b\x32\x15.qdrant.VectorExampleH\x00\x42\x08\n\x06target\"[\n\rVectorExample\x12\x1d\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointIdH\x00\x12 \n\x06vector\x18\x02 \x01(\x0b\x32\x0e.qdrant.VectorH\x00\x42\t\n\x07\x65xample\"f\n\x12\x43ontextExamplePair\x12\'\n\x08positive\x18\x01 \x01(\x0b\x32\x15.qdrant.VectorExample\x12\'\n\x08negative\x18\x02 \x01(\x0b\x32\x15.qdrant.VectorExample\"\x8e\x05\n\x0e\x44iscoverPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12$\n\x06target\x18\x02 \x01(\x0b\x32\x14.qdrant.TargetVector\x12+\n\x07\x63ontext\x18\x03 \x03(\x0b\x32\x1a.qdrant.ContextExamplePair\x12\x1e\n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x05 \x01(\x04\x12\x31\n\x0cwith_payload\x18\x06 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x07 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x13\n\x06offset\x18\x08 \x01(\x04H\x00\x88\x01\x01\x12\x12\n\x05using\x18\t \x01(\tH\x01\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\n \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x02\x88\x01\x01\x12\x30\n\x0blookup_from\x18\x0b \x01(\x0b\x32\x16.qdrant.LookupLocationH\x03\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x0c \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x04\x88\x01\x01\x12\x14\n\x07timeout\x18\r \x01(\x04H\x05\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x0e \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x06\x88\x01\x01\x42\t\n\x07_offsetB\x08\n\x06_usingB\x0f\n\r_with_vectorsB\x0e\n\x0c_lookup_fromB\x13\n\x11_read_consistencyB\n\n\x08_timeoutB\x15\n\x13_shard_key_selector\"\xce\x01\n\x13\x44iscoverBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12/\n\x0f\x64iscover_points\x18\x02 \x03(\x0b\x32\x16.qdrant.DiscoverPoints\x12\x36\n\x10read_consistency\x18\x03 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x04 \x01(\x04H\x01\x88\x01\x01\x42\x13\n\x11_read_consistencyB\n\n\x08_timeout\"\xa5\x02\n\x0b\x43ountPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x1e\n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.Filter\x12\x12\n\x05\x65xact\x18\x03 \x01(\x08H\x00\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x04 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x12\x14\n\x07timeout\x18\x06 \x01(\x04H\x03\x88\x01\x01\x42\x08\n\x06_exactB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selectorB\n\n\x08_timeout\"\x9d\x01\n\x0eRecommendInput\x12%\n\x08positive\x18\x01 \x03(\x0b\x32\x13.qdrant.VectorInput\x12%\n\x08negative\x18\x02 \x03(\x0b\x32\x13.qdrant.VectorInput\x12\x30\n\x08strategy\x18\x03 \x01(\x0e\x32\x19.qdrant.RecommendStrategyH\x00\x88\x01\x01\x42\x0b\n\t_strategy\"`\n\x10\x43ontextInputPair\x12%\n\x08positive\x18\x01 \x01(\x0b\x32\x13.qdrant.VectorInput\x12%\n\x08negative\x18\x02 \x01(\x0b\x32\x13.qdrant.VectorInput\"[\n\rDiscoverInput\x12#\n\x06target\x18\x01 \x01(\x0b\x32\x13.qdrant.VectorInput\x12%\n\x07\x63ontext\x18\x02 \x01(\x0b\x32\x14.qdrant.ContextInput\"7\n\x0c\x43ontextInput\x12\'\n\x05pairs\x18\x01 \x03(\x0b\x32\x18.qdrant.ContextInputPair\"\xa4\x02\n\x05Query\x12&\n\x07nearest\x18\x01 \x01(\x0b\x32\x13.qdrant.VectorInputH\x00\x12+\n\trecommend\x18\x02 \x01(\x0b\x32\x16.qdrant.RecommendInputH\x00\x12)\n\x08\x64iscover\x18\x03 \x01(\x0b\x32\x15.qdrant.DiscoverInputH\x00\x12\'\n\x07\x63ontext\x18\x04 \x01(\x0b\x32\x14.qdrant.ContextInputH\x00\x12#\n\x08order_by\x18\x05 \x01(\x0b\x32\x0f.qdrant.OrderByH\x00\x12 \n\x06\x66usion\x18\x06 \x01(\x0e\x32\x0e.qdrant.FusionH\x00\x12 \n\x06sample\x18\x07 \x01(\x0e\x32\x0e.qdrant.SampleH\x00\x42\t\n\x07variant\"\xfb\x02\n\rPrefetchQuery\x12\'\n\x08prefetch\x18\x01 \x03(\x0b\x32\x15.qdrant.PrefetchQuery\x12!\n\x05query\x18\x02 \x01(\x0b\x32\r.qdrant.QueryH\x00\x88\x01\x01\x12\x12\n\x05using\x18\x03 \x01(\tH\x01\x88\x01\x01\x12#\n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.FilterH\x02\x88\x01\x01\x12)\n\x06params\x18\x05 \x01(\x0b\x32\x14.qdrant.SearchParamsH\x03\x88\x01\x01\x12\x1c\n\x0fscore_threshold\x18\x06 \x01(\x02H\x04\x88\x01\x01\x12\x12\n\x05limit\x18\x07 \x01(\x04H\x05\x88\x01\x01\x12\x30\n\x0blookup_from\x18\x08 \x01(\x0b\x32\x16.qdrant.LookupLocationH\x06\x88\x01\x01\x42\x08\n\x06_queryB\x08\n\x06_usingB\t\n\x07_filterB\t\n\x07_paramsB\x12\n\x10_score_thresholdB\x08\n\x06_limitB\x0e\n\x0c_lookup_from\"\x85\x06\n\x0bQueryPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\x08prefetch\x18\x02 \x03(\x0b\x32\x15.qdrant.PrefetchQuery\x12!\n\x05query\x18\x03 \x01(\x0b\x32\r.qdrant.QueryH\x00\x88\x01\x01\x12\x12\n\x05using\x18\x04 \x01(\tH\x01\x88\x01\x01\x12#\n\x06\x66ilter\x18\x05 \x01(\x0b\x32\x0e.qdrant.FilterH\x02\x88\x01\x01\x12)\n\x06params\x18\x06 \x01(\x0b\x32\x14.qdrant.SearchParamsH\x03\x88\x01\x01\x12\x1c\n\x0fscore_threshold\x18\x07 \x01(\x02H\x04\x88\x01\x01\x12\x12\n\x05limit\x18\x08 \x01(\x04H\x05\x88\x01\x01\x12\x13\n\x06offset\x18\t \x01(\x04H\x06\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\n \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x07\x88\x01\x01\x12\x36\n\x0cwith_payload\x18\x0b \x01(\x0b\x32\x1b.qdrant.WithPayloadSelectorH\x08\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x0c \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\t\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\r \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\n\x88\x01\x01\x12\x30\n\x0blookup_from\x18\x0e \x01(\x0b\x32\x16.qdrant.LookupLocationH\x0b\x88\x01\x01\x12\x14\n\x07timeout\x18\x0f \x01(\x04H\x0c\x88\x01\x01\x42\x08\n\x06_queryB\x08\n\x06_usingB\t\n\x07_filterB\t\n\x07_paramsB\x12\n\x10_score_thresholdB\x08\n\x06_limitB\t\n\x07_offsetB\x0f\n\r_with_vectorsB\x0f\n\r_with_payloadB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selectorB\x0e\n\x0c_lookup_fromB\n\n\x08_timeout\"\xc5\x01\n\x10QueryBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12)\n\x0cquery_points\x18\x02 \x03(\x0b\x32\x13.qdrant.QueryPoints\x12\x36\n\x10read_consistency\x18\x03 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x04 \x01(\x04H\x01\x88\x01\x01\x42\x13\n\x11_read_consistencyB\n\n\x08_timeout\"\xcc\x06\n\x10QueryPointGroups\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\x08prefetch\x18\x02 \x03(\x0b\x32\x15.qdrant.PrefetchQuery\x12!\n\x05query\x18\x03 \x01(\x0b\x32\r.qdrant.QueryH\x00\x88\x01\x01\x12\x12\n\x05using\x18\x04 \x01(\tH\x01\x88\x01\x01\x12#\n\x06\x66ilter\x18\x05 \x01(\x0b\x32\x0e.qdrant.FilterH\x02\x88\x01\x01\x12)\n\x06params\x18\x06 \x01(\x0b\x32\x14.qdrant.SearchParamsH\x03\x88\x01\x01\x12\x1c\n\x0fscore_threshold\x18\x07 \x01(\x02H\x04\x88\x01\x01\x12\x31\n\x0cwith_payload\x18\x08 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12\x36\n\x0cwith_vectors\x18\t \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x05\x88\x01\x01\x12\x30\n\x0blookup_from\x18\n \x01(\x0b\x32\x16.qdrant.LookupLocationH\x06\x88\x01\x01\x12\x12\n\x05limit\x18\x0b \x01(\x04H\x07\x88\x01\x01\x12\x17\n\ngroup_size\x18\x0c \x01(\x04H\x08\x88\x01\x01\x12\x10\n\x08group_by\x18\r \x01(\t\x12\x36\n\x10read_consistency\x18\x0e \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\t\x88\x01\x01\x12,\n\x0bwith_lookup\x18\x0f \x01(\x0b\x32\x12.qdrant.WithLookupH\n\x88\x01\x01\x12\x14\n\x07timeout\x18\x10 \x01(\x04H\x0b\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x11 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x0c\x88\x01\x01\x42\x08\n\x06_queryB\x08\n\x06_usingB\t\n\x07_filterB\t\n\x07_paramsB\x12\n\x10_score_thresholdB\x0f\n\r_with_vectorsB\x0e\n\x0c_lookup_fromB\x08\n\x06_limitB\r\n\x0b_group_sizeB\x13\n\x11_read_consistencyB\x0e\n\x0c_with_lookupB\n\n\x08_timeoutB\x15\n\x13_shard_key_selector\"\xe0\x02\n\x0b\x46\x61\x63\x65tCounts\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12#\n\x06\x66ilter\x18\x03 \x01(\x0b\x32\x0e.qdrant.FilterH\x00\x88\x01\x01\x12\x12\n\x05limit\x18\x04 \x01(\x04H\x01\x88\x01\x01\x12\x12\n\x05\x65xact\x18\x05 \x01(\x08H\x02\x88\x01\x01\x12\x14\n\x07timeout\x18\x06 \x01(\x04H\x03\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x07 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x04\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x08 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x05\x88\x01\x01\x42\t\n\x07_filterB\x08\n\x06_limitB\x08\n\x06_exactB\n\n\x08_timeoutB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selector\"^\n\nFacetValue\x12\x16\n\x0cstring_value\x18\x01 \x01(\tH\x00\x12\x17\n\rinteger_value\x18\x02 \x01(\x03H\x00\x12\x14\n\nbool_value\x18\x03 \x01(\x08H\x00\x42\t\n\x07variant\"<\n\x08\x46\x61\x63\x65tHit\x12!\n\x05value\x18\x01 \x01(\x0b\x32\x12.qdrant.FacetValue\x12\r\n\x05\x63ount\x18\x02 \x01(\x04\"\xfa\x02\n\x12SearchMatrixPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12#\n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.FilterH\x00\x88\x01\x01\x12\x13\n\x06sample\x18\x03 \x01(\x04H\x01\x88\x01\x01\x12\x12\n\x05limit\x18\x04 \x01(\x04H\x02\x88\x01\x01\x12\x12\n\x05using\x18\x05 \x01(\tH\x03\x88\x01\x01\x12\x14\n\x07timeout\x18\x06 \x01(\x04H\x04\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x07 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x05\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x08 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x06\x88\x01\x01\x42\t\n\x07_filterB\t\n\x07_sampleB\x08\n\x06_limitB\x08\n\x06_usingB\n\n\x08_timeoutB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selector\"<\n\x11SearchMatrixPairs\x12\'\n\x05pairs\x18\x01 \x03(\x0b\x32\x18.qdrant.SearchMatrixPair\"Y\n\x10SearchMatrixPair\x12\x1a\n\x01\x61\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12\x1a\n\x01\x62\x18\x02 \x01(\x0b\x32\x0f.qdrant.PointId\x12\r\n\x05score\x18\x03 \x01(\x02\"m\n\x13SearchMatrixOffsets\x12\x13\n\x0boffsets_row\x18\x01 \x03(\x04\x12\x13\n\x0boffsets_col\x18\x02 \x03(\x04\x12\x0e\n\x06scores\x18\x03 \x03(\x02\x12\x1c\n\x03ids\x18\x04 \x03(\x0b\x32\x0f.qdrant.PointId\"\x95\x12\n\x15PointsUpdateOperation\x12?\n\x06upsert\x18\x01 \x01(\x0b\x32-.qdrant.PointsUpdateOperation.PointStructListH\x00\x12\x37\n\x11\x64\x65lete_deprecated\x18\x02 \x01(\x0b\x32\x16.qdrant.PointsSelectorB\x02\x18\x01H\x00\x12?\n\x0bset_payload\x18\x03 \x01(\x0b\x32(.qdrant.PointsUpdateOperation.SetPayloadH\x00\x12K\n\x11overwrite_payload\x18\x04 \x01(\x0b\x32..qdrant.PointsUpdateOperation.OverwritePayloadH\x00\x12\x45\n\x0e\x64\x65lete_payload\x18\x05 \x01(\x0b\x32+.qdrant.PointsUpdateOperation.DeletePayloadH\x00\x12>\n\x18\x63lear_payload_deprecated\x18\x06 \x01(\x0b\x32\x16.qdrant.PointsSelectorB\x02\x18\x01H\x00\x12\x45\n\x0eupdate_vectors\x18\x07 \x01(\x0b\x32+.qdrant.PointsUpdateOperation.UpdateVectorsH\x00\x12\x45\n\x0e\x64\x65lete_vectors\x18\x08 \x01(\x0b\x32+.qdrant.PointsUpdateOperation.DeleteVectorsH\x00\x12\x43\n\rdelete_points\x18\t \x01(\x0b\x32*.qdrant.PointsUpdateOperation.DeletePointsH\x00\x12\x43\n\rclear_payload\x18\n \x01(\x0b\x32*.qdrant.PointsUpdateOperation.ClearPayloadH\x00\x1a\x88\x01\n\x0fPointStructList\x12#\n\x06points\x18\x01 \x03(\x0b\x32\x13.qdrant.PointStruct\x12\x39\n\x12shard_key_selector\x18\x02 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selector\x1a\xc9\x02\n\nSetPayload\x12\x46\n\x07payload\x18\x01 \x03(\x0b\x32\x35.qdrant.PointsUpdateOperation.SetPayload.PayloadEntry\x12\x34\n\x0fpoints_selector\x18\x02 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x00\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x01\x88\x01\x01\x12\x10\n\x03key\x18\x04 \x01(\tH\x02\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x12\n\x10_points_selectorB\x15\n\x13_shard_key_selectorB\x06\n\x04_key\x1a\xd5\x02\n\x10OverwritePayload\x12L\n\x07payload\x18\x01 \x03(\x0b\x32;.qdrant.PointsUpdateOperation.OverwritePayload.PayloadEntry\x12\x34\n\x0fpoints_selector\x18\x02 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x00\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x01\x88\x01\x01\x12\x10\n\x03key\x18\x04 \x01(\tH\x02\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x12\n\x10_points_selectorB\x15\n\x13_shard_key_selectorB\x06\n\x04_key\x1a\xb9\x01\n\rDeletePayload\x12\x0c\n\x04keys\x18\x01 \x03(\t\x12\x34\n\x0fpoints_selector\x18\x02 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x00\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x01\x88\x01\x01\x42\x12\n\x10_points_selectorB\x15\n\x13_shard_key_selector\x1a\x87\x01\n\rUpdateVectors\x12$\n\x06points\x18\x01 \x03(\x0b\x32\x14.qdrant.PointVectors\x12\x39\n\x12shard_key_selector\x18\x02 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selector\x1a\xbc\x01\n\rDeleteVectors\x12/\n\x0fpoints_selector\x18\x01 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12(\n\x07vectors\x18\x02 \x01(\x0b\x32\x17.qdrant.VectorsSelector\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selector\x1a\x88\x01\n\x0c\x44\x65letePoints\x12&\n\x06points\x18\x01 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12\x39\n\x12shard_key_selector\x18\x02 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selector\x1a\x88\x01\n\x0c\x43learPayload\x12&\n\x06points\x18\x01 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12\x39\n\x12shard_key_selector\x18\x02 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selectorB\x0b\n\toperation\"\xb6\x01\n\x11UpdateBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x31\n\noperations\x18\x03 \x03(\x0b\x32\x1d.qdrant.PointsUpdateOperation\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_ordering\"M\n\x17PointsOperationResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.qdrant.UpdateResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"`\n\x0cUpdateResult\x12\x19\n\x0coperation_id\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12$\n\x06status\x18\x02 \x01(\x0e\x32\x14.qdrant.UpdateStatusB\x0f\n\r_operation_id\"7\n\nOrderValue\x12\r\n\x03int\x18\x01 \x01(\x03H\x00\x12\x0f\n\x05\x66loat\x18\x02 \x01(\x01H\x00\x42\t\n\x07variant\"\xeb\x02\n\x0bScoredPoint\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12\x31\n\x07payload\x18\x02 \x03(\x0b\x32 .qdrant.ScoredPoint.PayloadEntry\x12\r\n\x05score\x18\x03 \x01(\x02\x12\x0f\n\x07version\x18\x05 \x01(\x04\x12%\n\x07vectors\x18\x06 \x01(\x0b\x32\x0f.qdrant.VectorsH\x00\x88\x01\x01\x12(\n\tshard_key\x18\x07 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x01\x88\x01\x01\x12,\n\x0border_value\x18\x08 \x01(\x0b\x32\x12.qdrant.OrderValueH\x02\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\n\n\x08_vectorsB\x0c\n\n_shard_keyB\x0e\n\x0c_order_valueJ\x04\x08\x04\x10\x05\"\\\n\x07GroupId\x12\x18\n\x0eunsigned_value\x18\x01 \x01(\x04H\x00\x12\x17\n\rinteger_value\x18\x02 \x01(\x03H\x00\x12\x16\n\x0cstring_value\x18\x03 \x01(\tH\x00\x42\x06\n\x04kind\"t\n\nPointGroup\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.GroupId\x12!\n\x04hits\x18\x02 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12&\n\x06lookup\x18\x03 \x01(\x0b\x32\x16.qdrant.RetrievedPoint\"2\n\x0cGroupsResult\x12\"\n\x06groups\x18\x01 \x03(\x0b\x32\x12.qdrant.PointGroup\"C\n\x0eSearchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"B\n\rQueryResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"G\n\x12QueryBatchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.BatchResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"I\n\x13QueryGroupsResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.qdrant.GroupsResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"2\n\x0b\x42\x61tchResult\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\"H\n\x13SearchBatchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.BatchResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"J\n\x14SearchGroupsResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.qdrant.GroupsResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"B\n\rCountResponse\x12#\n\x06result\x18\x01 \x01(\x0b\x32\x13.qdrant.CountResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\x8b\x01\n\x0eScrollResponse\x12.\n\x10next_page_offset\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointIdH\x00\x88\x01\x01\x12&\n\x06result\x18\x02 \x03(\x0b\x32\x16.qdrant.RetrievedPoint\x12\x0c\n\x04time\x18\x03 \x01(\x01\x42\x13\n\x11_next_page_offset\"\x1c\n\x0b\x43ountResult\x12\r\n\x05\x63ount\x18\x01 \x01(\x04\"\xd1\x02\n\x0eRetrievedPoint\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12\x34\n\x07payload\x18\x02 \x03(\x0b\x32#.qdrant.RetrievedPoint.PayloadEntry\x12%\n\x07vectors\x18\x04 \x01(\x0b\x32\x0f.qdrant.VectorsH\x00\x88\x01\x01\x12(\n\tshard_key\x18\x05 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x01\x88\x01\x01\x12,\n\x0border_value\x18\x06 \x01(\x0b\x32\x12.qdrant.OrderValueH\x02\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\n\n\x08_vectorsB\x0c\n\n_shard_keyB\x0e\n\x0c_order_valueJ\x04\x08\x03\x10\x04\"C\n\x0bGetResponse\x12&\n\x06result\x18\x01 \x03(\x0b\x32\x16.qdrant.RetrievedPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"F\n\x11RecommendResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"K\n\x16RecommendBatchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.BatchResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"E\n\x10\x44iscoverResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"J\n\x15\x44iscoverBatchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.BatchResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"M\n\x17RecommendGroupsResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.qdrant.GroupsResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"I\n\x13UpdateBatchResponse\x12$\n\x06result\x18\x01 \x03(\x0b\x32\x14.qdrant.UpdateResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"=\n\rFacetResponse\x12\x1e\n\x04hits\x18\x01 \x03(\x0b\x32\x10.qdrant.FacetHit\x12\x0c\n\x04time\x18\x02 \x01(\x01\"T\n\x19SearchMatrixPairsResponse\x12)\n\x06result\x18\x01 \x01(\x0b\x32\x19.qdrant.SearchMatrixPairs\x12\x0c\n\x04time\x18\x02 \x01(\x01\"X\n\x1bSearchMatrixOffsetsResponse\x12+\n\x06result\x18\x01 \x01(\x0b\x32\x1b.qdrant.SearchMatrixOffsets\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\xac\x01\n\x06\x46ilter\x12!\n\x06should\x18\x01 \x03(\x0b\x32\x11.qdrant.Condition\x12\x1f\n\x04must\x18\x02 \x03(\x0b\x32\x11.qdrant.Condition\x12#\n\x08must_not\x18\x03 \x03(\x0b\x32\x11.qdrant.Condition\x12*\n\nmin_should\x18\x04 \x01(\x0b\x32\x11.qdrant.MinShouldH\x00\x88\x01\x01\x42\r\n\x0b_min_should\"E\n\tMinShould\x12%\n\nconditions\x18\x01 \x03(\x0b\x32\x11.qdrant.Condition\x12\x11\n\tmin_count\x18\x02 \x01(\x04\"\x99\x02\n\tCondition\x12\'\n\x05\x66ield\x18\x01 \x01(\x0b\x32\x16.qdrant.FieldConditionH\x00\x12,\n\x08is_empty\x18\x02 \x01(\x0b\x32\x18.qdrant.IsEmptyConditionH\x00\x12(\n\x06has_id\x18\x03 \x01(\x0b\x32\x16.qdrant.HasIdConditionH\x00\x12 \n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.FilterH\x00\x12*\n\x07is_null\x18\x05 \x01(\x0b\x32\x17.qdrant.IsNullConditionH\x00\x12)\n\x06nested\x18\x06 \x01(\x0b\x32\x17.qdrant.NestedConditionH\x00\x42\x12\n\x10\x63ondition_one_of\"\x1f\n\x10IsEmptyCondition\x12\x0b\n\x03key\x18\x01 \x01(\t\"\x1e\n\x0fIsNullCondition\x12\x0b\n\x03key\x18\x01 \x01(\t\"1\n\x0eHasIdCondition\x12\x1f\n\x06has_id\x18\x01 \x03(\x0b\x32\x0f.qdrant.PointId\">\n\x0fNestedCondition\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1e\n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.Filter\"\xb5\x02\n\x0e\x46ieldCondition\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05match\x18\x02 \x01(\x0b\x32\r.qdrant.Match\x12\x1c\n\x05range\x18\x03 \x01(\x0b\x32\r.qdrant.Range\x12\x30\n\x10geo_bounding_box\x18\x04 \x01(\x0b\x32\x16.qdrant.GeoBoundingBox\x12%\n\ngeo_radius\x18\x05 \x01(\x0b\x32\x11.qdrant.GeoRadius\x12)\n\x0cvalues_count\x18\x06 \x01(\x0b\x32\x13.qdrant.ValuesCount\x12\'\n\x0bgeo_polygon\x18\x07 \x01(\x0b\x32\x12.qdrant.GeoPolygon\x12-\n\x0e\x64\x61tetime_range\x18\x08 \x01(\x0b\x32\x15.qdrant.DatetimeRange\"\xa3\x02\n\x05Match\x12\x11\n\x07keyword\x18\x01 \x01(\tH\x00\x12\x11\n\x07integer\x18\x02 \x01(\x03H\x00\x12\x11\n\x07\x62oolean\x18\x03 \x01(\x08H\x00\x12\x0e\n\x04text\x18\x04 \x01(\tH\x00\x12+\n\x08keywords\x18\x05 \x01(\x0b\x32\x17.qdrant.RepeatedStringsH\x00\x12,\n\x08integers\x18\x06 \x01(\x0b\x32\x18.qdrant.RepeatedIntegersH\x00\x12\x33\n\x0f\x65xcept_integers\x18\x07 \x01(\x0b\x32\x18.qdrant.RepeatedIntegersH\x00\x12\x32\n\x0f\x65xcept_keywords\x18\x08 \x01(\x0b\x32\x17.qdrant.RepeatedStringsH\x00\x42\r\n\x0bmatch_value\"\"\n\x0fRepeatedStrings\x12\x0f\n\x07strings\x18\x01 \x03(\t\"$\n\x10RepeatedIntegers\x12\x10\n\x08integers\x18\x01 \x03(\x03\"k\n\x05Range\x12\x0f\n\x02lt\x18\x01 \x01(\x01H\x00\x88\x01\x01\x12\x0f\n\x02gt\x18\x02 \x01(\x01H\x01\x88\x01\x01\x12\x10\n\x03gte\x18\x03 \x01(\x01H\x02\x88\x01\x01\x12\x10\n\x03lte\x18\x04 \x01(\x01H\x03\x88\x01\x01\x42\x05\n\x03_ltB\x05\n\x03_gtB\x06\n\x04_gteB\x06\n\x04_lte\"\xe3\x01\n\rDatetimeRange\x12+\n\x02lt\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x88\x01\x01\x12+\n\x02gt\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x01\x88\x01\x01\x12,\n\x03gte\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x02\x88\x01\x01\x12,\n\x03lte\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x03\x88\x01\x01\x42\x05\n\x03_ltB\x05\n\x03_gtB\x06\n\x04_gteB\x06\n\x04_lte\"\\\n\x0eGeoBoundingBox\x12\"\n\x08top_left\x18\x01 \x01(\x0b\x32\x10.qdrant.GeoPoint\x12&\n\x0c\x62ottom_right\x18\x02 \x01(\x0b\x32\x10.qdrant.GeoPoint\"=\n\tGeoRadius\x12 \n\x06\x63\x65nter\x18\x01 \x01(\x0b\x32\x10.qdrant.GeoPoint\x12\x0e\n\x06radius\x18\x02 \x01(\x02\"1\n\rGeoLineString\x12 \n\x06points\x18\x01 \x03(\x0b\x32\x10.qdrant.GeoPoint\"_\n\nGeoPolygon\x12\'\n\x08\x65xterior\x18\x01 \x01(\x0b\x32\x15.qdrant.GeoLineString\x12(\n\tinteriors\x18\x02 \x03(\x0b\x32\x15.qdrant.GeoLineString\"q\n\x0bValuesCount\x12\x0f\n\x02lt\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x0f\n\x02gt\x18\x02 \x01(\x04H\x01\x88\x01\x01\x12\x10\n\x03gte\x18\x03 \x01(\x04H\x02\x88\x01\x01\x12\x10\n\x03lte\x18\x04 \x01(\x04H\x03\x88\x01\x01\x42\x05\n\x03_ltB\x05\n\x03_gtB\x06\n\x04_gteB\x06\n\x04_lte\"u\n\x0ePointsSelector\x12\'\n\x06points\x18\x01 \x01(\x0b\x32\x15.qdrant.PointsIdsListH\x00\x12 \n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.FilterH\x00\x42\x18\n\x16points_selector_one_of\"-\n\rPointsIdsList\x12\x1c\n\x03ids\x18\x01 \x03(\x0b\x32\x0f.qdrant.PointId\"\xd5\x01\n\x0bPointStruct\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12\x31\n\x07payload\x18\x03 \x03(\x0b\x32 .qdrant.PointStruct.PayloadEntry\x12%\n\x07vectors\x18\x04 \x01(\x0b\x32\x0f.qdrant.VectorsH\x00\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\n\n\x08_vectorsJ\x04\x08\x02\x10\x03\"$\n\x08GeoPoint\x12\x0b\n\x03lon\x18\x01 \x01(\x01\x12\x0b\n\x03lat\x18\x02 \x01(\x01*5\n\x11WriteOrderingType\x12\x08\n\x04Weak\x10\x00\x12\n\n\x06Medium\x10\x01\x12\n\n\x06Strong\x10\x02*8\n\x13ReadConsistencyType\x12\x07\n\x03\x41ll\x10\x00\x12\x0c\n\x08Majority\x10\x01\x12\n\n\x06Quorum\x10\x02*\xad\x01\n\tFieldType\x12\x14\n\x10\x46ieldTypeKeyword\x10\x00\x12\x14\n\x10\x46ieldTypeInteger\x10\x01\x12\x12\n\x0e\x46ieldTypeFloat\x10\x02\x12\x10\n\x0c\x46ieldTypeGeo\x10\x03\x12\x11\n\rFieldTypeText\x10\x04\x12\x11\n\rFieldTypeBool\x10\x05\x12\x15\n\x11\x46ieldTypeDatetime\x10\x06\x12\x11\n\rFieldTypeUuid\x10\x07*\x1e\n\tDirection\x12\x07\n\x03\x41sc\x10\x00\x12\x08\n\x04\x44\x65sc\x10\x01*5\n\x11RecommendStrategy\x12\x11\n\rAverageVector\x10\x00\x12\r\n\tBestScore\x10\x01*\x1b\n\x06\x46usion\x12\x07\n\x03RRF\x10\x00\x12\x08\n\x04\x44\x42SF\x10\x01*\x14\n\x06Sample\x12\n\n\x06Random\x10\x00*[\n\x0cUpdateStatus\x12\x17\n\x13UnknownUpdateStatus\x10\x00\x12\x10\n\x0c\x41\x63knowledged\x10\x01\x12\r\n\tCompleted\x10\x02\x12\x11\n\rClockRejected\x10\x03\x42\x15\xaa\x02\x12Qdrant.Client.Grpcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cpoints.proto\x12\x06qdrant\x1a\x11\x63ollections.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13json_with_int.proto\"8\n\rWriteOrdering\x12\'\n\x04type\x18\x01 \x01(\x0e\x32\x19.qdrant.WriteOrderingType\"Y\n\x0fReadConsistency\x12+\n\x04type\x18\x01 \x01(\x0e\x32\x1b.qdrant.ReadConsistencyTypeH\x00\x12\x10\n\x06\x66\x61\x63tor\x18\x02 \x01(\x04H\x00\x42\x07\n\x05value\"<\n\x07PointId\x12\r\n\x03num\x18\x01 \x01(\x04H\x00\x12\x0e\n\x04uuid\x18\x02 \x01(\tH\x00\x42\x12\n\x10point_id_options\"\x1d\n\rSparseIndices\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\r\"\xa5\x01\n\x08\x44ocument\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x12\n\x05model\x18\x03 \x01(\tH\x00\x88\x01\x01\x12.\n\x07options\x18\x04 \x03(\x0b\x32\x1d.qdrant.Document.OptionsEntry\x1a=\n\x0cOptionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x08\n\x06_model\"\xa0\x01\n\x05Image\x12\r\n\x05image\x18\x01 \x01(\t\x12\x12\n\x05model\x18\x02 \x01(\tH\x00\x88\x01\x01\x12+\n\x07options\x18\x03 \x03(\x0b\x32\x1a.qdrant.Image.OptionsEntry\x1a=\n\x0cOptionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x08\n\x06_model\"\xc4\x01\n\x0fInferenceObject\x12\x1d\n\x06object\x18\x01 \x01(\x0b\x32\r.qdrant.Value\x12\x12\n\x05model\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x35\n\x07options\x18\x03 \x03(\x0b\x32$.qdrant.InferenceObject.OptionsEntry\x1a=\n\x0cOptionsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x08\n\x06_model\"\xf7\x02\n\x06Vector\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\x12+\n\x07indices\x18\x02 \x01(\x0b\x32\x15.qdrant.SparseIndicesH\x01\x88\x01\x01\x12\x1a\n\rvectors_count\x18\x03 \x01(\rH\x02\x88\x01\x01\x12$\n\x05\x64\x65nse\x18\x65 \x01(\x0b\x32\x13.qdrant.DenseVectorH\x00\x12&\n\x06sparse\x18\x66 \x01(\x0b\x32\x14.qdrant.SparseVectorH\x00\x12/\n\x0bmulti_dense\x18g \x01(\x0b\x32\x18.qdrant.MultiDenseVectorH\x00\x12$\n\x08\x64ocument\x18h \x01(\x0b\x32\x10.qdrant.DocumentH\x00\x12\x1e\n\x05image\x18i \x01(\x0b\x32\r.qdrant.ImageH\x00\x12)\n\x06object\x18j \x01(\x0b\x32\x17.qdrant.InferenceObjectH\x00\x42\x08\n\x06vectorB\n\n\x08_indicesB\x10\n\x0e_vectors_count\"\x8c\x02\n\x0cVectorOutput\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\x12+\n\x07indices\x18\x02 \x01(\x0b\x32\x15.qdrant.SparseIndicesH\x01\x88\x01\x01\x12\x1a\n\rvectors_count\x18\x03 \x01(\rH\x02\x88\x01\x01\x12$\n\x05\x64\x65nse\x18\x65 \x01(\x0b\x32\x13.qdrant.DenseVectorH\x00\x12&\n\x06sparse\x18\x66 \x01(\x0b\x32\x14.qdrant.SparseVectorH\x00\x12/\n\x0bmulti_dense\x18g \x01(\x0b\x32\x18.qdrant.MultiDenseVectorH\x00\x42\x08\n\x06vectorB\n\n\x08_indicesB\x10\n\x0e_vectors_count\"\x1b\n\x0b\x44\x65nseVector\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\"/\n\x0cSparseVector\x12\x0e\n\x06values\x18\x01 \x03(\x02\x12\x0f\n\x07indices\x18\x02 \x03(\r\"8\n\x10MultiDenseVector\x12$\n\x07vectors\x18\x01 \x03(\x0b\x32\x13.qdrant.DenseVector\"\xa7\x02\n\x0bVectorInput\x12\x1d\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointIdH\x00\x12$\n\x05\x64\x65nse\x18\x02 \x01(\x0b\x32\x13.qdrant.DenseVectorH\x00\x12&\n\x06sparse\x18\x03 \x01(\x0b\x32\x14.qdrant.SparseVectorH\x00\x12/\n\x0bmulti_dense\x18\x04 \x01(\x0b\x32\x18.qdrant.MultiDenseVectorH\x00\x12$\n\x08\x64ocument\x18\x05 \x01(\x0b\x32\x10.qdrant.DocumentH\x00\x12\x1e\n\x05image\x18\x06 \x01(\x0b\x32\r.qdrant.ImageH\x00\x12)\n\x06object\x18\x07 \x01(\x0b\x32\x17.qdrant.InferenceObjectH\x00\x42\t\n\x07variant\"8\n\x10ShardKeySelector\x12$\n\nshard_keys\x18\x01 \x03(\x0b\x32\x10.qdrant.ShardKey\"\xf5\x01\n\x0cUpsertPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12#\n\x06points\x18\x03 \x03(\x0b\x32\x13.qdrant.PointStruct\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"\xf8\x01\n\x0c\x44\x65letePoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12&\n\x06points\x18\x03 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"\x85\x03\n\tGetPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x1c\n\x03ids\x18\x02 \x03(\x0b\x32\x0f.qdrant.PointId\x12\x31\n\x0cwith_payload\x18\x04 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12\x36\n\x0cwith_vectors\x18\x05 \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x00\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x06 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x07 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x12\x14\n\x07timeout\x18\x08 \x01(\x04H\x03\x88\x01\x01\x42\x0f\n\r_with_vectorsB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selectorB\n\n\x08_timeoutJ\x04\x08\x03\x10\x04\"\xfc\x01\n\x12UpdatePointVectors\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12$\n\x06points\x18\x03 \x03(\x0b\x32\x14.qdrant.PointVectors\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"M\n\x0cPointVectors\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12 \n\x07vectors\x18\x02 \x01(\x0b\x32\x0f.qdrant.Vectors\"\xb1\x02\n\x12\x44\x65letePointVectors\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12/\n\x0fpoints_selector\x18\x03 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12(\n\x07vectors\x18\x04 \x01(\x0b\x32\x17.qdrant.VectorsSelector\x12,\n\x08ordering\x18\x05 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x06 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"\xb5\x03\n\x10SetPayloadPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x36\n\x07payload\x18\x03 \x03(\x0b\x32%.qdrant.SetPayloadPoints.PayloadEntry\x12\x34\n\x0fpoints_selector\x18\x05 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x01\x88\x01\x01\x12,\n\x08ordering\x18\x06 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x02\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x07 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x03\x88\x01\x01\x12\x10\n\x03key\x18\x08 \x01(\tH\x04\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x07\n\x05_waitB\x12\n\x10_points_selectorB\x0b\n\t_orderingB\x15\n\x13_shard_key_selectorB\x06\n\x04_keyJ\x04\x08\x04\x10\x05\"\xb5\x02\n\x13\x44\x65letePayloadPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x0c\n\x04keys\x18\x03 \x03(\t\x12\x34\n\x0fpoints_selector\x18\x05 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x01\x88\x01\x01\x12,\n\x08ordering\x18\x06 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x02\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x07 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x03\x88\x01\x01\x42\x07\n\x05_waitB\x12\n\x10_points_selectorB\x0b\n\t_orderingB\x15\n\x13_shard_key_selectorJ\x04\x08\x04\x10\x05\"\xfe\x01\n\x12\x43learPayloadPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12&\n\x06points\x18\x03 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_orderingB\x15\n\x13_shard_key_selector\"\xaf\x02\n\x1a\x43reateFieldIndexCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x12\n\nfield_name\x18\x03 \x01(\t\x12*\n\nfield_type\x18\x04 \x01(\x0e\x32\x11.qdrant.FieldTypeH\x01\x88\x01\x01\x12;\n\x12\x66ield_index_params\x18\x05 \x01(\x0b\x32\x1a.qdrant.PayloadIndexParamsH\x02\x88\x01\x01\x12,\n\x08ordering\x18\x06 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x03\x88\x01\x01\x42\x07\n\x05_waitB\r\n\x0b_field_typeB\x15\n\x13_field_index_paramsB\x0b\n\t_ordering\"\xa0\x01\n\x1a\x44\x65leteFieldIndexCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x12\n\nfield_name\x18\x03 \x01(\t\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_ordering\"(\n\x16PayloadIncludeSelector\x12\x0e\n\x06\x66ields\x18\x01 \x03(\t\"(\n\x16PayloadExcludeSelector\x12\x0e\n\x06\x66ields\x18\x01 \x03(\t\"\xa1\x01\n\x13WithPayloadSelector\x12\x10\n\x06\x65nable\x18\x01 \x01(\x08H\x00\x12\x31\n\x07include\x18\x02 \x01(\x0b\x32\x1e.qdrant.PayloadIncludeSelectorH\x00\x12\x31\n\x07\x65xclude\x18\x03 \x01(\x0b\x32\x1e.qdrant.PayloadExcludeSelectorH\x00\x42\x12\n\x10selector_options\"\x82\x01\n\x0cNamedVectors\x12\x32\n\x07vectors\x18\x01 \x03(\x0b\x32!.qdrant.NamedVectors.VectorsEntry\x1a>\n\x0cVectorsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1d\n\x05value\x18\x02 \x01(\x0b\x32\x0e.qdrant.Vector:\x02\x38\x01\"\x94\x01\n\x12NamedVectorsOutput\x12\x38\n\x07vectors\x18\x01 \x03(\x0b\x32\'.qdrant.NamedVectorsOutput.VectorsEntry\x1a\x44\n\x0cVectorsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.qdrant.VectorOutput:\x02\x38\x01\"g\n\x07Vectors\x12 \n\x06vector\x18\x01 \x01(\x0b\x32\x0e.qdrant.VectorH\x00\x12\'\n\x07vectors\x18\x02 \x01(\x0b\x32\x14.qdrant.NamedVectorsH\x00\x42\x11\n\x0fvectors_options\"y\n\rVectorsOutput\x12&\n\x06vector\x18\x01 \x01(\x0b\x32\x14.qdrant.VectorOutputH\x00\x12-\n\x07vectors\x18\x02 \x01(\x0b\x32\x1a.qdrant.NamedVectorsOutputH\x00\x42\x11\n\x0fvectors_options\" \n\x0fVectorsSelector\x12\r\n\x05names\x18\x01 \x03(\t\"g\n\x13WithVectorsSelector\x12\x10\n\x06\x65nable\x18\x01 \x01(\x08H\x00\x12*\n\x07include\x18\x02 \x01(\x0b\x32\x17.qdrant.VectorsSelectorH\x00\x42\x12\n\x10selector_options\"\x88\x01\n\x18QuantizationSearchParams\x12\x13\n\x06ignore\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x14\n\x07rescore\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12\x19\n\x0coversampling\x18\x03 \x01(\x01H\x02\x88\x01\x01\x42\t\n\x07_ignoreB\n\n\x08_rescoreB\x0f\n\r_oversampling\"\xc8\x01\n\x0cSearchParams\x12\x14\n\x07hnsw_ef\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x12\n\x05\x65xact\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12;\n\x0cquantization\x18\x03 \x01(\x0b\x32 .qdrant.QuantizationSearchParamsH\x02\x88\x01\x01\x12\x19\n\x0cindexed_only\x18\x04 \x01(\x08H\x03\x88\x01\x01\x42\n\n\x08_hnsw_efB\x08\n\x06_exactB\x0f\n\r_quantizationB\x0f\n\r_indexed_only\"\x92\x05\n\x0cSearchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x0e\n\x06vector\x18\x02 \x03(\x02\x12\x1e\n\x06\x66ilter\x18\x03 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x04 \x01(\x04\x12\x31\n\x0cwith_payload\x18\x06 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x07 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x1c\n\x0fscore_threshold\x18\x08 \x01(\x02H\x00\x88\x01\x01\x12\x13\n\x06offset\x18\t \x01(\x04H\x01\x88\x01\x01\x12\x18\n\x0bvector_name\x18\n \x01(\tH\x02\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\x0b \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x03\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x0c \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x04\x88\x01\x01\x12\x14\n\x07timeout\x18\r \x01(\x04H\x05\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x0e \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x06\x88\x01\x01\x12\x32\n\x0esparse_indices\x18\x0f \x01(\x0b\x32\x15.qdrant.SparseIndicesH\x07\x88\x01\x01\x42\x12\n\x10_score_thresholdB\t\n\x07_offsetB\x0e\n\x0c_vector_nameB\x0f\n\r_with_vectorsB\x13\n\x11_read_consistencyB\n\n\x08_timeoutB\x15\n\x13_shard_key_selectorB\x11\n\x0f_sparse_indicesJ\x04\x08\x05\x10\x06\"\xc8\x01\n\x11SearchBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12+\n\rsearch_points\x18\x02 \x03(\x0b\x32\x14.qdrant.SearchPoints\x12\x36\n\x10read_consistency\x18\x03 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x04 \x01(\x04H\x01\x88\x01\x01\x42\x13\n\x11_read_consistencyB\n\n\x08_timeout\"\xb2\x01\n\nWithLookup\x12\x12\n\ncollection\x18\x01 \x01(\t\x12\x36\n\x0cwith_payload\x18\x02 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelectorH\x00\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\x03 \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x01\x88\x01\x01\x42\x0f\n\r_with_payloadB\x0f\n\r_with_vectors\"\xd5\x05\n\x11SearchPointGroups\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x0e\n\x06vector\x18\x02 \x03(\x02\x12\x1e\n\x06\x66ilter\x18\x03 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x04 \x01(\r\x12\x31\n\x0cwith_payload\x18\x05 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x06 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x1c\n\x0fscore_threshold\x18\x07 \x01(\x02H\x00\x88\x01\x01\x12\x18\n\x0bvector_name\x18\x08 \x01(\tH\x01\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\t \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x02\x88\x01\x01\x12\x10\n\x08group_by\x18\n \x01(\t\x12\x12\n\ngroup_size\x18\x0b \x01(\r\x12\x36\n\x10read_consistency\x18\x0c \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x03\x88\x01\x01\x12,\n\x0bwith_lookup\x18\r \x01(\x0b\x32\x12.qdrant.WithLookupH\x04\x88\x01\x01\x12\x14\n\x07timeout\x18\x0e \x01(\x04H\x05\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x0f \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x06\x88\x01\x01\x12\x32\n\x0esparse_indices\x18\x10 \x01(\x0b\x32\x15.qdrant.SparseIndicesH\x07\x88\x01\x01\x42\x12\n\x10_score_thresholdB\x0e\n\x0c_vector_nameB\x0f\n\r_with_vectorsB\x13\n\x11_read_consistencyB\x0e\n\x0c_with_lookupB\n\n\x08_timeoutB\x15\n\x13_shard_key_selectorB\x11\n\x0f_sparse_indices\"}\n\tStartFrom\x12\x0f\n\x05\x66loat\x18\x01 \x01(\x01H\x00\x12\x11\n\x07integer\x18\x02 \x01(\x03H\x00\x12/\n\ttimestamp\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x12\x12\n\x08\x64\x61tetime\x18\x04 \x01(\tH\x00\x42\x07\n\x05value\"\x8a\x01\n\x07OrderBy\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\tdirection\x18\x02 \x01(\x0e\x32\x11.qdrant.DirectionH\x00\x88\x01\x01\x12*\n\nstart_from\x18\x03 \x01(\x0b\x32\x11.qdrant.StartFromH\x01\x88\x01\x01\x42\x0c\n\n_directionB\r\n\x0b_start_from\"\x8e\x04\n\x0cScrollPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x1e\n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.Filter\x12$\n\x06offset\x18\x03 \x01(\x0b\x32\x0f.qdrant.PointIdH\x00\x88\x01\x01\x12\x12\n\x05limit\x18\x04 \x01(\rH\x01\x88\x01\x01\x12\x31\n\x0cwith_payload\x18\x06 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12\x36\n\x0cwith_vectors\x18\x07 \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x02\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x08 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x03\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\t \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x04\x88\x01\x01\x12&\n\x08order_by\x18\n \x01(\x0b\x32\x0f.qdrant.OrderByH\x05\x88\x01\x01\x12\x14\n\x07timeout\x18\x0b \x01(\x04H\x06\x88\x01\x01\x42\t\n\x07_offsetB\x08\n\x06_limitB\x0f\n\r_with_vectorsB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selectorB\x0b\n\t_order_byB\n\n\x08_timeoutJ\x04\x08\x05\x10\x06\"\xa5\x01\n\x0eLookupLocation\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x18\n\x0bvector_name\x18\x02 \x01(\tH\x00\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x01\x88\x01\x01\x42\x0e\n\x0c_vector_nameB\x15\n\x13_shard_key_selector\"\xcd\x06\n\x0fRecommendPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12!\n\x08positive\x18\x02 \x03(\x0b\x32\x0f.qdrant.PointId\x12!\n\x08negative\x18\x03 \x03(\x0b\x32\x0f.qdrant.PointId\x12\x1e\n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x05 \x01(\x04\x12\x31\n\x0cwith_payload\x18\x07 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x08 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x1c\n\x0fscore_threshold\x18\t \x01(\x02H\x00\x88\x01\x01\x12\x13\n\x06offset\x18\n \x01(\x04H\x01\x88\x01\x01\x12\x12\n\x05using\x18\x0b \x01(\tH\x02\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\x0c \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x03\x88\x01\x01\x12\x30\n\x0blookup_from\x18\r \x01(\x0b\x32\x16.qdrant.LookupLocationH\x04\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x0e \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x05\x88\x01\x01\x12\x30\n\x08strategy\x18\x10 \x01(\x0e\x32\x19.qdrant.RecommendStrategyH\x06\x88\x01\x01\x12(\n\x10positive_vectors\x18\x11 \x03(\x0b\x32\x0e.qdrant.Vector\x12(\n\x10negative_vectors\x18\x12 \x03(\x0b\x32\x0e.qdrant.Vector\x12\x14\n\x07timeout\x18\x13 \x01(\x04H\x07\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x14 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x08\x88\x01\x01\x42\x12\n\x10_score_thresholdB\t\n\x07_offsetB\x08\n\x06_usingB\x0f\n\r_with_vectorsB\x0e\n\x0c_lookup_fromB\x13\n\x11_read_consistencyB\x0b\n\t_strategyB\n\n\x08_timeoutB\x15\n\x13_shard_key_selectorJ\x04\x08\x06\x10\x07\"\xd1\x01\n\x14RecommendBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x31\n\x10recommend_points\x18\x02 \x03(\x0b\x32\x17.qdrant.RecommendPoints\x12\x36\n\x10read_consistency\x18\x03 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x04 \x01(\x04H\x01\x88\x01\x01\x42\x13\n\x11_read_consistencyB\n\n\x08_timeout\"\x90\x07\n\x14RecommendPointGroups\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12!\n\x08positive\x18\x02 \x03(\x0b\x32\x0f.qdrant.PointId\x12!\n\x08negative\x18\x03 \x03(\x0b\x32\x0f.qdrant.PointId\x12\x1e\n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x05 \x01(\r\x12\x31\n\x0cwith_payload\x18\x06 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x07 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x1c\n\x0fscore_threshold\x18\x08 \x01(\x02H\x00\x88\x01\x01\x12\x12\n\x05using\x18\t \x01(\tH\x01\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\n \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x02\x88\x01\x01\x12\x30\n\x0blookup_from\x18\x0b \x01(\x0b\x32\x16.qdrant.LookupLocationH\x03\x88\x01\x01\x12\x10\n\x08group_by\x18\x0c \x01(\t\x12\x12\n\ngroup_size\x18\r \x01(\r\x12\x36\n\x10read_consistency\x18\x0e \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x04\x88\x01\x01\x12,\n\x0bwith_lookup\x18\x0f \x01(\x0b\x32\x12.qdrant.WithLookupH\x05\x88\x01\x01\x12\x30\n\x08strategy\x18\x11 \x01(\x0e\x32\x19.qdrant.RecommendStrategyH\x06\x88\x01\x01\x12(\n\x10positive_vectors\x18\x12 \x03(\x0b\x32\x0e.qdrant.Vector\x12(\n\x10negative_vectors\x18\x13 \x03(\x0b\x32\x0e.qdrant.Vector\x12\x14\n\x07timeout\x18\x14 \x01(\x04H\x07\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x15 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x08\x88\x01\x01\x42\x12\n\x10_score_thresholdB\x08\n\x06_usingB\x0f\n\r_with_vectorsB\x0e\n\x0c_lookup_fromB\x13\n\x11_read_consistencyB\x0e\n\x0c_with_lookupB\x0b\n\t_strategyB\n\n\x08_timeoutB\x15\n\x13_shard_key_selector\"A\n\x0cTargetVector\x12\'\n\x06single\x18\x01 \x01(\x0b\x32\x15.qdrant.VectorExampleH\x00\x42\x08\n\x06target\"[\n\rVectorExample\x12\x1d\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointIdH\x00\x12 \n\x06vector\x18\x02 \x01(\x0b\x32\x0e.qdrant.VectorH\x00\x42\t\n\x07\x65xample\"f\n\x12\x43ontextExamplePair\x12\'\n\x08positive\x18\x01 \x01(\x0b\x32\x15.qdrant.VectorExample\x12\'\n\x08negative\x18\x02 \x01(\x0b\x32\x15.qdrant.VectorExample\"\x8e\x05\n\x0e\x44iscoverPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12$\n\x06target\x18\x02 \x01(\x0b\x32\x14.qdrant.TargetVector\x12+\n\x07\x63ontext\x18\x03 \x03(\x0b\x32\x1a.qdrant.ContextExamplePair\x12\x1e\n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.Filter\x12\r\n\x05limit\x18\x05 \x01(\x04\x12\x31\n\x0cwith_payload\x18\x06 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12$\n\x06params\x18\x07 \x01(\x0b\x32\x14.qdrant.SearchParams\x12\x13\n\x06offset\x18\x08 \x01(\x04H\x00\x88\x01\x01\x12\x12\n\x05using\x18\t \x01(\tH\x01\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\n \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x02\x88\x01\x01\x12\x30\n\x0blookup_from\x18\x0b \x01(\x0b\x32\x16.qdrant.LookupLocationH\x03\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x0c \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x04\x88\x01\x01\x12\x14\n\x07timeout\x18\r \x01(\x04H\x05\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x0e \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x06\x88\x01\x01\x42\t\n\x07_offsetB\x08\n\x06_usingB\x0f\n\r_with_vectorsB\x0e\n\x0c_lookup_fromB\x13\n\x11_read_consistencyB\n\n\x08_timeoutB\x15\n\x13_shard_key_selector\"\xce\x01\n\x13\x44iscoverBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12/\n\x0f\x64iscover_points\x18\x02 \x03(\x0b\x32\x16.qdrant.DiscoverPoints\x12\x36\n\x10read_consistency\x18\x03 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x04 \x01(\x04H\x01\x88\x01\x01\x42\x13\n\x11_read_consistencyB\n\n\x08_timeout\"\xa5\x02\n\x0b\x43ountPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x1e\n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.Filter\x12\x12\n\x05\x65xact\x18\x03 \x01(\x08H\x00\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x04 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x01\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x05 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x02\x88\x01\x01\x12\x14\n\x07timeout\x18\x06 \x01(\x04H\x03\x88\x01\x01\x42\x08\n\x06_exactB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selectorB\n\n\x08_timeout\"\x9d\x01\n\x0eRecommendInput\x12%\n\x08positive\x18\x01 \x03(\x0b\x32\x13.qdrant.VectorInput\x12%\n\x08negative\x18\x02 \x03(\x0b\x32\x13.qdrant.VectorInput\x12\x30\n\x08strategy\x18\x03 \x01(\x0e\x32\x19.qdrant.RecommendStrategyH\x00\x88\x01\x01\x42\x0b\n\t_strategy\"`\n\x10\x43ontextInputPair\x12%\n\x08positive\x18\x01 \x01(\x0b\x32\x13.qdrant.VectorInput\x12%\n\x08negative\x18\x02 \x01(\x0b\x32\x13.qdrant.VectorInput\"[\n\rDiscoverInput\x12#\n\x06target\x18\x01 \x01(\x0b\x32\x13.qdrant.VectorInput\x12%\n\x07\x63ontext\x18\x02 \x01(\x0b\x32\x14.qdrant.ContextInput\"7\n\x0c\x43ontextInput\x12\'\n\x05pairs\x18\x01 \x03(\x0b\x32\x18.qdrant.ContextInputPair\"\xa4\x02\n\x05Query\x12&\n\x07nearest\x18\x01 \x01(\x0b\x32\x13.qdrant.VectorInputH\x00\x12+\n\trecommend\x18\x02 \x01(\x0b\x32\x16.qdrant.RecommendInputH\x00\x12)\n\x08\x64iscover\x18\x03 \x01(\x0b\x32\x15.qdrant.DiscoverInputH\x00\x12\'\n\x07\x63ontext\x18\x04 \x01(\x0b\x32\x14.qdrant.ContextInputH\x00\x12#\n\x08order_by\x18\x05 \x01(\x0b\x32\x0f.qdrant.OrderByH\x00\x12 \n\x06\x66usion\x18\x06 \x01(\x0e\x32\x0e.qdrant.FusionH\x00\x12 \n\x06sample\x18\x07 \x01(\x0e\x32\x0e.qdrant.SampleH\x00\x42\t\n\x07variant\"\xfb\x02\n\rPrefetchQuery\x12\'\n\x08prefetch\x18\x01 \x03(\x0b\x32\x15.qdrant.PrefetchQuery\x12!\n\x05query\x18\x02 \x01(\x0b\x32\r.qdrant.QueryH\x00\x88\x01\x01\x12\x12\n\x05using\x18\x03 \x01(\tH\x01\x88\x01\x01\x12#\n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.FilterH\x02\x88\x01\x01\x12)\n\x06params\x18\x05 \x01(\x0b\x32\x14.qdrant.SearchParamsH\x03\x88\x01\x01\x12\x1c\n\x0fscore_threshold\x18\x06 \x01(\x02H\x04\x88\x01\x01\x12\x12\n\x05limit\x18\x07 \x01(\x04H\x05\x88\x01\x01\x12\x30\n\x0blookup_from\x18\x08 \x01(\x0b\x32\x16.qdrant.LookupLocationH\x06\x88\x01\x01\x42\x08\n\x06_queryB\x08\n\x06_usingB\t\n\x07_filterB\t\n\x07_paramsB\x12\n\x10_score_thresholdB\x08\n\x06_limitB\x0e\n\x0c_lookup_from\"\x85\x06\n\x0bQueryPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\x08prefetch\x18\x02 \x03(\x0b\x32\x15.qdrant.PrefetchQuery\x12!\n\x05query\x18\x03 \x01(\x0b\x32\r.qdrant.QueryH\x00\x88\x01\x01\x12\x12\n\x05using\x18\x04 \x01(\tH\x01\x88\x01\x01\x12#\n\x06\x66ilter\x18\x05 \x01(\x0b\x32\x0e.qdrant.FilterH\x02\x88\x01\x01\x12)\n\x06params\x18\x06 \x01(\x0b\x32\x14.qdrant.SearchParamsH\x03\x88\x01\x01\x12\x1c\n\x0fscore_threshold\x18\x07 \x01(\x02H\x04\x88\x01\x01\x12\x12\n\x05limit\x18\x08 \x01(\x04H\x05\x88\x01\x01\x12\x13\n\x06offset\x18\t \x01(\x04H\x06\x88\x01\x01\x12\x36\n\x0cwith_vectors\x18\n \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x07\x88\x01\x01\x12\x36\n\x0cwith_payload\x18\x0b \x01(\x0b\x32\x1b.qdrant.WithPayloadSelectorH\x08\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x0c \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\t\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\r \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\n\x88\x01\x01\x12\x30\n\x0blookup_from\x18\x0e \x01(\x0b\x32\x16.qdrant.LookupLocationH\x0b\x88\x01\x01\x12\x14\n\x07timeout\x18\x0f \x01(\x04H\x0c\x88\x01\x01\x42\x08\n\x06_queryB\x08\n\x06_usingB\t\n\x07_filterB\t\n\x07_paramsB\x12\n\x10_score_thresholdB\x08\n\x06_limitB\t\n\x07_offsetB\x0f\n\r_with_vectorsB\x0f\n\r_with_payloadB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selectorB\x0e\n\x0c_lookup_fromB\n\n\x08_timeout\"\xc5\x01\n\x10QueryBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12)\n\x0cquery_points\x18\x02 \x03(\x0b\x32\x13.qdrant.QueryPoints\x12\x36\n\x10read_consistency\x18\x03 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x04 \x01(\x04H\x01\x88\x01\x01\x42\x13\n\x11_read_consistencyB\n\n\x08_timeout\"\xcc\x06\n\x10QueryPointGroups\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\x08prefetch\x18\x02 \x03(\x0b\x32\x15.qdrant.PrefetchQuery\x12!\n\x05query\x18\x03 \x01(\x0b\x32\r.qdrant.QueryH\x00\x88\x01\x01\x12\x12\n\x05using\x18\x04 \x01(\tH\x01\x88\x01\x01\x12#\n\x06\x66ilter\x18\x05 \x01(\x0b\x32\x0e.qdrant.FilterH\x02\x88\x01\x01\x12)\n\x06params\x18\x06 \x01(\x0b\x32\x14.qdrant.SearchParamsH\x03\x88\x01\x01\x12\x1c\n\x0fscore_threshold\x18\x07 \x01(\x02H\x04\x88\x01\x01\x12\x31\n\x0cwith_payload\x18\x08 \x01(\x0b\x32\x1b.qdrant.WithPayloadSelector\x12\x36\n\x0cwith_vectors\x18\t \x01(\x0b\x32\x1b.qdrant.WithVectorsSelectorH\x05\x88\x01\x01\x12\x30\n\x0blookup_from\x18\n \x01(\x0b\x32\x16.qdrant.LookupLocationH\x06\x88\x01\x01\x12\x12\n\x05limit\x18\x0b \x01(\x04H\x07\x88\x01\x01\x12\x17\n\ngroup_size\x18\x0c \x01(\x04H\x08\x88\x01\x01\x12\x10\n\x08group_by\x18\r \x01(\t\x12\x36\n\x10read_consistency\x18\x0e \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\t\x88\x01\x01\x12,\n\x0bwith_lookup\x18\x0f \x01(\x0b\x32\x12.qdrant.WithLookupH\n\x88\x01\x01\x12\x14\n\x07timeout\x18\x10 \x01(\x04H\x0b\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x11 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x0c\x88\x01\x01\x42\x08\n\x06_queryB\x08\n\x06_usingB\t\n\x07_filterB\t\n\x07_paramsB\x12\n\x10_score_thresholdB\x0f\n\r_with_vectorsB\x0e\n\x0c_lookup_fromB\x08\n\x06_limitB\r\n\x0b_group_sizeB\x13\n\x11_read_consistencyB\x0e\n\x0c_with_lookupB\n\n\x08_timeoutB\x15\n\x13_shard_key_selector\"\xe0\x02\n\x0b\x46\x61\x63\x65tCounts\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x0b\n\x03key\x18\x02 \x01(\t\x12#\n\x06\x66ilter\x18\x03 \x01(\x0b\x32\x0e.qdrant.FilterH\x00\x88\x01\x01\x12\x12\n\x05limit\x18\x04 \x01(\x04H\x01\x88\x01\x01\x12\x12\n\x05\x65xact\x18\x05 \x01(\x08H\x02\x88\x01\x01\x12\x14\n\x07timeout\x18\x06 \x01(\x04H\x03\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x07 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x04\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x08 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x05\x88\x01\x01\x42\t\n\x07_filterB\x08\n\x06_limitB\x08\n\x06_exactB\n\n\x08_timeoutB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selector\"^\n\nFacetValue\x12\x16\n\x0cstring_value\x18\x01 \x01(\tH\x00\x12\x17\n\rinteger_value\x18\x02 \x01(\x03H\x00\x12\x14\n\nbool_value\x18\x03 \x01(\x08H\x00\x42\t\n\x07variant\"<\n\x08\x46\x61\x63\x65tHit\x12!\n\x05value\x18\x01 \x01(\x0b\x32\x12.qdrant.FacetValue\x12\r\n\x05\x63ount\x18\x02 \x01(\x04\"\xfa\x02\n\x12SearchMatrixPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12#\n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.FilterH\x00\x88\x01\x01\x12\x13\n\x06sample\x18\x03 \x01(\x04H\x01\x88\x01\x01\x12\x12\n\x05limit\x18\x04 \x01(\x04H\x02\x88\x01\x01\x12\x12\n\x05using\x18\x05 \x01(\tH\x03\x88\x01\x01\x12\x14\n\x07timeout\x18\x06 \x01(\x04H\x04\x88\x01\x01\x12\x36\n\x10read_consistency\x18\x07 \x01(\x0b\x32\x17.qdrant.ReadConsistencyH\x05\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x08 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x06\x88\x01\x01\x42\t\n\x07_filterB\t\n\x07_sampleB\x08\n\x06_limitB\x08\n\x06_usingB\n\n\x08_timeoutB\x13\n\x11_read_consistencyB\x15\n\x13_shard_key_selector\"<\n\x11SearchMatrixPairs\x12\'\n\x05pairs\x18\x01 \x03(\x0b\x32\x18.qdrant.SearchMatrixPair\"Y\n\x10SearchMatrixPair\x12\x1a\n\x01\x61\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12\x1a\n\x01\x62\x18\x02 \x01(\x0b\x32\x0f.qdrant.PointId\x12\r\n\x05score\x18\x03 \x01(\x02\"m\n\x13SearchMatrixOffsets\x12\x13\n\x0boffsets_row\x18\x01 \x03(\x04\x12\x13\n\x0boffsets_col\x18\x02 \x03(\x04\x12\x0e\n\x06scores\x18\x03 \x03(\x02\x12\x1c\n\x03ids\x18\x04 \x03(\x0b\x32\x0f.qdrant.PointId\"\x95\x12\n\x15PointsUpdateOperation\x12?\n\x06upsert\x18\x01 \x01(\x0b\x32-.qdrant.PointsUpdateOperation.PointStructListH\x00\x12\x37\n\x11\x64\x65lete_deprecated\x18\x02 \x01(\x0b\x32\x16.qdrant.PointsSelectorB\x02\x18\x01H\x00\x12?\n\x0bset_payload\x18\x03 \x01(\x0b\x32(.qdrant.PointsUpdateOperation.SetPayloadH\x00\x12K\n\x11overwrite_payload\x18\x04 \x01(\x0b\x32..qdrant.PointsUpdateOperation.OverwritePayloadH\x00\x12\x45\n\x0e\x64\x65lete_payload\x18\x05 \x01(\x0b\x32+.qdrant.PointsUpdateOperation.DeletePayloadH\x00\x12>\n\x18\x63lear_payload_deprecated\x18\x06 \x01(\x0b\x32\x16.qdrant.PointsSelectorB\x02\x18\x01H\x00\x12\x45\n\x0eupdate_vectors\x18\x07 \x01(\x0b\x32+.qdrant.PointsUpdateOperation.UpdateVectorsH\x00\x12\x45\n\x0e\x64\x65lete_vectors\x18\x08 \x01(\x0b\x32+.qdrant.PointsUpdateOperation.DeleteVectorsH\x00\x12\x43\n\rdelete_points\x18\t \x01(\x0b\x32*.qdrant.PointsUpdateOperation.DeletePointsH\x00\x12\x43\n\rclear_payload\x18\n \x01(\x0b\x32*.qdrant.PointsUpdateOperation.ClearPayloadH\x00\x1a\x88\x01\n\x0fPointStructList\x12#\n\x06points\x18\x01 \x03(\x0b\x32\x13.qdrant.PointStruct\x12\x39\n\x12shard_key_selector\x18\x02 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selector\x1a\xc9\x02\n\nSetPayload\x12\x46\n\x07payload\x18\x01 \x03(\x0b\x32\x35.qdrant.PointsUpdateOperation.SetPayload.PayloadEntry\x12\x34\n\x0fpoints_selector\x18\x02 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x00\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x01\x88\x01\x01\x12\x10\n\x03key\x18\x04 \x01(\tH\x02\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x12\n\x10_points_selectorB\x15\n\x13_shard_key_selectorB\x06\n\x04_key\x1a\xd5\x02\n\x10OverwritePayload\x12L\n\x07payload\x18\x01 \x03(\x0b\x32;.qdrant.PointsUpdateOperation.OverwritePayload.PayloadEntry\x12\x34\n\x0fpoints_selector\x18\x02 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x00\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x01\x88\x01\x01\x12\x10\n\x03key\x18\x04 \x01(\tH\x02\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x12\n\x10_points_selectorB\x15\n\x13_shard_key_selectorB\x06\n\x04_key\x1a\xb9\x01\n\rDeletePayload\x12\x0c\n\x04keys\x18\x01 \x03(\t\x12\x34\n\x0fpoints_selector\x18\x02 \x01(\x0b\x32\x16.qdrant.PointsSelectorH\x00\x88\x01\x01\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x01\x88\x01\x01\x42\x12\n\x10_points_selectorB\x15\n\x13_shard_key_selector\x1a\x87\x01\n\rUpdateVectors\x12$\n\x06points\x18\x01 \x03(\x0b\x32\x14.qdrant.PointVectors\x12\x39\n\x12shard_key_selector\x18\x02 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selector\x1a\xbc\x01\n\rDeleteVectors\x12/\n\x0fpoints_selector\x18\x01 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12(\n\x07vectors\x18\x02 \x01(\x0b\x32\x17.qdrant.VectorsSelector\x12\x39\n\x12shard_key_selector\x18\x03 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selector\x1a\x88\x01\n\x0c\x44\x65letePoints\x12&\n\x06points\x18\x01 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12\x39\n\x12shard_key_selector\x18\x02 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selector\x1a\x88\x01\n\x0c\x43learPayload\x12&\n\x06points\x18\x01 \x01(\x0b\x32\x16.qdrant.PointsSelector\x12\x39\n\x12shard_key_selector\x18\x02 \x01(\x0b\x32\x18.qdrant.ShardKeySelectorH\x00\x88\x01\x01\x42\x15\n\x13_shard_key_selectorB\x0b\n\toperation\"\xb6\x01\n\x11UpdateBatchPoints\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x11\n\x04wait\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x31\n\noperations\x18\x03 \x03(\x0b\x32\x1d.qdrant.PointsUpdateOperation\x12,\n\x08ordering\x18\x04 \x01(\x0b\x32\x15.qdrant.WriteOrderingH\x01\x88\x01\x01\x42\x07\n\x05_waitB\x0b\n\t_ordering\"M\n\x17PointsOperationResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.qdrant.UpdateResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"`\n\x0cUpdateResult\x12\x19\n\x0coperation_id\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12$\n\x06status\x18\x02 \x01(\x0e\x32\x14.qdrant.UpdateStatusB\x0f\n\r_operation_id\"7\n\nOrderValue\x12\r\n\x03int\x18\x01 \x01(\x03H\x00\x12\x0f\n\x05\x66loat\x18\x02 \x01(\x01H\x00\x42\t\n\x07variant\"\xf1\x02\n\x0bScoredPoint\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12\x31\n\x07payload\x18\x02 \x03(\x0b\x32 .qdrant.ScoredPoint.PayloadEntry\x12\r\n\x05score\x18\x03 \x01(\x02\x12\x0f\n\x07version\x18\x05 \x01(\x04\x12+\n\x07vectors\x18\x06 \x01(\x0b\x32\x15.qdrant.VectorsOutputH\x00\x88\x01\x01\x12(\n\tshard_key\x18\x07 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x01\x88\x01\x01\x12,\n\x0border_value\x18\x08 \x01(\x0b\x32\x12.qdrant.OrderValueH\x02\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\n\n\x08_vectorsB\x0c\n\n_shard_keyB\x0e\n\x0c_order_valueJ\x04\x08\x04\x10\x05\"\\\n\x07GroupId\x12\x18\n\x0eunsigned_value\x18\x01 \x01(\x04H\x00\x12\x17\n\rinteger_value\x18\x02 \x01(\x03H\x00\x12\x16\n\x0cstring_value\x18\x03 \x01(\tH\x00\x42\x06\n\x04kind\"t\n\nPointGroup\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.GroupId\x12!\n\x04hits\x18\x02 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12&\n\x06lookup\x18\x03 \x01(\x0b\x32\x16.qdrant.RetrievedPoint\"2\n\x0cGroupsResult\x12\"\n\x06groups\x18\x01 \x03(\x0b\x32\x12.qdrant.PointGroup\"C\n\x0eSearchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"B\n\rQueryResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"G\n\x12QueryBatchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.BatchResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"I\n\x13QueryGroupsResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.qdrant.GroupsResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"2\n\x0b\x42\x61tchResult\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\"H\n\x13SearchBatchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.BatchResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"J\n\x14SearchGroupsResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.qdrant.GroupsResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"B\n\rCountResponse\x12#\n\x06result\x18\x01 \x01(\x0b\x32\x13.qdrant.CountResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\x8b\x01\n\x0eScrollResponse\x12.\n\x10next_page_offset\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointIdH\x00\x88\x01\x01\x12&\n\x06result\x18\x02 \x03(\x0b\x32\x16.qdrant.RetrievedPoint\x12\x0c\n\x04time\x18\x03 \x01(\x01\x42\x13\n\x11_next_page_offset\"\x1c\n\x0b\x43ountResult\x12\r\n\x05\x63ount\x18\x01 \x01(\x04\"\xd7\x02\n\x0eRetrievedPoint\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12\x34\n\x07payload\x18\x02 \x03(\x0b\x32#.qdrant.RetrievedPoint.PayloadEntry\x12+\n\x07vectors\x18\x04 \x01(\x0b\x32\x15.qdrant.VectorsOutputH\x00\x88\x01\x01\x12(\n\tshard_key\x18\x05 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x01\x88\x01\x01\x12,\n\x0border_value\x18\x06 \x01(\x0b\x32\x12.qdrant.OrderValueH\x02\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\n\n\x08_vectorsB\x0c\n\n_shard_keyB\x0e\n\x0c_order_valueJ\x04\x08\x03\x10\x04\"C\n\x0bGetResponse\x12&\n\x06result\x18\x01 \x03(\x0b\x32\x16.qdrant.RetrievedPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"F\n\x11RecommendResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"K\n\x16RecommendBatchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.BatchResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"E\n\x10\x44iscoverResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.ScoredPoint\x12\x0c\n\x04time\x18\x02 \x01(\x01\"J\n\x15\x44iscoverBatchResponse\x12#\n\x06result\x18\x01 \x03(\x0b\x32\x13.qdrant.BatchResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"M\n\x17RecommendGroupsResponse\x12$\n\x06result\x18\x01 \x01(\x0b\x32\x14.qdrant.GroupsResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"I\n\x13UpdateBatchResponse\x12$\n\x06result\x18\x01 \x03(\x0b\x32\x14.qdrant.UpdateResult\x12\x0c\n\x04time\x18\x02 \x01(\x01\"=\n\rFacetResponse\x12\x1e\n\x04hits\x18\x01 \x03(\x0b\x32\x10.qdrant.FacetHit\x12\x0c\n\x04time\x18\x02 \x01(\x01\"T\n\x19SearchMatrixPairsResponse\x12)\n\x06result\x18\x01 \x01(\x0b\x32\x19.qdrant.SearchMatrixPairs\x12\x0c\n\x04time\x18\x02 \x01(\x01\"X\n\x1bSearchMatrixOffsetsResponse\x12+\n\x06result\x18\x01 \x01(\x0b\x32\x1b.qdrant.SearchMatrixOffsets\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\xac\x01\n\x06\x46ilter\x12!\n\x06should\x18\x01 \x03(\x0b\x32\x11.qdrant.Condition\x12\x1f\n\x04must\x18\x02 \x03(\x0b\x32\x11.qdrant.Condition\x12#\n\x08must_not\x18\x03 \x03(\x0b\x32\x11.qdrant.Condition\x12*\n\nmin_should\x18\x04 \x01(\x0b\x32\x11.qdrant.MinShouldH\x00\x88\x01\x01\x42\r\n\x0b_min_should\"E\n\tMinShould\x12%\n\nconditions\x18\x01 \x03(\x0b\x32\x11.qdrant.Condition\x12\x11\n\tmin_count\x18\x02 \x01(\x04\"\xcb\x02\n\tCondition\x12\'\n\x05\x66ield\x18\x01 \x01(\x0b\x32\x16.qdrant.FieldConditionH\x00\x12,\n\x08is_empty\x18\x02 \x01(\x0b\x32\x18.qdrant.IsEmptyConditionH\x00\x12(\n\x06has_id\x18\x03 \x01(\x0b\x32\x16.qdrant.HasIdConditionH\x00\x12 \n\x06\x66ilter\x18\x04 \x01(\x0b\x32\x0e.qdrant.FilterH\x00\x12*\n\x07is_null\x18\x05 \x01(\x0b\x32\x17.qdrant.IsNullConditionH\x00\x12)\n\x06nested\x18\x06 \x01(\x0b\x32\x17.qdrant.NestedConditionH\x00\x12\x30\n\nhas_vector\x18\x07 \x01(\x0b\x32\x1a.qdrant.HasVectorConditionH\x00\x42\x12\n\x10\x63ondition_one_of\"\x1f\n\x10IsEmptyCondition\x12\x0b\n\x03key\x18\x01 \x01(\t\"\x1e\n\x0fIsNullCondition\x12\x0b\n\x03key\x18\x01 \x01(\t\"1\n\x0eHasIdCondition\x12\x1f\n\x06has_id\x18\x01 \x03(\x0b\x32\x0f.qdrant.PointId\"(\n\x12HasVectorCondition\x12\x12\n\nhas_vector\x18\x01 \x01(\t\">\n\x0fNestedCondition\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1e\n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.Filter\"\xb5\x02\n\x0e\x46ieldCondition\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05match\x18\x02 \x01(\x0b\x32\r.qdrant.Match\x12\x1c\n\x05range\x18\x03 \x01(\x0b\x32\r.qdrant.Range\x12\x30\n\x10geo_bounding_box\x18\x04 \x01(\x0b\x32\x16.qdrant.GeoBoundingBox\x12%\n\ngeo_radius\x18\x05 \x01(\x0b\x32\x11.qdrant.GeoRadius\x12)\n\x0cvalues_count\x18\x06 \x01(\x0b\x32\x13.qdrant.ValuesCount\x12\'\n\x0bgeo_polygon\x18\x07 \x01(\x0b\x32\x12.qdrant.GeoPolygon\x12-\n\x0e\x64\x61tetime_range\x18\x08 \x01(\x0b\x32\x15.qdrant.DatetimeRange\"\xa3\x02\n\x05Match\x12\x11\n\x07keyword\x18\x01 \x01(\tH\x00\x12\x11\n\x07integer\x18\x02 \x01(\x03H\x00\x12\x11\n\x07\x62oolean\x18\x03 \x01(\x08H\x00\x12\x0e\n\x04text\x18\x04 \x01(\tH\x00\x12+\n\x08keywords\x18\x05 \x01(\x0b\x32\x17.qdrant.RepeatedStringsH\x00\x12,\n\x08integers\x18\x06 \x01(\x0b\x32\x18.qdrant.RepeatedIntegersH\x00\x12\x33\n\x0f\x65xcept_integers\x18\x07 \x01(\x0b\x32\x18.qdrant.RepeatedIntegersH\x00\x12\x32\n\x0f\x65xcept_keywords\x18\x08 \x01(\x0b\x32\x17.qdrant.RepeatedStringsH\x00\x42\r\n\x0bmatch_value\"\"\n\x0fRepeatedStrings\x12\x0f\n\x07strings\x18\x01 \x03(\t\"$\n\x10RepeatedIntegers\x12\x10\n\x08integers\x18\x01 \x03(\x03\"k\n\x05Range\x12\x0f\n\x02lt\x18\x01 \x01(\x01H\x00\x88\x01\x01\x12\x0f\n\x02gt\x18\x02 \x01(\x01H\x01\x88\x01\x01\x12\x10\n\x03gte\x18\x03 \x01(\x01H\x02\x88\x01\x01\x12\x10\n\x03lte\x18\x04 \x01(\x01H\x03\x88\x01\x01\x42\x05\n\x03_ltB\x05\n\x03_gtB\x06\n\x04_gteB\x06\n\x04_lte\"\xe3\x01\n\rDatetimeRange\x12+\n\x02lt\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x00\x88\x01\x01\x12+\n\x02gt\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x01\x88\x01\x01\x12,\n\x03gte\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x02\x88\x01\x01\x12,\n\x03lte\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.TimestampH\x03\x88\x01\x01\x42\x05\n\x03_ltB\x05\n\x03_gtB\x06\n\x04_gteB\x06\n\x04_lte\"\\\n\x0eGeoBoundingBox\x12\"\n\x08top_left\x18\x01 \x01(\x0b\x32\x10.qdrant.GeoPoint\x12&\n\x0c\x62ottom_right\x18\x02 \x01(\x0b\x32\x10.qdrant.GeoPoint\"=\n\tGeoRadius\x12 \n\x06\x63\x65nter\x18\x01 \x01(\x0b\x32\x10.qdrant.GeoPoint\x12\x0e\n\x06radius\x18\x02 \x01(\x02\"1\n\rGeoLineString\x12 \n\x06points\x18\x01 \x03(\x0b\x32\x10.qdrant.GeoPoint\"_\n\nGeoPolygon\x12\'\n\x08\x65xterior\x18\x01 \x01(\x0b\x32\x15.qdrant.GeoLineString\x12(\n\tinteriors\x18\x02 \x03(\x0b\x32\x15.qdrant.GeoLineString\"q\n\x0bValuesCount\x12\x0f\n\x02lt\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x0f\n\x02gt\x18\x02 \x01(\x04H\x01\x88\x01\x01\x12\x10\n\x03gte\x18\x03 \x01(\x04H\x02\x88\x01\x01\x12\x10\n\x03lte\x18\x04 \x01(\x04H\x03\x88\x01\x01\x42\x05\n\x03_ltB\x05\n\x03_gtB\x06\n\x04_gteB\x06\n\x04_lte\"u\n\x0ePointsSelector\x12\'\n\x06points\x18\x01 \x01(\x0b\x32\x15.qdrant.PointsIdsListH\x00\x12 \n\x06\x66ilter\x18\x02 \x01(\x0b\x32\x0e.qdrant.FilterH\x00\x42\x18\n\x16points_selector_one_of\"-\n\rPointsIdsList\x12\x1c\n\x03ids\x18\x01 \x03(\x0b\x32\x0f.qdrant.PointId\"\xd5\x01\n\x0bPointStruct\x12\x1b\n\x02id\x18\x01 \x01(\x0b\x32\x0f.qdrant.PointId\x12\x31\n\x07payload\x18\x03 \x03(\x0b\x32 .qdrant.PointStruct.PayloadEntry\x12%\n\x07vectors\x18\x04 \x01(\x0b\x32\x0f.qdrant.VectorsH\x00\x88\x01\x01\x1a=\n\x0cPayloadEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\n\n\x08_vectorsJ\x04\x08\x02\x10\x03\"$\n\x08GeoPoint\x12\x0b\n\x03lon\x18\x01 \x01(\x01\x12\x0b\n\x03lat\x18\x02 \x01(\x01*5\n\x11WriteOrderingType\x12\x08\n\x04Weak\x10\x00\x12\n\n\x06Medium\x10\x01\x12\n\n\x06Strong\x10\x02*8\n\x13ReadConsistencyType\x12\x07\n\x03\x41ll\x10\x00\x12\x0c\n\x08Majority\x10\x01\x12\n\n\x06Quorum\x10\x02*\xad\x01\n\tFieldType\x12\x14\n\x10\x46ieldTypeKeyword\x10\x00\x12\x14\n\x10\x46ieldTypeInteger\x10\x01\x12\x12\n\x0e\x46ieldTypeFloat\x10\x02\x12\x10\n\x0c\x46ieldTypeGeo\x10\x03\x12\x11\n\rFieldTypeText\x10\x04\x12\x11\n\rFieldTypeBool\x10\x05\x12\x15\n\x11\x46ieldTypeDatetime\x10\x06\x12\x11\n\rFieldTypeUuid\x10\x07*\x1e\n\tDirection\x12\x07\n\x03\x41sc\x10\x00\x12\x08\n\x04\x44\x65sc\x10\x01*5\n\x11RecommendStrategy\x12\x11\n\rAverageVector\x10\x00\x12\r\n\tBestScore\x10\x01*\x1b\n\x06\x46usion\x12\x07\n\x03RRF\x10\x00\x12\x08\n\x04\x44\x42SF\x10\x01*\x14\n\x06Sample\x12\n\n\x06Random\x10\x00*[\n\x0cUpdateStatus\x12\x17\n\x13UnknownUpdateStatus\x10\x00\x12\x10\n\x0c\x41\x63knowledged\x10\x01\x12\r\n\tCompleted\x10\x02\x12\x11\n\rClockRejected\x10\x03\x42\x15\xaa\x02\x12Qdrant.Client.Grpcb\x06proto3')
 
 _WRITEORDERINGTYPE = DESCRIPTOR.enum_types_by_name['WriteOrderingType']
 WriteOrderingType = enum_type_wrapper.EnumTypeWrapper(_WRITEORDERINGTYPE)
@@ -67,7 +67,14 @@ _WRITEORDERING = DESCRIPTOR.message_types_by_name['WriteOrdering']
 _READCONSISTENCY = DESCRIPTOR.message_types_by_name['ReadConsistency']
 _POINTID = DESCRIPTOR.message_types_by_name['PointId']
 _SPARSEINDICES = DESCRIPTOR.message_types_by_name['SparseIndices']
+_DOCUMENT = DESCRIPTOR.message_types_by_name['Document']
+_DOCUMENT_OPTIONSENTRY = _DOCUMENT.nested_types_by_name['OptionsEntry']
+_IMAGE = DESCRIPTOR.message_types_by_name['Image']
+_IMAGE_OPTIONSENTRY = _IMAGE.nested_types_by_name['OptionsEntry']
+_INFERENCEOBJECT = DESCRIPTOR.message_types_by_name['InferenceObject']
+_INFERENCEOBJECT_OPTIONSENTRY = _INFERENCEOBJECT.nested_types_by_name['OptionsEntry']
 _VECTOR = DESCRIPTOR.message_types_by_name['Vector']
+_VECTOROUTPUT = DESCRIPTOR.message_types_by_name['VectorOutput']
 _DENSEVECTOR = DESCRIPTOR.message_types_by_name['DenseVector']
 _SPARSEVECTOR = DESCRIPTOR.message_types_by_name['SparseVector']
 _MULTIDENSEVECTOR = DESCRIPTOR.message_types_by_name['MultiDenseVector']
@@ -90,7 +97,10 @@ _PAYLOADEXCLUDESELECTOR = DESCRIPTOR.message_types_by_name['PayloadExcludeSelect
 _WITHPAYLOADSELECTOR = DESCRIPTOR.message_types_by_name['WithPayloadSelector']
 _NAMEDVECTORS = DESCRIPTOR.message_types_by_name['NamedVectors']
 _NAMEDVECTORS_VECTORSENTRY = _NAMEDVECTORS.nested_types_by_name['VectorsEntry']
+_NAMEDVECTORSOUTPUT = DESCRIPTOR.message_types_by_name['NamedVectorsOutput']
+_NAMEDVECTORSOUTPUT_VECTORSENTRY = _NAMEDVECTORSOUTPUT.nested_types_by_name['VectorsEntry']
 _VECTORS = DESCRIPTOR.message_types_by_name['Vectors']
+_VECTORSOUTPUT = DESCRIPTOR.message_types_by_name['VectorsOutput']
 _VECTORSSELECTOR = DESCRIPTOR.message_types_by_name['VectorsSelector']
 _WITHVECTORSSELECTOR = DESCRIPTOR.message_types_by_name['WithVectorsSelector']
 _QUANTIZATIONSEARCHPARAMS = DESCRIPTOR.message_types_by_name['QuantizationSearchParams']
@@ -176,6 +186,7 @@ _CONDITION = DESCRIPTOR.message_types_by_name['Condition']
 _ISEMPTYCONDITION = DESCRIPTOR.message_types_by_name['IsEmptyCondition']
 _ISNULLCONDITION = DESCRIPTOR.message_types_by_name['IsNullCondition']
 _HASIDCONDITION = DESCRIPTOR.message_types_by_name['HasIdCondition']
+_HASVECTORCONDITION = DESCRIPTOR.message_types_by_name['HasVectorCondition']
 _NESTEDCONDITION = DESCRIPTOR.message_types_by_name['NestedCondition']
 _FIELDCONDITION = DESCRIPTOR.message_types_by_name['FieldCondition']
 _MATCH = DESCRIPTOR.message_types_by_name['Match']
@@ -221,12 +232,64 @@ SparseIndices = _reflection.GeneratedProtocolMessageType('SparseIndices', (_mess
   })
 _sym_db.RegisterMessage(SparseIndices)
 
+Document = _reflection.GeneratedProtocolMessageType('Document', (_message.Message,), {
+
+  'OptionsEntry' : _reflection.GeneratedProtocolMessageType('OptionsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _DOCUMENT_OPTIONSENTRY,
+    '__module__' : 'points_pb2'
+    # @@protoc_insertion_point(class_scope:qdrant.Document.OptionsEntry)
+    })
+  ,
+  'DESCRIPTOR' : _DOCUMENT,
+  '__module__' : 'points_pb2'
+  # @@protoc_insertion_point(class_scope:qdrant.Document)
+  })
+_sym_db.RegisterMessage(Document)
+_sym_db.RegisterMessage(Document.OptionsEntry)
+
+Image = _reflection.GeneratedProtocolMessageType('Image', (_message.Message,), {
+
+  'OptionsEntry' : _reflection.GeneratedProtocolMessageType('OptionsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _IMAGE_OPTIONSENTRY,
+    '__module__' : 'points_pb2'
+    # @@protoc_insertion_point(class_scope:qdrant.Image.OptionsEntry)
+    })
+  ,
+  'DESCRIPTOR' : _IMAGE,
+  '__module__' : 'points_pb2'
+  # @@protoc_insertion_point(class_scope:qdrant.Image)
+  })
+_sym_db.RegisterMessage(Image)
+_sym_db.RegisterMessage(Image.OptionsEntry)
+
+InferenceObject = _reflection.GeneratedProtocolMessageType('InferenceObject', (_message.Message,), {
+
+  'OptionsEntry' : _reflection.GeneratedProtocolMessageType('OptionsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _INFERENCEOBJECT_OPTIONSENTRY,
+    '__module__' : 'points_pb2'
+    # @@protoc_insertion_point(class_scope:qdrant.InferenceObject.OptionsEntry)
+    })
+  ,
+  'DESCRIPTOR' : _INFERENCEOBJECT,
+  '__module__' : 'points_pb2'
+  # @@protoc_insertion_point(class_scope:qdrant.InferenceObject)
+  })
+_sym_db.RegisterMessage(InferenceObject)
+_sym_db.RegisterMessage(InferenceObject.OptionsEntry)
+
 Vector = _reflection.GeneratedProtocolMessageType('Vector', (_message.Message,), {
   'DESCRIPTOR' : _VECTOR,
   '__module__' : 'points_pb2'
   # @@protoc_insertion_point(class_scope:qdrant.Vector)
   })
 _sym_db.RegisterMessage(Vector)
+
+VectorOutput = _reflection.GeneratedProtocolMessageType('VectorOutput', (_message.Message,), {
+  'DESCRIPTOR' : _VECTOROUTPUT,
+  '__module__' : 'points_pb2'
+  # @@protoc_insertion_point(class_scope:qdrant.VectorOutput)
+  })
+_sym_db.RegisterMessage(VectorOutput)
 
 DenseVector = _reflection.GeneratedProtocolMessageType('DenseVector', (_message.Message,), {
   'DESCRIPTOR' : _DENSEVECTOR,
@@ -384,12 +447,34 @@ NamedVectors = _reflection.GeneratedProtocolMessageType('NamedVectors', (_messag
 _sym_db.RegisterMessage(NamedVectors)
 _sym_db.RegisterMessage(NamedVectors.VectorsEntry)
 
+NamedVectorsOutput = _reflection.GeneratedProtocolMessageType('NamedVectorsOutput', (_message.Message,), {
+
+  'VectorsEntry' : _reflection.GeneratedProtocolMessageType('VectorsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _NAMEDVECTORSOUTPUT_VECTORSENTRY,
+    '__module__' : 'points_pb2'
+    # @@protoc_insertion_point(class_scope:qdrant.NamedVectorsOutput.VectorsEntry)
+    })
+  ,
+  'DESCRIPTOR' : _NAMEDVECTORSOUTPUT,
+  '__module__' : 'points_pb2'
+  # @@protoc_insertion_point(class_scope:qdrant.NamedVectorsOutput)
+  })
+_sym_db.RegisterMessage(NamedVectorsOutput)
+_sym_db.RegisterMessage(NamedVectorsOutput.VectorsEntry)
+
 Vectors = _reflection.GeneratedProtocolMessageType('Vectors', (_message.Message,), {
   'DESCRIPTOR' : _VECTORS,
   '__module__' : 'points_pb2'
   # @@protoc_insertion_point(class_scope:qdrant.Vectors)
   })
 _sym_db.RegisterMessage(Vectors)
+
+VectorsOutput = _reflection.GeneratedProtocolMessageType('VectorsOutput', (_message.Message,), {
+  'DESCRIPTOR' : _VECTORSOUTPUT,
+  '__module__' : 'points_pb2'
+  # @@protoc_insertion_point(class_scope:qdrant.VectorsOutput)
+  })
+_sym_db.RegisterMessage(VectorsOutput)
 
 VectorsSelector = _reflection.GeneratedProtocolMessageType('VectorsSelector', (_message.Message,), {
   'DESCRIPTOR' : _VECTORSSELECTOR,
@@ -998,6 +1083,13 @@ HasIdCondition = _reflection.GeneratedProtocolMessageType('HasIdCondition', (_me
   })
 _sym_db.RegisterMessage(HasIdCondition)
 
+HasVectorCondition = _reflection.GeneratedProtocolMessageType('HasVectorCondition', (_message.Message,), {
+  'DESCRIPTOR' : _HASVECTORCONDITION,
+  '__module__' : 'points_pb2'
+  # @@protoc_insertion_point(class_scope:qdrant.HasVectorCondition)
+  })
+_sym_db.RegisterMessage(HasVectorCondition)
+
 NestedCondition = _reflection.GeneratedProtocolMessageType('NestedCondition', (_message.Message,), {
   'DESCRIPTOR' : _NESTEDCONDITION,
   '__module__' : 'points_pb2'
@@ -1122,10 +1214,18 @@ if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\252\002\022Qdrant.Client.Grpc'
+  _DOCUMENT_OPTIONSENTRY._options = None
+  _DOCUMENT_OPTIONSENTRY._serialized_options = b'8\001'
+  _IMAGE_OPTIONSENTRY._options = None
+  _IMAGE_OPTIONSENTRY._serialized_options = b'8\001'
+  _INFERENCEOBJECT_OPTIONSENTRY._options = None
+  _INFERENCEOBJECT_OPTIONSENTRY._serialized_options = b'8\001'
   _SETPAYLOADPOINTS_PAYLOADENTRY._options = None
   _SETPAYLOADPOINTS_PAYLOADENTRY._serialized_options = b'8\001'
   _NAMEDVECTORS_VECTORSENTRY._options = None
   _NAMEDVECTORS_VECTORSENTRY._serialized_options = b'8\001'
+  _NAMEDVECTORSOUTPUT_VECTORSENTRY._options = None
+  _NAMEDVECTORSOUTPUT_VECTORSENTRY._serialized_options = b'8\001'
   _POINTSUPDATEOPERATION_SETPAYLOAD_PAYLOADENTRY._options = None
   _POINTSUPDATEOPERATION_SETPAYLOAD_PAYLOADENTRY._serialized_options = b'8\001'
   _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD_PAYLOADENTRY._options = None
@@ -1140,22 +1240,22 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _RETRIEVEDPOINT_PAYLOADENTRY._serialized_options = b'8\001'
   _POINTSTRUCT_PAYLOADENTRY._options = None
   _POINTSTRUCT_PAYLOADENTRY._serialized_options = b'8\001'
-  _WRITEORDERINGTYPE._serialized_start=22799
-  _WRITEORDERINGTYPE._serialized_end=22852
-  _READCONSISTENCYTYPE._serialized_start=22854
-  _READCONSISTENCYTYPE._serialized_end=22910
-  _FIELDTYPE._serialized_start=22913
-  _FIELDTYPE._serialized_end=23086
-  _DIRECTION._serialized_start=23088
-  _DIRECTION._serialized_end=23118
-  _RECOMMENDSTRATEGY._serialized_start=23120
-  _RECOMMENDSTRATEGY._serialized_end=23173
-  _FUSION._serialized_start=23175
-  _FUSION._serialized_end=23202
-  _SAMPLE._serialized_start=23204
-  _SAMPLE._serialized_end=23224
-  _UPDATESTATUS._serialized_start=23226
-  _UPDATESTATUS._serialized_end=23317
+  _WRITEORDERINGTYPE._serialized_start=24342
+  _WRITEORDERINGTYPE._serialized_end=24395
+  _READCONSISTENCYTYPE._serialized_start=24397
+  _READCONSISTENCYTYPE._serialized_end=24453
+  _FIELDTYPE._serialized_start=24456
+  _FIELDTYPE._serialized_end=24629
+  _DIRECTION._serialized_start=24631
+  _DIRECTION._serialized_end=24661
+  _RECOMMENDSTRATEGY._serialized_start=24663
+  _RECOMMENDSTRATEGY._serialized_end=24716
+  _FUSION._serialized_start=24718
+  _FUSION._serialized_end=24745
+  _SAMPLE._serialized_start=24747
+  _SAMPLE._serialized_end=24767
+  _UPDATESTATUS._serialized_start=24769
+  _UPDATESTATUS._serialized_end=24860
   _WRITEORDERING._serialized_start=97
   _WRITEORDERING._serialized_end=153
   _READCONSISTENCY._serialized_start=155
@@ -1164,256 +1264,278 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _POINTID._serialized_end=306
   _SPARSEINDICES._serialized_start=308
   _SPARSEINDICES._serialized_end=337
-  _VECTOR._serialized_start=339
-  _VECTOR._serialized_end=464
-  _DENSEVECTOR._serialized_start=466
-  _DENSEVECTOR._serialized_end=493
-  _SPARSEVECTOR._serialized_start=495
-  _SPARSEVECTOR._serialized_end=542
-  _MULTIDENSEVECTOR._serialized_start=544
-  _MULTIDENSEVECTOR._serialized_end=600
-  _VECTORINPUT._serialized_start=603
-  _VECTORINPUT._serialized_end=785
-  _SHARDKEYSELECTOR._serialized_start=787
-  _SHARDKEYSELECTOR._serialized_end=843
-  _UPSERTPOINTS._serialized_start=846
-  _UPSERTPOINTS._serialized_end=1091
-  _DELETEPOINTS._serialized_start=1094
-  _DELETEPOINTS._serialized_end=1342
-  _GETPOINTS._serialized_start=1345
-  _GETPOINTS._serialized_end=1734
-  _UPDATEPOINTVECTORS._serialized_start=1737
-  _UPDATEPOINTVECTORS._serialized_end=1989
-  _POINTVECTORS._serialized_start=1991
-  _POINTVECTORS._serialized_end=2068
-  _DELETEPOINTVECTORS._serialized_start=2071
-  _DELETEPOINTVECTORS._serialized_end=2376
-  _SETPAYLOADPOINTS._serialized_start=2379
-  _SETPAYLOADPOINTS._serialized_end=2816
-  _SETPAYLOADPOINTS_PAYLOADENTRY._serialized_start=2676
-  _SETPAYLOADPOINTS_PAYLOADENTRY._serialized_end=2737
-  _DELETEPAYLOADPOINTS._serialized_start=2819
-  _DELETEPAYLOADPOINTS._serialized_end=3128
-  _CLEARPAYLOADPOINTS._serialized_start=3131
-  _CLEARPAYLOADPOINTS._serialized_end=3385
-  _CREATEFIELDINDEXCOLLECTION._serialized_start=3388
-  _CREATEFIELDINDEXCOLLECTION._serialized_end=3691
-  _DELETEFIELDINDEXCOLLECTION._serialized_start=3694
-  _DELETEFIELDINDEXCOLLECTION._serialized_end=3854
-  _PAYLOADINCLUDESELECTOR._serialized_start=3856
-  _PAYLOADINCLUDESELECTOR._serialized_end=3896
-  _PAYLOADEXCLUDESELECTOR._serialized_start=3898
-  _PAYLOADEXCLUDESELECTOR._serialized_end=3938
-  _WITHPAYLOADSELECTOR._serialized_start=3941
-  _WITHPAYLOADSELECTOR._serialized_end=4102
-  _NAMEDVECTORS._serialized_start=4105
-  _NAMEDVECTORS._serialized_end=4235
-  _NAMEDVECTORS_VECTORSENTRY._serialized_start=4173
-  _NAMEDVECTORS_VECTORSENTRY._serialized_end=4235
-  _VECTORS._serialized_start=4237
-  _VECTORS._serialized_end=4340
-  _VECTORSSELECTOR._serialized_start=4342
-  _VECTORSSELECTOR._serialized_end=4374
-  _WITHVECTORSSELECTOR._serialized_start=4376
-  _WITHVECTORSSELECTOR._serialized_end=4479
-  _QUANTIZATIONSEARCHPARAMS._serialized_start=4482
-  _QUANTIZATIONSEARCHPARAMS._serialized_end=4618
-  _SEARCHPARAMS._serialized_start=4621
-  _SEARCHPARAMS._serialized_end=4821
-  _SEARCHPOINTS._serialized_start=4824
-  _SEARCHPOINTS._serialized_end=5482
-  _SEARCHBATCHPOINTS._serialized_start=5485
-  _SEARCHBATCHPOINTS._serialized_end=5685
-  _WITHLOOKUP._serialized_start=5688
-  _WITHLOOKUP._serialized_end=5866
-  _SEARCHPOINTGROUPS._serialized_start=5869
-  _SEARCHPOINTGROUPS._serialized_end=6594
-  _STARTFROM._serialized_start=6596
-  _STARTFROM._serialized_end=6721
-  _ORDERBY._serialized_start=6724
-  _ORDERBY._serialized_end=6862
-  _SCROLLPOINTS._serialized_start=6865
-  _SCROLLPOINTS._serialized_end=7391
-  _LOOKUPLOCATION._serialized_start=7394
-  _LOOKUPLOCATION._serialized_end=7559
-  _RECOMMENDPOINTS._serialized_start=7562
-  _RECOMMENDPOINTS._serialized_end=8407
-  _RECOMMENDBATCHPOINTS._serialized_start=8410
-  _RECOMMENDBATCHPOINTS._serialized_end=8619
-  _RECOMMENDPOINTGROUPS._serialized_start=8622
-  _RECOMMENDPOINTGROUPS._serialized_end=9534
-  _TARGETVECTOR._serialized_start=9536
-  _TARGETVECTOR._serialized_end=9601
-  _VECTOREXAMPLE._serialized_start=9603
-  _VECTOREXAMPLE._serialized_end=9694
-  _CONTEXTEXAMPLEPAIR._serialized_start=9696
-  _CONTEXTEXAMPLEPAIR._serialized_end=9798
-  _DISCOVERPOINTS._serialized_start=9801
-  _DISCOVERPOINTS._serialized_end=10455
-  _DISCOVERBATCHPOINTS._serialized_start=10458
-  _DISCOVERBATCHPOINTS._serialized_end=10664
-  _COUNTPOINTS._serialized_start=10667
-  _COUNTPOINTS._serialized_end=10960
-  _RECOMMENDINPUT._serialized_start=10963
-  _RECOMMENDINPUT._serialized_end=11120
-  _CONTEXTINPUTPAIR._serialized_start=11122
-  _CONTEXTINPUTPAIR._serialized_end=11218
-  _DISCOVERINPUT._serialized_start=11220
-  _DISCOVERINPUT._serialized_end=11311
-  _CONTEXTINPUT._serialized_start=11313
-  _CONTEXTINPUT._serialized_end=11368
-  _QUERY._serialized_start=11371
-  _QUERY._serialized_end=11663
-  _PREFETCHQUERY._serialized_start=11666
-  _PREFETCHQUERY._serialized_end=12045
-  _QUERYPOINTS._serialized_start=12048
-  _QUERYPOINTS._serialized_end=12821
-  _QUERYBATCHPOINTS._serialized_start=12824
-  _QUERYBATCHPOINTS._serialized_end=13021
-  _QUERYPOINTGROUPS._serialized_start=13024
-  _QUERYPOINTGROUPS._serialized_end=13868
-  _FACETCOUNTS._serialized_start=13871
-  _FACETCOUNTS._serialized_end=14223
-  _FACETVALUE._serialized_start=14225
-  _FACETVALUE._serialized_end=14319
-  _FACETHIT._serialized_start=14321
-  _FACETHIT._serialized_end=14381
-  _SEARCHMATRIXPOINTS._serialized_start=14384
-  _SEARCHMATRIXPOINTS._serialized_end=14762
-  _SEARCHMATRIXPAIRS._serialized_start=14764
-  _SEARCHMATRIXPAIRS._serialized_end=14824
-  _SEARCHMATRIXPAIR._serialized_start=14826
-  _SEARCHMATRIXPAIR._serialized_end=14915
-  _SEARCHMATRIXOFFSETS._serialized_start=14917
-  _SEARCHMATRIXOFFSETS._serialized_end=15026
-  _POINTSUPDATEOPERATION._serialized_start=15029
-  _POINTSUPDATEOPERATION._serialized_end=17354
-  _POINTSUPDATEOPERATION_POINTSTRUCTLIST._serialized_start=15734
-  _POINTSUPDATEOPERATION_POINTSTRUCTLIST._serialized_end=15870
-  _POINTSUPDATEOPERATION_SETPAYLOAD._serialized_start=15873
-  _POINTSUPDATEOPERATION_SETPAYLOAD._serialized_end=16202
-  _POINTSUPDATEOPERATION_SETPAYLOAD_PAYLOADENTRY._serialized_start=2676
-  _POINTSUPDATEOPERATION_SETPAYLOAD_PAYLOADENTRY._serialized_end=2737
-  _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD._serialized_start=16205
-  _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD._serialized_end=16546
-  _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD_PAYLOADENTRY._serialized_start=2676
-  _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD_PAYLOADENTRY._serialized_end=2737
-  _POINTSUPDATEOPERATION_DELETEPAYLOAD._serialized_start=16549
-  _POINTSUPDATEOPERATION_DELETEPAYLOAD._serialized_end=16734
-  _POINTSUPDATEOPERATION_UPDATEVECTORS._serialized_start=16737
-  _POINTSUPDATEOPERATION_UPDATEVECTORS._serialized_end=16872
-  _POINTSUPDATEOPERATION_DELETEVECTORS._serialized_start=16875
-  _POINTSUPDATEOPERATION_DELETEVECTORS._serialized_end=17063
-  _POINTSUPDATEOPERATION_DELETEPOINTS._serialized_start=17066
-  _POINTSUPDATEOPERATION_DELETEPOINTS._serialized_end=17202
-  _POINTSUPDATEOPERATION_CLEARPAYLOAD._serialized_start=17205
-  _POINTSUPDATEOPERATION_CLEARPAYLOAD._serialized_end=17341
-  _UPDATEBATCHPOINTS._serialized_start=17357
-  _UPDATEBATCHPOINTS._serialized_end=17539
-  _POINTSOPERATIONRESPONSE._serialized_start=17541
-  _POINTSOPERATIONRESPONSE._serialized_end=17618
-  _UPDATERESULT._serialized_start=17620
-  _UPDATERESULT._serialized_end=17716
-  _ORDERVALUE._serialized_start=17718
-  _ORDERVALUE._serialized_end=17773
-  _SCOREDPOINT._serialized_start=17776
-  _SCOREDPOINT._serialized_end=18139
-  _SCOREDPOINT_PAYLOADENTRY._serialized_start=2676
-  _SCOREDPOINT_PAYLOADENTRY._serialized_end=2737
-  _GROUPID._serialized_start=18141
-  _GROUPID._serialized_end=18233
-  _POINTGROUP._serialized_start=18235
-  _POINTGROUP._serialized_end=18351
-  _GROUPSRESULT._serialized_start=18353
-  _GROUPSRESULT._serialized_end=18403
-  _SEARCHRESPONSE._serialized_start=18405
-  _SEARCHRESPONSE._serialized_end=18472
-  _QUERYRESPONSE._serialized_start=18474
-  _QUERYRESPONSE._serialized_end=18540
-  _QUERYBATCHRESPONSE._serialized_start=18542
-  _QUERYBATCHRESPONSE._serialized_end=18613
-  _QUERYGROUPSRESPONSE._serialized_start=18615
-  _QUERYGROUPSRESPONSE._serialized_end=18688
-  _BATCHRESULT._serialized_start=18690
-  _BATCHRESULT._serialized_end=18740
-  _SEARCHBATCHRESPONSE._serialized_start=18742
-  _SEARCHBATCHRESPONSE._serialized_end=18814
-  _SEARCHGROUPSRESPONSE._serialized_start=18816
-  _SEARCHGROUPSRESPONSE._serialized_end=18890
-  _COUNTRESPONSE._serialized_start=18892
-  _COUNTRESPONSE._serialized_end=18958
-  _SCROLLRESPONSE._serialized_start=18961
-  _SCROLLRESPONSE._serialized_end=19100
-  _COUNTRESULT._serialized_start=19102
-  _COUNTRESULT._serialized_end=19130
-  _RETRIEVEDPOINT._serialized_start=19133
-  _RETRIEVEDPOINT._serialized_end=19470
-  _RETRIEVEDPOINT_PAYLOADENTRY._serialized_start=2676
-  _RETRIEVEDPOINT_PAYLOADENTRY._serialized_end=2737
-  _GETRESPONSE._serialized_start=19472
-  _GETRESPONSE._serialized_end=19539
-  _RECOMMENDRESPONSE._serialized_start=19541
-  _RECOMMENDRESPONSE._serialized_end=19611
-  _RECOMMENDBATCHRESPONSE._serialized_start=19613
-  _RECOMMENDBATCHRESPONSE._serialized_end=19688
-  _DISCOVERRESPONSE._serialized_start=19690
-  _DISCOVERRESPONSE._serialized_end=19759
-  _DISCOVERBATCHRESPONSE._serialized_start=19761
-  _DISCOVERBATCHRESPONSE._serialized_end=19835
-  _RECOMMENDGROUPSRESPONSE._serialized_start=19837
-  _RECOMMENDGROUPSRESPONSE._serialized_end=19914
-  _UPDATEBATCHRESPONSE._serialized_start=19916
-  _UPDATEBATCHRESPONSE._serialized_end=19989
-  _FACETRESPONSE._serialized_start=19991
-  _FACETRESPONSE._serialized_end=20052
-  _SEARCHMATRIXPAIRSRESPONSE._serialized_start=20054
-  _SEARCHMATRIXPAIRSRESPONSE._serialized_end=20138
-  _SEARCHMATRIXOFFSETSRESPONSE._serialized_start=20140
-  _SEARCHMATRIXOFFSETSRESPONSE._serialized_end=20228
-  _FILTER._serialized_start=20231
-  _FILTER._serialized_end=20403
-  _MINSHOULD._serialized_start=20405
-  _MINSHOULD._serialized_end=20474
-  _CONDITION._serialized_start=20477
-  _CONDITION._serialized_end=20758
-  _ISEMPTYCONDITION._serialized_start=20760
-  _ISEMPTYCONDITION._serialized_end=20791
-  _ISNULLCONDITION._serialized_start=20793
-  _ISNULLCONDITION._serialized_end=20823
-  _HASIDCONDITION._serialized_start=20825
-  _HASIDCONDITION._serialized_end=20874
-  _NESTEDCONDITION._serialized_start=20876
-  _NESTEDCONDITION._serialized_end=20938
-  _FIELDCONDITION._serialized_start=20941
-  _FIELDCONDITION._serialized_end=21250
-  _MATCH._serialized_start=21253
-  _MATCH._serialized_end=21544
-  _REPEATEDSTRINGS._serialized_start=21546
-  _REPEATEDSTRINGS._serialized_end=21580
-  _REPEATEDINTEGERS._serialized_start=21582
-  _REPEATEDINTEGERS._serialized_end=21618
-  _RANGE._serialized_start=21620
-  _RANGE._serialized_end=21727
-  _DATETIMERANGE._serialized_start=21730
-  _DATETIMERANGE._serialized_end=21957
-  _GEOBOUNDINGBOX._serialized_start=21959
-  _GEOBOUNDINGBOX._serialized_end=22051
-  _GEORADIUS._serialized_start=22053
-  _GEORADIUS._serialized_end=22114
-  _GEOLINESTRING._serialized_start=22116
-  _GEOLINESTRING._serialized_end=22165
-  _GEOPOLYGON._serialized_start=22167
-  _GEOPOLYGON._serialized_end=22262
-  _VALUESCOUNT._serialized_start=22264
-  _VALUESCOUNT._serialized_end=22377
-  _POINTSSELECTOR._serialized_start=22379
-  _POINTSSELECTOR._serialized_end=22496
-  _POINTSIDSLIST._serialized_start=22498
-  _POINTSIDSLIST._serialized_end=22543
-  _POINTSTRUCT._serialized_start=22546
-  _POINTSTRUCT._serialized_end=22759
-  _POINTSTRUCT_PAYLOADENTRY._serialized_start=2676
-  _POINTSTRUCT_PAYLOADENTRY._serialized_end=2737
-  _GEOPOINT._serialized_start=22761
-  _GEOPOINT._serialized_end=22797
+  _DOCUMENT._serialized_start=340
+  _DOCUMENT._serialized_end=505
+  _DOCUMENT_OPTIONSENTRY._serialized_start=434
+  _DOCUMENT_OPTIONSENTRY._serialized_end=495
+  _IMAGE._serialized_start=508
+  _IMAGE._serialized_end=668
+  _IMAGE_OPTIONSENTRY._serialized_start=434
+  _IMAGE_OPTIONSENTRY._serialized_end=495
+  _INFERENCEOBJECT._serialized_start=671
+  _INFERENCEOBJECT._serialized_end=867
+  _INFERENCEOBJECT_OPTIONSENTRY._serialized_start=434
+  _INFERENCEOBJECT_OPTIONSENTRY._serialized_end=495
+  _VECTOR._serialized_start=870
+  _VECTOR._serialized_end=1245
+  _VECTOROUTPUT._serialized_start=1248
+  _VECTOROUTPUT._serialized_end=1516
+  _DENSEVECTOR._serialized_start=1518
+  _DENSEVECTOR._serialized_end=1545
+  _SPARSEVECTOR._serialized_start=1547
+  _SPARSEVECTOR._serialized_end=1594
+  _MULTIDENSEVECTOR._serialized_start=1596
+  _MULTIDENSEVECTOR._serialized_end=1652
+  _VECTORINPUT._serialized_start=1655
+  _VECTORINPUT._serialized_end=1950
+  _SHARDKEYSELECTOR._serialized_start=1952
+  _SHARDKEYSELECTOR._serialized_end=2008
+  _UPSERTPOINTS._serialized_start=2011
+  _UPSERTPOINTS._serialized_end=2256
+  _DELETEPOINTS._serialized_start=2259
+  _DELETEPOINTS._serialized_end=2507
+  _GETPOINTS._serialized_start=2510
+  _GETPOINTS._serialized_end=2899
+  _UPDATEPOINTVECTORS._serialized_start=2902
+  _UPDATEPOINTVECTORS._serialized_end=3154
+  _POINTVECTORS._serialized_start=3156
+  _POINTVECTORS._serialized_end=3233
+  _DELETEPOINTVECTORS._serialized_start=3236
+  _DELETEPOINTVECTORS._serialized_end=3541
+  _SETPAYLOADPOINTS._serialized_start=3544
+  _SETPAYLOADPOINTS._serialized_end=3981
+  _SETPAYLOADPOINTS_PAYLOADENTRY._serialized_start=3841
+  _SETPAYLOADPOINTS_PAYLOADENTRY._serialized_end=3902
+  _DELETEPAYLOADPOINTS._serialized_start=3984
+  _DELETEPAYLOADPOINTS._serialized_end=4293
+  _CLEARPAYLOADPOINTS._serialized_start=4296
+  _CLEARPAYLOADPOINTS._serialized_end=4550
+  _CREATEFIELDINDEXCOLLECTION._serialized_start=4553
+  _CREATEFIELDINDEXCOLLECTION._serialized_end=4856
+  _DELETEFIELDINDEXCOLLECTION._serialized_start=4859
+  _DELETEFIELDINDEXCOLLECTION._serialized_end=5019
+  _PAYLOADINCLUDESELECTOR._serialized_start=5021
+  _PAYLOADINCLUDESELECTOR._serialized_end=5061
+  _PAYLOADEXCLUDESELECTOR._serialized_start=5063
+  _PAYLOADEXCLUDESELECTOR._serialized_end=5103
+  _WITHPAYLOADSELECTOR._serialized_start=5106
+  _WITHPAYLOADSELECTOR._serialized_end=5267
+  _NAMEDVECTORS._serialized_start=5270
+  _NAMEDVECTORS._serialized_end=5400
+  _NAMEDVECTORS_VECTORSENTRY._serialized_start=5338
+  _NAMEDVECTORS_VECTORSENTRY._serialized_end=5400
+  _NAMEDVECTORSOUTPUT._serialized_start=5403
+  _NAMEDVECTORSOUTPUT._serialized_end=5551
+  _NAMEDVECTORSOUTPUT_VECTORSENTRY._serialized_start=5483
+  _NAMEDVECTORSOUTPUT_VECTORSENTRY._serialized_end=5551
+  _VECTORS._serialized_start=5553
+  _VECTORS._serialized_end=5656
+  _VECTORSOUTPUT._serialized_start=5658
+  _VECTORSOUTPUT._serialized_end=5779
+  _VECTORSSELECTOR._serialized_start=5781
+  _VECTORSSELECTOR._serialized_end=5813
+  _WITHVECTORSSELECTOR._serialized_start=5815
+  _WITHVECTORSSELECTOR._serialized_end=5918
+  _QUANTIZATIONSEARCHPARAMS._serialized_start=5921
+  _QUANTIZATIONSEARCHPARAMS._serialized_end=6057
+  _SEARCHPARAMS._serialized_start=6060
+  _SEARCHPARAMS._serialized_end=6260
+  _SEARCHPOINTS._serialized_start=6263
+  _SEARCHPOINTS._serialized_end=6921
+  _SEARCHBATCHPOINTS._serialized_start=6924
+  _SEARCHBATCHPOINTS._serialized_end=7124
+  _WITHLOOKUP._serialized_start=7127
+  _WITHLOOKUP._serialized_end=7305
+  _SEARCHPOINTGROUPS._serialized_start=7308
+  _SEARCHPOINTGROUPS._serialized_end=8033
+  _STARTFROM._serialized_start=8035
+  _STARTFROM._serialized_end=8160
+  _ORDERBY._serialized_start=8163
+  _ORDERBY._serialized_end=8301
+  _SCROLLPOINTS._serialized_start=8304
+  _SCROLLPOINTS._serialized_end=8830
+  _LOOKUPLOCATION._serialized_start=8833
+  _LOOKUPLOCATION._serialized_end=8998
+  _RECOMMENDPOINTS._serialized_start=9001
+  _RECOMMENDPOINTS._serialized_end=9846
+  _RECOMMENDBATCHPOINTS._serialized_start=9849
+  _RECOMMENDBATCHPOINTS._serialized_end=10058
+  _RECOMMENDPOINTGROUPS._serialized_start=10061
+  _RECOMMENDPOINTGROUPS._serialized_end=10973
+  _TARGETVECTOR._serialized_start=10975
+  _TARGETVECTOR._serialized_end=11040
+  _VECTOREXAMPLE._serialized_start=11042
+  _VECTOREXAMPLE._serialized_end=11133
+  _CONTEXTEXAMPLEPAIR._serialized_start=11135
+  _CONTEXTEXAMPLEPAIR._serialized_end=11237
+  _DISCOVERPOINTS._serialized_start=11240
+  _DISCOVERPOINTS._serialized_end=11894
+  _DISCOVERBATCHPOINTS._serialized_start=11897
+  _DISCOVERBATCHPOINTS._serialized_end=12103
+  _COUNTPOINTS._serialized_start=12106
+  _COUNTPOINTS._serialized_end=12399
+  _RECOMMENDINPUT._serialized_start=12402
+  _RECOMMENDINPUT._serialized_end=12559
+  _CONTEXTINPUTPAIR._serialized_start=12561
+  _CONTEXTINPUTPAIR._serialized_end=12657
+  _DISCOVERINPUT._serialized_start=12659
+  _DISCOVERINPUT._serialized_end=12750
+  _CONTEXTINPUT._serialized_start=12752
+  _CONTEXTINPUT._serialized_end=12807
+  _QUERY._serialized_start=12810
+  _QUERY._serialized_end=13102
+  _PREFETCHQUERY._serialized_start=13105
+  _PREFETCHQUERY._serialized_end=13484
+  _QUERYPOINTS._serialized_start=13487
+  _QUERYPOINTS._serialized_end=14260
+  _QUERYBATCHPOINTS._serialized_start=14263
+  _QUERYBATCHPOINTS._serialized_end=14460
+  _QUERYPOINTGROUPS._serialized_start=14463
+  _QUERYPOINTGROUPS._serialized_end=15307
+  _FACETCOUNTS._serialized_start=15310
+  _FACETCOUNTS._serialized_end=15662
+  _FACETVALUE._serialized_start=15664
+  _FACETVALUE._serialized_end=15758
+  _FACETHIT._serialized_start=15760
+  _FACETHIT._serialized_end=15820
+  _SEARCHMATRIXPOINTS._serialized_start=15823
+  _SEARCHMATRIXPOINTS._serialized_end=16201
+  _SEARCHMATRIXPAIRS._serialized_start=16203
+  _SEARCHMATRIXPAIRS._serialized_end=16263
+  _SEARCHMATRIXPAIR._serialized_start=16265
+  _SEARCHMATRIXPAIR._serialized_end=16354
+  _SEARCHMATRIXOFFSETS._serialized_start=16356
+  _SEARCHMATRIXOFFSETS._serialized_end=16465
+  _POINTSUPDATEOPERATION._serialized_start=16468
+  _POINTSUPDATEOPERATION._serialized_end=18793
+  _POINTSUPDATEOPERATION_POINTSTRUCTLIST._serialized_start=17173
+  _POINTSUPDATEOPERATION_POINTSTRUCTLIST._serialized_end=17309
+  _POINTSUPDATEOPERATION_SETPAYLOAD._serialized_start=17312
+  _POINTSUPDATEOPERATION_SETPAYLOAD._serialized_end=17641
+  _POINTSUPDATEOPERATION_SETPAYLOAD_PAYLOADENTRY._serialized_start=3841
+  _POINTSUPDATEOPERATION_SETPAYLOAD_PAYLOADENTRY._serialized_end=3902
+  _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD._serialized_start=17644
+  _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD._serialized_end=17985
+  _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD_PAYLOADENTRY._serialized_start=3841
+  _POINTSUPDATEOPERATION_OVERWRITEPAYLOAD_PAYLOADENTRY._serialized_end=3902
+  _POINTSUPDATEOPERATION_DELETEPAYLOAD._serialized_start=17988
+  _POINTSUPDATEOPERATION_DELETEPAYLOAD._serialized_end=18173
+  _POINTSUPDATEOPERATION_UPDATEVECTORS._serialized_start=18176
+  _POINTSUPDATEOPERATION_UPDATEVECTORS._serialized_end=18311
+  _POINTSUPDATEOPERATION_DELETEVECTORS._serialized_start=18314
+  _POINTSUPDATEOPERATION_DELETEVECTORS._serialized_end=18502
+  _POINTSUPDATEOPERATION_DELETEPOINTS._serialized_start=18505
+  _POINTSUPDATEOPERATION_DELETEPOINTS._serialized_end=18641
+  _POINTSUPDATEOPERATION_CLEARPAYLOAD._serialized_start=18644
+  _POINTSUPDATEOPERATION_CLEARPAYLOAD._serialized_end=18780
+  _UPDATEBATCHPOINTS._serialized_start=18796
+  _UPDATEBATCHPOINTS._serialized_end=18978
+  _POINTSOPERATIONRESPONSE._serialized_start=18980
+  _POINTSOPERATIONRESPONSE._serialized_end=19057
+  _UPDATERESULT._serialized_start=19059
+  _UPDATERESULT._serialized_end=19155
+  _ORDERVALUE._serialized_start=19157
+  _ORDERVALUE._serialized_end=19212
+  _SCOREDPOINT._serialized_start=19215
+  _SCOREDPOINT._serialized_end=19584
+  _SCOREDPOINT_PAYLOADENTRY._serialized_start=3841
+  _SCOREDPOINT_PAYLOADENTRY._serialized_end=3902
+  _GROUPID._serialized_start=19586
+  _GROUPID._serialized_end=19678
+  _POINTGROUP._serialized_start=19680
+  _POINTGROUP._serialized_end=19796
+  _GROUPSRESULT._serialized_start=19798
+  _GROUPSRESULT._serialized_end=19848
+  _SEARCHRESPONSE._serialized_start=19850
+  _SEARCHRESPONSE._serialized_end=19917
+  _QUERYRESPONSE._serialized_start=19919
+  _QUERYRESPONSE._serialized_end=19985
+  _QUERYBATCHRESPONSE._serialized_start=19987
+  _QUERYBATCHRESPONSE._serialized_end=20058
+  _QUERYGROUPSRESPONSE._serialized_start=20060
+  _QUERYGROUPSRESPONSE._serialized_end=20133
+  _BATCHRESULT._serialized_start=20135
+  _BATCHRESULT._serialized_end=20185
+  _SEARCHBATCHRESPONSE._serialized_start=20187
+  _SEARCHBATCHRESPONSE._serialized_end=20259
+  _SEARCHGROUPSRESPONSE._serialized_start=20261
+  _SEARCHGROUPSRESPONSE._serialized_end=20335
+  _COUNTRESPONSE._serialized_start=20337
+  _COUNTRESPONSE._serialized_end=20403
+  _SCROLLRESPONSE._serialized_start=20406
+  _SCROLLRESPONSE._serialized_end=20545
+  _COUNTRESULT._serialized_start=20547
+  _COUNTRESULT._serialized_end=20575
+  _RETRIEVEDPOINT._serialized_start=20578
+  _RETRIEVEDPOINT._serialized_end=20921
+  _RETRIEVEDPOINT_PAYLOADENTRY._serialized_start=3841
+  _RETRIEVEDPOINT_PAYLOADENTRY._serialized_end=3902
+  _GETRESPONSE._serialized_start=20923
+  _GETRESPONSE._serialized_end=20990
+  _RECOMMENDRESPONSE._serialized_start=20992
+  _RECOMMENDRESPONSE._serialized_end=21062
+  _RECOMMENDBATCHRESPONSE._serialized_start=21064
+  _RECOMMENDBATCHRESPONSE._serialized_end=21139
+  _DISCOVERRESPONSE._serialized_start=21141
+  _DISCOVERRESPONSE._serialized_end=21210
+  _DISCOVERBATCHRESPONSE._serialized_start=21212
+  _DISCOVERBATCHRESPONSE._serialized_end=21286
+  _RECOMMENDGROUPSRESPONSE._serialized_start=21288
+  _RECOMMENDGROUPSRESPONSE._serialized_end=21365
+  _UPDATEBATCHRESPONSE._serialized_start=21367
+  _UPDATEBATCHRESPONSE._serialized_end=21440
+  _FACETRESPONSE._serialized_start=21442
+  _FACETRESPONSE._serialized_end=21503
+  _SEARCHMATRIXPAIRSRESPONSE._serialized_start=21505
+  _SEARCHMATRIXPAIRSRESPONSE._serialized_end=21589
+  _SEARCHMATRIXOFFSETSRESPONSE._serialized_start=21591
+  _SEARCHMATRIXOFFSETSRESPONSE._serialized_end=21679
+  _FILTER._serialized_start=21682
+  _FILTER._serialized_end=21854
+  _MINSHOULD._serialized_start=21856
+  _MINSHOULD._serialized_end=21925
+  _CONDITION._serialized_start=21928
+  _CONDITION._serialized_end=22259
+  _ISEMPTYCONDITION._serialized_start=22261
+  _ISEMPTYCONDITION._serialized_end=22292
+  _ISNULLCONDITION._serialized_start=22294
+  _ISNULLCONDITION._serialized_end=22324
+  _HASIDCONDITION._serialized_start=22326
+  _HASIDCONDITION._serialized_end=22375
+  _HASVECTORCONDITION._serialized_start=22377
+  _HASVECTORCONDITION._serialized_end=22417
+  _NESTEDCONDITION._serialized_start=22419
+  _NESTEDCONDITION._serialized_end=22481
+  _FIELDCONDITION._serialized_start=22484
+  _FIELDCONDITION._serialized_end=22793
+  _MATCH._serialized_start=22796
+  _MATCH._serialized_end=23087
+  _REPEATEDSTRINGS._serialized_start=23089
+  _REPEATEDSTRINGS._serialized_end=23123
+  _REPEATEDINTEGERS._serialized_start=23125
+  _REPEATEDINTEGERS._serialized_end=23161
+  _RANGE._serialized_start=23163
+  _RANGE._serialized_end=23270
+  _DATETIMERANGE._serialized_start=23273
+  _DATETIMERANGE._serialized_end=23500
+  _GEOBOUNDINGBOX._serialized_start=23502
+  _GEOBOUNDINGBOX._serialized_end=23594
+  _GEORADIUS._serialized_start=23596
+  _GEORADIUS._serialized_end=23657
+  _GEOLINESTRING._serialized_start=23659
+  _GEOLINESTRING._serialized_end=23708
+  _GEOPOLYGON._serialized_start=23710
+  _GEOPOLYGON._serialized_end=23805
+  _VALUESCOUNT._serialized_start=23807
+  _VALUESCOUNT._serialized_end=23920
+  _POINTSSELECTOR._serialized_start=23922
+  _POINTSSELECTOR._serialized_end=24039
+  _POINTSIDSLIST._serialized_start=24041
+  _POINTSIDSLIST._serialized_end=24086
+  _POINTSTRUCT._serialized_start=24089
+  _POINTSTRUCT._serialized_end=24302
+  _POINTSTRUCT_PAYLOADENTRY._serialized_start=3841
+  _POINTSTRUCT_PAYLOADENTRY._serialized_end=3902
+  _GEOPOINT._serialized_start=24304
+  _GEOPOINT._serialized_end=24340
 # @@protoc_insertion_point(module_scope)
