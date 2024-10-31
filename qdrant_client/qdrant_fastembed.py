@@ -974,7 +974,7 @@ class QdrantFastembedMixin(QdrantBase):
         return model
 
     @staticmethod
-    def _resolve_inference_object(data: models.VectorStruct):
+    def _resolve_inference_object(data: models.VectorStruct) -> models.VectorStruct:
         """Resolve inference object into a model
 
         Args:
