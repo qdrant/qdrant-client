@@ -731,6 +731,12 @@ def test_propagate_options(prefer_grpc):
     multi_doc_1 = models.Document(
         text="hello world", model=COLBERT_MODEL_NAME, options={"lazy_load": True}
     )
+    with open(TEST_IMAGE_PATH, "r") as f:
+        base64_string = f.read()
+
+    dense_image_1 = models.Image(
+        image=base64_string, model=DENSE_IMAGE_MODEL_NAME, options={"lazy_load": True}
+    )
 
     points = [
         models.PointStruct(
@@ -739,6 +745,7 @@ def test_propagate_options(prefer_grpc):
                 "text": dense_doc_1,
                 "multi-text": multi_doc_1,
                 "sparse-text": sparse_doc_1,
+                "image": dense_image_1,
             },
         )
     ]
@@ -752,6 +759,7 @@ def test_propagate_options(prefer_grpc):
                 comparator=models.MultiVectorComparator.MAX_SIM
             ),
         ),
+        "image": models.VectorParams(size=DENSE_IMAGE_DIM, distance=models.Distance.COSINE),
     }
     sparse_vectors_config = {
         "sparse-text": models.SparseVectorParams(modifier=models.Modifier.IDF)

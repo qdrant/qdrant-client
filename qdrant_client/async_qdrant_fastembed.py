@@ -970,7 +970,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         """
         model_name = image.model
         if model_name in _IMAGE_EMBEDDING_MODELS:
-            embedding_model_inst = self._get_or_init_image_model(model_name=model_name)
+            embedding_model_inst = self._get_or_init_image_model(
+                model_name=model_name, **image.options or {}
+            )
             image_data = base64.b64decode(image.image)
             with io.BytesIO(image_data) as buffer:
                 with PilImage.open(buffer) as image:
