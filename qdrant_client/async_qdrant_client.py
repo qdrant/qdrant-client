@@ -1468,7 +1468,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 idx="grpc-input",
             )
         requires_inference = self._inference_inspector.inspect(points)
-        print("\nrequires inference\n", requires_inference, "\n", points)
         if requires_inference and (not self.cloud_inference):
             if isinstance(points, List):
                 points = [self._embed_models(point, is_query=False) for point in points]
