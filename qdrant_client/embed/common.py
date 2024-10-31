@@ -1,4 +1,6 @@
-from qdrant_client import models
+from typing import Set, Tuple
 
-INFERENCE_OBJECT_NAMES = {"Document", "Image"}
-INFERENCE_OBJECT_TYPES = (models.Document, models.Image)
+from qdrant_client.http import models
+
+INFERENCE_OBJECT_NAMES: Set[str] = {"Document", "Image"}
+INFERENCE_OBJECT_TYPES: Tuple = (models.Document, models.Image)
