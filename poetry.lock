@@ -594,19 +594,19 @@ tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipyth
 
 [[package]]
 name = "fastembed"
-version = "0.3.6"
+version = "0.4.1"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 optional = true
 python-versions = "<3.13,>=3.8.0"
 files = [
-    {file = "fastembed-0.3.6-py3-none-any.whl", hash = "sha256:2bf70edae28bb4ccd9e01617098c2075b0ba35b88025a3d22b0e1e85b2c488ce"},
-    {file = "fastembed-0.3.6.tar.gz", hash = "sha256:c93c8ec99b8c008c2d192d6297866b8d70ec7ac8f5696b34eb5ea91f85efd15f"},
+    {file = "fastembed-0.4.1-py3-none-any.whl", hash = "sha256:f75f02468aafa8de474844f9fbaa89683a3dcfd76521fa83cfc3efc885db61f3"},
+    {file = "fastembed-0.4.1.tar.gz", hash = "sha256:d5dcfffc3554dca48caf16eec35e38c20544c58e396a5d215f238d40c8442718"},
 ]
 
 [package.dependencies]
 huggingface-hub = ">=0.20,<1.0"
 loguru = ">=0.7.2,<0.8.0"
-mmh3 = ">=4.0,<5.0"
+mmh3 = ">=4.1.0,<5.0.0"
 numpy = [
     {version = ">=1.21,<2", markers = "python_version < \"3.12\""},
     {version = ">=1.26,<2", markers = "python_version >= \"3.12\""},
@@ -614,36 +614,34 @@ numpy = [
 onnx = ">=1.15.0,<2.0.0"
 onnxruntime = ">=1.17.0,<2.0.0"
 pillow = ">=10.3.0,<11.0.0"
-PyStemmer = ">=2.2.0,<3.0.0"
+py-rust-stemmers = ">=0.1.0,<0.2.0"
 requests = ">=2.31,<3.0"
-snowballstemmer = ">=2.2.0,<3.0.0"
 tokenizers = ">=0.15,<1.0"
 tqdm = ">=4.66,<5.0"
 
 [[package]]
 name = "fastembed-gpu"
-version = "0.3.6"
+version = "0.4.1"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 optional = true
 python-versions = "<3.13,>=3.8.0"
 files = [
-    {file = "fastembed_gpu-0.3.6-py3-none-any.whl", hash = "sha256:4a8ef0ef5e344dc2ede9c4f2ffb4573c9e65c51391eef31d8d3f67b45e82c1c4"},
-    {file = "fastembed_gpu-0.3.6.tar.gz", hash = "sha256:ee2de8918b142adbbf48caaffec0c492f864d73c073eea5a3dcd0e8c1041c50d"},
+    {file = "fastembed_gpu-0.4.1-py3-none-any.whl", hash = "sha256:a1755894fd58d0196d8c7a479e8613adf212b6a9d1f3f5e987f9a4fd0273bda3"},
+    {file = "fastembed_gpu-0.4.1.tar.gz", hash = "sha256:50ef33eb350c75640f2de9873eb663048116b38fe122001e06f124289faa9f2c"},
 ]
 
 [package.dependencies]
 huggingface-hub = ">=0.20,<1.0"
 loguru = ">=0.7.2,<0.8.0"
-mmh3 = ">=4.0,<5.0"
+mmh3 = ">=4.1.0,<5.0.0"
 numpy = [
     {version = ">=1.21,<2", markers = "python_version < \"3.12\""},
     {version = ">=1.26,<2", markers = "python_version >= \"3.12\""},
 ]
 onnxruntime-gpu = ">=1.17.0,<2.0.0"
 pillow = ">=10.3.0,<11.0.0"
-PyStemmer = ">=2.2.0,<3.0.0"
+py-rust-stemmers = ">=0.1.0,<0.2.0"
 requests = ">=2.31,<3.0"
-snowballstemmer = ">=2.2.0,<3.0.0"
 tokenizers = ">=0.15,<1.0"
 tqdm = ">=4.66,<5.0"
 
@@ -2225,6 +2223,70 @@ files = [
 tests = ["pytest"]
 
 [[package]]
+name = "py-rust-stemmers"
+version = "0.1.3"
+description = "Fast and parallel snowball stemmer"
+optional = true
+python-versions = "*"
+files = [
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:8b4861673bc690a5830a5d84d61c64a95ede86f79c9952df66e99e0559fe8264"},
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b0d2108c758e8081064cbbb7fc70d3cdfd32e0cccf7d051c1d888d16c91c1e78"},
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:fdf43a726b81dd5439a98973200546660e10379e805bb6fd6366dbd8d0857666"},
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:03acb3d89f8090f67698d2c64172492618585927dfb56d0b5f6070ff54269940"},
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b3f8cd1139a641ed53e9a1d7f25ae9cf3757cae96a2b0ce0d9399332ec8b148f"},
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:0a5906aa2eec31f647b94d6cc9b2b065bf77ca31be095fcbb1b412ba42f0e473"},
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:b89fe8e55201604e89bdbd7559b19337ef9ae703a5545878d37664507c1067e9"},
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-musllinux_1_2_armv7l.whl", hash = "sha256:0d43981b272c73709d3885ed096a332b2a160db2317fbe16cc9ef3b1d974d39a"},
+    {file = "py_rust_stemmers-0.1.3-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:1b379c3901a87ee63d7cbb01a68ece78af7040e0c3e3d52fe7b108bfa399feb2"},
+    {file = "py_rust_stemmers-0.1.3-cp310-none-win_amd64.whl", hash = "sha256:0f571ee0f2a4b2314d4cd8ef26af83e1fd24ea3e3ff97407d536184167f05957"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:2d8b8e6b6d5839a168dae510a00ff4662c7d0a22d12f24fe81caa0ac59265711"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:02b347ab8fe686a88aef0432060471d501b37a6b9a868e7c50bffcd382269cf2"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d4a65b429eb1282934a1cc3c1b2698ae32a6dc00d6be00dd747e688c642eb110"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:9fbbb37e0df579859b42b3f850aa08fe829d190d32c6338349eccb0e762b74c6"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d6f9790fe1e9962787817b1894486df7e0b5fc59e4adad423e189530530fae11"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:fd5d7388f807f584b4c55bfbe608ef40cff0024c1dc54de95d28265395065d02"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:72a7b810d8d376c03f0ccebe146f04cbf4c6c97bd74e489b0ddf1342eb40970c"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-musllinux_1_2_armv7l.whl", hash = "sha256:658784c0072f7aae67c726be9acac40dd27b29416356c63a3a760a9499a93513"},
+    {file = "py_rust_stemmers-0.1.3-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:e6afcd19da56d4182eecb43bdb6c5b9686370063f2538df877fc23f1d16f909e"},
+    {file = "py_rust_stemmers-0.1.3-cp311-none-win_amd64.whl", hash = "sha256:47211ac6252eb484f5067d30b1812667936deffcef89b4b0acd2efe881a99aed"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:a36bfbd9219a55bdf5aa9c5d74b8a3741cb092495190ca18551dc39f57272d57"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:ca1ab04ff2fa15a1d0685007293ffdf4679dcfdc02fc5b36c1af0111670908a1"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ccaa08251b9cb421429976d56365ddf9db63b5a8ac4e7817723fb0b62adf8b19"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:6262b40f989c0b0bcb3eaef5511268ba63703428c4ab1aa9353a58c8572735b7"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a073701b492ef900cee5185961c23006ba13fa6126cf716f241c929adbdfad6e"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:39c75f10da70380076b68398d84cdc42b42966180bdb8216b81d21a824278b50"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:34f7d92abc85f0f0b1fa407410b3f2daaf2c36b8277a2ffff2ff0beb2f2acc2f"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-musllinux_1_2_armv7l.whl", hash = "sha256:fbb9f7933239a57d1d9c0fcdfbe0c5283a081e9e64ddc48ed878783be3d52b2b"},
+    {file = "py_rust_stemmers-0.1.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:921803a6f8259f10bf348ac0e32a767c28ab587c9ad5c3b1ee593a4bbbe98d39"},
+    {file = "py_rust_stemmers-0.1.3-cp312-none-win_amd64.whl", hash = "sha256:576206b540575e81bb84a0f620b7a8529f5e89b0b2ec7d4487f3183789dd5cfd"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-macosx_10_12_x86_64.whl", hash = "sha256:8cf4ddafea535c67c00191ff314f947e146b73b3c2a18f745c633f6da10e0118"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:bc689a1b6413e0a5170ddb3902c9bec1422f2749ef4b61e8c88618d8b6d4c79a"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5863d0e3dbf9c9564635ef29b60928d9ebdc407970fbded3f31e75ae695e108a"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:985e4bdb91d2bdcbb066838ba108b68de2b5d847350ecb8824fe5bc41cc6bb42"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f457f8c1f90663d747f9a58dc4652949bda872d7436c4dd3c12445183df8f256"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:d92f275b061af0ef213ee897e3e2000a9b704ca2d731e4894fc04789460de8e7"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-musllinux_1_2_aarch64.whl", hash = "sha256:285357eb9346a22e03f1a843a382d76fca5041932574746ede049c15f2a75c83"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-musllinux_1_2_armv7l.whl", hash = "sha256:0a801fe925e59122ab4da289a35ac954c25f0e32c02b118416c819cf526a3e93"},
+    {file = "py_rust_stemmers-0.1.3-cp38-cp38-musllinux_1_2_x86_64.whl", hash = "sha256:c93900ebe37dff6068f9f443782fe38ed212c9cb6e640c92a26880124ad303d6"},
+    {file = "py_rust_stemmers-0.1.3-cp38-none-win_amd64.whl", hash = "sha256:d3bc1c1bd29a8cf782c2e0564219e11ee45e26b774aaf1a19110adf821c8bb8c"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-macosx_10_12_x86_64.whl", hash = "sha256:d182dd36e825583de0bc8d8148ea8258ba9bd9d7274d219071bb9d58a10fd23f"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:78b6fe32037621ccfb11c11612a7463639b2ddcfdfa2109a10576f2a0359ea22"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6aef7800e28457557a16ecb19ef3dfdeb459bddd6d9cea4e929ca328dda517d7"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:f717b49eb756e9266150593e368587a06487f56956de518411e22419b8e419ae"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:accc60909f0bef310edb9606fad521297a81fecece5fb345b34862f1a72a4c73"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:92103556fde7d43f8206ccdc68810df73581533a98eb0ebb4f623c05ad9ed060"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:796e78f9301169f4f3ac485cbf0f00531c4227c82745002603ca0726ef157b79"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-musllinux_1_2_armv7l.whl", hash = "sha256:efc2eb8052a16626d92cc838e4459b5ae71418b761632a10622561bd01d95aff"},
+    {file = "py_rust_stemmers-0.1.3-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:48150a071dd612eb3968d827bb3143c28967a25f610c4b5077d5010a8a082936"},
+    {file = "py_rust_stemmers-0.1.3-cp39-none-win_amd64.whl", hash = "sha256:fee92e93fbbc8e58b526b29e2d25c01ed2fb3e39d31b47938eb90fea8b03de97"},
+    {file = "py_rust_stemmers-0.1.3-pp310-pypy310_pp73-macosx_10_12_x86_64.whl", hash = "sha256:59eacf7687738b20886a7c0ceeae999d501902b4e6234cf11eecd2f45f2c26bb"},
+    {file = "py_rust_stemmers-0.1.3-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:e39d5d273e13aec2f07a2c3ea0050b3bf3aaa7b6e9f6bef3d4e728ab49979ae8"},
+    {file = "py_rust_stemmers-0.1.3-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f95b25138431c4a457d684c49c6de5ff0c1852cf1cb3657e187ea63610fc7c21"},
+    {file = "py_rust_stemmers-0.1.3-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1cc9df57dff15d12d7fec65a541af6fdcefd40ea5f7ebd48ad5202a1b9a56f89"},
+    {file = "py_rust_stemmers-0.1.3.tar.gz", hash = "sha256:ad796d47874181a25addb505a04245e34620bd7a0c5055671f52d9ce993253e2"},
+]
+
+[[package]]
 name = "pycparser"
 version = "2.22"
 description = "C parser in Python"
@@ -2417,97 +2479,6 @@ typing-extensions = ">=4.1"
 all = ["nodejs-wheel-binaries", "twine (>=3.4.1)"]
 dev = ["twine (>=3.4.1)"]
 nodejs = ["nodejs-wheel-binaries"]
-
-[[package]]
-name = "pystemmer"
-version = "2.2.0.3"
-description = "Snowball stemming algorithms, for information retrieval"
-optional = true
-python-versions = "*"
-files = [
-    {file = "PyStemmer-2.2.0.3-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:2935aa78a89b04899de4a8b8b6339806e0d5cd93811de52e98829b5762cf913c"},
-    {file = "PyStemmer-2.2.0.3-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:31c9d3c808647d4c569737b32b40ed23c67133d2b89033ebc8b5756cadf6f1c1"},
-    {file = "PyStemmer-2.2.0.3-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:584ead989545a60919e4015371dd2f69ff0ca985e76618d41930f77b9e248286"},
-    {file = "PyStemmer-2.2.0.3-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:be904f4d0d522de98ff9f0a348d8748c2f95926523b7b04ee75b50967289782d"},
-    {file = "PyStemmer-2.2.0.3-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:7024cdbcf4bbc2a5e1c277e11a10cb2b7481b7f99946cdcfa7271d5e9799399a"},
-    {file = "PyStemmer-2.2.0.3-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:aa0f70f84c69b7a6a38ddbea51a29f855c42120e8069ea4c450021a2c7dc42d8"},
-    {file = "PyStemmer-2.2.0.3-cp310-cp310-win32.whl", hash = "sha256:85e583ec705b1b1c0503bc9cdbca027d3446cbc7cf7de3d29f1e0ab58999e5fe"},
-    {file = "PyStemmer-2.2.0.3-cp310-cp310-win_amd64.whl", hash = "sha256:4556b2718bb22052f39a50f3166c4ee0e140c58ee06bbab31d57d765159d2f00"},
-    {file = "PyStemmer-2.2.0.3-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:0c76ac603ff774fe3137340083315f34d6afbcd4ebebab99c1564c00c1c318ee"},
-    {file = "PyStemmer-2.2.0.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:ee100ba27a07d2fc3bd29cdd619cdff51735ed059002574c550697d1d160b7c9"},
-    {file = "PyStemmer-2.2.0.3-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:3932f794e84bf29bdf4952d018b00c290fd06b055648f8e8fb9132e6684c4472"},
-    {file = "PyStemmer-2.2.0.3-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f74f6e0bb2034880bf4688ab5b95f97bb90952086682a93f080b260b454f933e"},
-    {file = "PyStemmer-2.2.0.3-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:af925366939839e4bf11f426388201195c305a3edcdd9097e8775fbd083ff309"},
-    {file = "PyStemmer-2.2.0.3-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:b199cbab2ce93ee1dd76da4d0523af5af4446d775b7bcb75dfdfcd2a8226404e"},
-    {file = "PyStemmer-2.2.0.3-cp311-cp311-win32.whl", hash = "sha256:e9bbaa5aa38a2f82bb1eaa6b97396e58c3a7f87e46607f52c7fda53927616eda"},
-    {file = "PyStemmer-2.2.0.3-cp311-cp311-win_amd64.whl", hash = "sha256:258af638eb68273f130c9878de2bb4a427fe99e86900b9b9b09c1cd7a185c189"},
-    {file = "PyStemmer-2.2.0.3-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:c30c44241065beb9432273874f199fc109473338d9f2c921a3387fd534fd94a7"},
-    {file = "PyStemmer-2.2.0.3-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:a6adf0b86b6be85f0cf80b2b255b2b0179782b4a3f39c0a6c5b3dd07af5f95eb"},
-    {file = "PyStemmer-2.2.0.3-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2d42b41082553fa23a4ce191860fd7caffdeaf8507e84db630a97ed154bd2320"},
-    {file = "PyStemmer-2.2.0.3-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ec763ee2994402c534bf898ff318edd158c32071c3ffbdcd7ae7b7c884250471"},
-    {file = "PyStemmer-2.2.0.3-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:264f09d5f70b09c845a6f0d0d4973de674056fd50452cb9383ffae8fc0967f1d"},
-    {file = "PyStemmer-2.2.0.3-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:5634f38a781b9a893550c23380af080ca5291d19c2bcb1753a34022d1d0de7cb"},
-    {file = "PyStemmer-2.2.0.3-cp312-cp312-win32.whl", hash = "sha256:186c2e90ea2c3d0fab21f10f17b48fb7d716cba5f49b68f7f0fe539db4ff0499"},
-    {file = "PyStemmer-2.2.0.3-cp312-cp312-win_amd64.whl", hash = "sha256:320c1da333f5f8571e2b313c9fa6c0a7a79d8a00a2ad0bf29932d931d236d7e8"},
-    {file = "PyStemmer-2.2.0.3-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:806530b6a1542efd6453fc5f5b5aa348d52c337d0eb1dfc54a5ff6a8733d7ccc"},
-    {file = "PyStemmer-2.2.0.3-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:d3fe53911811ec554b13a2c3b0ceb1a23c6fbed3d510ea0d8544a4e0b861e4d6"},
-    {file = "PyStemmer-2.2.0.3-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:cf26cc1071685597b54b78dd2f62080c58f9be1cb9b4f9c92f94d5c0b5e5e65d"},
-    {file = "PyStemmer-2.2.0.3-cp313-cp313-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f3d229a8451e5e909c3f41e19c2f1c9a531d3281954a8cbc06163a458adcc465"},
-    {file = "PyStemmer-2.2.0.3-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:f44e27fbdeffd46b513ed80d5dab0c7e0e09fb1cd85e8dbf8041b6e4a2d55bee"},
-    {file = "PyStemmer-2.2.0.3-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:4acd71d4359399e41543198caf150e7f398a8d52e371a0c89ba63a90ec3e0909"},
-    {file = "PyStemmer-2.2.0.3-cp313-cp313-win32.whl", hash = "sha256:91ab47d071383b5c558542bf54facf116f3fd1516c177ef10843f41e528d8873"},
-    {file = "PyStemmer-2.2.0.3-cp313-cp313-win_amd64.whl", hash = "sha256:4e192613a1e02b0cebcbb9f8a708001bdf7ec842972b42008f3b0b006a8c53b6"},
-    {file = "PyStemmer-2.2.0.3-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:5abfc79e82bbec2242f766876f7a2afa3b7bd124b73016650319e95bcb6449d6"},
-    {file = "PyStemmer-2.2.0.3-cp36-cp36m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b428a233f0f86ef99147d803478f4050a3dc770a760c1cefdadaf080e0900155"},
-    {file = "PyStemmer-2.2.0.3-cp36-cp36m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:591230dce77c49ab61a923409cfd271e1a1db41e58081dd1125511d6a7cb0239"},
-    {file = "PyStemmer-2.2.0.3-cp36-cp36m-musllinux_1_2_i686.whl", hash = "sha256:033a3d2a78d8ff03520da9d7a419599e91455f875b9bac51245ec4b24ea5de9c"},
-    {file = "PyStemmer-2.2.0.3-cp36-cp36m-musllinux_1_2_x86_64.whl", hash = "sha256:fa584c6890c18ec379bf597bc71fed902d900827c63f615d45ad24b2cc4cad9a"},
-    {file = "PyStemmer-2.2.0.3-cp36-cp36m-win32.whl", hash = "sha256:70f4d62d60483f8463ee759b6754a0482fd902652f87d37511ffffc579a2b276"},
-    {file = "PyStemmer-2.2.0.3-cp36-cp36m-win_amd64.whl", hash = "sha256:15e12442d393aa8d4e2ed8a2e513f46f8d340981cab3173351d0a36919888658"},
-    {file = "PyStemmer-2.2.0.3-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:71f75c04b8a90499b4a54d50baa2ec647504853613ec486e1f1d922c11dfb6b6"},
-    {file = "PyStemmer-2.2.0.3-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9491400aa99f1172e53c9619fde67f7419f0256e48d3d660b8c6e5d637e4701a"},
-    {file = "PyStemmer-2.2.0.3-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ef83887dee6a636e8c89bba24dfe04d695a808ffb41280e4ca64985135a0892d"},
-    {file = "PyStemmer-2.2.0.3-cp37-cp37m-musllinux_1_2_i686.whl", hash = "sha256:edac115a129ee11c8bd47822d898199568e3ef90118c03f154d1d4c48bfb49df"},
-    {file = "PyStemmer-2.2.0.3-cp37-cp37m-musllinux_1_2_x86_64.whl", hash = "sha256:1483ffdc48d7065bdae99abcb3075b892b0508295f2a5627d2eeeceae56c7ec2"},
-    {file = "PyStemmer-2.2.0.3-cp37-cp37m-win32.whl", hash = "sha256:62fb36213acbafe4d2f6a358b187b516c39daf0491a41377b915810f2a1cd959"},
-    {file = "PyStemmer-2.2.0.3-cp37-cp37m-win_amd64.whl", hash = "sha256:73dbd546a3122677aeebc8f0e645d4b95ea548c98784fd06157080222690080b"},
-    {file = "PyStemmer-2.2.0.3-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:77fbe1c9c382dbed42aabf61c481e68559f9fd4281ada051f0dc49317e08d38f"},
-    {file = "PyStemmer-2.2.0.3-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:dfcd54f6e8c01ed63693f6ada399f59fe78c777d26f9e7d0b22ec03afbe19b98"},
-    {file = "PyStemmer-2.2.0.3-cp38-cp38-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5c57e1cb57f3d535de1ff2a6be9b9525557d252ed290b708b79bc35d9f058319"},
-    {file = "PyStemmer-2.2.0.3-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b820bd316351de434ddc331fb3f861e5f2c6bcd8f495636be5cc6e2d4b2147aa"},
-    {file = "PyStemmer-2.2.0.3-cp38-cp38-musllinux_1_2_i686.whl", hash = "sha256:61e239b8b48713270bb6b03f211c170e84d5a33a49ec735552e2f30001082a12"},
-    {file = "PyStemmer-2.2.0.3-cp38-cp38-musllinux_1_2_x86_64.whl", hash = "sha256:783e5451eb8bb48f24c60f749c7912fd32439330c61738acf4fc91c1ef610066"},
-    {file = "PyStemmer-2.2.0.3-cp38-cp38-win32.whl", hash = "sha256:1ea84ed2411b6671363e51cfb31af64370a48627a64e465c5dc1ae9545529fd8"},
-    {file = "PyStemmer-2.2.0.3-cp38-cp38-win_amd64.whl", hash = "sha256:ef50a927740ad366fad147a387a0976b50f35fa62da3dd8c6791a00353b258cc"},
-    {file = "PyStemmer-2.2.0.3-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:931b0327eb52f87621444576ca11e6d45ba44edfecc591ff77d8ed4dfaa7293f"},
-    {file = "PyStemmer-2.2.0.3-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:bc1b867d17859d68ffe00b0511eeb3a1904cef794c77f5c30f165075d9f487d5"},
-    {file = "PyStemmer-2.2.0.3-cp39-cp39-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:8bbdd506b5b242f830f34d6ad842adeb8e45f4675ac7548dc7f541fdbdd1748d"},
-    {file = "PyStemmer-2.2.0.3-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:66aa082011dbce0d58632f4b01a427116e0377d80c0aed991e331dfe2b55577d"},
-    {file = "PyStemmer-2.2.0.3-cp39-cp39-musllinux_1_2_i686.whl", hash = "sha256:fe861224607410ea36c363ae0c77fd8a34efcf94663f1f9422fcf8e55869aeb8"},
-    {file = "PyStemmer-2.2.0.3-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:f072dc2445ecac86a8e85540d5c2b8da0b0d21533c4ecd5e1ed1cde435530d66"},
-    {file = "PyStemmer-2.2.0.3-cp39-cp39-win32.whl", hash = "sha256:31eeabc246768efa25b36110acd7486768e72f0d4a21509119dd2c89a12b4a4f"},
-    {file = "PyStemmer-2.2.0.3-cp39-cp39-win_amd64.whl", hash = "sha256:dad2cdbd1acf81e838db79ed7dc65574069a9a2ebef7c9650a47d2a4bdcb542d"},
-    {file = "PyStemmer-2.2.0.3-pp310-pypy310_pp73-macosx_10_15_x86_64.whl", hash = "sha256:ff3feeac41968fd8b50e9d6b8a03a5f15b27e765a0826f06dc32155f8f22909c"},
-    {file = "PyStemmer-2.2.0.3-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:41a31d8ad810063e2cc675d93d0951dbfbb6ede278e111f15d74b7d781612364"},
-    {file = "PyStemmer-2.2.0.3-pp310-pypy310_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:4abcb516040d7a561eb95c60125f9f5636080c154f46d365b14cd33197ac74fd"},
-    {file = "PyStemmer-2.2.0.3-pp310-pypy310_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f8c307f1d5084e6074bc1826df9453887e589e92bab63851991b444f68a08b7e"},
-    {file = "PyStemmer-2.2.0.3-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:7f0d5f36922ea94599f79f86383972e91cdeab28918f8e1535cd589d2b5fb345"},
-    {file = "PyStemmer-2.2.0.3-pp37-pypy37_pp73-macosx_10_9_x86_64.whl", hash = "sha256:6f9b01764d7bacfb2655d305259de27a023624df2c5ba6acbf2b25ed0f4f2271"},
-    {file = "PyStemmer-2.2.0.3-pp37-pypy37_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:b573b678f8d34a1349eceb4ea047bbfae8fa6b1b7c77ffbe36ea3ab9b86a5391"},
-    {file = "PyStemmer-2.2.0.3-pp37-pypy37_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6974514fe5c6909599e7122937ddb73fd8313da7ee68ce2e601c5c28b3c4e2f5"},
-    {file = "PyStemmer-2.2.0.3-pp37-pypy37_pp73-win_amd64.whl", hash = "sha256:0f17dc30e656710ca866ca4f8a4af6bb1e46e4da349b89a59a9ebc2825b93852"},
-    {file = "PyStemmer-2.2.0.3-pp38-pypy38_pp73-macosx_10_9_x86_64.whl", hash = "sha256:a278907d4cf9bd65888fe45f264765b579791af5ed32dd943761b26213b78bcd"},
-    {file = "PyStemmer-2.2.0.3-pp38-pypy38_pp73-macosx_11_0_arm64.whl", hash = "sha256:a79a06f642ffd9c9f8fc8cfe84c6e278965d5d250598f27f86af774bcc78fdf7"},
-    {file = "PyStemmer-2.2.0.3-pp38-pypy38_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:e88eeeb5b221b4647f7471a683b7cc9e270bd11e5b8e83c983dc62fd72b9f5c3"},
-    {file = "PyStemmer-2.2.0.3-pp38-pypy38_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d648b669bf761a61d42b82497d397a84039e22f3a20a601b718ec7db7bfe0feb"},
-    {file = "PyStemmer-2.2.0.3-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:09d236633ba63ab312e8d763a23803dcef4d2192c3cc3760f14bb749393413c6"},
-    {file = "PyStemmer-2.2.0.3-pp39-pypy39_pp73-macosx_10_15_x86_64.whl", hash = "sha256:84c141725402033472b64b4d40deb828de040b6890399de2fbe9b9b16f939cc4"},
-    {file = "PyStemmer-2.2.0.3-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:5b4229166a04b6c0dab7e2234e4203ba4a4993805367524cd79d7e7bdd15b7af"},
-    {file = "PyStemmer-2.2.0.3-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:e051104462150ce801e8fb4ca3aee23e4a9a2ba31c21a8a95b231ee776a12a56"},
-    {file = "PyStemmer-2.2.0.3-pp39-pypy39_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e92f8bdd2b7ddf84cafdda6eb613e1c536b62d6a412d633a202d7d5e41155b89"},
-    {file = "PyStemmer-2.2.0.3-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:825b81d3340671583cae72ff0918ad898718aa0e37662c6b4d63e63e8f5f98d9"},
-    {file = "pystemmer-2.2.0.3.tar.gz", hash = "sha256:9ac74c8d0f3358dbb050f64cddbb8d55021d831d92305d7c20780ea8d6c0020e"},
-]
 
 [[package]]
 name = "pytest"
@@ -3516,4 +3487,4 @@ fastembed-gpu = ["fastembed-gpu"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8"
-content-hash = "782047bdd71d59fffc763e9bcc7ebba700873f8eba49b32687cd44f2704bd1e4"
+content-hash = "bb02c2a38bd0ce9298a48f48576832c870c0fa26f3fbd7b26058276510744a63"
