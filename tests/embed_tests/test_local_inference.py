@@ -812,5 +812,8 @@ def test_image(prefer_grpc):
         collection_name=COLLECTION_NAME,
     )
 
+    local_client.query_points(COLLECTION_NAME, dense_image_1)
+    remote_client.query_points(COLLECTION_NAME, dense_image_1)
+
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
