@@ -734,7 +734,7 @@ def test_propagate_options(prefer_grpc):
         base64_string = f.read()
 
     dense_image_1 = models.Image(
-        image=base64_string, model=DENSE_IMAGE_MODEL_NAME, options={"device_ids": [1, 2, 3]}
+        image=base64_string, model=DENSE_IMAGE_MODEL_NAME, options={"lazy_load": True}
     )
 
     points = [
@@ -783,10 +783,12 @@ def test_propagate_options(prefer_grpc):
     assert local_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
     assert local_client.sparse_embedding_models[SPARSE_MODEL_NAME].model.lazy_load
     assert local_client.late_interaction_embedding_models[COLBERT_MODEL_NAME].model.lazy_load
+    assert local_client.image_embedding_models[DENSE_IMAGE_MODEL_NAME].model.lazy_load
 
     local_client.embedding_models.clear()
     local_client.sparse_embedding_models.clear()
     local_client.late_interaction_embedding_models.clear()
+    local_client.image_embedding_models.clear()
 
     inference_object_dense_doc_1 = models.InferenceObject(
         object="hello world",
@@ -830,6 +832,7 @@ def test_propagate_options(prefer_grpc):
     assert local_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
     assert local_client.sparse_embedding_models[SPARSE_MODEL_NAME].model.lazy_load
     assert local_client.late_interaction_embedding_models[COLBERT_MODEL_NAME].model.lazy_load
+    assert local_client.image_embedding_models[DENSE_IMAGE_MODEL_NAME].model.lazy_load
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
