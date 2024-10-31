@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
+from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.embed_inspector import InspectorEmbed
 from qdrant_client.embed.models import NumericVector, NumericVectorStruct
 from qdrant_client.embed.schema_parser import ModelSchemaParser
@@ -81,7 +82,7 @@ _IMAGE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
 
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
-    INFERENCE_OBJECT_TYPES = models.Document, models.Image
+
     embedding_models: Dict[str, "TextEmbedding"] = {}
     sparse_embedding_models: Dict[str, "SparseTextEmbedding"] = {}
     late_interaction_embedding_models: Dict[str, "LateInteractionTextEmbedding"] = {}
@@ -892,7 +893,7 @@ class QdrantFastembedMixin(QdrantBase):
             )
             return models.NearestQuery(nearest=query)
 
-        if isinstance(query, cls.INFERENCE_OBJECT_TYPES):
+        if isinstance(query, INFERENCE_OBJECT_TYPES):
             model_name = query.model
             if model_name is None:
                 raise ValueError(f"`model` field has to be set explicitly in the {type(query)}")
@@ -946,7 +947,7 @@ class QdrantFastembedMixin(QdrantBase):
             A deepcopy of the method with embedded fields
         """
         if paths is None:
-            if isinstance(model, self.INFERENCE_OBJECT_TYPES):
+            if isinstance(model, INFERENCE_OBJECT_TYPES):
                 return self._embed_raw_data(model, is_query=is_query)
             model = deepcopy(model)
             paths = self._embed_inspector.inspect(model)
