@@ -882,6 +882,32 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                         setattr(item, path.current, embeddings[0])
         return model
 
+    @staticmethod
+    def _resolve_inference_object(data: models.VectorStruct):
+        """Resolve inference object into a model
+
+        Args:
+            data: models.VectorStruct - data to resolve, if it's an inference object, convert it to a proper type,
+                otherwise - keep unchanged
+
+        Returns:
+            models.VectorStruct: resolved data
+        """
+        if not isinstance(data, models.InferenceObject):
+            return data
+        model_name = data.model
+        value = data.object
+        options = data.options
+        if model_name in (
+            *SUPPORTED_EMBEDDING_MODELS.keys(),
+            *SUPPORTED_SPARSE_EMBEDDING_MODELS.keys(),
+            *_LATE_INTERACTION_EMBEDDING_MODELS.keys(),
+        ):
+            return models.Document(model=model_name, text=value, options=options)
+        if model_name in _IMAGE_EMBEDDING_MODELS:
+            return models.Image(model=model_name, image=value, options=options)
+        raise ValueError(f"{model_name} is not among supported models")
+
     def _embed_raw_data(
         self, data: models.VectorStruct, is_query: bool = False
     ) -> NumericVectorStruct:
@@ -894,6 +920,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Returns:
             NumericVectorStruct: Embedded data
         """
+        data = self._resolve_inference_object(data)
         if isinstance(data, models.Document):
             return self._embed_document(data, is_query=is_query)
         elif isinstance(data, models.Image):
@@ -924,10 +951,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         """
         model_name = document.model
         text = document.text
+        options = document.options or {}
         if model_name in SUPPORTED_EMBEDDING_MODELS:
-            embedding_model_inst = self._get_or_init_model(
-                model_name=model_name, **document.options or {}
-            )
+            embedding_model_inst = self._get_or_init_model(model_name=model_name, **options)
             if not is_query:
                 embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
             else:
@@ -935,7 +961,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             return embedding
         elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
             sparse_embedding_model_inst = self._get_or_init_sparse_model(
-                model_name=model_name, **document.options or {}
+                model_name=model_name, **options
             )
             if not is_query:
                 sparse_embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
@@ -946,7 +972,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
         elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
             li_embedding_model_inst = self._get_or_init_late_interaction_model(
-                model_name=model_name, **document.options or {}
+                model_name=model_name, **options
             )
             if not is_query:
                 embedding = list(li_embedding_model_inst.embed(documents=[text]))[0].tolist()

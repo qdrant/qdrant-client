@@ -727,7 +727,6 @@ def test_propagate_options(prefer_grpc):
     sparse_doc_1 = models.Document(
         text="hello world", model=SPARSE_MODEL_NAME, options={"lazy_load": True}
     )
-
     multi_doc_1 = models.Document(
         text="hello world", model=COLBERT_MODEL_NAME, options={"lazy_load": True}
     )
@@ -735,7 +734,7 @@ def test_propagate_options(prefer_grpc):
         base64_string = f.read()
 
     dense_image_1 = models.Image(
-        image=base64_string, model=DENSE_IMAGE_MODEL_NAME, options={"lazy_load": True}
+        image=base64_string, model=DENSE_IMAGE_MODEL_NAME, options={"device_ids": [1, 2, 3]}
     )
 
     points = [
@@ -785,6 +784,53 @@ def test_propagate_options(prefer_grpc):
     assert local_client.sparse_embedding_models[SPARSE_MODEL_NAME].model.lazy_load
     assert local_client.late_interaction_embedding_models[COLBERT_MODEL_NAME].model.lazy_load
 
+    local_client.embedding_models.clear()
+    local_client.sparse_embedding_models.clear()
+    local_client.late_interaction_embedding_models.clear()
+
+    inference_object_dense_doc_1 = models.InferenceObject(
+        object="hello world",
+        model=DENSE_MODEL_NAME,
+        options={"lazy_load": True},
+    )
+
+    inference_object_sparse_doc_1 = models.InferenceObject(
+        object="hello world",
+        model=SPARSE_MODEL_NAME,
+        options={"lazy_load": True},
+    )
+
+    inference_object_multi_doc_1 = models.InferenceObject(
+        object="hello world",
+        model=COLBERT_MODEL_NAME,
+        options={"lazy_load": True},
+    )
+
+    inference_object_dense_image_1 = models.InferenceObject(
+        object=base64_string,
+        model=DENSE_IMAGE_MODEL_NAME,
+        options={"lazy_load": True},
+    )
+
+    points = [
+        models.PointStruct(
+            id=2,
+            vector={
+                "text": inference_object_dense_doc_1,
+                "multi-text": inference_object_multi_doc_1,
+                "sparse-text": inference_object_sparse_doc_1,
+                "image": inference_object_dense_image_1,
+            },
+        )
+    ]
+
+    local_client.upsert(COLLECTION_NAME, points)
+    remote_client.upsert(COLLECTION_NAME, points)
+
+    assert local_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
+    assert local_client.sparse_embedding_models[SPARSE_MODEL_NAME].model.lazy_load
+    assert local_client.late_interaction_embedding_models[COLBERT_MODEL_NAME].model.lazy_load
+
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_image(prefer_grpc):
@@ -822,6 +868,108 @@ def test_image(prefer_grpc):
 
     local_client.query_points(COLLECTION_NAME, dense_image_1)
     remote_client.query_points(COLLECTION_NAME, dense_image_1)
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_inference_object(prefer_grpc):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    local_kwargs = {}
+    local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
+
+    with open(TEST_IMAGE_PATH, "r") as f:
+        base64_string = f.read()
+
+    inference_object_dense_doc_1 = models.InferenceObject(
+        object="hello world",
+        model=DENSE_MODEL_NAME,
+        options={"lazy_load": True},
+    )
+
+    inference_object_sparse_doc_1 = models.InferenceObject(
+        object="hello world",
+        model=SPARSE_MODEL_NAME,
+        options={"lazy_load": True},
+    )
+
+    inference_object_multi_doc_1 = models.InferenceObject(
+        object="hello world",
+        model=COLBERT_MODEL_NAME,
+        options={"lazy_load": True},
+    )
+
+    inference_object_dense_image_1 = models.InferenceObject(
+        object=base64_string,
+        model=DENSE_IMAGE_MODEL_NAME,
+        options={"lazy_load": True},
+    )
+
+    points = [
+        models.PointStruct(
+            id=1,
+            vector={
+                "text": inference_object_dense_doc_1,
+                "multi-text": inference_object_multi_doc_1,
+                "sparse-text": inference_object_sparse_doc_1,
+                "image": inference_object_dense_image_1,
+            },
+        )
+    ]
+    vectors_config = {
+        "text": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
+        "multi-text": models.VectorParams(
+            size=COLBERT_DIM,
+            distance=models.Distance.COSINE,
+            multivector_config=models.MultiVectorConfig(
+                comparator=models.MultiVectorComparator.MAX_SIM
+            ),
+        ),
+        "image": models.VectorParams(size=DENSE_IMAGE_DIM, distance=models.Distance.COSINE),
+    }
+    sparse_vectors_config = {
+        "sparse-text": models.SparseVectorParams(modifier=models.Modifier.IDF)
+    }
+
+    for client in local_client, remote_client:
+        if client.collection_exists(COLLECTION_NAME):
+            client.delete_collection(COLLECTION_NAME)
+        client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
+        )
+        client.upsert(COLLECTION_NAME, points)
+
+    vec_points = local_kwargs["points"]
+    vector = vec_points[0].vector
+    assert isinstance(vector["text"], list)
+    assert isinstance(vector["multi-text"], list)
+    assert isinstance(vector["sparse-text"], models.SparseVector)
+    assert isinstance(vector["image"], list)
+    assert local_client.scroll(COLLECTION_NAME, limit=1, with_vectors=True)[0]
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.query_points(COLLECTION_NAME, inference_object_dense_doc_1, using="text")
+    remote_client.query_points(COLLECTION_NAME, inference_object_dense_doc_1, using="text")
+
+    local_client.query_points(COLLECTION_NAME, inference_object_sparse_doc_1, using="sparse-text")
+    remote_client.query_points(COLLECTION_NAME, inference_object_sparse_doc_1, using="sparse-text")
+
+    local_client.query_points(COLLECTION_NAME, inference_object_multi_doc_1, using="multi-text")
+    remote_client.query_points(COLLECTION_NAME, inference_object_multi_doc_1, using="multi-text")
+
+    local_client.query_points(COLLECTION_NAME, inference_object_dense_image_1, using="image")
+    remote_client.query_points(COLLECTION_NAME, inference_object_dense_image_1, using="image")
 
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
