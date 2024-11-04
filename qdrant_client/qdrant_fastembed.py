@@ -1,15 +1,20 @@
+import base64
+import io
 import uuid
 import warnings
 from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set, get_args
 from copy import deepcopy
 
+
 import numpy as np
+
 from pydantic import BaseModel
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
+from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.embed_inspector import InspectorEmbed
 from qdrant_client.embed.models import NumericVector, NumericVectorStruct
 from qdrant_client.embed.schema_parser import ModelSchemaParser
@@ -20,13 +25,21 @@ from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 from qdrant_client import grpc
 
 try:
-    from fastembed import SparseTextEmbedding, TextEmbedding, LateInteractionTextEmbedding
+    from fastembed import (
+        SparseTextEmbedding,
+        TextEmbedding,
+        LateInteractionTextEmbedding,
+        ImageEmbedding,
+    )
     from fastembed.common import OnnxProvider
+    from PIL import Image as PilImage
 except ImportError:
     TextEmbedding = None
     SparseTextEmbedding = None
     OnnxProvider = None
     LateInteractionTextEmbedding = None
+    ImageEmbedding = None
+    PilImage = None
 
 
 SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
@@ -60,6 +73,12 @@ _LATE_INTERACTION_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     else {}
 )
 
+_IMAGE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+    {model["model"]: model for model in ImageEmbedding.list_supported_models()}
+    if ImageEmbedding
+    else {}
+)
+
 
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
@@ -67,6 +86,7 @@ class QdrantFastembedMixin(QdrantBase):
     embedding_models: Dict[str, "TextEmbedding"] = {}
     sparse_embedding_models: Dict[str, "SparseTextEmbedding"] = {}
     late_interaction_embedding_models: Dict[str, "LateInteractionTextEmbedding"] = {}
+    image_embedding_models: Dict[str, "ImageEmbedding"] = {}
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, parser: ModelSchemaParser, **kwargs: Any):
@@ -309,6 +329,34 @@ class QdrantFastembedMixin(QdrantBase):
             **kwargs,
         )
         return cls.late_interaction_embedding_models[model_name]
+
+    @classmethod
+    def _get_or_init_image_model(
+        cls,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
+        **kwargs: Any,
+    ) -> "ImageEmbedding":
+        if model_name in cls.image_embedding_models:
+            return cls.image_embedding_models[model_name]
+
+        cls._import_fastembed()
+
+        if model_name not in _IMAGE_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {_IMAGE_EMBEDDING_MODELS}"
+            )
+
+        cls.image_embedding_models[model_name] = ImageEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            providers=providers,
+            **kwargs,
+        )
+        return cls.image_embedding_models[model_name]
 
     def _embed_documents(
         self,
@@ -803,8 +851,9 @@ class QdrantFastembedMixin(QdrantBase):
 
         return [self._scored_points_to_query_responses(response) for response in responses]
 
-    @staticmethod
+    @classmethod
     def _resolve_query(
+        cls,
         query: Union[
             types.PointId,
             List[float],
@@ -844,10 +893,10 @@ class QdrantFastembedMixin(QdrantBase):
             )
             return models.NearestQuery(nearest=query)
 
-        if isinstance(query, models.Document):
+        if isinstance(query, INFERENCE_OBJECT_TYPES):
             model_name = query.model
             if model_name is None:
-                raise ValueError("`model` field has to be set explicitly in the `Document`")
+                raise ValueError(f"`model` field has to be set explicitly in the {type(query)}")
             return models.NearestQuery(nearest=query)
 
         if query is None:
@@ -898,7 +947,7 @@ class QdrantFastembedMixin(QdrantBase):
             A deepcopy of the method with embedded fields
         """
         if paths is None:
-            if isinstance(model, models.Document):
+            if isinstance(model, INFERENCE_OBJECT_TYPES):
                 return self._embed_raw_data(model, is_query=is_query)
             model = deepcopy(model)
             paths = self._embed_inspector.inspect(model)
@@ -924,6 +973,35 @@ class QdrantFastembedMixin(QdrantBase):
                         setattr(item, path.current, embeddings[0])
         return model
 
+    @staticmethod
+    def _resolve_inference_object(data: models.VectorStruct) -> models.VectorStruct:
+        """Resolve inference object into a model
+
+        Args:
+            data: models.VectorStruct - data to resolve, if it's an inference object, convert it to a proper type,
+                otherwise - keep unchanged
+
+        Returns:
+            models.VectorStruct: resolved data
+        """
+
+        if not isinstance(data, models.InferenceObject):
+            return data
+
+        model_name = data.model
+        value = data.object
+        options = data.options
+        if model_name in (
+            *SUPPORTED_EMBEDDING_MODELS.keys(),
+            *SUPPORTED_SPARSE_EMBEDDING_MODELS.keys(),
+            *_LATE_INTERACTION_EMBEDDING_MODELS.keys(),
+        ):
+            return models.Document(model=model_name, text=value, options=options)
+        if model_name in _IMAGE_EMBEDDING_MODELS:
+            return models.Image(model=model_name, image=value, options=options)
+
+        raise ValueError(f"{model_name} is not among supported models")
+
     def _embed_raw_data(
         self,
         data: models.VectorStruct,
@@ -938,8 +1016,12 @@ class QdrantFastembedMixin(QdrantBase):
         Returns:
             NumericVectorStruct: Embedded data
         """
+        data = self._resolve_inference_object(data)
+
         if isinstance(data, models.Document):
             return self._embed_document(data, is_query=is_query)
+        elif isinstance(data, models.Image):
+            return self._embed_image(data)
         elif isinstance(data, dict):
             return {
                 key: self._embed_raw_data(value, is_query=is_query) for key, value in data.items()
@@ -966,10 +1048,9 @@ class QdrantFastembedMixin(QdrantBase):
         """
         model_name = document.model
         text = document.text
+        options = document.options or {}
         if model_name in SUPPORTED_EMBEDDING_MODELS:
-            embedding_model_inst = self._get_or_init_model(
-                model_name=model_name, **(document.options or {})
-            )
+            embedding_model_inst = self._get_or_init_model(model_name=model_name, **options)
             if not is_query:
                 embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
             else:
@@ -977,7 +1058,7 @@ class QdrantFastembedMixin(QdrantBase):
             return embedding
         elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
             sparse_embedding_model_inst = self._get_or_init_sparse_model(
-                model_name=model_name, **(document.options or {})
+                model_name=model_name, **options
             )
             if not is_query:
                 sparse_embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
@@ -989,7 +1070,7 @@ class QdrantFastembedMixin(QdrantBase):
             )
         elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
             li_embedding_model_inst = self._get_or_init_late_interaction_model(
-                model_name=model_name, **(document.options or {})
+                model_name=model_name, **options
             )
             if not is_query:
                 embedding = list(li_embedding_model_inst.embed(documents=[text]))[0].tolist()
@@ -998,3 +1079,28 @@ class QdrantFastembedMixin(QdrantBase):
             return embedding
         else:
             raise ValueError(f"{model_name} is not among supported models")
+
+    def _embed_image(self, image: models.Image) -> NumericVector:
+        """Embed an image using the specified embedding model
+
+        Args:
+            image: Image to embed
+
+        Returns:
+            NumericVector: Image's embedding
+
+        Raises:
+            ValueError: If model is not supported
+        """
+        model_name = image.model
+        if model_name in _IMAGE_EMBEDDING_MODELS:
+            embedding_model_inst = self._get_or_init_image_model(
+                model_name=model_name, **(image.options or {})
+            )
+            image_data = base64.b64decode(image.image)
+            with io.BytesIO(image_data) as buffer:
+                with PilImage.open(buffer) as image:
+                    embedding = list(embedding_model_inst.embed(images=[image]))[0].tolist()
+            return embedding
+
+        raise ValueError(f"{model_name} is not among supported models")

@@ -4,6 +4,7 @@ from typing import Union, List, Optional, Iterable
 from pydantic import BaseModel
 
 from qdrant_client._pydantic_compat import model_fields_set
+from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 
 from qdrant_client.embed.utils import convert_paths, Path
@@ -112,7 +113,7 @@ class InspectorEmbed:
         if model is None:
             return []
 
-        if isinstance(model, models.Document):
+        if isinstance(model, INFERENCE_OBJECT_TYPES):
             return [accum]
 
         if isinstance(model, BaseModel):
@@ -132,7 +133,7 @@ class InspectorEmbed:
                 if not isinstance(current_model, BaseModel):
                     continue
 
-                if isinstance(current_model, models.Document):
+                if isinstance(current_model, INFERENCE_OBJECT_TYPES):
                     found_paths.append(accum)
 
                 found_paths.extend(inspect_recursive(current_model, accum))
@@ -157,7 +158,7 @@ class InspectorEmbed:
                     if not isinstance(current_model, BaseModel):
                         continue
 
-                    if isinstance(current_model, models.Document):
+                    if isinstance(current_model, INFERENCE_OBJECT_TYPES):
                         found_paths.append(accum)
 
                     found_paths.extend(inspect_recursive(current_model, accum))

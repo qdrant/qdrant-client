@@ -67,6 +67,7 @@ class ModelSchemaParser:
     """
 
     CACHE_PATH = "_inspection_cache.py"
+    INFERENCE_OBJECT_NAMES = {"Document", "Image"}
 
     def __init__(self) -> None:
         self._defs: Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]] = deepcopy(DEFS)  # type: ignore[arg-type]
@@ -159,7 +160,7 @@ class ModelSchemaParser:
         if not isinstance(schema, dict):
             return document_paths
 
-        if "title" in schema and schema["title"] == "Document":
+        if "title" in schema and schema["title"] in self.INFERENCE_OBJECT_NAMES:
             document_paths.append(current_path)
             return document_paths
 
