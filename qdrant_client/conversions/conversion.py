@@ -935,6 +935,8 @@ class GrpcToRest:
         if name == "object":
             return cls.convert_inference_object(val)
 
+        raise ValueError(f"invalid Vector model: {model}")  # pragma: no cover
+
     @classmethod
     def convert_vector_output(
         cls, model: grpc.VectorOutput
@@ -2904,7 +2906,7 @@ class RestToGrpc:
         return grpc.Image(image=model.image, model=model.model, options=model.options)
 
     @classmethod
-    def convert_inference_object(cls, model: rest.InferenceObject):
+    def convert_inference_object(cls, model: rest.InferenceObject) -> grpc.InferenceObject:
         return grpc.InferenceObject(object=model.object, model=model.model, options=model.options)
 
     @classmethod
