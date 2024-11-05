@@ -1469,9 +1469,9 @@ fixtures = {
     "PointVectors": [
         point_vector_1,
         point_vector_2,
-        # point_vector_3,  # todo: uncomment as of 1.13.0
-        # point_vector_4,  # todo: uncomment as of 1.13.0
-        # point_vector_5,  # todo: uncomment as of 1.13.0
+        # point_vector_3,  # todo: uncomment as of 1.14.0
+        # point_vector_4,  # todo: uncomment as of 1.14.0
+        # point_vector_5,  # todo: uncomment as of 1.14.0
     ],
     "GroupId": [group_id_1, group_id_2, group_id_3],
     "GroupsResult": [group_result],
