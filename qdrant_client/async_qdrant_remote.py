@@ -102,7 +102,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             self._host = host or "localhost"
             self._port = port
-        self._timeout = math.ceil(timeout) if timeout is not None else None
+        self._timeout = math.ceil(timeout) if isinstance(timeout, float) else timeout
         self._api_key = api_key
         self._auth_token_provider = auth_token_provider
         limits = kwargs.pop("limits", None)
