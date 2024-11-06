@@ -5,7 +5,7 @@ from google.protobuf.message import Message
 from google.protobuf.timestamp_pb2 import Timestamp
 
 from qdrant_client import grpc as grpc
-from qdrant_client.conversions.conversion import payload_to_grpc
+from qdrant_client.conversions.conversion import payload_to_grpc, json_to_value
 from qdrant_client.grpc import SparseIndices
 
 point_id = grpc.PointId(num=1)
@@ -291,16 +291,66 @@ single_vector = grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, 3.0, 4.0]))
 multi_vector = grpc.Vectors(
     vector=grpc.Vector(data=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], vectors_count=2)
 )
+single_dense_vector = grpc.Vectors(
+    vector=grpc.Vector(dense=grpc.DenseVector(data=[1.0, 2.0, 3.0]))
+)
+single_sparse_vector = grpc.Vectors(
+    vectors=grpc.NamedVectors(
+        vectors={
+            "sparse": grpc.Vector(
+                sparse=grpc.SparseVector(values=[1.0, 2.0, 3.0], indices=[1, 2, 3])
+            )
+        }
+    )
+)
+single_multidense_vector = grpc.Vectors(
+    vector=grpc.Vector(
+        multi_dense=grpc.MultiDenseVector(vectors=[grpc.DenseVector(data=[1.0, 2.0, 3.0])])
+    )
+)
+document_with_options = grpc.Document(
+    text="random text", model="bert", options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"})
+)
+document_without_options = grpc.Document(text="random text", model="bert")
+document_only_text = grpc.Document(text="random text")
+image_with_options = grpc.Image(
+    image="base64", model="resnet", options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"})
+)
+image_without_options = grpc.Image(image="base64", model="resnet")
+image_only_image = grpc.Image(image="base64")
+inference_object_with_options = grpc.InferenceObject(
+    object=json_to_value("text"),
+    model="bert",
+    options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"}),
+)
+inference_object_without_options = grpc.InferenceObject(object=json_to_value("text"), model="bert")
+inference_object_only_object = grpc.InferenceObject(object=json_to_value("text"))
 order_value_int = grpc.OrderValue(int=42)
 order_value_float = grpc.OrderValue(float=42.0)
+single_vector_output = grpc.VectorsOutput(vector=grpc.VectorOutput(data=[1.0, 2.0, 3.0, 4.0]))
+multi_vector_output = grpc.VectorsOutput(
+    vector=grpc.VectorOutput(data=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], vectors_count=2)
+)
+named_vectors_output = grpc.VectorsOutput(
+    vectors=grpc.NamedVectorsOutput(
+        vectors={
+            "sparse": grpc.VectorOutput(
+                data=[1.0, 2.0, 3.0, 4.0], indices=grpc.SparseIndices(data=[1, 2, 3, 4])
+            ),
+            "dense": grpc.VectorOutput(data=[1.0, 2.0, 3.0, 4.0]),
+            "multi": multi_vector_output.vector,
+        }
+    )
+)
+
 scored_point = grpc.ScoredPoint(
-    id=point_id, payload=payload, score=0.99, vectors=single_vector, version=12
+    id=point_id, payload=payload, score=0.99, vectors=single_vector_output, version=12
 )
 scored_point_order_value_int = grpc.ScoredPoint(
     id=point_id,
     payload=payload,
     score=0.99,
-    vectors=single_vector,
+    vectors=single_vector_output,
     version=12,
     order_value=order_value_int,
 )
@@ -308,15 +358,15 @@ scored_point_order_value_float = grpc.ScoredPoint(
     id=point_id,
     payload=payload,
     score=0.99,
-    vectors=single_vector,
+    vectors=named_vectors_output,
     version=12,
-    order_value=order_value_int,
+    order_value=order_value_float,
 )
 scored_point_multivector = grpc.ScoredPoint(
     id=point_id,
     payload=payload,
     score=0.99,
-    vectors=multi_vector,
+    vectors=multi_vector_output,
     version=12,
     order_value=order_value_float,
 )
@@ -678,6 +728,24 @@ point_struct = grpc.PointStruct(
     payload=payload_to_grpc({"my_payload": payload_value}),
 )
 
+point_struct_doc = grpc.PointStruct(
+    id=point_id_1,
+    vectors=grpc.Vectors(vector=grpc.Vector(document=document_with_options)),
+    payload=payload_to_grpc({"my_payload": payload_value}),
+)
+
+point_struct_image = grpc.PointStruct(
+    id=point_id_1,
+    vectors=grpc.Vectors(vector=grpc.Vector(image=image_with_options)),
+    payload=payload_to_grpc({"my_payload": payload_value}),
+)
+
+point_struct_obj = grpc.PointStruct(
+    id=point_id_1,
+    vectors=grpc.Vectors(vector=grpc.Vector(object=inference_object_with_options)),
+    payload=payload_to_grpc({"my_payload": payload_value}),
+)
+
 many_vectors = grpc.Vectors(
     vectors=grpc.NamedVectors(
         vectors={
@@ -687,6 +755,9 @@ many_vectors = grpc.Vectors(
                 data=[1.0, 2.0, -1.0, -0.2], indices=SparseIndices(data=[1, 2, 3])
             ),
             "multi": grpc.Vector(data=[1.0, 2.0, 3.0, 4.0], vectors_count=2),
+            "doc_raw": grpc.Vector(document=document_with_options),
+            "image_raw": grpc.Vector(image=image_with_options),
+            "obj_raw": grpc.Vector(object=inference_object_with_options),
         }
     )
 )
@@ -776,13 +847,13 @@ with_payload_exclude = grpc.WithPayloadSelector(
 retrieved_point = grpc.RetrievedPoint(
     id=point_id_1,
     payload=payload_to_grpc({"key": payload_value}),
-    vectors=single_vector,
+    vectors=single_vector_output,
 )
 
 retrieved_point_with_order_value = grpc.RetrievedPoint(
     id=point_id_1,
     payload=payload_to_grpc({"key": payload_value}),
-    vectors=single_vector,
+    vectors=single_vector_output,
     order_value=order_value_int,
 )
 
@@ -834,6 +905,7 @@ search_points = grpc.SearchPoints(
     vector_name="abc",
     with_vectors=grpc.WithVectorsSelector(include=grpc.VectorsSelector(names=["abc", "def"])),
     shard_key_selector=shard_key_selector,
+    sparse_indices=grpc.SparseIndices(data=[1, 2, 3]),
 )
 
 search_points_all_vectors = grpc.SearchPoints(
@@ -960,6 +1032,12 @@ point_vector_2 = grpc.PointVectors(
     id=point_id_2,
     vectors=many_vectors,
 )
+
+point_vector_3 = grpc.PointVectors(id=point_id_1, vectors=single_dense_vector)
+
+point_vector_4 = grpc.PointVectors(id=point_id_1, vectors=single_sparse_vector)
+
+point_vector_5 = grpc.PointVectors(id=point_id_1, vectors=single_multidense_vector)
 
 group_id_1 = grpc.GroupId(unsigned_value=123)
 group_id_2 = grpc.GroupId(integer_value=-456)
@@ -1172,9 +1250,36 @@ vector_input_dense = grpc.VectorInput(dense=dense_vector)
 vector_input_dense_2 = grpc.VectorInput(dense=dense_vector_2)
 vector_input_sparse = grpc.VectorInput(sparse=sparse_vector)
 vector_input_multi = grpc.VectorInput(multi_dense=multi_dense_vector)
+vector_input_doc_with_options = grpc.VectorInput(document=document_with_options)
+vector_input_doc_without_options = grpc.VectorInput(document=document_without_options)
+vector_input_doc_only_text = grpc.VectorInput(document=document_only_text)
+vector_input_image_with_options = grpc.VectorInput(image=image_with_options)
+vector_input_image_without_options = grpc.VectorInput(image=image_without_options)
+vector_input_image_only_image = grpc.VectorInput(image=image_only_image)
+vector_input_inference_with_options = grpc.VectorInput(object=inference_object_with_options)
+vector_input_inference_without_options = grpc.VectorInput(object=inference_object_without_options)
+vector_input_inference_only_object = grpc.VectorInput(object=inference_object_only_object)
+
 recommend_input = grpc.RecommendInput(
-    positive=[vector_input_dense],
+    positive=[
+        vector_input_dense,
+    ],
     negative=[vector_input_dense_2],
+)
+recommend_input_raw = grpc.RecommendInput(
+    positive=[
+        vector_input_doc_with_options,
+        vector_input_doc_without_options,
+        vector_input_doc_only_text,
+    ],
+    negative=[
+        vector_input_image_with_options,
+        vector_input_image_without_options,
+        vector_input_image_only_image,
+        vector_input_inference_with_options,
+        vector_input_inference_without_options,
+        vector_input_inference_only_object,
+    ],
 )
 recommend_input_strategy = grpc.RecommendInput(
     positive=[vector_input_id],
@@ -1190,6 +1295,7 @@ discover_input = grpc.DiscoverInput(target=vector_input_dense, context=context_i
 query_nearest = grpc.Query(nearest=vector_input_sparse)
 query_recommend = grpc.Query(recommend=recommend_input)
 query_recommend_id = grpc.Query(recommend=recommend_input_strategy)
+query_recommend_raw = grpc.Query(recommend=recommend_input_raw)
 query_discover = grpc.Query(discover=discover_input)
 query_context = grpc.Query(context=context_input)
 query_order_by = grpc.Query(order_by=order_by)
@@ -1291,7 +1397,13 @@ fixtures = {
     "IsEmptyCondition": [is_empty],
     "IsNullCondition": [is_null],
     "DeleteAlias": [delete_alias],
-    "PointStruct": [point_struct, point_struct_many],
+    "PointStruct": [
+        point_struct,
+        point_struct_many,
+        point_struct_doc,
+        point_struct_image,
+        point_struct_obj,
+    ],
     "CollectionDescription": [collection_description],
     "GeoPoint": [geo_point],
     "WalConfigDiff": [wal_config],
@@ -1354,7 +1466,13 @@ fixtures = {
     "QuantizationConfig": [quantization_config, binary_quantization_config]
     + product_quantizations,
     "QuantizationSearchParams": [quantization_search_params],
-    "PointVectors": [point_vector_1, point_vector_2],
+    "PointVectors": [
+        point_vector_1,
+        point_vector_2,
+        # point_vector_3,  # todo: uncomment as of 1.14.0
+        # point_vector_4,  # todo: uncomment as of 1.14.0
+        # point_vector_5,  # todo: uncomment as of 1.14.0
+    ],
     "GroupId": [group_id_1, group_id_2, group_id_3],
     "GroupsResult": [group_result],
     "WithLookup": [with_lookup],
@@ -1389,6 +1507,7 @@ fixtures = {
     "Query": [
         query_nearest,
         query_recommend,
+        query_recommend_raw,
         query_discover,
         query_context,
         query_order_by,

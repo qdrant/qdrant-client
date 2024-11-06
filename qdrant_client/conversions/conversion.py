@@ -141,7 +141,7 @@ class GrpcToRest:
     def convert_condition(cls, model: grpc.Condition) -> rest.Condition:
         name = model.WhichOneof("condition_one_of")
         if name is None:
-            raise ValueError(f"invalid Condition model: {model}")
+            raise ValueError(f"invalid Condition model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "field":
@@ -490,7 +490,7 @@ class GrpcToRest:
     def convert_order_value(cls, model: grpc.OrderValue) -> rest.OrderValue:
         name = model.WhichOneof("variant")
         if name is None:
-            raise ValueError(f"invalid OrderValue model: {model}")
+            raise ValueError(f"invalid OrderValue model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "int":
@@ -508,7 +508,9 @@ class GrpcToRest:
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload) if has_field(model, "payload") else None,
             score=model.score,
-            vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
+            vector=cls.convert_vectors_output(model.vectors)
+            if model.HasField("vectors")
+            else None,
             version=model.version,
             shard_key=(
                 cls.convert_shard_key(model.shard_key) if model.HasField("shard_key") else None
@@ -587,7 +589,7 @@ class GrpcToRest:
     def convert_match(cls, model: grpc.Match) -> rest.Match:
         name = model.WhichOneof("match_value")
         if name is None:
-            raise ValueError(f"invalid Match model: {model}")
+            raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "integer":
@@ -722,7 +724,7 @@ class GrpcToRest:
     def convert_alias_operations(cls, model: grpc.AliasOperations) -> rest.AliasOperations:
         name = model.WhichOneof("action")
         if name is None:
-            raise ValueError(f"invalid AliasOperations model: {model}")
+            raise ValueError(f"invalid AliasOperations model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "rename_alias":
@@ -747,7 +749,7 @@ class GrpcToRest:
     ) -> rest.PointsSelector:
         name = model.WhichOneof("points_selector_one_of")
         if name is None:
-            raise ValueError(f"invalid PointsSelector model: {model}")
+            raise ValueError(f"invalid PointsSelector model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "points":
@@ -768,7 +770,7 @@ class GrpcToRest:
     ) -> rest.WithPayloadInterface:
         name = model.WhichOneof("selector_options")
         if name is None:
-            raise ValueError(f"invalid WithPayloadSelector model: {model}")
+            raise ValueError(f"invalid WithPayloadSelector model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "enable":
@@ -791,7 +793,9 @@ class GrpcToRest:
         return rest.Record(
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
-            vector=cls.convert_vectors(model.vectors) if model.HasField("vectors") else None,
+            vector=cls.convert_vectors_output(model.vectors)
+            if model.HasField("vectors")
+            else None,
             shard_key=(
                 cls.convert_shard_key(model.shard_key) if model.HasField("shard_key") else None
             ),
@@ -833,7 +837,7 @@ class GrpcToRest:
         elif model == grpc.Datatype.Float16:
             return rest.Datatype.FLOAT16
         else:
-            raise ValueError(f"invalid Datatype model: {model}")
+            raise ValueError(f"invalid Datatype model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_vector_params(cls, model: grpc.VectorParams) -> rest.VectorParams:
@@ -878,7 +882,7 @@ class GrpcToRest:
     def convert_vectors_config(cls, model: grpc.VectorsConfig) -> rest.VectorsConfig:
         name = model.WhichOneof("config")
         if name is None:
-            raise ValueError(f"invalid VectorsConfig model: {model}")
+            raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "params":
@@ -890,17 +894,87 @@ class GrpcToRest:
         raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
 
     @classmethod
+    def _convert_vector(
+        cls, model: Union[grpc.Vector, grpc.VectorOutput]
+    ) -> Tuple[
+        Optional[str],
+        Union[
+            List[float],
+            List[List[float]],
+            rest.SparseVector,
+            grpc.Document,
+            grpc.Image,
+            grpc.InferenceObject,
+        ],
+    ]:
+        """Parse common parts of vector structs
+
+        Args:
+            model: Vector or VectorOutput
+
+        Returns:
+            Tuple of name and value, name is None if the struct was parsed and returned with the converted value,
+            otherwise it's propagated for further processing along with the raw value
+        """
+        name = model.WhichOneof("vector")
+        if name is None:
+            if model.HasField("indices"):
+                return None, rest.SparseVector(indices=model.indices.data[:], values=model.data[:])
+            if model.HasField("vectors_count"):
+                vectors_count = model.vectors_count
+                vectors = model.data
+                step = len(vectors) // vectors_count
+                return None, [vectors[i : i + step] for i in range(0, len(vectors), step)]
+
+            return None, model.data[:]
+
+        val = getattr(model, name)
+        if name == "dense":
+            return None, cls.convert_dense_vector(val)
+
+        if name == "sparse":
+            return None, cls.convert_sparse_vector(val)
+
+        if name == "multi_dense":
+            return None, cls.convert_multi_dense_vector(val)
+
+        return name, val
+
+    @classmethod
     def convert_vector(
         cls, model: grpc.Vector
+    ) -> Union[
+        List[float],
+        List[List[float]],
+        rest.SparseVector,
+        rest.Document,
+        rest.Image,
+        rest.InferenceObject,
+    ]:
+        name, val = cls._convert_vector(model)
+
+        if name is None:
+            return val
+
+        if name == "document":
+            return cls.convert_document(val)
+
+        if name == "image":
+            return cls.convert_image(val)
+
+        if name == "object":
+            return cls.convert_inference_object(val)
+
+        raise ValueError(f"invalid Vector model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vector_output(
+        cls, model: grpc.VectorOutput
     ) -> Union[List[float], List[List[float]], rest.SparseVector]:
-        if model.HasField("indices"):
-            return rest.SparseVector(indices=model.indices.data[:], values=model.data[:])
-        if model.HasField("vectors_count"):
-            vectors_count = model.vectors_count
-            vectors = model.data
-            step = len(vectors) // vectors_count
-            return [vectors[i : i + step] for i in range(0, len(vectors), step)]
-        return model.data[:]
+        name, val = cls._convert_vector(model)
+        if name is None:
+            return val
+        raise ValueError(f"invalid Vector model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, rest.Vector]:
@@ -911,10 +985,20 @@ class GrpcToRest:
         return vectors
 
     @classmethod
+    def convert_named_vectors_output(
+        cls, model: grpc.NamedVectorsOutput
+    ) -> Dict[str, rest.VectorOutput]:
+        vectors = {}
+        for name, vector in model.vectors.items():
+            vectors[name] = cls.convert_vector_output(vector)
+
+        return vectors
+
+    @classmethod
     def convert_vectors(cls, model: grpc.Vectors) -> rest.VectorStruct:
         name = model.WhichOneof("vectors_options")
         if name is None:
-            raise ValueError(f"invalid Vectors model: {model}")
+            raise ValueError(f"invalid Vectors model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "vector":
@@ -922,6 +1006,19 @@ class GrpcToRest:
         if name == "vectors":
             return cls.convert_named_vectors(val)
         raise ValueError(f"invalid Vectors model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vectors_output(cls, model: grpc.VectorsOutput) -> rest.VectorStructOutput:
+        name = model.WhichOneof("vectors_options")
+        if name is None:
+            raise ValueError(f"invalid VectorsOutput model: {model}")  # pragma: no cover
+        val = getattr(model, name)
+
+        if name == "vector":
+            return cls.convert_vector_output(val)
+        if name == "vectors":
+            return cls.convert_named_vectors_output(val)
+        raise ValueError(f"invalid VectorsOutput model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_dense_vector(cls, model: grpc.DenseVector) -> List[float]:
@@ -936,10 +1033,34 @@ class GrpcToRest:
         return [cls.convert_dense_vector(vector) for vector in model.vectors]
 
     @classmethod
+    def convert_document(cls, model: grpc.Document) -> rest.Document:
+        return rest.Document(
+            text=model.text,
+            model=model.model if model.HasField("model") else None,
+            options=grpc_to_payload(model.options),
+        )
+
+    @classmethod
+    def convert_image(cls, model: grpc.Image) -> rest.Image:
+        return rest.Image(
+            image=model.image,
+            model=model.model if model.HasField("model") else None,
+            options=grpc_to_payload(model.options),
+        )
+
+    @classmethod
+    def convert_inference_object(cls, model: grpc.InferenceObject) -> rest.InferenceObject:
+        return rest.InferenceObject(
+            object=model.object,
+            model=model.model if model.HasField("model") else None,
+            options=grpc_to_payload(model.options),
+        )
+
+    @classmethod
     def convert_vector_input(cls, model: grpc.VectorInput) -> rest.VectorInput:
         name = model.WhichOneof("variant")
         if name is None:
-            raise ValueError(f"invalid VectorInput model: {model}")
+            raise ValueError(f"invalid VectorInput model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "id":
@@ -950,7 +1071,13 @@ class GrpcToRest:
             return cls.convert_sparse_vector(val)
         if name == "multi_dense":
             return cls.convert_multi_dense_vector(val)
-        raise ValueError(f"invalid VectorInput model: {model}")
+        if name == "document":
+            return cls.convert_document(val)
+        if name == "image":
+            return cls.convert_image(val)
+        if name == "object":
+            return cls.convert_inference_object(val)
+        raise ValueError(f"invalid VectorInput model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_recommend_input(cls, model: grpc.RecommendInput) -> rest.RecommendInput:
@@ -1001,7 +1128,7 @@ class GrpcToRest:
     def convert_query(cls, model: grpc.Query) -> rest.Query:
         name = model.WhichOneof("variant")
         if name is None:
-            raise ValueError(f"invalid Query model: {model}")
+            raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "nearest":
@@ -1025,7 +1152,7 @@ class GrpcToRest:
         if name == "sample":
             return rest.SampleQuery(sample=cls.convert_sample(val))
 
-        raise ValueError(f"invalid Query model: {model}")
+        raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_prefetch_query(cls, model: grpc.PrefetchQuery) -> rest.Prefetch:
@@ -1052,7 +1179,7 @@ class GrpcToRest:
     def convert_with_vectors_selector(cls, model: grpc.WithVectorsSelector) -> rest.WithVector:
         name = model.WhichOneof("selector_options")
         if name is None:
-            raise ValueError(f"invalid WithVectorsSelector model: {model}")
+            raise ValueError(f"invalid WithVectorsSelector model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "enable":
@@ -1063,8 +1190,20 @@ class GrpcToRest:
 
     @classmethod
     def convert_search_points(cls, model: grpc.SearchPoints) -> rest.SearchRequest:
+        vector = (
+            rest.NamedVector(name=model.vector_name, vector=model.vector[:])
+            if not model.HasField("sparse_indices")
+            else (
+                rest.NamedSparseVector(
+                    name=model.vector_name,
+                    vector=rest.SparseVector(
+                        indices=model.sparse_indices.data[:], values=model.vector[:]
+                    ),
+                )
+            )
+        )
         return rest.SearchRequest(
-            vector=rest.NamedVector(name=model.vector_name, vector=model.vector[:]),
+            vector=vector,
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
             limit=model.limit,
             with_payload=(
@@ -1348,7 +1487,7 @@ class GrpcToRest:
     def convert_read_consistency(cls, model: grpc.ReadConsistency) -> rest.ReadConsistency:
         name = model.WhichOneof("value")
         if name is None:
-            raise ValueError(f"invalid ReadConsistency model: {model}")
+            raise ValueError(f"invalid ReadConsistency model: {model}")  # pragma: no cover
         val = getattr(model, name)
         if name == "factor":
             return val
@@ -1415,7 +1554,7 @@ class GrpcToRest:
     ) -> rest.QuantizationConfig:
         name = model.WhichOneof("quantization")
         if name is None:
-            raise ValueError(f"invalid QuantizationConfig model: {model}")
+            raise ValueError(f"invalid QuantizationConfig model: {model}")  # pragma: no cover
         val = getattr(model, name)
         if name == "scalar":
             return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
@@ -1460,7 +1599,7 @@ class GrpcToRest:
     def convert_group_id(cls, model: grpc.GroupId) -> rest.GroupId:
         name = model.WhichOneof("kind")
         if name is None:
-            raise ValueError(f"invalid GroupId model: {model}")
+            raise ValueError(f"invalid GroupId model: {model}")  # pragma: no cover
         val = getattr(model, name)
         return val
 
@@ -1486,7 +1625,7 @@ class GrpcToRest:
     ) -> rest.QuantizationConfigDiff:
         name = model.WhichOneof("quantization")
         if name is None:
-            raise ValueError(f"invalid QuantizationConfigDiff model: {model}")
+            raise ValueError(f"invalid QuantizationConfigDiff model: {model}")  # pragma: no cover
         val = getattr(model, name)
         if name == "scalar":
             return rest.ScalarQuantization(scalar=cls.convert_scalar_quantization_config(val))
@@ -1518,7 +1657,7 @@ class GrpcToRest:
     def convert_vectors_config_diff(cls, model: grpc.VectorsConfigDiff) -> rest.VectorsConfigDiff:
         name = model.WhichOneof("config")
         if name is None:
-            raise ValueError(f"invalid VectorsConfigDiff model: {model}")
+            raise ValueError(f"invalid VectorsConfigDiff model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "params":
@@ -1536,7 +1675,7 @@ class GrpcToRest:
     ) -> rest.UpdateOperation:
         name = model.WhichOneof("operation")
         if name is None:
-            raise ValueError(f"invalid PointsUpdateOperation model: {model}")
+            raise ValueError(f"invalid PointsUpdateOperation model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "upsert":
@@ -1712,7 +1851,7 @@ class GrpcToRest:
             return rest.Modifier.IDF
         if model == getattr(grpc.Modifier, "None"):
             return rest.Modifier.NONE
-        raise ValueError(f"invalid Modifier model: {model}")
+        raise ValueError(f"invalid Modifier model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_sparse_vector_params(
@@ -1739,7 +1878,7 @@ class GrpcToRest:
     def convert_shard_key(cls, model: grpc.ShardKey) -> rest.ShardKey:
         name = model.WhichOneof("key")
         if name is None:
-            raise ValueError(f"invalid ShardKey model: {model}")
+            raise ValueError(f"invalid ShardKey model: {model}")  # pragma: no cover
         val = getattr(model, name)
         return val
 
@@ -1793,7 +1932,7 @@ class GrpcToRest:
     def convert_facet_value(cls, model: grpc.FacetValue) -> rest.FacetValue:
         name = model.WhichOneof("variant")
         if name is None:
-            raise ValueError(f"invalid FacetValue model: {model}")
+            raise ValueError(f"invalid FacetValue model: {model}")  # pragma: no cover
 
         val = getattr(model, name)
         return val
@@ -2099,7 +2238,9 @@ class RestToGrpc:
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
             score=model.score,
-            vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
+            vectors=cls.convert_vector_struct_output(model.vector)
+            if model.vector is not None
+            else None,
             version=model.version,
             shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
             order_value=cls.convert_order_value(model.order_value) if model.order_value else None,
@@ -2417,6 +2558,13 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_sparse_vector_to_vector_output(cls, model: rest.SparseVector) -> grpc.VectorOutput:
+        return grpc.VectorOutput(
+            data=model.values,
+            indices=grpc.SparseIndices(data=model.indices),
+        )
+
+    @classmethod
     def convert_target_vector(cls, model: rest.RecommendExample) -> grpc.TargetVector:
         return grpc.TargetVector(single=cls.convert_recommend_example(model))
 
@@ -2519,7 +2667,7 @@ class RestToGrpc:
             return grpc.Direction.Asc
         if model == rest.Direction.DESC:
             return grpc.Direction.Desc
-        raise ValueError(f"invalid Direction model: {model}")
+        raise ValueError(f"invalid Direction model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_order_by(cls, model: rest.OrderBy) -> grpc.OrderBy:
@@ -2534,15 +2682,13 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_order_by_interface(
-        cls, model: rest.OrderByInterface
-    ) -> grpc.OrderBy:  # pragma: no cover
+    def convert_order_by_interface(cls, model: rest.OrderByInterface) -> grpc.OrderBy:
         # using no cover because there is no OrderByInterface in grpc
         if isinstance(model, str):
             return grpc.OrderBy(key=model)
         if isinstance(model, rest.OrderBy):
             return cls.convert_order_by(model)
-        raise ValueError(f"invalid OrderByInterface model: {model}")
+        raise ValueError(f"invalid OrderByInterface model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_facet_value(cls, model: rest.FacetValue) -> grpc.FacetValue:
@@ -2551,7 +2697,7 @@ class RestToGrpc:
         if isinstance(model, int):
             return grpc.FacetValue(integer_value=model)
 
-        raise ValueError(f"invalid FacetValue model: {model}")
+        raise ValueError(f"invalid FacetValue model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_facet_value_hit(cls, model: rest.FacetValueHit) -> grpc.FacetHit:
@@ -2565,7 +2711,9 @@ class RestToGrpc:
         return grpc.RetrievedPoint(
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload),
-            vectors=cls.convert_vector_struct(model.vector) if model.vector is not None else None,
+            vectors=cls.convert_vector_struct_output(model.vector)
+            if model.vector is not None
+            else None,
             shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
             order_value=cls.convert_order_value(model.order_value) if model.order_value else None,
         )
@@ -2678,9 +2826,50 @@ class RestToGrpc:
                     vectors.update({key: convert_vector(val)})
                 elif isinstance(val, rest.SparseVector):
                     vectors.update({key: cls.convert_sparse_vector_to_vector(val)})
+                elif isinstance(val, rest.Document):
+                    vectors.update({key: grpc.Vector(document=cls.convert_document(val))})
+                elif isinstance(val, rest.Image):
+                    vectors.update({key: grpc.Vector(image=cls.convert_image(val))})
+                elif isinstance(val, rest.InferenceObject):
+                    vectors.update({key: grpc.Vector(object=cls.convert_inference_object(val))})
             return grpc.Vectors(vectors=grpc.NamedVectors(vectors=vectors))
+        elif isinstance(model, rest.Document):
+            return grpc.Vectors(vector=grpc.Vector(document=cls.convert_document(model)))
+        elif isinstance(model, rest.Image):
+            return grpc.Vectors(vector=grpc.Vector(image=cls.convert_image(model)))
+        elif isinstance(model, rest.InferenceObject):
+            return grpc.Vectors(vector=grpc.Vector(object=cls.convert_inference_object(model)))
         else:
             raise ValueError(f"invalid VectorStruct model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_vector_struct_output(cls, model: rest.VectorStructOutput) -> grpc.VectorsOutput:
+        def convert_vector(vector: Union[List[float], List[List[float]]]) -> grpc.VectorOutput:
+            if len(vector) != 0 and isinstance(
+                vector[0], list
+            ):  # we can't say whether it is an empty dense or multi-dense vector
+                return grpc.VectorOutput(
+                    data=[
+                        inner_vector
+                        for multi_vector in vector
+                        for inner_vector in multi_vector  # type: ignore
+                    ],
+                    vectors_count=len(vector),
+                )
+            return grpc.VectorOutput(data=vector)
+
+        if isinstance(model, list):
+            return grpc.VectorsOutput(vector=convert_vector(model))
+        elif isinstance(model, dict):
+            vectors: Dict = {}
+            for key, val in model.items():
+                if isinstance(val, list):
+                    vectors.update({key: convert_vector(val)})
+                elif isinstance(val, rest.SparseVector):
+                    vectors.update({key: cls.convert_sparse_vector_to_vector_output(val)})
+            return grpc.VectorsOutput(vectors=grpc.NamedVectorsOutput(vectors=vectors))
+        else:
+            raise ValueError(f"invalid VectorStructOutput model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_with_vectors(cls, model: rest.WithVector) -> grpc.WithVectorsSelector:
@@ -2734,6 +2923,24 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_document(cls, model: rest.Document) -> grpc.Document:
+        return grpc.Document(
+            text=model.text, model=model.model, options=payload_to_grpc(model.options)
+        )
+
+    @classmethod
+    def convert_image(cls, model: rest.Image) -> grpc.Image:
+        return grpc.Image(
+            image=model.image, model=model.model, options=payload_to_grpc(model.options)
+        )
+
+    @classmethod
+    def convert_inference_object(cls, model: rest.InferenceObject) -> grpc.InferenceObject:
+        return grpc.InferenceObject(
+            object=model.object, model=model.model, options=payload_to_grpc(model.options)
+        )
+
+    @classmethod
     def convert_vector_input(cls, model: rest.VectorInput) -> grpc.VectorInput:
         if isinstance(model, list):
             if len(model) != 0 and isinstance(
@@ -2745,6 +2952,12 @@ class RestToGrpc:
             return grpc.VectorInput(sparse=cls.convert_sparse_vector(model))
         if isinstance(model, get_args_subscribed(rest.ExtendedPointId)):
             return grpc.VectorInput(id=cls.convert_extended_point_id(model))
+        if isinstance(model, rest.Document):
+            return grpc.VectorInput(document=cls.convert_document(model))
+        if isinstance(model, rest.Image):
+            return grpc.VectorInput(image=cls.convert_image(model))
+        if isinstance(model, rest.InferenceObject):
+            return grpc.VectorInput(object=cls.convert_inference_object(model))
 
         raise ValueError(f"invalid VectorInput model: {model}")  # pragma: no cover
 
@@ -2795,14 +3008,14 @@ class RestToGrpc:
         if model == rest.Fusion.DBSF:
             return grpc.Fusion.DBSF
 
-        raise ValueError(f"invalid Fusion model: {model}")
+        raise ValueError(f"invalid Fusion model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_sample(cls, model: rest.Sample) -> grpc.Sample:
         if model == rest.Sample.RANDOM:
             return grpc.Sample.Random
 
-        raise ValueError(f"invalid Sample model: {model}")
+        raise ValueError(f"invalid Sample model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_query(cls, model: rest.Query) -> grpc.Query:
@@ -3562,7 +3775,7 @@ class RestToGrpc:
         elif model == rest.Modifier.NONE:
             return getattr(grpc.Modifier, "None")
         else:
-            raise ValueError(f"invalid Modifier model: {model}")
+            raise ValueError(f"invalid Modifier model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_sparse_vector_params(
