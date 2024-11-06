@@ -436,6 +436,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             types.Query,
             types.NumpyArray,
             types.Document,
+            types.Image,
+            types.InferenceObject,
             None,
         ] = None,
         using: Optional[str] = None,
@@ -603,6 +605,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             types.Query,
             types.NumpyArray,
             types.Document,
+            types.Image,
+            types.InferenceObject,
             None,
         ] = None,
         using: Optional[str] = None,
@@ -1591,13 +1595,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
-            w = grpc.UpsertPoints(
-                collection_name=collection_name,
-                wait=wait,
-                points=points,
-                ordering=ordering,
-                shard_key_selector=shard_key_selector,
-            )
             grpc_result = (
                 await self.grpc_points.Upsert(
                     grpc.UpsertPoints(

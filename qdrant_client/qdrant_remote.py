@@ -1918,14 +1918,6 @@ class QdrantRemote(QdrantBase):
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
-            w = grpc.UpsertPoints(
-                collection_name=collection_name,
-                wait=wait,
-                points=points,
-                ordering=ordering,
-                shard_key_selector=shard_key_selector,
-            )
-
             grpc_result = self.grpc_points.Upsert(
                 grpc.UpsertPoints(
                     collection_name=collection_name,
