@@ -200,9 +200,26 @@ def header_adder_async_interceptor(
 
 
 def parse_channel_options(options: Optional[Dict[str, Any]] = None) -> List[Tuple[str, Any]]:
+    """
+     Client                      Server
+    |                          |
+    |------ RPC Call -------->| (Initial attempt)
+    |                          | (Server not responding)
+    |<-- 20s timeout reached --| (keepalive_timeout_ms)
+    |                          |
+    |---- wait 10s ------>    | (min/max_reconnect_backoff_ms)
+    |                          |
+    |------ RPC Call -------->| (Retry attempt)
+    |                          |
+    |-- Keepalive ping (10s) ->| (keepalive_time_ms)
+    """
     default_options: List[Tuple[str, Any]] = [
         ("grpc.max_send_message_length", -1),
         ("grpc.max_receive_message_length", -1),
+        ("grpc.keepalive_timeout_ms", 20000),
+        ("grpc.keepalive_time_ms", 10000),
+        ("grpc.min_reconnect_backoff_ms", 10000),
+        ("grpc.max_reconnect_backoff_ms", 10000),
     ]
     if options is None:
         return default_options
