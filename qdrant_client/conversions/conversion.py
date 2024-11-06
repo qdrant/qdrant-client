@@ -1012,7 +1012,7 @@ class GrpcToRest:
         return rest.Document(
             text=model.text,
             model=model.model if model.HasField("model") else None,
-            options=model.options,
+            options=grpc_to_payload(model.options),
         )
 
     @classmethod
@@ -1020,7 +1020,7 @@ class GrpcToRest:
         return rest.Image(
             image=model.image,
             model=model.model if model.HasField("model") else None,
-            options=model.options,
+            options=grpc_to_payload(model.options),
         )
 
     @classmethod
@@ -1028,7 +1028,7 @@ class GrpcToRest:
         return rest.InferenceObject(
             object=model.object,
             model=model.model if model.HasField("model") else None,
-            options=model.options,
+            options=grpc_to_payload(model.options),
         )
 
     @classmethod
@@ -2899,15 +2899,21 @@ class RestToGrpc:
 
     @classmethod
     def convert_document(cls, model: rest.Document) -> grpc.Document:
-        return grpc.Document(text=model.text, model=model.model, options=model.options)
+        return grpc.Document(
+            text=model.text, model=model.model, options=payload_to_grpc(model.options)
+        )
 
     @classmethod
     def convert_image(cls, model: rest.Image) -> grpc.Image:
-        return grpc.Image(image=model.image, model=model.model, options=model.options)
+        return grpc.Image(
+            image=model.image, model=model.model, options=payload_to_grpc(model.options)
+        )
 
     @classmethod
     def convert_inference_object(cls, model: rest.InferenceObject) -> grpc.InferenceObject:
-        return grpc.InferenceObject(object=model.object, model=model.model, options=model.options)
+        return grpc.InferenceObject(
+            object=model.object, model=model.model, options=payload_to_grpc(model.options)
+        )
 
     @classmethod
     def convert_vector_input(cls, model: rest.VectorInput) -> grpc.VectorInput:
