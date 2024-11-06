@@ -377,3 +377,63 @@ def test_query_points():
     assert recovered.using == query_request.using
     assert recovered.with_payload == query_request.with_payload
     assert recovered.prefetch[0] == query_request.prefetch
+
+
+def test_extended_vectors():
+    # todo: test in fixtures.py from v1.14.0
+    import numpy as np
+
+    from qdrant_client import grpc, models
+    from qdrant_client.conversions.conversion import GrpcToRest
+
+    # region grpc.Vector
+    dense_vector = grpc.Vector(dense=grpc.DenseVector(data=[0.2, 0.3, 0.4]))
+    sparse_vector = grpc.Vector(
+        sparse=grpc.SparseVector(values=[0.1, 0.2, 0.3], indices=[1, 42, 240])
+    )
+    multi_dense_vector = grpc.Vector(
+        multi_dense=grpc.MultiDenseVector(
+            vectors=[
+                grpc.DenseVector(data=[0.1, 0.3, 0.5]),
+                grpc.DenseVector(data=[0.2, 0.4, 0.6]),
+            ]
+        )
+    )
+
+    rest_dense_vector = GrpcToRest.convert_vector(dense_vector)
+    rest_sparse_vector = GrpcToRest.convert_vector(sparse_vector)
+    rest_multi_dense_vector = GrpcToRest.convert_vector(multi_dense_vector)
+    assert np.allclose(rest_dense_vector, [0.2, 0.3, 0.4])
+    assert (
+        isinstance(rest_sparse_vector, models.SparseVector)
+        and np.allclose(rest_sparse_vector.values, [0.1, 0.2, 0.3])
+        and rest_sparse_vector.indices == [1, 42, 240]
+    )
+    assert np.allclose(rest_multi_dense_vector, np.array([[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]))
+    # endregion
+
+    # region grpc.VectorOutput
+    dense_vector_output = grpc.VectorOutput(dense=grpc.DenseVector(data=[0.2, 0.3, 0.4]))
+    sparse_vector_output = grpc.VectorOutput(
+        sparse=grpc.SparseVector(values=[0.1, 0.2, 0.3], indices=[1, 42, 240])
+    )
+    multi_dense_vector_output = grpc.VectorOutput(
+        multi_dense=grpc.MultiDenseVector(
+            vectors=[
+                grpc.DenseVector(data=[0.1, 0.3, 0.5]),
+                grpc.DenseVector(data=[0.2, 0.4, 0.6]),
+            ]
+        )
+    )
+
+    rest_dense_vector = GrpcToRest.convert_vector_output(dense_vector_output)
+    rest_sparse_vector = GrpcToRest.convert_vector_output(sparse_vector_output)
+    rest_multi_dense_vector = GrpcToRest.convert_vector_output(multi_dense_vector_output)
+    assert np.allclose(rest_dense_vector, [0.2, 0.3, 0.4])
+    assert (
+        isinstance(rest_sparse_vector, models.SparseVector)
+        and np.allclose(rest_sparse_vector.values, [0.1, 0.2, 0.3])
+        and rest_sparse_vector.indices == [1, 42, 240]
+    )
+    assert np.allclose(rest_multi_dense_vector, np.array([[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]))
+    # endregion
