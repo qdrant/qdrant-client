@@ -894,6 +894,53 @@ class GrpcToRest:
         raise ValueError(f"invalid VectorsConfig model: {model}")  # pragma: no cover
 
     @classmethod
+    def _convert_vector(
+        cls, model: Union[grpc.Vector, grpc.VectorOutput]
+    ) -> Tuple[
+        Optional[str],
+        Union[
+            List[float],
+            List[List[float]],
+            rest.SparseVector,
+            grpc.Document,
+            grpc.Image,
+            grpc.InferenceObject,
+        ],
+    ]:
+        """Parse common parts of vector structs
+
+        Args:
+            model: Vector or VectorOutput
+
+        Returns:
+            Tuple of name and value, name is None if the struct was parsed and returned with the converted value,
+            otherwise it's propagated for further processing along with the raw value
+        """
+        name = model.WhichOneof("vector")
+        if name is None:
+            if model.HasField("indices"):
+                return None, rest.SparseVector(indices=model.indices.data[:], values=model.data[:])
+            if model.HasField("vectors_count"):
+                vectors_count = model.vectors_count
+                vectors = model.data
+                step = len(vectors) // vectors_count
+                return None, [vectors[i : i + step] for i in range(0, len(vectors), step)]
+
+            return None, model.data[:]
+
+        val = getattr(model, name)
+        if name == "dense":
+            return None, cls.convert_dense_vector(val)
+
+        if name == "sparse":
+            return None, cls.convert_sparse_vector(val)
+
+        if name == "multi_dense":
+            return None, cls.convert_multi_dense_vector(val)
+
+        return name, val
+
+    @classmethod
     def convert_vector(
         cls, model: grpc.Vector
     ) -> Union[
@@ -904,27 +951,10 @@ class GrpcToRest:
         rest.Image,
         rest.InferenceObject,
     ]:
-        if model.HasField("indices"):
-            return rest.SparseVector(indices=model.indices.data[:], values=model.data[:])
-        if model.HasField("vectors_count"):
-            vectors_count = model.vectors_count
-            vectors = model.data
-            step = len(vectors) // vectors_count
-            return [vectors[i : i + step] for i in range(0, len(vectors), step)]
+        name, val = cls._convert_vector(model)
 
-        name = model.WhichOneof("vector")
         if name is None:
-            return model.data[:]
-
-        val = getattr(model, name)
-        if name == "dense":
-            return cls.convert_dense_vector(val)
-
-        if name == "sparse":
-            return cls.convert_sparse_vector(val)
-
-        if name == "multi_dense":
-            return cls.convert_multi_dense_vector(val)
+            return val
 
         if name == "document":
             return cls.convert_document(val)
@@ -941,15 +971,10 @@ class GrpcToRest:
     def convert_vector_output(
         cls, model: grpc.VectorOutput
     ) -> Union[List[float], List[List[float]], rest.SparseVector]:
-        if model.HasField("indices"):
-            return rest.SparseVector(indices=model.indices.data[:], values=model.data[:])
-        if model.HasField("vectors_count"):
-            vectors_count = model.vectors_count
-            vectors = model.data
-            step = len(vectors) // vectors_count
-            return [vectors[i : i + step] for i in range(0, len(vectors), step)]
-
-        return model.data[:]
+        name, val = cls._convert_vector(model)
+        if name is None:
+            return val
+        raise ValueError(f"invalid Vector model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, rest.Vector]:
@@ -986,14 +1011,14 @@ class GrpcToRest:
     def convert_vectors_output(cls, model: grpc.VectorsOutput) -> rest.VectorStructOutput:
         name = model.WhichOneof("vectors_options")
         if name is None:
-            raise ValueError(f"invalid Vectors model: {model}")  # pragma: no cover
+            raise ValueError(f"invalid VectorsOutput model: {model}")  # pragma: no cover
         val = getattr(model, name)
 
         if name == "vector":
             return cls.convert_vector_output(val)
         if name == "vectors":
             return cls.convert_named_vectors_output(val)
-        raise ValueError(f"invalid Vectors model: {model}")  # pragma: no cover
+        raise ValueError(f"invalid VectorsOutput model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_dense_vector(cls, model: grpc.DenseVector) -> List[float]:
