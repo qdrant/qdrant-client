@@ -989,11 +989,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Distance matrix using a pair-based encoding.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        warnings.warn(
-            "`search_matrix_pairs` method is deprecated and will be removed in the future. Use `query_points` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return await self._client.search_matrix_pairs(
             collection_name=collection_name,
             query_filter=query_filter,
@@ -1040,11 +1035,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Distance matrix using an offset-based encoding.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        warnings.warn(
-            "`search_matrix_offsets` method is deprecated and will be removed in the future. Use `query_points` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return await self._client.search_matrix_offsets(
             collection_name=collection_name,
             query_filter=query_filter,
