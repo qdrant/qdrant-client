@@ -291,7 +291,12 @@ class QdrantClient(QdrantFastembedMixin):
             List of search responses
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
+        warnings.warn(
+            "`search_batch` method is deprecated and will be removed in the future."
+            " Use `query_batch_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.search_batch(
             collection_name=collection_name,
             requests=requests,
@@ -393,7 +398,12 @@ class QdrantClient(QdrantFastembedMixin):
             List of found close points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
+        warnings.warn(
+            "`search` method is deprecated and will be removed in the future."
+            " Use `query_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.search(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -822,7 +832,12 @@ class QdrantClient(QdrantFastembedMixin):
             Each group also contains an id of the group, which is the value of the payload field.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
+        warnings.warn(
+            "`search_groups` method is deprecated and will be removed in the future."
+            " Use `query_points_groups` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.search_groups(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -868,7 +883,12 @@ class QdrantClient(QdrantFastembedMixin):
             List of recommend responses
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
+        warnings.warn(
+            "`recommend_batch` method is deprecated and will be removed in the future."
+            " Use `query_batch_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.recommend_batch(
             collection_name=collection_name,
             requests=requests,
@@ -971,7 +991,12 @@ class QdrantClient(QdrantFastembedMixin):
             List of recommended points with similarity scores.
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
+        warnings.warn(
+            "`recommend` method is deprecated and will be removed in the future."
+            " Use `query_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.recommend(
             collection_name=collection_name,
             positive=positive,
@@ -1027,7 +1052,12 @@ class QdrantClient(QdrantFastembedMixin):
         """
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
+        warnings.warn(
+            "`search_matrix_pairs` method is deprecated and will be removed in the future."
+            " Use `query_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.search_matrix_pairs(
             collection_name=collection_name,
             query_filter=query_filter,
@@ -1075,7 +1105,12 @@ class QdrantClient(QdrantFastembedMixin):
         """
 
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
+        warnings.warn(
+            "`search_matrix_offsets` method is deprecated and will be removed in the future."
+            " Use `query_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.search_matrix_offsets(
             collection_name=collection_name,
             query_filter=query_filter,
@@ -1193,7 +1228,12 @@ class QdrantClient(QdrantFastembedMixin):
 
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
+        warnings.warn(
+            "`recommend_groups` method is deprecated and will be removed in the future."
+            " Use `query_points_groups` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.recommend_groups(
             collection_name=collection_name,
             group_by=group_by,
@@ -1296,6 +1336,12 @@ class QdrantClient(QdrantFastembedMixin):
         Returns:
             List of discovered points with discovery or context scores, accordingly.
         """
+        warnings.warn(
+            "`discover` method is deprecated and will be removed in the future."
+            " Use `query_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.discover(
             collection_name=collection_name,
             target=target,
@@ -1322,6 +1368,12 @@ class QdrantClient(QdrantFastembedMixin):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> List[List[types.ScoredPoint]]:
+        warnings.warn(
+            "`discover_batch` method is deprecated and will be removed in the future."
+            " Use `query_batch_points` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._client.discover_batch(
             collection_name=collection_name,
             requests=requests,
