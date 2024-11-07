@@ -72,7 +72,9 @@ def _worker(
         # See:
         # https://docs.python.org/3.6/library/multiprocessing.html?highlight=process#pipes-and-queues
         # https://docs.python.org/3.6/library/multiprocessing.html?highlight=process#programming-guidelines
+        input_queue.close()
         output_queue.close()
+        input_queue.join_thread()
         output_queue.join_thread()
 
         with num_active_workers.get_lock():
@@ -90,7 +92,7 @@ class ParallelWorkerPool:
         self.ctx: BaseContext = get_context(start_method)
         self.processes: List[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
-
+        self.emergency_shutdown = False
         self.num_active_workers: Optional[BaseValue] = None
 
     def start(self, **kwargs: Any) -> None:
@@ -162,8 +164,15 @@ class ParallelWorkerPool:
         finally:
             assert self.input_queue is not None, "Input queue is None"
             assert self.output_queue is not None, "Output queue is None"
+            self.join()
             self.input_queue.close()
             self.output_queue.close()
+            if self.emergency_shutdown:
+                self.input_queue.cancel_join_thread()
+                self.output_queue.cancel_join_thread()
+            else:
+                self.input_queue.join_thread()
+                self.output_queue.join_thread()
 
     def join_or_terminate(self, timeout: Optional[int] = 1) -> None:
         """
@@ -171,6 +180,7 @@ class ParallelWorkerPool:
         @param timeout:
         @return:
         """
+        self.emergency_shutdown = True
         for process in self.processes:
             process.join(timeout=timeout)
             if process.is_alive():
@@ -193,4 +203,5 @@ class ParallelWorkerPool:
         https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/.
         """
         for process in self.processes:
-            process.terminate()
+            if process.is_alive():
+                process.terminate()
