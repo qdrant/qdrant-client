@@ -3,7 +3,7 @@ from typing import List, Type, Dict, Union, Any, Set, Optional
 
 from pydantic import BaseModel
 
-from qdrant_client.embed.utils import Path, convert_paths
+from qdrant_client.embed.utils import FieldPath, convert_paths
 
 
 try:
@@ -39,20 +39,20 @@ class ModelSchemaParser:
             {"Prefetch"}
         _cache: cache of string paths for models containing objects for inference, e.g.:
             {"Prefetch": ['prefetch.query', 'prefetch.query.context.negative', ...]}
-        path_cache: cache of Path objects for models containing objects for inference, e.g.:
+        path_cache: cache of FieldPath objects for models containing objects for inference, e.g.:
             {
                  "Prefetch": [
-                     Path(
+                     FieldPath(
                          current="prefetch",
                          tail=[
-                             Path(
+                             FieldPath(
                                  current="query",
                                  tail=[
-                                     Path(
+                                     FieldPath(
                                          current="recommend",
                                          tail=[
-                                             Path(current="negative", tail=None),
-                                             Path(current="positive", tail=None),
+                                             FieldPath(current="negative", tail=None),
+                                             FieldPath(current="positive", tail=None),
                                          ],
                                      ),
                                      ...,
@@ -80,7 +80,7 @@ class ModelSchemaParser:
         self.name_recursive_ref_mapping: Dict[str, str] = {
             k: v for k, v in NAME_RECURSIVE_REF_MAPPING.items()
         }
-        self.path_cache: Dict[str, List[Path]] = {
+        self.path_cache: Dict[str, List[FieldPath]] = {
             model: convert_paths(paths) for model, paths in self._cache.items()
         }
 
@@ -238,10 +238,10 @@ class ModelSchemaParser:
             else:
                 self._excluded_recursive_refs.add(ref)
 
-        # convert str paths to Path objects which group path parts and reduce the time of the traversal
+        # convert str paths to FieldPath objects which group path parts and reduce the time of the traversal
         self.path_cache = {model: convert_paths(paths) for model, paths in self._cache.items()}
 
-    def _persist(self, output_path: Union[Path, str] = CACHE_PATH) -> None:
+    def _persist(self, output_path: Union[FieldPath, str] = CACHE_PATH) -> None:
         """Persist the parser state to a file
 
         Args:

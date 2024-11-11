@@ -314,12 +314,14 @@ document_with_options = grpc.Document(
 document_without_options = grpc.Document(text="random text", model="bert")
 document_only_text = grpc.Document(text="random text")
 image_with_options = grpc.Image(
-    image="base64", model="resnet", options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"})
+    image=json_to_value("path_to_image"),
+    model="resnet",
+    options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"}),
 )
-image_without_options = grpc.Image(image="base64", model="resnet")
-image_only_image = grpc.Image(image="base64")
+image_without_options = grpc.Image(image=json_to_value("path_to_image"), model="resnet")
+image_only_image = grpc.Image(image=json_to_value("path_to_image"))
 inference_object_with_options = grpc.InferenceObject(
-    object=json_to_value("text"),
+    object=json_to_value("path_to_image"),
     model="bert",
     options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"}),
 )

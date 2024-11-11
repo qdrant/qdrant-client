@@ -1,11 +1,9 @@
-import base64
-import io
 import uuid
 import warnings
 from itertools import tee
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set, get_args
 from copy import deepcopy
-
+from pathlib import Path
 
 import numpy as np
 
@@ -18,7 +16,7 @@ from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.embed_inspector import InspectorEmbed
 from qdrant_client.embed.models import NumericVector, NumericVectorStruct
 from qdrant_client.embed.schema_parser import ModelSchemaParser
-from qdrant_client.embed.utils import Path
+from qdrant_client.embed.utils import FieldPath
 from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
@@ -933,14 +931,14 @@ class QdrantFastembedMixin(QdrantBase):
     def _embed_models(
         self,
         model: BaseModel,
-        paths: Optional[List[Path]] = None,
+        paths: Optional[List[FieldPath]] = None,
         is_query: bool = False,
     ) -> Union[BaseModel, NumericVector]:
         """Embed model's fields requiring inference
 
         Args:
-            model: Qdrant model containing fields to embed
-            paths: Path to fields to embed. E.g. [Path(current="recommend", tail=[Path(current="negative", tail=None)])]
+            model: Qdrant http model containing fields to embed
+            paths: Path to fields to embed. E.g. [FieldPath(current="recommend", tail=[FieldPath(current="negative", tail=None)])]
             is_query: Flag to determine which embed method to use. Defaults to False.
 
         Returns:
@@ -1097,10 +1095,13 @@ class QdrantFastembedMixin(QdrantBase):
             embedding_model_inst = self._get_or_init_image_model(
                 model_name=model_name, **(image.options or {})
             )
-            image_data = base64.b64decode(image.image)
-            with io.BytesIO(image_data) as buffer:
-                with PilImage.open(buffer) as image:
-                    embedding = list(embedding_model_inst.embed(images=[image]))[0].tolist()
+            if not isinstance(image.image, (str, Path, PilImage.Image)):  # type: ignore
+                # PilImage is None if PIL is not installed,
+                # but we'll fail earlier if it's not installed.
+                raise ValueError(
+                    f"Unsupported image type: {type(image.image)}. Image: {image.image}"
+                )
+            embedding = list(embedding_model_inst.embed(images=[image.image]))[0].tolist()
             return embedding
 
         raise ValueError(f"{model_name} is not among supported models")

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.schema_parser import ModelSchemaParser
-from qdrant_client.embed.utils import Path
+from qdrant_client.embed.utils import FieldPath
 from qdrant_client.http import models
 
 
@@ -41,7 +41,7 @@ class Inspector:
                         return True
         return False
 
-    def _inspect_model(self, model: BaseModel, paths: Optional[List[Path]] = None) -> bool:
+    def _inspect_model(self, model: BaseModel, paths: Optional[List[FieldPath]] = None) -> bool:
         if isinstance(model, INFERENCE_OBJECT_TYPES):
             return True
 
@@ -58,7 +58,7 @@ class Inspector:
         return False
 
     def _inspect_inner_models(
-        self, original_model: BaseModel, current_path: str, tail: List[Path]
+        self, original_model: BaseModel, current_path: str, tail: List[FieldPath]
     ) -> bool:
         def inspect_recursive(member: BaseModel) -> bool:
             recursive_paths = []

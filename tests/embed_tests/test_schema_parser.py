@@ -4,10 +4,10 @@ import pytest
 
 from qdrant_client import models
 from qdrant_client.embed.schema_parser import ModelSchemaParser
-from qdrant_client.embed.utils import Path
+from qdrant_client.embed.utils import FieldPath
 
 
-def check_path_recursive(plain_path_parts: List[str], paths: List[Path]) -> bool:
+def check_path_recursive(plain_path_parts: List[str], paths: List[FieldPath]) -> bool:
     if not plain_path_parts:
         return True
 
