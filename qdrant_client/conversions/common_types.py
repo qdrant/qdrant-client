@@ -115,6 +115,8 @@ UpdateOperation: TypeAlias = rest.UpdateOperation
 Query: TypeAlias = rest.Query
 Prefetch: TypeAlias = rest.Prefetch
 Document: TypeAlias = rest.Document
+Image: TypeAlias = rest.Image
+InferenceObject: TypeAlias = rest.InferenceObject
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
