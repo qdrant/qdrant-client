@@ -470,6 +470,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             types.Query,
             types.NumpyArray,
             types.Document,
+            types.Image,
+            types.InferenceObject,
             None,
         ] = None,
         using: Optional[str] = None,
