@@ -605,8 +605,12 @@ class Document(BaseModel, extra="forbid"):
     """
     WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.
     """
-    text: str = Field(..., description="Text document to be embedded by FastEmbed or Cloud inference server")
-    model: Optional[str] = Field(default=None, description="Model name to be used for embedding computation")
+
+    text: str = Field(..., description="Text of the document This field will be used as input for the embedding model")
+    model: Optional[str] = Field(
+        default=None,
+        description="Name of the model used to generate the vector List of available models depends on a provider",
+    )
     options: Optional[Dict[str, Any]] = Field(
         default=None, description="Parameters for the model Values of the parameters are model-specific"
     )
@@ -868,7 +872,7 @@ class Image(BaseModel, extra="forbid"):
     WARN: Work-in-progress, unimplemented  Image object for embedding. Requires inference infrastructure, unimplemented.
     """
 
-    image: str = Field(..., description="Image data: base64 encoded image or an URL")
+    image: Any = Field(..., description="Image data: base64 encoded image or an URL")
     model: Optional[str] = Field(
         default=None,
         description="Name of the model used to generate the vector List of available models depends on a provider",

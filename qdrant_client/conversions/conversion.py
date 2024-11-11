@@ -1043,7 +1043,7 @@ class GrpcToRest:
     @classmethod
     def convert_image(cls, model: grpc.Image) -> rest.Image:
         return rest.Image(
-            image=model.image,
+            image=value_to_json(model.image),
             model=model.model if model.HasField("model") else None,
             options=grpc_to_payload(model.options),
         )
@@ -1051,7 +1051,7 @@ class GrpcToRest:
     @classmethod
     def convert_inference_object(cls, model: grpc.InferenceObject) -> rest.InferenceObject:
         return rest.InferenceObject(
-            object=model.object,
+            object=value_to_json(model.object),
             model=model.model if model.HasField("model") else None,
             options=grpc_to_payload(model.options),
         )
@@ -2931,13 +2931,17 @@ class RestToGrpc:
     @classmethod
     def convert_image(cls, model: rest.Image) -> grpc.Image:
         return grpc.Image(
-            image=model.image, model=model.model, options=payload_to_grpc(model.options)
+            image=json_to_value(model.image),
+            model=model.model,
+            options=payload_to_grpc(model.options),
         )
 
     @classmethod
     def convert_inference_object(cls, model: rest.InferenceObject) -> grpc.InferenceObject:
         return grpc.InferenceObject(
-            object=model.object, model=model.model, options=payload_to_grpc(model.options)
+            object=json_to_value(model.object),
+            model=model.model,
+            options=payload_to_grpc(model.options),
         )
 
     @classmethod
