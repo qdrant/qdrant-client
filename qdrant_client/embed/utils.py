@@ -3,18 +3,18 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
-class Path(BaseModel):
+class FieldPath(BaseModel):
     current: str
-    tail: Optional[List["Path"]] = Field(default=None)
+    tail: Optional[List["FieldPath"]] = Field(default=None)
 
     def as_str_list(self) -> List[str]:
         """
-        >>> Path(current='a', tail=[Path(current='b', tail=[Path(current='c'), Path(current='d')])]).as_str_list()
+        >>> FieldPath(current='a', tail=[FieldPath(current='b', tail=[FieldPath(current='c'), FieldPath(current='d')])]).as_str_list()
         ['a.b.c', 'a.b.d']
         """
 
         # Recursive function to collect all paths
-        def collect_paths(path: Path, prefix: str = "") -> List[str]:
+        def collect_paths(path: FieldPath, prefix: str = "") -> List[str]:
             current_path = prefix + path.current
             if not path.tail:
                 return [current_path]
@@ -28,8 +28,8 @@ class Path(BaseModel):
         return collect_paths(self)
 
 
-def convert_paths(paths: List[str]) -> List[Path]:
-    """Convert string paths into Path objects
+def convert_paths(paths: List[str]) -> List[FieldPath]:
+    """Convert string paths into FieldPath objects
 
     Paths which share the same root are grouped together.
 
@@ -37,7 +37,7 @@ def convert_paths(paths: List[str]) -> List[Path]:
         paths: List[str]: List of str paths containing "." as separator
 
     Returns:
-        List[Path]: List of Path objects
+        List[FieldPath]: List of FieldPath objects
     """
     sorted_paths = sorted(paths)
     prev_root = None
@@ -46,7 +46,7 @@ def convert_paths(paths: List[str]) -> List[Path]:
         parts = path.split(".")
         root = parts[0]
         if root != prev_root:
-            converted_paths.append(Path(current=root))
+            converted_paths.append(FieldPath(current=root))
             prev_root = root
         current = converted_paths[-1]
         for part in parts[1:]:
@@ -59,7 +59,7 @@ def convert_paths(paths: List[str]) -> List[Path]:
                     found = True
                     break
             if not found:
-                new_tail = Path(current=part)
+                new_tail = FieldPath(current=part)
                 assert current.tail is not None
                 current.tail.append(new_tail)
                 current = new_tail

@@ -21,7 +21,7 @@ COLBERT_DIM = 128
 DENSE_IMAGE_MODEL_NAME = "Qdrant/resnet50-onnx"
 DENSE_IMAGE_DIM = 2048
 
-TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "test_image.txt"
+TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 
 
 # todo: remove once we don't store models in class variables
@@ -730,11 +730,9 @@ def test_propagate_options(prefer_grpc):
     multi_doc_1 = models.Document(
         text="hello world", model=COLBERT_MODEL_NAME, options={"lazy_load": True}
     )
-    with open(TEST_IMAGE_PATH, "r") as f:
-        base64_string = f.read()
 
     dense_image_1 = models.Image(
-        image=base64_string, model=DENSE_IMAGE_MODEL_NAME, options={"lazy_load": True}
+        image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME, options={"lazy_load": True}
     )
 
     points = [
@@ -809,7 +807,7 @@ def test_propagate_options(prefer_grpc):
     )
 
     inference_object_dense_image_1 = models.InferenceObject(
-        object=base64_string,
+        object=TEST_IMAGE_PATH,
         model=DENSE_IMAGE_MODEL_NAME,
         options={"lazy_load": True},
     )
@@ -844,10 +842,7 @@ def test_image(prefer_grpc):
     local_kwargs = {}
     local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
 
-    with open(TEST_IMAGE_PATH, "r") as f:
-        base64_string = f.read()
-
-    dense_image_1 = models.Image(image=base64_string, model=DENSE_IMAGE_MODEL_NAME)
+    dense_image_1 = models.Image(image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME)
     points = [
         models.PointStruct(id=i, vector=dense_img) for i, dense_img in enumerate([dense_image_1])
     ]
@@ -885,9 +880,6 @@ def test_inference_object(prefer_grpc):
     local_kwargs = {}
     local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
 
-    with open(TEST_IMAGE_PATH, "r") as f:
-        base64_string = f.read()
-
     inference_object_dense_doc_1 = models.InferenceObject(
         object="hello world",
         model=DENSE_MODEL_NAME,
@@ -907,7 +899,7 @@ def test_inference_object(prefer_grpc):
     )
 
     inference_object_dense_image_1 = models.InferenceObject(
-        object=base64_string,
+        object=TEST_IMAGE_PATH,
         model=DENSE_IMAGE_MODEL_NAME,
         options={"lazy_load": True},
     )

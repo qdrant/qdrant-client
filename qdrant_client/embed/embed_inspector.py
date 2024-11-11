@@ -7,7 +7,7 @@ from qdrant_client._pydantic_compat import model_fields_set
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 
-from qdrant_client.embed.utils import convert_paths, Path
+from qdrant_client.embed.utils import convert_paths, FieldPath
 from qdrant_client.http import models
 
 
@@ -21,14 +21,14 @@ class InspectorEmbed:
     def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
         self.parser = ModelSchemaParser() if parser is None else parser
 
-    def inspect(self, points: Union[Iterable[BaseModel], BaseModel]) -> List[Path]:
+    def inspect(self, points: Union[Iterable[BaseModel], BaseModel]) -> List[FieldPath]:
         """Looks for all the paths to objects requiring inference in the received models
 
         Args:
             points: models to inspect
 
         Returns:
-            list of Path objects
+            list of FieldPath objects
         """
         paths = []
         if isinstance(points, BaseModel):
@@ -45,7 +45,7 @@ class InspectorEmbed:
         return convert_paths(paths)
 
     def _inspect_model(
-        self, mod: BaseModel, paths: Optional[List[Path]] = None, accum: Optional[str] = None
+        self, mod: BaseModel, paths: Optional[List[FieldPath]] = None, accum: Optional[str] = None
     ) -> List[str]:
         """Looks for all the paths to objects requiring inference in the received model
 
@@ -72,7 +72,7 @@ class InspectorEmbed:
         self,
         original_model: BaseModel,
         current_path: str,
-        tail: List[Path],
+        tail: List[FieldPath],
         accum: Optional[str] = None,
     ) -> List[str]:
         """Looks for all the paths to objects requiring inference in the received model
@@ -80,7 +80,7 @@ class InspectorEmbed:
         Args:
             original_model: model to inspect
             current_path: the field to inspect on the current iteration
-            tail: list of Path objects to the fields possibly containing objects for inference
+            tail: list of FieldPath objects to the fields possibly containing objects for inference
             accum: accumulator for the path. Path is a dot separated string of field names which we assemble recursively
 
         Returns:
