@@ -542,7 +542,7 @@ class QdrantRemote(QdrantBase):
                     sparse_indices=sparse_indices,
                     shard_key_selector=shard_key_selector,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
 
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
@@ -591,8 +591,6 @@ class QdrantRemote(QdrantBase):
             types.Query,
             types.NumpyArray,
             types.Document,
-            types.Image,
-            types.InferenceObject,
             None,
         ] = None,
         using: Optional[str] = None,
@@ -662,7 +660,7 @@ class QdrantRemote(QdrantBase):
                     shard_key_selector=shard_key_selector,
                     read_consistency=consistency,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
 
             scored_points = [GrpcToRest.convert_scored_point(hit) for hit in res.result]
@@ -786,8 +784,6 @@ class QdrantRemote(QdrantBase):
             types.Query,
             types.NumpyArray,
             types.Document,
-            types.Image,
-            types.InferenceObject,
             None,
         ] = None,
         using: Optional[str] = None,
@@ -866,7 +862,7 @@ class QdrantRemote(QdrantBase):
                     shard_key_selector=shard_key_selector,
                     read_consistency=consistency,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
             return GrpcToRest.convert_groups_result(result)
         else:
@@ -1733,7 +1729,7 @@ class QdrantRemote(QdrantBase):
                     shard_key_selector=shard_key_selector,
                     timeout=timeout,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
 
             return [GrpcToRest.convert_retrieved_point(point) for point in res.result], (
@@ -1798,7 +1794,7 @@ class QdrantRemote(QdrantBase):
                     shard_key_selector=shard_key_selector,
                     timeout=timeout,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
             return GrpcToRest.convert_count_result(response)
 
@@ -1883,6 +1879,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1926,7 +1923,7 @@ class QdrantRemote(QdrantBase):
                     ordering=ordering,
                     shard_key_selector=shard_key_selector,
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
 
             assert grpc_result is not None, "Upsert returned None result"
@@ -2089,7 +2086,7 @@ class QdrantRemote(QdrantBase):
                     shard_key_selector=shard_key_selector,
                     timeout=timeout,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
 
             assert result is not None, "Retrieve returned None result"
@@ -2240,6 +2237,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -2263,7 +2261,7 @@ class QdrantRemote(QdrantBase):
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 ).result
             )
         else:
