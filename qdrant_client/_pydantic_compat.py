@@ -48,7 +48,7 @@ def model_fields_set(model: BaseModel) -> set:
         return model.__fields_set__
 
 
-def model_json_schema(model: BaseModel, *args: Any, **kwargs: Any) -> dict[str, Any]:
+def model_json_schema(model: BaseModel, *args: Any, **kwargs: Any) -> Dict[str, Any]:
     if PYDANTIC_V2:
         return model.model_json_schema(*args, **kwargs)
     else:
