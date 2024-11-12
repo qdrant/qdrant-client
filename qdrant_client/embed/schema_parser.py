@@ -2,6 +2,7 @@ from copy import copy, deepcopy
 from typing import List, Type, Dict, Union, Any, Set, Optional
 
 from pydantic import BaseModel
+from pydantic.json_schema import model_json_schema
 
 from qdrant_client.embed.utils import FieldPath, convert_paths
 
@@ -67,7 +68,7 @@ class ModelSchemaParser:
     """
 
     CACHE_PATH = "_inspection_cache.py"
-    INFERENCE_OBJECT_NAMES = {"Document", "Image"}
+    INFERENCE_OBJECT_NAMES = {"Document", "Image", "InferenceObject"}
 
     def __init__(self) -> None:
         self._defs: Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]] = deepcopy(DEFS)  # type: ignore[arg-type]
@@ -223,7 +224,7 @@ class ModelSchemaParser:
         if model_name in self._cache:
             return None
 
-        schema = model.model_json_schema()
+        schema = model_json_schema(model)
         self._defs.update(schema.get("$defs", {}))
 
         defs = self._replace_refs(schema)
