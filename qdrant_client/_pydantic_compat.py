@@ -1,3 +1,5 @@
+import json
+
 from typing import Any, Dict, Type, TypeVar
 
 from pydantic import BaseModel
@@ -44,3 +46,10 @@ def model_fields_set(model: BaseModel) -> set:
         return model.model_fields_set
     else:
         return model.__fields_set__
+
+
+def model_json_schema(model: BaseModel, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    if PYDANTIC_V2:
+        return model.model_json_schema(*args, **kwargs)
+    else:
+        return json.loads(model.schema_json(*args, **kwargs))
