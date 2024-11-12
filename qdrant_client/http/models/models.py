@@ -607,9 +607,8 @@ class Document(BaseModel, extra="forbid"):
     """
 
     text: str = Field(..., description="Text of the document This field will be used as input for the embedding model")
-    model: Optional[str] = Field(
-        default=None,
-        description="Name of the model used to generate the vector List of available models depends on a provider",
+    model: str = Field(
+        ..., description="Name of the model used to generate the vector List of available models depends on a provider"
     )
     options: Optional[Dict[str, Any]] = Field(
         default=None, description="Parameters for the model Values of the parameters are model-specific"
@@ -873,9 +872,8 @@ class Image(BaseModel, extra="forbid"):
     """
 
     image: Any = Field(..., description="Image data: base64 encoded image or an URL")
-    model: Optional[str] = Field(
-        default=None,
-        description="Name of the model used to generate the vector List of available models depends on a provider",
+    model: str = Field(
+        ..., description="Name of the model used to generate the vector List of available models depends on a provider"
     )
     options: Optional[Dict[str, Any]] = Field(
         default=None, description="Parameters for the model Values of the parameters are model-specific"
@@ -921,9 +919,8 @@ class InferenceObject(BaseModel, extra="forbid"):
         ...,
         description="Arbitrary data, used as input for the embedding model Used if the model requires more than one input or a custom input",
     )
-    model: Optional[str] = Field(
-        default=None,
-        description="Name of the model used to generate the vector List of available models depends on a provider",
+    model: str = Field(
+        ..., description="Name of the model used to generate the vector List of available models depends on a provider"
     )
     options: Optional[Dict[str, Any]] = Field(
         default=None, description="Parameters for the model Values of the parameters are model-specific"

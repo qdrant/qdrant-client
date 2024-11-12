@@ -872,7 +872,7 @@ class QdrantFastembedMixin(QdrantBase):
             Optional[models.Query]: query as it was, models.Query(nearest=query) or None
 
         Raises:
-            ValueError: if query is not of supported type or query is models.Document without `model` field
+            ValueError: if query is not of supported type
         """
         if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
             return query
@@ -892,9 +892,6 @@ class QdrantFastembedMixin(QdrantBase):
             return models.NearestQuery(nearest=query)
 
         if isinstance(query, INFERENCE_OBJECT_TYPES):
-            model_name = query.model
-            if model_name is None:
-                raise ValueError(f"`model` field has to be set explicitly in the {type(query)}")
             return models.NearestQuery(nearest=query)
 
         if query is None:

@@ -312,21 +312,18 @@ document_with_options = grpc.Document(
     text="random text", model="bert", options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"})
 )
 document_without_options = grpc.Document(text="random text", model="bert")
-document_only_text = grpc.Document(text="random text")
 image_with_options = grpc.Image(
     image=json_to_value("path_to_image"),
     model="resnet",
     options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"}),
 )
 image_without_options = grpc.Image(image=json_to_value("path_to_image"), model="resnet")
-image_only_image = grpc.Image(image=json_to_value("path_to_image"))
 inference_object_with_options = grpc.InferenceObject(
     object=json_to_value("path_to_image"),
     model="bert",
     options=payload_to_grpc({"a": 2, "b": [1, 2], "c": "useful"}),
 )
 inference_object_without_options = grpc.InferenceObject(object=json_to_value("text"), model="bert")
-inference_object_only_object = grpc.InferenceObject(object=json_to_value("text"))
 order_value_int = grpc.OrderValue(int=42)
 order_value_float = grpc.OrderValue(float=42.0)
 single_vector_output = grpc.VectorsOutput(vector=grpc.VectorOutput(data=[1.0, 2.0, 3.0, 4.0]))
@@ -1254,13 +1251,10 @@ vector_input_sparse = grpc.VectorInput(sparse=sparse_vector)
 vector_input_multi = grpc.VectorInput(multi_dense=multi_dense_vector)
 vector_input_doc_with_options = grpc.VectorInput(document=document_with_options)
 vector_input_doc_without_options = grpc.VectorInput(document=document_without_options)
-vector_input_doc_only_text = grpc.VectorInput(document=document_only_text)
 vector_input_image_with_options = grpc.VectorInput(image=image_with_options)
 vector_input_image_without_options = grpc.VectorInput(image=image_without_options)
-vector_input_image_only_image = grpc.VectorInput(image=image_only_image)
 vector_input_inference_with_options = grpc.VectorInput(object=inference_object_with_options)
 vector_input_inference_without_options = grpc.VectorInput(object=inference_object_without_options)
-vector_input_inference_only_object = grpc.VectorInput(object=inference_object_only_object)
 
 recommend_input = grpc.RecommendInput(
     positive=[
@@ -1272,15 +1266,12 @@ recommend_input_raw = grpc.RecommendInput(
     positive=[
         vector_input_doc_with_options,
         vector_input_doc_without_options,
-        vector_input_doc_only_text,
     ],
     negative=[
         vector_input_image_with_options,
         vector_input_image_without_options,
-        vector_input_image_only_image,
         vector_input_inference_with_options,
         vector_input_inference_without_options,
-        vector_input_inference_only_object,
     ],
 )
 recommend_input_strategy = grpc.RecommendInput(
