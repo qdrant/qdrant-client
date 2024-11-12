@@ -69,7 +69,7 @@ class RestBatchUploader(BaseUploader):
         cls,
         collection_name: Optional[str] = None,
         uri: str = "http://localhost:6333",
-        max_retries: int = 3,
+        max_retries: int = 5,
         **kwargs: Any,
     ) -> "RestBatchUploader":
         if not collection_name:

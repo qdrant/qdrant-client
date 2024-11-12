@@ -1,4 +1,3 @@
-import time
 import logging
 from itertools import count
 from typing import Any, Generator, Iterable, Optional, Tuple, Union
@@ -49,7 +48,7 @@ def upload_batch_grpc(
             break
         except Exception as e:
             logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
-            time.sleep(5)
+
             if attempt == max_retries - 1:
                 raise e
     return True
