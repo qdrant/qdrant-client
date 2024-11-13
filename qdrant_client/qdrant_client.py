@@ -1545,7 +1545,6 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -1603,7 +1602,6 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
-            timeout=timeout,
             **kwargs,
         )
 
@@ -1774,7 +1772,6 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Deletes selected points from collection
@@ -1812,7 +1809,6 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
-            timeout=timeout,
             **kwargs,
         )
 

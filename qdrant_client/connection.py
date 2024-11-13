@@ -201,10 +201,10 @@ def header_adder_async_interceptor(
 
 
 def parse_channel_options(options: Optional[Dict[str, Any]] = None) -> List[Tuple[str, Any]]:
+    timeout = f'{str(options.copy().pop("timeout", "10"))}s' if options else "10s"
     default_options: List[Tuple[str, Any]] = [
         ("grpc.max_send_message_length", -1),
         ("grpc.max_receive_message_length", -1),
-        ("grpc.enable_retries", 1),
         (
             "grpc.service_config",
             json.dumps(
@@ -212,7 +212,7 @@ def parse_channel_options(options: Optional[Dict[str, Any]] = None) -> List[Tupl
                     "methodConfig": [
                         {
                             "name": [{}],
-                            "timeout": "10s",  # TODO: propagate timeout
+                            "timeout": timeout,
                         },
                     ]
                 }

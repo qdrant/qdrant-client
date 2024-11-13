@@ -134,6 +134,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             self._rest_args["limits"] = limits
         if self._timeout is not None:
             self._rest_args["timeout"] = self._timeout
+            if self._grpc_options:
+                self._grpc_options["timeout"] = self._timeout
+            else:
+                self._grpc_options = {"timeout": self._timeout}
         if self._auth_token_provider is not None:
             if self._scheme == "http":
                 warnings.warn("Auth token provider is used with an insecure connection.")
@@ -393,7 +397,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     sparse_indices=sparse_indices,
                     shard_key_selector=shard_key_selector,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
             return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
         else:
@@ -436,8 +440,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             types.Query,
             types.NumpyArray,
             types.Document,
-            types.Image,
-            types.InferenceObject,
             None,
         ] = None,
         using: Optional[str] = None,
@@ -497,7 +499,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     shard_key_selector=shard_key_selector,
                     read_consistency=consistency,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
             scored_points = [GrpcToRest.convert_scored_point(hit) for hit in res.result]
             return models.QueryResponse(points=scored_points)
@@ -605,8 +607,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             types.Query,
             types.NumpyArray,
             types.Document,
-            types.Image,
-            types.InferenceObject,
             None,
         ] = None,
         using: Optional[str] = None,
@@ -674,7 +674,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         shard_key_selector=shard_key_selector,
                         read_consistency=consistency,
                     ),
-                    timeout=timeout if timeout is None else self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
             return GrpcToRest.convert_groups_result(result)
@@ -1429,7 +1429,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     shard_key_selector=shard_key_selector,
                     timeout=timeout,
                 ),
-                timeout=timeout if timeout is None else self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             )
             return (
                 [GrpcToRest.convert_retrieved_point(point) for point in res.result],
@@ -1488,7 +1488,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         shard_key_selector=shard_key_selector,
                         timeout=timeout,
                     ),
-                    timeout=timeout if timeout is None else self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
             return GrpcToRest.convert_count_result(response)
@@ -1755,7 +1755,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         shard_key_selector=shard_key_selector,
                         timeout=timeout,
                     ),
-                    timeout=timeout if timeout is None else self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
             assert result is not None, "Retrieve returned None result"
@@ -2188,7 +2188,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             return (
                 await self.grpc_collections.UpdateAliases(
                     grpc.ChangeAliases(timeout=timeout, actions=change_aliases_operation),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
         change_aliases_operation = [
@@ -2336,7 +2336,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         quantization_config=quantization_config,
                         sparse_vectors_config=sparse_vectors_config,
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
         if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
@@ -2372,7 +2372,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             return (
                 await self.grpc_collections.Delete(
-                    grpc.DeleteCollection(collection_name=collection_name), timeout=self._timeout
+                    grpc.DeleteCollection(collection_name=collection_name),
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
         result: Optional[bool] = (
@@ -2543,6 +2544,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "metadata": self._grpc_headers,
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
+                "options": self._grpc_options,
             }
         else:
             updater_kwargs = {
@@ -2948,7 +2950,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             placement=placement or [],
                         ),
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
         else:
@@ -2984,7 +2986,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         timeout=timeout,
                         request=grpc.DeleteShardKey(shard_key=shard_key),
                     ),
-                    timeout=self._timeout,
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
         else:

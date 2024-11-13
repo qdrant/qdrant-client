@@ -157,6 +157,10 @@ class QdrantRemote(QdrantBase):
 
         if self._timeout is not None:
             self._rest_args["timeout"] = self._timeout
+            if self._grpc_options:
+                self._grpc_options["timeout"] = self._timeout
+            else:
+                self._grpc_options = {"timeout": self._timeout}
 
         if self._auth_token_provider is not None:
             if self._scheme == "http":
@@ -1879,7 +1883,6 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1923,7 +1926,7 @@ class QdrantRemote(QdrantBase):
                     ordering=ordering,
                     shard_key_selector=shard_key_selector,
                 ),
-                timeout=timeout if timeout is not None else self._timeout,
+                timeout=self._timeout,
             ).result
 
             assert grpc_result is not None, "Upsert returned None result"
@@ -2237,7 +2240,6 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -2261,7 +2263,7 @@ class QdrantRemote(QdrantBase):
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
                     ),
-                    timeout=timeout if timeout is not None else self._timeout,
+                    timeout=self._timeout,
                 ).result
             )
         else:
@@ -2534,7 +2536,7 @@ class QdrantRemote(QdrantBase):
                     timeout=timeout,
                     actions=change_aliases_operation,
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
 
         change_aliases_operation = [
@@ -2680,7 +2682,7 @@ class QdrantRemote(QdrantBase):
                     quantization_config=quantization_config,
                     sparse_vectors_config=sparse_vectors_config,
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
 
         if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
@@ -2719,7 +2721,7 @@ class QdrantRemote(QdrantBase):
         if self._prefer_grpc:
             return self.grpc_collections.Delete(
                 grpc.DeleteCollection(collection_name=collection_name),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
 
         result: Optional[bool] = self.http.collections_api.delete_collection(
@@ -2910,6 +2912,7 @@ class QdrantRemote(QdrantBase):
                 "metadata": self._grpc_headers,
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
+                "options": self._grpc_options,
             }
         else:
             updater_kwargs = {
@@ -3328,7 +3331,7 @@ class QdrantRemote(QdrantBase):
                         placement=placement or [],
                     ),
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
         else:
             result = self.openapi_client.distributed_api.create_shard_key(
@@ -3363,7 +3366,7 @@ class QdrantRemote(QdrantBase):
                         shard_key=shard_key,
                     ),
                 ),
-                timeout=self._timeout,
+                timeout=timeout if timeout is not None else self._timeout,
             ).result
         else:
             result = self.openapi_client.distributed_api.delete_shard_key(
