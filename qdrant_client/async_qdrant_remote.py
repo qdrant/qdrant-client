@@ -17,13 +17,10 @@ from typing import (
     Any,
     Awaitable,
     Callable,
-    Dict,
     Iterable,
-    List,
     Mapping,
     Optional,
     Sequence,
-    Tuple,
     Type,
     Union,
     get_args,
@@ -63,7 +60,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         prefix: Optional[str] = None,
         timeout: Optional[int] = None,
         host: Optional[str] = None,
-        grpc_options: Optional[Dict[str, Any]] = None,
+        grpc_options: Optional[dict[str, Any]] = None,
         auth_token_provider: Optional[
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
@@ -172,7 +169,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._closed = True
 
     @staticmethod
-    def _parse_url(url: str) -> Tuple[Optional[str], str, Optional[int], Optional[str]]:
+    def _parse_url(url: str) -> tuple[Optional[str], str, Optional[int], Optional[str]]:
         parse_result: Url = parse_url(url)
         (scheme, host, port, prefix) = (
             parse_result.scheme,
@@ -281,7 +278,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
                 RestToGrpc.convert_search_request(r, collection_name)
@@ -308,7 +305,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r
                 for r in requests
             ]
-            http_res: Optional[List[List[models.ScoredPoint]]] = (
+            http_res: Optional[list[list[models.ScoredPoint]]] = (
                 await self.http.search_api.search_batch_points(
                     collection_name=collection_name,
                     consistency=consistency,
@@ -324,7 +321,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         query_vector: Union[
             Sequence[float],
-            Tuple[str, List[float]],
+            tuple[str, list[float]],
             types.NamedVector,
             types.NamedSparseVector,
             types.NumpyArray,
@@ -341,7 +338,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         if not append_payload:
             logging.warning(
                 "Usage of `append_payload` is deprecated. Please consider using `with_payload` instead"
@@ -421,7 +418,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     shard_key=shard_key_selector,
                 ),
             )
-            result: Optional[List[types.ScoredPoint]] = search_result.result
+            result: Optional[list[types.ScoredPoint]] = search_result.result
             assert result is not None, "Search returned None"
             return result
 
@@ -430,8 +427,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -441,7 +438,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             None,
         ] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -552,7 +549,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.QueryResponse]:
+    ) -> list[types.QueryResponse]:
         if self._prefer_grpc:
             requests = [
                 RestToGrpc.convert_query_request(r, collection_name)
@@ -582,7 +579,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 GrpcToRest.convert_query_points(r) if isinstance(r, grpc.QueryPoints) else r
                 for r in requests
             ]
-            http_res: Optional[List[models.QueryResponse]] = (
+            http_res: Optional[list[models.QueryResponse]] = (
                 await self.http.search_api.query_batch_points(
                     collection_name=collection_name,
                     consistency=consistency,
@@ -599,8 +596,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         group_by: str,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -610,7 +607,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             None,
         ] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -730,7 +727,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         collection_name: str,
         query_vector: Union[
             Sequence[float],
-            Tuple[str, List[float]],
+            tuple[str, list[float]],
             types.NamedVector,
             types.NamedSparseVector,
             types.NumpyArray,
@@ -953,7 +950,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
                 RestToGrpc.convert_recommend_request(r, collection_name)
@@ -982,7 +979,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 else r
                 for r in requests
             ]
-            http_res: List[List[models.ScoredPoint]] = (
+            http_res: list[list[models.ScoredPoint]] = (
                 await self.http.search_api.recommend_batch_points(
                     collection_name=collection_name,
                     consistency=consistency,
@@ -1000,8 +997,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, list[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
@@ -1010,7 +1007,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         if positive is None:
             positive = []
         if negative is None:
@@ -1110,8 +1107,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         group_by: str,
-        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        positive: Optional[Sequence[Union[types.PointId, list[float]]]] = None,
+        negative: Optional[Sequence[Union[types.PointId, list[float]]]] = None,
         query_filter: Optional[models.Filter] = None,
         search_params: Optional[models.SearchParams] = None,
         limit: int = 10,
@@ -1244,15 +1241,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, list[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         if context is None:
             context = []
         if self._prefer_grpc:
@@ -1352,7 +1349,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         if self._prefer_grpc:
             requests = [
                 RestToGrpc.convert_discover_request(r, collection_name)
@@ -1377,7 +1374,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 GrpcToRest.convert_discover_points(r) if isinstance(r, grpc.DiscoverPoints) else r
                 for r in requests
             ]
-            http_res: List[List[models.ScoredPoint]] = (
+            http_res: list[list[models.ScoredPoint]] = (
                 await self.http.search_api.discover_batch_points(
                     collection_name=collection_name,
                     discover_request_batch=models.DiscoverRequestBatch(searches=requests),
@@ -1400,7 +1397,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], Optional[types.PointId]]:
         if self._prefer_grpc:
             if isinstance(offset, get_args_subscribed(models.ExtendedPointId)):
                 offset = RestToGrpc.convert_extended_point_id(offset)
@@ -1571,7 +1568,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.UpdateResult:
         if self._prefer_grpc:
             if isinstance(points, models.Batch):
-                vectors_batch: List[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(
+                vectors_batch: list[grpc.Vectors] = RestToGrpc.convert_batch_vector_struct(
                     points.vectors, len(points.ids)
                 )
                 points = [
@@ -1729,7 +1726,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.Record]:
+    ) -> list[types.Record]:
         if self._prefer_grpc:
             if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
                 with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
@@ -1786,7 +1783,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @classmethod
     def _try_argument_to_grpc_selector(
         cls, points: types.PointsSelector
-    ) -> Tuple[grpc.PointsSelector, Optional[grpc.ShardKeySelector]]:
+    ) -> tuple[grpc.PointsSelector, Optional[grpc.ShardKeySelector]]:
         shard_key_selector = None
         if isinstance(points, list):
             points_selector = grpc.PointsSelector(
@@ -1850,7 +1847,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @classmethod
     def _points_selector_to_points_list(
         cls, points_selector: grpc.PointsSelector
-    ) -> List[grpc.PointId]:
+    ) -> list[grpc.PointId]:
         name = points_selector.WhichOneof("points_selector_one_of")
         if name is None:
             return []
@@ -1862,7 +1859,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @classmethod
     def _try_argument_to_rest_points_and_filter(
         cls, points: types.PointsSelector
-    ) -> Tuple[Optional[List[models.ExtendedPointId]], Optional[models.Filter]]:
+    ) -> tuple[Optional[list[models.ExtendedPointId]], Optional[models.Filter]]:
         _points = None
         _filter = None
         if isinstance(points, list):
@@ -2139,7 +2136,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         **kwargs: Any,
-    ) -> List[types.UpdateResult]:
+    ) -> list[types.UpdateResult]:
         if self._prefer_grpc:
             update_operations = [
                 RestToGrpc.convert_update_operation(operation) for operation in update_operations
@@ -2161,7 +2158,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             ]
         else:
-            result: Optional[List[types.UpdateResult]] = (
+            result: Optional[list[types.UpdateResult]] = (
                 await self.openapi_client.points_api.batch_update(
                     collection_name=collection_name,
                     wait=wait,
@@ -2616,9 +2613,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         vectors: Union[
-            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+            dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
         ],
-        payload: Optional[Iterable[Dict[Any, Any]]] = None,
+        payload: Optional[Iterable[dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         batch_size: int = 64,
         parallel: int = 1,
@@ -2741,7 +2738,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def list_snapshots(
         self, collection_name: str, **kwargs: Any
-    ) -> List[types.SnapshotDescription]:
+    ) -> list[types.SnapshotDescription]:
         if self._prefer_grpc:
             snapshots = (
                 await self.grpc_snapshots.List(
@@ -2787,7 +2784,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
         ).result
 
-    async def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
+    async def list_full_snapshots(self, **kwargs: Any) -> list[types.SnapshotDescription]:
         if self._prefer_grpc:
             snapshots = (
                 await self.grpc_snapshots.ListFull(grpc.ListFullSnapshotsRequest())
@@ -2843,7 +2840,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def list_shard_snapshots(
         self, collection_name: str, shard_id: int, **kwargs: Any
-    ) -> List[types.SnapshotDescription]:
+    ) -> list[types.SnapshotDescription]:
         snapshots = (
             await self.openapi_client.snapshots_api.list_shard_snapshots(
                 collection_name=collection_name, shard_id=shard_id
@@ -2929,7 +2926,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shard_key: types.ShardKey,
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
-        placement: Optional[List[int]] = None,
+        placement: Optional[list[int]] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:

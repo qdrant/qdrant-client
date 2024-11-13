@@ -1,4 +1,4 @@
-from typing import Optional, List, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -17,21 +17,21 @@ from qdrant_client.local.distances import (
 class MultiRecoQuery:
     def __init__(
         self,
-        positive: Optional[List[List[List[float]]]] = None,  # list of matrices
-        negative: Optional[List[List[List[float]]]] = None,  # list of matrices
+        positive: Optional[list[list[list[float]]]] = None,  # list of matrices
+        negative: Optional[list[list[list[float]]]] = None,  # list of matrices
     ):
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
 
-        self.positive: List[types.NumpyArray] = [np.array(vector) for vector in positive]
-        self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
+        self.positive: list[types.NumpyArray] = [np.array(vector) for vector in positive]
+        self.negative: list[types.NumpyArray] = [np.array(vector) for vector in negative]
 
         assert not np.isnan(self.positive).any(), "Positive vectors must not contain NaN"
         assert not np.isnan(self.negative).any(), "Negative vectors must not contain NaN"
 
 
 class MultiContextPair:
-    def __init__(self, positive: List[List[float]], negative: List[List[float]]):
+    def __init__(self, positive: list[list[float]], negative: list[list[float]]):
         self.positive: types.NumpyArray = np.array(positive)
         self.negative: types.NumpyArray = np.array(negative)
 
@@ -40,7 +40,7 @@ class MultiContextPair:
 
 
 class MultiDiscoveryQuery:
-    def __init__(self, target: List[List[float]], context: List[MultiContextPair]):
+    def __init__(self, target: list[list[float]], context: list[MultiContextPair]):
         self.target: types.NumpyArray = np.array(target)
         self.context = context
 
@@ -48,7 +48,7 @@ class MultiDiscoveryQuery:
 
 
 class MultiContextQuery:
-    def __init__(self, context_pairs: List[MultiContextPair]):
+    def __init__(self, context_pairs: list[MultiContextPair]):
         self.context_pairs = context_pairs
 
 
@@ -61,14 +61,14 @@ MultiQueryVector = Union[
 
 def calculate_multi_distance(
     query_matrix: types.NumpyArray,
-    matrices: List[types.NumpyArray],
+    matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
     assert not np.isnan(query_matrix).any(), "Query matrix must not contain NaN"
     assert len(query_matrix.shape) == 2, "Query must be a matrix"
 
     reverse = distance_to_order(distance_type) == DistanceOrder.SMALLER_IS_BETTER
-    similarities: List[float] = []
+    similarities: list[float] = []
     # max sim
     for matrix in matrices:
         sim_matrix = calculate_distance(query_matrix, matrix, distance_type)
@@ -80,7 +80,7 @@ def calculate_multi_distance(
 
 def calculate_multi_distance_core(
     query_matrix: types.NumpyArray,
-    matrices: List[types.NumpyArray],
+    matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
     def euclidean(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
@@ -92,7 +92,7 @@ def calculate_multi_distance_core(
     assert not np.isnan(query_matrix).any(), "Query vector must not contain NaN"
     if distance_type in [models.Distance.EUCLID, models.Distance.MANHATTAN]:
         query_matrix = query_matrix[:, np.newaxis]
-        similarities: List[float] = []
+        similarities: list[float] = []
         dist_func = euclidean if distance_type == models.Distance.EUCLID else manhattan
         for matrix in matrices:
             sim_matrix = dist_func(matrix, query_matrix)
@@ -104,13 +104,13 @@ def calculate_multi_distance_core(
 
 
 def calculate_multi_recommend_best_scores(
-    query: MultiRecoQuery, matrices: List[types.NumpyArray], distance_type: models.Distance
+    query: MultiRecoQuery, matrices: list[types.NumpyArray], distance_type: models.Distance
 ) -> types.NumpyArray:
-    def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
+    def get_best_scores(examples: list[types.NumpyArray]) -> types.NumpyArray:
         matrix_count = len(matrices)
 
         # Get scores to all examples
-        scores: List[types.NumpyArray] = []
+        scores: list[types.NumpyArray] = []
         for example in examples:
             score = calculate_multi_distance_core(example, matrices, distance_type)
             scores.append(score)
@@ -135,8 +135,8 @@ def calculate_multi_recommend_best_scores(
 
 
 def calculate_multi_discovery_ranks(
-    context: List[MultiContextPair],
-    matrices: List[types.NumpyArray],
+    context: list[MultiContextPair],
+    matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
     overall_ranks = np.zeros(len(matrices), dtype=np.int32)
@@ -158,7 +158,7 @@ def calculate_multi_discovery_ranks(
 
 
 def calculate_multi_discovery_scores(
-    query: MultiDiscoveryQuery, matrices: List[types.NumpyArray], distance_type: models.Distance
+    query: MultiDiscoveryQuery, matrices: list[types.NumpyArray], distance_type: models.Distance
 ) -> types.NumpyArray:
     ranks = calculate_multi_discovery_ranks(query.context, matrices, distance_type)
 
@@ -173,7 +173,7 @@ def calculate_multi_discovery_scores(
 
 
 def calculate_multi_context_scores(
-    query: MultiContextQuery, matrices: List[types.NumpyArray], distance_type: models.Distance
+    query: MultiContextQuery, matrices: list[types.NumpyArray], distance_type: models.Distance
 ) -> types.NumpyArray:
     overall_scores = np.zeros(len(matrices), dtype=np.float32)
     for pair in query.context_pairs:

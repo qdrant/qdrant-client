@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
 
@@ -16,8 +16,8 @@ from qdrant_client.local.sparse import (
 class SparseRecoQuery:
     def __init__(
         self,
-        positive: Optional[List[SparseVector]] = None,
-        negative: Optional[List[SparseVector]] = None,
+        positive: Optional[list[SparseVector]] = None,
+        negative: Optional[list[SparseVector]] = None,
     ):
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
@@ -51,7 +51,7 @@ class SparseContextPair:
 
 
 class SparseDiscoveryQuery:
-    def __init__(self, target: SparseVector, context: List[SparseContextPair]):
+    def __init__(self, target: SparseVector, context: list[SparseContextPair]):
         validate_sparse_vector(target)
         self.target: SparseVector = sort_sparse_vector(target)
         self.context = context
@@ -68,7 +68,7 @@ class SparseDiscoveryQuery:
 
 
 class SparseContextQuery:
-    def __init__(self, context_pairs: List[SparseContextPair]):
+    def __init__(self, context_pairs: list[SparseContextPair]):
         self.context_pairs = context_pairs
 
     def transform_sparse(
@@ -91,7 +91,7 @@ SparseQueryVector = Union[
 
 
 def calculate_distance_sparse(
-    query: SparseVector, vectors: List[SparseVector]
+    query: SparseVector, vectors: list[SparseVector]
 ) -> types.NumpyArray:
     scores = []
 
@@ -134,8 +134,8 @@ def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional
 
 
 def calculate_sparse_discovery_ranks(
-    context: List[SparseContextPair],
-    vectors: List[SparseVector],
+    context: list[SparseContextPair],
+    vectors: list[SparseVector],
 ) -> types.NumpyArray:
     overall_ranks = np.zeros(len(vectors), dtype=np.int32)
     for pair in context:
@@ -156,7 +156,7 @@ def calculate_sparse_discovery_ranks(
 
 
 def calculate_sparse_discovery_scores(
-    query: SparseDiscoveryQuery, vectors: List[SparseVector]
+    query: SparseDiscoveryQuery, vectors: list[SparseVector]
 ) -> types.NumpyArray:
     ranks = calculate_sparse_discovery_ranks(query.context, vectors)
 
@@ -171,7 +171,7 @@ def calculate_sparse_discovery_scores(
 
 
 def calculate_sparse_context_scores(
-    query: SparseContextQuery, vectors: List[SparseVector]
+    query: SparseContextQuery, vectors: list[SparseVector]
 ) -> types.NumpyArray:
     overall_scores = np.zeros(len(vectors), dtype=np.float32)
     for pair in query.context_pairs:
@@ -189,13 +189,13 @@ def calculate_sparse_context_scores(
 
 
 def calculate_sparse_recommend_best_scores(
-    query: SparseRecoQuery, vectors: List[SparseVector]
+    query: SparseRecoQuery, vectors: list[SparseVector]
 ) -> types.NumpyArray:
-    def get_best_scores(examples: List[SparseVector]) -> types.NumpyArray:
+    def get_best_scores(examples: list[SparseVector]) -> types.NumpyArray:
         vector_count = len(vectors)
 
         # Get scores to all examples
-        scores: List[types.NumpyArray] = []
+        scores: list[types.NumpyArray] = []
         for example in examples:
             score = calculate_distance_sparse(example, vectors)
             scores.append(score)

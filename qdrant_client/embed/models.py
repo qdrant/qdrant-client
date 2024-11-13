@@ -1,4 +1,4 @@
-from typing import Union, List, Dict
+from typing import Union
 
 from pydantic import StrictFloat, StrictStr
 
@@ -6,20 +6,20 @@ from qdrant_client.http.models import ExtendedPointId, SparseVector
 
 
 NumericVector = Union[
-    List[StrictFloat],
+    list[StrictFloat],
     SparseVector,
-    List[List[StrictFloat]],
+    list[list[StrictFloat]],
 ]
 NumericVectorInput = Union[
-    List[StrictFloat],
+    list[StrictFloat],
     SparseVector,
-    List[List[StrictFloat]],
+    list[list[StrictFloat]],
     ExtendedPointId,
 ]
 NumericVectorStruct = Union[
-    List[StrictFloat],
-    List[List[StrictFloat]],
-    Dict[StrictStr, NumericVector],
+    list[StrictFloat],
+    list[list[StrictFloat]],
+    dict[StrictStr, NumericVector],
 ]
 
 __all__ = ["NumericVector", "NumericVectorInput", "NumericVectorStruct"]

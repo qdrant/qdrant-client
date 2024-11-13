@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import pytest
 
@@ -31,7 +29,7 @@ class TestSimpleSparseSearcher:
         self.query_image = generate_random_sparse_vector(sparse_image_vector_size, density=0.2)
         self.query_code = generate_random_sparse_vector(sparse_code_vector_size, density=0.1)
 
-    def simple_search_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
@@ -40,7 +38,7 @@ class TestSimpleSparseSearcher:
             limit=10,
         )
 
-    def simple_search_image(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_image(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-image", vector=self.query_image),
@@ -49,7 +47,7 @@ class TestSimpleSparseSearcher:
             limit=10,
         )
 
-    def simple_search_code(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_code(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-code", vector=self.query_code),
@@ -58,7 +56,7 @@ class TestSimpleSparseSearcher:
             limit=10,
         )
 
-    def simple_search_text_offset(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_text_offset(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
@@ -67,7 +65,7 @@ class TestSimpleSparseSearcher:
             offset=10,
         )
 
-    def search_score_threshold(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def search_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
         res1 = client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
@@ -94,7 +92,7 @@ class TestSimpleSparseSearcher:
 
         return res1 + res2 + res3
 
-    def simple_search_text_select_payload(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_text_select_payload(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
@@ -102,7 +100,7 @@ class TestSimpleSparseSearcher:
             limit=10,
         )
 
-    def search_payload_exclude(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def search_payload_exclude(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
@@ -110,7 +108,7 @@ class TestSimpleSparseSearcher:
             limit=10,
         )
 
-    def simple_search_image_select_vector(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_image_select_vector(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-image", vector=self.query_image),
@@ -121,7 +119,7 @@ class TestSimpleSparseSearcher:
 
     def filter_search_text(
         self, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
@@ -132,7 +130,7 @@ class TestSimpleSparseSearcher:
 
     def filter_search_text_single(
         self, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=self.query_text,  # why it is not a NamedSparseVector?

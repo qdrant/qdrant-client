@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 
@@ -151,7 +151,7 @@ def test_values_count_query(payloads, filter_params, payload_key):
         ([{}], "city"),
     ],
 )
-def test_is_empty(payloads: List[Dict[str, Any]], payload_key: str) -> None:
+def test_is_empty(payloads: list[dict[str, Any]], payload_key: str) -> None:
     fixture_points = generate_fixtures(num=len(payloads))
     for i, point in enumerate(fixture_points):
         point.payload = payloads[i]

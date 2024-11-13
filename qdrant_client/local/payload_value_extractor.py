@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from qdrant_client.local.json_path_parser import (
     JsonPathItem,
@@ -8,7 +8,7 @@ from qdrant_client.local.json_path_parser import (
 )
 
 
-def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[Any]]:
+def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[list[Any]]:
     """
     Get value from payload by key.
     Args:
@@ -29,7 +29,7 @@ def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[List[An
     keys = parse_json_path(key)
     result = []
 
-    def _get_value(data: Any, k_list: List[JsonPathItem]) -> None:
+    def _get_value(data: Any, k_list: list[JsonPathItem]) -> None:
         if not k_list:
             return
 

@@ -1,4 +1,4 @@
-from typing import Union, List, Optional, Iterable
+from typing import Union, Optional, Iterable
 
 from pydantic import BaseModel
 
@@ -41,7 +41,7 @@ class Inspector:
                         return True
         return False
 
-    def _inspect_model(self, model: BaseModel, paths: Optional[List[FieldPath]] = None) -> bool:
+    def _inspect_model(self, model: BaseModel, paths: Optional[list[FieldPath]] = None) -> bool:
         if isinstance(model, INFERENCE_OBJECT_TYPES):
             return True
 
@@ -58,7 +58,7 @@ class Inspector:
         return False
 
     def _inspect_inner_models(
-        self, original_model: BaseModel, current_path: str, tail: List[FieldPath]
+        self, original_model: BaseModel, current_path: str, tail: list[FieldPath]
     ) -> bool:
         def inspect_recursive(member: BaseModel) -> bool:
             recursive_paths = []

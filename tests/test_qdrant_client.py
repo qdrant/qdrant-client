@@ -4,8 +4,6 @@ import uuid
 from pprint import pprint
 from tempfile import mkdtemp
 from time import sleep
-from typing import List
-
 
 import numpy as np
 import pytest
@@ -537,9 +535,9 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     # Now we can actually search in the collection
     # Let's create some random vector
     query_vector = np.random.rand(DIM)
-    query_vector_1: List[float] = list(np.random.rand(DIM))
-    query_vector_2: List[float] = list(np.random.rand(DIM))
-    query_vector_3: List[float] = list(np.random.rand(DIM))
+    query_vector_1: list[float] = list(np.random.rand(DIM))
+    query_vector_2: list[float] = list(np.random.rand(DIM))
+    query_vector_3: list[float] = list(np.random.rand(DIM))
 
     #  and use it as a query
     hits = client.search(

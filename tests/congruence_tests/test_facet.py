@@ -1,6 +1,4 @@
 import random
-import time
-from typing import List
 
 import pytest
 
@@ -24,12 +22,12 @@ STRING_KEY = "city.name"
 BOOL_KEY = "rand_bool"
 
 
-def all_facet_keys() -> List[str]:
+def all_facet_keys() -> list[str]:
     return [INT_KEY, INT_ID_KEY, UUID_KEY, STRING_ID_KEY, STRING_KEY, BOOL_KEY]
 
 
 @pytest.fixture(scope="module")
-def fixture_points() -> List[models.PointStruct]:
+def fixture_points() -> list[models.PointStruct]:
     return generate_fixtures()
 
 

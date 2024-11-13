@@ -1,6 +1,6 @@
 import asyncio
 import collections
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Awaitable, Callable, Optional, Union
 
 import grpc
 
@@ -127,7 +127,7 @@ class _ClientAsyncCallDetails(
 
 
 def header_adder_interceptor(
-    new_metadata: List[Tuple[str, str]],
+    new_metadata: list[tuple[str, str]],
     auth_token_provider: Optional[Callable[[], str]] = None,
 ) -> _GenericClientInterceptor:
     def intercept_call(
@@ -135,7 +135,7 @@ def header_adder_interceptor(
         request_iterator: Any,
         _request_streaming: Any,
         _response_streaming: Any,
-    ) -> Tuple[_ClientCallDetails, Any, Any]:
+    ) -> tuple[_ClientCallDetails, Any, Any]:
         metadata = []
 
         if client_call_details.metadata is not None:
@@ -166,7 +166,7 @@ def header_adder_interceptor(
 
 
 def header_adder_async_interceptor(
-    new_metadata: List[Tuple[str, str]],
+    new_metadata: list[tuple[str, str]],
     auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
 ) -> _GenericAsyncClientInterceptor:
     async def intercept_call(
@@ -174,7 +174,7 @@ def header_adder_async_interceptor(
         request_iterator: Any,
         _request_streaming: Any,
         _response_streaming: Any,
-    ) -> Tuple[_ClientAsyncCallDetails, Any, Any]:
+    ) -> tuple[_ClientAsyncCallDetails, Any, Any]:
         metadata = []
         if client_call_details.metadata is not None:
             metadata = list(client_call_details.metadata)
@@ -199,8 +199,8 @@ def header_adder_async_interceptor(
     return create_generic_async_client_interceptor(intercept_call)
 
 
-def parse_channel_options(options: Optional[Dict[str, Any]] = None) -> List[Tuple[str, Any]]:
-    default_options: List[Tuple[str, Any]] = [
+def parse_channel_options(options: Optional[dict[str, Any]] = None) -> list[tuple[str, Any]]:
+    default_options: list[tuple[str, Any]] = [
         ("grpc.max_send_message_length", -1),
         ("grpc.max_receive_message_length", -1),
     ]
@@ -218,8 +218,8 @@ def get_channel(
     host: str,
     port: int,
     ssl: bool,
-    metadata: Optional[List[Tuple[str, str]]] = None,
-    options: Optional[Dict[str, Any]] = None,
+    metadata: Optional[list[tuple[str, str]]] = None,
+    options: Optional[dict[str, Any]] = None,
     compression: Optional[grpc.Compression] = None,
     auth_token_provider: Optional[Callable[[], str]] = None,
 ) -> grpc.Channel:
@@ -242,8 +242,8 @@ def get_async_channel(
     host: str,
     port: int,
     ssl: bool,
-    metadata: Optional[List[Tuple[str, str]]] = None,
-    options: Optional[Dict[str, Any]] = None,
+    metadata: Optional[list[tuple[str, str]]] = None,
+    options: Optional[dict[str, Any]] = None,
     compression: Optional[grpc.Compression] = None,
     auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
 ) -> grpc.aio.Channel:

@@ -1,18 +1,16 @@
-from typing import Dict, List
-
 from qdrant_client.http import models
 
 
 def reciprocal_rank_fusion(
-    responses: List[List[models.ScoredPoint]], limit: int = 10
-) -> List[models.ScoredPoint]:
+    responses: list[list[models.ScoredPoint]], limit: int = 10
+) -> list[models.ScoredPoint]:
     def compute_score(pos: int) -> float:
         ranking_constant = (
             2  # the constant mitigates the impact of high rankings by outlier systems
         )
         return 1 / (ranking_constant + pos)
 
-    scores: Dict[models.ExtendedPointId, float] = {}
+    scores: dict[models.ExtendedPointId, float] = {}
     point_pile = {}
     for response in responses:
         for i, scored_point in enumerate(response):
@@ -32,9 +30,9 @@ def reciprocal_rank_fusion(
 
 
 def distribution_based_score_fusion(
-    responses: List[List[models.ScoredPoint]], limit: int
-) -> List[models.ScoredPoint]:
-    def normalize(response: List[models.ScoredPoint]) -> List[models.ScoredPoint]:
+    responses: list[list[models.ScoredPoint]], limit: int
+) -> list[models.ScoredPoint]:
+    def normalize(response: list[models.ScoredPoint]) -> list[models.ScoredPoint]:
         total = sum([point.score for point in response])
         mean = total / len(response)
         variance = sum([(point.score - mean) ** 2 for point in response]) / (len(response) - 1)
@@ -48,7 +46,7 @@ def distribution_based_score_fusion(
 
         return response
 
-    points_map: Dict[models.ExtendedPointId, models.ScoredPoint] = {}
+    points_map: dict[models.ExtendedPointId, models.ScoredPoint] = {}
     for response in responses:
         if not response:
             continue

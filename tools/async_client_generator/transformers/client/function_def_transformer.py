@@ -1,5 +1,5 @@
 import ast
-from typing import Dict, List, Optional
+from typing import Optional
 
 from tools.async_client_generator.transformers import FunctionDefTransformer
 
@@ -7,10 +7,10 @@ from tools.async_client_generator.transformers import FunctionDefTransformer
 class ClientFunctionDefTransformer(FunctionDefTransformer):
     def __init__(
         self,
-        keep_sync: Optional[List[str]] = None,
-        class_replace_map: Optional[Dict[str, str]] = None,
-        exclude_methods: Optional[List[str]] = None,
-        async_methods: Optional[List[str]] = None,
+        keep_sync: Optional[list[str]] = None,
+        class_replace_map: Optional[dict[str, str]] = None,
+        exclude_methods: Optional[list[str]] = None,
+        async_methods: Optional[list[str]] = None,
     ):
         super().__init__(keep_sync)
         self.class_replace_map = class_replace_map if class_replace_map is not None else {}

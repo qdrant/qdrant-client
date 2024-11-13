@@ -11,19 +11,7 @@
 
 import warnings
 from copy import deepcopy
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, Awaitable, Callable, Iterable, Mapping, Optional, Sequence, Union
 from qdrant_client import grpc as grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.common.deprecations import deprecation_warning_once
@@ -101,7 +89,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         host: Optional[str] = None,
         path: Optional[str] = None,
         force_disable_check_same_thread: bool = False,
-        grpc_options: Optional[Dict[str, Any]] = None,
+        grpc_options: Optional[dict[str, Any]] = None,
         auth_token_provider: Optional[
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
@@ -211,7 +199,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         raise NotImplementedError(f"REST client is not supported for {type(self._client)}")
 
     @property
-    def init_options(self) -> Dict[str, Any]:
+    def init_options(self) -> dict[str, Any]:
         """`__init__` Options
 
         Returns:
@@ -226,7 +214,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         timeout: Optional[int] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         """Perform multiple searches in a collection mitigating network overhead
 
         Args:
@@ -264,7 +252,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         collection_name: str,
         query_vector: Union[
             Sequence[float],
-            Tuple[str, List[float]],
+            tuple[str, list[float]],
             types.NamedVector,
             types.NamedSparseVector,
             types.NumpyArray,
@@ -281,7 +269,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         """Search for closest vectors in collection taking into account filtering conditions
 
         Args:
@@ -381,7 +369,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.QueryResponse]:
+    ) -> list[types.QueryResponse]:
         """Perform any search, recommend, discovery, context search operations in batch, and mitigate network overhead
 
         Args:
@@ -418,8 +406,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         collection_name: str,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -429,7 +417,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             None,
         ] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -451,8 +439,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Query for the chosen search type operation.
                 - If `str` - use string as UUID of the existing point as a search query.
                 - If `int` - use integer as ID of the existing point as a search query.
-                - If `List[float]` - use as a dense vector for nearest search.
-                - If `List[List[float]]` - use as a multi-vector for nearest search.
+                - If `list[float]` - use as a dense vector for nearest search.
+                - If `list[list[float]]` - use as a multi-vector for nearest search.
                 - If `SparseVector` - use as a sparse vector for nearest search.
                 - If `Query` - use as a query for specific search type.
                 - If `NumpyArray` - use as a dense vector for nearest search.
@@ -560,8 +548,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         group_by: str,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -571,7 +559,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             None,
         ] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -594,8 +582,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Query for the chosen search type operation.
                 - If `str` - use string as UUID of the existing point as a search query.
                 - If `int` - use integer as ID of the existing point as a search query.
-                - If `List[float]` - use as a dense vector for nearest search.
-                - If `List[List[float]]` - use as a multi-vector for nearest search.
+                - If `list[float]` - use as a dense vector for nearest search.
+                - If `list[list[float]]` - use as a multi-vector for nearest search.
                 - If `SparseVector` - use as a sparse vector for nearest search.
                 - If `Query` - use as a query for specific search type.
                 - If `NumpyArray` - use as a dense vector for nearest search.
@@ -699,7 +687,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         collection_name: str,
         query_vector: Union[
             Sequence[float],
-            Tuple[str, List[float]],
+            tuple[str, list[float]],
             types.NamedVector,
             types.NamedSparseVector,
             types.NumpyArray,
@@ -807,7 +795,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         """Perform multiple recommend requests in batch mode
 
         Args:
@@ -849,8 +837,8 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, list[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
@@ -859,7 +847,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         """Recommend points: search for similar points based on already stored in Qdrant examples.
 
         Provide IDs of the stored points, and Qdrant will perform search based on already existing vectors.
@@ -1192,15 +1180,15 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, list[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         """
         Use context and a target to find the most similar points, constrained by the context.
 
@@ -1293,7 +1281,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         warnings.warn(
             "`discover_batch` method is deprecated and will be removed in the future. Use `query_batch_points` instead.",
             DeprecationWarning,
@@ -1320,7 +1308,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], Optional[types.PointId]]:
         """Scroll over all (matching) points in the collection.
 
         This method provides a way to iterate over all stored points with some optional filtering condition.
@@ -1513,7 +1501,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             )
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and (not self.cloud_inference):
-            if isinstance(points, List):
+            if isinstance(points, list):
                 points = [self._embed_models(point, is_query=False) for point in points]
             else:
                 points = self._embed_models(points, is_query=False)
@@ -1635,7 +1623,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.Record]:
+    ) -> list[types.Record]:
         """Retrieve stored points by IDs
 
         Args:
@@ -1986,7 +1974,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         **kwargs: Any,
-    ) -> List[types.UpdateResult]:
+    ) -> list[types.UpdateResult]:
         """Batch update points in the collection.
 
         Args:
@@ -2440,9 +2428,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self,
         collection_name: str,
         vectors: Union[
-            Iterable[types.VectorStruct], Dict[str, types.NumpyArray], types.NumpyArray
+            Iterable[types.VectorStruct], dict[str, types.NumpyArray], types.NumpyArray
         ],
-        payload: Optional[Iterable[Dict[Any, Any]]] = None,
+        payload: Optional[Iterable[dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         batch_size: int = 64,
         parallel: int = 1,
@@ -2569,7 +2557,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
     async def list_snapshots(
         self, collection_name: str, **kwargs: Any
-    ) -> List[types.SnapshotDescription]:
+    ) -> list[types.SnapshotDescription]:
         """List all snapshots for a given collection.
 
         Args:
@@ -2622,7 +2610,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             collection_name=collection_name, snapshot_name=snapshot_name, wait=wait, **kwargs
         )
 
-    async def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
+    async def list_full_snapshots(self, **kwargs: Any) -> list[types.SnapshotDescription]:
         """List all snapshots for a whole storage
 
         Returns:
@@ -2718,7 +2706,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
     async def list_shard_snapshots(
         self, collection_name: str, shard_id: int, **kwargs: Any
-    ) -> List[types.SnapshotDescription]:
+    ) -> list[types.SnapshotDescription]:
         """List all snapshots of a given shard
 
         Args:
@@ -2853,7 +2841,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         shard_key: types.ShardKey,
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
-        placement: Optional[List[int]] = None,
+        placement: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> bool:
         """Create shard key for collection.

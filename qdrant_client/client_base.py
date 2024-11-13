@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Iterable, Mapping, Optional, Sequence, Union
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
@@ -13,7 +13,7 @@ class QdrantBase:
         collection_name: str,
         requests: Sequence[types.SearchRequest],
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         raise NotImplementedError()
 
     def search(
@@ -22,7 +22,7 @@ class QdrantBase:
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
-            Tuple[str, List[float]],
+            tuple[str, list[float]],
             types.NamedVector,
             types.NamedSparseVector,
         ],
@@ -34,7 +34,7 @@ class QdrantBase:
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         raise NotImplementedError()
 
     def search_groups(
@@ -43,7 +43,7 @@ class QdrantBase:
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
-            Tuple[str, List[float]],
+            tuple[str, list[float]],
             types.NamedVector,
             types.NamedSparseVector,
         ],
@@ -87,7 +87,7 @@ class QdrantBase:
         collection_name: str,
         requests: Sequence[types.QueryRequest],
         **kwargs: Any,
-    ) -> List[types.QueryResponse]:
+    ) -> list[types.QueryResponse]:
         raise NotImplementedError()
 
     def query_points(
@@ -95,8 +95,8 @@ class QdrantBase:
         collection_name: str,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -106,7 +106,7 @@ class QdrantBase:
             None,
         ] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -125,8 +125,8 @@ class QdrantBase:
         group_by: str,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -136,7 +136,7 @@ class QdrantBase:
             None,
         ] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -155,7 +155,7 @@ class QdrantBase:
         collection_name: str,
         requests: Sequence[types.RecommendRequest],
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         raise NotImplementedError()
 
     def recommend(
@@ -167,14 +167,14 @@ class QdrantBase:
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, list[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         raise NotImplementedError()
 
     def recommend_groups(
@@ -207,13 +207,13 @@ class QdrantBase:
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, list[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         raise NotImplementedError()
 
     def discover_batch(
@@ -221,7 +221,7 @@ class QdrantBase:
         collection_name: str,
         requests: Sequence[types.DiscoverRequest],
         **kwargs: Any,
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         raise NotImplementedError()
 
     def scroll(
@@ -234,7 +234,7 @@ class QdrantBase:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         **kwargs: Any,
-    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], Optional[types.PointId]]:
         raise NotImplementedError()
 
     def count(
@@ -289,7 +289,7 @@ class QdrantBase:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         **kwargs: Any,
-    ) -> List[types.Record]:
+    ) -> list[types.Record]:
         raise NotImplementedError()
 
     def delete(
@@ -341,7 +341,7 @@ class QdrantBase:
         collection_name: str,
         update_operations: Sequence[types.UpdateOperation],
         **kwargs: Any,
-    ) -> List[types.UpdateResult]:
+    ) -> list[types.UpdateResult]:
         raise NotImplementedError()
 
     def update_collection_aliases(
@@ -414,9 +414,9 @@ class QdrantBase:
         self,
         collection_name: str,
         vectors: Union[
-            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+            dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
         ],
-        payload: Optional[Iterable[Dict[Any, Any]]] = None,
+        payload: Optional[Iterable[dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,
     ) -> None:
@@ -442,7 +442,7 @@ class QdrantBase:
 
     def list_snapshots(
         self, collection_name: str, **kwargs: Any
-    ) -> List[types.SnapshotDescription]:
+    ) -> list[types.SnapshotDescription]:
         raise NotImplementedError()
 
     def create_snapshot(
@@ -455,7 +455,7 @@ class QdrantBase:
     ) -> Optional[bool]:
         raise NotImplementedError()
 
-    def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
+    def list_full_snapshots(self, **kwargs: Any) -> list[types.SnapshotDescription]:
         raise NotImplementedError()
 
     def create_full_snapshot(self, **kwargs: Any) -> Optional[types.SnapshotDescription]:
@@ -474,7 +474,7 @@ class QdrantBase:
 
     def list_shard_snapshots(
         self, collection_name: str, shard_id: int, **kwargs: Any
-    ) -> List[types.SnapshotDescription]:
+    ) -> list[types.SnapshotDescription]:
         raise NotImplementedError()
 
     def create_shard_snapshot(
@@ -511,7 +511,7 @@ class QdrantBase:
     def migrate(
         self,
         dest_client: "QdrantBase",
-        collection_names: Optional[List[str]] = None,
+        collection_names: Optional[list[str]] = None,
         batch_size: int = 100,
         recreate_on_collision: bool = False,
     ) -> None:
@@ -523,7 +523,7 @@ class QdrantBase:
         shard_key: types.ShardKey,
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
-        placement: Optional[List[int]] = None,
+        placement: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> bool:
         raise NotImplementedError()

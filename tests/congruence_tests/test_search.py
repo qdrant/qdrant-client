@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import pytest
 
@@ -28,7 +26,7 @@ class TestSimpleSearcher:
         self.query_image = np.random.random(image_vector_size).tolist()
         self.query_code = np.random.random(code_vector_size).tolist()
 
-    def simple_search_text(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -36,7 +34,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def simple_search_image(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_image(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("image", self.query_image),
@@ -44,7 +42,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def simple_search_code(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_code(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("code", self.query_code),
@@ -52,7 +50,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def simple_search_text_offset(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_text_offset(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -61,7 +59,7 @@ class TestSimpleSearcher:
             offset=10,
         )
 
-    def simple_search_text_with_vector(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_text_with_vector(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -71,7 +69,7 @@ class TestSimpleSearcher:
             offset=10,
         )
 
-    def search_score_threshold(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def search_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
         res1 = client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -98,7 +96,7 @@ class TestSimpleSearcher:
 
         return res1 + res2 + res3
 
-    def simple_search_text_select_payload(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_text_select_payload(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -106,7 +104,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def search_payload_exclude(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def search_payload_exclude(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -114,7 +112,7 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def simple_search_image_select_vector(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_search_image_select_vector(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("image", self.query_image),
@@ -125,7 +123,7 @@ class TestSimpleSearcher:
 
     def filter_search_text(
         self, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("text", self.query_text),
@@ -136,7 +134,7 @@ class TestSimpleSearcher:
 
     def filter_search_text_single(
         self, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=self.query_text,

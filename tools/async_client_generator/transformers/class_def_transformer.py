@@ -1,9 +1,9 @@
 import ast
-from typing import Dict, Optional
+from typing import Optional
 
 
 class ClassDefTransformer(ast.NodeTransformer):
-    def __init__(self, class_replace_map: Optional[Dict[str, str]]):
+    def __init__(self, class_replace_map: Optional[dict[str, str]]):
         self.class_replace_map = class_replace_map if class_replace_map is not None else {}
 
     def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST:

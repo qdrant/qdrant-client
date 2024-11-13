@@ -1,7 +1,6 @@
 import itertools
 import uuid
 from collections import defaultdict
-from typing import Dict, List
 
 import numpy as np
 import pytest
@@ -176,7 +175,7 @@ def test_upload_collection_float_list():
 
 def test_upload_collection_named_float_list_vectors(local_client, remote_client):
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
-    vectors = []  # List[Dict[str, float]]
+    vectors = []  # list[dict[str, float]]
     for point in points:
         vectors.append(point.vector)
     ids = [point.id for point in points]
@@ -248,8 +247,8 @@ def test_upload_collection_list_np_arrays():
 
 def test_upload_collection_dict_np_arrays(local_client, remote_client):
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
-    intermediate_vectors: Dict[str, List[float]] = defaultdict(list)
-    vectors: Dict[str, np.ndarray] = {}
+    intermediate_vectors: dict[str, list[float]] = defaultdict(list)
+    vectors: dict[str, np.ndarray] = {}
     ids = [point.id for point in points]
     for point in points:
         for key, vector in point.vector.items():

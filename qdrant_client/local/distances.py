@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -18,21 +18,21 @@ class DistanceOrder(str, Enum):
 class RecoQuery:
     def __init__(
         self,
-        positive: Optional[List[List[float]]] = None,
-        negative: Optional[List[List[float]]] = None,
+        positive: Optional[list[list[float]]] = None,
+        negative: Optional[list[list[float]]] = None,
     ):
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
 
-        self.positive: List[types.NumpyArray] = [np.array(vector) for vector in positive]
-        self.negative: List[types.NumpyArray] = [np.array(vector) for vector in negative]
+        self.positive: list[types.NumpyArray] = [np.array(vector) for vector in positive]
+        self.negative: list[types.NumpyArray] = [np.array(vector) for vector in negative]
 
         assert not np.isnan(self.positive).any(), "Positive vectors must not contain NaN"
         assert not np.isnan(self.negative).any(), "Negative vectors must not contain NaN"
 
 
 class ContextPair:
-    def __init__(self, positive: List[float], negative: List[float]):
+    def __init__(self, positive: list[float], negative: list[float]):
         self.positive: types.NumpyArray = np.array(positive)
         self.negative: types.NumpyArray = np.array(negative)
 
@@ -41,7 +41,7 @@ class ContextPair:
 
 
 class DiscoveryQuery:
-    def __init__(self, target: List[float], context: List[ContextPair]):
+    def __init__(self, target: list[float], context: list[ContextPair]):
         self.target: types.NumpyArray = np.array(target)
         self.context = context
 
@@ -49,7 +49,7 @@ class DiscoveryQuery:
 
 
 class ContextQuery:
-    def __init__(self, context_pairs: List[ContextPair]):
+    def __init__(self, context_pairs: list[ContextPair]):
         self.context_pairs = context_pairs
 
 
@@ -190,11 +190,11 @@ def scaled_fast_sigmoid(x: np.float32) -> np.float32:
 def calculate_recommend_best_scores(
     query: RecoQuery, vectors: types.NumpyArray, distance_type: models.Distance
 ) -> types.NumpyArray:
-    def get_best_scores(examples: List[types.NumpyArray]) -> types.NumpyArray:
+    def get_best_scores(examples: list[types.NumpyArray]) -> types.NumpyArray:
         vector_count = vectors.shape[0]
 
         # Get scores to all examples
-        scores: List[types.NumpyArray] = []
+        scores: list[types.NumpyArray] = []
         for example in examples:
             score = calculate_distance_core(example, vectors, distance_type)
             scores.append(score)
@@ -219,7 +219,7 @@ def calculate_recommend_best_scores(
 
 
 def calculate_discovery_ranks(
-    context: List[ContextPair],
+    context: list[ContextPair],
     vectors: types.NumpyArray,
     distance_type: models.Distance,
 ) -> types.NumpyArray:

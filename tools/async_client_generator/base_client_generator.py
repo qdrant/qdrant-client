@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Optional
 
 from tools.async_client_generator.base_generator import BaseGenerator
 from tools.async_client_generator.transformers import (
@@ -11,9 +11,9 @@ from tools.async_client_generator.transformers import (
 class BaseClientGenerator(BaseGenerator):
     def __init__(
         self,
-        keep_sync: Optional[List[str]] = None,
-        class_replace_map: Optional[Dict[str, str]] = None,
-        constant_replace_map: Optional[Dict[str, str]] = None,
+        keep_sync: Optional[list[str]] = None,
+        class_replace_map: Optional[dict[str, str]] = None,
+        constant_replace_map: Optional[dict[str, str]] = None,
     ):
         super().__init__()
 

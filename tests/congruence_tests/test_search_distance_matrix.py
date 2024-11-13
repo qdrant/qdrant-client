@@ -1,4 +1,4 @@
-from typing import List, Callable, Any
+from typing import Callable, Any
 
 import pytest
 
@@ -19,7 +19,7 @@ TEST_NUM_POINTS = 100
 
 
 @pytest.fixture(scope="module")
-def fixture_points() -> List[models.PointStruct]:
+def fixture_points() -> list[models.PointStruct]:
     return generate_fixtures(num=TEST_NUM_POINTS)
 
 

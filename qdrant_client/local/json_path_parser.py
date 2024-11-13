@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -12,21 +12,21 @@ class JsonPathItemType(str, Enum):
 
 class JsonPathItem(BaseModel):
     item_type: JsonPathItemType
-    index: Optional[
-        int
-    ] = None  # split into index and key instead of using Union, because pydantic coerces
+    index: Optional[int] = (
+        None  # split into index and key instead of using Union, because pydantic coerces
+    )
     # int to str even in case of Union[int, str]. Tested with pydantic==1.10.14
     key: Optional[str] = None
 
 
-def parse_json_path(key: str) -> List[JsonPathItem]:
+def parse_json_path(key: str) -> list[JsonPathItem]:
     """Parse and validate json path
 
     Args:
         key: json path
 
     Returns:
-        List[JsonPathItem]: json path split into separate keys
+        list[JsonPathItem]: json path split into separate keys
 
     Raises:
         ValueError: if json path is invalid or empty
@@ -78,7 +78,7 @@ def trunk_sep(path: str) -> str:
         raise ValueError("Invalid path")
 
 
-def match_quote(path: str) -> Tuple[Optional[JsonPathItem], str]:
+def match_quote(path: str) -> tuple[Optional[JsonPathItem], str]:
     if not path.startswith('"'):
         return None, path
 
@@ -96,7 +96,7 @@ def match_quote(path: str) -> Tuple[Optional[JsonPathItem], str]:
     )
 
 
-def match_key(path: str) -> Tuple[Optional[JsonPathItem], str]:
+def match_key(path: str) -> tuple[Optional[JsonPathItem], str]:
     char_counter = 0
     for char in path:
         if not char.isalnum() and char not in ["_", "-"]:
@@ -111,7 +111,7 @@ def match_key(path: str) -> Tuple[Optional[JsonPathItem], str]:
     )
 
 
-def match_brackets(rest: str) -> Tuple[List[JsonPathItem], str]:
+def match_brackets(rest: str) -> tuple[list[JsonPathItem], str]:
     keys = []
 
     while rest:
@@ -125,7 +125,7 @@ def match_brackets(rest: str) -> Tuple[List[JsonPathItem], str]:
     return keys, rest
 
 
-def _match_brackets(path: str) -> Tuple[Optional[JsonPathItem], str]:
+def _match_brackets(path: str) -> tuple[Optional[JsonPathItem], str]:
     if "[" not in path or not path.startswith("["):
         return None, path
 

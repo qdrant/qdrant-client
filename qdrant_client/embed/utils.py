@@ -1,20 +1,20 @@
-from typing import Optional, List
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
 
 class FieldPath(BaseModel):
     current: str
-    tail: Optional[List["FieldPath"]] = Field(default=None)
+    tail: Optional[list["FieldPath"]] = Field(default=None)
 
-    def as_str_list(self) -> List[str]:
+    def as_str_list(self) -> list[str]:
         """
         >>> FieldPath(current='a', tail=[FieldPath(current='b', tail=[FieldPath(current='c'), FieldPath(current='d')])]).as_str_list()
         ['a.b.c', 'a.b.d']
         """
 
         # Recursive function to collect all paths
-        def collect_paths(path: FieldPath, prefix: str = "") -> List[str]:
+        def collect_paths(path: FieldPath, prefix: str = "") -> list[str]:
             current_path = prefix + path.current
             if not path.tail:
                 return [current_path]
@@ -28,7 +28,7 @@ class FieldPath(BaseModel):
         return collect_paths(self)
 
 
-def convert_paths(paths: List[str]) -> List[FieldPath]:
+def convert_paths(paths: list[str]) -> list[FieldPath]:
     """Convert string paths into FieldPath objects
 
     Paths which share the same root are grouped together.

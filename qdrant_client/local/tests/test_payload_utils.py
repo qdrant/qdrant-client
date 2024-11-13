@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -253,8 +253,8 @@ def test_value_by_key() -> None:
 
 def test_set_value_by_key() -> None:
     # region valid keys
-    payload: Dict[str, Any] = {}
-    new_value: Dict[str, Any] = {}
+    payload: dict[str, Any] = {}
+    new_value: dict[str, Any] = {}
     key = "a"
     set_value_by_key(payload, parse_json_path(key), new_value)
     assert payload == {"a": {}}, payload
