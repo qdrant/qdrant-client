@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 
 from qdrant_client.http import models
@@ -54,7 +52,7 @@ def test_distribution_based_score_fusion() -> None:
 
 
 def test_reciprocal_rank_fusion_empty_responses() -> None:
-    responses: List[List[models.ScoredPoint]] = [[]]
+    responses: list[list[models.ScoredPoint]] = [[]]
     fused = reciprocal_rank_fusion(responses)
     assert fused == []
 
@@ -78,7 +76,7 @@ def test_reciprocal_rank_fusion_empty_responses() -> None:
 
 
 def test_distribution_based_score_fusion_empty_response() -> None:
-    responses: List[List[models.ScoredPoint]] = [[]]
+    responses: list[list[models.ScoredPoint]] = [[]]
     fused = distribution_based_score_fusion(responses, limit=3)
     assert fused == []
 

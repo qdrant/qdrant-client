@@ -86,7 +86,7 @@ class BaseUploader(Worker, ABC):
         ), "Each named vector should have the same number of vectors"
 
         num_vectors = next(iter(vectors.values())).shape[0]
-        # Convert Dict[str, np.ndarray] to Generator(Dict[str, List[float]])
+        # Convert dict[str, np.ndarray] to Generator(dict[str, list[float]])
         vector_batches = (
             {name: vectors[name][i].tolist() for name in vectors.keys()}
             for i in range(num_vectors)
