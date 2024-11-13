@@ -1,4 +1,5 @@
 from copy import copy, deepcopy
+from pathlib import Path
 from typing import List, Type, Dict, Union, Any, Set, Optional
 
 from pydantic import BaseModel
@@ -242,7 +243,7 @@ class ModelSchemaParser:
         # convert str paths to FieldPath objects which group path parts and reduce the time of the traversal
         self.path_cache = {model: convert_paths(paths) for model, paths in self._cache.items()}
 
-    def _persist(self, output_path: Union[FieldPath, str] = CACHE_PATH) -> None:
+    def _persist(self, output_path: Union[Path, str] = CACHE_PATH) -> None:
         """Persist the parser state to a file
 
         Args:
