@@ -33,6 +33,7 @@ from qdrant_client.local.local_collection import (
 )
 
 META_INFO_FILENAME = "meta.json"
+LOCAL_MODE_POINTS_THRESHOLD = 20000
 
 
 class AsyncQdrantLocal(AsyncQdrantBase):
@@ -147,6 +148,28 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         if collection_name in self.aliases:
             return self.collections[self.aliases[collection_name]]
         raise ValueError(f"Collection {collection_name} not found")
+
+    def _warn_if_large_collection(self, points_count: int) -> None:
+        """Warn if collection size exceeds recommended threshold for local mode."""
+        if points_count > LOCAL_MODE_POINTS_THRESHOLD:
+            logging.warning(
+                f"Local mode is not recommended for collections with more than {LOCAL_MODE_POINTS_THRESHOLD:,} points.Consider using Qdrant server mode for better performance with large datasets."
+            )
+
+    def _count_points(self, points: types.Points) -> int:
+        """
+        Count number of points in types.Points
+        """
+        if hasattr(points, "ids"):
+            return len(points.ids)
+        elif hasattr(points, "vectors"):
+            if isinstance(points.vectors, dict):
+                return len(next(iter(points.vectors.values())))
+            return len(points.vectors)
+        elif isinstance(points, (list, tuple)):
+            return len(points)
+        elif isinstance(points, Iterable):
+            return len(list(points))
 
     async def search_batch(
         self, collection_name: str, requests: Sequence[types.SearchRequest], **kwargs: Any
@@ -711,6 +734,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def upsert(
         self, collection_name: str, points: types.Points, **kwargs: Any
     ) -> types.UpdateResult:
+        points_count = self._count_points(points)
+        self._warn_if_large_collection(points_count)
         collection = self._get_collection(collection_name)
         collection.upsert(points)
         return self._default_update_result()
@@ -967,11 +992,13 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     def upload_points(
         self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
     ) -> None:
+        self._warn_if_large_collection(len(list(points)))
         self._upload_points(collection_name, points)
 
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
     ) -> None:
+        self._warn_if_large_collection(len(list(records)))
         self._upload_points(collection_name, records)
 
     def _upload_points(
@@ -997,6 +1024,14 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,
     ) -> None:
+        if isinstance(vectors, (np.ndarray, list, tuple)):
+            self._warn_if_large_collection(len(vectors))
+        elif isinstance(vectors, dict) and any(
+            (isinstance(v, np.ndarray) for v in vectors.values())
+        ):
+            first_array = next((v for v in vectors.values() if isinstance(v, np.ndarray)))
+            self._warn_if_large_collection(len(first_array))
+
         def uuid_generator() -> Generator[str, None, None]:
             while True:
                 yield str(uuid4())
