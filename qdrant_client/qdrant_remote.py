@@ -44,6 +44,8 @@ from qdrant_client.uploader.uploader import BaseUploader
 
 
 class QdrantRemote(QdrantBase):
+    DEFAULT_GRPC_TIMEOUT = 5  # seconds
+
     def __init__(
         self,
         url: Optional[str] = None,
@@ -108,7 +110,7 @@ class QdrantRemote(QdrantBase):
             self._host = host or "localhost"
             self._port = port
 
-        self._timeout = (
+        _timeout = (
             math.ceil(timeout) if timeout is not None else None
         )  # it has been changed from float to int.
         # convert it to the closest greater or equal int value (e.g. 0.5 -> 1)
@@ -155,12 +157,11 @@ class QdrantRemote(QdrantBase):
         if limits is not None:
             self._rest_args["limits"] = limits
 
-        if self._timeout is not None:
-            self._rest_args["timeout"] = self._timeout
-            if self._grpc_options:
-                self._grpc_options["timeout"] = self._timeout
-            else:
-                self._grpc_options = {"timeout": self._timeout}
+        if _timeout is not None:
+            self._rest_args["timeout"] = _timeout
+            self._timeout = _timeout
+        else:
+            self._timeout = self.DEFAULT_GRPC_TIMEOUT
 
         if self._auth_token_provider is not None:
             if self._scheme == "http":
@@ -2917,6 +2918,7 @@ class QdrantRemote(QdrantBase):
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
                 "options": self._grpc_options,
+                "timeout": self._timeout,
             }
         else:
             updater_kwargs = {

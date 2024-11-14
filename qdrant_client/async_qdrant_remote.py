@@ -52,6 +52,8 @@ from qdrant_client.uploader.uploader import BaseUploader
 
 
 class AsyncQdrantRemote(AsyncQdrantBase):
+    DEFAULT_GRPC_TIMEOUT = 5
+
     def __init__(
         self,
         url: Optional[str] = None,
@@ -102,7 +104,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         else:
             self._host = host or "localhost"
             self._port = port
-        self._timeout = math.ceil(timeout) if timeout is not None else None
+        _timeout = math.ceil(timeout) if timeout is not None else None
         self._api_key = api_key
         self._auth_token_provider = auth_token_provider
         limits = kwargs.pop("limits", None)
@@ -132,12 +134,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._rest_args = {"headers": self._rest_headers, "http2": http2, **kwargs}
         if limits is not None:
             self._rest_args["limits"] = limits
-        if self._timeout is not None:
-            self._rest_args["timeout"] = self._timeout
-            if self._grpc_options:
-                self._grpc_options["timeout"] = self._timeout
-            else:
-                self._grpc_options = {"timeout": self._timeout}
+        if _timeout is not None:
+            self._rest_args["timeout"] = _timeout
+            self._timeout = _timeout
+        else:
+            self._timeout = self.DEFAULT_GRPC_TIMEOUT
         if self._auth_token_provider is not None:
             if self._scheme == "http":
                 warnings.warn("Auth token provider is used with an insecure connection.")
@@ -2549,6 +2550,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
                 "options": self._grpc_options,
+                "timeout": self._timeout,
             }
         else:
             updater_kwargs = {
