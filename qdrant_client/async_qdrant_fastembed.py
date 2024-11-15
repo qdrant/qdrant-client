@@ -779,6 +779,8 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             types.Query,
             types.NumpyArray,
             models.Document,
+            models.Image,
+            models.InferenceObject,
             None,
         ],
     ) -> Optional[models.Query]:
