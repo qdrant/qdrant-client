@@ -991,6 +991,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 await self.http.search_api.recommend_batch_points(
                     collection_name=collection_name,
                     consistency=consistency,
+                    timeout=timeout,
                     recommend_request_batch=models.RecommendRequestBatch(searches=requests),
                 )
             ).result
