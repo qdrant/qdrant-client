@@ -15,6 +15,7 @@ from copy import deepcopy
 import numpy as np
 
 from qdrant_client import grpc as grpc
+from qdrant_client.common.deprecations import deprecation_warning_once
 from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -89,6 +90,8 @@ class LocalCollection:
     LocalCollection is a class that represents a collection of vectors in the local storage.
     """
 
+    LARGE_DATA_THRESHOLD = 20_000
+
     def __init__(
         self,
         config: models.CreateCollection,
@@ -136,6 +139,10 @@ class LocalCollection:
         self.storage = None
         self.config = config
         if location is not None:
+            deprecation_warning_once(
+                f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Consider using Qdrant server mode for better performance with large datasets.",
+                idx="large-data-local",
+            )
             self.storage = CollectionPersistence(location, force_disable_check_same_thread)
         self.load_vectors()
 
@@ -2159,10 +2166,20 @@ class LocalCollection:
 
     def upsert(self, points: Union[Sequence[models.PointStruct], models.Batch]) -> None:
         if isinstance(points, list):
+            if len(points) > self.LARGE_DATA_THRESHOLD:
+                deprecation_warning_once(
+                    f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Consider using Qdrant server mode for better performance with large datasets.",
+                    idx="large-data-local",
+                )
             for point in points:
                 self._upsert_point(point)
         elif isinstance(points, models.Batch):
             batch = points
+            if len(batch.ids) > self.LARGE_DATA_THRESHOLD:
+                deprecation_warning_once(
+                    f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Consider using Qdrant server mode for better performance with large datasets.",
+                    idx="large-data-local",
+                )
             if isinstance(batch.vectors, list):
                 vectors = {DEFAULT_VECTOR_NAME: batch.vectors}
             else:
