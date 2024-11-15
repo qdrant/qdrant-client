@@ -10,7 +10,7 @@ Library contains type definitions for all Qdrant API and allows to make both Syn
 
 ``Pydantic`` is used for describing request models and ``httpx`` for handling http queries.
 
-Client allows calls for all `Qdrant API methods <https://qdrant.github.io/qdrant/redoc/index.html>`_ directly. It also provides some additional helper methods for frequently required operations, e.g. initial collection uploading.
+Client allows calls for all `Qdrant API methods <https://api.qdrant.tech/>`_ directly. It also provides some additional helper methods for frequently required operations, e.g. initial collection uploading.
 
 Installation
 ============
