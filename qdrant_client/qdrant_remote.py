@@ -1986,7 +1986,8 @@ class QdrantRemote(QdrantBase):
                     points=points,
                     ordering=ordering,
                     shard_key_selector=shard_key_selector,
-                )
+                ),
+                timeout=self._timeout,
             ).result
             assert grpc_result is not None, "Upsert returned None result"
             return GrpcToRest.convert_update_result(grpc_result)
@@ -2031,7 +2032,8 @@ class QdrantRemote(QdrantBase):
                     points_selector=points_selector,
                     ordering=ordering,
                     shard_key_selector=shard_key_selector,
-                )
+                ),
+                timeout=self._timeout,
             ).result
 
             assert grpc_result is not None, "Delete vectors returned None result"
@@ -2686,6 +2688,7 @@ class QdrantRemote(QdrantBase):
                     hnsw_config=hnsw_config,
                     quantization_config=quantization_config,
                     sparse_vectors_config=sparse_vectors_config,
+                    timeout=timeout,
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             ).result
@@ -2725,7 +2728,7 @@ class QdrantRemote(QdrantBase):
     ) -> bool:
         if self._prefer_grpc:
             return self.grpc_collections.Delete(
-                grpc.DeleteCollection(collection_name=collection_name),
+                grpc.DeleteCollection(collection_name=collection_name, timeout=timeout),
                 timeout=timeout if timeout is not None else self._timeout,
             ).result
 
@@ -2802,7 +2805,7 @@ class QdrantRemote(QdrantBase):
                 sparse_vectors_config=sparse_vectors_config,
                 sharding_method=sharding_method,
             )
-            return self.grpc_collections.Create(create_collection).result
+            return self.grpc_collections.Create(create_collection, timeout=self._timeout).result
 
         if isinstance(hnsw_config, grpc.HnswConfigDiff):
             hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
@@ -3089,7 +3092,7 @@ class QdrantRemote(QdrantBase):
                 ordering=ordering,
             )
             return GrpcToRest.convert_update_result(
-                self.grpc_points.CreateFieldIndex(request).result
+                self.grpc_points.CreateFieldIndex(request, timeout=self._timeout).result
             )
 
         if isinstance(field_schema, int):  # type(grpc.PayloadSchemaType) == int
@@ -3125,7 +3128,7 @@ class QdrantRemote(QdrantBase):
                 ordering=ordering,
             )
             return GrpcToRest.convert_update_result(
-                self.grpc_points.DeleteFieldIndex(request).result
+                self.grpc_points.DeleteFieldIndex(request, timeout=self._timeout).result
             )
 
         result: Optional[types.UpdateResult] = self.openapi_client.indexes_api.delete_field_index(
@@ -3142,7 +3145,7 @@ class QdrantRemote(QdrantBase):
     ) -> List[types.SnapshotDescription]:
         if self._prefer_grpc:
             snapshots = self.grpc_snapshots.List(
-                grpc.ListSnapshotsRequest(collection_name=collection_name)
+                grpc.ListSnapshotsRequest(collection_name=collection_name), timeout=self._timeout
             ).snapshot_descriptions
             return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
 
@@ -3157,7 +3160,7 @@ class QdrantRemote(QdrantBase):
     ) -> Optional[types.SnapshotDescription]:
         if self._prefer_grpc:
             snapshot = self.grpc_snapshots.Create(
-                grpc.CreateSnapshotRequest(collection_name=collection_name)
+                grpc.CreateSnapshotRequest(collection_name=collection_name), timeout=self._timeout
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot)
 
@@ -3172,7 +3175,8 @@ class QdrantRemote(QdrantBase):
             self.grpc_snapshots.Delete(
                 grpc.DeleteSnapshotRequest(
                     collection_name=collection_name, snapshot_name=snapshot_name
-                )
+                ),
+                timeout=self._timeout,
             )
             return True
 
@@ -3185,7 +3189,8 @@ class QdrantRemote(QdrantBase):
     def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
         if self._prefer_grpc:
             snapshots = self.grpc_snapshots.ListFull(
-                grpc.ListFullSnapshotsRequest()
+                grpc.ListFullSnapshotsRequest(),
+                timeout=self._timeout,
             ).snapshot_descriptions
             return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
 
@@ -3196,7 +3201,7 @@ class QdrantRemote(QdrantBase):
     def create_full_snapshot(self, wait: bool = True, **kwargs: Any) -> types.SnapshotDescription:
         if self._prefer_grpc:
             snapshot_description = self.grpc_snapshots.CreateFull(
-                grpc.CreateFullSnapshotRequest()
+                grpc.CreateFullSnapshotRequest(), timeout=self._timeout
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot_description)
 
@@ -3207,7 +3212,8 @@ class QdrantRemote(QdrantBase):
     ) -> Optional[bool]:
         if self._prefer_grpc:
             self.grpc_snapshots.DeleteFull(
-                grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name)
+                grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name),
+                timeout=self._timeout,
             )
             return True
 
@@ -3387,7 +3393,9 @@ class QdrantRemote(QdrantBase):
 
     def info(self) -> types.VersionInfo:
         if self._prefer_grpc:
-            version_info = self.grpc_root.HealthCheck(grpc.HealthCheckRequest())
+            version_info = self.grpc_root.HealthCheck(
+                grpc.HealthCheckRequest(), timeout=self._timeout
+            )
             return GrpcToRest.convert_health_check_reply(version_info)
         version_info = self.rest.service_api.root()
         assert version_info is not None, "Healthcheck returned None"

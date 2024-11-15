@@ -1659,7 +1659,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         points=points,
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
-                    )
+                    ),
+                    timeout=self._timeout,
                 )
             ).result
             assert grpc_result is not None, "Upsert returned None result"
@@ -1702,7 +1703,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         points_selector=points_selector,
                         ordering=ordering,
                         shard_key_selector=shard_key_selector,
-                    )
+                    ),
+                    timeout=self._timeout,
                 )
             ).result
             assert grpc_result is not None, "Delete vectors returned None result"
@@ -2340,6 +2342,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         hnsw_config=hnsw_config,
                         quantization_config=quantization_config,
                         sparse_vectors_config=sparse_vectors_config,
+                        timeout=timeout,
                     ),
                     timeout=timeout if timeout is not None else self._timeout,
                 )
@@ -2377,7 +2380,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             return (
                 await self.grpc_collections.Delete(
-                    grpc.DeleteCollection(collection_name=collection_name),
+                    grpc.DeleteCollection(collection_name=collection_name, timeout=timeout),
                     timeout=timeout if timeout is not None else self._timeout,
                 )
             ).result
@@ -2442,7 +2445,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 sparse_vectors_config=sparse_vectors_config,
                 sharding_method=sharding_method,
             )
-            return (await self.grpc_collections.Create(create_collection)).result
+            return (
+                await self.grpc_collections.Create(create_collection, timeout=self._timeout)
+            ).result
         if isinstance(hnsw_config, grpc.HnswConfigDiff):
             hnsw_config = GrpcToRest.convert_hnsw_config_diff(hnsw_config)
         if isinstance(optimizers_config, grpc.OptimizersConfigDiff):
@@ -2699,7 +2704,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ordering=ordering,
             )
             return GrpcToRest.convert_update_result(
-                (await self.grpc_points.CreateFieldIndex(request)).result
+                (await self.grpc_points.CreateFieldIndex(request, timeout=self._timeout)).result
             )
         if isinstance(field_schema, int):
             field_schema = GrpcToRest.convert_payload_schema_type(field_schema)
@@ -2734,7 +2739,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ordering=ordering,
             )
             return GrpcToRest.convert_update_result(
-                (await self.grpc_points.DeleteFieldIndex(request)).result
+                (await self.grpc_points.DeleteFieldIndex(request, timeout=self._timeout)).result
             )
         result: Optional[types.UpdateResult] = (
             await self.openapi_client.indexes_api.delete_field_index(
@@ -2753,7 +2758,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             snapshots = (
                 await self.grpc_snapshots.List(
-                    grpc.ListSnapshotsRequest(collection_name=collection_name)
+                    grpc.ListSnapshotsRequest(collection_name=collection_name),
+                    timeout=self._timeout,
                 )
             ).snapshot_descriptions
             return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
@@ -2769,7 +2775,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if self._prefer_grpc:
             snapshot = (
                 await self.grpc_snapshots.Create(
-                    grpc.CreateSnapshotRequest(collection_name=collection_name)
+                    grpc.CreateSnapshotRequest(collection_name=collection_name),
+                    timeout=self._timeout,
                 )
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot)
@@ -2786,7 +2793,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             await self.grpc_snapshots.Delete(
                 grpc.DeleteSnapshotRequest(
                     collection_name=collection_name, snapshot_name=snapshot_name
-                )
+                ),
+                timeout=self._timeout,
             )
             return True
         return (
@@ -2798,7 +2806,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     async def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
         if self._prefer_grpc:
             snapshots = (
-                await self.grpc_snapshots.ListFull(grpc.ListFullSnapshotsRequest())
+                await self.grpc_snapshots.ListFull(
+                    grpc.ListFullSnapshotsRequest(), timeout=self._timeout
+                )
             ).snapshot_descriptions
             return [GrpcToRest.convert_snapshot_description(snapshot) for snapshot in snapshots]
         snapshots = (await self.openapi_client.snapshots_api.list_full_snapshots()).result
@@ -2810,7 +2820,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> types.SnapshotDescription:
         if self._prefer_grpc:
             snapshot_description = (
-                await self.grpc_snapshots.CreateFull(grpc.CreateFullSnapshotRequest())
+                await self.grpc_snapshots.CreateFull(
+                    grpc.CreateFullSnapshotRequest(), timeout=self._timeout
+                )
             ).snapshot_description
             return GrpcToRest.convert_snapshot_description(snapshot_description)
         return (await self.openapi_client.snapshots_api.create_full_snapshot(wait=wait)).result
@@ -2820,7 +2832,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> Optional[bool]:
         if self._prefer_grpc:
             await self.grpc_snapshots.DeleteFull(
-                grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name)
+                grpc.DeleteFullSnapshotRequest(snapshot_name=snapshot_name), timeout=self._timeout
             )
             return True
         return (
@@ -3008,7 +3020,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     async def info(self) -> types.VersionInfo:
         if self._prefer_grpc:
-            version_info = await self.grpc_root.HealthCheck(grpc.HealthCheckRequest())
+            version_info = await self.grpc_root.HealthCheck(
+                grpc.HealthCheckRequest(), timeout=self._timeout
+            )
             return GrpcToRest.convert_health_check_reply(version_info)
         version_info = await self.rest.service_api.root()
         assert version_info is not None, "Healthcheck returned None"
