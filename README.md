@@ -11,7 +11,7 @@
 
 <p align=center>
     <a href="https://pypi.org/project/qdrant-client/"><img src="https://badge.fury.io/py/qdrant-client.svg" alt="PyPI version" height="18"></a>
-    <a href="https://qdrant.github.io/qdrant/redoc/index.html"><img src="https://img.shields.io/badge/Docs-OpenAPI%203.0-success" alt="OpenAPI Docs"></a>
+    <a href="http://api.qdrant.tech/"><img src="https://img.shields.io/badge/Docs-OpenAPI%203.0-success" alt="OpenAPI Docs"></a>
     <a href="https://github.com/qdrant/qdrant-client/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-success" alt="Apache 2.0 License"></a>
     <a href="https://qdrant.to/discord"><img src="https://img.shields.io/badge/Discord-Qdrant-5865F2.svg?logo=discord" alt="Discord"></a>
     <a href="https://qdrant.to/roadmap"><img src="https://img.shields.io/badge/Roadmap-2023-bc1439.svg" alt="Roadmap 2023"></a>
@@ -24,7 +24,7 @@ Client library and SDK for the [Qdrant](https://github.com/qdrant/qdrant) vector
 
 Library contains type definitions for all Qdrant API and allows to make both Sync and Async requests.
 
-Client allows calls for all [Qdrant API methods](https://qdrant.github.io/qdrant/redoc/index.html) directly.
+Client allows calls for all [Qdrant API methods](http://api.qdrant.tech/) directly.
 It also provides some additional helper methods for frequently required operations, e.g. initial collection uploading.
 
 See [QuickStart](https://qdrant.tech/documentation/quick-start/#create-collection) for more details!
