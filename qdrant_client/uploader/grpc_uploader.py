@@ -1,6 +1,6 @@
 import logging
 from itertools import count
-from typing import Any, Generator, Iterable, Optional, Tuple, Union
+from typing import Any, Generator, Iterable, Optional, Union
 from uuid import uuid4
 
 from qdrant_client import grpc as grpc
@@ -14,7 +14,7 @@ from qdrant_client.uploader.uploader import BaseUploader
 def upload_batch_grpc(
     points_client: PointsStub,
     collection_name: str,
-    batch: Union[Batch, Tuple],
+    batch: Union[Batch, tuple],
     max_retries: int,
     shard_key_selector: Optional[ShardKeySelector],
     wait: bool = False,

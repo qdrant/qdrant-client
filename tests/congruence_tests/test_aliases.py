@@ -1,5 +1,3 @@
-from typing import List
-
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
@@ -19,11 +17,11 @@ class TestAliasRetriever:
         self.collection_name = collection_name
 
     @classmethod
-    def list_aliases(cls, client: QdrantBase) -> List[models.AliasDescription]:
+    def list_aliases(cls, client: QdrantBase) -> list[models.AliasDescription]:
         aliases = client.get_aliases()
         return sorted(aliases.aliases, key=lambda x: x.alias_name)
 
-    def list_collection_aliases(self, client: QdrantBase) -> List[models.AliasDescription]:
+    def list_collection_aliases(self, client: QdrantBase) -> list[models.AliasDescription]:
         aliases = client.get_collection_aliases(collection_name=self.collection_name)
         return sorted(aliases.aliases, key=lambda x: x.alias_name)
 

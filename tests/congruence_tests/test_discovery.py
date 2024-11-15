@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import numpy as np
 import pytest
@@ -20,17 +20,17 @@ from tests.fixtures.filters import one_random_filter_please
 secondary_collection_name = "congruence_secondary_collection"
 
 
-def random_vector(dims: int) -> List[float]:
+def random_vector(dims: int) -> list[float]:
     return np.random.random(dims).round(3).tolist()
 
 
 @pytest.fixture(scope="module")
-def fixture_points() -> List[models.PointStruct]:
+def fixture_points() -> list[models.PointStruct]:
     return generate_fixtures()
 
 
 @pytest.fixture(scope="module")
-def secondary_collection_points() -> List[models.PointStruct]:
+def secondary_collection_points() -> list[models.PointStruct]:
     return generate_fixtures(100)
 
 
@@ -61,7 +61,7 @@ def test_context_cosine(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=10, negative=19)],
@@ -79,7 +79,7 @@ def test_context_dot(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=10, negative=19)],
@@ -97,7 +97,7 @@ def test_context_euclidean(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=11, negative=19)],
@@ -118,7 +118,7 @@ def test_context_many_pairs(
     random_image_vector_1 = random_vector(image_vector_size)
     random_image_vector_2 = random_vector(image_vector_size)
 
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[
@@ -144,7 +144,7 @@ def test_discover_cosine(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
@@ -163,7 +163,7 @@ def test_discover_dot(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
@@ -182,7 +182,7 @@ def test_discover_euclidean(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
@@ -203,7 +203,7 @@ def test_discover_raw_target(
 ):
     random_image_vector = random_vector(image_vector_size)
 
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=random_image_vector,
@@ -223,7 +223,7 @@ def test_context_raw_positive(
 ):
     random_image_vector = random_vector(image_vector_size)
 
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
@@ -241,7 +241,7 @@ def test_only_target(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
@@ -259,8 +259,8 @@ def discover_from_another_collection(
     collection_name=COLLECTION_NAME,
     lookup_collection_name=secondary_collection_name,
     positive_point_id: Optional[int] = None,
-    **kwargs: Dict[str, Any],
-) -> List[models.ScoredPoint]:
+    **kwargs: dict[str, Any],
+) -> list[models.ScoredPoint]:
     return client.discover(
         collection_name=collection_name,
         target=5,
@@ -317,7 +317,7 @@ def test_discover_batch(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[List[models.ScoredPoint]]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[list[models.ScoredPoint]]:
         return client.discover_batch(
             collection_name=COLLECTION_NAME,
             requests=[
@@ -346,7 +346,7 @@ def test_discover_batch(
 
 @pytest.mark.parametrize("filter", [one_random_filter_please() for _ in range(10)])
 def test_discover_with_filters(local_client, http_client, grpc_client, filter: models.Filter):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             target=10,
@@ -359,7 +359,7 @@ def test_discover_with_filters(local_client, http_client, grpc_client, filter: m
 
 @pytest.mark.parametrize("filter", [one_random_filter_please() for _ in range(10)])
 def test_context_with_filters(local_client, http_client, grpc_client, filter: models.Filter):
-    def f(client: QdrantBase, **kwargs: Dict[str, Any]) -> List[models.ScoredPoint]:
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=15, negative=7)],

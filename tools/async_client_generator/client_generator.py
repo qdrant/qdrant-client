@@ -1,5 +1,5 @@
 import inspect
-from typing import Dict, List, Optional
+from typing import Optional
 
 from tools.async_client_generator.async_client_base import AsyncQdrantBase
 from tools.async_client_generator.base_generator import BaseGenerator
@@ -18,13 +18,13 @@ from tools.async_client_generator.transformers.client import (
 class ClientGenerator(BaseGenerator):
     def __init__(
         self,
-        keep_sync: Optional[List[str]] = None,
-        class_replace_map: Optional[Dict[str, str]] = None,
-        import_replace_map: Optional[Dict[str, str]] = None,
-        exclude_methods: Optional[List[str]] = None,
+        keep_sync: Optional[list[str]] = None,
+        class_replace_map: Optional[dict[str, str]] = None,
+        import_replace_map: Optional[dict[str, str]] = None,
+        exclude_methods: Optional[list[str]] = None,
     ):
         super().__init__()
-        self._async_methods: Optional[List[str]] = None
+        self._async_methods: Optional[list[str]] = None
 
         self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))
         self.transformers.append(ImportFromTransformer(import_replace_map=import_replace_map))
@@ -51,13 +51,13 @@ class ClientGenerator(BaseGenerator):
         )
 
     @property
-    def async_methods(self) -> List[str]:
+    def async_methods(self) -> list[str]:
         if self._async_methods is None:
             self._async_methods = self.get_async_methods(AsyncQdrantBase)
         return self._async_methods
 
     @staticmethod
-    def get_async_methods(class_obj: type) -> List[str]:
+    def get_async_methods(class_obj: type) -> list[str]:
         async_methods = []
         for name, method in inspect.getmembers(class_obj):
             if inspect.iscoroutinefunction(method):

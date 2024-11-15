@@ -1,10 +1,10 @@
 import ast
 import sys
-from typing import List, Optional
+from typing import Optional
 
 
 class FunctionDefTransformer(ast.NodeTransformer):
-    def __init__(self, keep_sync: Optional[List[str]] = None):
+    def __init__(self, keep_sync: Optional[list[str]] = None):
         self.keep_sync = keep_sync if keep_sync is not None else []
 
     def _keep_sync(self, name: str) -> bool:
@@ -14,7 +14,7 @@ class FunctionDefTransformer(ast.NodeTransformer):
         if self._keep_sync(sync_node.name):
             return self.generic_visit(sync_node)
 
-        params: List = [
+        params: list = [
             sync_node.name,
             sync_node.args,
             sync_node.body,

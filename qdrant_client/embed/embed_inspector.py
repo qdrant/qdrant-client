@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Union, List, Optional, Iterable
+from typing import Union, Optional, Iterable
 
 from pydantic import BaseModel
 
@@ -21,7 +21,7 @@ class InspectorEmbed:
     def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
         self.parser = ModelSchemaParser() if parser is None else parser
 
-    def inspect(self, points: Union[Iterable[BaseModel], BaseModel]) -> List[FieldPath]:
+    def inspect(self, points: Union[Iterable[BaseModel], BaseModel]) -> list[FieldPath]:
         """Looks for all the paths to objects requiring inference in the received models
 
         Args:
@@ -45,8 +45,8 @@ class InspectorEmbed:
         return convert_paths(paths)
 
     def _inspect_model(
-        self, mod: BaseModel, paths: Optional[List[FieldPath]] = None, accum: Optional[str] = None
-    ) -> List[str]:
+        self, mod: BaseModel, paths: Optional[list[FieldPath]] = None, accum: Optional[str] = None
+    ) -> list[str]:
         """Looks for all the paths to objects requiring inference in the received model
 
         Args:
@@ -72,9 +72,9 @@ class InspectorEmbed:
         self,
         original_model: BaseModel,
         current_path: str,
-        tail: List[FieldPath],
+        tail: list[FieldPath],
         accum: Optional[str] = None,
-    ) -> List[str]:
+    ) -> list[str]:
         """Looks for all the paths to objects requiring inference in the received model
 
         Args:
@@ -92,7 +92,7 @@ class InspectorEmbed:
         else:
             accum += f".{current_path}"
 
-        def inspect_recursive(member: BaseModel, accumulator: str) -> List[str]:
+        def inspect_recursive(member: BaseModel, accumulator: str) -> list[str]:
             """Iterates over the set model fields, expand recursive ones and find paths to objects requiring inference
 
             Args:

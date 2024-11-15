@@ -1,12 +1,11 @@
 import ast
-from typing import List
 
 from tools.async_client_generator.config import AUTOGEN_WARNING_MESSAGE
 
 
 class BaseGenerator:
     def __init__(self) -> None:
-        self.transformers: List[ast.NodeTransformer] = []
+        self.transformers: list[ast.NodeTransformer] = []
 
     def generate(self, code: str) -> str:
         nodes = ast.parse(code)

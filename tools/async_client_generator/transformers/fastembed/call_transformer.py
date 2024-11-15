@@ -1,9 +1,9 @@
 import ast
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 
 class FastembedCallTransformer(ast.NodeTransformer):
-    def __init__(self, async_methods: Optional[List[str]] = None):
+    def __init__(self, async_methods: Optional[list[str]] = None):
         self.async_methods = async_methods if async_methods is not None else []
 
     def visit_Call(self, node: ast.Call) -> Union[ast.AST, ast.Await]:

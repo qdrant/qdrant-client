@@ -6,7 +6,7 @@ from multiprocessing.context import BaseContext
 from multiprocessing.process import BaseProcess
 from multiprocessing.sharedctypes import Synchronized as BaseValue
 from queue import Empty
-from typing import Any, Dict, Iterable, List, Optional, Type
+from typing import Any, Iterable, Optional, Type
 
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
@@ -35,7 +35,7 @@ def _worker(
     output_queue: Queue,
     num_active_workers: BaseValue,
     worker_id: int,
-    kwargs: Optional[Dict[str, Any]] = None,
+    kwargs: Optional[dict[str, Any]] = None,
 ) -> None:
     """
     A worker that pulls data pints off the input queue, and places the execution result on the output queue.
@@ -90,7 +90,7 @@ class ParallelWorkerPool:
         self.input_queue: Optional[Queue] = None
         self.output_queue: Optional[Queue] = None
         self.ctx: BaseContext = get_context(start_method)
-        self.processes: List[BaseProcess] = []
+        self.processes: list[BaseProcess] = []
         self.queue_size = self.num_workers * max_internal_batch_size
         self.emergency_shutdown = False
         self.num_active_workers: Optional[BaseValue] = None

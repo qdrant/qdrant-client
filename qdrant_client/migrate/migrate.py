@@ -1,5 +1,5 @@
 import time
-from typing import Dict, Iterable, List, Optional
+from typing import Iterable, Optional
 
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
@@ -35,7 +35,7 @@ def upload_with_retry(
 def migrate(
     source_client: QdrantBase,
     dest_client: QdrantBase,
-    collection_names: Optional[List[str]] = None,
+    collection_names: Optional[list[str]] = None,
     recreate_on_collision: bool = False,
     batch_size: int = 100,
 ) -> None:
@@ -81,8 +81,8 @@ def _has_custom_shards(source_client: QdrantBase, collection_name: str) -> bool:
 
 
 def _select_source_collections(
-    source_client: QdrantBase, collection_names: Optional[List[str]] = None
-) -> List[str]:
+    source_client: QdrantBase, collection_names: Optional[list[str]] = None
+) -> list[str]:
     source_collections = source_client.get_collections().collections
     source_collection_names = [collection.name for collection in source_collections]
 
@@ -96,7 +96,7 @@ def _select_source_collections(
     return collection_names
 
 
-def _find_collisions(dest_client: QdrantBase, collection_names: List[str]) -> List[str]:
+def _find_collisions(dest_client: QdrantBase, collection_names: list[str]) -> list[str]:
     dest_collections = dest_client.get_collections().collections
     dest_collection_names = {collection.name for collection in dest_collections}
     existing_dest_collections = dest_collection_names & set(collection_names)
@@ -133,7 +133,7 @@ def _recreate_collection(
 def _recreate_payload_schema(
     dest_client: QdrantBase,
     collection_name: str,
-    payload_schema: Dict[str, models.PayloadIndexInfo],
+    payload_schema: dict[str, models.PayloadIndexInfo],
 ) -> None:
     for field_name, field_info in payload_schema.items():
         dest_client.create_payload_index(

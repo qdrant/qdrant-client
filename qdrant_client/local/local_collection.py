@@ -5,14 +5,10 @@ from collections import OrderedDict, defaultdict
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Optional,
     Sequence,
-    Tuple,
     Union,
     get_args,
-    Set,
 )
 from copy import deepcopy
 
@@ -24,7 +20,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
-from qdrant_client.http.models import PointIdsList, ScoredPoint
+from qdrant_client.http.models import ScoredPoint
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 from qdrant_client.local.distances import (
@@ -109,22 +105,22 @@ class LocalCollection:
             config.vectors
         )
         sparse_vectors_config = config.sparse_vectors
-        self.vectors: Dict[str, types.NumpyArray] = {
+        self.vectors: dict[str, types.NumpyArray] = {
             name: np.zeros((0, params.size), dtype=np.float32)
             for name, params in self.vectors_config.items()
         }
-        self.sparse_vectors: Dict[str, List[SparseVector]] = (
+        self.sparse_vectors: dict[str, list[SparseVector]] = (
             {name: [] for name, params in sparse_vectors_config.items()}
             if sparse_vectors_config is not None
             else {}
         )
-        self.sparse_vectors_idf: Dict[
-            str, Dict[int, int]
+        self.sparse_vectors_idf: dict[
+            str, dict[int, int]
         ] = {}  # vector_name: {idx_in_vocab: doc frequency}
-        self.multivectors: Dict[str, List[types.NumpyArray]] = {
+        self.multivectors: dict[str, list[types.NumpyArray]] = {
             name: [] for name in self.multivectors_config
         }
-        self.payload: List[models.Payload] = []
+        self.payload: list[models.Payload] = []
         self.deleted = np.zeros(0, dtype=bool)
         self._all_vectors_keys = (
             list(self.vectors.keys())
@@ -134,8 +130,8 @@ class LocalCollection:
         self.deleted_per_vector = {
             name: np.zeros(0, dtype=bool) for name in self._all_vectors_keys
         }
-        self.ids: Dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id
-        self.ids_inv: List[models.ExtendedPointId] = []  # Mapping from internal id to external id
+        self.ids: dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id
+        self.ids_inv: list[models.ExtendedPointId] = []  # Mapping from internal id to external id
         self.persistent = location is not None
         self.storage = None
         self.config = config
@@ -145,8 +141,8 @@ class LocalCollection:
 
     @staticmethod
     def _resolve_vectors_config(
-        vectors: Dict[str, models.VectorParams],
-    ) -> Tuple[Dict[str, models.VectorParams], Dict[str, models.VectorParams]]:
+        vectors: dict[str, models.VectorParams],
+    ) -> tuple[dict[str, models.VectorParams], dict[str, models.VectorParams]]:
         vectors_config = {}
         multivectors_config = {}
         if isinstance(vectors, models.VectorParams):
@@ -277,20 +273,20 @@ class LocalCollection:
     def _resolve_query_vector_name(
         cls,
         query_vector: Union[
-            List[float],
-            Tuple[str, List[float]],
-            List[List[float]],
-            Tuple[str, List[List[float]]],
+            list[float],
+            tuple[str, list[float]],
+            list[list[float]],
+            tuple[str, list[list[float]]],
             types.NamedVector,
             types.NamedSparseVector,
             DenseQueryVector,
-            Tuple[str, DenseQueryVector],
-            Tuple[str, SparseQueryVector],
+            tuple[str, DenseQueryVector],
+            tuple[str, SparseQueryVector],
             MultiQueryVector,
-            Tuple[str, MultiQueryVector],
+            tuple[str, MultiQueryVector],
             types.NumpyArray,
         ],
-    ) -> Tuple[
+    ) -> tuple[
         str, Union[DenseQueryVector, SparseQueryVector, MultiQueryVector, types.NumpyArray]
     ]:
         # SparseQueryVector is not in the method's signature, because sparse vectors can only be used as named vectors,
@@ -518,18 +514,18 @@ class LocalCollection:
     def search(
         self,
         query_vector: Union[
-            List[float],
-            Tuple[str, List[float]],
-            List[List[float]],
-            Tuple[str, List[List[float]]],
+            list[float],
+            tuple[str, list[float]],
+            list[list[float]],
+            tuple[str, list[list[float]]],
             types.NamedVector,
             types.NamedSparseVector,
             DenseQueryVector,
-            Tuple[str, DenseQueryVector],
+            tuple[str, DenseQueryVector],
             SparseQueryVector,
-            Tuple[str, SparseQueryVector],
+            tuple[str, SparseQueryVector],
             MultiQueryVector,
-            Tuple[str, MultiQueryVector],
+            tuple[str, MultiQueryVector],
             types.NumpyArray,
         ],
         query_filter: Optional[types.Filter] = None,
@@ -538,10 +534,10 @@ class LocalCollection:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         name, query_vector = self._resolve_query_vector_name(query_vector)
 
-        result: List[models.ScoredPoint] = []
+        result: list[models.ScoredPoint] = []
         sparse_scoring = False
         rescore_idf = False
 
@@ -663,7 +659,7 @@ class LocalCollection:
     def query_points(
         self,
         query: Optional[types.Query] = None,
-        prefetch: Optional[List[types.Prefetch]] = None,
+        prefetch: Optional[list[types.Prefetch]] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         offset: int = 0,
@@ -713,7 +709,7 @@ class LocalCollection:
 
         return types.QueryResponse(points=scored_points)
 
-    def _prefetch(self, prefetch: types.Prefetch, offset: int) -> List[types.ScoredPoint]:
+    def _prefetch(self, prefetch: types.Prefetch, offset: int) -> list[types.ScoredPoint]:
         if prefetch.limit is not None:
             prefetch.limit = prefetch.limit + offset
 
@@ -755,7 +751,7 @@ class LocalCollection:
 
     def _merge_sources(
         self,
-        sources: List[List[types.ScoredPoint]],
+        sources: list[list[types.ScoredPoint]],
         query: types.Query,
         limit: int,
         offset: int,
@@ -764,7 +760,7 @@ class LocalCollection:
         score_threshold: Optional[float] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         if isinstance(query, models.FusionQuery):
             # Fuse results
             if query.fusion == models.Fusion.RRF:
@@ -819,7 +815,7 @@ class LocalCollection:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = False,
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         """
         Performs the query on the collection, assuming it didn't have any prefetches.
         """
@@ -920,8 +916,8 @@ class LocalCollection:
         group_by: str,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -931,7 +927,7 @@ class LocalCollection:
             None,
         ] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         limit: int = 10,
         group_size: int = 3,
@@ -986,7 +982,7 @@ class LocalCollection:
 
                 groups[group_value].hits.append(point)
 
-        groups_result: List[models.PointGroup] = list(groups.values())[:limit]
+        groups_result: list[models.PointGroup] = list(groups.values())[:limit]
 
         if isinstance(with_lookup, str):
             with_lookup = models.WithLookup(
@@ -1010,8 +1006,8 @@ class LocalCollection:
         self,
         query_vector: Union[
             Sequence[float],
-            List[List[float]],
-            Tuple[
+            list[list[float]],
+            tuple[
                 str,
                 Union[
                     models.Vector,
@@ -1070,7 +1066,7 @@ class LocalCollection:
 
                 groups[group_value].hits.append(point)
 
-        groups_result: List[models.PointGroup] = list(groups.values())[:limit]
+        groups_result: list[models.PointGroup] = list(groups.values())[:limit]
 
         if isinstance(with_lookup, str):
             with_lookup = models.WithLookup(
@@ -1096,7 +1092,7 @@ class LocalCollection:
         facet_filter: Optional[types.Filter] = None,
         limit: int = 10,
     ) -> types.FacetResponse:
-        facet_hits: Dict[types.FacetValue, int] = defaultdict(int)
+        facet_hits: dict[types.FacetValue, int] = defaultdict(int)
 
         mask = self._payload_and_non_deleted_mask(facet_filter)
 
@@ -1113,7 +1109,7 @@ class LocalCollection:
                 continue
 
             # Only count the same value for each point once
-            values_set: Set[types.FacetValue] = set()
+            values_set: set[types.FacetValue] = set()
 
             # Sanitize to use only valid values
             for v in values:
@@ -1146,7 +1142,7 @@ class LocalCollection:
         ids: Sequence[types.PointId],
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> List[models.Record]:
+    ) -> list[models.Record]:
         result = []
 
         for point_id in ids:
@@ -1176,18 +1172,18 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ) -> Tuple[
-        List[List[float]],
-        List[List[float]],
-        List[models.SparseVector],
-        List[models.SparseVector],
-        List[List[List[float]]],
-        List[List[List[float]]],
+    ) -> tuple[
+        list[list[float]],
+        list[list[float]],
+        list[models.SparseVector],
+        list[models.SparseVector],
+        list[list[list[float]]],
+        list[list[list[float]]],
         types.Filter,
     ]:
         def examples_into_vectors(
             examples: Sequence[models.VectorInput],
-            acc: Union[List[List[float]], List[models.SparseVector], List[List[List[float]]]],
+            acc: Union[list[list[float]], list[models.SparseVector], list[list[list[float]]]],
         ) -> None:
             for example in examples:
                 if isinstance(example, get_args(types.PointId)):
@@ -1224,13 +1220,13 @@ class LocalCollection:
                 raise ValueError("No positive or negative examples given")
 
         # Turn every example into vectors
-        positive_vectors: List[List[float]] = []
-        negative_vectors: List[List[float]] = []
-        sparse_positive_vectors: List[models.SparseVector] = []
-        sparse_negative_vectors: List[models.SparseVector] = []
-        positive_multivectors: List[List[List[float]]] = []
-        negative_multivectors: List[List[List[float]]] = []
-        mentioned_ids: List[ExtendedPointId] = []
+        positive_vectors: list[list[float]] = []
+        negative_vectors: list[list[float]] = []
+        sparse_positive_vectors: list[models.SparseVector] = []
+        sparse_negative_vectors: list[models.SparseVector] = []
+        positive_multivectors: list[list[list[float]]] = []
+        negative_multivectors: list[list[list[float]]] = []
+        mentioned_ids: list[ExtendedPointId] = []
 
         sparse = vector_name in collection.sparse_vectors
         multi = vector_name in collection.multivectors
@@ -1262,7 +1258,7 @@ class LocalCollection:
 
     @staticmethod
     def _recommend_average_dense(
-        positive_vectors: List[List[float]], negative_vectors: List[List[float]]
+        positive_vectors: list[list[float]], negative_vectors: list[list[float]]
     ) -> types.NumpyArray:
         positive_vectors_np = np.stack(positive_vectors)
         negative_vectors_np = np.stack(negative_vectors) if len(negative_vectors) > 0 else None
@@ -1279,8 +1275,8 @@ class LocalCollection:
 
     @staticmethod
     def _recommend_average_sparse(
-        positive_vectors: List[models.SparseVector],
-        negative_vectors: List[models.SparseVector],
+        positive_vectors: list[models.SparseVector],
+        negative_vectors: list[models.SparseVector],
     ) -> models.SparseVector:
         for i, vector in enumerate(positive_vectors):
             validate_sparse_vector(vector)
@@ -1308,7 +1304,7 @@ class LocalCollection:
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
         strategy: Optional[types.RecommendStrategy] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Union[RecoQuery, SparseRecoQuery, MultiRecoQuery, models.SparseVector, types.NumpyArray],
         types.Filter,
     ]:
@@ -1390,7 +1386,7 @@ class LocalCollection:
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
         strategy: Optional[types.RecommendStrategy] = None,
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         query_vector, edited_query_filter = self._construct_recommend_query(
             positive,
             negative,
@@ -1520,8 +1516,8 @@ class LocalCollection:
         limit: int = 3,
         sample: int = 10,
         using: Optional[str] = None,
-    ) -> Tuple[List[ExtendedPointId], List[List[ScoredPoint]]]:
-        samples: List[ScoredPoint] = []
+    ) -> tuple[list[ExtendedPointId], list[list[ScoredPoint]]]:
+        samples: list[ScoredPoint] = []
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
         # Sample random points from the whole collection to filter out the ones without vectors
         # TODO: use search_filter once with have an HasVector like condition
@@ -1544,7 +1540,7 @@ class LocalCollection:
         samples = sorted(samples, key=lambda x: x.id)
         # extract the ids
         ids = [sample.id for sample in samples]
-        scores: List[List[ScoredPoint]] = []
+        scores: list[list[ScoredPoint]] = []
 
         # Query `limit` neighbors for each sample
         for sampled_id_index, sampled in enumerate(samples):
@@ -1570,7 +1566,7 @@ class LocalCollection:
     @staticmethod
     def _preprocess_target(
         target: Optional[models.VectorInput], collection: "LocalCollection", vector_name: str
-    ) -> Tuple[models.Vector, types.PointId]:
+    ) -> tuple[models.Vector, types.PointId]:
         # todo: context can no longer be grpc.TargetVector, but models.VectorInput, currently, grpc types are not supported
         target = (
             GrpcToRest.convert_target_vector(target)
@@ -1594,9 +1590,9 @@ class LocalCollection:
         return target, None
 
     def _preprocess_context(
-        self, context: List[models.ContextPair], collection: "LocalCollection", vector_name: str
-    ) -> Tuple[
-        List[ContextPair], List[SparseContextPair], List[MultiContextPair], List[types.PointId]
+        self, context: list[models.ContextPair], collection: "LocalCollection", vector_name: str
+    ) -> tuple[
+        list[ContextPair], list[SparseContextPair], list[MultiContextPair], list[types.PointId]
     ]:
         # todo: context can no longer be ContextExamplePair, currently grpc types are not supported
         context = [
@@ -1681,11 +1677,11 @@ class LocalCollection:
         using: Optional[str] = None,
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
-    ) -> Tuple[
+    ) -> tuple[
         Optional[models.Vector],
-        List[ContextPair],
-        List[SparseContextPair],
-        List[MultiContextPair],
+        list[ContextPair],
+        list[SparseContextPair],
+        list[MultiContextPair],
         types.Filter,
     ]:
         if target is None and not context:
@@ -1733,7 +1729,7 @@ class LocalCollection:
         lookup_from_collection: Optional["LocalCollection"] = None,
         lookup_from_vector_name: Optional[str] = None,
         score_threshold: Optional[float] = None,
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         (
             target_vector,
             dense_context_vectors,
@@ -1786,7 +1782,7 @@ class LocalCollection:
         )
 
     @classmethod
-    def _universal_id(cls, point_id: models.ExtendedPointId) -> Tuple[str, int]:
+    def _universal_id(cls, point_id: models.ExtendedPointId) -> tuple[str, int]:
         if isinstance(point_id, str):
             return point_id, 0
         elif isinstance(point_id, int):
@@ -1801,7 +1797,7 @@ class LocalCollection:
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], Optional[types.PointId]]:
         if len(self.ids) == 0:
             return [], None
 
@@ -1841,10 +1837,10 @@ class LocalCollection:
         offset: Optional[types.PointId] = None,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], Optional[types.PointId]]:
         sorted_ids = sorted(self.ids.items(), key=lambda x: self._universal_id(x[0]))
 
-        result: List[types.Record] = []
+        result: list[types.Record] = []
 
         mask = self._payload_and_non_deleted_mask(scroll_filter)
 
@@ -1878,13 +1874,13 @@ class LocalCollection:
         limit: int = 10,
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], Optional[types.PointId]]:
         if isinstance(order_by, grpc.OrderBy):
             order_by = GrpcToRest.convert_order_by(order_by)
         if isinstance(order_by, str):
             order_by = models.OrderBy(key=order_by)
 
-        value_and_ids: List[Tuple[OrderValue, ExtendedPointId, int]] = []
+        value_and_ids: list[tuple[OrderValue, ExtendedPointId, int]] = []
 
         for external_id, internal_id in self.ids.items():
             # get order-by values for id
@@ -1907,7 +1903,7 @@ class LocalCollection:
 
         mask = self._payload_and_non_deleted_mask(scroll_filter)
 
-        result: List[types.Record] = []
+        result: list[types.Record] = []
 
         start_from = to_order_value(order_by.start_from)
 
@@ -1942,13 +1938,13 @@ class LocalCollection:
         query_filter: Optional[types.Filter],
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         mask = self._payload_and_non_deleted_mask(query_filter)
 
         random_scores = np.random.rand(len(self.ids))
         random_order = np.argsort(random_scores)
 
-        result: List[types.ScoredPoint] = []
+        result: list[types.ScoredPoint] = []
         for idx in random_order:
             if len(result) >= limit:
                 break
@@ -2190,7 +2186,7 @@ class LocalCollection:
             raise ValueError(f"Unsupported type: {type(points)}")
 
     def _update_named_vectors(
-        self, idx: int, vectors: Dict[str, Union[List[float], SparseVector]]
+        self, idx: int, vectors: dict[str, Union[list[float], SparseVector]]
     ) -> None:
         for vector_name, vector in vectors.items():
             if isinstance(vector, SparseVector):
@@ -2223,7 +2219,7 @@ class LocalCollection:
         vectors: Sequence[str],
         selector: Union[
             models.Filter,
-            List[models.ExtendedPointId],
+            list[models.ExtendedPointId],
             models.FilterSelector,
             models.PointIdsList,
         ],
@@ -2235,7 +2231,7 @@ class LocalCollection:
                 self.deleted_per_vector[vector_name][idx] = 1
             self._persist_by_id(point_id)
 
-    def _delete_ids(self, ids: List[types.PointId]) -> None:
+    def _delete_ids(self, ids: list[types.PointId]) -> None:
         for point_id in ids:
             idx = self.ids[point_id]
             self.deleted[idx] = 1
@@ -2244,7 +2240,7 @@ class LocalCollection:
             for point_id in ids:
                 self.storage.delete(point_id)
 
-    def _filter_to_ids(self, delete_filter: types.Filter) -> List[models.ExtendedPointId]:
+    def _filter_to_ids(self, delete_filter: types.Filter) -> list[models.ExtendedPointId]:
         mask = self._payload_and_non_deleted_mask(delete_filter)
         ids = [point_id for point_id, idx in self.ids.items() if mask[idx]]
         return ids
@@ -2253,11 +2249,11 @@ class LocalCollection:
         self,
         selector: Union[
             models.Filter,
-            List[models.ExtendedPointId],
+            list[models.ExtendedPointId],
             models.FilterSelector,
             models.PointIdsList,
         ],
-    ) -> List[models.ExtendedPointId]:
+    ) -> list[models.ExtendedPointId]:
         if isinstance(selector, list):
             return selector
         elif isinstance(selector, models.Filter):
@@ -2273,7 +2269,7 @@ class LocalCollection:
         self,
         selector: Union[
             models.Filter,
-            List[models.ExtendedPointId],
+            list[models.ExtendedPointId],
             models.FilterSelector,
             models.PointIdsList,
         ],
@@ -2296,7 +2292,7 @@ class LocalCollection:
         payload: models.Payload,
         selector: Union[
             models.Filter,
-            List[models.ExtendedPointId],
+            list[models.ExtendedPointId],
             models.FilterSelector,
             models.PointIdsList,
         ],
@@ -2305,7 +2301,7 @@ class LocalCollection:
         ids = self._selector_to_ids(selector)
         jsonable_payload = deepcopy(to_jsonable_python(payload))
 
-        keys: Optional[List[JsonPathItem]] = parse_json_path(key) if key is not None else None
+        keys: Optional[list[JsonPathItem]] = parse_json_path(key) if key is not None else None
 
         for point_id in ids:
             idx = self.ids[point_id]
@@ -2322,7 +2318,7 @@ class LocalCollection:
         payload: models.Payload,
         selector: Union[
             models.Filter,
-            List[models.ExtendedPointId],
+            list[models.ExtendedPointId],
             models.FilterSelector,
             models.PointIdsList,
         ],
@@ -2338,7 +2334,7 @@ class LocalCollection:
         keys: Sequence[str],
         selector: Union[
             models.Filter,
-            List[models.ExtendedPointId],
+            list[models.ExtendedPointId],
             models.FilterSelector,
             models.PointIdsList,
         ],
@@ -2355,7 +2351,7 @@ class LocalCollection:
         self,
         selector: Union[
             models.Filter,
-            List[models.ExtendedPointId],
+            list[models.ExtendedPointId],
             models.FilterSelector,
             models.PointIdsList,
         ],
@@ -2454,7 +2450,7 @@ class LocalCollection:
 
 
 def ignore_mentioned_ids_filter(
-    query_filter: Optional[types.Filter], mentioned_ids: List[types.PointId]
+    query_filter: Optional[types.Filter], mentioned_ids: list[types.PointId]
 ) -> types.Filter:
     if len(mentioned_ids) == 0:
         return query_filter
@@ -2476,7 +2472,7 @@ def ignore_mentioned_ids_filter(
 
 
 def _include_ids_in_filter(
-    query_filter: Optional[types.Filter], ids: List[types.PointId]
+    query_filter: Optional[types.Filter], ids: list[types.PointId]
 ) -> types.Filter:
     if len(ids) == 0:
         return query_filter
