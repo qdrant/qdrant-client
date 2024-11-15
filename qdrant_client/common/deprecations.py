@@ -8,7 +8,7 @@ def deprecation_warning(message: str) -> None:
     warnings.warn(message, DeprecationWarning, stacklevel=2)
 
 
-def deprecation_warning_once(message: str, idx: Optional[str]) -> None:
+def deprecation_warning_once(message: str, idx: Optional[str] = None) -> None:
     """
     Same as deprecation_warning, but will be shown only once per program run.
     """
