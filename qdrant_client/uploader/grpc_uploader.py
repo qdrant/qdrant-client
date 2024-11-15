@@ -18,6 +18,7 @@ def upload_batch_grpc(
     max_retries: int,
     shard_key_selector: Optional[ShardKeySelector],
     wait: bool = False,
+    timeout: Optional[int] = None,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
@@ -43,7 +44,8 @@ def upload_batch_grpc(
                     shard_key_selector=RestToGrpc.convert_shard_key_selector(shard_key_selector)
                     if shard_key_selector is not None
                     else None,
-                )
+                ),
+                timeout=timeout,
             )
             break
         except Exception as e:
@@ -72,6 +74,7 @@ class GrpcBatchUploader(BaseUploader):
         self._kwargs = kwargs
         self._wait = wait
         self._shard_key_selector = shard_key_selector
+        self._timeout = kwargs.pop("timeout", None)
 
     @classmethod
     def start(
@@ -104,6 +107,7 @@ class GrpcBatchUploader(BaseUploader):
                 shard_key_selector=self._shard_key_selector,
                 max_retries=self.max_retries,
                 wait=self._wait,
+                timeout=self._timeout,
             )
 
     def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
