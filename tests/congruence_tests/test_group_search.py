@@ -1,4 +1,4 @@
-from typing import List, Sequence, Tuple, Union
+from typing import Sequence, Union
 
 import numpy as np
 
@@ -39,7 +39,7 @@ class TestGroupSearcher:
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
-            Tuple[str, List[float]],
+            tuple[str, list[float]],
             types.NamedVector,
         ],
     ) -> models.GroupsResult:
@@ -272,7 +272,8 @@ def test_simple_group_search():
     fixture_points = generate_fixtures()
 
     lookup_points = generate_fixtures(
-        num=7, random_ids=False  # Less that group ids to test the empty lookups
+        num=7,
+        random_ids=False,  # Less that group ids to test the empty lookups
     )
 
     searcher = TestGroupSearcher()

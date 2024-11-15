@@ -1,5 +1,5 @@
 from datetime import date, datetime, timezone
-from typing import Any, List, Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 
@@ -9,7 +9,7 @@ from qdrant_client.local.geo import boolean_point_in_polygon, geo_distance
 from qdrant_client.local.payload_value_extractor import value_by_key
 
 
-def get_value_counts(values: List[Any]) -> List[int]:
+def get_value_counts(values: list[Any]) -> list[int]:
     counts = []
 
     if all(value is None for value in values):
@@ -25,7 +25,7 @@ def get_value_counts(values: List[Any]) -> List[int]:
     return counts
 
 
-def check_values_count(condition: models.ValuesCount, values: Optional[List[Any]]) -> bool:
+def check_values_count(condition: models.ValuesCount, values: Optional[list[Any]]) -> bool:
     if values is None:
         return False
 
@@ -67,17 +67,14 @@ def check_geo_bounding_box(condition: models.GeoBoundingBox, values: Any) -> boo
         # handle anti-meridian crossing case
         if condition.top_left.lon > condition.bottom_right.lon:
             longitude_condition = (
-                (condition.top_left.lon <= lon <= 180 or -180 <= lon <= condition.bottom_right.lon)
+                condition.top_left.lon <= lon <= 180 or -180 <= lon <= condition.bottom_right.lon
             )
         else:
-            longitude_condition = (condition.top_left.lon <= lon <= condition.bottom_right.lon)
+            longitude_condition = condition.top_left.lon <= lon <= condition.bottom_right.lon
 
         latitude_condition = condition.top_left.lat >= lat >= condition.bottom_right.lat
 
-        return (
-            longitude_condition
-            and latitude_condition
-        )
+        return longitude_condition and latitude_condition
 
     return False
 
@@ -161,7 +158,7 @@ def check_match(condition: models.Match, value: Any) -> bool:
     raise ValueError(f"Unknown match condition: {condition}")
 
 
-def check_nested_filter(nested_filter: models.Filter, values: List[Any]) -> bool:
+def check_nested_filter(nested_filter: models.Filter, values: list[Any]) -> bool:
     return any(check_filter(nested_filter, v, point_id=-1) for v in values)
 
 
@@ -223,25 +220,25 @@ def check_condition(
 
 
 def check_must(
-    conditions: List[models.Condition], payload: dict, point_id: models.ExtendedPointId
+    conditions: list[models.Condition], payload: dict, point_id: models.ExtendedPointId
 ) -> bool:
     return all(check_condition(condition, payload, point_id) for condition in conditions)
 
 
 def check_must_not(
-    conditions: List[models.Condition], payload: dict, point_id: models.ExtendedPointId
+    conditions: list[models.Condition], payload: dict, point_id: models.ExtendedPointId
 ) -> bool:
     return all(not check_condition(condition, payload, point_id) for condition in conditions)
 
 
 def check_should(
-    conditions: List[models.Condition], payload: dict, point_id: models.ExtendedPointId
+    conditions: list[models.Condition], payload: dict, point_id: models.ExtendedPointId
 ) -> bool:
     return any(check_condition(condition, payload, point_id) for condition in conditions)
 
 
 def check_min_should(
-    conditions: List[models.Condition],
+    conditions: list[models.Condition],
     payload: dict,
     point_id: models.ExtendedPointId,
     min_count: int,
@@ -275,9 +272,9 @@ def check_filter(
 
 
 def calculate_payload_mask(
-    payloads: List[dict],
+    payloads: list[dict],
     payload_filter: Optional[models.Filter],
-    ids_inv: List[models.ExtendedPointId],
+    ids_inv: list[models.ExtendedPointId],
 ) -> np.ndarray:
     if payload_filter is None:
         return np.ones(len(payloads), dtype=bool)

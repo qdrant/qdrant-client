@@ -8,7 +8,7 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-from typing import List, Union, get_args, Sequence
+from typing import Union, get_args, Sequence
 
 from qdrant_client import grpc
 from qdrant_client.http import models as rest
@@ -67,7 +67,7 @@ PointStruct: TypeAlias = rest.PointStruct
 Batch: TypeAlias = rest.Batch
 Points = Union[Batch, Sequence[Union[rest.PointStruct, grpc.PointStruct]]]
 PointsSelector = Union[
-    List[PointId],
+    list[PointId],
     rest.Filter,
     grpc.Filter,
     rest.PointsSelector,

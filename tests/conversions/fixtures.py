@@ -1,5 +1,4 @@
 import datetime
-from typing import List
 
 from google.protobuf.message import Message
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -1515,7 +1514,7 @@ fixtures = {
 }
 
 
-def get_grpc_fixture(model_name: str) -> List[Message]:
+def get_grpc_fixture(model_name: str) -> list[Message]:
     if model_name not in fixtures:
         raise RuntimeError(f"Model {model_name} not found in fixtures")
     return fixtures[model_name]

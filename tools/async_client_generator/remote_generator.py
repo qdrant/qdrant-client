@@ -1,6 +1,6 @@
 import ast
 import inspect
-from typing import Dict, List, Optional
+from typing import Optional
 
 from qdrant_client.grpc import CollectionsStub, PointsStub, SnapshotsStub, QdrantStub
 from qdrant_client.http import AsyncApiClient
@@ -29,14 +29,14 @@ from tools.async_client_generator.transformers.remote import (
 class RemoteGenerator(BaseGenerator):
     def __init__(
         self,
-        keep_sync: Optional[List[str]] = None,
+        keep_sync: Optional[list[str]] = None,
         class_replace_map: Optional[dict] = None,
         import_replace_map: Optional[dict] = None,
-        exclude_methods: Optional[List[str]] = None,
-        rename_methods: Optional[Dict[str, str]] = None,
+        exclude_methods: Optional[list[str]] = None,
+        rename_methods: Optional[dict[str, str]] = None,
     ):
         super().__init__()
-        self._async_methods: Optional[List[str]] = None
+        self._async_methods: Optional[list[str]] = None
 
         self.transformers.append(
             RemoteImportFromTransformer(import_replace_map=import_replace_map)
@@ -62,7 +62,7 @@ class RemoteGenerator(BaseGenerator):
         )
 
     @staticmethod
-    def _get_grpc_methods(grpc_stub_class: type) -> List[str]:
+    def _get_grpc_methods(grpc_stub_class: type) -> list[str]:
         init_source = inspect.getsource(grpc_stub_class)
 
         # Parse the source code using ast
@@ -83,7 +83,7 @@ class RemoteGenerator(BaseGenerator):
         return field_names
 
     @property
-    def async_methods(self) -> List[str]:
+    def async_methods(self) -> list[str]:
         if self._async_methods is None:
             self._async_methods = []
             for cls_ in (
@@ -106,7 +106,7 @@ class RemoteGenerator(BaseGenerator):
         return self._async_methods
 
     @staticmethod
-    def get_async_methods(class_obj: type) -> List[str]:
+    def get_async_methods(class_obj: type) -> list[str]:
         async_methods = []
         for name, method in inspect.getmembers(class_obj):
             if inspect.iscoroutinefunction(method):

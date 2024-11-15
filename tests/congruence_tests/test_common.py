@@ -1,5 +1,5 @@
 import math
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 
@@ -93,8 +93,8 @@ multi_vector_config = {
 def initialize_fixture_collection(
     client: QdrantBase,
     collection_name: str = COLLECTION_NAME,
-    vectors_config: Optional[Union[Dict[str, models.VectorParams], models.VectorParams]] = None,
-    sparse_vectors_config: Optional[Dict[str, models.SparseVectorParams]] = None,
+    vectors_config: Optional[Union[dict[str, models.VectorParams], models.VectorParams]] = None,
+    sparse_vectors_config: Optional[dict[str, models.SparseVectorParams]] = None,
 ) -> None:
     if vectors_config is None:
         vectors_config = dense_vectors_config
@@ -117,9 +117,9 @@ def delete_fixture_collection(client: QdrantBase) -> None:
 def generate_fixtures(
     num: Optional[int] = NUM_VECTORS,
     random_ids: bool = False,
-    vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
+    vectors_sizes: Optional[Union[dict[str, int], int]] = None,
     skip_vectors: bool = False,
-) -> List[models.PointStruct]:
+) -> list[models.PointStruct]:
     if vectors_sizes is None:
         vectors_sizes = dense_vectors_sizes
     return generate_points(
@@ -135,11 +135,11 @@ def generate_fixtures(
 def generate_sparse_fixtures(
     num: Optional[int] = NUM_VECTORS,
     random_ids: bool = False,
-    vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
+    vectors_sizes: Optional[Union[dict[str, int], int]] = None,
     skip_vectors: bool = False,
     with_payload: bool = True,
     even_sparse: bool = True,
-) -> List[models.PointStruct]:
+) -> list[models.PointStruct]:
     if vectors_sizes is None:
         vectors_sizes = sparse_vectors_sizes
     return generate_points(
@@ -156,10 +156,10 @@ def generate_sparse_fixtures(
 def generate_multivector_fixtures(
     num: Optional[int] = NUM_VECTORS,
     random_ids: bool = False,
-    vectors_sizes: Optional[Union[Dict[str, int], int]] = None,
+    vectors_sizes: Optional[Union[dict[str, int], int]] = None,
     skip_vectors: bool = False,
     with_payload: bool = True,
-) -> List[models.PointStruct]:
+) -> list[models.PointStruct]:
     if vectors_sizes is None:
         vectors_sizes = multivectors_sizes
     return generate_points(
@@ -368,10 +368,10 @@ def compare_client_results(
 
 def init_client(
     client: QdrantBase,
-    points: List[models.PointStruct],
+    points: list[models.PointStruct],
     collection_name: str = COLLECTION_NAME,
-    vectors_config: Optional[Union[Dict[str, models.VectorParams], models.VectorParams]] = None,
-    sparse_vectors_config: Optional[Dict[str, models.SparseVectorParams]] = None,
+    vectors_config: Optional[Union[dict[str, models.VectorParams], models.VectorParams]] = None,
+    sparse_vectors_config: Optional[dict[str, models.SparseVectorParams]] = None,
 ) -> None:
     initialize_fixture_collection(
         client=client,

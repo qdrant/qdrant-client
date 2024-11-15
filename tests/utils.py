@@ -1,8 +1,8 @@
 import os
-from typing import Optional, Tuple
+from typing import Optional
 
 
-def read_version() -> Tuple[Optional[int], Optional[int], Optional[int], bool]:
+def read_version() -> tuple[Optional[int], Optional[int], Optional[int], bool]:
     """Read Qdrant's version from env and parse it into a tuple
 
     Returns:

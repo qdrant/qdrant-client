@@ -1,6 +1,6 @@
 import random
 import uuid
-from typing import Dict, List, Union
+from typing import Union
 
 import numpy as np
 
@@ -12,7 +12,7 @@ from tests.fixtures.payload import one_random_payload_please
 
 
 def random_vectors(
-    vector_sizes: Union[Dict[str, int], int],
+    vector_sizes: Union[dict[str, int], int],
 ) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
         return np.random.random(vector_sizes).round(3).tolist()
@@ -25,7 +25,7 @@ def random_vectors(
         raise ValueError("vector_sizes must be int or dict")
 
 
-def random_multivectors(vector_sizes: Union[Dict[str, int], int]) -> models.VectorStruct:
+def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
         vec_count = random.randint(1, 10)
         return generate_random_multivector(vector_sizes, vec_count)
@@ -39,7 +39,7 @@ def random_multivectors(vector_sizes: Union[Dict[str, int], int]) -> models.Vect
         raise ValueError("vector_sizes must be int or dict")
 
 
-def generate_random_multivector(vec_size: int, vec_count: int) -> List[List[float]]:
+def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
     multivec = []
     for _ in range(vec_count):
         multivec.append(np.random.random(vec_size).round(3).tolist())
@@ -50,8 +50,8 @@ def generate_random_multivector(vec_size: int, vec_count: int) -> List[List[floa
 # The density is the probability of non-zero value over the whole vector
 def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
     num_non_zero = int(size * density)
-    indices: List[int] = random.sample(range(size), num_non_zero)
-    values: List[float] = [round(random.random(), 6) for _ in range(num_non_zero)]
+    indices: list[int] = random.sample(range(size), num_non_zero)
+    values: list[float] = [round(random.random(), 6) for _ in range(num_non_zero)]
     sparse_vector = SparseVector(indices=indices, values=values)
     validate_sparse_vector(sparse_vector)
     return sparse_vector
@@ -65,7 +65,7 @@ def generate_random_sparse_vector_uneven(size: int, density: float) -> SparseVec
 
 def generate_random_sparse_vector_list(
     num_vectors: int, vector_size: int, vector_density: float
-) -> List[SparseVector]:
+) -> list[SparseVector]:
     sparse_vector_list = []
     for _ in range(num_vectors):
         sparse_vector = generate_random_sparse_vector(vector_size, vector_density)
@@ -74,7 +74,7 @@ def generate_random_sparse_vector_list(
 
 
 def random_sparse_vectors(
-    vector_sizes: Dict[str, int],
+    vector_sizes: dict[str, int],
     even: bool = True,
 ) -> models.VectorStruct:
     vectors = {}
@@ -89,14 +89,14 @@ def random_sparse_vectors(
 
 def generate_points(
     num_points: int,
-    vector_sizes: Union[Dict[str, int], int],
+    vector_sizes: Union[dict[str, int], int],
     with_payload: bool = False,
     random_ids: bool = False,
     skip_vectors: bool = False,
     sparse: bool = False,
     even_sparse: bool = True,
     multivector: bool = False,
-) -> List[models.PointStruct]:
+) -> list[models.PointStruct]:
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
 

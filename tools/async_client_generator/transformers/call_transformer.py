@@ -1,12 +1,12 @@
 import ast
-from typing import Dict, List, Optional, Union
+from typing import Optional, Union
 
 
 class CallTransformer(ast.NodeTransformer):
     def __init__(
         self,
-        class_replace_map: Optional[Dict[str, str]] = None,
-        async_methods: Optional[List[str]] = None,
+        class_replace_map: Optional[dict[str, str]] = None,
+        async_methods: Optional[list[str]] = None,
     ):
         self.class_replace_map = class_replace_map if class_replace_map is not None else {}
         self.async_methods = async_methods if async_methods is not None else []

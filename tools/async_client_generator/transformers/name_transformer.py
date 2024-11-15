@@ -1,5 +1,5 @@
 import ast
-from typing import Dict, Optional
+from typing import Optional
 
 
 class NameTransformer(ast.NodeTransformer):
@@ -7,9 +7,9 @@ class NameTransformer(ast.NodeTransformer):
 
     def __init__(
         self,
-        class_replace_map: Optional[Dict[str, str]] = None,
-        import_replace_map: Optional[Dict[str, str]] = None,
-        rename_methods: Optional[Dict[str, str]] = None,
+        class_replace_map: Optional[dict[str, str]] = None,
+        import_replace_map: Optional[dict[str, str]] = None,
+        rename_methods: Optional[dict[str, str]] = None,
     ):
         self.class_replace_map = class_replace_map if class_replace_map is not None else {}
         self.import_replace_map = import_replace_map if import_replace_map is not None else {}

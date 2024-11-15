@@ -1,4 +1,4 @@
-from typing import List, Tuple, Callable, Any
+from typing import Tuple, Callable, Any
 
 import numpy as np
 import pytest
@@ -152,7 +152,7 @@ class TestSimpleSearcher:
             offset=10,
         )
 
-    def dense_query_score_threshold(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def dense_query_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
         res1 = client.query_points(
             collection_name=COLLECTION_NAME,
             query=self.dense_vector_query_text,

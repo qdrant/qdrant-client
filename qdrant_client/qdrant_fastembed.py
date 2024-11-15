@@ -1,7 +1,7 @@
 import uuid
 import warnings
 from itertools import tee
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union, Set, get_args
+from typing import Any, Iterable, Optional, Sequence, Union, get_args
 from copy import deepcopy
 from pathlib import Path
 
@@ -40,7 +40,7 @@ except ImportError:
     PilImage = None
 
 
-SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+SUPPORTED_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
     {
         model["model"]: (model["dim"], models.Distance.COSINE)
         for model in TextEmbedding.list_supported_models()
@@ -49,13 +49,13 @@ SUPPORTED_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
     else {}
 )
 
-SUPPORTED_SPARSE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+SUPPORTED_SPARSE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
     {model["model"]: model for model in SparseTextEmbedding.list_supported_models()}
     if SparseTextEmbedding
     else {}
 )
 
-IDF_EMBEDDING_MODELS: Set[str] = (
+IDF_EMBEDDING_MODELS: set[str] = (
     {
         model_config["model"]
         for model_config in SparseTextEmbedding.list_supported_models()
@@ -65,13 +65,13 @@ IDF_EMBEDDING_MODELS: Set[str] = (
     else set()
 )
 
-_LATE_INTERACTION_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+_LATE_INTERACTION_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
     {model["model"]: model for model in LateInteractionTextEmbedding.list_supported_models()}
     if LateInteractionTextEmbedding
     else {}
 )
 
-_IMAGE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
+_IMAGE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
     {model["model"]: model for model in ImageEmbedding.list_supported_models()}
     if ImageEmbedding
     else {}
@@ -81,10 +81,10 @@ _IMAGE_EMBEDDING_MODELS: Dict[str, Tuple[int, models.Distance]] = (
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
 
-    embedding_models: Dict[str, "TextEmbedding"] = {}
-    sparse_embedding_models: Dict[str, "SparseTextEmbedding"] = {}
-    late_interaction_embedding_models: Dict[str, "LateInteractionTextEmbedding"] = {}
-    image_embedding_models: Dict[str, "ImageEmbedding"] = {}
+    embedding_models: dict[str, "TextEmbedding"] = {}
+    sparse_embedding_models: dict[str, "SparseTextEmbedding"] = {}
+    late_interaction_embedding_models: dict[str, "LateInteractionTextEmbedding"] = {}
+    image_embedding_models: dict[str, "ImageEmbedding"] = {}
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, parser: ModelSchemaParser, **kwargs: Any):
@@ -121,7 +121,7 @@ class QdrantFastembedMixin(QdrantBase):
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -140,7 +140,7 @@ class QdrantFastembedMixin(QdrantBase):
                 https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#configuration-options
             cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
                 Defaults to False.
-            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
                 workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
@@ -179,7 +179,7 @@ class QdrantFastembedMixin(QdrantBase):
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         cuda: bool = False,
-        device_ids: Optional[List[int]] = None,
+        device_ids: Optional[list[int]] = None,
         lazy_load: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -198,7 +198,7 @@ class QdrantFastembedMixin(QdrantBase):
                 https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html#configuration-options
             cuda (bool, optional): Whether to use cuda for inference. Mutually exclusive with `providers`
                 Defaults to False.
-            device_ids (Optional[List[int]], optional): The list of device ids to use for data parallel processing in
+            device_ids (Optional[list[int]], optional): The list of device ids to use for data parallel processing in
                 workers. Should be used with `cuda=True`, mutually exclusive with `providers`. Defaults to None.
             lazy_load (bool, optional): Whether to load the model during class initialization or on demand.
                 Should be set to True when using multiple-gpu and parallel encoding. Defaults to False.
@@ -234,7 +234,7 @@ class QdrantFastembedMixin(QdrantBase):
         )
 
     @classmethod
-    def _get_model_params(cls, model_name: str) -> Tuple[int, models.Distance]:
+    def _get_model_params(cls, model_name: str) -> tuple[int, models.Distance]:
         cls._import_fastembed()
 
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
@@ -363,7 +363,7 @@ class QdrantFastembedMixin(QdrantBase):
         batch_size: int = 32,
         embed_type: str = "default",
         parallel: Optional[int] = None,
-    ) -> Iterable[Tuple[str, List[float]]]:
+    ) -> Iterable[tuple[str, list[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name)
         documents_a, documents_b = tee(documents, 2)
         if embed_type == "passage":
@@ -425,8 +425,8 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _scored_points_to_query_responses(
         self,
-        scored_points: List[types.ScoredPoint],
-    ) -> List[QueryResponse]:
+        scored_points: list[types.ScoredPoint],
+    ) -> list[QueryResponse]:
         response = []
         vector_field_name = self.get_vector_field_name()
         sparse_vector_field_name = self.get_sparse_vector_field_name()
@@ -434,14 +434,14 @@ class QdrantFastembedMixin(QdrantBase):
         for scored_point in scored_points:
             embedding = (
                 scored_point.vector.get(vector_field_name, None)
-                if isinstance(scored_point.vector, Dict)
+                if isinstance(scored_point.vector, dict)
                 else None
             )
             sparse_embedding = None
             if sparse_vector_field_name is not None:
                 sparse_embedding = (
                     scored_point.vector.get(sparse_vector_field_name, None)
-                    if isinstance(scored_point.vector, Dict)
+                    if isinstance(scored_point.vector, dict)
                     else None
                 )
 
@@ -460,8 +460,8 @@ class QdrantFastembedMixin(QdrantBase):
     def _points_iterator(
         self,
         ids: Optional[Iterable[models.ExtendedPointId]],
-        metadata: Optional[Iterable[Dict[str, Any]]],
-        encoded_docs: Iterable[Tuple[str, List[float]]],
+        metadata: Optional[Iterable[dict[str, Any]]],
+        encoded_docs: Iterable[tuple[str, list[float]]],
         ids_accumulator: list,
         sparse_vectors: Optional[Iterable[types.SparseVector]] = None,
     ) -> Iterable[models.PointStruct]:
@@ -482,7 +482,7 @@ class QdrantFastembedMixin(QdrantBase):
         ):
             ids_accumulator.append(idx)
             payload = {"document": doc, **meta}
-            point_vector: Dict[str, models.Vector] = {vector_name: vector}
+            point_vector: dict[str, models.Vector] = {vector_name: vector}
             if sparse_vector_name is not None and sparse_vector is not None:
                 point_vector[sparse_vector_name] = sparse_vector
             yield models.PointStruct(id=idx, payload=payload, vector=point_vector)
@@ -528,7 +528,7 @@ class QdrantFastembedMixin(QdrantBase):
         on_disk: Optional[bool] = None,
         quantization_config: Optional[models.QuantizationConfig] = None,
         hnsw_config: Optional[models.HnswConfigDiff] = None,
-    ) -> Dict[str, models.VectorParams]:
+    ) -> dict[str, models.VectorParams]:
         """
         Generates vector configuration, compatible with fastembed models.
 
@@ -556,7 +556,7 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         on_disk: Optional[bool] = None,
         modifier: Optional[models.Modifier] = None,
-    ) -> Optional[Dict[str, models.SparseVectorParams]]:
+    ) -> Optional[dict[str, models.SparseVectorParams]]:
         """
         Generates vector configuration, compatible with fastembed sparse models.
 
@@ -586,12 +586,12 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         collection_name: str,
         documents: Iterable[str],
-        metadata: Optional[Iterable[Dict[str, Any]]] = None,
+        metadata: Optional[Iterable[dict[str, Any]]] = None,
         ids: Optional[Iterable[models.ExtendedPointId]] = None,
         batch_size: int = 32,
         parallel: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[Union[str, int]]:
+    ) -> list[Union[str, int]]:
         """
         Adds text documents into qdrant collection.
         If collection does not exist, it will be created with default parameters.
@@ -605,7 +605,7 @@ class QdrantFastembedMixin(QdrantBase):
                 Name of the collection to add documents to.
             documents (Iterable[str]):
                 List of documents to embed and add to the collection.
-            metadata (Iterable[Dict[str, Any]], optional):
+            metadata (Iterable[dict[str, Any]], optional):
                 List of metadata dicts. Defaults to None.
             ids (Iterable[models.ExtendedPointId], optional):
                 List of ids to assign to documents.
@@ -683,7 +683,7 @@ class QdrantFastembedMixin(QdrantBase):
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
-    ) -> List[QueryResponse]:
+    ) -> list[QueryResponse]:
         """
         Search for documents in a collection.
         This method automatically embeds the query text using the specified embedding model.
@@ -701,7 +701,7 @@ class QdrantFastembedMixin(QdrantBase):
             **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
 
         Returns:
-            List[types.ScoredPoint]: List of scored points.
+            list[types.ScoredPoint]: List of scored points.
 
         """
 
@@ -763,11 +763,11 @@ class QdrantFastembedMixin(QdrantBase):
     def query_batch(
         self,
         collection_name: str,
-        query_texts: List[str],
+        query_texts: list[str],
         query_filter: Optional[models.Filter] = None,
         limit: int = 10,
         **kwargs: Any,
-    ) -> List[List[QueryResponse]]:
+    ) -> list[list[QueryResponse]]:
         """
         Search for documents in a collection with batched query.
         This method automatically embeds the query text using the specified embedding model.
@@ -785,7 +785,7 @@ class QdrantFastembedMixin(QdrantBase):
             **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
 
         Returns:
-            List[List[QueryResponse]]: List of lists of responses for each query text.
+            list[list[QueryResponse]]: List of lists of responses for each query text.
 
         """
         embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
@@ -854,8 +854,8 @@ class QdrantFastembedMixin(QdrantBase):
         cls,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -868,7 +868,7 @@ class QdrantFastembedMixin(QdrantBase):
         """Resolves query interface into a models.Query object
 
         Args:
-            query: models.QueryInterface - query as a model or a plain structure like List[float]
+            query: models.QueryInterface - query as a model or a plain structure like list[float]
 
         Returns:
             Optional[models.Query]: query as it was, models.Query(nearest=query) or None
@@ -930,7 +930,7 @@ class QdrantFastembedMixin(QdrantBase):
     def _embed_models(
         self,
         model: BaseModel,
-        paths: Optional[List[FieldPath]] = None,
+        paths: Optional[list[FieldPath]] = None,
         is_query: bool = False,
     ) -> Union[BaseModel, NumericVector]:
         """Embed model's fields requiring inference

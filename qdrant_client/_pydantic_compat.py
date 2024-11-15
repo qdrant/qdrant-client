@@ -1,6 +1,6 @@
 import json
 
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, Type, TypeVar
 
 from pydantic import BaseModel
 from pydantic.version import VERSION as PYDANTIC_VERSION
@@ -34,7 +34,7 @@ def construct(model_class: Type[Model], *args: Any, **kwargs: Any) -> Model:
         return model_class.construct(*args, **kwargs)
 
 
-def to_dict(model: BaseModel, *args: Any, **kwargs: Any) -> Dict[Any, Any]:
+def to_dict(model: BaseModel, *args: Any, **kwargs: Any) -> dict[Any, Any]:
     if PYDANTIC_V2:
         return model.model_dump(*args, **kwargs)
     else:
@@ -48,7 +48,7 @@ def model_fields_set(model: BaseModel) -> set:
         return model.__fields_set__
 
 
-def model_json_schema(model: BaseModel, *args: Any, **kwargs: Any) -> Dict[str, Any]:
+def model_json_schema(model: BaseModel, *args: Any, **kwargs: Any) -> dict[str, Any]:
     if PYDANTIC_V2:
         return model.model_json_schema(*args, **kwargs)
     else:

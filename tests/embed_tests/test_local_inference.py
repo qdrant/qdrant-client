@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 from pathlib import Path
 
 import numpy as np
@@ -44,7 +44,7 @@ def arg_interceptor(func, kwarg_storage):
 
 def populate_dense_collection(
     client: QdrantBase,
-    points: List[models.PointStruct],
+    points: list[models.PointStruct],
     vector_name: Optional[str] = None,
     collection_name: str = COLLECTION_NAME,
     recreate: bool = True,
@@ -60,7 +60,7 @@ def populate_dense_collection(
 
 def populate_sparse_collection(
     client: QdrantBase,
-    points: List[models.PointStruct],
+    points: list[models.PointStruct],
     vector_name: str,
     collection_name: str = COLLECTION_NAME,
     recreate: bool = True,

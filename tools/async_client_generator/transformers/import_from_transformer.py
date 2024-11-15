@@ -1,9 +1,9 @@
 import ast
-from typing import Dict, Optional
+from typing import Optional
 
 
 class ImportFromTransformer(ast.NodeTransformer):
-    def __init__(self, import_replace_map: Optional[Dict[str, str]] = None):
+    def __init__(self, import_replace_map: Optional[dict[str, str]] = None):
         self.import_replace_map = import_replace_map if import_replace_map is not None else {}
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> ast.AST:

@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 from pathlib import Path
-from typing import List, Type, Dict, Union, Any, Set, Optional
+from typing import Type, Union, Any, Optional
 
 from pydantic import BaseModel
 from pydantic.json_schema import model_json_schema
@@ -72,26 +72,26 @@ class ModelSchemaParser:
     INFERENCE_OBJECT_NAMES = {"Document", "Image", "InferenceObject"}
 
     def __init__(self) -> None:
-        self._defs: Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]] = deepcopy(DEFS)  # type: ignore[arg-type]
-        self._cache: Dict[str, List[str]] = deepcopy(CACHE_STR_PATH)
+        self._defs: dict[str, Union[dict[str, Any], list[dict[str, Any]]]] = deepcopy(DEFS)  # type: ignore[arg-type]
+        self._cache: dict[str, list[str]] = deepcopy(CACHE_STR_PATH)
 
-        self._recursive_refs: Set[str] = set(RECURSIVE_REFS)
-        self._excluded_recursive_refs: Set[str] = set(EXCLUDED_RECURSIVE_REFS)
-        self._included_recursive_refs: Set[str] = set(INCLUDED_RECURSIVE_REFS)
+        self._recursive_refs: set[str] = set(RECURSIVE_REFS)
+        self._excluded_recursive_refs: set[str] = set(EXCLUDED_RECURSIVE_REFS)
+        self._included_recursive_refs: set[str] = set(INCLUDED_RECURSIVE_REFS)
 
-        self.name_recursive_ref_mapping: Dict[str, str] = {
+        self.name_recursive_ref_mapping: dict[str, str] = {
             k: v for k, v in NAME_RECURSIVE_REF_MAPPING.items()
         }
-        self.path_cache: Dict[str, List[FieldPath]] = {
+        self.path_cache: dict[str, list[FieldPath]] = {
             model: convert_paths(paths) for model, paths in self._cache.items()
         }
 
     def _replace_refs(
         self,
-        schema: Union[Dict[str, Any], List[Dict[str, Any]]],
+        schema: Union[dict[str, Any], list[dict[str, Any]]],
         parent: Optional[str] = None,
         seen_refs: Optional[set] = None,
-    ) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+    ) -> Union[dict[str, Any], list[dict[str, Any]]]:
         """Replace refs in schema with their definitions
 
         Args:
@@ -134,11 +134,11 @@ class ModelSchemaParser:
 
     def _find_document_paths(
         self,
-        schema: Union[Dict[str, Any], List[Dict[str, Any]]],
+        schema: Union[dict[str, Any], list[dict[str, Any]]],
         current_path: str = "",
         after_properties: bool = False,
-        seen_refs: Optional[Set] = None,
-    ) -> List[str]:
+        seen_refs: Optional[set] = None,
+    ) -> list[str]:
         """Read a schema and find paths to objects requiring inference
 
         Populates model fields names to ref names mapping
@@ -152,7 +152,7 @@ class ModelSchemaParser:
         Returns:
             List of string dot separated paths to objects requiring inference
         """
-        document_paths: List[str] = []
+        document_paths: list[str] = []
         seen_recursive_refs = seen_refs if seen_refs is not None else set()
 
         parts = current_path.split(".")

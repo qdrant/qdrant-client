@@ -1,7 +1,7 @@
 import random
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 from qdrant_client.local import datetime_utils
 
@@ -187,7 +187,7 @@ def random_signed_int():
     return number
 
 
-def one_random_payload_please(idx: int) -> Dict[str, Any]:
+def one_random_payload_please(idx: int) -> dict[str, Any]:
     payload = {
         "id": idx + 100,
         "id_str": [str(random.randint(1, 30)).zfill(2) for _ in range(random.randint(0, 5))],

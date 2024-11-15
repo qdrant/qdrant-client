@@ -1,6 +1,6 @@
 import logging
 from itertools import count
-from typing import Any, Generator, Iterable, Optional, Tuple, Union
+from typing import Any, Generator, Iterable, Optional, Union
 from uuid import uuid4
 
 import numpy as np
@@ -13,7 +13,7 @@ from qdrant_client.uploader.uploader import BaseUploader
 def upload_batch(
     openapi_client: SyncApis,
     collection_name: str,
-    batch: Union[Tuple, Batch],
+    batch: Union[tuple, Batch],
     max_retries: int,
     shard_key_selector: Optional[ShardKeySelector],
     wait: bool = False,

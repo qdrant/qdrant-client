@@ -1,6 +1,6 @@
 from abc import ABC
 from itertools import count, islice
-from typing import Any, Dict, Generator, Iterable, List, Optional, Union
+from typing import Any, Generator, Iterable, Optional, Union
 
 import numpy as np
 
@@ -45,7 +45,7 @@ class BaseUploader(Worker, ABC):
     def iterate_batches(
         cls,
         vectors: Union[
-            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+            dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
         ],
         payload: Optional[Iterable[dict]],
         ids: Optional[Iterable[ExtendedPointId]],
@@ -79,14 +79,14 @@ class BaseUploader(Worker, ABC):
 
     @staticmethod
     def _vector_batches_from_numpy_named_vectors(
-        vectors: Dict[str, types.NumpyArray], batch_size: int
-    ) -> Iterable[Dict[str, List[float]]]:
+        vectors: dict[str, types.NumpyArray], batch_size: int
+    ) -> Iterable[dict[str, list[float]]]:
         assert (
             len(set([arr.shape[0] for arr in vectors.values()])) == 1
         ), "Each named vector should have the same number of vectors"
 
         num_vectors = next(iter(vectors.values())).shape[0]
-        # Convert Dict[str, np.ndarray] to Generator(Dict[str, List[float]])
+        # Convert dict[str, np.ndarray] to Generator(dict[str, list[float]])
         vector_batches = (
             {name: vectors[name][i].tolist() for name in vectors.keys()}
             for i in range(num_vectors)

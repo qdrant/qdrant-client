@@ -17,20 +17,7 @@ import os
 import shutil
 from copy import deepcopy
 from io import TextIOWrapper
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    get_args,
-    Set,
-)
+from typing import Any, Generator, Iterable, Mapping, Optional, Sequence, Union, get_args
 from uuid import uuid4
 import numpy as np
 import portalocker
@@ -71,8 +58,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self.force_disable_check_same_thread = force_disable_check_same_thread
         self.location = location
         self.persistent = location != ":memory:"
-        self.collections: Dict[str, LocalCollection] = {}
-        self.aliases: Dict[str, str] = {}
+        self.collections: dict[str, LocalCollection] = {}
+        self.aliases: dict[str, str] = {}
         self._flock_file: Optional[TextIOWrapper] = None
         self._load()
         self._closed: bool = False
@@ -163,7 +150,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
     async def search_batch(
         self, collection_name: str, requests: Sequence[types.SearchRequest], **kwargs: Any
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         collection = self._get_collection(collection_name)
         return [
             collection.search(
@@ -184,7 +171,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         query_vector: Union[
             types.NumpyArray,
             Sequence[float],
-            Tuple[str, List[float]],
+            tuple[str, list[float]],
             types.NamedVector,
             types.NamedSparseVector,
         ],
@@ -196,7 +183,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         with_vectors: Union[bool, Sequence[str]] = False,
         score_threshold: Optional[float] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         collection = self._get_collection(collection_name)
         return collection.search(
             query_vector=query_vector,
@@ -240,7 +227,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self,
         collection_name: str,
         query_vector: Union[
-            types.NumpyArray, Sequence[float], Tuple[str, List[float]], types.NamedVector
+            types.NumpyArray, Sequence[float], tuple[str, list[float]], types.NamedVector
         ],
         group_by: str,
         query_filter: Optional[rest_models.Filter] = None,
@@ -279,7 +266,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         query: Optional[types.Query],
         using: Optional[str],
         lookup_from: Optional[types.LookupLocation],
-    ) -> Tuple[types.Query, Set[types.PointId]]:
+    ) -> tuple[types.Query, set[types.PointId]]:
         """
         Resolves any possible ids into vectors and returns a new query object, along with a set of the mentioned
         point ids that should be filtered when searching.
@@ -300,7 +287,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             collection_vectors = collection.multivectors
         else:
             collection_vectors = collection.vectors
-        mentioned_ids: Set[types.PointId] = set()
+        mentioned_ids: set[types.PointId] = set()
 
         def input_into_vector(vector_input: types.VectorInput) -> types.VectorInput:
             if isinstance(vector_input, get_args(types.PointId)):
@@ -365,7 +352,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self,
         prefetch: Optional[Union[Sequence[types.Prefetch], types.Prefetch]],
         collection_name: str,
-    ) -> List[types.Prefetch]:
+    ) -> list[types.Prefetch]:
         if prefetch is None:
             return []
         if isinstance(prefetch, list) and len(prefetch) == 0:
@@ -403,7 +390,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection_name: str,
         query: Optional[types.Query] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -435,7 +422,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
     async def query_batch_points(
         self, collection_name: str, requests: Sequence[types.QueryRequest], **kwargs: Any
-    ) -> List[types.QueryResponse]:
+    ) -> list[types.QueryResponse]:
         collection = self._get_collection(collection_name)
         return [
             collection.query_points(
@@ -464,8 +451,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         group_by: str,
         query: Union[
             types.PointId,
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             types.SparseVector,
             types.Query,
             types.NumpyArray,
@@ -475,7 +462,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             None,
         ] = None,
         using: Optional[str] = None,
-        prefetch: Union[types.Prefetch, List[types.Prefetch], None] = None,
+        prefetch: Union[types.Prefetch, list[types.Prefetch], None] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -516,7 +503,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
     async def recommend_batch(
         self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         collection = self._get_collection(collection_name)
         return [
             collection.recommend(
@@ -549,14 +536,14 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, list[str]] = False,
         score_threshold: Optional[float] = None,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         strategy: Optional[types.RecommendStrategy] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         collection = self._get_collection(collection_name)
         return collection.recommend(
             positive=positive,
@@ -579,8 +566,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self,
         collection_name: str,
         group_by: str,
-        positive: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, List[float]]]] = None,
+        positive: Optional[Sequence[Union[types.PointId, list[float]]]] = None,
+        negative: Optional[Sequence[Union[types.PointId, list[float]]]] = None,
         query_filter: Optional[types.Filter] = None,
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
@@ -630,14 +617,14 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         search_params: Optional[types.SearchParams] = None,
         limit: int = 10,
         offset: int = 0,
-        with_payload: Union[bool, List[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, List[str]] = False,
+        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, list[str]] = False,
         using: Optional[str] = None,
         lookup_from: Optional[types.LookupLocation] = None,
         consistency: Optional[types.ReadConsistency] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
-    ) -> List[types.ScoredPoint]:
+    ) -> list[types.ScoredPoint]:
         collection = self._get_collection(collection_name)
         return collection.discover(
             target=target,
@@ -656,7 +643,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
     async def discover_batch(
         self, collection_name: str, requests: Sequence[types.DiscoverRequest], **kwargs: Any
-    ) -> List[List[types.ScoredPoint]]:
+    ) -> list[list[types.ScoredPoint]]:
         collection = self._get_collection(collection_name)
         return [
             collection.discover(
@@ -688,7 +675,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         **kwargs: Any,
-    ) -> Tuple[List[types.Record], Optional[types.PointId]]:
+    ) -> tuple[list[types.Record], Optional[types.PointId]]:
         collection = self._get_collection(collection_name)
         return collection.scroll(
             scroll_filter=scroll_filter,
@@ -753,7 +740,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
         **kwargs: Any,
-    ) -> List[types.Record]:
+    ) -> list[types.Record]:
         collection = self._get_collection(collection_name)
         return collection.retrieve(ids, with_payload, with_vectors)
 
@@ -816,7 +803,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         collection_name: str,
         update_operations: Sequence[types.UpdateOperation],
         **kwargs: Any,
-    ) -> List[types.UpdateResult]:
+    ) -> list[types.UpdateResult]:
         collection = self._get_collection(collection_name)
         collection.batch_update_points(update_operations)
         return [self._default_update_result()] * len(update_operations)
@@ -1004,9 +991,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self,
         collection_name: str,
         vectors: Union[
-            Dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
+            dict[str, types.NumpyArray], types.NumpyArray, Iterable[types.VectorStruct]
         ],
-        payload: Optional[Iterable[Dict[Any, Any]]] = None,
+        payload: Optional[Iterable[dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
         **kwargs: Any,
     ) -> None:
@@ -1062,7 +1049,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
     async def list_snapshots(
         self, collection_name: str, **kwargs: Any
-    ) -> List[types.SnapshotDescription]:
+    ) -> list[types.SnapshotDescription]:
         return []
 
     async def create_snapshot(
@@ -1079,7 +1066,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
         )
 
-    async def list_full_snapshots(self, **kwargs: Any) -> List[types.SnapshotDescription]:
+    async def list_full_snapshots(self, **kwargs: Any) -> list[types.SnapshotDescription]:
         return []
 
     async def create_full_snapshot(self, **kwargs: Any) -> types.SnapshotDescription:
@@ -1099,7 +1086,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
 
     async def list_shard_snapshots(
         self, collection_name: str, shard_id: int, **kwargs: Any
-    ) -> List[types.SnapshotDescription]:
+    ) -> list[types.SnapshotDescription]:
         return []
 
     async def create_shard_snapshot(
@@ -1142,7 +1129,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         shard_key: types.ShardKey,
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
-        placement: Optional[List[int]] = None,
+        placement: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> bool:
         raise NotImplementedError(

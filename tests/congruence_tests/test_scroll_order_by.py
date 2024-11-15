@@ -1,5 +1,3 @@
-from typing import List
-
 from qdrant_client import models
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.local import datetime_utils
@@ -13,7 +11,7 @@ from tests.congruence_tests.test_common import (
 )
 
 
-def scroll_all_with_key(client: QdrantBase, key: str) -> List[models.Record]:
+def scroll_all_with_key(client: QdrantBase, key: str) -> list[models.Record]:
     all_records = []
 
     last_seen_value = None
@@ -55,7 +53,7 @@ def scroll_all_with_key(client: QdrantBase, key: str) -> List[models.Record]:
     return subsorted_by_id(all_records, key)
 
 
-def subsorted_by_id(all_records: List[models.Record], key: str) -> List[models.Record]:
+def subsorted_by_id(all_records: list[models.Record], key: str) -> list[models.Record]:
     resorted_records = []
     same_value_batch = []
     same_value = None
@@ -76,15 +74,15 @@ def subsorted_by_id(all_records: List[models.Record], key: str) -> List[models.R
     return resorted_records
 
 
-def scroll_all_integers(client: QdrantBase) -> List[models.Record]:
+def scroll_all_integers(client: QdrantBase) -> list[models.Record]:
     return scroll_all_with_key(client, "rand_digit")
 
 
-def scroll_all_floats(client: QdrantBase) -> List[models.Record]:
+def scroll_all_floats(client: QdrantBase) -> list[models.Record]:
     return scroll_all_with_key(client, "rand_number")
 
 
-def scroll_all_datetimes(client: QdrantBase) -> List[models.Record]:
+def scroll_all_datetimes(client: QdrantBase) -> list[models.Record]:
     return scroll_all_with_key(client, "rand_datetime")
 
 

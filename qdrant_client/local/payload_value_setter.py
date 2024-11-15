@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Optional, Type
 
 from qdrant_client.local.json_path_parser import JsonPathItem, JsonPathItemType
 
 
-def set_value_by_key(payload: dict, keys: List[JsonPathItem], value: Any) -> None:
+def set_value_by_key(payload: dict, keys: list[JsonPathItem], value: Any) -> None:
     """
     Set value in payload by key.
     Args:
@@ -30,7 +30,7 @@ def set_value_by_key(payload: dict, keys: List[JsonPathItem], value: Any) -> Non
 
 class Setter:
     TYPE: Any
-    SETTERS: Dict[JsonPathItemType, Type["Setter"]] = {}
+    SETTERS: dict[JsonPathItemType, Type["Setter"]] = {}
 
     @classmethod
     def add_setter(cls, item_type: JsonPathItemType, setter: Type["Setter"]) -> None:
@@ -40,8 +40,8 @@ class Setter:
     def set(
         cls,
         data: Any,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
         prev_data: Any,
         prev_key: Optional[JsonPathItem],
     ) -> None:
@@ -63,8 +63,8 @@ class Setter:
         cls,
         data: Any,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
         prev_data: Any,
         prev_key: Optional[JsonPathItem],
     ) -> None:
@@ -86,8 +86,8 @@ class Setter:
         cls,
         data: Any,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
     ) -> None:
         raise NotImplementedError()
 
@@ -95,8 +95,8 @@ class Setter:
     def _set_incompatible_types(
         cls,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
         prev_data: Any,
         prev_key: Optional[JsonPathItem],
     ) -> None:
@@ -104,15 +104,15 @@ class Setter:
 
 
 class KeySetter(Setter):
-    TYPE = Dict
+    TYPE = dict
 
     @classmethod
     def _set_compatible_types(
         cls,
         data: Any,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
     ) -> None:
         if current_key.key not in data:
             data[current_key.key] = {}
@@ -129,8 +129,8 @@ class KeySetter(Setter):
     def _set_incompatible_types(
         cls,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
         prev_data: Any,
         prev_key: Optional[JsonPathItem],
     ) -> None:
@@ -163,14 +163,14 @@ class KeySetter(Setter):
 
 
 class _ListSetter(Setter):
-    TYPE = List
+    TYPE = list
 
     @classmethod
     def _set_incompatible_types(
         cls,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
         prev_data: Any,
         prev_key: Optional[JsonPathItem],
     ) -> None:
@@ -188,8 +188,8 @@ class _ListSetter(Setter):
         cls,
         data: Any,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
     ) -> None:
         raise NotImplementedError()
 
@@ -200,8 +200,8 @@ class IndexSetter(_ListSetter):
         cls,
         data: Any,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
     ) -> None:
         assert current_key.index is not None
 
@@ -222,8 +222,8 @@ class WildcardIndexSetter(_ListSetter):
         cls,
         data: Any,
         current_key: JsonPathItem,
-        k_list: List[JsonPathItem],
-        value: Dict[str, Any],
+        k_list: list[JsonPathItem],
+        value: dict[str, Any],
     ) -> None:
         if len(k_list) == 0:
             for i, item in enumerate(data):

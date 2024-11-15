@@ -1,5 +1,5 @@
 from datetime import date, datetime, timezone
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union, get_args
+from typing import Any, Mapping, Optional, Sequence, Union, get_args
 
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -86,11 +86,11 @@ def value_to_json(value: Value) -> Any:
     raise ValueError(f"Not supported value: {value_}")  # pragma: no cover
 
 
-def payload_to_grpc(payload: Dict[str, Any]) -> Dict[str, Value]:
+def payload_to_grpc(payload: dict[str, Any]) -> dict[str, Value]:
     return dict((key, json_to_value(val)) for key, val in payload.items())
 
 
-def grpc_to_payload(grpc_: Dict[str, Value]) -> Dict[str, Any]:
+def grpc_to_payload(grpc_: dict[str, Value]) -> dict[str, Any]:
     return dict((key, value_to_json(val)) for key, val in grpc_.items())
 
 
@@ -331,8 +331,8 @@ class GrpcToRest:
 
     @classmethod
     def convert_payload_schema(
-        cls, model: Dict[str, grpc.PayloadSchemaInfo]
-    ) -> Dict[str, rest.PayloadIndexInfo]:
+        cls, model: dict[str, grpc.PayloadSchemaInfo]
+    ) -> dict[str, rest.PayloadIndexInfo]:
         return {key: cls.convert_payload_schema_info(info) for key, info in model.items()}
 
     @classmethod
@@ -896,11 +896,11 @@ class GrpcToRest:
     @classmethod
     def _convert_vector(
         cls, model: Union[grpc.Vector, grpc.VectorOutput]
-    ) -> Tuple[
+    ) -> tuple[
         Optional[str],
         Union[
-            List[float],
-            List[List[float]],
+            list[float],
+            list[list[float]],
             rest.SparseVector,
             grpc.Document,
             grpc.Image,
@@ -944,8 +944,8 @@ class GrpcToRest:
     def convert_vector(
         cls, model: grpc.Vector
     ) -> Union[
-        List[float],
-        List[List[float]],
+        list[float],
+        list[list[float]],
         rest.SparseVector,
         rest.Document,
         rest.Image,
@@ -970,14 +970,14 @@ class GrpcToRest:
     @classmethod
     def convert_vector_output(
         cls, model: grpc.VectorOutput
-    ) -> Union[List[float], List[List[float]], rest.SparseVector]:
+    ) -> Union[list[float], list[list[float]], rest.SparseVector]:
         name, val = cls._convert_vector(model)
         if name is None:
             return val
         raise ValueError(f"invalid Vector model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_named_vectors(cls, model: grpc.NamedVectors) -> Dict[str, rest.Vector]:
+    def convert_named_vectors(cls, model: grpc.NamedVectors) -> dict[str, rest.Vector]:
         vectors = {}
         for name, vector in model.vectors.items():
             vectors[name] = cls.convert_vector(vector)
@@ -987,7 +987,7 @@ class GrpcToRest:
     @classmethod
     def convert_named_vectors_output(
         cls, model: grpc.NamedVectorsOutput
-    ) -> Dict[str, rest.VectorOutput]:
+    ) -> dict[str, rest.VectorOutput]:
         vectors = {}
         for name, vector in model.vectors.items():
             vectors[name] = cls.convert_vector_output(vector)
@@ -1021,7 +1021,7 @@ class GrpcToRest:
         raise ValueError(f"invalid VectorsOutput model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_dense_vector(cls, model: grpc.DenseVector) -> List[float]:
+    def convert_dense_vector(cls, model: grpc.DenseVector) -> list[float]:
         return model.data[:]
 
     @classmethod
@@ -1029,7 +1029,7 @@ class GrpcToRest:
         return rest.SparseVector(indices=model.indices[:], values=model.values[:])
 
     @classmethod
-    def convert_multi_dense_vector(cls, model: grpc.MultiDenseVector) -> List[List[float]]:
+    def convert_multi_dense_vector(cls, model: grpc.MultiDenseVector) -> list[list[float]]:
         return [cls.convert_dense_vector(vector) for vector in model.vectors]
 
     @classmethod
@@ -1172,7 +1172,7 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_vectors_selector(cls, model: grpc.VectorsSelector) -> List[str]:
+    def convert_vectors_selector(cls, model: grpc.VectorsSelector) -> list[str]:
         return model.names[:]
 
     @classmethod
@@ -1871,7 +1871,7 @@ class GrpcToRest:
     @classmethod
     def convert_sparse_vector_config(
         cls, model: grpc.SparseVectorConfig
-    ) -> Dict[str, rest.SparseVectorParams]:
+    ) -> dict[str, rest.SparseVectorParams]:
         return dict((key, cls.convert_sparse_vector_params(val)) for key, val in model.map.items())
 
     @classmethod
@@ -1991,9 +1991,9 @@ class RestToGrpc:
     @classmethod
     def convert_filter(cls, model: rest.Filter) -> grpc.Filter:
         def convert_conditions(
-            conditions: Union[List[rest.Condition], rest.Condition],
-        ) -> List[grpc.Condition]:
-            if not isinstance(conditions, List):
+            conditions: Union[list[rest.Condition], rest.Condition],
+        ) -> list[grpc.Condition]:
+            if not isinstance(conditions, list):
                 conditions = [conditions]
             return [cls.convert_condition(condition) for condition in conditions]
 
@@ -2088,8 +2088,8 @@ class RestToGrpc:
 
     @classmethod
     def convert_payload_schema(
-        cls, model: Dict[str, rest.PayloadIndexInfo]
-    ) -> Dict[str, grpc.PayloadSchemaInfo]:
+        cls, model: dict[str, rest.PayloadIndexInfo]
+    ) -> dict[str, grpc.PayloadSchemaInfo]:
         return dict((key, cls.convert_payload_index_info(val)) for key, val in model.items())
 
     @classmethod
@@ -2271,7 +2271,7 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_payload(cls, model: rest.Payload) -> Dict[str, grpc.Value]:
+    def convert_payload(cls, model: rest.Payload) -> dict[str, grpc.Value]:
         return dict((key, json_to_value(val)) for key, val in model.items())
 
     @classmethod
@@ -2502,8 +2502,8 @@ class RestToGrpc:
     @classmethod
     def convert_recommend_examples_to_ids(
         cls, examples: Sequence[rest.RecommendExample]
-    ) -> List[grpc.PointId]:
-        ids: List[grpc.PointId] = []
+    ) -> list[grpc.PointId]:
+        ids: list[grpc.PointId] = []
         for example in examples:
             if isinstance(example, get_args_subscribed(rest.ExtendedPointId)):
                 id_ = cls.convert_extended_point_id(example)
@@ -2519,8 +2519,8 @@ class RestToGrpc:
     @classmethod
     def convert_recommend_examples_to_vectors(
         cls, examples: Sequence[rest.RecommendExample]
-    ) -> List[grpc.Vector]:
-        vectors: List[grpc.Vector] = []
+    ) -> list[grpc.Vector]:
+        vectors: list[grpc.Vector] = []
         for example in examples:
             if isinstance(example, grpc.Vector):
                 vector = example
@@ -2803,7 +2803,7 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_struct(cls, model: rest.VectorStruct) -> grpc.Vectors:
-        def convert_vector(vector: Union[List[float], List[List[float]]]) -> grpc.Vector:
+        def convert_vector(vector: Union[list[float], list[list[float]]]) -> grpc.Vector:
             if len(vector) != 0 and isinstance(
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
@@ -2820,7 +2820,7 @@ class RestToGrpc:
         if isinstance(model, list):
             return grpc.Vectors(vector=convert_vector(model))
         elif isinstance(model, dict):
-            vectors: Dict = {}
+            vectors: dict = {}
             for key, val in model.items():
                 if isinstance(val, list):
                     vectors.update({key: convert_vector(val)})
@@ -2844,7 +2844,7 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_struct_output(cls, model: rest.VectorStructOutput) -> grpc.VectorsOutput:
-        def convert_vector(vector: Union[List[float], List[List[float]]]) -> grpc.VectorOutput:
+        def convert_vector(vector: Union[list[float], list[list[float]]]) -> grpc.VectorOutput:
             if len(vector) != 0 and isinstance(
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
@@ -2861,7 +2861,7 @@ class RestToGrpc:
         if isinstance(model, list):
             return grpc.VectorsOutput(vector=convert_vector(model))
         elif isinstance(model, dict):
-            vectors: Dict = {}
+            vectors: dict = {}
             for key, val in model.items():
                 if isinstance(val, list):
                     vectors.update({key: convert_vector(val)})
@@ -2883,11 +2883,11 @@ class RestToGrpc:
     @classmethod
     def convert_batch_vector_struct(
         cls, model: rest.BatchVectorStruct, num_records: int
-    ) -> List[grpc.Vectors]:
+    ) -> list[grpc.Vectors]:
         if isinstance(model, list):
             return [cls.convert_vector_struct(item) for item in model]
         elif isinstance(model, dict):
-            result: List[Dict] = [{} for _ in range(num_records)]
+            result: list[dict] = [{} for _ in range(num_records)]
             for key, val in model.items():
                 for i, item in enumerate(val):
                     result[i][key] = item
@@ -2898,7 +2898,7 @@ class RestToGrpc:
     @classmethod
     def convert_named_vector_struct(
         cls, model: rest.NamedVectorStruct
-    ) -> Tuple[List[float], Optional[grpc.SparseIndices], Optional[str]]:
+    ) -> tuple[list[float], Optional[grpc.SparseIndices], Optional[str]]:
         if isinstance(model, list):
             return model, None, None
         elif isinstance(model, rest.NamedVector):
@@ -2909,7 +2909,7 @@ class RestToGrpc:
             raise ValueError(f"invalid NamedVectorStruct model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_dense_vector(cls, model: List[float]) -> grpc.DenseVector:
+    def convert_dense_vector(cls, model: list[float]) -> grpc.DenseVector:
         return grpc.DenseVector(data=model)
 
     @classmethod
@@ -2917,7 +2917,7 @@ class RestToGrpc:
         return grpc.SparseVector(values=model.values, indices=model.indices)
 
     @classmethod
-    def convert_multi_dense_vector(cls, model: List[List[float]]) -> grpc.MultiDenseVector:
+    def convert_multi_dense_vector(cls, model: list[list[float]]) -> grpc.MultiDenseVector:
         return grpc.MultiDenseVector(
             vectors=[cls.convert_dense_vector(vector) for vector in model]
         )
@@ -3061,7 +3061,7 @@ class RestToGrpc:
         prefetch = None
         if isinstance(model.prefetch, rest.Prefetch):
             prefetch = [cls.convert_prefetch_query(model.prefetch)]
-        elif isinstance(model.prefetch, List):
+        elif isinstance(model.prefetch, list):
             prefetch = [cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
 
         return grpc.PrefetchQuery(
@@ -3568,9 +3568,9 @@ class RestToGrpc:
     @classmethod
     def convert_point_insert_operation(
         cls, model: rest.PointInsertOperations
-    ) -> List[grpc.PointStruct]:
+    ) -> list[grpc.PointStruct]:
         if isinstance(model, rest.PointsBatch):
-            vectors_batch: List[grpc.Vectors] = cls.convert_batch_vector_struct(
+            vectors_batch: list[grpc.Vectors] = cls.convert_batch_vector_struct(
                 model.batch.vectors, len(model.batch.ids)
             )
             return [

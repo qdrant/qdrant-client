@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import pytest
 
@@ -9,9 +7,7 @@ from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
-    generate_fixtures,
     generate_sparse_fixtures,
-    image_vector_size,
     init_client,
     init_local,
     init_remote,
@@ -33,7 +29,7 @@ class TestSimpleRecommendation:
         ]
 
     @classmethod
-    def simple_recommend_image(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_recommend_image(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[10],
@@ -44,7 +40,7 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def many_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def many_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[10, 19],
@@ -54,7 +50,7 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def simple_recommend_negative(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def simple_recommend_negative(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[10],
@@ -65,7 +61,7 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def recommend_from_another_collection(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def recommend_from_another_collection(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[10],
@@ -82,7 +78,7 @@ class TestSimpleRecommendation:
     @classmethod
     def filter_recommend_text(
         cls, client: QdrantBase, query_filter: models.Filter
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[10],
@@ -93,7 +89,7 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def best_score_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[
@@ -108,7 +104,7 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def best_score_recommend_euclid(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def best_score_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[
@@ -123,7 +119,7 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def only_negatives_best_score_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def only_negatives_best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=None,
@@ -137,7 +133,7 @@ class TestSimpleRecommendation:
     @classmethod
     def only_negatives_best_score_recommend_euclid(
         cls, client: QdrantBase
-    ) -> List[models.ScoredPoint]:
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=None,
@@ -149,7 +145,7 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def avg_vector_recommend(cls, client: QdrantBase) -> List[models.ScoredPoint]:
+    def avg_vector_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[10, 13],
@@ -160,7 +156,7 @@ class TestSimpleRecommendation:
             strategy=models.RecommendStrategy.AVERAGE_VECTOR,
         )
 
-    def recommend_from_raw_vectors(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def recommend_from_raw_vectors(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[self.query_image],
@@ -170,7 +166,7 @@ class TestSimpleRecommendation:
             using="sparse-image",
         )
 
-    def recommend_from_raw_vectors_and_ids(self, client: QdrantBase) -> List[models.ScoredPoint]:
+    def recommend_from_raw_vectors_and_ids(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
             positive=[self.query_image, 10],
@@ -181,7 +177,7 @@ class TestSimpleRecommendation:
         )
 
     @staticmethod
-    def recommend_batch(client: QdrantBase) -> List[List[models.ScoredPoint]]:
+    def recommend_batch(client: QdrantBase) -> list[list[models.ScoredPoint]]:
         return client.recommend_batch(
             collection_name=COLLECTION_NAME,
             requests=[

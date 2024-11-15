@@ -1,5 +1,4 @@
 from math import asin, cos, radians, sin, sqrt
-from typing import List, Tuple
 
 
 def geo_distance(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
@@ -42,9 +41,9 @@ def test_geo_distance() -> None:
 
 
 def boolean_point_in_polygon(
-    point: Tuple[float, float],
-    exterior: List[Tuple[float, float]],
-    interiors: List[List[Tuple[float, float]]],
+    point: tuple[float, float],
+    exterior: list[tuple[float, float]],
+    interiors: list[list[tuple[float, float]]],
 ) -> bool:
     inside_poly = False
 
@@ -62,7 +61,7 @@ def boolean_point_in_polygon(
 
 
 def in_ring(
-    pt: Tuple[float, float], ring: List[Tuple[float, float]], ignore_boundary: bool
+    pt: tuple[float, float], ring: list[tuple[float, float]], ignore_boundary: bool
 ) -> bool:
     is_inside = False
     if ring[0][0] == ring[len(ring) - 1][0] and ring[0][1] == ring[len(ring) - 1][1]:
