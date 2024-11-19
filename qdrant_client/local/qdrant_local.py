@@ -113,7 +113,7 @@ class QdrantLocal(QdrantBase):
                     if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
                         user_warning_once(
                             f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. "
-                            "Consider using Qdrant docker (http/grpc) mode for better performance with large datasets.",
+                            "Consider using Qdrant docker (http/grpc) or Qdrant cloud for better performance with large datasets.",
                             "large-local-collection",
                         )
                 self.aliases = meta["aliases"]
