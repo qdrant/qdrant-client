@@ -21,6 +21,7 @@ from uuid import uuid4
 import numpy as np
 import portalocker
 
+from qdrant_client.common.warnings import user_warning_once
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
@@ -45,6 +46,8 @@ class QdrantLocal(QdrantBase):
     Use for small-scale data, demos, and tests.
     If you need more speed or size, use Qdrant server.
     """
+
+    LARGE_DATA_THRESHOLD = 20_000
 
     def __init__(self, location: str, force_disable_check_same_thread: bool = False) -> None:
         """
@@ -101,11 +104,18 @@ class QdrantLocal(QdrantBase):
                 for collection_name, config_json in meta["collections"].items():
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
-                    self.collections[collection_name] = LocalCollection(
+                    collection = LocalCollection(
                         config,
                         collection_path,
                         force_disable_check_same_thread=self.force_disable_check_same_thread,
                     )
+                    self.collections[collection_name] = collection
+                    if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
+                        user_warning_once(
+                            f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. "
+                            "Consider using Qdrant docker (http/grpc) mode for better performance with large datasets.",
+                            "large-local-collection",
+                        )
                 self.aliases = meta["aliases"]
 
         lock_file_path = os.path.join(self.location, ".lock")
