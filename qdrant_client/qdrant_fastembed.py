@@ -91,6 +91,8 @@ class QdrantFastembedMixin(QdrantBase):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
         self._embed_inspector = InspectorEmbed(parser=parser)
+        self._batch_accumulator = {}
+        self._embed_storage = {}
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
@@ -928,10 +930,31 @@ class QdrantFastembedMixin(QdrantBase):
         return [self._resolve_query_request(query) for query in requests]
 
     def _embed_models(
+        self, raw_models: Union[BaseModel, list[BaseModel]], is_query: bool = False
+    ) -> Union[BaseModel, NumericVector, list[Union[BaseModel, NumericVector]]]:
+        if isinstance(raw_models, list):
+            for raw_model in raw_models:
+                self._embed_model(raw_model, is_query=is_query, accumulating=True)
+        else:
+            self._embed_model(raw_models, is_query=is_query, accumulating=True)
+
+        if not self._batch_accumulator:
+            return raw_models
+
+        inferred_data = [
+            self._embed_model(raw_model, is_query=is_query, accumulating=False)
+            for raw_model in ([raw_models] if not isinstance(raw_models, list) else raw_models)
+        ]
+        if isinstance(raw_models, list):
+            return inferred_data
+        return inferred_data[0]
+
+    def _embed_model(
         self,
         model: BaseModel,
         paths: Optional[list[FieldPath]] = None,
         is_query: bool = False,
+        accumulating: bool = False,
     ) -> Union[BaseModel, NumericVector]:
         """Embed model's fields requiring inference
 
@@ -939,15 +962,21 @@ class QdrantFastembedMixin(QdrantBase):
             model: Qdrant http model containing fields to embed
             paths: Path to fields to embed. E.g. [FieldPath(current="recommend", tail=[FieldPath(current="negative", tail=None)])]
             is_query: Flag to determine which embed method to use. Defaults to False.
+            accumulating: Flag to determine if we are accumulating models for batch embedding. Defaults to False.
 
         Returns:
             A deepcopy of the method with embedded fields
         """
+        if isinstance(model, INFERENCE_OBJECT_TYPES):
+            if not accumulating:
+                return self._drain_accum(model)
+            else:
+                self._accum(model)
+
         if paths is None:
-            if isinstance(model, INFERENCE_OBJECT_TYPES):
-                return self._embed_raw_data(model, is_query=is_query)
-            model = deepcopy(model)
+            model = deepcopy(model) if not accumulating else model
             paths = self._embed_inspector.inspect(model)
+
         for path in paths:
             list_model = [model] if not isinstance(model, list) else model
             for item in list_model:
@@ -955,20 +984,129 @@ class QdrantFastembedMixin(QdrantBase):
                 if current_model is None:
                     continue
                 if path.tail:
-                    self._embed_models(current_model, path.tail, is_query=is_query)
+                    self._embed_model(
+                        current_model, path.tail, is_query=is_query, accumulating=accumulating
+                    )
                 else:
                     was_list = isinstance(current_model, list)
                     current_model = (
                         [current_model] if not isinstance(current_model, list) else current_model
                     )
-                    embeddings = [
-                        self._embed_raw_data(data, is_query=is_query) for data in current_model
-                    ]
-                    if was_list:
-                        setattr(item, path.current, embeddings)
+                    if not accumulating:
+                        embeddings = [self._drain_accum(data) for data in current_model]
+                        if was_list:
+                            setattr(item, path.current, embeddings)
+                        else:
+                            setattr(item, path.current, embeddings[0])
                     else:
-                        setattr(item, path.current, embeddings[0])
+                        for data in current_model:
+                            self._accum(data)
         return model
+
+    def _accum(self, data: models.VectorStruct) -> None:
+        if not isinstance(data, INFERENCE_OBJECT_TYPES):
+            return None
+
+        data = self._resolve_inference_object(data)
+        if data.model not in self._batch_accumulator:
+            self._batch_accumulator[data.model] = []
+        self._batch_accumulator[data.model].append(data)
+
+    def _drain_accum(self, data: models.VectorStruct) -> models.VectorStruct:
+        if not isinstance(data, INFERENCE_OBJECT_TYPES):
+            return data
+
+        if not self._embed_storage or not self._embed_storage.get(data.model, None):
+            self._embed_accum()
+
+        return self._next_embed(data.model)
+
+    def _embed_accum(self, is_query: bool = False) -> None:
+        for model_name, objects in self._batch_accumulator.items():
+            if model_name not in (
+                *SUPPORTED_EMBEDDING_MODELS.keys(),
+                *SUPPORTED_SPARSE_EMBEDDING_MODELS.keys(),
+                *_LATE_INTERACTION_EMBEDDING_MODELS.keys(),
+                *_IMAGE_EMBEDDING_MODELS,
+            ):
+                raise ValueError(f"{model_name} is not among supported models")
+
+            options = next(iter(objects)).options
+            for obj in objects:
+                if options != obj.options:
+                    raise ValueError(
+                        f"Options for {model_name} model should be the same for all objects in one request"
+                    )
+
+        for model_name, objects in self._batch_accumulator.items():
+            options = next(iter(objects)).options or {}
+
+            if model_name in SUPPORTED_EMBEDDING_MODELS.keys():
+                texts = [obj.text for obj in objects]
+                embedding_model_inst = self._get_or_init_model(model_name=model_name, **options)
+                if not is_query:
+                    embeddings = [
+                        embedding.tolist()
+                        for embedding in embedding_model_inst.embed(documents=texts)
+                    ]
+                else:
+                    embeddings = [
+                        embedding.tolist()
+                        for embedding in embedding_model_inst.query_embed(query=texts)
+                    ]
+
+            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS.keys():
+                texts = [obj.text for obj in objects]
+                embedding_model_inst = self._get_or_init_sparse_model(
+                    model_name=model_name, **options
+                )
+                if not is_query:
+                    embeddings = [
+                        models.SparseVector(
+                            indices=sparse_embedding.indices.tolist(),
+                            values=sparse_embedding.values.tolist(),
+                        )
+                        for sparse_embedding in embedding_model_inst.embed(documents=texts)
+                    ]
+                else:
+                    embeddings = [
+                        models.SparseVector(
+                            indices=sparse_embedding.indices.tolist(),
+                            values=sparse_embedding.values.tolist(),
+                        )
+                        for sparse_embedding in embedding_model_inst.query_embed(query=texts)
+                    ]
+
+            elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS.keys():
+                texts = [obj.text for obj in objects]
+                embedding_model_inst = self._get_or_init_late_interaction_model(
+                    model_name=model_name, **options
+                )
+                if not is_query:
+                    embeddings = [
+                        embedding.tolist()
+                        for embedding in embedding_model_inst.embed(documents=texts)
+                    ]
+                else:
+                    embeddings = [
+                        embedding.tolist()
+                        for embedding in embedding_model_inst.query_embed(query=texts)
+                    ]
+
+            else:
+                images = [obj.image for obj in objects]
+                embedding_model_inst = self._get_or_init_image_model(
+                    model_name=model_name, **options
+                )
+                embeddings = [
+                    embedding.tolist() for embedding in embedding_model_inst.embed(images=images)
+                ]
+
+            self._embed_storage[model_name] = embeddings
+        self._batch_accumulator.clear()
+
+    def _next_embed(self, model_name: str):
+        return self._embed_storage[model_name].pop(0)
 
     @staticmethod
     def _resolve_inference_object(data: models.VectorStruct) -> models.VectorStruct:
