@@ -2,7 +2,6 @@ import uuid
 from itertools import tee
 from typing import Any, Iterable, Optional, Sequence, Union, get_args
 from copy import deepcopy
-from pathlib import Path
 
 import numpy as np
 
@@ -13,7 +12,7 @@ from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.embed_inspector import InspectorEmbed
-from qdrant_client.embed.models import NumericVector, NumericVectorStruct
+from qdrant_client.embed.models import NumericVector
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.embed.utils import FieldPath
 from qdrant_client.fastembed_common import QueryResponse
@@ -930,8 +929,8 @@ class QdrantFastembedMixin(QdrantBase):
         return [self._resolve_query_request(query) for query in requests]
 
     def _embed_models(
-        self, raw_models: Union[BaseModel, list[BaseModel]], is_query: bool = False
-    ) -> Union[BaseModel, NumericVector, list[Union[BaseModel, NumericVector]]]:
+        self, raw_models: Union[BaseModel, Sequence[BaseModel]], is_query: bool = False
+    ) -> Union[BaseModel, NumericVector, list[BaseModel]]:
         if isinstance(raw_models, list):
             for raw_model in raw_models:
                 self._embed_model(raw_model, is_query=is_query, accumulating=True)
@@ -989,9 +988,8 @@ class QdrantFastembedMixin(QdrantBase):
                     )
                 else:
                     was_list = isinstance(current_model, list)
-                    current_model = (
-                        [current_model] if not isinstance(current_model, list) else current_model
-                    )
+                    current_model = current_model if was_list else [current_model]
+
                     if not accumulating:
                         embeddings = [self._drain_accum(data) for data in current_model]
                         if was_list:
@@ -1004,6 +1002,17 @@ class QdrantFastembedMixin(QdrantBase):
         return model
 
     def _accum(self, data: models.VectorStruct) -> None:
+        if isinstance(data, dict):
+            for value in data.values():
+                self._accum(value)
+            return None
+
+        if isinstance(data, list):
+            for value in data:
+                if not isinstance(value, INFERENCE_OBJECT_TYPES):  # if value is vector
+                    return None
+                self._accum(value)
+
         if not isinstance(data, INFERENCE_OBJECT_TYPES):
             return None
 
@@ -1013,6 +1022,19 @@ class QdrantFastembedMixin(QdrantBase):
         self._batch_accumulator[data.model].append(data)
 
     def _drain_accum(self, data: models.VectorStruct) -> models.VectorStruct:
+        if isinstance(data, dict):
+            for key, value in data.items():
+                data[key] = self._drain_accum(value)
+            return data
+
+        if isinstance(data, list):
+            for i, value in enumerate(data):
+                if not isinstance(value, INFERENCE_OBJECT_TYPES):  # if value is vector
+                    return data
+
+                data[i] = self._drain_accum(value)
+            return data
+
         if not isinstance(data, INFERENCE_OBJECT_TYPES):
             return data
 
@@ -1134,111 +1156,5 @@ class QdrantFastembedMixin(QdrantBase):
             return models.Document(model=model_name, text=value, options=options)
         if model_name in _IMAGE_EMBEDDING_MODELS:
             return models.Image(model=model_name, image=value, options=options)
-
-        raise ValueError(f"{model_name} is not among supported models")
-
-    def _embed_raw_data(
-        self,
-        data: models.VectorStruct,
-        is_query: bool = False,
-    ) -> NumericVectorStruct:
-        """Iterates over the data and calls inference on the fields requiring it
-
-        Args:
-            data: models.VectorStruct - data to embed, if it's not a field which requires inference, leave it as is
-            is_query: Flag to determine which embed method to use. Defaults to False.
-
-        Returns:
-            NumericVectorStruct: Embedded data
-        """
-        data = self._resolve_inference_object(data)
-
-        if isinstance(data, models.Document):
-            return self._embed_document(data, is_query=is_query)
-        elif isinstance(data, models.Image):
-            return self._embed_image(data)
-        elif isinstance(data, dict):
-            return {
-                key: self._embed_raw_data(value, is_query=is_query) for key, value in data.items()
-            }
-        elif isinstance(data, list):
-            # we don't want to iterate over a vector
-            if data and isinstance(data[0], float):
-                return data
-            return [self._embed_raw_data(value, is_query=is_query) for value in data]
-        return data
-
-    def _embed_document(self, document: models.Document, is_query: bool = False) -> NumericVector:
-        """Embed a document using the specified embedding model
-
-        Args:
-            document: Document to embed
-            is_query: Flag to determine which embed method to use. Defaults to False.
-
-        Returns:
-            NumericVector: Document's embedding
-
-        Raises:
-            ValueError: If model is not supported
-        """
-        model_name = document.model
-        text = document.text
-        options = document.options or {}
-        if model_name in SUPPORTED_EMBEDDING_MODELS:
-            embedding_model_inst = self._get_or_init_model(model_name=model_name, **options)
-            if not is_query:
-                embedding = list(embedding_model_inst.embed(documents=[text]))[0].tolist()
-            else:
-                embedding = list(embedding_model_inst.query_embed(query=text))[0].tolist()
-            return embedding
-        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
-            sparse_embedding_model_inst = self._get_or_init_sparse_model(
-                model_name=model_name, **options
-            )
-            if not is_query:
-                sparse_embedding = list(sparse_embedding_model_inst.embed(documents=[text]))[0]
-            else:
-                sparse_embedding = list(sparse_embedding_model_inst.query_embed(query=text))[0]
-
-            return models.SparseVector(
-                indices=sparse_embedding.indices.tolist(), values=sparse_embedding.values.tolist()
-            )
-        elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
-            li_embedding_model_inst = self._get_or_init_late_interaction_model(
-                model_name=model_name, **options
-            )
-            if not is_query:
-                embedding = list(li_embedding_model_inst.embed(documents=[text]))[0].tolist()
-            else:
-                embedding = list(li_embedding_model_inst.query_embed(query=text))[0].tolist()
-            return embedding
-        else:
-            raise ValueError(f"{model_name} is not among supported models")
-
-    def _embed_image(self, image: models.Image) -> NumericVector:
-        """Embed an image using the specified embedding model
-
-        Args:
-            image: Image to embed
-
-        Returns:
-            NumericVector: Image's embedding
-
-        Raises:
-            ValueError: If model is not supported
-        """
-        model_name = image.model
-        if model_name in _IMAGE_EMBEDDING_MODELS:
-            embedding_model_inst = self._get_or_init_image_model(
-                model_name=model_name, **(image.options or {})
-            )
-            if not isinstance(image.image, (str, Path, PilImage.Image)):  # type: ignore
-                # PilImage is None if PIL is not installed,
-                # but we'll fail earlier if it's not installed.
-                raise ValueError(
-                    f"Unsupported image type: {type(image.image)}. Image: {image.image}"
-                )
-            embedding = list(embedding_model_inst.embed(images=[image.image]))[0].tolist()
-            return embedding
 
         raise ValueError(f"{model_name} is not among supported models")
