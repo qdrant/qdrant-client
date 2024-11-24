@@ -21,7 +21,7 @@ from uuid import uuid4
 import numpy as np
 import portalocker
 
-from qdrant_client.common.warnings import user_warning_once
+from qdrant_client.common.client_warnings import show_warning_once
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
@@ -111,10 +111,11 @@ class QdrantLocal(QdrantBase):
                     )
                     self.collections[collection_name] = collection
                     if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
-                        user_warning_once(
-                            f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. "
+                        show_warning_once(
+                            message=f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. "
                             "Consider using Qdrant docker (http/grpc) or Qdrant cloud for better performance with large datasets.",
-                            "large-local-collection",
+                            category=UserWarning,
+                            idx="large-local-collection",
                         )
                 self.aliases = meta["aliases"]
 

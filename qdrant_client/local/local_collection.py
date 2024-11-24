@@ -15,7 +15,7 @@ from copy import deepcopy
 import numpy as np
 
 from qdrant_client import grpc as grpc
-from qdrant_client.common.warnings import user_warning_once
+from qdrant_client.common.client_warnings import show_warning_once
 from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -2169,10 +2169,11 @@ class LocalCollection:
             else 0
         )
         if len(self.ids) + points_count > self.LARGE_DATA_THRESHOLD:
-            user_warning_once(
+            show_warning_once(
                 f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. "
                 "Consider using Qdrant docker (http/grpc) or Qdrant cloud for better performance with large datasets.",
-                "large-local-collection",
+                category=UserWarning,
+                idx="large-local-collection",
             )
         if isinstance(points, list):
             for point in points:
