@@ -94,13 +94,14 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
         cloud_inference: bool = False,
+        check_version: Optional[bool] = None,
         **kwargs: Any,
     ):
         self._inference_inspector = Inspector()
         super().__init__(parser=self._inference_inspector.parser, **kwargs)
         self._init_options = {
             key: value
-            for (key, value) in locals().items()
+            for key, value in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
         self._init_options.update(deepcopy(kwargs))
@@ -132,6 +133,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 host=host,
                 grpc_options=grpc_options,
                 auth_token_provider=auth_token_provider,
+                check_version=check_version,
                 **kwargs,
             )
         if isinstance(self._client, AsyncQdrantLocal) and cloud_inference:
