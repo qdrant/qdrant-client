@@ -1,5 +1,4 @@
 import asyncio
-import importlib.metadata
 import logging
 import math
 import platform
@@ -21,13 +20,13 @@ from typing import (
 import httpx
 import numpy as np
 from grpc import Compression
-from packaging import version
 from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.common.version_check import is_server_version_compatible
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -196,27 +195,8 @@ class QdrantRemote(QdrantBase):
 
         self._closed: bool = False
 
-        if check_version:
-            client_version = importlib.metadata.version("qdrant-client")
-            server_version = self.info().version
-            is_ok = self._check_versions(client_version, server_version)
-            if not is_ok:
-                warnings.warn(
-                    f"Found Qdrant server version `{server_version}` is not supported by current version of Qdrant client `{client_version}`."
-                )
-
-    @staticmethod
-    def _check_versions(client_version: str, server_version: str) -> bool:
-        client = version.parse(client_version)
-        server = version.parse(server_version)
-        if client_version == server_version:
-            return True
-        major_dif = abs(server.major - client.major)
-        if major_dif >= 1:
-            return False
-        elif major_dif == 0:
-            return abs(server.minor - client.minor) <= 1
-        return False
+        if check_version and not is_server_version_compatible(self):
+            warnings.warn("Qdrant client version may be incompatible with server version.")
 
     @property
     def closed(self) -> bool:
