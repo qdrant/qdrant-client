@@ -162,8 +162,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._closed: bool = False
         if check_version:
             client_version = importlib.metadata.version("qdrant-client")
-            with asyncio.get_event_loop() as loop:
-                server_version = loop.run_until_complete(self.info()).version
+            loop = asyncio.get_event_loop()
+            server_version = loop.run_until_complete(self.info()).version
             is_ok = self._check_versions(client_version, server_version)
             if not is_ok:
                 warnings.warn(
@@ -172,15 +172,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
 
     @staticmethod
     def _check_versions(client_version: str, server_version: str) -> bool:
-        client_version = version.parse(client_version)
-        server_version = version.parse(server_version)
+        client = version.parse(client_version)
+        server = version.parse(server_version)
         if client_version == server_version:
             return True
-        major_dif = abs(server_version.major - client_version.major)
+        major_dif = abs(server.major - client.major)
         if major_dif >= 1:
             return False
         elif major_dif == 0:
-            return abs(server_version.minor - client_version.minor) <= 1
+            return abs(server.minor - client.minor) <= 1
         return False
 
     @property

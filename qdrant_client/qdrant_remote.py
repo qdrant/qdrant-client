@@ -207,15 +207,15 @@ class QdrantRemote(QdrantBase):
 
     @staticmethod
     def _check_versions(client_version: str, server_version: str) -> bool:
-        client_version = version.parse(client_version)
-        server_version = version.parse(server_version)
+        client = version.parse(client_version)
+        server = version.parse(server_version)
         if client_version == server_version:
             return True
-        major_dif = abs(server_version.major - client_version.major)
+        major_dif = abs(server.major - client.major)
         if major_dif >= 1:
             return False
         elif major_dif == 0:
-            return abs(server_version.minor - client_version.minor) <= 1
+            return abs(server.minor - client.minor) <= 1
         return False
 
     @property
