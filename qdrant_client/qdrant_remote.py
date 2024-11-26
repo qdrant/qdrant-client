@@ -1,4 +1,5 @@
 import asyncio
+import importlib.metadata
 import logging
 import math
 import warnings
@@ -19,6 +20,7 @@ from typing import (
 import httpx
 import numpy as np
 from grpc import Compression
+from packaging import version
 from urllib3.util import Url, parse_url
 
 from qdrant_client import grpc as grpc
@@ -58,6 +60,7 @@ class QdrantRemote(QdrantBase):
         auth_token_provider: Optional[
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
+        check_version: Optional[bool] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -185,6 +188,28 @@ class QdrantRemote(QdrantBase):
         self._aio_grpc_root_client: Optional[grpc.QdrantStub] = None
 
         self._closed: bool = False
+
+        if check_version:
+            client_version = importlib.metadata.version("qdrant-client")
+            server_version = self.info().version
+            is_ok = self._check_versions(client_version, server_version)
+            if not is_ok:
+                warnings.warn(
+                    f"Found Qdrant server version `{server_version}` is not supported by current version of Qdrant client `{client_version}`."
+                )
+
+    @staticmethod
+    def _check_versions(client_version: str, server_version: str) -> bool:
+        client_version = version.parse(client_version)
+        server_version = version.parse(server_version)
+        if client_version == server_version:
+            return True
+        major_dif = abs(server_version.major - client_version.major)
+        if major_dif >= 1:
+            return False
+        elif major_dif == 0:
+            return abs(server_version.minor - client_version.minor) <= 1
+        return False
 
     @property
     def closed(self) -> bool:
