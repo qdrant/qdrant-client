@@ -29,7 +29,6 @@ from typing import (
 import httpx
 import numpy as np
 from grpc import Compression
-from packaging import version
 from urllib3.util import Url, parse_url
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
@@ -118,7 +117,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 warnings.warn("Api key is used with an insecure connection.")
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
-        client_version = version.parse(importlib.metadata.version("qdrant-client"))
+        client_version = importlib.metadata.version("qdrant-client")
         self._rest_headers["User-Agent"] = f"qdrant-client/{client_version}"
         self._grpc_headers.append(("user-agent", f"qdrant-client/{client_version}"))
         grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
