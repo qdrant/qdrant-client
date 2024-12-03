@@ -1,13 +1,19 @@
 import pytest
-from packaging.version import Version
 
-from qdrant_client.common.version_check import check_version
+from qdrant_client.common.version_check import check_version, parse_version
 
 
 @pytest.mark.parametrize(
     "test_data",
     [
         ("1.9.3.dev0", "2.0.1", False, "Diff between major versions = 1, minor versions differ"),
+        (
+            "1.9",
+            "2.0",
+            False,
+            "Diff between major versions = 1, minor versions differ, only major and patch",
+        ),
+        ("1", "2", False, "Diff between major versions = 1, minor versions differ, only major"),
         ("1.9.0", "2.9.0", False, "Diff between major versions = 1, minor versions are the same"),
         (
             "1.1.0",
@@ -45,7 +51,20 @@ from qdrant_client.common.version_check import check_version
     ],
 )
 def test_check_versions(test_data):
-    assert (
-        check_version(client_version=Version(test_data[0]), server_version=Version(test_data[1]))
-        is test_data[2]
-    )
+    assert check_version(client_version=test_data[0], server_version=test_data[1]) is test_data[2]
+
+
+@pytest.mark.parametrize(
+    "test_data",
+    [
+        ("1", "Only major version"),
+        ("1.", "Only major version"),
+        (".1", "Only minor version"),
+        (".1.", "Only minor version"),
+        ("1.None.1", "Minor version is not a number"),
+        ("None.0.1", "Major version is not a number"),
+    ],
+)
+def test_parse_versions_value_error(test_data):
+    with pytest.raises(ValueError):
+        parse_version(test_data[0])

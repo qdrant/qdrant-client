@@ -1,10 +1,13 @@
 import asyncio
 import importlib.metadata
 import inspect
+import logging
 from typing import Union, TYPE_CHECKING
+from collections import namedtuple
 
-from packaging import version
-from packaging.version import Version
+
+Version = namedtuple("Version", ["major", "minor", "rest"])
+
 
 if TYPE_CHECKING:
     from qdrant_client.qdrant_remote import QdrantRemote
@@ -12,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def is_server_version_compatible(client: Union["QdrantRemote", "AsyncQdrantRemote"]) -> bool:
-    client_version = version.parse(importlib.metadata.version("qdrant-client"))
+    client_version = importlib.metadata.version("qdrant-client")
 
     get_info = client.info()
     if inspect.iscoroutine(get_info):
@@ -22,14 +25,31 @@ def is_server_version_compatible(client: Union["QdrantRemote", "AsyncQdrantRemot
         info_version = get_info.version
     else:
         raise ValueError("Unable to retrieve server version")
-    server_version = version.parse(info_version)
+    server_version = info_version
 
     return check_version(client_version, server_version)
 
 
-def check_version(client_version: Version, server_version: Version) -> bool:
+def parse_version(version: str) -> Version:
+    try:
+        major, minor, *rest = version.split(".")
+        return Version(int(major), int(minor), rest)
+    except ValueError as er:
+        raise ValueError(
+            f"Unable to parse version, expected format: x.y.z, found: {version}"
+        ) from er
+
+
+def check_version(client_version: str, server_version: str) -> bool:
     if client_version == server_version:
         return True
+
+    try:
+        server_version = parse_version(server_version)
+        client_version = parse_version(client_version)
+    except ValueError as er:
+        logging.warning(f"Unable to parse version: {er}")
+        return False
     major_dif = abs(server_version.major - client_version.major)
     if major_dif >= 1:
         return False

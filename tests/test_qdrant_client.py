@@ -106,6 +106,9 @@ def test_client_init():
     client = QdrantClient(check_version=True)
     assert isinstance(client._client, QdrantRemote)
 
+    client = QdrantClient(check_version=True, prefer_grpc=True)
+    assert isinstance(client._client, QdrantRemote)
+
     client = QdrantClient(https=True)
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "https://localhost:6333"
