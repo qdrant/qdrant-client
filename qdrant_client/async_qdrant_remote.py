@@ -73,7 +73,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
-        self._grpc_options = grpc_options
+        self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
         self._prefix = prefix or ""
@@ -122,10 +122,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         python_version = platform.python_version()
         user_agent = f"qdrant-client/{client_version} python/{python_version}"
         self._rest_headers["User-Agent"] = user_agent
-        if self._grpc_options is not None:
-            self._grpc_options["grpc.primary_user_agent"] = user_agent
-        else:
-            self._grpc_options = {"grpc.primary_user_agent": user_agent}
+        self._grpc_options["grpc.primary_user_agent"] = user_agent
         grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
         if grpc_compression is not None and (not isinstance(grpc_compression, Compression)):
             raise TypeError(

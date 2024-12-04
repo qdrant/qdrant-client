@@ -65,7 +65,7 @@ class QdrantRemote(QdrantBase):
         super().__init__(**kwargs)
         self._prefer_grpc = prefer_grpc
         self._grpc_port = grpc_port
-        self._grpc_options = grpc_options
+        self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
 
@@ -139,10 +139,7 @@ class QdrantRemote(QdrantBase):
         python_version = platform.python_version()
         user_agent = f"qdrant-client/{client_version} python/{python_version}"
         self._rest_headers["User-Agent"] = user_agent
-        if self._grpc_options is not None:
-            self._grpc_options["grpc.primary_user_agent"] = user_agent
-        else:
-            self._grpc_options = {"grpc.primary_user_agent": user_agent}
+        self._grpc_options["grpc.primary_user_agent"] = user_agent
 
         # GRPC Channel-Level Compression
         grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
