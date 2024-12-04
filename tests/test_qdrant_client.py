@@ -1968,7 +1968,7 @@ def test_timeout_propagation():
 def test_grpc_options():
     client_version = importlib.metadata.version("qdrant-client")
     user_agent = f"qdrant-client/{client_version}"
-    python_version = f"python{platform.python_version()}"
+    python_version = f"python/{platform.python_version()}"
 
     client = QdrantClient(prefer_grpc=True)
     assert client._client._grpc_options == {
