@@ -1,5 +1,7 @@
 import asyncio
+import importlib.metadata
 import os
+import platform
 import uuid
 from pprint import pprint
 from tempfile import mkdtemp
@@ -1964,11 +1966,20 @@ def test_timeout_propagation():
 
 
 def test_grpc_options():
+    client_version = importlib.metadata.version("qdrant-client")
+    user_agent = f"qdrant-client/{client_version}"
+    python_version = f"python{platform.python_version()}"
+
     client = QdrantClient(prefer_grpc=True)
-    assert client._client._grpc_options is None
+    assert client._client._grpc_options == {
+        "grpc.primary_user_agent": f"{user_agent} {python_version}"
+    }
 
     client = QdrantClient(prefer_grpc=True, grpc_options={"grpc.max_send_message_length": 3})
-    assert client._client._grpc_options == {"grpc.max_send_message_length": 3}
+    assert client._client._grpc_options == {
+        "grpc.max_send_message_length": 3,
+        "grpc.primary_user_agent": f"{user_agent} {python_version}",
+    }
 
     with pytest.raises(RpcError):
         if not client.collection_exists("grpc_collection"):

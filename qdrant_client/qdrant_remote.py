@@ -140,7 +140,7 @@ class QdrantRemote(QdrantBase):
         python_version = f"python{platform.python_version()}"
         self._rest_headers["User-Agent"] = user_agent
         if self._grpc_options is not None:
-            self._grpc_options["grpc.primary_user_agent"] = user_agent
+            self._grpc_options["grpc.primary_user_agent"] = f"{user_agent} {python_version}"
         else:
             self._grpc_options = {"grpc.primary_user_agent": f"{user_agent} {python_version}"}
 
