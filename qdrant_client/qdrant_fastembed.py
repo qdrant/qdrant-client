@@ -90,8 +90,8 @@ class QdrantFastembedMixin(QdrantBase):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
         self._embed_inspector = InspectorEmbed(parser=parser)
-        self._batch_accumulator = {}
-        self._embed_storage = {}
+        self._batch_accumulator: dict[str, list[Any]] = {}  # lists of inference object types
+        self._embed_storage: dict[str, NumericVector] = {}
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
@@ -931,6 +931,17 @@ class QdrantFastembedMixin(QdrantBase):
     def _embed_models(
         self, raw_models: Union[BaseModel, Sequence[BaseModel]], is_query: bool = False
     ) -> Union[BaseModel, NumericVector, list[BaseModel]]:
+        """Embed raw data fields in models and return models with vectors
+
+            If any of model fields required inference, a deepcopy of a model with computed embeddings is returned,
+            otherwise returns original models.
+        Args:
+            raw_models: Union[BaseModel, Sequence[BaseModel]] - models which can contain fields with raw data
+            is_query: bool - flag to determine which embed method to use. Defaults to False.
+
+        Returns:
+            Union[BaseModel, NumericVector, list[BaseModel]]: models with embedded fields
+        """
         if isinstance(raw_models, list):
             for raw_model in raw_models:
                 self._embed_model(raw_model, is_query=is_query, accumulating=True)
@@ -940,13 +951,13 @@ class QdrantFastembedMixin(QdrantBase):
         if not self._batch_accumulator:
             return raw_models
 
-        inferred_data = [
-            self._embed_model(raw_model, is_query=is_query, accumulating=False)
-            for raw_model in ([raw_models] if not isinstance(raw_models, list) else raw_models)
-        ]
         if isinstance(raw_models, list):
-            return inferred_data
-        return inferred_data[0]
+            return [
+                self._embed_model(raw_model, is_query=is_query, accumulating=False)
+                for raw_model in raw_models
+            ]
+
+        return self._embed_model(raw_models, is_query=is_query, accumulating=False)
 
     def _embed_model(
         self,
@@ -1009,7 +1020,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         if isinstance(data, list):
             for value in data:
-                if not isinstance(value, INFERENCE_OBJECT_TYPES):  # if value is vector
+                if not isinstance(value, INFERENCE_OBJECT_TYPES):  # if value is a vector
                     return None
                 self._accum(value)
 
@@ -1127,7 +1138,7 @@ class QdrantFastembedMixin(QdrantBase):
             self._embed_storage[model_name] = embeddings
         self._batch_accumulator.clear()
 
-    def _next_embed(self, model_name: str):
+    def _next_embed(self, model_name: str) -> NumericVector:
         return self._embed_storage[model_name].pop(0)
 
     @staticmethod
