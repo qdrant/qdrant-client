@@ -2161,20 +2161,6 @@ class LocalCollection:
             self.storage.persist(point)
 
     def upsert(self, points: Union[Sequence[models.PointStruct], models.Batch]) -> None:
-        points_count = (
-            len(points)
-            if isinstance(points, list)
-            else len(points.ids)
-            if isinstance(points, models.Batch)
-            else 0
-        )
-        if len(self.ids) + points_count > self.LARGE_DATA_THRESHOLD:
-            show_warning_once(
-                f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. "
-                "Consider using Qdrant docker (http/grpc) or Qdrant cloud for better performance with large datasets.",
-                category=UserWarning,
-                idx="large-local-collection",
-            )
         if isinstance(points, list):
             for point in points:
                 self._upsert_point(point)
@@ -2199,6 +2185,13 @@ class LocalCollection:
                         vector=vector,
                     )
                 )
+        if len(self.ids) > self.LARGE_DATA_THRESHOLD:
+            show_warning_once(
+                f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points, currect collection contains {len(self.ids)}."
+                "Consider using Qdrant in docker or Qdrant cloud for better performance with large datasets.",
+                category=UserWarning,
+                idx="large-local-collection",
+            )
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
 

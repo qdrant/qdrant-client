@@ -5,7 +5,7 @@ SEEN_MESSAGES = set()
 
 
 def show_warning(message: str, category: type[Warning] = UserWarning) -> None:
-    warnings.warn(message, category, stacklevel=2)
+    warnings.warn(message, category, stacklevel=4)
 
 
 def show_warning_once(
