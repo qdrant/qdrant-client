@@ -2185,6 +2185,9 @@ class LocalCollection:
                         vector=vector,
                     )
                 )
+        else:
+            raise ValueError(f"Unsupported type: {type(points)}")
+
         if len(self.ids) > self.LARGE_DATA_THRESHOLD:
             show_warning_once(
                 f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points, currect collection contains {len(self.ids)}."
@@ -2192,8 +2195,6 @@ class LocalCollection:
                 category=UserWarning,
                 idx="large-local-collection",
             )
-        else:
-            raise ValueError(f"Unsupported type: {type(points)}")
 
     def _update_named_vectors(
         self, idx: int, vectors: dict[str, Union[list[float], SparseVector]]
