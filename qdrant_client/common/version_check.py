@@ -1,36 +1,46 @@
-import asyncio
 import importlib.metadata
-import inspect
 import logging
-from typing import Union, TYPE_CHECKING
+from typing import Union
 from collections import namedtuple
 
+from qdrant_client.http import SyncApis, ApiClient
+from qdrant_client.http.models import models
 
 Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
-if TYPE_CHECKING:
-    from qdrant_client.qdrant_remote import QdrantRemote
-    from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
+def is_server_version_compatible(rest_uri, rest_args):
+    def get_server_info():
+        openapi_client: SyncApis[ApiClient] = SyncApis(
+            host=rest_uri,
+            **rest_args,
+        )
+        return openapi_client.client.request(
+            type_=models.VersionInfo,
+            method="GET",
+            url="/",
+            headers=None,
+        )
 
+    def get_server_version() -> Union[str, None]:
+        try:
+            version_info = get_server_info()
+        except Exception as er:
+            logging.warning(f"Unable to get server version: {er}, default to None")
+            return None
 
-def is_server_version_compatible(client: Union["QdrantRemote", "AsyncQdrantRemote"]) -> bool:
+        if not version_info:
+            return None
+        return version_info.version
+
     client_version = importlib.metadata.version("qdrant-client")
-
-    get_info = client.info()
-    if inspect.iscoroutine(get_info):
-        loop = asyncio.get_event_loop()
-        info_version = loop.run_until_complete(get_info).version
-    elif hasattr(get_info, "version"):
-        info_version = get_info.version
-    else:
-        raise ValueError("Unable to retrieve server version")
-    server_version = info_version
-
-    return check_version(client_version, server_version)
+    server_version = get_server_version()
+    return compare_versions(client_version, server_version)
 
 
 def parse_version(version: str) -> Version:
+    if not version:
+        raise ValueError("Version is None")
     try:
         major, minor, *rest = version.split(".")
         return Version(int(major), int(minor), rest)
@@ -40,7 +50,11 @@ def parse_version(version: str) -> Version:
         ) from er
 
 
-def check_version(client_version: str, server_version: str) -> bool:
+def compare_versions(client_version: str, server_version: str) -> bool:
+    if not client_version or not server_version:
+        logging.warning(f"Unable to compare: {client_version} vs {server_version}")
+        return False
+
     if client_version == server_version:
         return True
 

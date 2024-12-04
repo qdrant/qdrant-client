@@ -1,4 +1,5 @@
 import asyncio
+import importlib.metadata
 import logging
 import math
 import platform
@@ -195,8 +196,10 @@ class QdrantRemote(QdrantBase):
 
         self._closed: bool = False
 
-        if check_version and not is_server_version_compatible(self):
-            warnings.warn("Qdrant client version may be incompatible with server version.")
+        if check_version and not is_server_version_compatible(self.rest_uri, self._rest_args):
+            warnings.warn(
+                "Qdrant client version may be incompatible with server version. Set check_version=False to skip version check."
+            )
 
     @property
     def closed(self) -> bool:
