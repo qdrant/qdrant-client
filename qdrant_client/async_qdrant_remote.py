@@ -12,6 +12,7 @@
 import importlib.metadata
 import logging
 import math
+import platform
 import warnings
 from multiprocessing import get_all_start_methods
 from typing import (
@@ -118,8 +119,13 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
         client_version = importlib.metadata.version("qdrant-client")
-        self._rest_headers["User-Agent"] = f"qdrant-client/{client_version}"
-        self._grpc_headers.append(("user-agent", f"qdrant-client/{client_version}"))
+        user_agent = f"qdrant-client/{client_version}"
+        python_version = f"python{platform.python_version()}"
+        self._rest_headers["User-Agent"] = user_agent
+        if self._grpc_options is not None:
+            self._grpc_options["grpc.primary_user_agent"] = user_agent
+        else:
+            self._grpc_options = {"grpc.primary_user_agent": f"{user_agent} {python_version}"}
         grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
         if grpc_compression is not None and (not isinstance(grpc_compression, Compression)):
             raise TypeError(
