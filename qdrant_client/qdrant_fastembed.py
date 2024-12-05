@@ -979,9 +979,9 @@ class QdrantFastembedMixin(QdrantBase):
         """
         if isinstance(model, INFERENCE_OBJECT_TYPES):
             if not accumulating:
-                return self._drain_accum(model)
+                return self._drain_accumulator(model)
             else:
-                self._accum(model)
+                self._accumulate(model)
 
         if paths is None:
             model = deepcopy(model) if not accumulating else model
@@ -1002,27 +1002,36 @@ class QdrantFastembedMixin(QdrantBase):
                     current_model = current_model if was_list else [current_model]
 
                     if not accumulating:
-                        embeddings = [self._drain_accum(data) for data in current_model]
+                        embeddings = [self._drain_accumulator(data) for data in current_model]
                         if was_list:
                             setattr(item, path.current, embeddings)
                         else:
                             setattr(item, path.current, embeddings[0])
                     else:
                         for data in current_model:
-                            self._accum(data)
+                            self._accumulate(data)
         return model
 
-    def _accum(self, data: models.VectorStruct) -> None:
+    def _accumulate(self, data: models.VectorStruct) -> None:
+        """Add data to batch accumulator
+
+        Args:
+            data: models.VectorStruct - any vector struct data, if inference object types instances in `data` - add them
+                to the accumulator, otherwise - do nothing. `InferenceObject` instances are converted to proper types.
+
+        Returns:
+            None
+        """
         if isinstance(data, dict):
             for value in data.values():
-                self._accum(value)
+                self._accumulate(value)
             return None
 
         if isinstance(data, list):
             for value in data:
                 if not isinstance(value, INFERENCE_OBJECT_TYPES):  # if value is a vector
                     return None
-                self._accum(value)
+                self._accumulate(value)
 
         if not isinstance(data, INFERENCE_OBJECT_TYPES):
             return None
@@ -1032,10 +1041,21 @@ class QdrantFastembedMixin(QdrantBase):
             self._batch_accumulator[data.model] = []
         self._batch_accumulator[data.model].append(data)
 
-    def _drain_accum(self, data: models.VectorStruct) -> models.VectorStruct:
+    def _drain_accumulator(self, data: models.VectorStruct) -> models.VectorStruct:
+        """Drain accumulator and replaces inference objects with computed embeddings
+            It is assumed objects are traversed in the same order as they were added to the accumulator
+
+        Args:
+            data: models.VectorStruct - any vector struct data, if inference object types instances in `data` - replace
+                them with computed embeddings. If embeddings haven't yet been computed - compute them and then replace
+                inference objects.
+
+        Returns:
+            models.VectorStruct: data with replaced inference objects
+        """
         if isinstance(data, dict):
             for key, value in data.items():
-                data[key] = self._drain_accum(value)
+                data[key] = self._drain_accumulator(value)
             return data
 
         if isinstance(data, list):
@@ -1043,18 +1063,26 @@ class QdrantFastembedMixin(QdrantBase):
                 if not isinstance(value, INFERENCE_OBJECT_TYPES):  # if value is vector
                     return data
 
-                data[i] = self._drain_accum(value)
+                data[i] = self._drain_accumulator(value)
             return data
 
         if not isinstance(data, INFERENCE_OBJECT_TYPES):
             return data
 
         if not self._embed_storage or not self._embed_storage.get(data.model, None):
-            self._embed_accum()
+            self._embed_accumulator()
 
         return self._next_embed(data.model)
 
-    def _embed_accum(self, is_query: bool = False) -> None:
+    def _embed_accumulator(self, is_query: bool = False) -> None:
+        """Embed all accumulated objects for all models
+
+        Args:
+            is_query: bool - flag to determine which embed method to use. Defaults to False.
+
+        Returns:
+            None
+        """
         for model_name, objects in self._batch_accumulator.items():
             if model_name not in (
                 *SUPPORTED_EMBEDDING_MODELS.keys(),
@@ -1125,7 +1153,6 @@ class QdrantFastembedMixin(QdrantBase):
                         embedding.tolist()
                         for embedding in embedding_model_inst.query_embed(query=texts)
                     ]
-
             else:
                 images = [obj.image for obj in objects]
                 embedding_model_inst = self._get_or_init_image_model(
@@ -1139,6 +1166,14 @@ class QdrantFastembedMixin(QdrantBase):
         self._batch_accumulator.clear()
 
     def _next_embed(self, model_name: str) -> NumericVector:
+        """Get next computed embedding from embedded batch
+
+        Args:
+            model_name: str - retrieve embedding from the storage by this model name
+
+        Returns:
+            NumericVector: computed embedding
+        """
         return self._embed_storage[model_name].pop(0)
 
     @staticmethod
