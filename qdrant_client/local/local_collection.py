@@ -2190,8 +2190,9 @@ class LocalCollection:
 
         if len(self.ids) > self.LARGE_DATA_THRESHOLD:
             show_warning_once(
-                f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points, currect collection contains {len(self.ids)}."
-                "Consider using Qdrant in docker or Qdrant cloud for better performance with large datasets.",
+                f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} "
+                f"points. Current collection contains {len(self.ids)} points. "
+                "Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
                 category=UserWarning,
                 idx="large-local-collection",
             )

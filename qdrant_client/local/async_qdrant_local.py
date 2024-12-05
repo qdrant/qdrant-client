@@ -109,7 +109,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     self.collections[collection_name] = collection
                     if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
                         show_warning_once(
-                            message=f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points, currect collection contains {len(collection.ids)}.Consider using Qdrant in docker or Qdrant cloud for better performance with large datasets.",
+                            f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Collection <{collection_name}> contains {len(collection.ids)} points. Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
                             category=UserWarning,
                             idx="large-local-collection",
                         )
