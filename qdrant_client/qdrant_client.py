@@ -13,7 +13,7 @@ from typing import (
 
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.common.deprecations import deprecation_warning_once
+from qdrant_client.common.client_warnings import show_warning_once
 from qdrant_client.conversions import common_types as types
 from qdrant_client.embed.type_inspector import Inspector
 from qdrant_client.http import ApiClient, SyncApis
@@ -1578,10 +1578,11 @@ class QdrantClient(QdrantFastembedMixin):
             and isinstance(points[0], grpc.PointStruct)
         ):
             # gRPC structures won't support local inference feature, so we deprecated it
-            deprecation_warning_once(
-                """
+            show_warning_once(
+                message="""
             Usage of `grpc.PointStruct` is deprecated. Please use `models.PointStruct` instead.
             """,
+                category=DeprecationWarning,
                 idx="grpc-input",
             )
 

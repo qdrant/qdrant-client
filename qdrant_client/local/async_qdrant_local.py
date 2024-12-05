@@ -21,6 +21,7 @@ from typing import Any, Generator, Iterable, Mapping, Optional, Sequence, Union,
 from uuid import uuid4
 import numpy as np
 import portalocker
+from qdrant_client.common.client_warnings import show_warning_once
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
@@ -45,6 +46,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     Use for small-scale data, demos, and tests.
     If you need more speed or size, use Qdrant server.
     """
+
+    LARGE_DATA_THRESHOLD = 20000
 
     def __init__(self, location: str, force_disable_check_same_thread: bool = False) -> None:
         """
@@ -98,11 +101,18 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 for collection_name, config_json in meta["collections"].items():
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
-                    self.collections[collection_name] = LocalCollection(
+                    collection = LocalCollection(
                         config,
                         collection_path,
                         force_disable_check_same_thread=self.force_disable_check_same_thread,
                     )
+                    self.collections[collection_name] = collection
+                    if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
+                        show_warning_once(
+                            f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Collection <{collection_name}> contains {len(collection.ids)} points. Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
+                            category=UserWarning,
+                            idx="large-local-collection",
+                        )
                 self.aliases = meta["aliases"]
         lock_file_path = os.path.join(self.location, ".lock")
         if not os.path.exists(lock_file_path):
