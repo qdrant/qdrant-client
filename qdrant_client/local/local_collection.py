@@ -15,6 +15,7 @@ from copy import deepcopy
 import numpy as np
 
 from qdrant_client import grpc as grpc
+from qdrant_client.common.client_warnings import show_warning_once
 from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -88,6 +89,8 @@ class LocalCollection:
     """
     LocalCollection is a class that represents a collection of vectors in the local storage.
     """
+
+    LARGE_DATA_THRESHOLD = 20_000
 
     def __init__(
         self,
@@ -2184,6 +2187,15 @@ class LocalCollection:
                 )
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
+
+        if len(self.ids) > self.LARGE_DATA_THRESHOLD:
+            show_warning_once(
+                f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} "
+                f"points. Current collection contains {len(self.ids)} points. "
+                "Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
+                category=UserWarning,
+                idx="large-local-collection",
+            )
 
     def _update_named_vectors(
         self, idx: int, vectors: dict[str, Union[list[float], SparseVector]]
