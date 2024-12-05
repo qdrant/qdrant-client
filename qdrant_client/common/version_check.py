@@ -1,6 +1,6 @@
 import importlib.metadata
 import logging
-from typing import Union
+from typing import Union, Any
 from collections import namedtuple
 
 from qdrant_client.http import SyncApis, ApiClient
@@ -9,11 +9,11 @@ from qdrant_client.http.models import models
 Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
-def is_server_version_compatible(rest_uri, rest_args):
-    def get_server_info():
+def is_server_version_compatible(rest_uri: str, **kwargs: Any) -> bool:
+    def get_server_info() -> Any:
         openapi_client: SyncApis[ApiClient] = SyncApis(
             host=rest_uri,
-            **rest_args,
+            **kwargs,
         )
         return openapi_client.client.request(
             type_=models.VersionInfo,
@@ -50,7 +50,7 @@ def parse_version(version: str) -> Version:
         ) from er
 
 
-def compare_versions(client_version: str, server_version: str) -> bool:
+def compare_versions(client_version: Union[str, None], server_version: Union[str, None]) -> bool:
     if not client_version or not server_version:
         logging.warning(f"Unable to compare: {client_version} vs {server_version}")
         return False
@@ -59,14 +59,14 @@ def compare_versions(client_version: str, server_version: str) -> bool:
         return True
 
     try:
-        server_version = parse_version(server_version)
-        client_version = parse_version(client_version)
+        parsed_server_version = parse_version(server_version)
+        parsed_client_version = parse_version(client_version)
     except ValueError as er:
         logging.warning(f"Unable to parse version: {er}")
         return False
-    major_dif = abs(server_version.major - client_version.major)
+    major_dif = abs(parsed_server_version.major - parsed_client_version.major)
     if major_dif >= 1:
         return False
     elif major_dif == 0:
-        return abs(server_version.minor - client_version.minor) <= 1
+        return abs(parsed_server_version.minor - parsed_client_version.minor) <= 1
     return False

@@ -159,7 +159,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
         self._grpc_root_client: Optional[grpc.QdrantStub] = None
         self._closed: bool = False
-        if check_version and (not is_server_version_compatible(self.rest_uri, self._rest_args)):
+        if check_version and (not is_server_version_compatible(self.rest_uri, **self._rest_args)):
             warnings.warn(
                 "Qdrant client version may be incompatible with server version. Set check_version=False to skip version check."
             )
