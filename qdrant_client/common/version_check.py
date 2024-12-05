@@ -1,41 +1,32 @@
-import importlib.metadata
 import logging
+import warnings
 from typing import Union, Any
 from collections import namedtuple
 
 from qdrant_client.http import SyncApis, ApiClient
-from qdrant_client.http.models import models
 
 Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
-def is_server_version_compatible(rest_uri: str, **kwargs: Any) -> bool:
-    def get_server_info() -> Any:
+def get_server_version(rest_uri: str, **kwargs: Any) -> Union[str, None]:
+    try:
         openapi_client: SyncApis[ApiClient] = SyncApis(
             host=rest_uri,
             **kwargs,
         )
-        return openapi_client.client.request(
-            type_=models.VersionInfo,
-            method="GET",
-            url="/",
-            headers=None,
-        )
+        version_info = openapi_client.service_api.root()
 
-    def get_server_version() -> Union[str, None]:
         try:
-            version_info = get_server_info()
-        except Exception as er:
-            logging.warning(f"Unable to get server version: {er}, default to None")
-            return None
+            openapi_client.close()
+        except Exception:
+            logging.warning(
+                "Unable to close http connection. Connection was interrupted on the server side"
+            )
 
-        if not version_info:
-            return None
         return version_info.version
-
-    client_version = importlib.metadata.version("qdrant-client")
-    server_version = get_server_version()
-    return compare_versions(client_version, server_version)
+    except Exception as er:
+        warnings.warn(f"Unable to get server version: {er}, default to None")
+        return None
 
 
 def parse_version(version: str) -> Version:
@@ -50,9 +41,15 @@ def parse_version(version: str) -> Version:
         ) from er
 
 
-def compare_versions(client_version: Union[str, None], server_version: Union[str, None]) -> bool:
-    if not client_version or not server_version:
-        logging.warning(f"Unable to compare: {client_version} vs {server_version}")
+def is_versions_compatible(
+    client_version: Union[str, None], server_version: Union[str, None]
+) -> bool:
+    if not client_version:
+        warnings.warn(f"Unable to compare with client version {client_version}")
+        return False
+
+    if not server_version:
+        warnings.warn(f"Unable to compare with server version {server_version}")
         return False
 
     if client_version == server_version:
@@ -62,11 +59,10 @@ def compare_versions(client_version: Union[str, None], server_version: Union[str
         parsed_server_version = parse_version(server_version)
         parsed_client_version = parse_version(client_version)
     except ValueError as er:
-        logging.warning(f"Unable to parse version: {er}")
+        warnings.warn(f"Unable to compare versions: {er}")
         return False
+
     major_dif = abs(parsed_server_version.major - parsed_client_version.major)
     if major_dif >= 1:
         return False
-    elif major_dif == 0:
-        return abs(parsed_server_version.minor - parsed_client_version.minor) <= 1
-    return False
+    return abs(parsed_server_version.minor - parsed_client_version.minor) <= 1

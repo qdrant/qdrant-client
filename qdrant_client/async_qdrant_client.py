@@ -94,7 +94,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
         cloud_inference: bool = False,
-        check_version: Optional[bool] = None,
+        check_compatibility: Optional[bool] = True,
         **kwargs: Any,
     ):
         self._inference_inspector = Inspector()
@@ -133,7 +133,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 host=host,
                 grpc_options=grpc_options,
                 auth_token_provider=auth_token_provider,
-                check_version=check_version,
+                check_compatibility=check_compatibility,
                 **kwargs,
             )
         if isinstance(self._client, AsyncQdrantLocal) and cloud_inference:

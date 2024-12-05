@@ -100,13 +100,13 @@ def test_client_init():
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333"
 
-    client = QdrantClient(":memory:", check_version=True)
+    client = QdrantClient(":memory:", check_compatibility=True)
     assert isinstance(client._client, QdrantLocal)
 
-    client = QdrantClient(check_version=True)
+    client = QdrantClient(check_compatibility=True)
     assert isinstance(client._client, QdrantRemote)
 
-    client = QdrantClient(check_version=True, prefer_grpc=True)
+    client = QdrantClient(check_compatibility=True, prefer_grpc=True)
     assert isinstance(client._client, QdrantRemote)
 
     client = QdrantClient(https=True)
