@@ -98,7 +98,7 @@ async def test_async_grpc():
 async def test_async_qdrant_client(prefer_grpc):
     major, minor, patch, dev = read_version()
 
-    client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=15, check_version=True)
+    client = AsyncQdrantClient(prefer_grpc=prefer_grpc, timeout=15)
     collection_params = dict(
         collection_name=COLLECTION_NAME,
         vectors_config=models.VectorParams(size=10, distance=models.Distance.EUCLID),
