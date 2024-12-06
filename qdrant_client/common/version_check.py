@@ -1,6 +1,6 @@
 import logging
 import warnings
-from typing import Union, Any
+from typing import Union
 from collections import namedtuple
 
 from qdrant_client.http import SyncApis, ApiClient
@@ -8,12 +8,9 @@ from qdrant_client.http import SyncApis, ApiClient
 Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
-def get_server_version(rest_uri: str, **kwargs: Any) -> Union[str, None]:
+def get_server_version(rest_uri: str) -> Union[str, None]:
     try:
-        openapi_client: SyncApis[ApiClient] = SyncApis(
-            host=rest_uri,
-            **kwargs,
-        )
+        openapi_client: SyncApis[ApiClient] = SyncApis(host=rest_uri)
         version_info = openapi_client.service_api.root()
 
         try:
