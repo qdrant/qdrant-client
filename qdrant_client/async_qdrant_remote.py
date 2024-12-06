@@ -161,7 +161,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._closed: bool = False
         if check_compatibility:
             client_version = importlib.metadata.version("qdrant-client")
-            server_version = get_server_version(self.rest_uri, self._rest_headers)
+            server_version = get_server_version(
+                self.rest_uri, self._rest_headers, self._rest_args.get("auth")
+            )
             if not is_versions_compatible(client_version, server_version):
                 warnings.warn(
                     f"Qdrant client version {client_version} is incompatible with server version {server_version}. Major versions should match and minor version difference must not exceed 1. Set check_version=False to skip version check."

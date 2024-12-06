@@ -588,12 +588,13 @@ async def test_async_auth():
         call_num += 1
         return sync_token
 
+    # Additional sync request is sent during client init to check compatibility
     client = AsyncQdrantClient(timeout=3, auth_token_provider=auth_token_provider)
     await client.get_collections()
-    assert sync_token == "token_0"
+    assert sync_token == "token_1"
 
     await client.get_collections()
-    assert sync_token == "token_1"
+    assert sync_token == "token_2"
 
     sync_token = ""
     call_num = 0
@@ -602,13 +603,13 @@ async def test_async_auth():
         prefer_grpc=True, timeout=3, auth_token_provider=auth_token_provider
     )
     await client.get_collections()
-    assert sync_token == "token_0"
-
-    await client.get_collections()
     assert sync_token == "token_1"
 
-    await client.unlock_storage()
+    await client.get_collections()
     assert sync_token == "token_2"
+
+    await client.unlock_storage()
+    assert sync_token == "token_3"
 
 
 @pytest.mark.asyncio
