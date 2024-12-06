@@ -100,13 +100,13 @@ def test_client_init():
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333"
 
-    client = QdrantClient(":memory:", check_compatibility=True)
+    client = QdrantClient(":memory:")
     assert isinstance(client._client, QdrantLocal)
 
-    client = QdrantClient(check_compatibility=True)
+    client = QdrantClient(check_compatibility=False)
     assert isinstance(client._client, QdrantRemote)
 
-    client = QdrantClient(check_compatibility=True, prefer_grpc=True)
+    client = QdrantClient(prefer_grpc=True)
     assert isinstance(client._client, QdrantRemote)
 
     client = QdrantClient(https=True)
@@ -2026,7 +2026,17 @@ def test_auth_token_provider():
         call_num += 1
         return token
 
+    # Additional sync request is sent during client init to check compatibility
     client = QdrantClient(auth_token_provider=auth_token_provider)
+    client.get_collections()
+    assert token == "token_1"
+    client.get_collections()
+    assert token == "token_2"
+
+    token = ""
+    call_num = 0
+
+    client = QdrantClient(check_compatibility=False, auth_token_provider=auth_token_provider)
     client.get_collections()
     assert token == "token_0"
     client.get_collections()
@@ -2035,7 +2045,22 @@ def test_auth_token_provider():
     token = ""
     call_num = 0
 
+    # Additional sync http request is sent during client init to check compatibility
     client = QdrantClient(prefer_grpc=True, auth_token_provider=auth_token_provider)
+    client.get_collections()
+    assert token == "token_1"
+    client.get_collections()
+    assert token == "token_2"
+
+    client.unlock_storage()
+    assert token == "token_3"
+
+    token = ""
+    call_num = 0
+
+    client = QdrantClient(
+        prefer_grpc=True, check_compatibility=False, auth_token_provider=auth_token_provider
+    )
     client.get_collections()
     assert token == "token_0"
     client.get_collections()

@@ -94,7 +94,7 @@ class QdrantClient(QdrantFastembedMixin):
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
         cloud_inference: bool = False,
-        check_compatibility: Optional[bool] = True,
+        check_compatibility: bool = True,
         **kwargs: Any,
     ):
         self._inference_inspector = Inspector()

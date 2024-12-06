@@ -61,7 +61,7 @@ class QdrantRemote(QdrantBase):
         auth_token_provider: Optional[
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
-        check_compatibility: Optional[bool] = True,
+        check_compatibility: bool = True,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)

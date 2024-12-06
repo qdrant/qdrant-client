@@ -13,10 +13,7 @@ def get_server_version(
     rest_uri: str, rest_headers: Dict[str, Any], auth_provider: Union[BearerAuth, None]
 ) -> Union[str, None]:
     try:
-        if auth_provider:
-            response = httpx.get(rest_uri + "/", headers=rest_headers, auth=auth_provider)
-        else:
-            response = httpx.get(rest_uri + "/", headers=rest_headers)
+        response = httpx.get(rest_uri + "/", headers=rest_headers, auth=auth_provider)
     except Exception as er:
         warnings.warn(f"Unable to get server version: {er}, default to None")
         return None
