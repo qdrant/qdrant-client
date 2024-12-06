@@ -1,5 +1,5 @@
 import warnings
-from typing import Union, Dict, Any
+from typing import Any, Optional
 from collections import namedtuple
 
 import httpx
@@ -10,8 +10,8 @@ Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
 def get_server_version(
-    rest_uri: str, rest_headers: Dict[str, Any], auth_provider: Union[BearerAuth, None]
-) -> Union[str, None]:
+    rest_uri: str, rest_headers: dict[str, Any], auth_provider: Optional[BearerAuth]
+) -> Optional[str]:
     try:
         response = httpx.get(rest_uri + "/", headers=rest_headers, auth=auth_provider)
     except Exception as er:
@@ -40,9 +40,7 @@ def parse_version(version: str) -> Version:
         ) from er
 
 
-def is_versions_compatible(
-    client_version: Union[str, None], server_version: Union[str, None]
-) -> bool:
+def is_versions_compatible(client_version: Optional[str], server_version: Optional[str]) -> bool:
     if not client_version:
         warnings.warn(f"Unable to compare with client version {client_version}")
         return False
