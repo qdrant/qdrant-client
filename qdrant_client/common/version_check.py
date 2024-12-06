@@ -1,29 +1,32 @@
-import logging
 import warnings
-from typing import Union
+from typing import Union, Dict, Any
 from collections import namedtuple
 
-from qdrant_client.http import SyncApis, ApiClient
+import httpx
+from pydantic import ValidationError
+
+from qdrant_client.http.api_client import parse_as_type
+from qdrant_client.http.models import models
 
 Version = namedtuple("Version", ["major", "minor", "rest"])
 
 
-def get_server_version(rest_uri: str) -> Union[str, None]:
+def get_server_version(rest_uri: str, rest_headers: Dict[str, Any]) -> Union[str, None]:
     try:
-        openapi_client: SyncApis[ApiClient] = SyncApis(host=rest_uri)
-        version_info = openapi_client.service_api.root()
-
-        try:
-            openapi_client.close()
-        except Exception:
-            logging.warning(
-                "Unable to close http connection. Connection was interrupted on the server side"
-            )
-
-        return version_info.version
+        response = httpx.get(rest_uri + "/", headers=rest_headers)
     except Exception as er:
         warnings.warn(f"Unable to get server version: {er}, default to None")
         return None
+
+    if response.status_code in [200, 201, 202]:
+        try:
+            version_info = parse_as_type(response.json(), models.VersionInfo)
+            return version_info.version
+        except ValidationError as e:
+            warnings.warn(f"Unable to parse response from server: {response}, default to None")
+    else:
+        warnings.warn(f"Unexpected response from server: {response}, default to None")
+    return None
 
 
 def parse_version(version: str) -> Version:
