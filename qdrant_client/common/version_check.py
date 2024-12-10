@@ -1,3 +1,4 @@
+import logging
 import warnings
 from typing import Any, Optional
 from collections import namedtuple
@@ -15,16 +16,20 @@ def get_server_version(
     try:
         response = httpx.get(rest_uri + "/", headers=rest_headers, auth=auth_provider)
     except Exception as er:
-        warnings.warn(f"Unable to get server version: {er}, default to None")
+        logging.debug(f"Unable to get server version: {er}, server version defaults to None")
         return None
 
     if response.status_code == 200:
         version_info = response.json().get("version", None)
         if not version_info:
-            warnings.warn(f"Unable to parse response from server: {response}, default to None")
+            logging.debug(
+                f"Unable to parse response from server: {response}, server version defaults to None"
+            )
         return version_info
     else:
-        warnings.warn(f"Unexpected response from server: {response}, default to None")
+        logging.debug(
+            f"Unexpected response from server: {response}, server version defaults to None"
+        )
     return None
 
 
@@ -40,13 +45,13 @@ def parse_version(version: str) -> Version:
         ) from er
 
 
-def is_versions_compatible(client_version: Optional[str], server_version: Optional[str]) -> bool:
+def is_compatible(client_version: Optional[str], server_version: Optional[str]) -> bool:
     if not client_version:
-        warnings.warn(f"Unable to compare with client version {client_version}")
+        logging.debug(f"Unable to compare with client version {client_version}")
         return False
 
     if not server_version:
-        warnings.warn(f"Unable to compare with server version {server_version}")
+        logging.debug(f"Unable to compare with server version {server_version}")
         return False
 
     if client_version == server_version:
@@ -56,7 +61,7 @@ def is_versions_compatible(client_version: Optional[str], server_version: Option
         parsed_server_version = parse_version(server_version)
         parsed_client_version = parse_version(client_version)
     except ValueError as er:
-        warnings.warn(f"Unable to compare versions: {er}")
+        logging.debug(f"Unable to compare versions: {er}")
         return False
 
     major_dif = abs(parsed_server_version.major - parsed_client_version.major)

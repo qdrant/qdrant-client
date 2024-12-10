@@ -27,7 +27,7 @@ from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.common.version_check import is_versions_compatible, get_server_version
+from qdrant_client.common.version_check import is_compatible, get_server_version
 from qdrant_client.connection import get_async_channel, get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -201,7 +201,11 @@ class QdrantRemote(QdrantBase):
             server_version = get_server_version(
                 self.rest_uri, self._rest_headers, self._rest_args.get("auth")
             )
-            if not is_versions_compatible(client_version, server_version):
+            if not server_version:
+                warnings.warn(
+                    f"Failed to obtain server version. Unable to check client-server compatibility. Set check_version=False to skip version check."
+                )
+            elif not is_compatible(client_version, server_version):
                 warnings.warn(
                     f"Qdrant client version {client_version} is incompatible with server version {server_version}. Major versions should match and minor version difference must not exceed 1. Set check_version=False to skip version check."
                 )

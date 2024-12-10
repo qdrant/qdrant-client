@@ -1,6 +1,6 @@
 import pytest
 
-from qdrant_client.common.version_check import is_versions_compatible, parse_version
+from qdrant_client.common.version_check import is_compatible, parse_version
 
 
 @pytest.mark.parametrize(
@@ -42,7 +42,7 @@ from qdrant_client.common.version_check import is_versions_compatible, parse_ver
 )
 def test_check_versions(client_version, server_version, expected_result):
     assert (
-        is_versions_compatible(client_version=client_version, server_version=server_version)
+        is_compatible(client_version=client_version, server_version=server_version)
         is expected_result
     )
 
