@@ -166,7 +166,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             )
             if not server_version:
                 warnings.warn(
-                    f"Failed to obtain server version. Unable to check compatibility. Set check_version=False to skip version check."
+                    f"Failed to obtain server version. Unable to check client-server compatibility. Set check_version=False to skip version check."
                 )
             elif not is_compatible(client_version, server_version):
                 warnings.warn(
