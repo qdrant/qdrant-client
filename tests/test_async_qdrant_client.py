@@ -588,7 +588,10 @@ async def test_async_auth():
         call_num += 1
         return sync_token
 
-    client = AsyncQdrantClient(timeout=3, auth_token_provider=auth_token_provider)
+    # Additional sync request is sent during client init to check compatibility
+    client = AsyncQdrantClient(
+        timeout=3, check_compatibility=False, auth_token_provider=auth_token_provider
+    )
     await client.get_collections()
     assert sync_token == "token_0"
 
@@ -598,8 +601,29 @@ async def test_async_auth():
     sync_token = ""
     call_num = 0
 
+    def auth_token_provider():
+        nonlocal sync_token
+        nonlocal call_num
+        sync_token = f"token_{call_num}"
+        call_num += 1
+        return sync_token
+
+    # Additional sync request is sent during client init to check compatibility
+    client = AsyncQdrantClient(timeout=3, auth_token_provider=auth_token_provider)
+    await client.get_collections()
+    assert sync_token == "token_1"
+
+    await client.get_collections()
+    assert sync_token == "token_2"
+
+    sync_token = ""
+    call_num = 0
+
     client = AsyncQdrantClient(
-        prefer_grpc=True, timeout=3, auth_token_provider=auth_token_provider
+        prefer_grpc=True,
+        timeout=3,
+        check_compatibility=False,
+        auth_token_provider=auth_token_provider,
     )
     await client.get_collections()
     assert sync_token == "token_0"
