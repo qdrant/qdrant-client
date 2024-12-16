@@ -12,7 +12,6 @@
 import importlib.metadata
 import itertools
 import json
-import logging
 import os
 import shutil
 from copy import deepcopy
@@ -21,7 +20,7 @@ from typing import Any, Generator, Iterable, Mapping, Optional, Sequence, Union,
 from uuid import uuid4
 import numpy as np
 import portalocker
-from qdrant_client.common.client_warnings import show_warning_once
+from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.conversions import common_types as types
@@ -77,8 +76,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             if collection is not None:
                 collection.close()
             else:
-                logging.warning(
-                    f"Collection appears to be None before closing. The existing collections are: {list(self.collections.keys())}"
+                show_warning(
+                    message=f"Collection appears to be None before closing. The existing collections are: {list(self.collections.keys())}",
+                    category=UserWarning,
+                    stacklevel=1,
                 )
         try:
             if self._flock_file is not None and (not self._flock_file.closed):
@@ -112,6 +113,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                             f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Collection <{collection_name}> contains {len(collection.ids)} points. Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
                             category=UserWarning,
                             idx="large-local-collection",
+                            stacklevel=4,
                         )
                 self.aliases = meta["aliases"]
         lock_file_path = os.path.join(self.location, ".lock")
@@ -1044,16 +1046,22 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         field_type: Optional[types.PayloadSchemaType] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
-        logging.warning(
-            "Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes."
+        show_warning_once(
+            message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
+            category=UserWarning,
+            idx="server-payload-indexes",
+            stacklevel=1,
         )
         return self._default_update_result()
 
     async def delete_payload_index(
         self, collection_name: str, field_name: str, **kwargs: Any
     ) -> types.UpdateResult:
-        logging.warning(
-            "Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes."
+        show_warning_once(
+            message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
+            category=UserWarning,
+            idx="server-payload-indexes",
+            stacklevel=1,
         )
         return self._default_update_result()
 

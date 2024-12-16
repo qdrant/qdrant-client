@@ -8,6 +8,7 @@ import numpy as np
 from qdrant_client.http import SyncApis
 from qdrant_client.http.models import Batch, PointsList, PointStruct, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
+from qdrant_client.common.client_warnings import show_warning
 
 
 def upload_batch(
@@ -41,7 +42,11 @@ def upload_batch(
             )
             break
         except Exception as e:
-            logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
+            show_warning(
+                message=f"Batch upload failed {attempt + 1} times. Retrying...",
+                category=UserWarning,
+                stacklevel=1,
+            )
 
             if attempt == max_retries - 1:
                 raise e

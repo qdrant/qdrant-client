@@ -4,12 +4,15 @@ from typing import Optional
 SEEN_MESSAGES = set()
 
 
-def show_warning(message: str, category: type[Warning] = UserWarning) -> None:
-    warnings.warn(message, category, stacklevel=4)
+def show_warning(message: str, category: type[Warning] = UserWarning, stacklevel: int = 1) -> None:
+    warnings.warn(message, category, stacklevel=stacklevel)
 
 
 def show_warning_once(
-    message: str, category: type[Warning] = UserWarning, idx: Optional[str] = None
+    message: str,
+    category: type[Warning] = UserWarning,
+    idx: Optional[str] = None,
+    stacklevel: int = 1,
 ) -> None:
     """
     Show a warning of the specified category only once per program run.
@@ -18,4 +21,4 @@ def show_warning_once(
 
     if key not in SEEN_MESSAGES:
         SEEN_MESSAGES.add(key)
-        show_warning(message, category)
+        show_warning(message, category, stacklevel)

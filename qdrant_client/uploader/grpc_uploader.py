@@ -9,6 +9,7 @@ from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
 from qdrant_client.grpc import PointId, PointsStub, PointStruct
 from qdrant_client.http.models import Batch, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
+from qdrant_client.common.client_warnings import show_warning
 
 
 def upload_batch_grpc(
@@ -49,7 +50,11 @@ def upload_batch_grpc(
             )
             break
         except Exception as e:
-            logging.warning(f"Batch upload failed {attempt + 1} times. Retrying...")
+            show_warning(
+                message=f"Batch upload failed {attempt + 1} times. Retrying...",
+                category=UserWarning,
+                stacklevel=1,
+            )
 
             if attempt == max_retries - 1:
                 raise e
