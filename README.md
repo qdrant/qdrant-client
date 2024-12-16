@@ -289,7 +289,6 @@ asyncio.run(main())
 ```
 
 Both, gRPC and REST API are supported in async mode.
-More examples can be found [here](./tests/test_async_qdrant_client.py).
 
 ### Development
 

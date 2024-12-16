@@ -94,9 +94,6 @@ if __name__ == "__main__":
         exclude_methods=[
             "__del__",
             "migrate",
-            "async_grpc_collections",
-            "async_grpc_points",
-            "async_grpc_root",
         ],
     )
 
