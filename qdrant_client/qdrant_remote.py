@@ -2,7 +2,6 @@ import importlib.metadata
 import logging
 import math
 import platform
-import warnings
 from multiprocessing import get_all_start_methods
 from typing import (
     Any,

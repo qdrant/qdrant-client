@@ -1,5 +1,4 @@
 import uuid
-import warnings
 from itertools import tee
 from typing import Any, Iterable, Optional, Sequence, Union, get_args
 from copy import deepcopy
