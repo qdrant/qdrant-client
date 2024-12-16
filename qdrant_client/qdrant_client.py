@@ -71,6 +71,7 @@ class QdrantClient(QdrantFastembedMixin):
             For QdrantLocal, force disable check_same_thread. Default: `False`
             Only use this if you can guarantee that you can resolve the thread safety outside QdrantClient.
         auth_token_provider: Callback function to get Bearer access token. If given, the function will be called before each request to get the token.
+        check_compatibility: If `true` - check compatibility with the server version. Default: `true`
         **kwargs: Additional arguments passed directly into REST client initialization
 
     """
