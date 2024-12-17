@@ -271,21 +271,6 @@ class QdrantRemote(QdrantBase):
                 auth_token_provider=self._auth_token_provider,  # type: ignore
             )
 
-    def _init_async_grpc_channel(self) -> None:
-        if self._closed:
-            raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
-
-        if self._aio_grpc_channel is None:
-            self._aio_grpc_channel = get_async_channel(
-                host=self._host,
-                port=self._grpc_port,
-                ssl=self._https,
-                metadata=self._grpc_headers,
-                options=self._grpc_options,
-                compression=self._grpc_compression,
-                auth_token_provider=self._auth_token_provider,
-            )
-
     def _init_grpc_points_client(self) -> None:
         self._init_grpc_channel()
         self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
@@ -302,75 +287,6 @@ class QdrantRemote(QdrantBase):
         self._init_grpc_channel()
         self._grpc_root_client = grpc.QdrantStub(self._grpc_channel)
 
-    def _init_async_grpc_points_client(self) -> None:
-        self._init_async_grpc_channel()
-        self._aio_grpc_points_client = grpc.PointsStub(self._aio_grpc_channel)
-
-    def _init_async_grpc_collections_client(self) -> None:
-        self._init_async_grpc_channel()
-        self._aio_grpc_collections_client = grpc.CollectionsStub(self._aio_grpc_channel)
-
-    def _init_async_grpc_snapshots_client(self) -> None:
-        self._init_async_grpc_channel()
-        self._aio_grpc_snapshots_client = grpc.SnapshotsStub(self._aio_grpc_channel)
-
-    def _init_async_grpc_root_client(self) -> None:
-        self._init_async_grpc_channel()
-        self._aio_grpc_root_client = grpc.QdrantStub(self._aio_grpc_channel)
-
-    @property
-    def async_grpc_collections(self) -> grpc.CollectionsStub:
-        """gRPC client for collections methods
-
-        Returns:
-            An instance of raw gRPC client, generated from Protobuf
-        """
-        if self._aio_grpc_collections_client is None:
-            self._init_async_grpc_collections_client()
-        return self._aio_grpc_collections_client
-
-    @property
-    def async_grpc_points(self) -> grpc.PointsStub:
-        """gRPC client for points methods
-
-        Returns:
-            An instance of raw gRPC client, generated from Protobuf
-        """
-        if self._aio_grpc_points_client is None:
-            self._init_async_grpc_points_client()
-        return self._aio_grpc_points_client
-
-    @property
-    def async_grpc_snapshots(self) -> grpc.SnapshotsStub:
-        """gRPC client for snapshots methods
-
-        Returns:
-            An instance of raw gRPC client, generated from Protobuf
-        """
-        warnings.warn(
-            "async_grpc_snapshots is deprecated and will be removed in a future release. Use `AsyncQdrantRemote.grpc_snapshots` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if self._aio_grpc_snapshots_client is None:
-            self._init_async_grpc_snapshots_client()
-        return self._aio_grpc_snapshots_client
-
-    @property
-    def async_grpc_root(self) -> grpc.QdrantStub:
-        """gRPC client for info methods
-
-        Returns:
-            An instance of raw gRPC client, generated from Protobuf
-        """
-        warnings.warn(
-            "async_grpc_root is deprecated and will be removed in a future release. Use `AsyncQdrantRemote.grpc_root` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if self._aio_grpc_root_client is None:
-            self._init_async_grpc_root_client()
-        return self._aio_grpc_root_client
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:

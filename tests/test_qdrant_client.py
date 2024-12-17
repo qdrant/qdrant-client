@@ -1888,24 +1888,6 @@ def test_client_close():
         RuntimeError
     ):  # prevent initializing grpc connection, since http connection is closed
         _ = client_grpc_do_nothing.get_collection("test")
-
-    client_aio_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
-    _ = client_aio_grpc.async_grpc_collections
-    client_aio_grpc.close()
-
-    client_aio_grpc = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
-    _ = client_aio_grpc.async_grpc_collections
-    client_aio_grpc.close(grace=2.0)
-    with pytest.raises(RuntimeError):
-        client_aio_grpc._client._init_async_grpc_channel()  # prevent reinitializing grpc connection, since
-        # http connection is closed
-
-    client_aio_grpc_do_nothing = QdrantClient(prefer_grpc=True, timeout=TIMEOUT)
-    client_aio_grpc_do_nothing.close()
-    with pytest.raises(
-        RuntimeError
-    ):  # prevent initializing grpc connection, since http connection is closed
-        _ = client_aio_grpc_do_nothing.async_grpc_collections
     # endregion grpc
 
     # region local
