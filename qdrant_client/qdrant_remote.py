@@ -1,4 +1,3 @@
-import asyncio
 import importlib.metadata
 import logging
 import math
@@ -28,7 +27,7 @@ from qdrant_client._pydantic_compat import construct
 from qdrant_client.auth import BearerAuth
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.version_check import is_compatible, get_server_version
-from qdrant_client.connection import get_async_channel, get_channel
+from qdrant_client.connection import get_channel
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.conversions.conversion import (
@@ -188,7 +187,6 @@ class QdrantRemote(QdrantBase):
         self._grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
         self._grpc_root_client: Optional[grpc.QdrantStub] = None
 
-        self._aio_grpc_channel = None
         self._aio_grpc_points_client: Optional[grpc.PointsStub] = None
         self._aio_grpc_collections_client: Optional[grpc.CollectionsStub] = None
         self._aio_grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
@@ -222,17 +220,6 @@ class QdrantRemote(QdrantBase):
                 logging.warning(
                     "Unable to close grpc_channel. Connection was interrupted on the server side"
                 )
-
-        if hasattr(self, "_aio_grpc_channel") and self._aio_grpc_channel is not None:
-            try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(self._aio_grpc_channel.close(grace=grpc_grace))
-            except AttributeError:
-                logging.warning(
-                    "Unable to close aio_grpc_channel. Connection was interrupted on the server side"
-                )
-            except RuntimeError:
-                pass
 
         try:
             self.openapi_client.close()

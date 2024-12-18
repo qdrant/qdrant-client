@@ -2051,36 +2051,6 @@ def test_auth_token_provider():
     client.unlock_storage()
     assert token == "token_2"
 
-
-def test_async_auth_token_provider():
-    """Check that initialization fails if async auth_token_provider is provided to sync client."""
-    token = ""
-
-    async def auth_token_provider():
-        nonlocal token
-        await asyncio.sleep(0.1)
-        token = "test_token"
-        return token
-
-    client = QdrantClient(auth_token_provider=auth_token_provider)
-
-    with pytest.raises(
-        qdrant_client.http.exceptions.ResponseHandlingException,
-        match="Synchronous token provider is not set.",
-    ):
-        client.get_collections()
-
-    assert token == ""
-
-    client = QdrantClient(auth_token_provider=auth_token_provider, prefer_grpc=True)
-    with pytest.raises(
-        ValueError, match="Synchronous channel requires synchronous auth token provider."
-    ):
-        client.get_collections()
-
-    assert token == ""
-
-
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_read_consistency(prefer_grpc):
     fixture_points = generate_fixtures(vectors_sizes=DIM, num=NUM_VECTORS)
