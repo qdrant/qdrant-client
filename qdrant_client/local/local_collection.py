@@ -2195,7 +2195,7 @@ class LocalCollection:
                 "Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
                 category=UserWarning,
                 idx="large-local-collection",
-                stacklevel=4,
+                stacklevel=6,
             )
 
     def _update_named_vectors(

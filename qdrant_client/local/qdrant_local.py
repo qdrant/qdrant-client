@@ -81,7 +81,7 @@ class QdrantLocal(QdrantBase):
                     message=f"Collection appears to be None before closing. The existing collections are: "
                     f"{list(self.collections.keys())}",
                     category=UserWarning,
-                    stacklevel=1,
+                    stacklevel=5,
                 )
 
         try:
@@ -121,7 +121,7 @@ class QdrantLocal(QdrantBase):
                             "with large datasets.",
                             category=UserWarning,
                             idx="large-local-collection",
-                            stacklevel=4,
+                            stacklevel=6,
                         )
                 self.aliases = meta["aliases"]
 
@@ -1140,7 +1140,7 @@ class QdrantLocal(QdrantBase):
             message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
             category=UserWarning,
             idx="server-payload-indexes",
-            stacklevel=1,
+            stacklevel=5,
         )
         return self._default_update_result()
 
@@ -1151,7 +1151,7 @@ class QdrantLocal(QdrantBase):
             message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
             category=UserWarning,
             idx="server-payload-indexes",
-            stacklevel=1,
+            stacklevel=5,
         )
         return self._default_update_result()
 

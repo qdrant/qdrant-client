@@ -132,7 +132,7 @@ class QdrantRemote(QdrantBase):
                 show_warning(
                     message="Api key is used with an insecure connection.",
                     category=RuntimeWarning,
-                    stacklevel=2,
+                    stacklevel=4,
                 )
 
             # http2 = True
@@ -178,7 +178,7 @@ class QdrantRemote(QdrantBase):
                 show_warning(
                     message="Auth token provider is used with an insecure connection.",
                     category=RuntimeWarning,
-                    stacklevel=2,
+                    stacklevel=4,
                 )
 
             bearer_auth = BearerAuth(self._auth_token_provider)
@@ -228,7 +228,7 @@ class QdrantRemote(QdrantBase):
                 show_warning(
                     message="Unable to close grpc_channel. Connection was interrupted on the server side",
                     category=RuntimeWarning,
-                    stacklevel=2,
+                    stacklevel=4,
                 )
 
         try:
@@ -237,7 +237,7 @@ class QdrantRemote(QdrantBase):
             show_warning(
                 message="Unable to close http connection. Connection was interrupted on the server side",
                 category=RuntimeWarning,
-                stacklevel=2,
+                stacklevel=4,
             )
 
         self._closed = True
@@ -2697,7 +2697,7 @@ class QdrantRemote(QdrantBase):
     ) -> bool:
         if init_from is not None:
             show_warning(
-                message="init_from is deprecated", category=DeprecationWarning, stacklevel=2
+                message="init_from is deprecated", category=DeprecationWarning, stacklevel=4
             )
 
         if self._prefer_grpc:
@@ -2981,7 +2981,7 @@ class QdrantRemote(QdrantBase):
             show_warning(
                 message="field_type is deprecated, use field_schema instead",
                 category=DeprecationWarning,
-                stacklevel=2,
+                stacklevel=4,
             )
             field_schema = field_type
 
