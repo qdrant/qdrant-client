@@ -120,7 +120,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 show_warning(
                     message="Api key is used with an insecure connection.",
                     category=RuntimeWarning,
-                    stacklevel=2,
+                    stacklevel=4,
                 )
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
@@ -154,7 +154,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 show_warning(
                     message="Auth token provider is used with an insecure connection.",
                     category=RuntimeWarning,
-                    stacklevel=2,
+                    stacklevel=4,
                 )
             bearer_auth = BearerAuth(self._auth_token_provider)
             self._rest_args["auth"] = bearer_auth
@@ -2440,7 +2440,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     ) -> bool:
         if init_from is not None:
             show_warning(
-                message="init_from is deprecated", category=DeprecationWarning, stacklevel=2
+                message="init_from is deprecated", category=DeprecationWarning, stacklevel=4
             )
         if self._prefer_grpc:
             if isinstance(vectors_config, (models.VectorParams, dict)):
@@ -2700,7 +2700,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             show_warning(
                 message="field_type is deprecated, use field_schema instead",
                 category=DeprecationWarning,
-                stacklevel=2,
+                stacklevel=4,
             )
             field_schema = field_type
         if self._prefer_grpc:
