@@ -1502,6 +1502,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 message="\n            Usage of `grpc.PointStruct` is deprecated. Please use `models.PointStruct` instead.\n            ",
                 category=DeprecationWarning,
                 idx="grpc-input",
+                stacklevel=4,
             )
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and (not self.cloud_inference):

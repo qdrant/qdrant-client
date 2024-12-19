@@ -31,6 +31,7 @@ import httpx
 import numpy as np
 from grpc import Compression
 from urllib3.util import Url, parse_url
+from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client import grpc as grpc
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.auth import BearerAuth
@@ -117,7 +118,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._rest_headers = kwargs.pop("metadata", {})
         if api_key is not None:
             if self._scheme == "http":
-                warnings.warn("Api key is used with an insecure connection.")
+                show_warning(
+                    message="Api key is used with an insecure connection.",
+                    category=RuntimeWarning,
+                    stacklevel=4,
+                )
             self._rest_headers["api-key"] = api_key
             self._grpc_headers.append(("api-key", api_key))
         client_version = importlib.metadata.version("qdrant-client")
@@ -147,7 +152,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             self._timeout = self.DEFAULT_GRPC_TIMEOUT
         if self._auth_token_provider is not None:
             if self._scheme == "http":
-                warnings.warn("Auth token provider is used with an insecure connection.")
+                show_warning(
+                    message="Auth token provider is used with an insecure connection.",
+                    category=RuntimeWarning,
+                    stacklevel=4,
+                )
             bearer_auth = BearerAuth(self._auth_token_provider)
             self._rest_args["auth"] = bearer_auth
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
@@ -367,8 +376,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> list[types.ScoredPoint]:
         if not append_payload:
-            logging.warning(
-                "Usage of `append_payload` is deprecated. Please consider using `with_payload` instead"
+            show_warning_once(
+                message="Usage of `append_payload` is deprecated. Please consider using `with_payload` instead",
+                category=DeprecationWarning,
+                stacklevel=2,
+                idx="search-append-payload",
             )
             with_payload = append_payload
         if isinstance(query_vector, np.ndarray):
@@ -2429,7 +2441,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> bool:
         if init_from is not None:
-            logging.warning("init_from is deprecated")
+            show_warning_once(
+                message="init_from is deprecated",
+                category=DeprecationWarning,
+                stacklevel=4,
+                idx="create-collection-inint-from",
+            )
         if self._prefer_grpc:
             if isinstance(vectors_config, (models.VectorParams, dict)):
                 vectors_config = RestToGrpc.convert_vectors_config(vectors_config)
@@ -2685,7 +2702,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if field_type is not None:
-            warnings.warn("field_type is deprecated, use field_schema instead", DeprecationWarning)
+            show_warning_once(
+                message="field_type is deprecated, use field_schema instead",
+                category=DeprecationWarning,
+                stacklevel=4,
+                idx="payload-index-field-type",
+            )
             field_schema = field_type
         if self._prefer_grpc:
             field_index_params = None

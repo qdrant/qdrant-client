@@ -1587,6 +1587,7 @@ class QdrantClient(QdrantFastembedMixin):
             """,
                 category=DeprecationWarning,
                 idx="grpc-input",
+                stacklevel=4,
             )
 
         requires_inference = self._inference_inspector.inspect(points)
