@@ -181,6 +181,7 @@ Insert vectors into a collection
 
 ```python
 import numpy as np
+
 from qdrant_client.models import PointStruct
 
 vectors = np.random.rand(100, 100)
@@ -204,9 +205,9 @@ Search for similar vectors
 
 ```python
 query_vector = np.random.rand(100)
-hits = client.search(
+hits = client.query_points(
     collection_name="my_collection",
-    query_vector=query_vector,
+    query=query_vector,
     limit=5  # Return 5 closest points
 )
 ```
@@ -216,9 +217,9 @@ Search for similar vectors with filtering condition
 ```python
 from qdrant_client.models import Filter, FieldCondition, Range
 
-hits = client.search(
+hits = client.query_points(
     collection_name="my_collection",
-    query_vector=query_vector,
+    query=query_vector,
     query_filter=Filter(
         must=[  # These conditions are required for search results
             FieldCondition(
@@ -253,9 +254,12 @@ Starting from version 1.6.1, all python client methods are available in async ve
 To use it, just import `AsyncQdrantClient` instead of `QdrantClient`:
 
 ```python
-from qdrant_client import AsyncQdrantClient, models
-import numpy as np
 import asyncio
+
+import numpy as np
+
+from qdrant_client import AsyncQdrantClient, models
+
 
 async def main():
     # Your async code using QdrantClient might be put here
@@ -277,9 +281,9 @@ async def main():
         ],
     )
 
-    res = await client.search(
+    res = await client.query_points(
         collection_name="my_collection",
-        query_vector=np.random.rand(10).tolist(),  # type: ignore
+        query=np.random.rand(10).tolist(),  # type: ignore
         limit=10,
     )
 
@@ -296,5 +300,3 @@ More examples can be found [here](./tests/test_async_qdrant_client.py).
 This project uses git hooks to run code formatters.
 
 Install `pre-commit` with `pip3 install pre-commit` and set up hooks with `pre-commit install`.
-
-> pre-commit requires python>=3.8
