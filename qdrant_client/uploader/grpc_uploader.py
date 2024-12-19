@@ -53,7 +53,7 @@ def upload_batch_grpc(
             show_warning(
                 message=f"Batch upload failed {attempt + 1} times. Retrying...",
                 category=UserWarning,
-                stacklevel=1,
+                stacklevel=8,
             )
 
             if attempt == max_retries - 1:

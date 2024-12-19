@@ -4,7 +4,7 @@ from typing import Optional
 SEEN_MESSAGES = set()
 
 
-def show_warning(message: str, category: type[Warning] = UserWarning, stacklevel: int = 1) -> None:
+def show_warning(message: str, category: type[Warning] = UserWarning, stacklevel: int = 2) -> None:
     warnings.warn(message, category, stacklevel=stacklevel)
 
 

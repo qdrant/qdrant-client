@@ -1049,7 +1049,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         show_warning_once(
             message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
             category=UserWarning,
-            idx="server-payload-indexes",
+            idx="create-local-payload-indexes",
             stacklevel=5,
         )
         return self._default_update_result()
@@ -1060,7 +1060,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         show_warning_once(
             message="Payload indexes have no effect in the local Qdrant. Please use server Qdrant if you need payload indexes.",
             category=UserWarning,
-            idx="server-payload-indexes",
+            idx="delete-local-payload-indexes",
             stacklevel=5,
         )
         return self._default_update_result()

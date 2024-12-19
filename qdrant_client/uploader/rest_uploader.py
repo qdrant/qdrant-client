@@ -45,7 +45,7 @@ def upload_batch(
             show_warning(
                 message=f"Batch upload failed {attempt + 1} times. Retrying...",
                 category=UserWarning,
-                stacklevel=1,
+                stacklevel=7,
             )
 
             if attempt == max_retries - 1:
