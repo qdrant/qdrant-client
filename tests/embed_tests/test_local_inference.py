@@ -221,6 +221,112 @@ def test_upsert(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_upload(prefer_grpc):
+    def recreate_collection(client, collection_name):
+        if client.collection_exists(collection_name):
+            client.delete_collection(collection_name)
+        vector_params = models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE)
+        client.create_collection(collection_name, vectors_config=vector_params)
+
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+
+    dense_doc_1 = models.Document(text="hello world", model=DENSE_MODEL_NAME)
+    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
+    dense_doc_3 = models.Document(text="world world", model=DENSE_MODEL_NAME)
+
+    points = [
+        models.PointStruct(id=1, vector=dense_doc_1),
+        models.PointStruct(id=2, vector=dense_doc_2),
+        models.PointStruct(id=3, vector=dense_doc_3),
+    ]
+
+    recreate_collection(local_client, COLLECTION_NAME)
+    recreate_collection(remote_client, COLLECTION_NAME)
+
+    local_client.upload_points(COLLECTION_NAME, points)
+    remote_client.upload_points(COLLECTION_NAME, points)
+
+    assert local_client.count(COLLECTION_NAME).count == len(points)
+    assert isinstance(
+        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector, list
+    )  # assert doc
+    # has been substituted with its embedding
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    recreate_collection(local_client, COLLECTION_NAME)
+    recreate_collection(remote_client, COLLECTION_NAME)
+
+    vectors = [dense_doc_1, dense_doc_2, dense_doc_3]
+    ids = list(range(len(vectors)))
+    local_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors)
+    remote_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors)
+
+    assert local_client.count(COLLECTION_NAME).count == len(points)
+    assert isinstance(
+        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector, list
+    )  # assert doc
+    # has been substituted with its embedding
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    recreate_collection(local_client, COLLECTION_NAME)
+    recreate_collection(remote_client, COLLECTION_NAME)
+
+    local_client.upload_points(COLLECTION_NAME, points, parallel=2)
+    remote_client.upload_points(COLLECTION_NAME, points, parallel=2)
+
+    assert local_client.count(COLLECTION_NAME).count == len(points)
+    assert isinstance(
+        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector, list
+    )  # assert doc
+    # has been substituted with its embedding
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    recreate_collection(local_client, COLLECTION_NAME)
+    recreate_collection(remote_client, COLLECTION_NAME)
+
+    local_client.upload_collection(
+        COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2
+    )
+    remote_client.upload_collection(
+        COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2
+    )
+
+    assert local_client.count(COLLECTION_NAME).count == len(points)
+    assert isinstance(
+        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector, list
+    )  # assert doc
+    # has been substituted with its embedding
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_batch_update_points(prefer_grpc):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:

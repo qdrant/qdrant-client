@@ -20,6 +20,7 @@ from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 from qdrant_client import grpc
+from qdrant_client.uploader.uploader import iter_batch
 
 try:
     from fastembed import (
@@ -928,38 +929,50 @@ class QdrantFastembedMixin(QdrantBase):
         """
         return [self._resolve_query_request(query) for query in requests]
 
-    def _embed_models(
-        self, raw_models: Union[BaseModel, Sequence[BaseModel]], is_query: bool = False
-    ) -> Union[BaseModel, NumericVector, list[BaseModel]]:
+    def _embed_model(
+        self, raw_model: BaseModel, is_query: bool = False
+    ) -> Union[BaseModel, NumericVector]:
+        """Embed raw data fields in a model and return a model with vectors
+
+        If any of model fields required inference, a deepcopy of a model with computed embeddings is returned,
+        otherwise returns original models.
+        Args:
+            raw_model: BaseModel - model which can contain fields with raw data
+            is_query: bool - flag to determine which embed method to use. Defaults to False.
+        Returns:
+            list[BaseModel]: models with embedded fields
+        """
+        self._process_model(raw_model, is_query=is_query, accumulating=True)
+        if not self._batch_accumulator:
+            return raw_model
+        return self._process_model(raw_model, is_query=is_query, accumulating=False)
+
+    def _lazy_embed_models(
+        self, raw_models: Iterable[BaseModel], is_query: bool = False, batch_size: int = 32
+    ) -> Iterable[BaseModel]:
         """Embed raw data fields in models and return models with vectors
 
             If any of model fields required inference, a deepcopy of a model with computed embeddings is returned,
             otherwise returns original models.
         Args:
-            raw_models: Union[BaseModel, Sequence[BaseModel]] - models which can contain fields with raw data
+            raw_models: Iterable[BaseModel] - models which can contain fields with raw data
             is_query: bool - flag to determine which embed method to use. Defaults to False.
-
+            batch_size: int - batch size for inference
         Returns:
-            Union[BaseModel, NumericVector, list[BaseModel]]: models with embedded fields
+            list[BaseModel]: models with embedded fields
         """
-        if isinstance(raw_models, list):
-            for raw_model in raw_models:
-                self._embed_model(raw_model, is_query=is_query, accumulating=True)
-        else:
-            self._embed_model(raw_models, is_query=is_query, accumulating=True)
 
-        if not self._batch_accumulator:
-            return raw_models
+        for raw_models_batch in iter_batch(raw_models, batch_size):
+            for raw_model in raw_models_batch:
+                self._process_model(raw_model, is_query=is_query, accumulating=True)
+            if not self._batch_accumulator:
+                yield from raw_models
+            yield from (
+                self._process_model(raw_model, is_query=is_query, accumulating=False)
+                for raw_model in raw_models_batch
+            )
 
-        if isinstance(raw_models, list):
-            return [
-                self._embed_model(raw_model, is_query=is_query, accumulating=False)
-                for raw_model in raw_models
-            ]
-
-        return self._embed_model(raw_models, is_query=is_query, accumulating=False)
-
-    def _embed_model(
+    def _process_model(
         self,
         model: BaseModel,
         paths: Optional[list[FieldPath]] = None,
@@ -994,7 +1007,7 @@ class QdrantFastembedMixin(QdrantBase):
                 if current_model is None:
                     continue
                 if path.tail:
-                    self._embed_model(
+                    self._process_model(
                         current_model, path.tail, is_query=is_query, accumulating=accumulating
                     )
                 else:
