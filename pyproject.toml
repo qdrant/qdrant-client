@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qdrant-client"
-version = "1.12.1"
+version = "1.12.2"
 description = "Client library for the Qdrant vector search engine"
 authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
@@ -16,9 +16,10 @@ keywords = ["vector", "search", "neural", "matching", "client"]
 python = ">=3.8"
 httpx = { version = ">=0.20.0", extras = ["http2"] }
 numpy = [
-    { version = "<1.21", python = "<3.8" },
-    { version = ">=1.21", python = ">=3.8,<3.12" },
-    { version = ">=1.26", python = ">=3.12" }
+    { version = ">=1.21,<2.1.0", python = "<3.10" },
+    { version = ">=1.21", python = ">=3.10,<3.12" },
+    { version = ">=1.26", python = ">=3.12,<3.13" },
+    { version = ">=2.1.0", python = ">=3.13" }
 ]
 pydantic = ">=1.10.8"
 grpcio = { version = ">=1.41.0", allow-prereleases = true }
@@ -26,10 +27,12 @@ grpcio-tools = ">=1.41.0"
 urllib3 = ">=1.26.14,<3"
 portalocker = "^2.7.0"
 fastembed = [
-    { version = "0.3.6", optional = true, python = "<3.13" }
+    { version = "0.5.0", optional = true, python = ">=3.9" },
+    { version = "0.4.2", optional = true, python = ">=3.8,<3.9"}
 ]
 fastembed-gpu = [
-    { version = "0.3.6", optional = true, python = "<3.13" }
+    { version = "0.5.0", optional = true, python = ">=3.9" },
+    { version = "0.4.2", optional = true, python = ">=3.8,<3.9"}
 ]
 
 [tool.poetry.group.dev.dependencies]
