@@ -879,10 +879,11 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 self._process_model(raw_model, is_query=is_query, accumulating=True)
             if not self._batch_accumulator:
                 yield from raw_models
-            yield from (
-                self._process_model(raw_model, is_query=is_query, accumulating=False)
-                for raw_model in raw_models_batch
-            )
+            else:
+                yield from (
+                    self._process_model(raw_model, is_query=is_query, accumulating=False)
+                    for raw_model in raw_models_batch
+                )
 
     def _process_model(
         self,

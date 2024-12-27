@@ -948,7 +948,10 @@ class QdrantFastembedMixin(QdrantBase):
         return self._process_model(raw_model, is_query=is_query, accumulating=False)
 
     def _lazy_embed_models(
-        self, raw_models: Iterable[BaseModel], is_query: bool = False, batch_size: int = 32
+        self,
+        raw_models: Iterable[BaseModel],
+        is_query: bool = False,
+        batch_size: int = 32,
     ) -> Iterable[BaseModel]:
         """Embed raw data fields in models and return models with vectors
 
@@ -967,10 +970,11 @@ class QdrantFastembedMixin(QdrantBase):
                 self._process_model(raw_model, is_query=is_query, accumulating=True)
             if not self._batch_accumulator:
                 yield from raw_models
-            yield from (
-                self._process_model(raw_model, is_query=is_query, accumulating=False)
-                for raw_model in raw_models_batch
-            )
+            else:
+                yield from (
+                    self._process_model(raw_model, is_query=is_query, accumulating=False)
+                    for raw_model in raw_models_batch
+                )
 
     def _process_model(
         self,
