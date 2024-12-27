@@ -11,7 +11,7 @@ function stop_docker()
 # Ensure current path is project root
 cd "$(dirname "$0")/../"
 
-QDRANT_LATEST="v1.12.1"
+QDRANT_LATEST="v1.12.5"
 QDRANT_VERSION=${QDRANT_VERSION:-"$QDRANT_LATEST"}
 IGNORE_CONGRUENCE_TESTS=${IGNORE_CONGRUENCE_TESTS:-"false"}
 REST_PORT="6333"
