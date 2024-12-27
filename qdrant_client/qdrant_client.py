@@ -193,40 +193,6 @@ class QdrantClient(QdrantFastembedMixin):
         raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
 
     @property
-    def async_grpc_points(self) -> grpc.PointsStub:
-        """gRPC client for points methods
-
-        Returns:
-            An instance of raw gRPC client, generated from Protobuf
-        """
-        warnings.warn(
-            "async_grpc_points is deprecated and will be removed in a future release. Use `AsyncQdrantRemote.grpc_points` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if isinstance(self._client, QdrantRemote):
-            return self._client.async_grpc_points
-
-        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
-
-    @property
-    def async_grpc_collections(self) -> grpc.CollectionsStub:
-        """gRPC client for collections methods
-
-        Returns:
-            An instance of raw gRPC client, generated from Protobuf
-        """
-        warnings.warn(
-            "async_grpc_collections is deprecated and will be removed in a future release. Use `AsyncQdrantRemote.grpc_collections` instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if isinstance(self._client, QdrantRemote):
-            return self._client.async_grpc_collections
-
-        raise NotImplementedError(f"gRPC client is not supported for {type(self._client)}")
-
-    @property
     def rest(self) -> SyncApis[ApiClient]:
         """REST Client
 

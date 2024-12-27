@@ -18,8 +18,8 @@ class RemoteImportFromTransformer(ast.NodeTransformer):
             if hasattr(alias, "name"):
                 for old_value, new_value in self.import_replace_map.items():
                     alias.name = alias.name.replace(old_value, new_value)
-                if alias.name == "get_async_channel":
+                if alias.name == "get_channel":
+                    alias.name = "get_async_channel"
                     alias.asname = "get_channel"
-        node.names = [alias for alias in node.names if alias.name != "get_channel"]
 
         return self.generic_visit(node)
