@@ -13,7 +13,6 @@ import importlib.metadata
 import logging
 import math
 import platform
-import warnings
 from multiprocessing import get_all_start_methods
 from typing import (
     Any,
@@ -375,11 +374,11 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> list[types.ScoredPoint]:
-        if not append_payload:
+        if append_payload is not None:
             show_warning_once(
                 message="Usage of `append_payload` is deprecated. Please consider using `with_payload` instead",
                 category=DeprecationWarning,
-                stacklevel=2,
+                stacklevel=5,
                 idx="search-append-payload",
             )
             with_payload = append_payload
@@ -2444,7 +2443,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             show_warning_once(
                 message="init_from is deprecated",
                 category=DeprecationWarning,
-                stacklevel=4,
+                stacklevel=5,
                 idx="create-collection-inint-from",
             )
         if self._prefer_grpc:
@@ -2705,7 +2704,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             show_warning_once(
                 message="field_type is deprecated, use field_schema instead",
                 category=DeprecationWarning,
-                stacklevel=4,
+                stacklevel=5,
                 idx="payload-index-field-type",
             )
             field_schema = field_type

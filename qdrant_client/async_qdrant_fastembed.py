@@ -154,7 +154,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             show_warning(
                 message="max_length parameter is deprecated and will be removed in the future. It's not used by fastembed models.",
                 category=DeprecationWarning,
-                stacklevel=2,
+                stacklevel=3,
             )
         self._get_or_init_model(
             model_name=embedding_model_name,
