@@ -253,7 +253,8 @@ optimizer_config = grpc.OptimizersConfigDiff(
     memmap_threshold=50000,
     indexing_threshold=10000,
     flush_interval_sec=10,
-    max_optimization_threads=0,
+    max_optimization_threads=grpc.MaxOptimizationThreads(value=0),
+    deprecated_max_optimization_threads=0,
 )
 
 optimizer_config_half = grpc.OptimizersConfigDiff(
@@ -261,6 +262,9 @@ optimizer_config_half = grpc.OptimizersConfigDiff(
     vacuum_min_vector_number=10000,
     default_segment_number=5,
     max_segment_size=200000,
+    max_optimization_threads=grpc.MaxOptimizationThreads(
+        setting=grpc.MaxOptimizationThreads.Setting.Auto
+    ),
 )
 
 wal_config = grpc.WalConfigDiff(wal_capacity_mb=32, wal_segments_ahead=2)
@@ -444,6 +448,7 @@ float_index_params_0 = grpc.FloatIndexParams()
 float_index_params_1 = grpc.FloatIndexParams(on_disk=True, is_principal=True)
 
 bool_index_params = grpc.BoolIndexParams()
+bool_index_params_1 = grpc.BoolIndexParams(on_disk=True)
 
 geo_index_params_0 = grpc.GeoIndexParams()
 geo_index_params_1 = grpc.GeoIndexParams(on_disk=True)
@@ -518,6 +523,12 @@ payload_schema_bool_w_params = grpc.PayloadSchemaInfo(
     points=0,
 )
 
+payload_schema_bool_w_params_on_disk = grpc.PayloadSchemaInfo(
+    data_type=grpc.PayloadSchemaType.Bool,
+    params=grpc.PayloadIndexParams(bool_index_params=bool_index_params_1),
+    points=0,
+)
+
 payload_schema_geo_w_params_no_disk = grpc.PayloadSchemaInfo(
     data_type=grpc.PayloadSchemaType.Geo,
     params=grpc.PayloadIndexParams(geo_index_params=geo_index_params_0),
@@ -588,6 +599,7 @@ collection_info_ok = grpc.CollectionInfo(
         "float_no_disk_not_principal": payload_schema_float_no_disk_not_principal,
         "float_on_disk_is_principal": payload_schema_float_on_disk_is_principal,
         "bool_w_params": payload_schema_bool_w_params,
+        "bool_w_params_on_disk": payload_schema_bool_w_params_on_disk,
         "geo_w_params_no_disk": payload_schema_geo_w_params_no_disk,
         "geo_w_params_on_disk": payload_schema_geo_w_params_on_disk,
         "datetime_no_disk_not_principal": payload_schema_datetime_no_disk_not_principal,

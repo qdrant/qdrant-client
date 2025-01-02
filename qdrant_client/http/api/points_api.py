@@ -77,7 +77,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20014,
+            type_=m.InlineResponse20015,
             method="POST",
             url="/collections/{collection_name}/points/batch",
             headers=headers if headers else None,
@@ -142,7 +142,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20019,
+            type_=m.InlineResponse20020,
             method="POST",
             url="/collections/{collection_name}/points/count",
             headers=headers if headers else None,
@@ -278,7 +278,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20020,
+            type_=m.InlineResponse20021,
             method="POST",
             url="/collections/{collection_name}/facet",
             headers=headers if headers else None,
@@ -307,7 +307,7 @@ class _PointsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20012,
+            type_=m.InlineResponse20013,
             method="GET",
             url="/collections/{collection_name}/points/{id}",
             headers=headers if headers else None,
@@ -340,7 +340,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20013,
+            type_=m.InlineResponse20014,
             method="POST",
             url="/collections/{collection_name}/points",
             headers=headers if headers else None,
@@ -408,7 +408,7 @@ class _PointsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse20015,
+            type_=m.InlineResponse20016,
             method="POST",
             url="/collections/{collection_name}/points/scroll",
             headers=headers if headers else None,
@@ -527,7 +527,7 @@ class AsyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         update_operations: m.UpdateOperations = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20015:
         """
         Apply a series of update operations for points, vectors and payloads
         """
@@ -560,7 +560,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         timeout: int = None,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20019:
+    ) -> m.InlineResponse20020:
         """
         Count points which matches given filtering condition
         """
@@ -627,7 +627,7 @@ class AsyncPointsApi(_PointsApi):
         timeout: int = None,
         consistency: m.ReadConsistency = None,
         facet_request: m.FacetRequest = None,
-    ) -> m.InlineResponse20020:
+    ) -> m.InlineResponse20021:
         """
         Count points that satisfy the given filter for each unique value of a payload key.
         """
@@ -643,7 +643,7 @@ class AsyncPointsApi(_PointsApi):
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20013:
         """
         Retrieve full information of single point by id
         """
@@ -659,7 +659,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Retrieve multiple points by specified IDs
         """
@@ -693,7 +693,7 @@ class AsyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20015:
+    ) -> m.InlineResponse20016:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
@@ -763,7 +763,7 @@ class SyncPointsApi(_PointsApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         update_operations: m.UpdateOperations = None,
-    ) -> m.InlineResponse20014:
+    ) -> m.InlineResponse20015:
         """
         Apply a series of update operations for points, vectors and payloads
         """
@@ -796,7 +796,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         timeout: int = None,
         count_request: m.CountRequest = None,
-    ) -> m.InlineResponse20019:
+    ) -> m.InlineResponse20020:
         """
         Count points which matches given filtering condition
         """
@@ -863,7 +863,7 @@ class SyncPointsApi(_PointsApi):
         timeout: int = None,
         consistency: m.ReadConsistency = None,
         facet_request: m.FacetRequest = None,
-    ) -> m.InlineResponse20020:
+    ) -> m.InlineResponse20021:
         """
         Count points that satisfy the given filter for each unique value of a payload key.
         """
@@ -879,7 +879,7 @@ class SyncPointsApi(_PointsApi):
         collection_name: str,
         id: m.ExtendedPointId,
         consistency: m.ReadConsistency = None,
-    ) -> m.InlineResponse20012:
+    ) -> m.InlineResponse20013:
         """
         Retrieve full information of single point by id
         """
@@ -895,7 +895,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         point_request: m.PointRequest = None,
-    ) -> m.InlineResponse20013:
+    ) -> m.InlineResponse20014:
         """
         Retrieve multiple points by specified IDs
         """
@@ -929,7 +929,7 @@ class SyncPointsApi(_PointsApi):
         consistency: m.ReadConsistency = None,
         timeout: int = None,
         scroll_request: m.ScrollRequest = None,
-    ) -> m.InlineResponse20015:
+    ) -> m.InlineResponse20016:
         """
         Scroll request - paginate over all points which matches given filtering condition
         """
