@@ -50,6 +50,9 @@ def test_distribution_based_score_fusion() -> None:
     assert fused[1].id == 0
     assert fused[2].id == 4
 
+    fused = distribution_based_score_fusion([[responses[0][0]]], limit=3)
+    assert fused[0].id == 1
+
 
 def test_reciprocal_rank_fusion_empty_responses() -> None:
     responses: list[list[models.ScoredPoint]] = [[]]
