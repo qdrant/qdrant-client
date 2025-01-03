@@ -113,4 +113,4 @@ def test_distribution_based_score_fusion_zero_variance() -> None:
     fused = distribution_based_score_fusion(responses, limit=3)
 
     assert len(fused) == 3
-    assert all(p.score == 1 for p in fused)
+    assert all(p.score == 0.5 for p in fused)
