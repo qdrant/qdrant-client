@@ -214,6 +214,7 @@ CACHE_STR_PATH = {
     "Image": [],
     "InferenceObject": [],
     "StrictModeConfig": [],
+    "HasVectorCondition": [],
 }
 DEFS = {
     "AbortShardTransfer": {

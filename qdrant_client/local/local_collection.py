@@ -501,6 +501,7 @@ class LocalCollection:
             payloads=self.payload,
             payload_filter=payload_filter,
             ids_inv=self.ids_inv,
+            deleted_per_vector=self.deleted_per_vector,
         )
 
         # in deleted: 1 - deleted, 0 - not deleted
