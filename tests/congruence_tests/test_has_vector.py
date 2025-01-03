@@ -27,7 +27,7 @@ def test_has_vector(local_client, remote_client):
             COLLECTION_NAME,
             limit=50,
             scroll_filter=models.Filter(must=[models.HasVectorCondition(has_vector="image")]),
-        ),
+        )[0],
     )
 
 
@@ -52,5 +52,5 @@ def test_has_vector_sparse():
             scroll_filter=models.Filter(
                 must=[models.HasVectorCondition(has_vector="sparse-image")]
             ),
-        ),
+        )[0],
     )
