@@ -1362,6 +1362,22 @@ search_matrix_offsets = grpc.SearchMatrixOffsets(
     ids=[point_id_1, point_id_2],
 )
 
+strict_mode_config = grpc.StrictModeConfig(
+    enabled=True,
+    max_query_limit=100,
+    max_timeout=10,
+    unindexed_filtering_retrieve=False,
+    unindexed_filtering_update=False,
+    search_max_hnsw_ef=256,
+    search_allow_exact=False,
+    search_max_oversampling=10,
+    upsert_max_batchsize=64,
+    max_collection_vector_size_bytes=1024 * 1024 * 1024,
+    # read_rate_limit=model.read_rate_limit, test empty field
+    write_rate_limit=2000,
+    max_collection_payload_size_bytes=10 * 1024 * 1024 * 1024,
+)
+
 
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
@@ -1523,6 +1539,7 @@ fixtures = {
     "HealthCheckReply": [health_check_reply],
     "SearchMatrixPairs": [search_matrix_pairs],
     "SearchMatrixOffsets": [search_matrix_offsets],
+    "StrictModeConfig": [strict_mode_config],
 }
 
 

@@ -2019,6 +2019,42 @@ class GrpcToRest:
             ids=[cls.convert_point_id(p_id) for p_id in model.ids],
         )
 
+    @classmethod
+    def convert_strict_mode_config(cls, model: grpc.StrictModeConfig) -> rest.StrictModeConfig:
+        return rest.StrictModeConfig(
+            enabled=model.enabled if model.HasField("enabled") else None,
+            max_query_limit=model.max_query_limit if model.HasField("max_query_limit") else None,
+            max_timeout=model.max_timeout if model.HasField("max_timeout") else None,
+            unindexed_filtering_retrieve=model.unindexed_filtering_retrieve
+            if model.HasField("unindexed_filtering_retrieve")
+            else None,
+            unindexed_filtering_update=model.unindexed_filtering_update
+            if model.HasField("unindexed_filtering_update")
+            else None,
+            search_max_hnsw_ef=model.search_max_hnsw_ef
+            if model.HasField("search_max_hnsw_ef")
+            else None,
+            search_allow_exact=model.search_allow_exact
+            if model.HasField("search_allow_exact")
+            else None,
+            search_max_oversampling=model.search_max_oversampling
+            if model.HasField("search_max_oversampling")
+            else None,
+            upsert_max_batchsize=model.upsert_max_batchsize
+            if model.HasField("upsert_max_batchsize")
+            else None,
+            max_collection_vector_size_bytes=model.max_collection_vector_size_bytes
+            if model.HasField("max_collection_vector_size_bytes")
+            else None,
+            read_rate_limit=model.read_rate_limit if model.HasField("read_rate_limit") else None,
+            write_rate_limit=model.write_rate_limit
+            if model.HasField("write_rate_limit")
+            else None,
+            max_collection_payload_size_bytes=model.max_collection_payload_size_bytes
+            if model.HasField("max_collection_payload_size_bytes")
+            else None,
+        )
+
 
 # ----------------------------------------
 #
@@ -3931,4 +3967,22 @@ class RestToGrpc:
             offsets_col=list(model.offsets_col),
             scores=list(model.scores),
             ids=[cls.convert_extended_point_id(p_id) for p_id in model.ids],
+        )
+
+    @classmethod
+    def convert_strict_mode_config(cls, model: rest.StrictModeConfig) -> grpc.StrictModeConfig:
+        return grpc.StrictModeConfig(
+            enabled=model.enabled,
+            max_query_limit=model.max_query_limit,
+            max_timeout=model.max_timeout,
+            unindexed_filtering_retrieve=model.unindexed_filtering_retrieve,
+            unindexed_filtering_update=model.unindexed_filtering_update,
+            search_max_hnsw_ef=model.search_max_hnsw_ef,
+            search_allow_exact=model.search_allow_exact,
+            search_max_oversampling=model.search_max_oversampling,
+            upsert_max_batchsize=model.upsert_max_batchsize,
+            max_collection_vector_size_bytes=model.max_collection_vector_size_bytes,
+            read_rate_limit=model.read_rate_limit,
+            write_rate_limit=model.write_rate_limit,
+            max_collection_payload_size_bytes=model.max_collection_payload_size_bytes,
         )
