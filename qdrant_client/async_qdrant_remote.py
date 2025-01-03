@@ -78,9 +78,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
-        self._prefix = prefix or ""
-        if len(self._prefix) > 0 and self._prefix[0] != "/":
-            self._prefix = f"/{self._prefix}"
+        self._prefix = self._format_prefix(prefix or "")
         if url is not None and host is not None:
             raise ValueError(f"Only one of (url, host) can be set. url is {url}, host is {host}")
         if host is not None and (host.startswith("http://") or host.startswith("https://")):
@@ -100,6 +98,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 raise ValueError(
                     f"Prefix can be set either in `url` or in `prefix`. url is {url}, prefix is {parsed_url.path}"
                 )
+            self._prefix = (
+                self._prefix if self._prefix else self._format_prefix(parsed_url.path or "")
+            )
             if self._scheme not in ("http", "https"):
                 raise ValueError(f"Unknown scheme: {self._scheme}")
         else:
@@ -205,6 +206,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             parse_result.path,
         )
         return (scheme, host, port, prefix)
+
+    @staticmethod
+    def _format_prefix(prefix: str) -> str:
+        if len(prefix) > 0 and prefix[0] != "/":
+            return f"/{prefix}"
+        return prefix
 
     def _init_grpc_channel(self) -> None:
         if self._closed:
