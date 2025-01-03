@@ -2487,7 +2487,9 @@ class RestToGrpc:
             indexing_threshold=model.indexing_threshold,
             max_optimization_threads=cls.convert_max_optimization_threads(
                 model.max_optimization_threads
-            ),
+            )
+            if model.max_optimization_threads is not None
+            else None,
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
@@ -2509,7 +2511,9 @@ class RestToGrpc:
             indexing_threshold=model.indexing_threshold,
             max_optimization_threads=cls.convert_max_optimization_threads(
                 model.max_optimization_threads
-            ),
+            )
+            if model.max_optimization_threads is not None
+            else None,
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
