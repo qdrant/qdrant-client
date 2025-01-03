@@ -2702,7 +2702,7 @@ class QdrantRemote(QdrantBase):
                 message="init_from is deprecated",
                 category=DeprecationWarning,
                 stacklevel=5,
-                idx="create-collection-inint-from",
+                idx="create-collection-init-from",
             )
 
         if self._prefer_grpc:
