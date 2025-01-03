@@ -1,5 +1,6 @@
 from qdrant_client.http import models
 
+EPS = 1e-9
 
 def reciprocal_rank_fusion(
     responses: list[list[models.ScoredPoint]], limit: int = 10
@@ -45,7 +46,7 @@ def distribution_based_score_fusion(
         high = mean + 3 * std_dev
 
         for point in response:
-            point.score = (point.score - low) / (high - low)
+            point.score = (EPS + point.score - low) / (EPS + high - low)
 
         return response
 

@@ -97,3 +97,20 @@ def test_distribution_based_score_fusion_empty_response() -> None:
     assert fused[0].id == 1
     assert fused[1].id == 0
     assert fused[2].id == 5
+
+
+def test_distribution_based_score_fusion_zero_variance() -> None:
+    score = 85.0
+    responses = [
+        [
+            models.ScoredPoint(id=1, version=0, score=score),
+            models.ScoredPoint(id=0, version=0, score=score),
+            models.ScoredPoint(id=5, version=0, score=score),
+        ],
+        [],
+    ]
+
+    fused = distribution_based_score_fusion(responses, limit=3)
+
+    assert len(fused) == 3
+    assert all(p.score == 1 for p in fused)
