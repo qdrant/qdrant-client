@@ -274,7 +274,6 @@ class QdrantRemote(QdrantBase):
         self._init_grpc_channel()
         self._grpc_root_client = grpc.QdrantStub(self._grpc_channel)
 
-
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
         """gRPC client for collections methods
@@ -2579,6 +2578,7 @@ class QdrantRemote(QdrantBase):
         quantization_config: Optional[types.QuantizationConfigDiff] = None,
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2604,6 +2604,9 @@ class QdrantRemote(QdrantBase):
                     sparse_vectors_config
                 )
 
+            if isinstance(strict_mode_config, models.StrictModeConfig):
+                strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
+
             return self.grpc_collections.Update(
                 grpc.UpdateCollection(
                     collection_name=collection_name,
@@ -2613,6 +2616,7 @@ class QdrantRemote(QdrantBase):
                     hnsw_config=hnsw_config,
                     quantization_config=quantization_config,
                     sparse_vectors_config=sparse_vectors_config,
+                    strict_mode_config=strict_mode_config,
                     timeout=timeout,
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
@@ -2679,6 +2683,7 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         if init_from is not None:
@@ -2714,6 +2719,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(sharding_method, models.ShardingMethod):
                 sharding_method = RestToGrpc.convert_sharding_method(sharding_method)
 
+            if isinstance(strict_mode_config, models.StrictModeConfig):
+                strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
+
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -2729,6 +2737,7 @@ class QdrantRemote(QdrantBase):
                 quantization_config=quantization_config,
                 sparse_vectors_config=sparse_vectors_config,
                 sharding_method=sharding_method,
+                strict_mode_config=strict_mode_config,
             )
             return self.grpc_collections.Create(create_collection, timeout=self._timeout).result
 
@@ -2760,6 +2769,7 @@ class QdrantRemote(QdrantBase):
             init_from=init_from,
             sparse_vectors=sparse_vectors_config,
             sharding_method=sharding_method,
+            strict_mode_config=strict_mode_config,
         )
 
         result: Optional[bool] = self.http.collections_api.create_collection(
