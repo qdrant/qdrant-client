@@ -62,7 +62,7 @@ def test_nested_payload_filters():
         }
     )
 
-    res = check_filter(query, payload, 0)
+    res = check_filter(query, payload, 0, has_vector={})
     assert res is False
 
     query = models.Filter(
@@ -87,7 +87,7 @@ def test_nested_payload_filters():
         }
     )
 
-    res = check_filter(query, payload, 0)
+    res = check_filter(query, payload, 0, has_vector={})
     assert res is True
 
     query = models.Filter(
@@ -113,7 +113,7 @@ def test_nested_payload_filters():
         }
     )
 
-    res = check_filter(query, payload, 0)
+    res = check_filter(query, payload, 0, has_vector={})
     assert res is False
 
     query = models.Filter(
@@ -138,7 +138,7 @@ def test_nested_payload_filters():
         }
     )
 
-    res = check_filter(query, payload, 0)
+    res = check_filter(query, payload, 0, has_vector={})
     assert res is False
 
 
@@ -173,7 +173,7 @@ def test_geo_polygon_filter_query():
         }
     )
 
-    res = check_filter(query, payload, 0)
+    res = check_filter(query, payload, 0, has_vector={})
     assert res is True
 
     payload = {
@@ -185,5 +185,5 @@ def test_geo_polygon_filter_query():
         ]
     }
 
-    res = check_filter(query, payload, 0)
+    res = check_filter(query, payload, 0, has_vector={})
     assert res is False
