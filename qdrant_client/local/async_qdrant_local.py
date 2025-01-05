@@ -79,7 +79,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 show_warning(
                     message=f"Collection appears to be None before closing. The existing collections are: {list(self.collections.keys())}",
                     category=UserWarning,
-                    stacklevel=5,
+                    stacklevel=4,
                 )
         try:
             if self._flock_file is not None and (not self._flock_file.closed):
@@ -109,7 +109,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     )
                     self.collections[collection_name] = collection
                     if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
-                        show_warning_once(
+                        show_warning(
                             f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Collection <{collection_name}> contains {len(collection.ids)} points. Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
                             category=UserWarning,
                             idx="large-local-collection",

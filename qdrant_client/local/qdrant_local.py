@@ -81,7 +81,7 @@ class QdrantLocal(QdrantBase):
                     message=f"Collection appears to be None before closing. The existing collections are: "
                     f"{list(self.collections.keys())}",
                     category=UserWarning,
-                    stacklevel=5,
+                    stacklevel=4,
                 )
 
         try:
@@ -113,7 +113,7 @@ class QdrantLocal(QdrantBase):
                     )
                     self.collections[collection_name] = collection
                     if len(collection.ids) > self.LARGE_DATA_THRESHOLD:
-                        show_warning_once(
+                        show_warning(
                             f"Local mode is not recommended for collections with more than "
                             f"{self.LARGE_DATA_THRESHOLD:,} points. "
                             f"Collection <{collection_name}> contains {len(collection.ids)} points. "

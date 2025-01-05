@@ -132,7 +132,7 @@ class QdrantRemote(QdrantBase):
             if self._scheme == "http":
                 show_warning(
                     message="Api key is used with an insecure connection.",
-                    category=RuntimeWarning,
+                    category=UserWarning,
                     stacklevel=4,
                 )
 
@@ -178,7 +178,7 @@ class QdrantRemote(QdrantBase):
             if self._scheme == "http":
                 show_warning(
                     message="Auth token provider is used with an insecure connection.",
-                    category=RuntimeWarning,
+                    category=UserWarning,
                     stacklevel=4,
                 )
 

@@ -42,8 +42,10 @@ async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None
         try:
             await self._grpc_channel.close(grace=grpc_grace)
         except AttributeError:
-            logging.warning(
-                "Unable to close grpc_channel. Connection was interrupted on the server side"
+            show_warning(
+                message="Unable to close grpc_channel. Connection was interrupted on the server side",
+                category=UserWarning,
+                stacklevel=5,
             )
         except RuntimeError:
             pass
@@ -51,8 +53,10 @@ async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None
     try:
         await self.http.aclose()
     except Exception:
-        logging.warning(
-            "Unable to close http connection. Connection was interrupted on the server side"
+        show_warning(
+            message="Unable to close http connection. Connection was interrupted on the server side",
+            category=UserWarning,
+            stacklevel=5,
         )
 
     self._closed = True
