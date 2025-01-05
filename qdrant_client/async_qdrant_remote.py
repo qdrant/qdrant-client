@@ -2528,6 +2528,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name, timeout=timeout)
@@ -2546,6 +2547,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             sharding_method=sharding_method,
+            strict_mode_config=strict_mode_config,
         )
 
     @property
