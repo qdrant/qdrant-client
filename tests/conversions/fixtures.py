@@ -11,13 +11,14 @@ point_id = grpc.PointId(num=1)
 point_id_1 = grpc.PointId(num=2)
 point_id_2 = grpc.PointId(uuid="f9bcf279-5e66-40f7-856b-3a9d9b6617ee")
 
-has_id_condition = grpc.HasIdCondition(
+has_id = grpc.HasIdCondition(
     has_id=[
         point_id,
         point_id_1,
         point_id_2,
     ]
 )
+has_vector = grpc.HasVectorCondition(has_vector="vector")
 
 is_empty = grpc.IsEmptyCondition(key="my.field")
 is_null = grpc.IsNullCondition(key="my.field")
@@ -88,7 +89,8 @@ values_count = grpc.ValuesCount(
 
 field_condition_values_count = grpc.FieldCondition(key="match_field", values_count=values_count)
 
-condition_has_id = grpc.Condition(has_id=has_id_condition)
+condition_has_id = grpc.Condition(has_id=has_id)
+condition_has_vector = grpc.Condition(has_vector=has_vector)
 condition_is_empty = grpc.Condition(is_empty=is_empty)
 condition_is_null = grpc.Condition(is_null=is_null)
 
@@ -115,6 +117,7 @@ filter_nested = grpc.Filter(must=[condition_nested])
 filter_ = grpc.Filter(
     must=[
         condition_has_id,
+        condition_has_vector,
         condition_is_empty,
         condition_is_null,
         condition_keywords,
@@ -132,6 +135,7 @@ filter_ = grpc.Filter(
     min_should=grpc.MinShould(
         conditions=[
             condition_has_id,
+            condition_has_vector,
             condition_is_empty,
             condition_except_keywords,
             condition_except_integers,
@@ -1391,7 +1395,7 @@ fixtures = {
     "CreateAlias": [create_alias],
     "GeoBoundingBox": [geo_bounding_box],
     "SearchParams": [search_params, search_params_2, search_params_3],
-    "HasIdCondition": [has_id_condition],
+    "HasIdCondition": [has_id],
     "RenameAlias": [rename_alias],
     "ValuesCount": [values_count],
     "Filter": [filter_nested, filter_],
