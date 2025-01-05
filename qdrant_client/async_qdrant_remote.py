@@ -172,12 +172,16 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 self.rest_uri, self._rest_headers, self._rest_args.get("auth")
             )
             if not server_version:
-                warnings.warn(
-                    f"Failed to obtain server version. Unable to check client-server compatibility. Set check_version=False to skip version check."
+                show_warning(
+                    message=f"Failed to obtain server version. Unable to check client-server compatibility. Set check_version=False to skip version check.",
+                    category=UserWarning,
+                    stacklevel=4,
                 )
             elif not is_compatible(client_version, server_version):
-                warnings.warn(
-                    f"Qdrant client version {client_version} is incompatible with server version {server_version}. Major versions should match and minor version difference must not exceed 1. Set check_version=False to skip version check."
+                show_warning(
+                    message=f"Qdrant client version {client_version} is incompatible with server version {server_version}. Major versions should match and minor version difference must not exceed 1. Set check_version=False to skip version check.",
+                    category=UserWarning,
+                    stacklevel=4,
                 )
 
     @property
