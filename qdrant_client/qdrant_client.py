@@ -2321,6 +2321,7 @@ class QdrantClient(QdrantFastembedMixin):
             init_from=init_from,
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
+            strict_mode_config=strict_mode_config,
             **kwargs,
         )
 

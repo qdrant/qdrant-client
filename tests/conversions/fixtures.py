@@ -268,12 +268,28 @@ optimizer_config_half = grpc.OptimizersConfigDiff(
 )
 
 wal_config = grpc.WalConfigDiff(wal_capacity_mb=32, wal_segments_ahead=2)
+strict_mode_config = grpc.StrictModeConfig(
+    enabled=True,
+    max_query_limit=100,
+    max_timeout=10,
+    unindexed_filtering_retrieve=False,
+    unindexed_filtering_update=False,
+    search_max_hnsw_ef=256,
+    search_allow_exact=False,
+    search_max_oversampling=10,
+    upsert_max_batchsize=64,
+    max_collection_vector_size_bytes=1024 * 1024 * 1024,
+    # read_rate_limit=model.read_rate_limit, test empty field
+    write_rate_limit=2000,
+    max_collection_payload_size_bytes=10 * 1024 * 1024 * 1024,
+)
 
 collection_config = grpc.CollectionConfig(
     params=collection_params,
     hnsw_config=hnsw_config,
     optimizer_config=optimizer_config,
     wal_config=wal_config,
+    strict_mode_config=strict_mode_config,
 )
 
 payload_value = {
@@ -1360,22 +1376,6 @@ search_matrix_offsets = grpc.SearchMatrixOffsets(
     offsets_col=[0, 1],
     scores=[0.99, 0.98],
     ids=[point_id_1, point_id_2],
-)
-
-strict_mode_config = grpc.StrictModeConfig(
-    enabled=True,
-    max_query_limit=100,
-    max_timeout=10,
-    unindexed_filtering_retrieve=False,
-    unindexed_filtering_update=False,
-    search_max_hnsw_ef=256,
-    search_allow_exact=False,
-    search_max_oversampling=10,
-    upsert_max_batchsize=64,
-    max_collection_vector_size_bytes=1024 * 1024 * 1024,
-    # read_rate_limit=model.read_rate_limit, test empty field
-    write_rate_limit=2000,
-    max_collection_payload_size_bytes=10 * 1024 * 1024 * 1024,
 )
 
 
