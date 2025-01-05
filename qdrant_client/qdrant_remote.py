@@ -2646,6 +2646,7 @@ class QdrantRemote(QdrantBase):
                 hnsw_config=hnsw_config,
                 quantization_config=quantization_config,
                 sparse_vectors=sparse_vectors_config,
+                strict_mode_config=strict_mode_config,
             ),
             timeout=timeout,
         ).result
