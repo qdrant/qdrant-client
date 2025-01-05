@@ -1,4 +1,5 @@
 from qdrant_client import models
+
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -8,6 +9,8 @@ from tests.congruence_tests.test_common import (
     init_client,
     init_remote,
     sparse_vectors_config,
+    generate_multivector_fixtures,
+    multi_vector_config,
 )
 
 
@@ -52,5 +55,31 @@ def test_has_vector_sparse():
             scroll_filter=models.Filter(
                 must=[models.HasVectorCondition(has_vector="sparse-image")]
             ),
+        )[0],
+    )
+
+
+def test_has_vector_multi():
+    points = generate_multivector_fixtures(100, skip_vectors=True)
+
+    local_client = init_local()
+    init_client(local_client, [], vectors_config=multi_vector_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, [], vectors_config=multi_vector_config)
+
+    local_client.upload_points(COLLECTION_NAME, points)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    local_client.upload_points(COLLECTION_NAME, points)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        lambda c: c.scroll(
+            COLLECTION_NAME,
+            limit=50,
+            scroll_filter=models.Filter(must=[models.HasVectorCondition(has_vector="multi-code")]),
         )[0],
     )
