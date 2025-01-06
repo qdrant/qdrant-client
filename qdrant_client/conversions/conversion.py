@@ -150,6 +150,8 @@ class GrpcToRest:
             return cls.convert_filter(val)
         if name == "has_id":
             return cls.convert_has_id_condition(val)
+        if name == "has_vector":
+            return cls.convert_has_vector_condition(val)
         if name == "is_empty":
             return cls.convert_is_empty_condition(val)
         if name == "is_null":
@@ -242,6 +244,9 @@ class GrpcToRest:
                 if model.HasField("quantization_config")
                 else None
             ),
+            strict_mode_config=cls.convert_strict_mode_config(model.strict_mode_config)
+            if model.HasField("strict_mode_config")
+            else None,
         )
 
     @classmethod
@@ -275,7 +280,38 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_max_optimization_threads(
+        cls, model: grpc.MaxOptimizationThreads
+    ) -> rest.MaxOptimizationThreads:
+        name = model.WhichOneof("variant")
+        if name is None:
+            raise ValueError(f"invalid MaxOptimizationThreads model: {model}")  # pragma: no cover
+        val = getattr(model, name)
+
+        if name == "setting":
+            if val == grpc.MaxOptimizationThreads.Setting.Auto:
+                return rest.MaxOptimizationThreadsSetting.AUTO
+            else:
+                raise ValueError(
+                    f"invalid MaxOptimizationThreads model: {model}"
+                )  # pragma: no cover
+        elif name == "value":
+            return val
+        else:
+            raise ValueError(f"invalid MaxOptimizationThreads model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_optimizer_config(cls, model: grpc.OptimizersConfigDiff) -> rest.OptimizersConfig:
+        max_optimization_threads = None
+        if model.HasField("deprecated_max_optimization_threads"):
+            max_optimization_threads = model.deprecated_max_optimization_threads
+        elif model.HasField("max_optimization_threads"):
+            max_optimization_threads = cls.convert_max_optimization_threads(
+                model.max_optimization_threads
+            )
+            if not isinstance(max_optimization_threads, int):
+                max_optimization_threads = None
+
         return rest.OptimizersConfig(
             default_segment_number=(
                 model.default_segment_number if model.HasField("default_segment_number") else None
@@ -289,11 +325,7 @@ class GrpcToRest:
             indexing_threshold=(
                 model.indexing_threshold if model.HasField("indexing_threshold") else None
             ),
-            max_optimization_threads=(
-                model.max_optimization_threads
-                if model.HasField("max_optimization_threads")
-                else None
-            ),
+            max_optimization_threads=max_optimization_threads,
             max_segment_size=(
                 model.max_segment_size if model.HasField("max_segment_size") else None
             ),
@@ -431,6 +463,12 @@ class GrpcToRest:
     @classmethod
     def convert_has_id_condition(cls, model: grpc.HasIdCondition) -> rest.HasIdCondition:
         return rest.HasIdCondition(has_id=[cls.convert_point_id(idx) for idx in model.has_id])
+
+    @classmethod
+    def convert_has_vector_condition(
+        cls, model: grpc.HasVectorCondition
+    ) -> rest.HasVectorCondition:
+        return rest.HasVectorCondition(has_vector=model.has_vector)
 
     @classmethod
     def convert_point_id(cls, model: grpc.PointId) -> rest.ExtendedPointId:
@@ -652,6 +690,14 @@ class GrpcToRest:
     def convert_optimizers_config_diff(
         cls, model: grpc.OptimizersConfigDiff
     ) -> rest.OptimizersConfigDiff:
+        max_optimization_threads = None
+        if model.HasField("deprecated_max_optimization_threads"):
+            max_optimization_threads = model.deprecated_max_optimization_threads
+        elif model.HasField("max_optimization_threads"):
+            max_optimization_threads = cls.convert_max_optimization_threads(
+                model.max_optimization_threads
+            )
+
         return rest.OptimizersConfigDiff(
             default_segment_number=(
                 model.default_segment_number if model.HasField("default_segment_number") else None
@@ -665,11 +711,7 @@ class GrpcToRest:
             indexing_threshold=(
                 model.indexing_threshold if model.HasField("indexing_threshold") else None
             ),
-            max_optimization_threads=(
-                model.max_optimization_threads
-                if model.HasField("max_optimization_threads")
-                else None
-            ),
+            max_optimization_threads=max_optimization_threads,
             max_segment_size=(
                 model.max_segment_size if model.HasField("max_segment_size") else None
             ),
@@ -1424,9 +1466,10 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_bool_index_params(cls, _: grpc.BoolIndexParams) -> rest.BoolIndexParams:
+    def convert_bool_index_params(cls, model: grpc.BoolIndexParams) -> rest.BoolIndexParams:
         return rest.BoolIndexParams(
             type=rest.BoolIndexType.BOOL,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
         )
 
     @classmethod
@@ -1979,6 +2022,42 @@ class GrpcToRest:
             ids=[cls.convert_point_id(p_id) for p_id in model.ids],
         )
 
+    @classmethod
+    def convert_strict_mode_config(cls, model: grpc.StrictModeConfig) -> rest.StrictModeConfig:
+        return rest.StrictModeConfig(
+            enabled=model.enabled if model.HasField("enabled") else None,
+            max_query_limit=model.max_query_limit if model.HasField("max_query_limit") else None,
+            max_timeout=model.max_timeout if model.HasField("max_timeout") else None,
+            unindexed_filtering_retrieve=model.unindexed_filtering_retrieve
+            if model.HasField("unindexed_filtering_retrieve")
+            else None,
+            unindexed_filtering_update=model.unindexed_filtering_update
+            if model.HasField("unindexed_filtering_update")
+            else None,
+            search_max_hnsw_ef=model.search_max_hnsw_ef
+            if model.HasField("search_max_hnsw_ef")
+            else None,
+            search_allow_exact=model.search_allow_exact
+            if model.HasField("search_allow_exact")
+            else None,
+            search_max_oversampling=model.search_max_oversampling
+            if model.HasField("search_max_oversampling")
+            else None,
+            upsert_max_batchsize=model.upsert_max_batchsize
+            if model.HasField("upsert_max_batchsize")
+            else None,
+            max_collection_vector_size_bytes=model.max_collection_vector_size_bytes
+            if model.HasField("max_collection_vector_size_bytes")
+            else None,
+            read_rate_limit=model.read_rate_limit if model.HasField("read_rate_limit") else None,
+            write_rate_limit=model.write_rate_limit
+            if model.HasField("write_rate_limit")
+            else None,
+            max_collection_payload_size_bytes=model.max_collection_payload_size_bytes
+            if model.HasField("max_collection_payload_size_bytes")
+            else None,
+        )
+
 
 # ----------------------------------------
 #
@@ -2183,6 +2262,12 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_has_vector_condition(
+        cls, model: rest.HasVectorCondition
+    ) -> grpc.HasVectorCondition:
+        return grpc.HasVectorCondition(has_vector=model.has_vector)
+
+    @classmethod
     def convert_delete_alias(cls, model: rest.DeleteAlias) -> grpc.DeleteAlias:
         return grpc.DeleteAlias(alias_name=model.alias_name)
 
@@ -2330,6 +2415,11 @@ class RestToGrpc:
                 if model.quantization_config is not None
                 else None
             ),
+            strict_mode_config=(
+                cls.convert_strict_mode_config(model.strict_mode_config)
+                if model.strict_mode_config is not None
+                else None
+            ),
         )
 
     @classmethod
@@ -2387,31 +2477,55 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_max_optimization_threads(
+        cls, model: rest.MaxOptimizationThreads
+    ) -> grpc.MaxOptimizationThreads:
+        if model == rest.MaxOptimizationThreadsSetting.AUTO:
+            return grpc.MaxOptimizationThreads(setting=grpc.MaxOptimizationThreads.Setting.Auto)
+        elif isinstance(model, int):
+            return grpc.MaxOptimizationThreads(value=model)
+        raise ValueError(f"invalid MaxOptimizationThreads model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_optimizers_config(cls, model: rest.OptimizersConfig) -> grpc.OptimizersConfigDiff:
         return grpc.OptimizersConfigDiff(
             default_segment_number=model.default_segment_number,
             deleted_threshold=model.deleted_threshold,
             flush_interval_sec=model.flush_interval_sec,
             indexing_threshold=model.indexing_threshold,
-            max_optimization_threads=model.max_optimization_threads,
+            max_optimization_threads=cls.convert_max_optimization_threads(
+                model.max_optimization_threads
+            )
+            if model.max_optimization_threads is not None
+            else None,
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
+            deprecated_max_optimization_threads=model.max_optimization_threads,
         )
 
     @classmethod
     def convert_optimizers_config_diff(
         cls, model: rest.OptimizersConfigDiff
     ) -> grpc.OptimizersConfigDiff:
+        deprecated_max_optimization_threads = None
+        if isinstance(model.max_optimization_threads, int):
+            deprecated_max_optimization_threads = model.max_optimization_threads
+
         return grpc.OptimizersConfigDiff(
             default_segment_number=model.default_segment_number,
             deleted_threshold=model.deleted_threshold,
             flush_interval_sec=model.flush_interval_sec,
             indexing_threshold=model.indexing_threshold,
-            max_optimization_threads=model.max_optimization_threads,
+            max_optimization_threads=cls.convert_max_optimization_threads(
+                model.max_optimization_threads
+            )
+            if model.max_optimization_threads is not None
+            else None,
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
+            deprecated_max_optimization_threads=deprecated_max_optimization_threads,
         )
 
     @classmethod
@@ -2608,6 +2722,8 @@ class RestToGrpc:
             return grpc.Condition(is_null=cls.convert_is_null_condition(model))
         if isinstance(model, rest.HasIdCondition):
             return grpc.Condition(has_id=cls.convert_has_id_condition(model))
+        if isinstance(model, rest.HasVectorCondition):
+            return grpc.Condition(has_vector=cls.convert_has_vector_condition(model))
         if isinstance(model, rest.Filter):
             return grpc.Condition(filter=cls.convert_filter(model))
         if isinstance(model, rest.NestedCondition):
@@ -3317,8 +3433,8 @@ class RestToGrpc:
         return grpc.GeoIndexParams(on_disk=model.on_disk)
 
     @classmethod
-    def convert_bool_index_params(cls, _: rest.BoolIndexParams) -> grpc.BoolIndexParams:
-        return grpc.BoolIndexParams()
+    def convert_bool_index_params(cls, model: rest.BoolIndexParams) -> grpc.BoolIndexParams:
+        return grpc.BoolIndexParams(on_disk=model.on_disk)
 
     @classmethod
     def convert_datetime_index_params(
@@ -3863,4 +3979,22 @@ class RestToGrpc:
             offsets_col=list(model.offsets_col),
             scores=list(model.scores),
             ids=[cls.convert_extended_point_id(p_id) for p_id in model.ids],
+        )
+
+    @classmethod
+    def convert_strict_mode_config(cls, model: rest.StrictModeConfig) -> grpc.StrictModeConfig:
+        return grpc.StrictModeConfig(
+            enabled=model.enabled,
+            max_query_limit=model.max_query_limit,
+            max_timeout=model.max_timeout,
+            unindexed_filtering_retrieve=model.unindexed_filtering_retrieve,
+            unindexed_filtering_update=model.unindexed_filtering_update,
+            search_max_hnsw_ef=model.search_max_hnsw_ef,
+            search_allow_exact=model.search_allow_exact,
+            search_max_oversampling=model.search_max_oversampling,
+            upsert_max_batchsize=model.upsert_max_batchsize,
+            max_collection_vector_size_bytes=model.max_collection_vector_size_bytes,
+            read_rate_limit=model.read_rate_limit,
+            write_rate_limit=model.write_rate_limit,
+            max_collection_payload_size_bytes=model.max_collection_payload_size_bytes,
         )

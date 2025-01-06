@@ -1,5 +1,5 @@
 from datetime import date, datetime, timezone
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Dict
 
 import numpy as np
 
@@ -159,11 +159,14 @@ def check_match(condition: models.Match, value: Any) -> bool:
 
 
 def check_nested_filter(nested_filter: models.Filter, values: list[Any]) -> bool:
-    return any(check_filter(nested_filter, v, point_id=-1) for v in values)
+    return any(check_filter(nested_filter, v, point_id=-1, has_vector={}) for v in values)
 
 
 def check_condition(
-    condition: models.Condition, payload: dict, point_id: models.ExtendedPointId
+    condition: models.Condition,
+    payload: dict,
+    point_id: models.ExtendedPointId,
+    has_vector: Dict[str, bool],
 ) -> bool:
     if isinstance(condition, models.IsNullCondition):
         values = value_by_key(payload, condition.is_null.key, flat=False)
@@ -181,6 +184,9 @@ def check_condition(
             return True
     elif isinstance(condition, models.HasIdCondition):
         if point_id in condition.has_id:
+            return True
+    elif isinstance(condition, models.HasVectorCondition):
+        if condition.has_vector in has_vector and has_vector[condition.has_vector]:
             return True
     elif isinstance(condition, models.FieldCondition):
         values = value_by_key(payload, condition.key)
@@ -213,58 +219,79 @@ def check_condition(
             return False
         return check_nested_filter(condition.nested.filter, values)
     elif isinstance(condition, models.Filter):
-        return check_filter(condition, payload, point_id)
+        return check_filter(condition, payload, point_id, has_vector)
     else:
         raise ValueError(f"Unknown condition: {condition}")
     return False
 
 
 def check_must(
-    conditions: list[models.Condition], payload: dict, point_id: models.ExtendedPointId
+    conditions: list[models.Condition],
+    payload: dict,
+    point_id: models.ExtendedPointId,
+    has_vector: Dict[str, bool],
 ) -> bool:
-    return all(check_condition(condition, payload, point_id) for condition in conditions)
+    return all(
+        check_condition(condition, payload, point_id, has_vector) for condition in conditions
+    )
 
 
 def check_must_not(
-    conditions: list[models.Condition], payload: dict, point_id: models.ExtendedPointId
+    conditions: list[models.Condition],
+    payload: dict,
+    point_id: models.ExtendedPointId,
+    has_vector: Dict[str, bool],
 ) -> bool:
-    return all(not check_condition(condition, payload, point_id) for condition in conditions)
+    return all(
+        not check_condition(condition, payload, point_id, has_vector) for condition in conditions
+    )
 
 
 def check_should(
-    conditions: list[models.Condition], payload: dict, point_id: models.ExtendedPointId
+    conditions: list[models.Condition],
+    payload: dict,
+    point_id: models.ExtendedPointId,
+    has_vector: Dict[str, bool],
 ) -> bool:
-    return any(check_condition(condition, payload, point_id) for condition in conditions)
+    return any(
+        check_condition(condition, payload, point_id, has_vector) for condition in conditions
+    )
 
 
 def check_min_should(
     conditions: list[models.Condition],
     payload: dict,
     point_id: models.ExtendedPointId,
+    vectors: Dict[str, Any],
     min_count: int,
 ) -> bool:
     return (
-        sum(check_condition(condition, payload, point_id) for condition in conditions) >= min_count
+        sum(check_condition(condition, payload, point_id, vectors) for condition in conditions)
+        >= min_count
     )
 
 
 def check_filter(
-    payload_filter: models.Filter, payload: dict, point_id: models.ExtendedPointId
+    payload_filter: models.Filter,
+    payload: dict,
+    point_id: models.ExtendedPointId,
+    has_vector: Dict[str, bool],
 ) -> bool:
     if payload_filter.must is not None:
-        if not check_must(payload_filter.must, payload, point_id):
+        if not check_must(payload_filter.must, payload, point_id, has_vector):
             return False
     if payload_filter.must_not is not None:
-        if not check_must_not(payload_filter.must_not, payload, point_id):
+        if not check_must_not(payload_filter.must_not, payload, point_id, has_vector):
             return False
     if payload_filter.should is not None:
-        if not check_should(payload_filter.should, payload, point_id):
+        if not check_should(payload_filter.should, payload, point_id, has_vector):
             return False
     if payload_filter.min_should is not None:
         if not check_min_should(
             payload_filter.min_should.conditions,
             payload,
             point_id,
+            has_vector,
             payload_filter.min_should.min_count,
         ):
             return False
@@ -275,12 +302,18 @@ def calculate_payload_mask(
     payloads: list[dict],
     payload_filter: Optional[models.Filter],
     ids_inv: list[models.ExtendedPointId],
+    deleted_per_vector: Dict[str, np.ndarray],
 ) -> np.ndarray:
     if payload_filter is None:
         return np.ones(len(payloads), dtype=bool)
 
     mask = np.zeros(len(payloads), dtype=bool)
     for i, payload in enumerate(payloads):
-        if check_filter(payload_filter, payload, ids_inv[i]):
+        has_vector = {}
+        for vector_name, deleted in deleted_per_vector.items():
+            if not deleted[i]:
+                has_vector[vector_name] = True
+
+        if check_filter(payload_filter, payload, ids_inv[i], has_vector):
             mask[i] = True
     return mask

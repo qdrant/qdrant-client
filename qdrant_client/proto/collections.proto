@@ -145,6 +145,17 @@ enum CompressionRatio {
   x64 = 4;
 }
 
+message MaxOptimizationThreads {
+    enum Setting {
+        Auto = 0;
+    }
+
+    oneof variant {
+        uint64 value = 1;
+        Setting setting = 2;
+    }
+}
+
 message OptimizerStatus {
   bool ok = 1;
   string error = 2;
@@ -237,7 +248,7 @@ message OptimizersConfigDiff {
   optional uint64 max_segment_size = 4;
   /*
   Maximum size (in kilobytes) of vectors to store in-memory per segment.
-  Segments larger than this threshold will be stored as read-only memmaped file.
+  Segments larger than this threshold will be stored as read-only memmapped file.
 
   Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.
 
@@ -260,13 +271,17 @@ message OptimizersConfigDiff {
   Interval between forced flushes.
   */
   optional uint64 flush_interval_sec = 7;
+
+  // Deprecated in favor of `max_optimization_threads`
+  optional uint64 deprecated_max_optimization_threads = 8;
+
   /*
   Max number of threads (jobs) for running optimizations per shard.
   Note: each optimization job will also use `max_indexing_threads` threads by itself for index building.
-  If null - have no limit and choose dynamically to saturate CPU.
+  If "auto" - have no limit and choose dynamically to saturate CPU.
   If 0 - no optimization threads, optimizations will be disabled.
   */
-  optional uint64 max_optimization_threads = 8;
+  optional MaxOptimizationThreads max_optimization_threads = 9;
 }
 
 message ScalarQuantization {
@@ -320,6 +335,11 @@ message StrictModeConfig {
   optional uint32 search_max_hnsw_ef = 6;
   optional bool search_allow_exact  = 7;
   optional float search_max_oversampling  = 8;
+  optional uint64 upsert_max_batchsize  = 9;
+  optional uint64 max_collection_vector_size_bytes  = 10;
+  optional uint32 read_rate_limit = 11; // Max number of read operations per minute per replica
+  optional uint32 write_rate_limit = 12; // Max number of write operations per minute per replica
+  optional uint64 max_collection_payload_size_bytes = 13;
 }
 
 message CreateCollection {
@@ -351,6 +371,7 @@ message UpdateCollection {
   optional VectorsConfigDiff vectors_config = 6; // New vector parameters
   optional QuantizationConfigDiff quantization_config = 7; // Quantization configuration of vector
   optional SparseVectorConfig sparse_vectors_config = 8; // New sparse vector parameters
+  optional StrictModeConfig strict_mode_config = 9; // New strict mode configuration
 }
 
 message DeleteCollection {
@@ -430,6 +451,7 @@ message TextIndexParams {
 }
 
 message BoolIndexParams {
+    optional bool on_disk = 1; // If true - store index on disk.
 }
 
 message DatetimeIndexParams {
@@ -530,7 +552,8 @@ enum ReplicaState {
   Listener = 4; // A shard which receives data, but is not used for search; Useful for backup shards
   PartialSnapshot = 5; // Deprecated: snapshot shard transfer is in progress; Updates should not be sent to (and are ignored by) the shard
   Recovery = 6; // Shard is undergoing recovered by an external node; Normally rejects updates, accepts updates if force is true
-  Resharding = 7; // Points are being migrated to this shard as part of resharding
+  Resharding = 7; // Points are being migrated to this shard as part of scale-up resharding
+  ReshardingScaleDown = 8; // Points are being migrated to this shard as part of scale-down resharding
 }
 
 message ShardKey {

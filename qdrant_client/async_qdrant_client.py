@@ -2100,6 +2100,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfigDiff] = None,
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         """Update parameters of the collection
@@ -2115,6 +2116,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
             sparse_vectors_config: Override for sparse vector-specific configuration
+            strict_mode_config: Override for strict mode configuration
         Returns:
             Operation result
         """
@@ -2134,6 +2136,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             quantization_config=quantization_config,
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
+            strict_mode_config=strict_mode_config,
             **kwargs,
         )
 
@@ -2172,6 +2175,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -2217,6 +2221,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
+            strict_mode_config: Configure limitations for the collection, such as max size, rate limits, etc.
 
         Returns:
             Operation result
@@ -2237,6 +2242,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             init_from=init_from,
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
+            strict_mode_config=strict_mode_config,
             **kwargs,
         )
 
@@ -2256,6 +2262,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         quantization_config: Optional[types.QuantizationConfig] = None,
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -2301,6 +2308,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
+            strict_mode_config: Configure limitations for the collection, such as max size, rate limits, etc.
 
         Returns:
             Operation result
@@ -2326,6 +2334,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             init_from=init_from,
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
+            strict_mode_config=strict_mode_config,
             **kwargs,
         )
 

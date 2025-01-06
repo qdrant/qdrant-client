@@ -117,6 +117,7 @@ Prefetch: TypeAlias = rest.Prefetch
 Document: TypeAlias = rest.Document
 Image: TypeAlias = rest.Image
 InferenceObject: TypeAlias = rest.InferenceObject
+StrictModeConfig: TypeAlias = rest.StrictModeConfig
 
 SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
 RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
