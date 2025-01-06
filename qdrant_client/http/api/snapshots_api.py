@@ -65,7 +65,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20012,
             method="POST",
             url="/snapshots",
             headers=headers if headers else None,
@@ -92,7 +92,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20012,
             method="POST",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
@@ -118,7 +118,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20011,
+            type_=m.InlineResponse20012,
             method="POST",
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
@@ -144,7 +144,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse20010,
             method="DELETE",
             url="/snapshots/{snapshot_name}",
             headers=headers if headers else None,
@@ -174,7 +174,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse20010,
             method="DELETE",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
@@ -202,7 +202,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse20010,
             method="DELETE",
             url="/collections/{collection_name}/snapshots/{snapshot_name}",
             headers=headers if headers else None,
@@ -284,7 +284,7 @@ class _SnapshotsApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.InlineResponse20011,
             method="GET",
             url="/snapshots",
             headers=headers if headers else None,
@@ -305,7 +305,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.InlineResponse20011,
             method="GET",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots",
             headers=headers if headers else None,
@@ -325,7 +325,7 @@ class _SnapshotsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse20010,
+            type_=m.InlineResponse20011,
             method="GET",
             url="/collections/{collection_name}/snapshots",
             headers=headers if headers else None,
@@ -354,7 +354,7 @@ class _SnapshotsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse20010,
             method="PUT",
             url="/collections/{collection_name}/snapshots/recover",
             headers=headers if headers else None,
@@ -393,7 +393,7 @@ class _SnapshotsApi:
             files["snapshot"] = snapshot
 
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/snapshots/upload",
             headers=headers if headers else None,
@@ -427,7 +427,7 @@ class _SnapshotsApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse20010,
             method="PUT",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/recover",
             headers=headers if headers else None,
@@ -468,7 +468,7 @@ class _SnapshotsApi:
             files["snapshot"] = snapshot
 
         return self.api_client.request(
-            type_=m.InlineResponse200,
+            type_=m.InlineResponse20010,
             method="POST",
             url="/collections/{collection_name}/shards/{shard_id}/snapshots/upload",
             headers=headers if headers else None,
@@ -483,7 +483,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
     async def create_full_snapshot(
         self,
         wait: bool = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Create new snapshot of the whole storage
         """
@@ -496,7 +496,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Create new snapshot of a shard for a collection
         """
@@ -510,7 +510,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Create new snapshot for a collection
         """
@@ -523,7 +523,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         self,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Delete snapshot of the whole storage
         """
@@ -538,7 +538,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         shard_id: int,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Delete snapshot of a shard for a collection
         """
@@ -554,7 +554,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Delete snapshot for a collection
         """
@@ -605,7 +605,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
 
     async def list_full_snapshots(
         self,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Get list of snapshots of the whole storage
         """
@@ -615,7 +615,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         shard_id: int,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Get list of snapshots for a shard of a collection
         """
@@ -627,7 +627,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
     async def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Get list of snapshots for a collection
         """
@@ -640,7 +640,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         wait: bool = None,
         snapshot_recover: m.SnapshotRecover = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
@@ -657,7 +657,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         priority: SnapshotPriority = None,
         checksum: str = None,
         snapshot: IO[Any] = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
@@ -675,7 +675,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         shard_id: int,
         wait: bool = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
         """
@@ -694,7 +694,7 @@ class AsyncSnapshotsApi(_SnapshotsApi):
         priority: SnapshotPriority = None,
         checksum: str = None,
         snapshot: IO[Any] = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
         """
@@ -712,7 +712,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
     def create_full_snapshot(
         self,
         wait: bool = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Create new snapshot of the whole storage
         """
@@ -725,7 +725,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         shard_id: int,
         wait: bool = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Create new snapshot of a shard for a collection
         """
@@ -739,7 +739,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse20011:
+    ) -> m.InlineResponse20012:
         """
         Create new snapshot for a collection
         """
@@ -752,7 +752,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         self,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Delete snapshot of the whole storage
         """
@@ -767,7 +767,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         shard_id: int,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Delete snapshot of a shard for a collection
         """
@@ -783,7 +783,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         snapshot_name: str,
         wait: bool = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Delete snapshot for a collection
         """
@@ -834,7 +834,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
 
     def list_full_snapshots(
         self,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Get list of snapshots of the whole storage
         """
@@ -844,7 +844,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         self,
         collection_name: str,
         shard_id: int,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Get list of snapshots for a shard of a collection
         """
@@ -856,7 +856,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
     def list_snapshots(
         self,
         collection_name: str,
-    ) -> m.InlineResponse20010:
+    ) -> m.InlineResponse20011:
         """
         Get list of snapshots for a collection
         """
@@ -869,7 +869,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         collection_name: str,
         wait: bool = None,
         snapshot_recover: m.SnapshotRecover = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Recover local collection data from a snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
@@ -886,7 +886,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         priority: SnapshotPriority = None,
         checksum: str = None,
         snapshot: IO[Any] = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Recover local collection data from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection. If collection does not exist - it will be created.
         """
@@ -904,7 +904,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         shard_id: int,
         wait: bool = None,
         shard_snapshot_recover: m.ShardSnapshotRecover = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Recover shard of a local collection data from a snapshot. This will overwrite any data, stored in this shard, for the collection.
         """
@@ -923,7 +923,7 @@ class SyncSnapshotsApi(_SnapshotsApi):
         priority: SnapshotPriority = None,
         checksum: str = None,
         snapshot: IO[Any] = None,
-    ) -> m.InlineResponse200:
+    ) -> m.InlineResponse20010:
         """
         Recover shard of a local collection from an uploaded snapshot. This will overwrite any data, stored on this node, for the collection shard.
         """

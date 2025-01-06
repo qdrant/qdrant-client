@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Type, Union, Any, Optional
 
 from pydantic import BaseModel
-from pydantic.json_schema import model_json_schema
 
+from qdrant_client._pydantic_compat import model_json_schema
 from qdrant_client.embed.utils import FieldPath, convert_paths
 
 

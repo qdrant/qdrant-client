@@ -2333,6 +2333,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         quantization_config: Optional[types.QuantizationConfigDiff] = None,
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2352,6 +2353,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 sparse_vectors_config = RestToGrpc.convert_sparse_vector_config(
                     sparse_vectors_config
                 )
+            if isinstance(strict_mode_config, models.StrictModeConfig):
+                strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
             return (
                 await self.grpc_collections.Update(
                     grpc.UpdateCollection(
@@ -2362,6 +2365,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         hnsw_config=hnsw_config,
                         quantization_config=quantization_config,
                         sparse_vectors_config=sparse_vectors_config,
+                        strict_mode_config=strict_mode_config,
                         timeout=timeout,
                     ),
                     timeout=timeout if timeout is not None else self._timeout,
@@ -2387,6 +2391,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     hnsw_config=hnsw_config,
                     quantization_config=quantization_config,
                     sparse_vectors=sparse_vectors_config,
+                    strict_mode_config=strict_mode_config,
                 ),
                 timeout=timeout,
             )
@@ -2426,6 +2431,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         if init_from is not None:
@@ -2449,6 +2455,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             if isinstance(sharding_method, models.ShardingMethod):
                 sharding_method = RestToGrpc.convert_sharding_method(sharding_method)
+            if isinstance(strict_mode_config, models.StrictModeConfig):
+                strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -2464,6 +2472,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 quantization_config=quantization_config,
                 sparse_vectors_config=sparse_vectors_config,
                 sharding_method=sharding_method,
+                strict_mode_config=strict_mode_config,
             )
             return (
                 await self.grpc_collections.Create(create_collection, timeout=self._timeout)
@@ -2491,6 +2500,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             init_from=init_from,
             sparse_vectors=sparse_vectors_config,
             sharding_method=sharding_method,
+            strict_mode_config=strict_mode_config,
         )
         result: Optional[bool] = (
             await self.http.collections_api.create_collection(
@@ -2518,6 +2528,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name, timeout=timeout)
@@ -2536,6 +2547,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             sharding_method=sharding_method,
+            strict_mode_config=strict_mode_config,
         )
 
     @property

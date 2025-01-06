@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
@@ -40,6 +41,7 @@ class AppFeaturesTelemetry(BaseModel):
     web_feature: bool = Field(..., description="")
     service_debug_feature: bool = Field(..., description="")
     recovery_mode: bool = Field(..., description="")
+    gpu: bool = Field(..., description="")
 
 
 class Batch(BaseModel, extra="forbid"):
@@ -58,6 +60,7 @@ class BinaryQuantizationConfig(BaseModel, extra="forbid"):
 
 class BoolIndexParams(BaseModel, extra="forbid"):
     type: "BoolIndexType" = Field(..., description="")
+    on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
 
 
 class BoolIndexType(str, Enum):
@@ -142,11 +145,32 @@ class CollectionClusterInfo(BaseModel):
 
 
 class CollectionConfig(BaseModel):
+    """
+    Information about the collection configuration
+    """
+
+    params: "CollectionParams" = Field(..., description="Information about the collection configuration")
+    hnsw_config: "HnswConfig" = Field(..., description="Information about the collection configuration")
+    optimizer_config: "OptimizersConfig" = Field(..., description="Information about the collection configuration")
+    wal_config: Optional["WalConfig"] = Field(
+        default=None, description="Information about the collection configuration"
+    )
+    quantization_config: Optional["QuantizationConfig"] = Field(
+        default=None, description="Information about the collection configuration"
+    )
+    strict_mode_config: Optional["StrictModeConfig"] = Field(
+        default=None, description="Information about the collection configuration"
+    )
+
+
+class CollectionConfigInternal(BaseModel):
     params: "CollectionParams" = Field(..., description="")
     hnsw_config: "HnswConfig" = Field(..., description="")
     optimizer_config: "OptimizersConfig" = Field(..., description="")
     wal_config: "WalConfig" = Field(..., description="")
     quantization_config: Optional["QuantizationConfig"] = Field(default=None, description="")
+    strict_mode_config: Optional["StrictModeConfig"] = Field(default=None, description="")
+    uuid: Optional[UUID] = Field(default=None, description="")
 
 
 class CollectionDescription(BaseModel):
@@ -206,8 +230,8 @@ class CollectionParams(BaseModel):
         description="Defines how many additional replicas should be processing read request at the same time. Default value is Auto, which means that fan-out will be determined automatically based on the busyness of the local replica. Having more than 0 might be useful to smooth latency spikes of individual nodes.",
     )
     on_disk_payload: Optional[bool] = Field(
-        default=False,
-        description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
+        default=True,
+        description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.  Default: true",
     )
     sparse_vectors: Optional[Dict[str, "SparseVectorParams"]] = Field(
         default=None, description="Configuration of the sparse vector storage"
@@ -246,10 +270,11 @@ class CollectionStatus(str, Enum):
 class CollectionTelemetry(BaseModel):
     id: str = Field(..., description="")
     init_time_ms: int = Field(..., description="")
-    config: "CollectionConfig" = Field(..., description="")
+    config: "CollectionConfigInternal" = Field(..., description="")
     shards: List["ReplicaSetTelemetry"] = Field(..., description="")
     transfers: List["ShardTransferInfo"] = Field(..., description="")
     resharding: List["ReshardingInfo"] = Field(..., description="")
+    shard_clean_tasks: Dict[str, "ShardCleanStatusTelemetry"] = Field(..., description="")
 
 
 class CollectionsAggregatedTelemetry(BaseModel):
@@ -389,7 +414,7 @@ class CreateCollection(BaseModel, extra="forbid"):
     )
     on_disk_payload: Optional[bool] = Field(
         default=None,
-        description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.",
+        description="If true - point&#x27;s payload will not be stored in memory. It will be read from the disk every time it is requested. This setting saves RAM by (slightly) increasing the response time. Note: those payload values that are involved in filtering and are indexed - remain in RAM.  Default: true",
     )
     hnsw_config: Optional["HnswConfigDiff"] = Field(
         default=None,
@@ -792,6 +817,10 @@ class GeoRadius(BaseModel, extra="forbid"):
     radius: float = Field(..., description="Radius of the area in meters")
 
 
+class GpuDeviceTelemetry(BaseModel):
+    name: str = Field(..., description="")
+
+
 class GroupsResult(BaseModel):
     groups: List["PointGroup"] = Field(..., description="")
 
@@ -800,12 +829,32 @@ class GrpcTelemetry(BaseModel):
     responses: Dict[str, "OperationDurationStatistics"] = Field(..., description="")
 
 
+class HardwareTelemetry(BaseModel):
+    collection_data: Dict[str, "HardwareUsage"] = Field(..., description="")
+
+
+class HardwareUsage(BaseModel):
+    """
+    Usage of the hardware resources, spent to process the request
+    """
+
+    cpu: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+
+
 class HasIdCondition(BaseModel, extra="forbid"):
     """
     ID-based filtering condition
     """
 
     has_id: List["ExtendedPointId"] = Field(..., description="ID-based filtering condition")
+
+
+class HasVectorCondition(BaseModel, extra="forbid"):
+    """
+    Filter points which have specific vector assigned
+    """
+
+    has_vector: str = Field(..., description="Filter points which have specific vector assigned")
 
 
 class HnswConfig(BaseModel):
@@ -938,12 +987,14 @@ class InitFrom(BaseModel, extra="forbid"):
 
 
 class InlineResponse200(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[bool] = Field(default=None, description="")
 
 
 class InlineResponse2001(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["TelemetryData"] = Field(default=None, description="")
@@ -952,136 +1003,164 @@ class InlineResponse2001(BaseModel):
 class InlineResponse20010(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
+    result: Optional[bool] = Field(default=None, description="")
 
 
 class InlineResponse20011(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["SnapshotDescription"] = Field(default=None, description="")
+    result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
 class InlineResponse20012(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["Record"] = Field(default=None, description="")
+    result: Optional["SnapshotDescription"] = Field(default=None, description="")
 
 
 class InlineResponse20013(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["Record"] = Field(default=None, description="")
+
+
+class InlineResponse20014(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["Record"]] = Field(default=None, description="")
 
 
-class InlineResponse20014(BaseModel):
+class InlineResponse20015(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["UpdateResult"]] = Field(default=None, description="")
 
 
-class InlineResponse20015(BaseModel):
+class InlineResponse20016(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
-class InlineResponse20016(BaseModel):
+class InlineResponse20017(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
 
 
-class InlineResponse20017(BaseModel):
+class InlineResponse20018(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
 
 
-class InlineResponse20018(BaseModel):
+class InlineResponse20019(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["GroupsResult"] = Field(default=None, description="")
 
 
-class InlineResponse20019(BaseModel):
-    time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Optional[str] = Field(default=None, description="")
-    result: Optional["CountResult"] = Field(default=None, description="")
-
-
 class InlineResponse2002(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["LocksOption"] = Field(default=None, description="")
 
 
 class InlineResponse20020(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["CountResult"] = Field(default=None, description="")
+
+
+class InlineResponse20021(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["FacetResponse"] = Field(default=None, description="")
 
 
-class InlineResponse20021(BaseModel):
+class InlineResponse20022(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["QueryResponse"] = Field(default=None, description="")
 
 
-class InlineResponse20022(BaseModel):
+class InlineResponse20023(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["QueryResponse"]] = Field(default=None, description="")
 
 
-class InlineResponse20023(BaseModel):
+class InlineResponse20024(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
 
 
-class InlineResponse20024(BaseModel):
+class InlineResponse20025(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["SearchMatrixOffsetsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2003(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["ClusterStatus"] = Field(default=None, description="")
 
 
 class InlineResponse2004(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2005(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2006(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["UpdateResult"] = Field(default=None, description="")
 
 
 class InlineResponse2007(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionExistence"] = Field(default=None, description="")
 
 
 class InlineResponse2008(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2009(BaseModel):
+    usage: Optional["HardwareUsage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
@@ -1148,6 +1227,7 @@ class LocalShardTelemetry(BaseModel):
     total_optimized_points: int = Field(..., description="Total number of optimized points since the last start.")
     segments: List["SegmentTelemetry"] = Field(..., description="")
     optimizations: "OptimizerTelemetry" = Field(..., description="")
+    async_scorer: Optional[bool] = Field(default=None, description="")
 
 
 class LocksOption(BaseModel, extra="forbid"):
@@ -1203,6 +1283,18 @@ class MatchValue(BaseModel, extra="forbid"):
     """
 
     value: "ValueVariants" = Field(..., description="Exact match of the given value")
+
+
+class MaxOptimizationThreadsSetting(str, Enum):
+    AUTO = "auto"
+
+
+class MemoryTelemetry(BaseModel):
+    active_bytes: int = Field(..., description="Total number of bytes in active pages allocated by the application")
+    allocated_bytes: int = Field(..., description="Total number of bytes allocated by the application")
+    metadata_bytes: int = Field(..., description="Total number of bytes dedicated to metadata")
+    resident_bytes: int = Field(..., description="Maximum number of bytes in physically resident data pages mapped")
+    retained_bytes: int = Field(..., description="Total number of bytes in virtual memory mappings")
 
 
 class MessageSendErrors(BaseModel):
@@ -1330,7 +1422,7 @@ class OptimizersConfig(BaseModel):
     )
     memmap_threshold: Optional[int] = Field(
         default=None,
-        description="Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`. Internally it will use the largest threshold possible.  Note: 1Kb = 1 vector of size 256",
+        description="Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmapped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`. Internally it will use the largest threshold possible.  Note: 1Kb = 1 vector of size 256",
     )
     indexing_threshold: Optional[int] = Field(
         default=None,
@@ -1361,16 +1453,16 @@ class OptimizersConfigDiff(BaseModel, extra="forbid"):
     )
     memmap_threshold: Optional[int] = Field(
         default=None,
-        description="Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`.  Note: 1Kb = 1 vector of size 256",
+        description="Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmapped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`.  Note: 1Kb = 1 vector of size 256",
     )
     indexing_threshold: Optional[int] = Field(
         default=None,
         description="Maximum size (in kilobytes) of vectors allowed for plain index, exceeding this threshold will enable vector indexing  Default value is 20,000, based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt;.  To disable vector indexing, set to `0`.  Note: 1kB = 1 vector of size 256.",
     )
     flush_interval_sec: Optional[int] = Field(default=None, description="Minimum interval between forced flushes.")
-    max_optimization_threads: Optional[int] = Field(
+    max_optimization_threads: Optional["MaxOptimizationThreads"] = Field(
         default=None,
-        description="Max number of threads (jobs) for running optimizations per shard. Note: each optimization job will also use `max_indexing_threads` threads by itself for index building. If null - have no limit and choose dynamically to saturate CPU. If 0 - no optimization threads, optimizations will be disabled.",
+        description="Max number of threads (jobs) for running optimizations per shard. Note: each optimization job will also use `max_indexing_threads` threads by itself for index building. If &quot;auto&quot; - have no limit and choose dynamically to saturate CPU. If 0 - no optimization threads, optimizations will be disabled.",
     )
 
 
@@ -1438,8 +1530,8 @@ class PayloadIndexInfo(BaseModel):
 
 class PayloadIndexTelemetry(BaseModel):
     field_name: Optional[str] = Field(default=None, description="")
-    points_values_count: int = Field(..., description="")
-    points_count: int = Field(..., description="")
+    points_values_count: int = Field(..., description="The amount of values indexed for all points.")
+    points_count: int = Field(..., description="The amount of points that have at least one value indexed.")
     histogram_bucket_size: Optional[int] = Field(default=None, description="")
 
 
@@ -1478,6 +1570,12 @@ class PayloadStorageTypeOneOf(BaseModel):
 class PayloadStorageTypeOneOf1(BaseModel):
     type: Literal[
         "on_disk",
+    ] = Field(..., description="")
+
+
+class PayloadStorageTypeOneOf2(BaseModel):
+    type: Literal[
+        "mmap",
     ] = Field(..., description="")
 
 
@@ -1882,6 +1980,7 @@ class Replica(BaseModel, extra="forbid"):
 
 class ReplicaSetTelemetry(BaseModel):
     id: int = Field(..., description="")
+    key: Optional["ShardKey"] = Field(default=None, description="")
     local: Optional["LocalShardTelemetry"] = Field(default=None, description="")
     remote: List["RemoteShardTelemetry"] = Field(..., description="")
     replicate_states: Dict[str, "ReplicaState"] = Field(..., description="")
@@ -1975,6 +2074,7 @@ class RunningEnvironmentTelemetry(BaseModel):
     disk_size: Optional[int] = Field(default=None, description="")
     cpu_flags: str = Field(..., description="")
     cpu_endian: Optional["CpuEndian"] = Field(default=None, description="")
+    gpu_devices: Optional[List["GpuDeviceTelemetry"]] = Field(default=None, description="")
 
 
 class Sample(str, Enum):
@@ -2191,6 +2291,13 @@ class SegmentInfo(BaseModel):
     num_points: int = Field(..., description="Aggregated information about segment")
     num_indexed_vectors: int = Field(..., description="Aggregated information about segment")
     num_deleted_vectors: int = Field(..., description="Aggregated information about segment")
+    vectors_size_bytes: int = Field(
+        ...,
+        description="An ESTIMATION of effective amount of bytes used for vectors Do NOT rely on this number unless you know what you are doing",
+    )
+    payloads_size_bytes: int = Field(
+        ..., description="An estimation of the effective amount of bytes used for payloads"
+    )
     ram_usage_bytes: int = Field(..., description="Aggregated information about segment")
     disk_usage_bytes: int = Field(..., description="Aggregated information about segment")
     is_appendable: bool = Field(..., description="Aggregated information about segment")
@@ -2242,6 +2349,28 @@ class SetPayload(BaseModel, extra="forbid"):
 
 class SetPayloadOperation(BaseModel, extra="forbid"):
     set_payload: "SetPayload" = Field(..., description="")
+
+
+class ShardCleanStatusFailedTelemetry(BaseModel):
+    reason: str = Field(..., description="")
+
+
+class ShardCleanStatusProgressTelemetry(BaseModel):
+    deleted_points: int = Field(..., description="")
+
+
+class ShardCleanStatusTelemetryOneOf(str, Enum):
+    STARTED = "started"
+    DONE = "done"
+    CANCELLED = "cancelled"
+
+
+class ShardCleanStatusTelemetryOneOf1(BaseModel):
+    progress: "ShardCleanStatusProgressTelemetry" = Field(..., description="")
+
+
+class ShardCleanStatusTelemetryOneOf2(BaseModel):
+    failed: "ShardCleanStatusFailedTelemetry" = Field(..., description="")
 
 
 class ShardSnapshotRecover(BaseModel, extra="forbid"):
@@ -2440,6 +2569,9 @@ class SparseVectorDataConfig(BaseModel):
     """
 
     index: "SparseIndexConfig" = Field(..., description="Config of single sparse vector data storage")
+    storage_type: Optional["SparseVectorStorageType"] = Field(
+        default=None, description="Config of single sparse vector data storage"
+    )
 
 
 class SparseVectorParams(BaseModel, extra="forbid"):
@@ -2453,6 +2585,28 @@ class SparseVectorParams(BaseModel, extra="forbid"):
     modifier: Optional["Modifier"] = Field(
         default=None, description="Configures addition value modifications for sparse vectors. Default: none"
     )
+
+
+class SparseVectorStorageTypeOneOf(str, Enum):
+    """
+    Storage on disk
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    ON_DISK = "on_disk"
+
+
+class SparseVectorStorageTypeOneOf1(str, Enum):
+    """
+    Storage in memory maps
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    MMAP = "mmap"
 
 
 class StateRole(str, Enum):
@@ -2486,14 +2640,29 @@ class StrictModeConfig(BaseModel, extra="forbid"):
     search_max_oversampling: Optional[float] = Field(
         default=None, description="Max oversampling value allowed in search."
     )
+    upsert_max_batchsize: Optional[int] = Field(default=None, description="Max batchsize when upserting")
+    max_collection_vector_size_bytes: Optional[int] = Field(
+        default=None, description="Max size of a collections vector storage in bytes, ignoring replicas."
+    )
+    read_rate_limit: Optional[int] = Field(
+        default=None, description="Max number of read operations per minute per replica"
+    )
+    write_rate_limit: Optional[int] = Field(
+        default=None, description="Max number of write operations per minute per replica"
+    )
+    max_collection_payload_size_bytes: Optional[int] = Field(
+        default=None, description="Max size of a collections payload storage in bytes"
+    )
 
 
 class TelemetryData(BaseModel):
     id: str = Field(..., description="")
     app: "AppBuildTelemetry" = Field(..., description="")
     collections: "CollectionsTelemetry" = Field(..., description="")
-    cluster: "ClusterTelemetry" = Field(..., description="")
-    requests: "RequestsTelemetry" = Field(..., description="")
+    cluster: Optional["ClusterTelemetry"] = Field(default=None, description="")
+    requests: Optional["RequestsTelemetry"] = Field(default=None, description="")
+    memory: Optional["MemoryTelemetry"] = Field(default=None, description="")
+    hardware: Optional["HardwareTelemetry"] = Field(default=None, description="")
 
 
 class TextIndexParams(BaseModel, extra="forbid"):
@@ -2838,6 +3007,7 @@ Condition = Union[
     IsEmptyCondition,
     IsNullCondition,
     HasIdCondition,
+    HasVectorCondition,
     NestedCondition,
     Filter,
 ]
@@ -2873,6 +3043,10 @@ Match = Union[
     MatchAny,
     MatchExcept,
 ]
+MaxOptimizationThreads = Union[
+    StrictInt,
+    MaxOptimizationThreadsSetting,
+]
 NamedVectorStruct = Union[
     List[StrictFloat],
     NamedVector,
@@ -2907,6 +3081,7 @@ PayloadSelector = Union[
 PayloadStorageType = Union[
     PayloadStorageTypeOneOf,
     PayloadStorageTypeOneOf1,
+    PayloadStorageTypeOneOf2,
 ]
 PointInsertOperations = Union[
     PointsBatch,
@@ -2948,6 +3123,11 @@ ReshardingDirection = Union[
     ReshardingDirectionOneOf,
     ReshardingDirectionOneOf1,
 ]
+ShardCleanStatusTelemetry = Union[
+    ShardCleanStatusTelemetryOneOf,
+    ShardCleanStatusTelemetryOneOf1,
+    ShardCleanStatusTelemetryOneOf2,
+]
 ShardKey = Union[
     StrictInt,
     StrictStr,
@@ -2964,6 +3144,10 @@ SparseIndexType = Union[
     SparseIndexTypeOneOf,
     SparseIndexTypeOneOf1,
     SparseIndexTypeOneOf2,
+]
+SparseVectorStorageType = Union[
+    SparseVectorStorageTypeOneOf,
+    SparseVectorStorageTypeOneOf1,
 ]
 StartFrom = Union[
     StrictInt,
