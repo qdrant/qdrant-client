@@ -112,7 +112,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                         show_warning(
                             f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Collection <{collection_name}> contains {len(collection.ids)} points. Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
                             category=UserWarning,
-                            idx="large-local-collection",
                             stacklevel=6,
                         )
                 self.aliases = meta["aliases"]

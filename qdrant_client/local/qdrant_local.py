@@ -120,7 +120,6 @@ class QdrantLocal(QdrantBase):
                             "Consider using Qdrant in Docker or Qdrant Cloud for better performance "
                             "with large datasets.",
                             category=UserWarning,
-                            idx="large-local-collection",
                             stacklevel=6,
                         )
                 self.aliases = meta["aliases"]
