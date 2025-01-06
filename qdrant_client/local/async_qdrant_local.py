@@ -112,7 +112,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                         show_warning(
                             f"Local mode is not recommended for collections with more than {self.LARGE_DATA_THRESHOLD:,} points. Collection <{collection_name}> contains {len(collection.ids)} points. Consider using Qdrant in Docker or Qdrant Cloud for better performance with large datasets.",
                             category=UserWarning,
-                            stacklevel=6,
+                            stacklevel=5,
                         )
                 self.aliases = meta["aliases"]
         lock_file_path = os.path.join(self.location, ".lock")
