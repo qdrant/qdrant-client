@@ -2646,6 +2646,7 @@ class QdrantRemote(QdrantBase):
                 hnsw_config=hnsw_config,
                 quantization_config=quantization_config,
                 sparse_vectors=sparse_vectors_config,
+                strict_mode_config=strict_mode_config,
             ),
             timeout=timeout,
         ).result
@@ -2797,6 +2798,7 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
+        strict_mode_config: Optional[types.StrictModeConfig] = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name, timeout=timeout)
@@ -2816,6 +2818,7 @@ class QdrantRemote(QdrantBase):
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             sharding_method=sharding_method,
+            strict_mode_config=strict_mode_config,
         )
 
     @property

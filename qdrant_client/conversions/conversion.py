@@ -244,6 +244,9 @@ class GrpcToRest:
                 if model.HasField("quantization_config")
                 else None
             ),
+            strict_mode_config=cls.convert_strict_mode_config(model.strict_mode_config)
+            if model.HasField("strict_mode_config")
+            else None,
         )
 
     @classmethod
@@ -2410,6 +2413,11 @@ class RestToGrpc:
             quantization_config=(
                 cls.convert_quantization_config(model.quantization_config)
                 if model.quantization_config is not None
+                else None
+            ),
+            strict_mode_config=(
+                cls.convert_strict_mode_config(model.strict_mode_config)
+                if model.strict_mode_config is not None
                 else None
             ),
         )
