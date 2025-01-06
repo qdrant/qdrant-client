@@ -1,5 +1,4 @@
 import uuid
-import warnings
 from itertools import tee
 from typing import Any, Iterable, Optional, Sequence, Union, get_args
 from copy import deepcopy
@@ -21,6 +20,7 @@ from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 from qdrant_client import grpc
+from qdrant_client.common.client_warnings import show_warning
 
 try:
     from fastembed import (
@@ -153,11 +153,11 @@ class QdrantFastembedMixin(QdrantBase):
         """
 
         if max_length is not None:
-            warnings.warn(
-                "max_length parameter is deprecated and will be removed in the future. "
+            show_warning(
+                message="max_length parameter is deprecated and will be removed in the future. "
                 "It's not used by fastembed models.",
-                DeprecationWarning,
-                stacklevel=2,
+                category=DeprecationWarning,
+                stacklevel=3,
             )
 
         self._get_or_init_model(
