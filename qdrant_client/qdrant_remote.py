@@ -426,7 +426,7 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> list[types.ScoredPoint]:
-        if append_payload is not None:
+        if not append_payload:
             show_warning_once(
                 message="Usage of `append_payload` is deprecated. Please consider using `with_payload` instead",
                 category=DeprecationWarning,
