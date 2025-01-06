@@ -196,7 +196,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 show_warning(
                     message="Unable to close grpc_channel. Connection was interrupted on the server side",
                     category=UserWarning,
-                    stacklevel=5,
+                    stacklevel=4,
                 )
             except RuntimeError:
                 pass
@@ -206,7 +206,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             show_warning(
                 message="Unable to close http connection. Connection was interrupted on the server side",
                 category=UserWarning,
-                stacklevel=5,
+                stacklevel=4,
             )
         self._closed = True
 
