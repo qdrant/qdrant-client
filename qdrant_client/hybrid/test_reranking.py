@@ -50,9 +50,6 @@ def test_distribution_based_score_fusion() -> None:
     assert fused[1].id == 0
     assert fused[2].id == 4
 
-    fused = distribution_based_score_fusion([[responses[0][0]]], limit=3)
-    assert fused[0].id == 1
-
 
 def test_reciprocal_rank_fusion_empty_responses() -> None:
     responses: list[list[models.ScoredPoint]] = [[]]
@@ -97,3 +94,24 @@ def test_distribution_based_score_fusion_empty_response() -> None:
     assert fused[0].id == 1
     assert fused[1].id == 0
     assert fused[2].id == 5
+
+
+def test_distribution_based_score_fusion_zero_variance() -> None:
+    score = 85.0
+    responses = [
+        [
+            models.ScoredPoint(id=1, version=0, score=score),
+            models.ScoredPoint(id=0, version=0, score=score),
+            models.ScoredPoint(id=5, version=0, score=score),
+        ],
+        [],
+    ]
+    fused = distribution_based_score_fusion(
+        [[models.ScoredPoint(id=1, version=0, score=score)]], limit=3
+    )
+    assert fused[0].id == 1
+    assert fused[0].score == 0.5
+
+    fused = distribution_based_score_fusion(responses, limit=3)
+    assert len(fused) == 3
+    assert all([p.score == 0.5 for p in fused])

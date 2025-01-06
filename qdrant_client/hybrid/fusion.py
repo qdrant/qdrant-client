@@ -33,14 +33,20 @@ def distribution_based_score_fusion(
     responses: list[list[models.ScoredPoint]], limit: int
 ) -> list[models.ScoredPoint]:
     def normalize(response: list[models.ScoredPoint]) -> list[models.ScoredPoint]:
-        if len(response) <= 1:
+        if len(response) == 1:
+            response[0].score = 0.5
             return response
 
         total = sum([point.score for point in response])
         mean = total / len(response)
         variance = sum([(point.score - mean) ** 2 for point in response]) / (len(response) - 1)
-        std_dev = variance**0.5
 
+        if variance == 0:
+            for point in response:
+                point.score = 0.5
+            return response
+
+        std_dev = variance**0.5
         low = mean - 3 * std_dev
         high = mean + 3 * std_dev
 
