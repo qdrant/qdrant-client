@@ -101,6 +101,8 @@ class QdrantRemote(QdrantBase):
                     "Prefix can be set either in `url` or in `prefix`. "
                     f"url is {url}, prefix is {parsed_url.path}"
                 )
+            elif parsed_url.path:
+                self._prefix = parsed_url.path
 
             self._prefix = (
                 self._prefix if self._prefix else self._format_prefix(parsed_url.path or "")

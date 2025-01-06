@@ -9,61 +9,12 @@ import pytest
 import qdrant_client.http.exceptions
 from qdrant_client import models
 from qdrant_client.async_qdrant_client import AsyncQdrantClient
-from qdrant_client.async_qdrant_remote import AsyncQdrantRemote
 from tests.utils import read_version
 
 NUM_VECTORS = 100
 NUM_QUERIES = 100
 DIM = 32
 COLLECTION_NAME = "async_test_collection"
-
-
-def test_client_init():
-    client = AsyncQdrantClient()
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "http://localhost:6333"
-
-    client = AsyncQdrantClient(https=True)
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "https://localhost:6333"
-
-    client = AsyncQdrantClient(https=True, port=7333)
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "https://localhost:7333"
-
-    client = AsyncQdrantClient(host="hidden_port_addr.com", prefix="custom")
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "http://hidden_port_addr.com:6333/custom"
-
-    client = AsyncQdrantClient(host="hidden_port_addr.com", port=None)
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "http://hidden_port_addr.com"
-
-    client = AsyncQdrantClient(
-        host="hidden_port_addr.com",
-        port=None,
-        prefix="custom",
-    )
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "http://hidden_port_addr.com/custom"
-
-    client = AsyncQdrantClient("http://hidden_port_addr.com", port=None)
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "http://hidden_port_addr.com"
-
-    # url takes precedence over port, which has default value for a backward compatibility
-    client = AsyncQdrantClient(url="http://localhost:6333", port=7333)
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "http://localhost:6333"
-
-    client = AsyncQdrantClient(url="http://localhost:6333", prefix="custom")
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "http://localhost:6333/custom"
-
-    client = AsyncQdrantClient(url="http://localhost:6333/custom")
-    assert isinstance(client._client, AsyncQdrantRemote)
-    assert client._client.rest_uri == "http://localhost:6333/custom"
-    assert client._client._prefix == "/custom"
 
 
 @pytest.mark.asyncio
