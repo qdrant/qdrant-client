@@ -11,6 +11,8 @@ from typing import (
     Union,
 )
 
+import numpy as np
+
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.deprecations import deprecation_warning_once
@@ -2538,9 +2540,23 @@ class QdrantClient(QdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
+        if not self.cloud_inference:
+            iter_points = iter(points)
+            point = next(iter_points)
+            requires_inference = self._inference_inspector.inspect(point)
+
+            def chain(*iterables):
+                for iterable in iterables:
+                    yield from iterable
+
+            points = chain(iter([point]), iter_points)
+
+            if requires_inference:
+                points = self._lazy_embed_models(points, batch_size=batch_size)
+
         return self._client.upload_points(
             collection_name=collection_name,
-            points=self._lazy_embed_models(points, batch_size=batch_size),  # type: ignore
+            points=points,
             batch_size=batch_size,
             parallel=parallel,
             method=method,
@@ -2593,9 +2609,23 @@ class QdrantClient(QdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
+        if not self.cloud_inference:
+            if not isinstance(vectors, dict) and not isinstance(vectors, np.ndarray):
+                iter_vectors = iter(vectors)
+                vector = next(iter_vectors)
+                requires_inference = self._inference_inspector.inspect(vector)
+
+                def chain(*iterables):
+                    for iterable in iterables:
+                        yield from iterable
+
+                vectors = chain(iter([vector]), iter_vectors)
+                if requires_inference:
+                    vectors = self._lazy_embed_models(vectors, batch_size=batch_size)
+
         return self._client.upload_collection(
             collection_name=collection_name,
-            vectors=self._lazy_embed_models(vectors, batch_size=batch_size),  # type: ignore
+            vectors=vectors,
             payload=payload,
             ids=ids,
             batch_size=batch_size,
