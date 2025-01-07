@@ -146,6 +146,11 @@ def test_client_init():
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333/custom"
 
+    client = QdrantClient(url="http://localhost:6333/custom")
+    assert isinstance(client._client, QdrantRemote)
+    assert client._client.rest_uri == "http://localhost:6333/custom"
+    assert client._client._prefix == "/custom"
+
     client = QdrantClient("my-domain.com")
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://my-domain.com:6333"
@@ -2079,6 +2084,7 @@ def test_async_auth_token_provider():
         client.get_collections()
 
     assert token == ""
+
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_read_consistency(prefer_grpc):

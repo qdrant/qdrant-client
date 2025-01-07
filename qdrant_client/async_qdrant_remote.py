@@ -99,6 +99,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 raise ValueError(
                     f"Prefix can be set either in `url` or in `prefix`. url is {url}, prefix is {parsed_url.path}"
                 )
+            elif parsed_url.path:
+                self._prefix = parsed_url.path
             if self._scheme not in ("http", "https"):
                 raise ValueError(f"Unknown scheme: {self._scheme}")
         else:
