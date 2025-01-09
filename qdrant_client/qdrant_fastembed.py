@@ -1,6 +1,8 @@
+import os
 import uuid
 import warnings
 from itertools import tee
+from multiprocessing import get_all_start_methods
 from typing import Any, Iterable, Optional, Sequence, Union, get_args
 from copy import deepcopy
 
@@ -20,6 +22,7 @@ from qdrant_client.fastembed_common import QueryResponse
 from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
 from qdrant_client import grpc
+from qdrant_client.parallel_processor import ParallelWorkerPool, Worker
 from qdrant_client.uploader.uploader import iter_batch
 
 try:
@@ -81,18 +84,13 @@ _IMAGE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
 class QdrantFastembedMixin(QdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
 
-    embedding_models: dict[str, "TextEmbedding"] = {}
-    sparse_embedding_models: dict[str, "SparseTextEmbedding"] = {}
-    late_interaction_embedding_models: dict[str, "LateInteractionTextEmbedding"] = {}
-    image_embedding_models: dict[str, "ImageEmbedding"] = {}
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, parser: ModelSchemaParser, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
-        self._embed_inspector = InspectorEmbed(parser=parser)
-        self._batch_accumulator: dict[str, list[Any]] = {}  # lists of inference object types
-        self._embed_storage: dict[str, NumericVector] = {}
+        self._pydanter = Pydanter(parser=parser)
+
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
@@ -246,117 +244,111 @@ class QdrantFastembedMixin(QdrantBase):
 
         return SUPPORTED_EMBEDDING_MODELS[model_name]
 
-    @classmethod
     def _get_or_init_model(
-        cls,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "TextEmbedding":
-        if model_name in cls.embedding_models:
-            return cls.embedding_models[model_name]
+        if model_name in self._pydanter.embedder.embedding_models:
+            return self._pydanter.embedder.embedding_models[model_name]
 
-        cls._import_fastembed()
+        self._import_fastembed()
 
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
 
-        cls.embedding_models[model_name] = TextEmbedding(
+        self._pydanter.embedder.get_or_init_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
             **kwargs,
         )
-        return cls.embedding_models[model_name]
 
-    @classmethod
+        return self._pydanter.embedder.embedding_models[model_name]
+
     def _get_or_init_sparse_model(
-        cls,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "SparseTextEmbedding":
-        if model_name in cls.sparse_embedding_models:
-            return cls.sparse_embedding_models[model_name]
+        if model_name in self._pydanter.embedder.sparse_embedding_models:
+            return self._pydanter.embedder.sparse_embedding_models[model_name]
 
-        cls._import_fastembed()
+        self._import_fastembed()
 
         if model_name not in SUPPORTED_SPARSE_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_SPARSE_EMBEDDING_MODELS}"
             )
 
-        cls.sparse_embedding_models[model_name] = SparseTextEmbedding(
+        return self._pydanter.embedder.get_or_init_sparse_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
             **kwargs,
         )
-        return cls.sparse_embedding_models[model_name]
 
-    @classmethod
     def _get_or_init_late_interaction_model(
-        cls,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "LateInteractionTextEmbedding":
-        if model_name in cls.late_interaction_embedding_models:
-            return cls.late_interaction_embedding_models[model_name]
+        if model_name in self._pydanter.embedder.late_interaction_embedding_models:
+            return self._pydanter.embedder.late_interaction_embedding_models[model_name]
 
-        cls._import_fastembed()
+        self._import_fastembed()
 
         if model_name not in _LATE_INTERACTION_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_EMBEDDING_MODELS}"
             )
 
-        cls.late_interaction_embedding_models[model_name] = LateInteractionTextEmbedding(
+        return self._pydanter.embedder.get_or_init_late_interaction_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
             **kwargs,
         )
-        return cls.late_interaction_embedding_models[model_name]
 
-    @classmethod
     def _get_or_init_image_model(
-        cls,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "ImageEmbedding":
-        if model_name in cls.image_embedding_models:
-            return cls.image_embedding_models[model_name]
+        if model_name in self._pydanter.embedder.image_embedding_models:
+            return self._pydanter.embedder.image_embedding_models[model_name]
 
-        cls._import_fastembed()
+        self._import_fastembed()
 
         if model_name not in _IMAGE_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {_IMAGE_EMBEDDING_MODELS}"
             )
 
-        cls.image_embedding_models[model_name] = ImageEmbedding(
+        return self._pydanter.embedder.get_or_init_image_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
             **kwargs,
         )
-        return cls.image_embedding_models[model_name]
 
     def _embed_documents(
         self,
@@ -929,27 +921,34 @@ class QdrantFastembedMixin(QdrantBase):
         """
         return [self._resolve_query_request(query) for query in requests]
 
-    def _embed_model(
-        self, raw_model: BaseModel, is_query: bool = False
-    ) -> Union[BaseModel, NumericVector]:
-        """Embed raw data fields in a model and return a model with vectors
-
-        If any of model fields required inference, a deepcopy of a model with computed embeddings is returned,
-        otherwise returns original models.
-        Args:
-            raw_model: BaseModel - model which can contain fields with raw data
-            is_query: bool - flag to determine which embed method to use. Defaults to False.
-        Returns:
-            list[BaseModel]: models with embedded fields
-        """
-        self._process_model(raw_model, is_query=is_query, accumulating=True)
-        if not self._batch_accumulator:
-            return raw_model
-        return self._process_model(raw_model, is_query=is_query, accumulating=False)
-
-    def _lazy_embed_models(
+    def _embed_models(
         self,
         raw_models: Iterable[BaseModel],
+        is_query: bool = False,
+        batch_size: int = 32,
+    ) -> Iterable[BaseModel]:
+        yield from self._pydanter.embed_models(
+            raw_models=raw_models, is_query=is_query, batch_size=batch_size
+        )
+
+    def _embed_models_strict(
+        self, raw_models: Iterable[BaseModel], batch_size: int = 32, parallel: Optional[int] = None
+    ) -> Iterable[BaseModel]:
+        yield from self._pydanter.embed_models_strict(
+            raw_models=raw_models, batch_size=batch_size, parallel=parallel
+        )
+
+
+class Pydanter:
+    def __init__(self, parser: Optional[ModelSchemaParser] = None):
+        self._batch_accumulator = {}
+        self._embed_storage = {}
+        self._embed_inspector = InspectorEmbed(parser=parser)
+        self.embedder = Embedder()
+
+    def embed_models(
+        self,
+        raw_models: Union[BaseModel, Iterable[BaseModel]],
         is_query: bool = False,
         batch_size: int = 32,
     ) -> Iterable[BaseModel]:
@@ -964,17 +963,61 @@ class QdrantFastembedMixin(QdrantBase):
         Returns:
             list[BaseModel]: models with embedded fields
         """
-
+        if isinstance(raw_models, BaseModel):
+            raw_models = [raw_models]
         for raw_models_batch in iter_batch(raw_models, batch_size):
-            for raw_model in raw_models_batch:
-                self._process_model(raw_model, is_query=is_query, accumulating=True)
-            if not self._batch_accumulator:
-                yield from raw_models
-            else:
-                yield from (
-                    self._process_model(raw_model, is_query=is_query, accumulating=False)
-                    for raw_model in raw_models_batch
-                )
+            yield from self.embed_models_batch(raw_models_batch, is_query)
+
+    def embed_models_strict(
+        self, raw_models: Iterable[BaseModel], batch_size: int = 32, parallel: Optional[int] = None
+    ) -> Iterable[BaseModel]:
+        is_small = False
+
+        if isinstance(raw_models, list):
+            if len(raw_models) < batch_size:
+                is_small = True
+
+        if parallel is None or is_small:
+            for batch in iter_batch(raw_models, batch_size):
+                yield from self.embed_models_batch(batch)
+
+        else:
+            if parallel == 0:
+                parallel = os.cpu_count()
+
+            start_method = "forkserver" if "forkserver" in get_all_start_methods() else "spawn"
+            pool = ParallelWorkerPool(
+                num_workers=parallel,
+                worker=self._get_worker_class(),
+                start_method=start_method,
+            )
+            for batch in pool.unordered_map(iter_batch(raw_models, batch_size)):
+                yield from batch
+
+    def embed_models_batch(
+        self,
+        raw_models: list[BaseModel],
+        is_query: bool = False,
+    ) -> Iterable[BaseModel]:
+        """Embed raw data fields in models and return models with vectors
+
+            If any of model fields required inference, a deepcopy of a model with computed embeddings is returned,
+            otherwise returns original models.
+        Args:
+            raw_models: Iterable[BaseModel] - models which can contain fields with raw data
+            is_query: bool - flag to determine which embed method to use. Defaults to False.
+        Returns:
+            list[BaseModel]: models with embedded fields
+        """
+        for raw_model in raw_models:
+            self._process_model(raw_model, is_query=is_query, accumulating=True)
+        if not self._batch_accumulator:
+            yield from raw_models
+        else:
+            yield from (
+                self._process_model(raw_model, is_query=is_query, accumulating=False)
+                for raw_model in raw_models
+            )
 
     def _process_model(
         self,
@@ -1118,65 +1161,25 @@ class QdrantFastembedMixin(QdrantBase):
 
         for model_name, objects in self._batch_accumulator.items():
             options = next(iter(objects)).options or {}
-
-            if model_name in SUPPORTED_EMBEDDING_MODELS.keys():
+            if model_name in [
+                *SUPPORTED_EMBEDDING_MODELS,
+                *SUPPORTED_SPARSE_EMBEDDING_MODELS,
+                *_LATE_INTERACTION_EMBEDDING_MODELS,
+            ]:
                 texts = [obj.text for obj in objects]
-                embedding_model_inst = self._get_or_init_model(model_name=model_name, **options)
-                if not is_query:
-                    embeddings = [
-                        embedding.tolist()
-                        for embedding in embedding_model_inst.embed(documents=texts)
-                    ]
-                else:
-                    embeddings = [
-                        embedding.tolist()
-                        for embedding in embedding_model_inst.query_embed(query=texts)
-                    ]
-
-            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS.keys():
-                texts = [obj.text for obj in objects]
-                embedding_model_inst = self._get_or_init_sparse_model(
-                    model_name=model_name, **options
-                )
-                if not is_query:
-                    embeddings = [
-                        models.SparseVector(
-                            indices=sparse_embedding.indices.tolist(),
-                            values=sparse_embedding.values.tolist(),
-                        )
-                        for sparse_embedding in embedding_model_inst.embed(documents=texts)
-                    ]
-                else:
-                    embeddings = [
-                        models.SparseVector(
-                            indices=sparse_embedding.indices.tolist(),
-                            values=sparse_embedding.values.tolist(),
-                        )
-                        for sparse_embedding in embedding_model_inst.query_embed(query=texts)
-                    ]
-
-            elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS.keys():
-                texts = [obj.text for obj in objects]
-                embedding_model_inst = self._get_or_init_late_interaction_model(
-                    model_name=model_name, **options
-                )
-                if not is_query:
-                    embeddings = [
-                        embedding.tolist()
-                        for embedding in embedding_model_inst.embed(documents=texts)
-                    ]
-                else:
-                    embeddings = [
-                        embedding.tolist()
-                        for embedding in embedding_model_inst.query_embed(query=texts)
-                    ]
+                embeddings = [
+                    embedding
+                    for embedding in self.embedder.embed(
+                        texts=texts, is_query=is_query, model_name=model_name, **options
+                    )
+                ]
             else:
                 images = [obj.image for obj in objects]
-                embedding_model_inst = self._get_or_init_image_model(
-                    model_name=model_name, **options
-                )
                 embeddings = [
-                    embedding.tolist() for embedding in embedding_model_inst.embed(images=images)
+                    embedding
+                    for embedding in self.embedder.embed(
+                        images=images, is_query=is_query, model_name=model_name, **options
+                    )
                 ]
 
             self._embed_storage[model_name] = embeddings
@@ -1221,3 +1224,181 @@ class QdrantFastembedMixin(QdrantBase):
             return models.Image(model=model_name, image=value, options=options)
 
         raise ValueError(f"{model_name} is not among supported models")
+
+    @classmethod
+    def _get_worker_class(cls):
+        return PydanterWorker
+
+
+class PydanterWorker(Worker):
+    def __init__(self, **kwargs):
+        self.pydanter = Pydanter()
+
+    @classmethod
+    def start(cls, **kwargs: Any) -> "PydanterWorker":
+        return cls(**kwargs)
+
+    def process(self, items: Iterable[Any]) -> Iterable[BaseModel]:
+        yield from self.pydanter.embed_models_batch(list(items))
+
+
+class Embedder:
+    def __init__(self):
+        self.embedding_models: dict[str, "TextEmbedding"] = {}
+        self.sparse_embedding_models: dict[str, "SparseTextEmbedding"] = {}
+        self.late_interaction_embedding_models: dict[str, "LateInteractionTextEmbedding"] = {}
+        self.image_embedding_models: dict[str, "ImageEmbedding"] = {}
+
+    def get_or_init_model(
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cuda: bool = False,
+        device_ids: Optional[list[int]] = None,
+        **kwargs,
+    ):
+        self.embedding_models[model_name] = TextEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            providers=providers,
+            cuda=cuda,
+            device_ids=device_ids,
+            **kwargs,
+        )
+        return self.embedding_models[model_name]
+
+    def get_or_init_sparse_model(
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cuda: bool = False,
+        device_ids: Optional[list[int]] = None,
+        **kwargs,
+    ):
+        self.sparse_embedding_models[model_name] = SparseTextEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            providers=providers,
+            cuda=cuda,
+            device_ids=device_ids,
+            **kwargs,
+        )
+        return self.sparse_embedding_models[model_name]
+
+    def get_or_init_late_interaction_model(
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cuda: bool = False,
+        device_ids: Optional[list[int]] = None,
+        **kwargs,
+    ):
+        self.late_interaction_embedding_models[model_name] = LateInteractionTextEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            providers=providers,
+            cuda=cuda,
+            device_ids=device_ids,
+            **kwargs,
+        )
+        return self.late_interaction_embedding_models[model_name]
+
+    def get_or_init_image_model(
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cuda: bool = False,
+        device_ids: Optional[list[int]] = None,
+        **kwargs,
+    ):
+        self.image_embedding_models[model_name] = ImageEmbedding(
+            model_name=model_name,
+            cache_dir=cache_dir,
+            threads=threads,
+            providers=providers,
+            cuda=cuda,
+            device_ids=device_ids,
+            **kwargs,
+        )
+        return self.image_embedding_models[model_name]
+
+    def embed(
+        self, model_name, texts=None, images=None, is_query=False, batch_size: int = 32, **options
+    ) -> NumericVector:
+        if (texts is None) is (images is None):
+            raise ValueError("Either documents or images should be provided")
+
+        if model_name in SUPPORTED_EMBEDDING_MODELS:
+            embedding_model_inst = self.get_or_init_model(model_name=model_name, **options or {})
+            if not is_query:
+                embeddings = [
+                    embedding.tolist()
+                    for embedding in embedding_model_inst.embed(
+                        documents=texts, batch_size=batch_size
+                    )
+                ]
+            else:
+                embeddings = [
+                    embedding.tolist()
+                    for embedding in embedding_model_inst.query_embed(query=texts)
+                ]
+        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS.keys():
+            embedding_model_inst = self.get_or_init_sparse_model(
+                model_name=model_name, **options or {}
+            )
+            if not is_query:
+                embeddings = [
+                    models.SparseVector(
+                        indices=sparse_embedding.indices.tolist(),
+                        values=sparse_embedding.values.tolist(),
+                    )
+                    for sparse_embedding in embedding_model_inst.embed(
+                        documents=texts, batch_size=batch_size
+                    )
+                ]
+            else:
+                embeddings = [
+                    models.SparseVector(
+                        indices=sparse_embedding.indices.tolist(),
+                        values=sparse_embedding.values.tolist(),
+                    )
+                    for sparse_embedding in embedding_model_inst.query_embed(query=texts)
+                ]
+
+        elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
+            embedding_model_inst = self.get_or_init_late_interaction_model(
+                model_name=model_name, **options or {}
+            )
+            if not is_query:
+                embeddings = [
+                    embedding.tolist()
+                    for embedding in embedding_model_inst.embed(
+                        documents=texts, batch_size=batch_size
+                    )
+                ]
+            else:
+                embeddings = [
+                    embedding.tolist()
+                    for embedding in embedding_model_inst.query_embed(query=texts)
+                ]
+        else:
+            embedding_model_inst = self.get_or_init_image_model(
+                model_name=model_name, **options or {}
+            )
+            embeddings = [
+                embedding.tolist()
+                for embedding in embedding_model_inst.embed(images=images, batch_size=batch_size)
+            ]
+
+        return embeddings

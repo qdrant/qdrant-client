@@ -451,7 +451,7 @@ class QdrantClient(QdrantFastembedMixin):
         requests = self._resolve_query_batch_request(requests)
         requires_inference = self._inference_inspector.inspect(requests)
         if requires_inference and not self.cloud_inference:
-            requests = list(self._lazy_embed_models(requests))
+            requests = list(self._embed_models(requests, is_query=True))
 
         return self._client.query_batch_points(
             collection_name=collection_name,
@@ -583,12 +583,16 @@ class QdrantClient(QdrantFastembedMixin):
         query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
-            query = self._embed_model(query, is_query=True) if query is not None else None
+            query = (
+                next(iter(self._embed_models(query, is_query=True))) if query is not None else None
+            )
             if isinstance(prefetch, list):
-                prefetch = list(self._lazy_embed_models(prefetch))
+                prefetch = list(self._embed_models(prefetch, is_query=True))
             else:
                 prefetch = (
-                    self._embed_model(prefetch, is_query=True) if prefetch is not None else None
+                    next(iter(self._embed_models(prefetch, is_query=True)))
+                    if prefetch is not None
+                    else None
                 )
 
         return self._client.query_points(
@@ -730,12 +734,18 @@ class QdrantClient(QdrantFastembedMixin):
         query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
-            query = self._embed_model(query, is_query=True) if query is not None else None
+            query = (
+                next(iter(self._embed_models(query, is_query=True))) if query is not None else None
+            )
             if isinstance(prefetch, list):
-                prefetch = list(self._lazy_embed_models(prefetch, is_query=True))
+                prefetch = list(self._embed_models(prefetch, is_query=True))
             else:
-                prefetch = (
-                    self._embed_model(prefetch, is_query=True) if prefetch is not None else None
+                prefetch = next(
+                    iter(
+                        self._embed_models(prefetch, is_query=True)
+                        if prefetch is not None
+                        else None
+                    )
                 )
 
         return self._client.query_points_groups(
@@ -1597,9 +1607,9 @@ class QdrantClient(QdrantFastembedMixin):
 
         if requires_inference and not self.cloud_inference:
             if isinstance(points, types.Batch):
-                points = self._embed_model(points, is_query=False)
+                points = next(iter(self._embed_models(points, is_query=False)))
             else:
-                points = list(self._lazy_embed_models(points, is_query=False))
+                points = list(self._embed_models(points, is_query=False))
 
         return self._client.upsert(
             collection_name=collection_name,
@@ -1652,7 +1662,7 @@ class QdrantClient(QdrantFastembedMixin):
 
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and not self.cloud_inference:
-            points = list(self._lazy_embed_models(points, is_query=False))
+            points = list(self._embed_models(points, is_query=False))
 
         return self._client.update_vectors(
             collection_name=collection_name,
@@ -2102,7 +2112,7 @@ class QdrantClient(QdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         requires_inference = self._inference_inspector.inspect(update_operations)
         if requires_inference and not self.cloud_inference:
-            update_operations = list(self._lazy_embed_models(update_operations, is_query=False))
+            update_operations = list(self._embed_models(update_operations, is_query=False))
 
         return self._client.batch_update_points(
             collection_name=collection_name,
@@ -2552,7 +2562,9 @@ class QdrantClient(QdrantFastembedMixin):
             points = chain(iter([point]), iter_points)
 
             if requires_inference:
-                points = self._lazy_embed_models(points, batch_size=batch_size)
+                points = self._embed_models_strict(
+                    points, parallel=parallel, batch_size=batch_size
+                )
 
         return self._client.upload_points(
             collection_name=collection_name,
@@ -2621,7 +2633,9 @@ class QdrantClient(QdrantFastembedMixin):
 
                 vectors = chain(iter([vector]), iter_vectors)
                 if requires_inference:
-                    vectors = self._lazy_embed_models(vectors, batch_size=batch_size)
+                    vectors = self._embed_models_strict(
+                        vectors, parallel=parallel, batch_size=batch_size
+                    )
 
         return self._client.upload_collection(
             collection_name=collection_name,

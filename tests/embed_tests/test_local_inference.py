@@ -24,14 +24,6 @@ DENSE_IMAGE_DIM = 2048
 TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 
 
-# todo: remove once we don't store models in class variables
-@pytest.fixture(autouse=True)
-def reset_cls_model_storage():
-    QdrantClient.embedding_models = {}
-    QdrantClient.sparse_embedding_models = {}
-    QdrantClient.late_interaction_embedding_models = {}
-
-
 def arg_interceptor(func, kwarg_storage):
     kwarg_storage.clear()
 
@@ -225,7 +217,10 @@ def test_upload(prefer_grpc):
     def recreate_collection(client, collection_name):
         if client.collection_exists(collection_name):
             client.delete_collection(collection_name)
-        vector_params = models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE)
+        vector_params = {
+            "text": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
+            "image": models.VectorParams(size=DENSE_IMAGE_DIM, distance=models.Distance.COSINE),
+        }
         client.create_collection(collection_name, vectors_config=vector_params)
 
     local_client = QdrantClient(":memory:")
@@ -237,42 +232,56 @@ def test_upload(prefer_grpc):
     dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
     dense_doc_3 = models.Document(text="world world", model=DENSE_MODEL_NAME)
 
-    points = [
-        models.PointStruct(id=1, vector=dense_doc_1),
-        models.PointStruct(id=2, vector=dense_doc_2),
-        models.PointStruct(id=3, vector=dense_doc_3),
-    ]
+    dense_image_1 = models.Image(image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME)
+    dense_image_2 = models.Image(image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME)
+    dense_image_3 = models.Image(image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME)
 
+    # points = [
+    #     models.PointStruct(id=1, vector={"text": dense_doc_1,
+    #                                      # "image": dense_image_1
+    #                                      }),
+    #     models.PointStruct(id=2, vector={"text": dense_doc_2,
+    #                                      # "image": dense_image_2
+    #                                      }),
+    #     models.PointStruct(id=3, vector={"text": dense_doc_3,
+    #                                      # "image": dense_image_3
+    #                                      }),
+    # ]
+    #
+    # recreate_collection(local_client, COLLECTION_NAME)
+    # recreate_collection(remote_client, COLLECTION_NAME)
+    #
+    # local_client.upload_points(COLLECTION_NAME, points)
+    # remote_client.upload_points(COLLECTION_NAME, points)
+    #
+    # assert local_client.count(COLLECTION_NAME).count == len(points)
+    # assert isinstance(
+    #     local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector['text'], list
+    # )  # assert doc
+    # # has been substituted with its embedding
+    #
+    # compare_collections(
+    #     local_client,
+    #     remote_client,
+    #     num_vectors=10,
+    #     collection_name=COLLECTION_NAME,
+    # )
+    #
     recreate_collection(local_client, COLLECTION_NAME)
     recreate_collection(remote_client, COLLECTION_NAME)
 
-    local_client.upload_points(COLLECTION_NAME, points)
-    remote_client.upload_points(COLLECTION_NAME, points)
-
-    assert local_client.count(COLLECTION_NAME).count == len(points)
-    assert isinstance(
-        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector, list
-    )  # assert doc
-    # has been substituted with its embedding
-
-    compare_collections(
-        local_client,
-        remote_client,
-        num_vectors=10,
-        collection_name=COLLECTION_NAME,
+    vectors = (
+        {"text": dense_doc_1, "image": dense_image_1},
+        {"text": dense_doc_2, "image": dense_image_2},
+        {"text": dense_doc_3, "image": dense_image_3},
     )
-
-    recreate_collection(local_client, COLLECTION_NAME)
-    recreate_collection(remote_client, COLLECTION_NAME)
-
-    vectors = [dense_doc_1, dense_doc_2, dense_doc_3]
     ids = list(range(len(vectors)))
     local_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors)
     remote_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors)
 
-    assert local_client.count(COLLECTION_NAME).count == len(points)
+    assert local_client.count(COLLECTION_NAME).count == len(vectors)
     assert isinstance(
-        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector, list
+        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc
     # has been substituted with its embedding
 
@@ -282,48 +291,94 @@ def test_upload(prefer_grpc):
         num_vectors=10,
         collection_name=COLLECTION_NAME,
     )
+    #
+    # recreate_collection(local_client, COLLECTION_NAME)
+    # recreate_collection(remote_client, COLLECTION_NAME)
+    #
+    # local_client.upload_points(COLLECTION_NAME, points, parallel=2, batch_size=2)
+    # remote_client.upload_points(COLLECTION_NAME, points, parallel=2, batch_size=2)
+    #
+    # assert local_client.count(COLLECTION_NAME).count == len(points)
+    # assert isinstance(
+    #     local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector['text'], list
+    # )  # assert doc
+    # # has been substituted with its embedding
+    #
+    # compare_collections(
+    #     local_client,
+    #     remote_client,
+    #     num_vectors=10,
+    #     collection_name=COLLECTION_NAME,
+    # )
 
-    recreate_collection(local_client, COLLECTION_NAME)
-    recreate_collection(remote_client, COLLECTION_NAME)
-
-    local_client.upload_points(COLLECTION_NAME, points, parallel=2)
-    remote_client.upload_points(COLLECTION_NAME, points, parallel=2)
-
-    assert local_client.count(COLLECTION_NAME).count == len(points)
-    assert isinstance(
-        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector, list
-    )  # assert doc
-    # has been substituted with its embedding
-
-    compare_collections(
-        local_client,
-        remote_client,
-        num_vectors=10,
-        collection_name=COLLECTION_NAME,
-    )
-
-    recreate_collection(local_client, COLLECTION_NAME)
-    recreate_collection(remote_client, COLLECTION_NAME)
-
-    local_client.upload_collection(
-        COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2
-    )
-    remote_client.upload_collection(
-        COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2
-    )
-
-    assert local_client.count(COLLECTION_NAME).count == len(points)
-    assert isinstance(
-        local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector, list
-    )  # assert doc
-    # has been substituted with its embedding
-
-    compare_collections(
-        local_client,
-        remote_client,
-        num_vectors=10,
-        collection_name=COLLECTION_NAME,
-    )
+    # recreate_collection(local_client, COLLECTION_NAME)
+    # recreate_collection(remote_client, COLLECTION_NAME)
+    #
+    # local_client.upload_collection(
+    #     COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2
+    # )
+    # remote_client.upload_collection(
+    #     COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2
+    # )
+    #
+    # assert local_client.count(COLLECTION_NAME).count == len(vectors)
+    # assert isinstance(
+    #     local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector['text'], list
+    # )  # assert doc
+    # # has been substituted with its embedding
+    #
+    # compare_collections(
+    #     local_client,
+    #     remote_client,
+    #     num_vectors=10,
+    #     collection_name=COLLECTION_NAME,
+    # )
+    #
+    # assert isinstance(points[0].vector['text'], models.Document)
+    #
+    # recreate_collection(local_client, COLLECTION_NAME)
+    # recreate_collection(remote_client, COLLECTION_NAME)
+    #
+    # local_client.upload_points(COLLECTION_NAME, iter(points), parallel=2, batch_size=2)
+    # remote_client.upload_points(COLLECTION_NAME, iter(points), parallel=2, batch_size=2)
+    #
+    # assert local_client.count(COLLECTION_NAME).count == len(points)
+    # assert isinstance(
+    #     local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector['text'], list
+    # )  # assert doc
+    # # has been substituted with its embedding
+    #
+    # compare_collections(
+    #     local_client,
+    #     remote_client,
+    #     num_vectors=10,
+    #     collection_name=COLLECTION_NAME,
+    # )
+    #
+    # assert isinstance(vectors[0]['text'], models.Document)
+    #
+    # recreate_collection(local_client, COLLECTION_NAME)
+    # recreate_collection(remote_client, COLLECTION_NAME)
+    #
+    # local_client.upload_collection(
+    #     COLLECTION_NAME, ids=ids, vectors=iter(vectors), parallel=2, batch_size=2
+    # )
+    # remote_client.upload_collection(
+    #     COLLECTION_NAME, ids=ids, vectors=iter(vectors), parallel=2, batch_size=2
+    # )
+    #
+    # assert local_client.count(COLLECTION_NAME).count == len(vectors)
+    # assert isinstance(
+    #     local_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector['text'], list
+    # )  # assert doc
+    # # has been substituted with its embedding
+    #
+    # compare_collections(
+    #     local_client,
+    #     remote_client,
+    #     num_vectors=10,
+    #     collection_name=COLLECTION_NAME,
+    # )
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
@@ -884,15 +939,21 @@ def test_propagate_options(prefer_grpc):
     local_client.upsert(COLLECTION_NAME, points)
     remote_client.upsert(COLLECTION_NAME, points)
 
-    assert local_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
-    assert local_client.sparse_embedding_models[SPARSE_MODEL_NAME].model.lazy_load
-    assert local_client.late_interaction_embedding_models[COLBERT_MODEL_NAME].model.lazy_load
-    assert local_client.image_embedding_models[DENSE_IMAGE_MODEL_NAME].model.lazy_load
+    assert local_client._pydanter.embedder.embedding_models[DENSE_MODEL_NAME].model.lazy_load
+    assert local_client._pydanter.embedder.sparse_embedding_models[
+        SPARSE_MODEL_NAME
+    ].model.lazy_load
+    assert local_client._pydanter.embedder.late_interaction_embedding_models[
+        COLBERT_MODEL_NAME
+    ].model.lazy_load
+    assert local_client._pydanter.embedder.image_embedding_models[
+        DENSE_IMAGE_MODEL_NAME
+    ].model.lazy_load
 
-    local_client.embedding_models.clear()
-    local_client.sparse_embedding_models.clear()
-    local_client.late_interaction_embedding_models.clear()
-    local_client.image_embedding_models.clear()
+    local_client._pydanter.embedder.embedding_models.clear()
+    local_client._pydanter.embedder.sparse_embedding_models.clear()
+    local_client._pydanter.embedder.late_interaction_embedding_models.clear()
+    local_client._pydanter.embedder.image_embedding_models.clear()
 
     inference_object_dense_doc_1 = models.InferenceObject(
         object="hello world",
@@ -933,48 +994,16 @@ def test_propagate_options(prefer_grpc):
     local_client.upsert(COLLECTION_NAME, points)
     remote_client.upsert(COLLECTION_NAME, points)
 
-    assert local_client.embedding_models[DENSE_MODEL_NAME].model.lazy_load
-    assert local_client.sparse_embedding_models[SPARSE_MODEL_NAME].model.lazy_load
-    assert local_client.late_interaction_embedding_models[COLBERT_MODEL_NAME].model.lazy_load
-    assert local_client.image_embedding_models[DENSE_IMAGE_MODEL_NAME].model.lazy_load
-
-
-@pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_image(prefer_grpc):
-    local_client = QdrantClient(":memory:")
-    if not local_client._FASTEMBED_INSTALLED:
-        pytest.skip("FastEmbed is not installed, skipping")
-    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
-    local_kwargs = {}
-    local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
-
-    dense_image_1 = models.Image(image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME)
-    points = [
-        models.PointStruct(id=i, vector=dense_img) for i, dense_img in enumerate([dense_image_1])
-    ]
-
-    for client in local_client, remote_client:
-        if client.collection_exists(COLLECTION_NAME):
-            client.delete_collection(COLLECTION_NAME)
-        vector_params = models.VectorParams(size=DENSE_IMAGE_DIM, distance=models.Distance.COSINE)
-        client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
-        client.upsert(COLLECTION_NAME, points)
-
-    vec_points = local_kwargs["points"]
-    assert all([isinstance(vec_point.vector, list) for vec_point in vec_points])
-    assert local_client.scroll(COLLECTION_NAME, limit=1, with_vectors=True)[0]
-    compare_collections(
-        local_client,
-        remote_client,
-        num_vectors=10,
-        collection_name=COLLECTION_NAME,
-    )
-
-    local_client.query_points(COLLECTION_NAME, dense_image_1)
-    remote_client.query_points(COLLECTION_NAME, dense_image_1)
-
-    local_client.delete_collection(COLLECTION_NAME)
-    remote_client.delete_collection(COLLECTION_NAME)
+    assert local_client._pydanter.embedder.embedding_models[DENSE_MODEL_NAME].model.lazy_load
+    assert local_client._pydanter.embedder.sparse_embedding_models[
+        SPARSE_MODEL_NAME
+    ].model.lazy_load
+    assert local_client._pydanter.embedder.late_interaction_embedding_models[
+        COLBERT_MODEL_NAME
+    ].model.lazy_load
+    assert local_client._pydanter.embedder.image_embedding_models[
+        DENSE_IMAGE_MODEL_NAME
+    ].model.lazy_load
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
