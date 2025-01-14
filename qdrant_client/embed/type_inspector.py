@@ -4,7 +4,6 @@ from pydantic import BaseModel
 
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 
-# from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES_TUPLE
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.embed.utils import FieldPath
 from qdrant_client.http import models
