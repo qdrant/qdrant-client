@@ -771,40 +771,57 @@ def test_query_batch_points(prefer_grpc):
         local_client._client.query_batch_points, local_kwargs
     )
 
-    dense_doc_1 = models.Document(text="hello world", model=DENSE_MODEL_NAME)
-    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
-    dense_doc_3 = models.Document(text="goodbye world", model=DENSE_MODEL_NAME)
-    dense_doc_4 = models.Document(text="good afternoon world", model=DENSE_MODEL_NAME)
-    dense_doc_5 = models.Document(text="good morning world", model=DENSE_MODEL_NAME)
+    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
+    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
+    sparse_doc_3 = models.Document(text="goodbye world", model=SPARSE_MODEL_NAME)
+    sparse_doc_4 = models.Document(text="good afternoon world", model=SPARSE_MODEL_NAME)
+    sparse_doc_5 = models.Document(text="good morning world", model=SPARSE_MODEL_NAME)
 
     points = [
-        models.PointStruct(id=i, vector=dense_doc)
+        models.PointStruct(id=i, vector={"sparse-text": dense_doc})
         for i, dense_doc in enumerate(
-            [dense_doc_1, dense_doc_2, dense_doc_3, dense_doc_4, dense_doc_5]
+            [sparse_doc_1, sparse_doc_2, sparse_doc_3, sparse_doc_4, sparse_doc_5]
         )
     ]
 
-    populate_dense_collection(local_client, points)
-    populate_dense_collection(remote_client, points)
+    populate_sparse_collection(local_client, points, vector_name="sparse-text")
+    populate_sparse_collection(remote_client, points, vector_name="sparse-text")
 
-    prefetch_1 = models.Prefetch(query=models.NearestQuery(nearest=dense_doc_2), limit=3)
-    prefetch_2 = models.Prefetch(query=models.NearestQuery(nearest=dense_doc_3), limit=3)
+    prefetch_1 = models.Prefetch(
+        query=models.NearestQuery(nearest=sparse_doc_2), limit=3, using="sparse-text"
+    )
+    prefetch_2 = models.Prefetch(
+        query=models.NearestQuery(nearest=sparse_doc_3), limit=3, using="sparse-text"
+    )
 
     query_requests = [
-        models.QueryRequest(query=models.NearestQuery(nearest=dense_doc_1)),
+        models.QueryRequest(query=models.NearestQuery(nearest=sparse_doc_1), using="sparse-text"),
         models.QueryRequest(
-            query=models.NearestQuery(nearest=dense_doc_2), prefetch=[prefetch_1, prefetch_2]
+            query=models.NearestQuery(nearest=sparse_doc_2),
+            prefetch=[prefetch_1, prefetch_2],
+            using="sparse-text",
         ),
     ]
 
     local_client.query_batch_points(COLLECTION_NAME, query_requests)
     remote_client.query_batch_points(COLLECTION_NAME, query_requests)
     current_requests = local_kwargs["requests"]
-    assert all([isinstance(request.query.nearest, list) for request in current_requests])
     assert all(
-        [isinstance(prefetch.query.nearest, list) for prefetch in current_requests[1].prefetch]
+        [isinstance(request.query.nearest, models.SparseVector) for request in current_requests]
+    )
+    assert all(
+        [
+            isinstance(prefetch.query.nearest, models.SparseVector)
+            for prefetch in current_requests[1].prefetch
+        ]
     )
 
+    retrieved_point = local_client.retrieve(COLLECTION_NAME, ids=[0], with_vectors=True)[0]
+    assert not np.allclose(
+        retrieved_point.vector["sparse-text"].values,
+        current_requests[0].query.nearest.values,
+        atol=1e-3,
+    )
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
 
