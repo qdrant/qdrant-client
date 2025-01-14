@@ -739,14 +739,8 @@ class QdrantClient(QdrantFastembedMixin):
             )
             if isinstance(prefetch, list):
                 prefetch = list(self._embed_models(prefetch, is_query=True))
-            else:
-                prefetch = next(
-                    iter(
-                        self._embed_models(prefetch, is_query=True)
-                        if prefetch is not None
-                        else None
-                    )
-                )
+            elif prefetch is not None:
+                prefetch = next(iter(self._embed_models(prefetch, is_query=True)))
 
         return self._client.query_points_groups(
             collection_name=collection_name,
@@ -2548,18 +2542,22 @@ class QdrantClient(QdrantFastembedMixin):
                 This parameter overwrites shard keys written in the records.
 
         """
+
+        def chain(*iterables: Iterable) -> Iterable:
+            for iterable in iterables:
+                yield from iterable
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         if not self.cloud_inference:
             iter_points = iter(points)
-            point = next(iter_points)
-            requires_inference = self._inference_inspector.inspect(point)
-
-            def chain(*iterables):
-                for iterable in iterables:
-                    yield from iterable
-
-            points = chain(iter([point]), iter_points)
+            requires_inference = False
+            try:
+                point = next(iter_points)
+                requires_inference = self._inference_inspector.inspect(point)
+                points = chain(iter([point]), iter_points)
+            except (StopIteration, StopAsyncIteration):
+                points = []
 
             if requires_inference:
                 points = self._embed_models_strict(
@@ -2619,19 +2617,24 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
         """
+
+        def chain(*iterables: Iterable) -> Iterable:
+            for iterable in iterables:
+                yield from iterable
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
         if not self.cloud_inference:
             if not isinstance(vectors, dict) and not isinstance(vectors, np.ndarray):
-                iter_vectors = iter(vectors)
-                vector = next(iter_vectors)
-                requires_inference = self._inference_inspector.inspect(vector)
+                requires_inference = False
+                try:
+                    iter_vectors = iter(vectors)
+                    vector = next(iter_vectors)
+                    requires_inference = self._inference_inspector.inspect(vector)
+                    vectors = chain(iter([vector]), iter_vectors)
+                except (StopIteration, StopAsyncIteration):
+                    vectors = []
 
-                def chain(*iterables):
-                    for iterable in iterables:
-                        yield from iterable
-
-                vectors = chain(iter([vector]), iter_vectors)
                 if requires_inference:
                     vectors = self._embed_models_strict(
                         vectors, parallel=parallel, batch_size=batch_size

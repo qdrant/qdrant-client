@@ -16,84 +16,38 @@ from typing import Any, Iterable, Optional, Sequence, Union, get_args
 from copy import deepcopy
 import numpy as np
 from pydantic import BaseModel
+from qdrant_client import grpc
 from qdrant_client.async_client_base import AsyncQdrantBase
+from qdrant_client.embed.model_embedder import ModelEmbedder
+from qdrant_client.http import models
 from qdrant_client.conversions import common_types as types
 from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
-from qdrant_client.embed.embed_inspector import InspectorEmbed
-from qdrant_client.embed.models import NumericVector
 from qdrant_client.embed.schema_parser import ModelSchemaParser
-from qdrant_client.embed.utils import FieldPath
-from qdrant_client.fastembed_common import QueryResponse
-from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
-from qdrant_client import grpc
-from qdrant_client.uploader.uploader import iter_batch
-
-try:
-    from fastembed import (
-        SparseTextEmbedding,
-        TextEmbedding,
-        LateInteractionTextEmbedding,
-        ImageEmbedding,
-    )
-    from fastembed.common import OnnxProvider
-    from PIL import Image as PilImage
-except ImportError:
-    TextEmbedding = None
-    SparseTextEmbedding = None
-    OnnxProvider = None
-    LateInteractionTextEmbedding = None
-    ImageEmbedding = None
-    PilImage = None
-SUPPORTED_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
-    {
-        model["model"]: (model["dim"], models.Distance.COSINE)
-        for model in TextEmbedding.list_supported_models()
-    }
-    if TextEmbedding
-    else {}
-)
-SUPPORTED_SPARSE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
-    {model["model"]: model for model in SparseTextEmbedding.list_supported_models()}
-    if SparseTextEmbedding
-    else {}
-)
-IDF_EMBEDDING_MODELS: set[str] = (
-    {
-        model_config["model"]
-        for model_config in SparseTextEmbedding.list_supported_models()
-        if model_config.get("requires_idf", None)
-    }
-    if SparseTextEmbedding
-    else set()
-)
-_LATE_INTERACTION_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
-    {model["model"]: model for model in LateInteractionTextEmbedding.list_supported_models()}
-    if LateInteractionTextEmbedding
-    else {}
-)
-_IMAGE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
-    {model["model"]: model for model in ImageEmbedding.list_supported_models()}
-    if ImageEmbedding
-    else {}
+from qdrant_client.fastembed_common import (
+    QueryResponse,
+    TextEmbedding,
+    LateInteractionTextEmbedding,
+    ImageEmbedding,
+    SparseTextEmbedding,
+    SUPPORTED_EMBEDDING_MODELS,
+    SUPPORTED_SPARSE_EMBEDDING_MODELS,
+    IDF_EMBEDDING_MODELS,
+    _LATE_INTERACTION_EMBEDDING_MODELS,
+    _IMAGE_EMBEDDING_MODELS,
+    OnnxProvider,
 )
 
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
-    embedding_models: dict[str, "TextEmbedding"] = {}
-    sparse_embedding_models: dict[str, "SparseTextEmbedding"] = {}
-    late_interaction_embedding_models: dict[str, "LateInteractionTextEmbedding"] = {}
-    image_embedding_models: dict[str, "ImageEmbedding"] = {}
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, parser: ModelSchemaParser, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
-        self._embed_inspector = InspectorEmbed(parser=parser)
-        self._batch_accumulator: dict[str, list[Any]] = {}
-        self._embed_storage: dict[str, NumericVector] = {}
+        self._model_embedder = ModelEmbedder(parser=parser)
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
@@ -237,105 +191,98 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
         return SUPPORTED_EMBEDDING_MODELS[model_name]
 
-    @classmethod
     def _get_or_init_model(
-        cls,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "TextEmbedding":
-        if model_name in cls.embedding_models:
-            return cls.embedding_models[model_name]
-        cls._import_fastembed()
+        if model_name in self._model_embedder.embedder.embedding_models:
+            return self._model_embedder.embedder.embedding_models[model_name]
+        self._import_fastembed()
         if model_name not in SUPPORTED_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
             )
-        cls.embedding_models[model_name] = TextEmbedding(
+        self._model_embedder.embedder.get_or_init_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
             **kwargs,
         )
-        return cls.embedding_models[model_name]
+        return self._model_embedder.embedder.embedding_models[model_name]
 
-    @classmethod
     def _get_or_init_sparse_model(
-        cls,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "SparseTextEmbedding":
-        if model_name in cls.sparse_embedding_models:
-            return cls.sparse_embedding_models[model_name]
-        cls._import_fastembed()
+        if model_name in self._model_embedder.embedder.sparse_embedding_models:
+            return self._model_embedder.embedder.sparse_embedding_models[model_name]
+        self._import_fastembed()
         if model_name not in SUPPORTED_SPARSE_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_SPARSE_EMBEDDING_MODELS}"
             )
-        cls.sparse_embedding_models[model_name] = SparseTextEmbedding(
+        return self._model_embedder.embedder.get_or_init_sparse_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
             **kwargs,
         )
-        return cls.sparse_embedding_models[model_name]
 
-    @classmethod
     def _get_or_init_late_interaction_model(
-        cls,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "LateInteractionTextEmbedding":
-        if model_name in cls.late_interaction_embedding_models:
-            return cls.late_interaction_embedding_models[model_name]
-        cls._import_fastembed()
+        if model_name in self._model_embedder.embedder.late_interaction_embedding_models:
+            return self._model_embedder.embedder.late_interaction_embedding_models[model_name]
+        self._import_fastembed()
         if model_name not in _LATE_INTERACTION_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_EMBEDDING_MODELS}"
             )
-        cls.late_interaction_embedding_models[model_name] = LateInteractionTextEmbedding(
+        return self._model_embedder.embedder.get_or_init_late_interaction_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
             **kwargs,
         )
-        return cls.late_interaction_embedding_models[model_name]
 
-    @classmethod
     def _get_or_init_image_model(
-        cls,
+        self,
         model_name: str,
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "ImageEmbedding":
-        if model_name in cls.image_embedding_models:
-            return cls.image_embedding_models[model_name]
-        cls._import_fastembed()
+        if model_name in self._model_embedder.embedder.image_embedding_models:
+            return self._model_embedder.embedder.image_embedding_models[model_name]
+        self._import_fastembed()
         if model_name not in _IMAGE_EMBEDDING_MODELS:
             raise ValueError(
                 f"Unsupported embedding model: {model_name}. Supported models: {_IMAGE_EMBEDDING_MODELS}"
             )
-        cls.image_embedding_models[model_name] = ImageEmbedding(
+        return self._model_embedder.embedder.get_or_init_image_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
             **kwargs,
         )
-        return cls.image_embedding_models[model_name]
 
     def _embed_documents(
         self,
@@ -810,7 +757,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 GrpcToRest.convert_point_id(query) if isinstance(query, grpc.PointId) else query
             )
             return models.NearestQuery(nearest=query)
-        if isinstance(query, INFERENCE_OBJECT_TYPES):
+        if isinstance(query, get_args(INFERENCE_OBJECT_TYPES)):
             return models.NearestQuery(nearest=query)
         if query is None:
             return None
@@ -842,271 +789,22 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         """
         return [self._resolve_query_request(query) for query in requests]
 
-    def _embed_model(
-        self, raw_model: BaseModel, is_query: bool = False
-    ) -> Union[BaseModel, NumericVector]:
-        """Embed raw data fields in a model and return a model with vectors
-
-        If any of model fields required inference, a deepcopy of a model with computed embeddings is returned,
-        otherwise returns original models.
-        Args:
-            raw_model: BaseModel - model which can contain fields with raw data
-            is_query: bool - flag to determine which embed method to use. Defaults to False.
-        Returns:
-            list[BaseModel]: models with embedded fields
-        """
-        self._process_model(raw_model, is_query=is_query, accumulating=True)
-        if not self._batch_accumulator:
-            return raw_model
-        return self._process_model(raw_model, is_query=is_query, accumulating=False)
-
-    def _lazy_embed_models(
-        self, raw_models: Iterable[BaseModel], is_query: bool = False, batch_size: int = 32
-    ) -> Iterable[BaseModel]:
-        """Embed raw data fields in models and return models with vectors
-
-            If any of model fields required inference, a deepcopy of a model with computed embeddings is returned,
-            otherwise returns original models.
-        Args:
-            raw_models: Iterable[BaseModel] - models which can contain fields with raw data
-            is_query: bool - flag to determine which embed method to use. Defaults to False.
-            batch_size: int - batch size for inference
-        Returns:
-            list[BaseModel]: models with embedded fields
-        """
-        for raw_models_batch in iter_batch(raw_models, batch_size):
-            for raw_model in raw_models_batch:
-                self._process_model(raw_model, is_query=is_query, accumulating=True)
-            if not self._batch_accumulator:
-                yield from raw_models
-            else:
-                yield from (
-                    self._process_model(raw_model, is_query=is_query, accumulating=False)
-                    for raw_model in raw_models_batch
-                )
-
-    def _process_model(
+    def _embed_models(
         self,
-        model: BaseModel,
-        paths: Optional[list[FieldPath]] = None,
+        raw_models: Union[BaseModel, Iterable[BaseModel]],
         is_query: bool = False,
-        accumulating: bool = False,
-    ) -> Union[BaseModel, NumericVector]:
-        """Embed model's fields requiring inference
+        batch_size: int = 32,
+    ) -> Iterable[BaseModel]:
+        yield from self._model_embedder.embed_models(
+            raw_models=raw_models, is_query=is_query, batch_size=batch_size
+        )
 
-        Args:
-            model: Qdrant http model containing fields to embed
-            paths: Path to fields to embed. E.g. [FieldPath(current="recommend", tail=[FieldPath(current="negative", tail=None)])]
-            is_query: Flag to determine which embed method to use. Defaults to False.
-            accumulating: Flag to determine if we are accumulating models for batch embedding. Defaults to False.
-
-        Returns:
-            A deepcopy of the method with embedded fields
-        """
-        if isinstance(model, INFERENCE_OBJECT_TYPES):
-            if not accumulating:
-                return self._drain_accumulator(model)
-            else:
-                self._accumulate(model)
-        if paths is None:
-            model = deepcopy(model) if not accumulating else model
-            paths = self._embed_inspector.inspect(model)
-        for path in paths:
-            list_model = [model] if not isinstance(model, list) else model
-            for item in list_model:
-                current_model = getattr(item, path.current, None)
-                if current_model is None:
-                    continue
-                if path.tail:
-                    self._process_model(
-                        current_model, path.tail, is_query=is_query, accumulating=accumulating
-                    )
-                else:
-                    was_list = isinstance(current_model, list)
-                    current_model = current_model if was_list else [current_model]
-                    if not accumulating:
-                        embeddings = [self._drain_accumulator(data) for data in current_model]
-                        if was_list:
-                            setattr(item, path.current, embeddings)
-                        else:
-                            setattr(item, path.current, embeddings[0])
-                    else:
-                        for data in current_model:
-                            self._accumulate(data)
-        return model
-
-    def _accumulate(self, data: models.VectorStruct) -> None:
-        """Add data to batch accumulator
-
-        Args:
-            data: models.VectorStruct - any vector struct data, if inference object types instances in `data` - add them
-                to the accumulator, otherwise - do nothing. `InferenceObject` instances are converted to proper types.
-
-        Returns:
-            None
-        """
-        if isinstance(data, dict):
-            for value in data.values():
-                self._accumulate(value)
-            return None
-        if isinstance(data, list):
-            for value in data:
-                if not isinstance(value, INFERENCE_OBJECT_TYPES):
-                    return None
-                self._accumulate(value)
-        if not isinstance(data, INFERENCE_OBJECT_TYPES):
-            return None
-        data = self._resolve_inference_object(data)
-        if data.model not in self._batch_accumulator:
-            self._batch_accumulator[data.model] = []
-        self._batch_accumulator[data.model].append(data)
-
-    def _drain_accumulator(self, data: models.VectorStruct) -> models.VectorStruct:
-        """Drain accumulator and replaces inference objects with computed embeddings
-            It is assumed objects are traversed in the same order as they were added to the accumulator
-
-        Args:
-            data: models.VectorStruct - any vector struct data, if inference object types instances in `data` - replace
-                them with computed embeddings. If embeddings haven't yet been computed - compute them and then replace
-                inference objects.
-
-        Returns:
-            models.VectorStruct: data with replaced inference objects
-        """
-        if isinstance(data, dict):
-            for key, value in data.items():
-                data[key] = self._drain_accumulator(value)
-            return data
-        if isinstance(data, list):
-            for i, value in enumerate(data):
-                if not isinstance(value, INFERENCE_OBJECT_TYPES):
-                    return data
-                data[i] = self._drain_accumulator(value)
-            return data
-        if not isinstance(data, INFERENCE_OBJECT_TYPES):
-            return data
-        if not self._embed_storage or not self._embed_storage.get(data.model, None):
-            self._embed_accumulator()
-        return self._next_embed(data.model)
-
-    def _embed_accumulator(self, is_query: bool = False) -> None:
-        """Embed all accumulated objects for all models
-
-        Args:
-            is_query: bool - flag to determine which embed method to use. Defaults to False.
-
-        Returns:
-            None
-        """
-        for model_name, objects in self._batch_accumulator.items():
-            if model_name not in (
-                *SUPPORTED_EMBEDDING_MODELS.keys(),
-                *SUPPORTED_SPARSE_EMBEDDING_MODELS.keys(),
-                *_LATE_INTERACTION_EMBEDDING_MODELS.keys(),
-                *_IMAGE_EMBEDDING_MODELS,
-            ):
-                raise ValueError(f"{model_name} is not among supported models")
-            options = next(iter(objects)).options
-            for obj in objects:
-                if options != obj.options:
-                    raise ValueError(
-                        f"Options for {model_name} model should be the same for all objects in one request"
-                    )
-        for model_name, objects in self._batch_accumulator.items():
-            options = next(iter(objects)).options or {}
-            if model_name in SUPPORTED_EMBEDDING_MODELS.keys():
-                texts = [obj.text for obj in objects]
-                embedding_model_inst = self._get_or_init_model(model_name=model_name, **options)
-                if not is_query:
-                    embeddings = [
-                        embedding.tolist()
-                        for embedding in embedding_model_inst.embed(documents=texts)
-                    ]
-                else:
-                    embeddings = [
-                        embedding.tolist()
-                        for embedding in embedding_model_inst.query_embed(query=texts)
-                    ]
-            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS.keys():
-                texts = [obj.text for obj in objects]
-                embedding_model_inst = self._get_or_init_sparse_model(
-                    model_name=model_name, **options
-                )
-                if not is_query:
-                    embeddings = [
-                        models.SparseVector(
-                            indices=sparse_embedding.indices.tolist(),
-                            values=sparse_embedding.values.tolist(),
-                        )
-                        for sparse_embedding in embedding_model_inst.embed(documents=texts)
-                    ]
-                else:
-                    embeddings = [
-                        models.SparseVector(
-                            indices=sparse_embedding.indices.tolist(),
-                            values=sparse_embedding.values.tolist(),
-                        )
-                        for sparse_embedding in embedding_model_inst.query_embed(query=texts)
-                    ]
-            elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS.keys():
-                texts = [obj.text for obj in objects]
-                embedding_model_inst = self._get_or_init_late_interaction_model(
-                    model_name=model_name, **options
-                )
-                if not is_query:
-                    embeddings = [
-                        embedding.tolist()
-                        for embedding in embedding_model_inst.embed(documents=texts)
-                    ]
-                else:
-                    embeddings = [
-                        embedding.tolist()
-                        for embedding in embedding_model_inst.query_embed(query=texts)
-                    ]
-            else:
-                images = [obj.image for obj in objects]
-                embedding_model_inst = self._get_or_init_image_model(
-                    model_name=model_name, **options
-                )
-                embeddings = [
-                    embedding.tolist() for embedding in embedding_model_inst.embed(images=images)
-                ]
-            self._embed_storage[model_name] = embeddings
-        self._batch_accumulator.clear()
-
-    def _next_embed(self, model_name: str) -> NumericVector:
-        """Get next computed embedding from embedded batch
-
-        Args:
-            model_name: str - retrieve embedding from the storage by this model name
-
-        Returns:
-            NumericVector: computed embedding
-        """
-        return self._embed_storage[model_name].pop(0)
-
-    @staticmethod
-    def _resolve_inference_object(data: models.VectorStruct) -> models.VectorStruct:
-        """Resolve inference object into a model
-
-        Args:
-            data: models.VectorStruct - data to resolve, if it's an inference object, convert it to a proper type,
-                otherwise - keep unchanged
-
-        Returns:
-            models.VectorStruct: resolved data
-        """
-        if not isinstance(data, models.InferenceObject):
-            return data
-        model_name = data.model
-        value = data.object
-        options = data.options
-        if model_name in (
-            *SUPPORTED_EMBEDDING_MODELS.keys(),
-            *SUPPORTED_SPARSE_EMBEDDING_MODELS.keys(),
-            *_LATE_INTERACTION_EMBEDDING_MODELS.keys(),
-        ):
-            return models.Document(model=model_name, text=value, options=options)
-        if model_name in _IMAGE_EMBEDDING_MODELS:
-            return models.Image(model=model_name, image=value, options=options)
-        raise ValueError(f"{model_name} is not among supported models")
+    def _embed_models_strict(
+        self,
+        raw_models: Iterable[Union[dict[str, BaseModel], BaseModel]],
+        batch_size: int = 32,
+        parallel: Optional[int] = None,
+    ) -> Iterable[BaseModel]:
+        yield from self._model_embedder.embed_models_strict(
+            raw_models=raw_models, batch_size=batch_size, parallel=parallel
+        )

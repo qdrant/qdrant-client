@@ -393,7 +393,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         requests = self._resolve_query_batch_request(requests)
         requires_inference = self._inference_inspector.inspect(requests)
         if requires_inference and (not self.cloud_inference):
-            requests = list(self._lazy_embed_models(requests))
+            requests = list(self._embed_models(requests, is_query=True))
         return await self._client.query_batch_points(
             collection_name=collection_name,
             requests=requests,
@@ -520,12 +520,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and (not self.cloud_inference):
-            query = self._embed_model(query, is_query=True) if query is not None else None
+            query = (
+                next(iter(self._embed_models(query, is_query=True))) if query is not None else None
+            )
             if isinstance(prefetch, list):
-                prefetch = list(self._lazy_embed_models(prefetch))
+                prefetch = list(self._embed_models(prefetch, is_query=True))
             else:
                 prefetch = (
-                    self._embed_model(prefetch, is_query=True) if prefetch is not None else None
+                    next(iter(self._embed_models(prefetch, is_query=True)))
+                    if prefetch is not None
+                    else None
                 )
         return await self._client.query_points(
             collection_name=collection_name,
@@ -662,13 +666,13 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and (not self.cloud_inference):
-            query = self._embed_model(query, is_query=True) if query is not None else None
+            query = (
+                next(iter(self._embed_models(query, is_query=True))) if query is not None else None
+            )
             if isinstance(prefetch, list):
-                prefetch = list(self._lazy_embed_models(prefetch, is_query=True))
-            else:
-                prefetch = (
-                    self._embed_model(prefetch, is_query=True) if prefetch is not None else None
-                )
+                prefetch = list(self._embed_models(prefetch, is_query=True))
+            elif prefetch is not None:
+                prefetch = next(iter(self._embed_models(prefetch, is_query=True)))
         return await self._client.query_points_groups(
             collection_name=collection_name,
             query=query,
@@ -1509,9 +1513,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and (not self.cloud_inference):
             if isinstance(points, types.Batch):
-                points = self._embed_model(points, is_query=False)
+                points = next(iter(self._embed_models(points, is_query=False)))
             else:
-                points = list(self._lazy_embed_models(points, is_query=False))
+                points = list(self._embed_models(points, is_query=False))
         return await self._client.upsert(
             collection_name=collection_name,
             points=points,
@@ -1562,7 +1566,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and (not self.cloud_inference):
-            points = list(self._lazy_embed_models(points, is_query=False))
+            points = list(self._embed_models(points, is_query=False))
         return await self._client.update_vectors(
             collection_name=collection_name,
             points=points,
@@ -2002,7 +2006,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         requires_inference = self._inference_inspector.inspect(update_operations)
         if requires_inference and (not self.cloud_inference):
-            update_operations = list(self._lazy_embed_models(update_operations, is_query=False))
+            update_operations = list(self._embed_models(update_operations, is_query=False))
         return await self._client.batch_update_points(
             collection_name=collection_name,
             update_operations=update_operations,
@@ -2417,19 +2421,25 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 This parameter overwrites shard keys written in the records.
 
         """
+
+        def chain(*iterables: Iterable) -> Iterable:
+            for iterable in iterables:
+                yield from iterable
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         if not self.cloud_inference:
             iter_points = iter(points)
-            point = next(iter_points)
-            requires_inference = self._inference_inspector.inspect(point)
-
-            def chain(*iterables):
-                for iterable in iterables:
-                    yield from iterable
-
-            points = chain(iter([point]), iter_points)
+            requires_inference = False
+            try:
+                point = next(iter_points)
+                requires_inference = self._inference_inspector.inspect(point)
+                points = chain(iter([point]), iter_points)
+            except (StopIteration, StopAsyncIteration):
+                points = []
             if requires_inference:
-                points = self._lazy_embed_models(points, batch_size=batch_size)
+                points = self._embed_models_strict(
+                    points, parallel=parallel, batch_size=batch_size
+                )
         return self._client.upload_points(
             collection_name=collection_name,
             points=points,
@@ -2481,20 +2491,26 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
         """
+
+        def chain(*iterables: Iterable) -> Iterable:
+            for iterable in iterables:
+                yield from iterable
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         if not self.cloud_inference:
             if not isinstance(vectors, dict) and (not isinstance(vectors, np.ndarray)):
-                iter_vectors = iter(vectors)
-                vector = next(iter_vectors)
-                requires_inference = self._inference_inspector.inspect(vector)
-
-                def chain(*iterables):
-                    for iterable in iterables:
-                        yield from iterable
-
-                vectors = chain(iter([vector]), iter_vectors)
+                requires_inference = False
+                try:
+                    iter_vectors = iter(vectors)
+                    vector = next(iter_vectors)
+                    requires_inference = self._inference_inspector.inspect(vector)
+                    vectors = chain(iter([vector]), iter_vectors)
+                except (StopIteration, StopAsyncIteration):
+                    vectors = []
                 if requires_inference:
-                    vectors = self._lazy_embed_models(vectors, batch_size=batch_size)
+                    vectors = self._embed_models_strict(
+                        vectors, parallel=parallel, batch_size=batch_size
+                    )
         return self._client.upload_collection(
             collection_name=collection_name,
             vectors=vectors,
