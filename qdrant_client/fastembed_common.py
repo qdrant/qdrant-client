@@ -3,6 +3,61 @@ from typing import Any, Optional, Union
 from pydantic import BaseModel, Field
 
 from qdrant_client.conversions.common_types import SparseVector
+from qdrant_client.http import models
+
+try:
+    from fastembed import (
+        SparseTextEmbedding,
+        TextEmbedding,
+        LateInteractionTextEmbedding,
+        ImageEmbedding,
+    )
+    from fastembed.common import OnnxProvider, ImageInput
+except ImportError:
+    TextEmbedding = None
+    SparseTextEmbedding = None
+    OnnxProvider = None
+    LateInteractionTextEmbedding = None
+    ImageEmbedding = None
+    ImageInput = None
+
+
+SUPPORTED_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
+    {
+        model["model"]: (model["dim"], models.Distance.COSINE)
+        for model in TextEmbedding.list_supported_models()
+    }
+    if TextEmbedding
+    else {}
+)
+
+SUPPORTED_SPARSE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
+    {model["model"]: model for model in SparseTextEmbedding.list_supported_models()}
+    if SparseTextEmbedding
+    else {}
+)
+
+IDF_EMBEDDING_MODELS: set[str] = (
+    {
+        model_config["model"]
+        for model_config in SparseTextEmbedding.list_supported_models()
+        if model_config.get("requires_idf", None)
+    }
+    if SparseTextEmbedding
+    else set()
+)
+
+_LATE_INTERACTION_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
+    {model["model"]: model for model in LateInteractionTextEmbedding.list_supported_models()}
+    if LateInteractionTextEmbedding
+    else {}
+)
+
+_IMAGE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
+    {model["model"]: model for model in ImageEmbedding.list_supported_models()}
+    if ImageEmbedding
+    else {}
+)
 
 
 class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
