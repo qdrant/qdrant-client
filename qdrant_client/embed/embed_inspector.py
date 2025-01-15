@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Union, Optional, Iterable
+from typing import Union, Optional, Iterable, get_args
 
 from pydantic import BaseModel
 
@@ -34,6 +34,9 @@ class InspectorEmbed:
         if isinstance(points, BaseModel):
             self.parser.parse_model(points.__class__)
             paths.extend(self._inspect_model(points))
+        elif isinstance(points, dict):
+            for value in points.values():
+                paths.extend(self.inspect(value))
         elif isinstance(points, Iterable):
             for point in points:
                 if isinstance(point, BaseModel):
@@ -113,7 +116,7 @@ class InspectorEmbed:
         if model is None:
             return []
 
-        if isinstance(model, INFERENCE_OBJECT_TYPES):
+        if isinstance(model, get_args(INFERENCE_OBJECT_TYPES)):
             return [accum]
 
         if isinstance(model, BaseModel):
@@ -133,7 +136,7 @@ class InspectorEmbed:
                 if not isinstance(current_model, BaseModel):
                     continue
 
-                if isinstance(current_model, INFERENCE_OBJECT_TYPES):
+                if isinstance(current_model, get_args(INFERENCE_OBJECT_TYPES)):
                     found_paths.append(accum)
 
                 found_paths.extend(inspect_recursive(current_model, accum))
@@ -158,7 +161,7 @@ class InspectorEmbed:
                     if not isinstance(current_model, BaseModel):
                         continue
 
-                    if isinstance(current_model, INFERENCE_OBJECT_TYPES):
+                    if isinstance(current_model, get_args(INFERENCE_OBJECT_TYPES)):
                         found_paths.append(accum)
 
                     found_paths.extend(inspect_recursive(current_model, accum))
