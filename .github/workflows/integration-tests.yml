@@ -64,7 +64,7 @@ jobs:
       - name: Backward compatibility integration tests
         run: |
           export RUNNER_OS=${{ runner.os }}
-          QDRANT_VERSION='v1.11.5' ./tests/integration-tests.sh
+          QDRANT_VERSION='v1.12.6' ./tests/integration-tests.sh
         shell: bash
       - name: Run fastembed tests without fastembed
         run: |
