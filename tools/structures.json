@@ -1,0 +1,53 @@
+{
+  "components": {
+    "schemas": {
+      "VectorStruct": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Document"
+          }
+        ]
+      },
+      "BatchVectorStruct": {
+        "anyOf": [
+          {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            }
+          }
+        ]
+      },
+      "VectorInput": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Document"
+          }
+        ]
+      },
+      "Vector": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Document"
+          }
+        ]
+      },
+      "Document": {
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "Text document to be embedded by FastEmbed or Cloud inference server"
+          },
+          "model": {
+            "type": "string",
+            "description": "Model name to be used for embedding computation"
+          }
+        }
+      }
+    }
+  }
+}
