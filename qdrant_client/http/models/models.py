@@ -11,6 +11,10 @@ SparseVectorsConfig = Dict[str, "SparseVectorParams"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 
+class AbortReshardingOperation(BaseModel, extra="forbid"):
+    abort_resharding: Any = Field(..., description="")
+
+
 class AbortShardTransfer(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
     to_peer_id: int = Field(..., description="")
@@ -839,6 +843,8 @@ class HardwareUsage(BaseModel):
     """
 
     cpu: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
 
 
 class HasIdCondition(BaseModel, extra="forbid"):
@@ -2001,6 +2007,8 @@ class ReplicaState(str, Enum):
     LISTENER = "Listener"
     PARTIALSNAPSHOT = "PartialSnapshot"
     RECOVERY = "Recovery"
+    RESHARDING = "Resharding"
+    RESHARDINGSCALEDOWN = "ReshardingScaleDown"
 
 
 class ReplicateShard(BaseModel, extra="forbid"):
@@ -2048,10 +2056,6 @@ class ReshardingInfo(BaseModel):
     shard_id: int = Field(..., description="")
     peer_id: int = Field(..., description="")
     shard_key: Optional["ShardKey"] = Field(default=None, description="")
-    comment: Optional[str] = Field(
-        default=None,
-        description="A human-readable report of the operation progress. Available only on the source peer.",
-    )
 
 
 class RestartTransfer(BaseModel, extra="forbid"):
@@ -2400,6 +2404,10 @@ class ShardStatus(str, Enum):
 
 class ShardTransferInfo(BaseModel):
     shard_id: int = Field(..., description="")
+    to_shard_id: Optional[int] = Field(
+        default=None,
+        description="Target shard ID if different than source shard ID  Used exclusively with `ReshardStreamRecords` transfer method.",
+    )
     from_: int = Field(..., description="Source peer id", alias="from")
     to: int = Field(..., description="Destination peer id")
     sync: bool = Field(
@@ -2443,6 +2451,17 @@ class ShardTransferMethodOneOf2(str, Enum):
         return str(self.value)
 
     WAL_DELTA = "wal_delta"
+
+
+class ShardTransferMethodOneOf3(str, Enum):
+    """
+    Shard transfer for resharding: stream all records in batches until all points are transferred.
+    """
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    RESHARDING_STREAM_RECORDS = "resharding_stream_records"
 
 
 class ShardingMethod(str, Enum):
@@ -2609,6 +2628,16 @@ class SparseVectorStorageTypeOneOf1(str, Enum):
     MMAP = "mmap"
 
 
+class StartResharding(BaseModel, extra="forbid"):
+    direction: "ReshardingDirection" = Field(..., description="")
+    peer_id: Optional[int] = Field(default=None, description="")
+    shard_key: Optional["ShardKey"] = Field(default=None, description="")
+
+
+class StartReshardingOperation(BaseModel, extra="forbid"):
+    start_resharding: "StartResharding" = Field(..., description="")
+
+
 class StateRole(str, Enum):
     """
     Role of the peer in the consensus
@@ -2652,6 +2681,10 @@ class StrictModeConfig(BaseModel, extra="forbid"):
     )
     max_collection_payload_size_bytes: Optional[int] = Field(
         default=None, description="Max size of a collections payload storage in bytes"
+    )
+    filter_max_conditions: Optional[int] = Field(default=None, description="Max conditions a filter can have.")
+    condition_max_size: Optional[int] = Field(
+        default=None, description="Max size of a condition, eg. items in `MatchAny`."
     )
 
 
@@ -2993,6 +3026,8 @@ ClusterOperations = Union[
     CreateShardingKeyOperation,
     DropShardingKeyOperation,
     RestartTransferOperation,
+    StartReshardingOperation,
+    AbortReshardingOperation,
 ]
 ClusterStatus = Union[
     ClusterStatusOneOf,
@@ -3139,6 +3174,7 @@ ShardTransferMethod = Union[
     ShardTransferMethodOneOf,
     ShardTransferMethodOneOf1,
     ShardTransferMethodOneOf2,
+    ShardTransferMethodOneOf3,
 ]
 SparseIndexType = Union[
     SparseIndexTypeOneOf,

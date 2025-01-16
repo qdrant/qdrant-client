@@ -340,6 +340,8 @@ message StrictModeConfig {
   optional uint32 read_rate_limit = 11; // Max number of read operations per minute per replica
   optional uint32 write_rate_limit = 12; // Max number of write operations per minute per replica
   optional uint64 max_collection_payload_size_bytes = 13;
+  optional uint64 filter_max_conditions = 14;
+  optional uint64 condition_max_size = 15;
 }
 
 message CreateCollection {
@@ -589,6 +591,15 @@ message ReshardingInfo {
   uint32 shard_id = 1;
   uint64 peer_id = 2;
   optional ShardKey shard_key = 3;
+  ReshardingDirection direction = 4;
+}
+
+/*
+  Resharding direction, scale up or down in number of shards
+*/
+enum ReshardingDirection {
+  Up = 0; // Scale up, add a new shard
+  Down = 1; // Scale down, remove a shard
 }
 
 message CollectionClusterInfoResponse {
@@ -597,8 +608,7 @@ message CollectionClusterInfoResponse {
   repeated LocalShardInfo local_shards = 3; // Local shards
   repeated RemoteShardInfo remote_shards = 4; // Remote shards
   repeated ShardTransferInfo shard_transfers = 5; // Shard transfers
-  // TODO(resharding): enable on release:
-  // repeated ReshardingInfo resharding_operations = 6; // Resharding operations
+  repeated ReshardingInfo resharding_operations = 6; // Resharding operations
 }
 
 message MoveShard {

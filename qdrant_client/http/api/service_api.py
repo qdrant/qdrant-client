@@ -164,6 +164,7 @@ class _ServiceApi:
     def _build_for_telemetry(
         self,
         anonymize: bool = None,
+        details_level: int = None,
     ):
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
@@ -171,6 +172,8 @@ class _ServiceApi:
         query_params = {}
         if anonymize is not None:
             query_params["anonymize"] = str(anonymize).lower()
+        if details_level is not None:
+            query_params["details_level"] = str(details_level)
 
         headers = {}
         return self.api_client.request(
@@ -248,12 +251,14 @@ class AsyncServiceApi(_ServiceApi):
     async def telemetry(
         self,
         anonymize: bool = None,
+        details_level: int = None,
     ) -> m.InlineResponse2001:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
         return await self._build_for_telemetry(
             anonymize=anonymize,
+            details_level=details_level,
         )
 
 
@@ -323,10 +328,12 @@ class SyncServiceApi(_ServiceApi):
     def telemetry(
         self,
         anonymize: bool = None,
+        details_level: int = None,
     ) -> m.InlineResponse2001:
         """
         Collect telemetry data including app info, system info, collections info, cluster info, configs and statistics
         """
         return self._build_for_telemetry(
             anonymize=anonymize,
+            details_level=details_level,
         )

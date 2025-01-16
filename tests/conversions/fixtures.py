@@ -286,6 +286,8 @@ strict_mode_config = grpc.StrictModeConfig(
     # read_rate_limit=model.read_rate_limit, test empty field
     write_rate_limit=2000,
     max_collection_payload_size_bytes=10 * 1024 * 1024 * 1024,
+    filter_max_conditions=100,
+    condition_max_size=5,
 )
 
 collection_config = grpc.CollectionConfig(
