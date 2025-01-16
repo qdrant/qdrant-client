@@ -2056,6 +2056,12 @@ class GrpcToRest:
             max_collection_payload_size_bytes=model.max_collection_payload_size_bytes
             if model.HasField("max_collection_payload_size_bytes")
             else None,
+            filter_max_conditions=model.filter_max_conditions
+            if model.HasField("filter_max_conditions")
+            else None,
+            condition_max_size=model.condition_max_size
+            if model.HasField("condition_max_size")
+            else None,
         )
 
 
@@ -3997,4 +4003,6 @@ class RestToGrpc:
             read_rate_limit=model.read_rate_limit,
             write_rate_limit=model.write_rate_limit,
             max_collection_payload_size_bytes=model.max_collection_payload_size_bytes,
+            filter_max_conditions=model.filter_max_conditions,
+            condition_max_size=model.condition_max_size,
         )

@@ -215,6 +215,9 @@ CACHE_STR_PATH = {
     "InferenceObject": [],
     "StrictModeConfig": [],
     "HasVectorCondition": [],
+    "AbortReshardingOperation": [],
+    "StartResharding": [],
+    "StartReshardingOperation": [],
 }
 DEFS = {
     "AbortShardTransfer": {
@@ -3046,6 +3049,46 @@ DEFS = {
         },
         "required": ["upsert"],
         "title": "UpsertOperation",
+        "type": "object",
+    },
+    "ReshardingDirectionOneOf": {
+        "description": "Scale up, add a new shard",
+        "enum": ["up"],
+        "title": "ReshardingDirectionOneOf",
+        "type": "string",
+    },
+    "ReshardingDirectionOneOf1": {
+        "description": "Scale down, remove a shard",
+        "enum": ["down"],
+        "title": "ReshardingDirectionOneOf1",
+        "type": "string",
+    },
+    "StartResharding": {
+        "additionalProperties": False,
+        "properties": {
+            "direction": {
+                "anyOf": [
+                    {"$ref": "#/$defs/ReshardingDirectionOneOf"},
+                    {"$ref": "#/$defs/ReshardingDirectionOneOf1"},
+                ],
+                "description": "",
+                "title": "Direction",
+            },
+            "peer_id": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Peer Id",
+            },
+            "shard_key": {
+                "anyOf": [{"type": "integer"}, {"type": "string"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Shard Key",
+            },
+        },
+        "required": ["direction"],
+        "title": "StartResharding",
         "type": "object",
     },
 }
