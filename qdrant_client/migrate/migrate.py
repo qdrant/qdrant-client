@@ -4,6 +4,7 @@ from typing import Iterable, Optional
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
+from tests.conversions.fixtures import strict_mode_config
 
 
 def upload_with_retry(
@@ -125,6 +126,7 @@ def _recreate_collection(
         optimizers_config=models.OptimizersConfigDiff(**to_dict(src_config.optimizer_config)),
         wal_config=models.WalConfigDiff(**to_dict(src_config.wal_config)),
         quantization_config=src_config.quantization_config,
+        strict_mode_config=src_config.strict_mode_config,
     )
 
     _recreate_payload_schema(dest_client, collection_name, src_payload_schema)
