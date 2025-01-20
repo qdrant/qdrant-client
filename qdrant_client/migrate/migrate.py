@@ -4,7 +4,6 @@ from typing import Iterable, Optional
 from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
-from tests.conversions.fixtures import strict_mode_config
 
 
 def upload_with_retry(
