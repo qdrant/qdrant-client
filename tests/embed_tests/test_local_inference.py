@@ -286,7 +286,7 @@ def test_upload(prefer_grpc):
     ]
     ids = list(range(len(vectors)))
     local_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors)
-    remote_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors)
+    remote_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors, wait=True)
 
     assert local_client.count(COLLECTION_NAME).count == len(vectors)
     assert isinstance(
@@ -305,7 +305,7 @@ def test_upload(prefer_grpc):
     recreate_collection(remote_client, COLLECTION_NAME)
 
     local_client.upload_points(COLLECTION_NAME, points, parallel=2, batch_size=2)
-    remote_client.upload_points(COLLECTION_NAME, points, parallel=2, batch_size=2)
+    remote_client.upload_points(COLLECTION_NAME, points, parallel=2, batch_size=2, wait=True)
 
     assert local_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
@@ -327,7 +327,7 @@ def test_upload(prefer_grpc):
         COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2
     )
     remote_client.upload_collection(
-        COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2
+        COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2, wait=True
     )
 
     assert local_client.count(COLLECTION_NAME).count == len(vectors)
@@ -349,7 +349,7 @@ def test_upload(prefer_grpc):
     recreate_collection(remote_client, COLLECTION_NAME)
 
     local_client.upload_points(COLLECTION_NAME, iter(points), parallel=2, batch_size=2)
-    remote_client.upload_points(COLLECTION_NAME, iter(points), parallel=2, batch_size=2)
+    remote_client.upload_points(COLLECTION_NAME, iter(points), parallel=2, batch_size=2, wait=True)
 
     assert local_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
@@ -373,7 +373,7 @@ def test_upload(prefer_grpc):
         COLLECTION_NAME, ids=ids, vectors=iter(vectors), parallel=2, batch_size=2
     )
     remote_client.upload_collection(
-        COLLECTION_NAME, ids=ids, vectors=iter(vectors), parallel=2, batch_size=2
+        COLLECTION_NAME, ids=ids, vectors=iter(vectors), parallel=2, batch_size=2, wait=True
     )
 
     assert local_client.count(COLLECTION_NAME).count == len(vectors)
@@ -1275,3 +1275,281 @@ def test_inference_object(prefer_grpc):
 
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+@pytest.mark.parametrize("parallel", [1, 2])
+def test_upload_mixed_batches_upload_points(prefer_grpc, parallel):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    half_dense_dim = DENSE_DIM // 2
+    batch_size = 2
+
+    # region separate plain batches
+    points = [
+        models.PointStruct(
+            id=1, vector=models.Document(text="hello world", model=DENSE_MODEL_NAME)
+        ),
+        models.PointStruct(id=2, vector=models.Document(text="bye world", model=DENSE_MODEL_NAME)),
+        models.PointStruct(id=3, vector=[0.0, 0.2] * half_dense_dim),
+        models.PointStruct(id=4, vector=[0.1, 0.2] * half_dense_dim),
+    ]
+
+    vectors_config = models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE)
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(COLLECTION_NAME)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_points(
+        COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
+    )
+    remote_client.upload_points(
+        COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
+    )
+
+    assert remote_client.count(COLLECTION_NAME).count == len(points)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
+
+    # region mixed plain batches
+    points = [
+        models.PointStruct(
+            id=1, vector=models.Document(text="hello world", model=DENSE_MODEL_NAME)
+        ),
+        models.PointStruct(id=2, vector=[0.0, 0.2] * half_dense_dim),
+        models.PointStruct(id=3, vector=models.Document(text="bye world", model=DENSE_MODEL_NAME)),
+        models.PointStruct(id=4, vector=[0.1, 0.2] * half_dense_dim),
+    ]
+
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_points(
+        COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
+    )
+    remote_client.upload_points(
+        COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
+    )
+
+    assert remote_client.count(COLLECTION_NAME).count == len(points)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
+
+    # region mixed named batches
+
+    vectors_config = {
+        "text": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
+        "plain": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
+    }
+    points = [
+        models.PointStruct(
+            id=1,
+            vector={
+                "text": models.Document(text="hello world", model=DENSE_MODEL_NAME),
+                "plain": [0.0, 0.2] * half_dense_dim,
+            },
+        ),
+        models.PointStruct(
+            id=2,
+            vector={
+                "plain": [0.1, 0.2] * half_dense_dim,
+                "text": models.Document(text="bye world", model=DENSE_MODEL_NAME),
+            },
+        ),
+        models.PointStruct(
+            id=3,
+            vector={"plain": [0.3, 0.2] * half_dense_dim},
+        ),
+        models.PointStruct(
+            id=4,
+            vector={"text": models.Document(text="bye world", model=DENSE_MODEL_NAME)},
+        ),
+    ]
+
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_points(
+        COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
+    )
+    remote_client.upload_points(
+        COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
+    )
+
+    assert remote_client.count(COLLECTION_NAME).count == len(points)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+@pytest.mark.parametrize("parallel", [1, 2])
+def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+    half_dense_dim = DENSE_DIM // 2
+    batch_size = 2
+
+    # region separate plain batches
+    ids = [0, 1, 2, 3]
+    vectors = [
+        models.Document(text="hello world", model=DENSE_MODEL_NAME),
+        models.Document(text="bye world", model=DENSE_MODEL_NAME),
+        [0.0, 0.2] * half_dense_dim,
+        [0.1, 0.2] * half_dense_dim,
+    ]
+
+    vectors_config = models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE)
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(COLLECTION_NAME)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_collection(
+        COLLECTION_NAME,
+        ids=ids,
+        vectors=vectors,
+        batch_size=batch_size,
+        wait=True,
+        parallel=parallel,
+    )
+    remote_client.upload_collection(
+        COLLECTION_NAME,
+        ids=ids,
+        vectors=vectors,
+        batch_size=batch_size,
+        wait=True,
+        parallel=parallel,
+    )
+
+    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
+
+    # region mixed plain batches
+    vectors = [
+        models.Document(text="hello world", model=DENSE_MODEL_NAME),
+        [0.0, 0.2] * half_dense_dim,
+        models.Document(text="bye world", model=DENSE_MODEL_NAME),
+        [0.1, 0.2] * half_dense_dim,
+    ]
+
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_collection(
+        COLLECTION_NAME, ids=ids, vectors=vectors, batch_size=batch_size, parallel=parallel
+    )
+    remote_client.upload_collection(
+        COLLECTION_NAME,
+        ids=ids,
+        vectors=vectors,
+        batch_size=batch_size,
+        wait=True,
+        parallel=parallel,
+    )
+
+    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
+
+    # region mixed named batches
+
+    vectors_config = {
+        "text": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
+        "plain": models.VectorParams(size=DENSE_DIM, distance=models.Distance.COSINE),
+    }
+    vectors = [
+        {
+            "text": models.Document(text="hello world", model=DENSE_MODEL_NAME),
+            "plain": [0.0, 0.2] * half_dense_dim,
+        },
+        {
+            "plain": [0.1, 0.2] * half_dense_dim,
+            "text": models.Document(text="bye world", model=DENSE_MODEL_NAME),
+        },
+        {"plain": [0.3, 0.2] * half_dense_dim},
+        {"text": models.Document(text="bye world", model=DENSE_MODEL_NAME)},
+    ]
+
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+    remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    local_client.upload_collection(
+        COLLECTION_NAME,
+        ids=ids,
+        vectors=vectors,
+        batch_size=batch_size,
+        wait=True,
+        parallel=parallel,
+    )
+    remote_client.upload_collection(
+        COLLECTION_NAME,
+        ids=ids,
+        vectors=vectors,
+        batch_size=batch_size,
+        wait=True,
+        parallel=parallel,
+    )
+
+    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
+
+    local_client.delete_collection(COLLECTION_NAME)
+    remote_client.delete_collection(COLLECTION_NAME)
+    # endregion
