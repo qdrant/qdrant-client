@@ -1287,13 +1287,16 @@ def test_upload_mixed_batches_upload_points(prefer_grpc, parallel):
     half_dense_dim = DENSE_DIM // 2
     batch_size = 2
 
+    ref_vector = [0.0, 0.2] * half_dense_dim
+    norm_ref_vector = ref_vector / np.linalg.norm(ref_vector)
+
     # region separate plain batches
     points = [
         models.PointStruct(
             id=1, vector=models.Document(text="hello world", model=DENSE_MODEL_NAME)
         ),
         models.PointStruct(id=2, vector=models.Document(text="bye world", model=DENSE_MODEL_NAME)),
-        models.PointStruct(id=3, vector=[0.0, 0.2] * half_dense_dim),
+        models.PointStruct(id=3, vector=ref_vector),
         models.PointStruct(id=4, vector=[0.1, 0.2] * half_dense_dim),
     ]
 
@@ -1311,6 +1314,10 @@ def test_upload_mixed_batches_upload_points(prefer_grpc, parallel):
     )
 
     assert remote_client.count(COLLECTION_NAME).count == len(points)
+    assert np.allclose(
+        remote_client.retrieve(COLLECTION_NAME, ids=[3], with_vectors=True)[0].vector,
+        norm_ref_vector,
+    )
 
     compare_collections(
         local_client,
@@ -1328,7 +1335,7 @@ def test_upload_mixed_batches_upload_points(prefer_grpc, parallel):
         models.PointStruct(
             id=1, vector=models.Document(text="hello world", model=DENSE_MODEL_NAME)
         ),
-        models.PointStruct(id=2, vector=[0.0, 0.2] * half_dense_dim),
+        models.PointStruct(id=2, vector=ref_vector),
         models.PointStruct(id=3, vector=models.Document(text="bye world", model=DENSE_MODEL_NAME)),
         models.PointStruct(id=4, vector=[0.1, 0.2] * half_dense_dim),
     ]
@@ -1344,6 +1351,10 @@ def test_upload_mixed_batches_upload_points(prefer_grpc, parallel):
     )
 
     assert remote_client.count(COLLECTION_NAME).count == len(points)
+    assert np.allclose(
+        remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector,
+        norm_ref_vector,
+    )
 
     compare_collections(
         local_client,
@@ -1367,13 +1378,13 @@ def test_upload_mixed_batches_upload_points(prefer_grpc, parallel):
             id=1,
             vector={
                 "text": models.Document(text="hello world", model=DENSE_MODEL_NAME),
-                "plain": [0.0, 0.2] * half_dense_dim,
+                "plain": [0.1, 0.2] * half_dense_dim,
             },
         ),
         models.PointStruct(
             id=2,
             vector={
-                "plain": [0.1, 0.2] * half_dense_dim,
+                "plain": ref_vector,
                 "text": models.Document(text="bye world", model=DENSE_MODEL_NAME),
             },
         ),
@@ -1398,7 +1409,10 @@ def test_upload_mixed_batches_upload_points(prefer_grpc, parallel):
     )
 
     assert remote_client.count(COLLECTION_NAME).count == len(points)
-
+    assert np.allclose(
+        remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector["plain"],
+        norm_ref_vector,
+    )
     compare_collections(
         local_client,
         remote_client,
@@ -1420,13 +1434,15 @@ def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
     remote_client = QdrantClient(prefer_grpc=prefer_grpc)
     half_dense_dim = DENSE_DIM // 2
     batch_size = 2
+    ref_vector = [0.0, 0.2] * half_dense_dim
+    norm_ref_vector = ref_vector / np.linalg.norm(ref_vector)
 
     # region separate plain batches
     ids = [0, 1, 2, 3]
     vectors = [
         models.Document(text="hello world", model=DENSE_MODEL_NAME),
         models.Document(text="bye world", model=DENSE_MODEL_NAME),
-        [0.0, 0.2] * half_dense_dim,
+        ref_vector,
         [0.1, 0.2] * half_dense_dim,
     ]
 
@@ -1454,6 +1470,10 @@ def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
     )
 
     assert remote_client.count(COLLECTION_NAME).count == len(vectors)
+    assert np.allclose(
+        remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector,
+        norm_ref_vector,
+    )
 
     compare_collections(
         local_client,
@@ -1469,7 +1489,7 @@ def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
     # region mixed plain batches
     vectors = [
         models.Document(text="hello world", model=DENSE_MODEL_NAME),
-        [0.0, 0.2] * half_dense_dim,
+        ref_vector,
         models.Document(text="bye world", model=DENSE_MODEL_NAME),
         [0.1, 0.2] * half_dense_dim,
     ]
@@ -1490,6 +1510,10 @@ def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
     )
 
     assert remote_client.count(COLLECTION_NAME).count == len(vectors)
+    assert np.allclose(
+        remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector,
+        norm_ref_vector,
+    )
 
     compare_collections(
         local_client,
@@ -1514,7 +1538,7 @@ def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
             "plain": [0.0, 0.2] * half_dense_dim,
         },
         {
-            "plain": [0.1, 0.2] * half_dense_dim,
+            "plain": ref_vector,
             "text": models.Document(text="bye world", model=DENSE_MODEL_NAME),
         },
         {"plain": [0.3, 0.2] * half_dense_dim},
@@ -1542,6 +1566,10 @@ def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
     )
 
     assert remote_client.count(COLLECTION_NAME).count == len(vectors)
+    assert np.allclose(
+        remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["plain"],
+        norm_ref_vector,
+    )
 
     compare_collections(
         local_client,
