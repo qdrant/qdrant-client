@@ -21,6 +21,7 @@ import httpx
 import numpy as np
 from grpc import Compression
 from urllib3.util import Url, parse_url
+from urllib.parse import urljoin
 
 from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client import grpc as grpc
@@ -163,7 +164,8 @@ class QdrantRemote(QdrantBase):
         self._grpc_compression = grpc_compression
 
         address = f"{self._host}:{self._port}" if self._port is not None else self._host
-        self.rest_uri = f"{self._scheme}://{address}{self._prefix}"
+        base_url = f"{self._scheme}://{address}"
+        self.rest_uri = urljoin(base_url, self._prefix)
 
         self._rest_args = {"headers": self._rest_headers, "http2": http2, **kwargs}
 
@@ -206,22 +208,27 @@ class QdrantRemote(QdrantBase):
         self._closed: bool = False
 
         if check_compatibility:
-            client_version = importlib.metadata.version("qdrant-client")
-            server_version = get_server_version(
-                self.rest_uri, self._rest_headers, self._rest_args.get("auth")
-            )
-            if not server_version:
-                show_warning(
-                    message=f"Failed to obtain server version. Unable to check client-server compatibility. Set check_version=False to skip version check.",
-                    category=UserWarning,
-                    stacklevel=4,
+            try:
+                client_version = importlib.metadata.version("qdrant-client")
+                server_version = get_server_version(
+                    self.rest_uri, self._rest_headers, self._rest_args.get("auth")
                 )
-            elif not is_compatible(client_version, server_version):
-                show_warning(
-                    message=f"Qdrant client version {client_version} is incompatible with server version {server_version}. Major versions should match and minor version difference must not exceed 1. Set check_version=False to skip version check.",
-                    category=UserWarning,
-                    stacklevel=4,
-                )
+
+                if not server_version:
+                    show_warning(
+                        message=f"Failed to obtain server version. Unable to check client-server compatibility. Set check_version=False to skip version check.",
+                        category=UserWarning,
+                        stacklevel=4,
+                    )
+                elif not is_compatible(client_version, server_version):
+                    show_warning(
+                        message=f"Qdrant client version {client_version} is incompatible with server version {server_version}. Major versions should match and minor version difference must not exceed 1. Set check_version=False to skip version check.",
+                        category=UserWarning,
+                        stacklevel=4,
+                    )
+            except Exception as er:
+                logging.debug(f"Unable to get server version: {er}, server version defaults to None")
+
 
     @property
     def closed(self) -> bool:
