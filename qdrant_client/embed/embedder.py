@@ -17,15 +17,11 @@ from qdrant_client.fastembed_common import (
     ImageInput,
 )
 
-if TextEmbedding is not None:
-    T = TypeVar(
-        "T", *[TextEmbedding, SparseTextEmbedding, LateInteractionTextEmbedding, ImageEmbedding]
-    )
-else:
-    T = TypeVar("T")
+
+T = TypeVar("T")
 
 
-class ModelInstance(BaseModel, Generic[T], arbitrary_types_allowed=True):
+class ModelInstance(BaseModel, Generic[T], arbitrary_types_allowed=True):  # type: ignore[call-arg]
     model: T
     options: dict[str, Any]
     deprecated: bool = False
@@ -75,7 +71,9 @@ class Embedder:
                 return instance.model
 
         model = TextEmbedding(model_name=model_name, **options)
-        model_instance = ModelInstance(model=model, options=options, deprecated=deprecated)
+        model_instance: ModelInstance[TextEmbedding] = ModelInstance(
+            model=model, options=options, deprecated=deprecated
+        )
         self.embedding_models[model_name].append(model_instance)
         return model
 
@@ -111,7 +109,9 @@ class Embedder:
                 return instance.model
 
         model = SparseTextEmbedding(model_name=model_name, **options)
-        model_instance = ModelInstance(model=model, options=options, deprecated=deprecated)
+        model_instance: ModelInstance[SparseTextEmbedding] = ModelInstance(
+            model=model, options=options, deprecated=deprecated
+        )
         self.sparse_embedding_models[model_name].append(model_instance)
         return model
 
@@ -143,7 +143,9 @@ class Embedder:
                 return instance.model
 
         model = LateInteractionTextEmbedding(model_name=model_name, **options)
-        model_instance = ModelInstance(model=model, options=options)
+        model_instance: ModelInstance[LateInteractionTextEmbedding] = ModelInstance(
+            model=model, options=options
+        )
         self.late_interaction_embedding_models[model_name].append(model_instance)
         return model
 
@@ -175,7 +177,7 @@ class Embedder:
                 return instance.model
 
         model = ImageEmbedding(model_name=model_name, **options)
-        model_instance = ModelInstance(model=model, options=options)
+        model_instance: ModelInstance[ImageEmbedding] = ModelInstance(model=model, options=options)
         self.image_embedding_models[model_name].append(model_instance)
         return model
 
