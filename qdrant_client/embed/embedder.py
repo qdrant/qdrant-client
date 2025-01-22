@@ -17,13 +17,15 @@ from qdrant_client.fastembed_common import (
     ImageInput,
 )
 
-T = TypeVar("T", TextEmbedding, SparseTextEmbedding, LateInteractionTextEmbedding, ImageEmbedding)
+if TextEmbedding is not None:
+    T = TypeVar(
+        "T", *[TextEmbedding, SparseTextEmbedding, LateInteractionTextEmbedding, ImageEmbedding]
+    )
+else:
+    T = TypeVar("T")
 
 
-class ModelInstance(BaseModel, Generic[T]):
-    class Config:
-        arbitrary_types_allowed = True
-
+class ModelInstance(BaseModel, Generic[T], arbitrary_types_allowed=True):
     model: T
     options: dict[str, Any]
     deprecated: bool = False
