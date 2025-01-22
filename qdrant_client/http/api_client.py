@@ -1,6 +1,7 @@
 from asyncio import get_event_loop
 from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
+from urllib.parse import urljoin
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
@@ -81,7 +82,7 @@ class ApiClient:
     ) -> Any:
         if path_params is None:
             path_params = {}
-        url = (self.host or "") + url.format(**path_params)
+        url = urljoin((self.host or ""), url.format(**path_params))
         if "params" in kwargs and "timeout" in kwargs["params"]:
             kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._client.build_request(method, url, **kwargs)
@@ -155,7 +156,7 @@ class AsyncApiClient:
     ) -> Any:
         if path_params is None:
             path_params = {}
-        url = (self.host or "") + url.format(**path_params)
+        url = urljoin((self.host or ""), url.format(**path_params))
         request = self._async_client.build_request(method, url, **kwargs)
         return await self.send(request, type_)
 
