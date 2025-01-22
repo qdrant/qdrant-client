@@ -13,11 +13,7 @@ Version = namedtuple("Version", ["major", "minor", "rest"])
 def get_server_version(
     rest_uri: str, rest_headers: dict[str, Any], auth_provider: Optional[BearerAuth]
 ) -> Optional[str]:
-    try:
-        response = httpx.get(rest_uri + "/", headers=rest_headers, auth=auth_provider)
-    except Exception as er:
-        logging.debug(f"Unable to get server version: {er}, server version defaults to None")
-        return None
+    response = httpx.get(rest_uri, headers=rest_headers, auth=auth_provider)
 
     if response.status_code == 200:
         version_info = response.json().get("version", None)
