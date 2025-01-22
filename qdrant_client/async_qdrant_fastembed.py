@@ -32,10 +32,7 @@ from qdrant_client.fastembed_common import (
     ImageEmbedding,
     SparseTextEmbedding,
     SUPPORTED_EMBEDDING_MODELS,
-    SUPPORTED_SPARSE_EMBEDDING_MODELS,
     IDF_EMBEDDING_MODELS,
-    _LATE_INTERACTION_EMBEDDING_MODELS,
-    _IMAGE_EMBEDDING_MODELS,
     OnnxProvider,
 )
 
@@ -120,6 +117,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             cuda=cuda,
             device_ids=device_ids,
             lazy_load=lazy_load,
+            deprecated=True,
             **kwargs,
         )
         self._embedding_model_name = embedding_model_name
@@ -170,6 +168,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 cuda=cuda,
                 device_ids=device_ids,
                 lazy_load=lazy_load,
+                deprecated=True,
                 **kwargs,
             )
         self._sparse_embedding_model_name = embedding_model_name
@@ -197,23 +196,18 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
+        deprecated: bool = False,
         **kwargs: Any,
     ) -> "TextEmbedding":
-        if model_name in self._model_embedder.embedder.embedding_models:
-            return self._model_embedder.embedder.embedding_models[model_name]
         self._import_fastembed()
-        if model_name not in SUPPORTED_EMBEDDING_MODELS:
-            raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
-            )
-        self._model_embedder.embedder.get_or_init_model(
+        return self._model_embedder.embedder.get_or_init_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
+            deprecated=deprecated,
             **kwargs,
         )
-        return self._model_embedder.embedder.embedding_models[model_name]
 
     def _get_or_init_sparse_model(
         self,
@@ -221,20 +215,16 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         cache_dir: Optional[str] = None,
         threads: Optional[int] = None,
         providers: Optional[Sequence["OnnxProvider"]] = None,
+        deprecated: bool = False,
         **kwargs: Any,
     ) -> "SparseTextEmbedding":
-        if model_name in self._model_embedder.embedder.sparse_embedding_models:
-            return self._model_embedder.embedder.sparse_embedding_models[model_name]
         self._import_fastembed()
-        if model_name not in SUPPORTED_SPARSE_EMBEDDING_MODELS:
-            raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_SPARSE_EMBEDDING_MODELS}"
-            )
         return self._model_embedder.embedder.get_or_init_sparse_model(
             model_name=model_name,
             cache_dir=cache_dir,
             threads=threads,
             providers=providers,
+            deprecated=deprecated,
             **kwargs,
         )
 
@@ -246,13 +236,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "LateInteractionTextEmbedding":
-        if model_name in self._model_embedder.embedder.late_interaction_embedding_models:
-            return self._model_embedder.embedder.late_interaction_embedding_models[model_name]
         self._import_fastembed()
-        if model_name not in _LATE_INTERACTION_EMBEDDING_MODELS:
-            raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_EMBEDDING_MODELS}"
-            )
         return self._model_embedder.embedder.get_or_init_late_interaction_model(
             model_name=model_name,
             cache_dir=cache_dir,
@@ -269,13 +253,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         providers: Optional[Sequence["OnnxProvider"]] = None,
         **kwargs: Any,
     ) -> "ImageEmbedding":
-        if model_name in self._model_embedder.embedder.image_embedding_models:
-            return self._model_embedder.embedder.image_embedding_models[model_name]
         self._import_fastembed()
-        if model_name not in _IMAGE_EMBEDDING_MODELS:
-            raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {_IMAGE_EMBEDDING_MODELS}"
-            )
         return self._model_embedder.embedder.get_or_init_image_model(
             model_name=model_name,
             cache_dir=cache_dir,
@@ -292,7 +270,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         embed_type: str = "default",
         parallel: Optional[int] = None,
     ) -> Iterable[tuple[str, list[float]]]:
-        embedding_model = self._get_or_init_model(model_name=embedding_model_name)
+        embedding_model = self._get_or_init_model(model_name=embedding_model_name, deprecated=True)
         (documents_a, documents_b) = tee(documents, 2)
         if embed_type == "passage":
             vectors_iter = embedding_model.passage_embed(
@@ -318,7 +296,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         batch_size: int = 32,
         parallel: Optional[int] = None,
     ) -> Iterable[types.SparseVector]:
-        sparse_embedding_model = self._get_or_init_sparse_model(model_name=embedding_model_name)
+        sparse_embedding_model = self._get_or_init_sparse_model(
+            model_name=embedding_model_name, deprecated=True
+        )
         vectors_iter = sparse_embedding_model.embed(
             documents, batch_size=batch_size, parallel=parallel
         )
@@ -597,7 +577,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             list[types.ScoredPoint]: List of scored points.
 
         """
-        embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+        embedding_model_inst = self._get_or_init_model(
+            model_name=self.embedding_model_name, deprecated=True
+        )
         embeddings = list(embedding_model_inst.query_embed(query=query_text))
         query_vector = embeddings[0].tolist()
         if self.sparse_embedding_model_name is None:
@@ -614,7 +596,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 )
             )
         sparse_embedding_model_inst = self._get_or_init_sparse_model(
-            model_name=self.sparse_embedding_model_name
+            model_name=self.sparse_embedding_model_name, deprecated=True
         )
         sparse_vector = list(sparse_embedding_model_inst.query_embed(query=query_text))[0]
         sparse_query_vector = models.SparseVector(
@@ -671,7 +653,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             list[list[QueryResponse]]: List of lists of responses for each query text.
 
         """
-        embedding_model_inst = self._get_or_init_model(model_name=self.embedding_model_name)
+        embedding_model_inst = self._get_or_init_model(
+            model_name=self.embedding_model_name, deprecated=True
+        )
         query_vectors = list(embedding_model_inst.query_embed(query=query_texts))
         requests = []
         for vector in query_vectors:
@@ -689,7 +673,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             responses = await self.search_batch(collection_name=collection_name, requests=requests)
             return [self._scored_points_to_query_responses(response) for response in responses]
         sparse_embedding_model_inst = self._get_or_init_sparse_model(
-            model_name=self.sparse_embedding_model_name
+            model_name=self.sparse_embedding_model_name, deprecated=True
         )
         sparse_query_vectors = [
             models.SparseVector(

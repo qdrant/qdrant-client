@@ -1,4 +1,6 @@
-from typing import Optional, Sequence, Any
+from collections import defaultdict
+from typing import Optional, Sequence, Any, TypeVar, Generic
+from pydantic import BaseModel
 
 from qdrant_client.http import models
 from qdrant_client.embed.models import NumericVector
@@ -10,17 +12,35 @@ from qdrant_client.fastembed_common import (
     SUPPORTED_EMBEDDING_MODELS,
     SUPPORTED_SPARSE_EMBEDDING_MODELS,
     _LATE_INTERACTION_EMBEDDING_MODELS,
+    _IMAGE_EMBEDDING_MODELS,
     OnnxProvider,
     ImageInput,
 )
 
+T = TypeVar("T", TextEmbedding, SparseTextEmbedding, LateInteractionTextEmbedding, ImageEmbedding)
+
+
+class ModelInstance(BaseModel, Generic[T]):
+    class Config:
+        arbitrary_types_allowed = True
+
+    model: T
+    options: dict[str, Any]
+    deprecated: bool = False
+
 
 class Embedder:
     def __init__(self) -> None:
-        self.embedding_models: dict[str, "TextEmbedding"] = {}
-        self.sparse_embedding_models: dict[str, "SparseTextEmbedding"] = {}
-        self.late_interaction_embedding_models: dict[str, "LateInteractionTextEmbedding"] = {}
-        self.image_embedding_models: dict[str, "ImageEmbedding"] = {}
+        self.embedding_models: dict[str, list[ModelInstance[TextEmbedding]]] = defaultdict(list)
+        self.sparse_embedding_models: dict[str, list[ModelInstance[SparseTextEmbedding]]] = (
+            defaultdict(list)
+        )
+        self.late_interaction_embedding_models: dict[
+            str, list[ModelInstance[LateInteractionTextEmbedding]]
+        ] = defaultdict(list)
+        self.image_embedding_models: dict[str, list[ModelInstance[ImageEmbedding]]] = defaultdict(
+            list
+        )
 
     def get_or_init_model(
         self,
@@ -30,18 +50,32 @@ class Embedder:
         providers: Optional[Sequence["OnnxProvider"]] = None,
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
+        deprecated: bool = False,
         **kwargs: Any,
     ) -> TextEmbedding:
-        self.embedding_models[model_name] = TextEmbedding(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            cuda=cuda,
-            device_ids=device_ids,
+        if model_name not in SUPPORTED_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
+            )
+        options = {
+            "cache_dir": cache_dir,
+            "threads": threads,
+            "providers": providers,
+            "cuda": cuda,
+            "device_ids": device_ids,
             **kwargs,
-        )
-        return self.embedding_models[model_name]
+        }
+
+        for instance in self.embedding_models[model_name]:
+            if (deprecated and instance.deprecated) or (
+                not deprecated and instance.options == options
+            ):
+                return instance.model
+
+        model = TextEmbedding(model_name=model_name, **options)
+        model_instance = ModelInstance(model=model, options=options, deprecated=deprecated)
+        self.embedding_models[model_name].append(model_instance)
+        return model
 
     def get_or_init_sparse_model(
         self,
@@ -51,18 +85,33 @@ class Embedder:
         providers: Optional[Sequence["OnnxProvider"]] = None,
         cuda: bool = False,
         device_ids: Optional[list[int]] = None,
+        deprecated: bool = False,
         **kwargs: Any,
     ) -> SparseTextEmbedding:
-        self.sparse_embedding_models[model_name] = SparseTextEmbedding(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            cuda=cuda,
-            device_ids=device_ids,
+        if model_name not in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_SPARSE_EMBEDDING_MODELS}"
+            )
+
+        options = {
+            "cache_dir": cache_dir,
+            "threads": threads,
+            "providers": providers,
+            "cuda": cuda,
+            "device_ids": device_ids,
             **kwargs,
-        )
-        return self.sparse_embedding_models[model_name]
+        }
+
+        for instance in self.sparse_embedding_models[model_name]:
+            if (deprecated and instance.deprecated) or (
+                not deprecated and instance.options == options
+            ):
+                return instance.model
+
+        model = SparseTextEmbedding(model_name=model_name, **options)
+        model_instance = ModelInstance(model=model, options=options, deprecated=deprecated)
+        self.sparse_embedding_models[model_name].append(model_instance)
+        return model
 
     def get_or_init_late_interaction_model(
         self,
@@ -74,16 +123,27 @@ class Embedder:
         device_ids: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> LateInteractionTextEmbedding:
-        self.late_interaction_embedding_models[model_name] = LateInteractionTextEmbedding(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            cuda=cuda,
-            device_ids=device_ids,
+        if model_name not in _LATE_INTERACTION_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_EMBEDDING_MODELS}"
+            )
+        options = {
+            "cache_dir": cache_dir,
+            "threads": threads,
+            "providers": providers,
+            "cuda": cuda,
+            "device_ids": device_ids,
             **kwargs,
-        )
-        return self.late_interaction_embedding_models[model_name]
+        }
+
+        for instance in self.late_interaction_embedding_models[model_name]:
+            if instance.options == options:
+                return instance.model
+
+        model = LateInteractionTextEmbedding(model_name=model_name, **options)
+        model_instance = ModelInstance(model=model, options=options)
+        self.late_interaction_embedding_models[model_name].append(model_instance)
+        return model
 
     def get_or_init_image_model(
         self,
@@ -95,16 +155,27 @@ class Embedder:
         device_ids: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> ImageEmbedding:
-        self.image_embedding_models[model_name] = ImageEmbedding(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            cuda=cuda,
-            device_ids=device_ids,
+        if model_name not in _IMAGE_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {_IMAGE_EMBEDDING_MODELS}"
+            )
+        options = {
+            "cache_dir": cache_dir,
+            "threads": threads,
+            "providers": providers,
+            "cuda": cuda,
+            "device_ids": device_ids,
             **kwargs,
-        )
-        return self.image_embedding_models[model_name]
+        }
+
+        for instance in self.image_embedding_models[model_name]:
+            if instance.options == options:
+                return instance.model
+
+        model = ImageEmbedding(model_name=model_name, **options)
+        model_instance = ModelInstance(model=model, options=options)
+        self.image_embedding_models[model_name].append(model_instance)
+        return model
 
     def embed(
         self,

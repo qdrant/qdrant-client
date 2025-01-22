@@ -1111,16 +1111,18 @@ def test_propagate_options(prefer_grpc):
     local_client.upsert(COLLECTION_NAME, points)
     remote_client.upsert(COLLECTION_NAME, points)
 
-    assert local_client._model_embedder.embedder.embedding_models[DENSE_MODEL_NAME].model.lazy_load
-    assert local_client._model_embedder.embedder.sparse_embedding_models[
-        SPARSE_MODEL_NAME
-    ].model.lazy_load
+    assert local_client._model_embedder.embedder.embedding_models[DENSE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
+    assert local_client._model_embedder.embedder.sparse_embedding_models[SPARSE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
     assert local_client._model_embedder.embedder.late_interaction_embedding_models[
         COLBERT_MODEL_NAME
-    ].model.lazy_load
-    assert local_client._model_embedder.embedder.image_embedding_models[
-        DENSE_IMAGE_MODEL_NAME
-    ].model.lazy_load
+    ][0].model.model.lazy_load
+    assert local_client._model_embedder.embedder.image_embedding_models[DENSE_IMAGE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
 
     local_client._model_embedder.embedder.embedding_models.clear()
     local_client._model_embedder.embedder.sparse_embedding_models.clear()
@@ -1166,16 +1168,18 @@ def test_propagate_options(prefer_grpc):
     local_client.upsert(COLLECTION_NAME, points)
     remote_client.upsert(COLLECTION_NAME, points)
 
-    assert local_client._model_embedder.embedder.embedding_models[DENSE_MODEL_NAME].model.lazy_load
-    assert local_client._model_embedder.embedder.sparse_embedding_models[
-        SPARSE_MODEL_NAME
-    ].model.lazy_load
+    assert local_client._model_embedder.embedder.embedding_models[DENSE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
+    assert local_client._model_embedder.embedder.sparse_embedding_models[SPARSE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
     assert local_client._model_embedder.embedder.late_interaction_embedding_models[
         COLBERT_MODEL_NAME
-    ].model.lazy_load
-    assert local_client._model_embedder.embedder.image_embedding_models[
-        DENSE_IMAGE_MODEL_NAME
-    ].model.lazy_load
+    ][0].model.model.lazy_load
+    assert local_client._model_embedder.embedder.image_embedding_models[DENSE_IMAGE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
@@ -1288,7 +1292,7 @@ def test_upload_mixed_batches_upload_points(prefer_grpc, parallel):
     batch_size = 2
 
     ref_vector = [0.0, 0.2] * half_dense_dim
-    norm_ref_vector = ref_vector / np.linalg.norm(ref_vector)
+    norm_ref_vector = (np.array(ref_vector) / np.linalg.norm(ref_vector)).tolist()
 
     # region separate plain batches
     points = [
@@ -1435,7 +1439,7 @@ def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
     half_dense_dim = DENSE_DIM // 2
     batch_size = 2
     ref_vector = [0.0, 0.2] * half_dense_dim
-    norm_ref_vector = ref_vector / np.linalg.norm(ref_vector)
+    norm_ref_vector = (np.array(ref_vector) / np.linalg.norm(ref_vector)).tolist()
 
     # region separate plain batches
     ids = [0, 1, 2, 3]
