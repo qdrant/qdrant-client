@@ -413,7 +413,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                     modifier == models.Modifier.IDF
                 ), f"{self.sparse_embedding_model_name} requires modifier IDF, current modifier is {modifier}"
 
-    async def get_embedding_size(self, model_name: Optional[str] = None) -> int:
+    def get_embedding_size(self, model_name: Optional[str] = None) -> int:
         """
         Get the size of the embeddings produced by the specified model.
 
