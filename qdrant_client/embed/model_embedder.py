@@ -39,7 +39,7 @@ class ModelEmbedderWorker(Worker):
 class ModelEmbedder:
     MAX_INTERNAL_BATCH_SIZE = 4
 
-    def __init__(self, parser: Optional[ModelSchemaParser] = None, **kwargs):
+    def __init__(self, parser: Optional[ModelSchemaParser] = None, **kwargs: Any):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
         self._embed_storage: dict[str, list[NumericVector]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
