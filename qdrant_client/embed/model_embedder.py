@@ -37,6 +37,8 @@ class ModelEmbedderWorker(Worker):
 
 
 class ModelEmbedder:
+    MAX_INTERNAL_BATCH_SIZE = 4
+
     def __init__(self, parser: Optional[ModelSchemaParser] = None, **kwargs):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
         self._embed_storage: dict[str, list[NumericVector]] = {}
@@ -105,6 +107,7 @@ class ModelEmbedder:
                 num_workers=parallel,
                 worker=self._get_worker_class(),
                 start_method=start_method,
+                max_internal_batch_size=self.MAX_INTERNAL_BATCH_SIZE,
             )
 
             for batch in pool.ordered_map(raw_models_batches):

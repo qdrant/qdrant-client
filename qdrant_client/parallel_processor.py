@@ -12,7 +12,7 @@ from typing import Any, Iterable, Optional, Type
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
 
-max_internal_batch_size = 200
+MAX_INTERNAL_BATCH_SIZE = 200
 
 
 class QueueSignals(str, Enum):
@@ -85,7 +85,13 @@ def _worker(
 
 
 class ParallelWorkerPool:
-    def __init__(self, num_workers: int, worker: Type[Worker], start_method: Optional[str] = None):
+    def __init__(
+        self,
+        num_workers: int,
+        worker: Type[Worker],
+        start_method: Optional[str] = None,
+        max_internal_batch_size: int = MAX_INTERNAL_BATCH_SIZE,
+    ):
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Optional[Queue] = None
