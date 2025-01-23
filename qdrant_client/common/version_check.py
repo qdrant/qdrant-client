@@ -1,5 +1,4 @@
 import logging
-import warnings
 from typing import Any, Optional
 from collections import namedtuple
 
@@ -15,7 +14,7 @@ def get_server_version(
 ) -> Optional[str]:
     response = httpx.get(rest_uri, headers=rest_headers, auth=auth_provider)
 
-    if response.status_code == 200:
+    if response.status_code == 200 and response.json():
         version_info = response.json().get("version", None)
         if not version_info:
             logging.debug(
