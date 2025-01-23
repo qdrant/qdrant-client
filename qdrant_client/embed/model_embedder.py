@@ -157,9 +157,9 @@ class ModelEmbedder:
 
         if isinstance(model, get_args(INFERENCE_OBJECT_TYPES)):
             if accumulating:
-                self._accumulate(model)
+                self._accumulate(model)  # type: ignore
             else:
-                return self._drain_accumulator(model, is_query=is_query)
+                return self._drain_accumulator(model, is_query=is_query)  # type: ignore
 
         if paths is None:
             model = deepcopy(model) if not accumulating else model
