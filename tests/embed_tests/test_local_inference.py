@@ -1585,3 +1585,71 @@ def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel):
     local_client.delete_collection(COLLECTION_NAME)
     remote_client.delete_collection(COLLECTION_NAME)
     # endregion
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_upsert_batch_with_different_options(prefer_grpc):
+    bm25_name = "Qdrant/bm25"
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
+
+    sparse_doc_1 = models.Document(
+        text="running run", model=bm25_name, options={"language": "english"}
+    )
+    sparse_doc_2 = models.Document(
+        text="running run", model=bm25_name, options={"language": "german"}
+    )
+    sparse_doc_3 = models.Document(
+        text="running run", model=bm25_name, options={"language": "english"}
+    )
+    sparse_doc_4 = models.Document(
+        text="running run", model=bm25_name, options={"language": "german"}
+    )
+
+    sparse_vectors_config = {
+        "sparse-text-en": models.SparseVectorParams(modifier=models.Modifier.IDF),
+        "sparse-text-de": models.SparseVectorParams(modifier=models.Modifier.IDF),
+    }
+    if remote_client.collection_exists(COLLECTION_NAME):
+        remote_client.delete_collection(COLLECTION_NAME)
+
+    local_client.create_collection(
+        COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+    )
+    remote_client.create_collection(
+        COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+    )
+    points = [
+        models.PointStruct(
+            id=0, vector={"sparse-text-en": sparse_doc_1, "sparse-text-de": sparse_doc_2}
+        ),
+        models.PointStruct(id=1, vector={"sparse-text-en": sparse_doc_3}),
+        models.PointStruct(id=2, vector={"sparse-text-de": sparse_doc_4}),
+    ]
+
+    local_client.upsert(COLLECTION_NAME, points)
+    remote_client.upsert(COLLECTION_NAME, points)
+
+    read_points, _ = local_client.scroll(COLLECTION_NAME, limit=4, with_vectors=True)
+    assert len(read_points) == 3
+    assert (
+        read_points[0].vector["sparse-text-en"].indices
+        != read_points[0].vector["sparse-text-de"].indices
+    )
+    assert (
+        read_points[0].vector["sparse-text-en"].indices
+        == read_points[1].vector["sparse-text-en"].indices
+    )
+    assert (
+        read_points[0].vector["sparse-text-de"].indices
+        == read_points[2].vector["sparse-text-de"].indices
+    )
+
+    compare_collections(
+        local_client,
+        remote_client,
+        num_vectors=10,
+        collection_name=COLLECTION_NAME,
+    )
