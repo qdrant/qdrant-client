@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 from copy import deepcopy
 from multiprocessing import get_all_start_methods
 from typing import Optional, Union, Iterable, Any, Type, get_args
@@ -274,46 +275,68 @@ class ModelEmbedder:
         Returns:
             None
         """
-        for model_name, objects in self._batch_accumulator.items():
-            if model_name not in (
+
+        def embed(
+            objects: list[INFERENCE_OBJECT_TYPES], model_name: str, is_text: bool
+        ) -> list[NumericVector]:
+            """Assemble batches by groups, embeds and return embeddings in the original order"""
+            unique_options: list[dict[str, Any]] = []
+            batches: list[Any] = []
+            group_indices: dict[int, list[int]] = defaultdict(list)
+            for i, obj in enumerate(objects):
+                for j, options in enumerate(unique_options):
+                    if options == obj.options:
+                        group_indices[j].append(i)
+                        batches[j].append(obj.text if is_text else obj.image)
+                        break
+                else:
+                    # Create a new group if no match is found
+                    group_indices[len(unique_options)] = [i]
+                    unique_options.append(obj.options)
+                    batches.append([obj.text if is_text else obj.image])
+
+            embeds = []
+            for i, options in enumerate(unique_options):
+                embeds.extend(
+                    [
+                        embedding
+                        for embedding in self.embedder.embed(
+                            model_name=model_name,
+                            texts=batches[i] if is_text else None,
+                            images=batches[i] if not is_text else None,
+                            is_query=is_query,
+                            options=options or {},
+                        )
+                    ]
+                )
+
+            iter_embeds = iter(embeds)
+            ordered_embeddings: list[list[NumericVector]] = [[]] * len(objects)
+            for indices in group_indices.values():
+                for index in indices:
+                    ordered_embeddings[index] = next(iter_embeds)
+            return ordered_embeddings
+
+        for model in self._batch_accumulator:
+            if model not in (
                 *SUPPORTED_EMBEDDING_MODELS.keys(),
                 *SUPPORTED_SPARSE_EMBEDDING_MODELS.keys(),
                 *_LATE_INTERACTION_EMBEDDING_MODELS.keys(),
                 *_IMAGE_EMBEDDING_MODELS,
             ):
-                raise ValueError(f"{model_name} is not among supported models")
+                raise ValueError(f"{model} is not among supported models")
 
-            options = next(iter(objects)).options
-            for obj in objects:
-                if options != obj.options:
-                    raise ValueError(
-                        f"Options for {model_name} model should be the same for all objects in one request"
-                    )
-
-        for model_name, objects in self._batch_accumulator.items():
-            options = next(iter(objects)).options or {}
-            if model_name in [
+        for model, data in self._batch_accumulator.items():
+            if model in [
                 *SUPPORTED_EMBEDDING_MODELS,
                 *SUPPORTED_SPARSE_EMBEDDING_MODELS,
                 *_LATE_INTERACTION_EMBEDDING_MODELS,
             ]:
-                texts = [obj.text for obj in objects]
-                embeddings = [
-                    embedding
-                    for embedding in self.embedder.embed(
-                        texts=texts, is_query=is_query, model_name=model_name, **options
-                    )
-                ]
+                embeddings = embed(objects=data, model_name=model, is_text=True)
             else:
-                images = [obj.image for obj in objects]
-                embeddings = [
-                    embedding
-                    for embedding in self.embedder.embed(
-                        images=images, is_query=is_query, model_name=model_name, **options
-                    )
-                ]
+                embeddings = embed(objects=data, model_name=model, is_text=False)
 
-            self._embed_storage[model_name] = embeddings
+            self._embed_storage[model] = embeddings
         self._batch_accumulator.clear()
 
     def _next_embed(self, model_name: str) -> NumericVector:

@@ -186,9 +186,9 @@ class Embedder:
         model_name: str,
         texts: Optional[list[str]] = None,
         images: Optional[list[ImageInput]] = None,
+        options: Optional[dict[str, Any]] = None,
         is_query: bool = False,
         batch_size: int = 32,
-        **options: Any,
     ) -> NumericVector:
         if (texts is None) is (images is None):
             raise ValueError("Either documents or images should be provided")
