@@ -261,7 +261,7 @@ def test_upload(prefer_grpc):
     recreate_collection(remote_client, COLLECTION_NAME)
 
     local_client.upload_points(COLLECTION_NAME, points)
-    remote_client.upload_points(COLLECTION_NAME, points)
+    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
 
     assert local_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
