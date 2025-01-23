@@ -25,11 +25,11 @@ from qdrant_client.uploader.uploader import iter_batch
 
 class ModelEmbedderWorker(Worker):
     def __init__(self, **kwargs: Any):
-        self.model_embedder = ModelEmbedder()
+        self.model_embedder = ModelEmbedder(**kwargs)
 
     @classmethod
     def start(cls, **kwargs: Any) -> "ModelEmbedderWorker":
-        return cls(**kwargs)
+        return cls(threads=1, **kwargs)
 
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
@@ -37,11 +37,11 @@ class ModelEmbedderWorker(Worker):
 
 
 class ModelEmbedder:
-    def __init__(self, parser: Optional[ModelSchemaParser] = None):
+    def __init__(self, parser: Optional[ModelSchemaParser] = None, **kwargs):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
         self._embed_storage: dict[str, list[NumericVector]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
-        self.embedder = Embedder()
+        self.embedder = Embedder(**kwargs)
 
     def embed_models(
         self,

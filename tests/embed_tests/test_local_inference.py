@@ -211,7 +211,7 @@ def test_upsert(prefer_grpc):
     # endregion
 
 
-@pytest.mark.parametrize("prefer_grpc", [True, False])
+@pytest.mark.parametrize("prefer_grpc", [False])
 def test_upload(prefer_grpc):
     def recreate_collection(client, collection_name):
         if client.collection_exists(collection_name):

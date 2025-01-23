@@ -28,7 +28,7 @@ class ModelInstance(BaseModel, Generic[T], arbitrary_types_allowed=True):  # typ
 
 
 class Embedder:
-    def __init__(self) -> None:
+    def __init__(self, threads: Optional[int] = None, **kwargs) -> None:
         self.embedding_models: dict[str, list[ModelInstance[TextEmbedding]]] = defaultdict(list)
         self.sparse_embedding_models: dict[str, list[ModelInstance[SparseTextEmbedding]]] = (
             defaultdict(list)
@@ -39,6 +39,7 @@ class Embedder:
         self.image_embedding_models: dict[str, list[ModelInstance[ImageEmbedding]]] = defaultdict(
             list
         )
+        self._threads = threads
 
     def get_or_init_model(
         self,
@@ -57,7 +58,7 @@ class Embedder:
             )
         options = {
             "cache_dir": cache_dir,
-            "threads": threads,
+            "threads": threads or self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
@@ -95,7 +96,7 @@ class Embedder:
 
         options = {
             "cache_dir": cache_dir,
-            "threads": threads,
+            "threads": threads or self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
@@ -131,7 +132,7 @@ class Embedder:
             )
         options = {
             "cache_dir": cache_dir,
-            "threads": threads,
+            "threads": threads or self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
@@ -165,7 +166,7 @@ class Embedder:
             )
         options = {
             "cache_dir": cache_dir,
-            "threads": threads,
+            "threads": threads or self._threads,
             "providers": providers,
             "cuda": cuda,
             "device_ids": device_ids,
