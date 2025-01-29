@@ -37,7 +37,7 @@ class ModelEmbedderWorker(Worker):
 
 
 class ModelEmbedder:
-    MAX_INTERNAL_BATCH_SIZE = 4
+    MAX_INTERNAL_BATCH_SIZE = 64
 
     def __init__(self, parser: Optional[ModelSchemaParser] = None, **kwargs: Any):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
@@ -49,7 +49,7 @@ class ModelEmbedder:
         self,
         raw_models: Union[BaseModel, Iterable[BaseModel]],
         is_query: bool = False,
-        batch_size: int = 32,
+        batch_size: int = 16,
     ) -> Iterable[BaseModel]:
         """Embed raw data fields in models and return models with vectors
 
@@ -70,7 +70,7 @@ class ModelEmbedder:
     def embed_models_strict(
         self,
         raw_models: Iterable[Union[dict[str, BaseModel], BaseModel]],
-        batch_size: int = 32,
+        batch_size: int = 16,
         parallel: Optional[int] = None,
     ) -> Iterable[Union[dict[str, BaseModel], BaseModel]]:
         """Embed raw data fields in models and return models with vectors
@@ -92,12 +92,14 @@ class ModelEmbedder:
             if len(raw_models) < batch_size:
                 is_small = True
 
-        raw_models_batches = iter_batch(raw_models, batch_size)
-
         if parallel is None or parallel == 1 or is_small:
-            for batch in raw_models_batches:
+            for batch in iter_batch(raw_models, batch_size):
                 yield from self.embed_models_batch(batch)
         else:
+            raw_models_batches = iter_batch(
+                raw_models, size=1
+            )  # larger batch sizes do not help with data parallel
+            # on cpu. todo: adjust when multi-gpu is available
             if parallel == 0:
                 parallel = os.cpu_count()
 

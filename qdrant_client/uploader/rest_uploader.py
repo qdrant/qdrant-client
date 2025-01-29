@@ -1,6 +1,5 @@
-import logging
 from itertools import count
-from typing import Any, Generator, Iterable, Optional, Union
+from typing import Any, Iterable, Optional, Union
 from uuid import uuid4
 
 import numpy as np

@@ -42,12 +42,13 @@ from qdrant_client.fastembed_common import (
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
+    DEFAULT_BATCH_SIZE = 16
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, parser: ModelSchemaParser, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
-        self._model_embedder = ModelEmbedder(parser=parser)
+        self._model_embedder = ModelEmbedder(parser=parser, **kwargs)
         try:
             from fastembed import SparseTextEmbedding, TextEmbedding
 
@@ -804,18 +805,22 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         self,
         raw_models: Union[BaseModel, Iterable[BaseModel]],
         is_query: bool = False,
-        batch_size: int = 32,
+        batch_size: Optional[int] = None,
     ) -> Iterable[BaseModel]:
         yield from self._model_embedder.embed_models(
-            raw_models=raw_models, is_query=is_query, batch_size=batch_size
+            raw_models=raw_models,
+            is_query=is_query,
+            batch_size=batch_size or self.DEFAULT_BATCH_SIZE,
         )
 
     def _embed_models_strict(
         self,
         raw_models: Iterable[Union[dict[str, BaseModel], BaseModel]],
-        batch_size: int = 32,
+        batch_size: Optional[int] = None,
         parallel: Optional[int] = None,
     ) -> Iterable[BaseModel]:
         yield from self._model_embedder.embed_models_strict(
-            raw_models=raw_models, batch_size=batch_size, parallel=parallel
+            raw_models=raw_models,
+            batch_size=batch_size or self.DEFAULT_BATCH_SIZE,
+            parallel=parallel,
         )
