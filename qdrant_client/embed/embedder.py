@@ -64,7 +64,6 @@ class Embedder:
             "device_ids": device_ids,
             **kwargs,
         }
-
         for instance in self.embedding_models[model_name]:
             if (deprecated and instance.deprecated) or (
                 not deprecated and instance.options == options
@@ -193,9 +192,9 @@ class Embedder:
     ) -> NumericVector:
         if (texts is None) is (images is None):
             raise ValueError("Either documents or images should be provided")
-
         if model_name in SUPPORTED_EMBEDDING_MODELS:
             embedding_model_inst = self.get_or_init_model(model_name=model_name, **options or {})
+
             if not is_query:
                 embeddings = [
                     embedding.tolist()

@@ -96,6 +96,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
         cloud_inference: bool = False,
+        local_inference_batch_size: Optional[int] = None,
         check_compatibility: bool = True,
         **kwargs: Any,
     ):
@@ -143,6 +144,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 "Cloud inference is not supported for local Qdrant, consider using FastEmbed or switch to Qdrant Cloud"
             )
         self.cloud_inference = cloud_inference
+        self.local_inference_batch_size = local_inference_batch_size
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
@@ -396,7 +398,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         requests = self._resolve_query_batch_request(requests)
         requires_inference = self._inference_inspector.inspect(requests)
         if requires_inference and (not self.cloud_inference):
-            requests = list(self._embed_models(requests, is_query=True))
+            requests = list(
+                self._embed_models(
+                    requests, is_query=True, batch_size=self.local_inference_batch_size
+                )
+            )
         return await self._client.query_batch_points(
             collection_name=collection_name,
             requests=requests,
@@ -524,13 +530,31 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and (not self.cloud_inference):
             query = (
-                next(iter(self._embed_models(query, is_query=True))) if query is not None else None
+                next(
+                    iter(
+                        self._embed_models(
+                            query, is_query=True, batch_size=self.local_inference_batch_size
+                        )
+                    )
+                )
+                if query is not None
+                else None
             )
             if isinstance(prefetch, list):
-                prefetch = list(self._embed_models(prefetch, is_query=True))
+                prefetch = list(
+                    self._embed_models(
+                        prefetch, is_query=True, batch_size=self.local_inference_batch_size
+                    )
+                )
             else:
                 prefetch = (
-                    next(iter(self._embed_models(prefetch, is_query=True)))
+                    next(
+                        iter(
+                            self._embed_models(
+                                prefetch, is_query=True, batch_size=self.local_inference_batch_size
+                            )
+                        )
+                    )
                     if prefetch is not None
                     else None
                 )
@@ -670,12 +694,30 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and (not self.cloud_inference):
             query = (
-                next(iter(self._embed_models(query, is_query=True))) if query is not None else None
+                next(
+                    iter(
+                        self._embed_models(
+                            query, is_query=True, batch_size=self.local_inference_batch_size
+                        )
+                    )
+                )
+                if query is not None
+                else None
             )
             if isinstance(prefetch, list):
-                prefetch = list(self._embed_models(prefetch, is_query=True))
+                prefetch = list(
+                    self._embed_models(
+                        prefetch, is_query=True, batch_size=self.local_inference_batch_size
+                    )
+                )
             elif prefetch is not None:
-                prefetch = next(iter(self._embed_models(prefetch, is_query=True)))
+                prefetch = next(
+                    iter(
+                        self._embed_models(
+                            prefetch, is_query=True, batch_size=self.local_inference_batch_size
+                        )
+                    )
+                )
         return await self._client.query_points_groups(
             collection_name=collection_name,
             query=query,
@@ -1518,9 +1560,19 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and (not self.cloud_inference):
             if isinstance(points, types.Batch):
-                points = next(iter(self._embed_models(points, is_query=False)))
+                points = next(
+                    iter(
+                        self._embed_models(
+                            points, is_query=False, batch_size=self.local_inference_batch_size
+                        )
+                    )
+                )
             else:
-                points = list(self._embed_models(points, is_query=False))
+                points = list(
+                    self._embed_models(
+                        points, is_query=False, batch_size=self.local_inference_batch_size
+                    )
+                )
         return await self._client.upsert(
             collection_name=collection_name,
             points=points,
@@ -1571,7 +1623,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and (not self.cloud_inference):
-            points = list(self._embed_models(points, is_query=False))
+            points = list(
+                self._embed_models(
+                    points, is_query=False, batch_size=self.local_inference_batch_size
+                )
+            )
         return await self._client.update_vectors(
             collection_name=collection_name,
             points=points,
@@ -2011,7 +2067,11 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         requires_inference = self._inference_inspector.inspect(update_operations)
         if requires_inference and (not self.cloud_inference):
-            update_operations = list(self._embed_models(update_operations, is_query=False))
+            update_operations = list(
+                self._embed_models(
+                    update_operations, is_query=False, batch_size=self.local_inference_batch_size
+                )
+            )
         return await self._client.batch_update_points(
             collection_name=collection_name,
             update_operations=update_operations,
@@ -2452,7 +2512,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 points = []
             if requires_inference:
                 points = self._embed_models_strict(
-                    points, parallel=parallel, batch_size=batch_size
+                    points, parallel=parallel, batch_size=self.local_inference_batch_size
                 )
         return self._client.upload_points(
             collection_name=collection_name,
@@ -2523,7 +2583,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                     vectors = []
                 if requires_inference:
                     vectors = self._embed_models_strict(
-                        vectors, parallel=parallel, batch_size=batch_size
+                        vectors, parallel=parallel, batch_size=self.local_inference_batch_size
                     )
         return self._client.upload_collection(
             collection_name=collection_name,
