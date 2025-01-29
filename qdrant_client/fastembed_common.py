@@ -31,7 +31,7 @@ SUPPORTED_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
     else {}
 )
 
-SUPPORTED_SPARSE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
+SUPPORTED_SPARSE_EMBEDDING_MODELS: dict[str, dict[str, Any]] = (
     {model["model"]: model for model in SparseTextEmbedding.list_supported_models()}
     if SparseTextEmbedding
     else {}
@@ -48,13 +48,19 @@ IDF_EMBEDDING_MODELS: set[str] = (
 )
 
 _LATE_INTERACTION_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
-    {model["model"]: model for model in LateInteractionTextEmbedding.list_supported_models()}
+    {
+        model["model"]: (model["dim"], models.Distance.COSINE)
+        for model in LateInteractionTextEmbedding.list_supported_models()
+    }
     if LateInteractionTextEmbedding
     else {}
 )
 
 _IMAGE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
-    {model["model"]: model for model in ImageEmbedding.list_supported_models()}
+    {
+        model["model"]: (model["dim"], models.Distance.COSINE)
+        for model in ImageEmbedding.list_supported_models()
+    }
     if ImageEmbedding
     else {}
 )

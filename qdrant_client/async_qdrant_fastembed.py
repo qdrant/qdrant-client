@@ -32,6 +32,9 @@ from qdrant_client.fastembed_common import (
     ImageEmbedding,
     SparseTextEmbedding,
     SUPPORTED_EMBEDDING_MODELS,
+    SUPPORTED_SPARSE_EMBEDDING_MODELS,
+    _LATE_INTERACTION_EMBEDDING_MODELS,
+    _IMAGE_EMBEDDING_MODELS,
     IDF_EMBEDDING_MODELS,
     OnnxProvider,
 )
@@ -184,11 +187,17 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     @classmethod
     def _get_model_params(cls, model_name: str) -> tuple[int, models.Distance]:
         cls._import_fastembed()
-        if model_name not in SUPPORTED_EMBEDDING_MODELS:
+        if model_name in SUPPORTED_EMBEDDING_MODELS:
+            return SUPPORTED_EMBEDDING_MODELS[model_name]
+        if model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
+            return _LATE_INTERACTION_EMBEDDING_MODELS[model_name]
+        if model_name in _IMAGE_EMBEDDING_MODELS:
+            return _IMAGE_EMBEDDING_MODELS[model_name]
+        if model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
+                "Sparse embeddings do not return fixed embedding size and distance type"
             )
-        return SUPPORTED_EMBEDDING_MODELS[model_name]
+        raise ValueError(f"Unsupported embedding model: {model_name}")
 
     def _get_or_init_model(
         self,
@@ -412,6 +421,24 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 assert (
                     modifier == models.Modifier.IDF
                 ), f"{self.sparse_embedding_model_name} requires modifier IDF, current modifier is {modifier}"
+
+    def get_embedding_size(self, model_name: Optional[str] = None) -> int:
+        """
+        Get the size of the embeddings produced by the specified model.
+
+        Args:
+            model_name: optional, the name of the model to get the embedding size for. If None, the default model will be used.
+
+        Returns:
+            int: the size of the embeddings produced by the model.
+        """
+        model_name = model_name or self.embedding_model_name
+        if model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Sparse embeddings do not have a fixed embedding size. Current model: {model_name}"
+            )
+        (embeddings_size, _) = self._get_model_params(model_name=model_name)
+        return embeddings_size
 
     def get_fastembed_vector_params(
         self,
