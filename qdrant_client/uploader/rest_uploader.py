@@ -1,6 +1,5 @@
-import logging
 from itertools import count
-from typing import Any, Generator, Iterable, Optional, Union
+from typing import Any, Iterable, Optional, Union
 from uuid import uuid4
 
 import numpy as np
@@ -81,7 +80,7 @@ class RestBatchUploader(BaseUploader):
             raise RuntimeError("Collection name could not be empty")
         return cls(uri=uri, collection_name=collection_name, max_retries=max_retries, **kwargs)
 
-    def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
+    def process(self, items: Iterable[Any]) -> Iterable[bool]:
         for batch in items:
             yield upload_batch(
                 self.openapi_client,

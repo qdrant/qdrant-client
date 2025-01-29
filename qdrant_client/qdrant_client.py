@@ -11,6 +11,8 @@ from typing import (
     Union,
 )
 
+import numpy as np
+
 from qdrant_client import grpc as grpc
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.common.client_warnings import show_warning_once
@@ -95,6 +97,7 @@ class QdrantClient(QdrantFastembedMixin):
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
         cloud_inference: bool = False,
+        local_inference_batch_size: Optional[int] = None,
         check_compatibility: bool = True,
         **kwargs: Any,
     ):
@@ -155,6 +158,7 @@ class QdrantClient(QdrantFastembedMixin):
                 "Cloud inference is not supported for local Qdrant, consider using FastEmbed or switch to Qdrant Cloud"
             )
         self.cloud_inference = cloud_inference
+        self.local_inference_batch_size = local_inference_batch_size
 
     def __del__(self) -> None:
         self.close()
@@ -418,7 +422,11 @@ class QdrantClient(QdrantFastembedMixin):
         requests = self._resolve_query_batch_request(requests)
         requires_inference = self._inference_inspector.inspect(requests)
         if requires_inference and not self.cloud_inference:
-            requests = [self._embed_models(request) for request in requests]
+            requests = list(
+                self._embed_models(
+                    requests, is_query=True, batch_size=self.local_inference_batch_size
+                )
+            )
 
         return self._client.query_batch_points(
             collection_name=collection_name,
@@ -550,10 +558,35 @@ class QdrantClient(QdrantFastembedMixin):
         query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
-            query = self._embed_models(query, is_query=True) if query is not None else None
-            prefetch = (
-                self._embed_models(prefetch, is_query=True) if prefetch is not None else None
+            query = (
+                next(
+                    iter(
+                        self._embed_models(
+                            query, is_query=True, batch_size=self.local_inference_batch_size
+                        )
+                    )
+                )
+                if query is not None
+                else None
             )
+            if isinstance(prefetch, list):
+                prefetch = list(
+                    self._embed_models(
+                        prefetch, is_query=True, batch_size=self.local_inference_batch_size
+                    )
+                )
+            else:
+                prefetch = (
+                    next(
+                        iter(
+                            self._embed_models(
+                                prefetch, is_query=True, batch_size=self.local_inference_batch_size
+                            )
+                        )
+                    )
+                    if prefetch is not None
+                    else None
+                )
 
         return self._client.query_points(
             collection_name=collection_name,
@@ -694,10 +727,31 @@ class QdrantClient(QdrantFastembedMixin):
         query = self._resolve_query(query)
         requires_inference = self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
-            query = self._embed_models(query, is_query=True) if query is not None else None
-            prefetch = (
-                self._embed_models(prefetch, is_query=True) if prefetch is not None else None
+            query = (
+                next(
+                    iter(
+                        self._embed_models(
+                            query, is_query=True, batch_size=self.local_inference_batch_size
+                        )
+                    )
+                )
+                if query is not None
+                else None
             )
+            if isinstance(prefetch, list):
+                prefetch = list(
+                    self._embed_models(
+                        prefetch, is_query=True, batch_size=self.local_inference_batch_size
+                    )
+                )
+            elif prefetch is not None:
+                prefetch = next(
+                    iter(
+                        self._embed_models(
+                            prefetch, is_query=True, batch_size=self.local_inference_batch_size
+                        )
+                    )
+                )
 
         return self._client.query_points_groups(
             collection_name=collection_name,
@@ -1559,10 +1613,20 @@ class QdrantClient(QdrantFastembedMixin):
         requires_inference = self._inference_inspector.inspect(points)
 
         if requires_inference and not self.cloud_inference:
-            if isinstance(points, list):
-                points = [self._embed_models(point, is_query=False) for point in points]
+            if isinstance(points, types.Batch):
+                points = next(
+                    iter(
+                        self._embed_models(
+                            points, is_query=False, batch_size=self.local_inference_batch_size
+                        )
+                    )
+                )
             else:
-                points = self._embed_models(points, is_query=False)
+                points = list(
+                    self._embed_models(
+                        points, is_query=False, batch_size=self.local_inference_batch_size
+                    )
+                )
 
         return self._client.upsert(
             collection_name=collection_name,
@@ -1615,7 +1679,11 @@ class QdrantClient(QdrantFastembedMixin):
 
         requires_inference = self._inference_inspector.inspect(points)
         if requires_inference and not self.cloud_inference:
-            points = [self._embed_models(point, is_query=False) for point in points]
+            points = list(
+                self._embed_models(
+                    points, is_query=False, batch_size=self.local_inference_batch_size
+                )
+            )
 
         return self._client.update_vectors(
             collection_name=collection_name,
@@ -2065,9 +2133,11 @@ class QdrantClient(QdrantFastembedMixin):
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         requires_inference = self._inference_inspector.inspect(update_operations)
         if requires_inference and not self.cloud_inference:
-            update_operations = [
-                self._embed_models(op, is_query=False) for op in update_operations
-            ]
+            update_operations = list(
+                self._embed_models(
+                    update_operations, is_query=False, batch_size=self.local_inference_batch_size
+                )
+            )
 
         return self._client.batch_update_points(
             collection_name=collection_name,
@@ -2512,7 +2582,27 @@ class QdrantClient(QdrantFastembedMixin):
                 This parameter overwrites shard keys written in the records.
 
         """
+
+        def chain(*iterables: Iterable) -> Iterable:
+            for iterable in iterables:
+                yield from iterable
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        if not self.cloud_inference:
+            iter_points = iter(points)
+            requires_inference = False
+            try:
+                point = next(iter_points)
+                requires_inference = self._inference_inspector.inspect(point)
+                points = chain(iter([point]), iter_points)
+            except (StopIteration, StopAsyncIteration):
+                points = []
+
+            if requires_inference:
+                points = self._embed_models_strict(
+                    points, parallel=parallel, batch_size=self.local_inference_batch_size
+                )
 
         return self._client.upload_points(
             collection_name=collection_name,
@@ -2567,7 +2657,28 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
         """
+
+        def chain(*iterables: Iterable) -> Iterable:
+            for iterable in iterables:
+                yield from iterable
+
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+
+        if not self.cloud_inference:
+            if not isinstance(vectors, dict) and not isinstance(vectors, np.ndarray):
+                requires_inference = False
+                try:
+                    iter_vectors = iter(vectors)
+                    vector = next(iter_vectors)
+                    requires_inference = self._inference_inspector.inspect(vector)
+                    vectors = chain(iter([vector]), iter_vectors)
+                except (StopIteration, StopAsyncIteration):
+                    vectors = []
+
+                if requires_inference:
+                    vectors = self._embed_models_strict(
+                        vectors, parallel=parallel, batch_size=self.local_inference_batch_size
+                    )
 
         return self._client.upload_collection(
             collection_name=collection_name,

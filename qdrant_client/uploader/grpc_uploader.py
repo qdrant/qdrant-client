@@ -115,5 +115,5 @@ class GrpcBatchUploader(BaseUploader):
                 timeout=self._timeout,
             )
 
-    def process(self, items: Iterable[Any]) -> Generator[bool, None, None]:
+    def process(self, items: Iterable[Any]) -> Iterable[bool]:
         yield from self.process_upload(items)
