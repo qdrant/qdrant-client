@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from enum import Enum
 from multiprocessing import Queue, get_context
 from multiprocessing.context import BaseContext
@@ -11,7 +12,7 @@ from typing import Any, Iterable, Optional, Type
 # Single item should be processed in less than:
 processing_timeout = 10 * 60  # seconds
 
-max_internal_batch_size = 200
+MAX_INTERNAL_BATCH_SIZE = 200
 
 
 class QueueSignals(str, Enum):
@@ -22,7 +23,7 @@ class QueueSignals(str, Enum):
 
 class Worker:
     @classmethod
-    def start(cls, **kwargs: Any) -> "Worker":
+    def start(cls, *args: Any, **kwargs: Any) -> "Worker":
         raise NotImplementedError()
 
     def process(self, items: Iterable[Any]) -> Iterable[Any]:
@@ -84,7 +85,13 @@ def _worker(
 
 
 class ParallelWorkerPool:
-    def __init__(self, num_workers: int, worker: Type[Worker], start_method: Optional[str] = None):
+    def __init__(
+        self,
+        num_workers: int,
+        worker: Type[Worker],
+        start_method: Optional[str] = None,
+        max_internal_batch_size: int = MAX_INTERNAL_BATCH_SIZE,
+    ):
         self.worker_class = worker
         self.num_workers = num_workers
         self.input_queue: Optional[Queue] = None
@@ -129,6 +136,7 @@ class ParallelWorkerPool:
             pushed = 0
             read = 0
             for item in stream:
+                self.check_worker_health()
                 if pushed - read < self.queue_size:
                     try:
                         out_item = self.output_queue.get_nowait()
@@ -147,7 +155,6 @@ class ParallelWorkerPool:
                         raise RuntimeError("Thread unexpectedly terminated")
                     yield out_item
                     read += 1
-
                 self.input_queue.put(item)
                 pushed += 1
 
@@ -173,6 +180,31 @@ class ParallelWorkerPool:
             else:
                 self.input_queue.join_thread()
                 self.output_queue.join_thread()
+
+    def semi_ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
+        return self.unordered_map(enumerate(stream), *args, **kwargs)
+
+    def ordered_map(self, stream: Iterable[Any], *args: Any, **kwargs: Any) -> Iterable[Any]:
+        buffer = defaultdict(int)
+        next_expected = 0
+
+        for idx, item in self.semi_ordered_map(stream, *args, **kwargs):
+            buffer[idx] = item
+            while next_expected in buffer:
+                yield buffer.pop(next_expected)
+                next_expected += 1
+
+    def check_worker_health(self) -> None:
+        """
+        Checks if any worker process has terminated unexpectedly
+        """
+        for process in self.processes:
+            if not process.is_alive() and process.exitcode != 0:
+                self.emergency_shutdown = True
+                self.join_or_terminate()
+                raise RuntimeError(
+                    f"Worker PID: {process.pid} terminated unexpectedly with code {process.exitcode}"
+                )
 
     def join_or_terminate(self, timeout: Optional[int] = 1) -> None:
         """

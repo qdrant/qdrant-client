@@ -1,9 +1,10 @@
-from typing import Union, Optional, Iterable
+from typing import Union, Optional, Iterable, get_args
 
 from pydantic import BaseModel
 
 from qdrant_client._pydantic_compat import model_fields_set
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
+
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.embed.utils import FieldPath
 from qdrant_client.http import models
@@ -34,6 +35,11 @@ class Inspector:
             self.parser.parse_model(points.__class__)
             return self._inspect_model(points)
 
+        elif isinstance(points, dict):
+            for value in points.values():
+                if self.inspect(value):
+                    return True
+
         elif isinstance(points, Iterable):
             for point in points:
                 if isinstance(point, BaseModel):
@@ -43,7 +49,7 @@ class Inspector:
         return False
 
     def _inspect_model(self, model: BaseModel, paths: Optional[list[FieldPath]] = None) -> bool:
-        if isinstance(model, INFERENCE_OBJECT_TYPES):
+        if isinstance(model, get_args(INFERENCE_OBJECT_TYPES)):
             return True
 
         paths = (
@@ -82,7 +88,7 @@ class Inspector:
         if model is None:
             return False
 
-        if isinstance(model, INFERENCE_OBJECT_TYPES):
+        if isinstance(model, get_args(INFERENCE_OBJECT_TYPES)):
             return True
 
         if isinstance(model, BaseModel):
@@ -100,7 +106,7 @@ class Inspector:
 
         elif isinstance(model, list):
             for current_model in model:
-                if isinstance(current_model, INFERENCE_OBJECT_TYPES):
+                if isinstance(current_model, get_args(INFERENCE_OBJECT_TYPES)):
                     return True
 
                 if not isinstance(current_model, BaseModel):
@@ -123,7 +129,7 @@ class Inspector:
             for key, values in model.items():
                 values = [values] if not isinstance(values, list) else values
                 for current_model in values:
-                    if isinstance(current_model, INFERENCE_OBJECT_TYPES):
+                    if isinstance(current_model, get_args(INFERENCE_OBJECT_TYPES)):
                         return True
 
                     if not isinstance(current_model, BaseModel):

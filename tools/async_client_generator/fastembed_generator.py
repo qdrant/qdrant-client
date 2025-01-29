@@ -57,6 +57,7 @@ if __name__ == "__main__":
             "set_sparse_model",
             "get_vector_field_name",
             "get_sparse_vector_field_name",
+            "get_embedding_size",
             "get_fastembed_vector_params",
             "get_fastembed_sparse_vector_params",
             "embedding_model_name",
