@@ -2249,13 +2249,6 @@ class LocalCollection:
         for point_id in ids:
             if point_id in self.ids:
                 idx = self.ids[point_id]
-            else:
-                show_warning_once(
-                    f"{point_id} is not present in the collection. ",
-                    category=UserWarning,
-                    idx="deleting-non-persistent-point",
-                    stacklevel=6,
-                )
             self.deleted[idx] = 1
 
         if self.storage is not None:
