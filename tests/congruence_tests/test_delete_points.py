@@ -15,7 +15,6 @@ from tests.congruence_tests.test_common import (
 def test_delete_points(local_client, remote_client):
     points = generate_fixtures(100)
     vector = points[0].vector["image"]
-
     local_client.upload_points(COLLECTION_NAME, points)
     remote_client.upload_points(COLLECTION_NAME, points, wait=True)
 
@@ -31,7 +30,7 @@ def test_delete_points(local_client, remote_client):
             COLLECTION_NAME, query_vector=NamedVector(name="image", vector=vector)
         )
     ]
-    non_existent_ids = [max(found_ids) + 1]
+    non_existent_ids = [max(elem.id for elem in points) + 1]
     local_client.delete(COLLECTION_NAME, found_ids)
     remote_client.delete(COLLECTION_NAME, found_ids)
 
