@@ -2249,7 +2249,7 @@ class LocalCollection:
         for point_id in ids:
             if point_id in self.ids:
                 idx = self.ids[point_id]
-            self.deleted[idx] = 1
+                self.deleted[idx] = 1
 
         if self.storage is not None:
             for point_id in ids:
