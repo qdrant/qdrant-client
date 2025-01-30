@@ -30,12 +30,21 @@ def test_delete_points(local_client, remote_client):
             COLLECTION_NAME, query_vector=NamedVector(name="image", vector=vector)
         )
     ]
-    non_existent_ids = [max(elem.id for elem in points) + 1]
+
     local_client.delete(COLLECTION_NAME, found_ids)
     remote_client.delete(COLLECTION_NAME, found_ids)
 
-    local_client.delete(COLLECTION_NAME, non_existent_ids)
-    remote_client.delete(COLLECTION_NAME, non_existent_ids)
+    compare_collections(local_client, remote_client, 100, attrs=("points_count",))
+
+    compare_client_results(
+        local_client,
+        remote_client,
+        lambda c: c.search(COLLECTION_NAME, query_vector=NamedVector(name="image", vector=vector)),
+    )
+
+    #delete non-existent points
+    local_client.delete(COLLECTION_NAME, found_ids)
+    remote_client.delete(COLLECTION_NAME, found_ids)
 
     compare_collections(local_client, remote_client, 100, attrs=("points_count",))
 
