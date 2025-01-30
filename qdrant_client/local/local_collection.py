@@ -2247,12 +2247,14 @@ class LocalCollection:
 
     def _delete_ids(self, ids: list[types.PointId]) -> None:
         for point_id in ids:
-            idx = self.ids[point_id]
-            self.deleted[idx] = 1
+            if point_id in self.ids:
+                idx = self.ids[point_id]
+                self.deleted[idx] = 1
 
         if self.storage is not None:
             for point_id in ids:
-                self.storage.delete(point_id)
+                if point_id in self.ids:
+                    self.storage.delete(point_id)
 
     def _filter_to_ids(self, delete_filter: types.Filter) -> list[models.ExtendedPointId]:
         mask = self._payload_and_non_deleted_mask(delete_filter)
