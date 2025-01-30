@@ -2247,12 +2247,21 @@ class LocalCollection:
 
     def _delete_ids(self, ids: list[types.PointId]) -> None:
         for point_id in ids:
-            idx = self.ids[point_id]
+            if point_id in self.ids:
+                idx = self.ids[point_id]
+            else:
+                show_warning_once(
+                    f"{point_id} is not present in the collection. ",
+                    category=UserWarning,
+                    idx="deleting-non-persistent-point",
+                    stacklevel=6,
+                )
             self.deleted[idx] = 1
 
         if self.storage is not None:
             for point_id in ids:
-                self.storage.delete(point_id)
+                if point_id in self.ids:
+                    self.storage.delete(point_id)
 
     def _filter_to_ids(self, delete_filter: types.Filter) -> list[models.ExtendedPointId]:
         mask = self._payload_and_non_deleted_mask(delete_filter)
