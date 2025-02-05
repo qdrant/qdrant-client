@@ -23,7 +23,7 @@ numpy = [
 ]
 pydantic = ">=1.10.8"
 grpcio = { version = ">=1.41.0", allow-prereleases = true }
-grpcio-tools = ">=1.41.0"
+protobuf = ">=3.20.0"
 urllib3 = ">=1.26.14,<3"
 portalocker = "^2.7.0"
 fastembed = [
@@ -35,11 +35,6 @@ fastembed-gpu = [
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.1"
-grpcio-tools = [
-    # the proper version to use for generating grpc client is python 3.10.10
-    { version = "1.48.2", python = "3.10" },
-    { version = "^1.46" }
-]
 coverage = "^6.3.3"
 pytest-asyncio = "^0.21.0"
 pytest-timeout = "^2.1.0"
