@@ -218,6 +218,8 @@ CACHE_STR_PATH = {
     "AbortReshardingOperation": [],
     "StartResharding": [],
     "StartReshardingOperation": [],
+    "StrictModeMultivector": [],
+    "StrictModeSparse": [],
 }
 DEFS = {
     "AbortShardTransfer": {
