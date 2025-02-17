@@ -286,8 +286,28 @@ strict_mode_config = grpc.StrictModeConfig(
     # read_rate_limit=model.read_rate_limit, test empty field
     write_rate_limit=2000,
     max_collection_payload_size_bytes=10 * 1024 * 1024 * 1024,
+    max_points_count=1000000,
     filter_max_conditions=100,
     condition_max_size=5,
+    multivector_config=grpc.StrictModeMultivectorConfig(
+        multivector_config={
+            "colbert": grpc.StrictModeMultivector(
+                max_vectors=32,
+            )
+        }
+    ),
+    sparse_config=grpc.StrictModeSparseConfig(
+        sparse_config={
+            "bm25": grpc.StrictModeSparse(
+                max_length=256,
+            )
+        }
+    ),
+)
+
+strict_mode_config_empty = grpc.StrictModeConfig(
+    enabled=True,
+    max_query_limit=100,
 )
 
 collection_config = grpc.CollectionConfig(
@@ -1545,7 +1565,7 @@ fixtures = {
     "HealthCheckReply": [health_check_reply],
     "SearchMatrixPairs": [search_matrix_pairs],
     "SearchMatrixOffsets": [search_matrix_offsets],
-    "StrictModeConfig": [strict_mode_config],
+    "StrictModeConfig": [strict_mode_config, strict_mode_config_empty],
 }
 
 
