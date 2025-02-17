@@ -8,6 +8,8 @@ from pydantic.types import StrictBool, StrictFloat, StrictInt, StrictStr
 
 Payload = Dict[str, Any]
 SparseVectorsConfig = Dict[str, "SparseVectorParams"]
+StrictModeMultivectorConfig = Dict[str, "StrictModeMultivector"]
+StrictModeSparseConfig = Dict[str, "StrictModeSparse"]
 VectorsConfigDiff = Dict[str, "VectorParamsDiff"]
 
 
@@ -843,8 +845,10 @@ class HardwareUsage(BaseModel):
     """
 
     cpu: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
-    io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    payload_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    payload_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    vector_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    vector_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
 
 
 class HasIdCondition(BaseModel, extra="forbid"):
@@ -2682,10 +2686,23 @@ class StrictModeConfig(BaseModel, extra="forbid"):
     max_collection_payload_size_bytes: Optional[int] = Field(
         default=None, description="Max size of a collections payload storage in bytes"
     )
+    max_points_count: Optional[int] = Field(default=None, description="Max number of points estimated in a collection")
     filter_max_conditions: Optional[int] = Field(default=None, description="Max conditions a filter can have.")
     condition_max_size: Optional[int] = Field(
         default=None, description="Max size of a condition, eg. items in `MatchAny`."
     )
+    multivector_config: Optional["StrictModeMultivectorConfig"] = Field(
+        default=None, description="Multivector configuration"
+    )
+    sparse_config: Optional["StrictModeSparseConfig"] = Field(default=None, description="Sparse vector configuration")
+
+
+class StrictModeMultivector(BaseModel, extra="forbid"):
+    max_vectors: Optional[int] = Field(default=None, description="Max number of vectors in a multivector")
+
+
+class StrictModeSparse(BaseModel, extra="forbid"):
+    max_length: Optional[int] = Field(default=None, description="Max length of sparse vector")
 
 
 class TelemetryData(BaseModel):

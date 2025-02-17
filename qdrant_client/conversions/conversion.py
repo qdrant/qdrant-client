@@ -2023,6 +2023,26 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_strict_mode_multivector(cls, model: grpc.StrictModeMultivector) -> rest.StrictModeMultivector:
+        return rest.StrictModeMultivector(
+            max_vectors=model.max_vectors if model.HasField("max_vectors") else None
+        )
+
+    @classmethod
+    def convert_strict_mode_multivector_config(cls, model: grpc.StrictModeMultivectorConfig) -> rest.StrictModeMultivectorConfig:
+        return dict((key, cls.convert_strict_mode_multivector(val)) for key, val in model.multivector_config.items())
+
+    @classmethod
+    def convert_strict_mode_sparse(cls, model: grpc.StrictModeSparse) -> rest.StrictModeSparse:
+        return rest.StrictModeSparse(
+            max_length=model.max_length if model.HasField("max_length") else None
+        )
+
+    @classmethod
+    def convert_strict_mode_sparse_config(cls, model: grpc.StrictModeSparseConfig) -> rest.StrictModeSparseConfig:
+        return dict((key, cls.convert_strict_mode_sparse(val)) for key, val in model.sparse_config.items())
+
+    @classmethod
     def convert_strict_mode_config(cls, model: grpc.StrictModeConfig) -> rest.StrictModeConfig:
         return rest.StrictModeConfig(
             enabled=model.enabled if model.HasField("enabled") else None,
@@ -2056,11 +2076,20 @@ class GrpcToRest:
             max_collection_payload_size_bytes=model.max_collection_payload_size_bytes
             if model.HasField("max_collection_payload_size_bytes")
             else None,
+            max_points_count=model.max_points_count
+            if model.HasField("max_points_count")
+            else None,
             filter_max_conditions=model.filter_max_conditions
             if model.HasField("filter_max_conditions")
             else None,
             condition_max_size=model.condition_max_size
             if model.HasField("condition_max_size")
+            else None,
+            multivector_config=cls.convert_strict_mode_multivector_config(model.multivector_config)
+            if model.HasField("multivector_config")
+            else None,
+            sparse_config=cls.convert_strict_mode_sparse_config(model.sparse_config)
+            if model.HasField("sparse_config")
             else None,
         )
 
@@ -3988,6 +4017,30 @@ class RestToGrpc:
         )
 
     @classmethod
+    def convert_strict_mode_multivector(cls, model: rest.StrictModeMultivector) -> grpc.StrictModeMultivector:
+        return grpc.StrictModeMultivector(
+            max_vectors=model.max_vectors,
+        )
+
+    @classmethod
+    def convert_strict_mode_multivector_config(cls, model: rest.StrictModeMultivectorConfig) -> grpc.StrictModeMultivectorConfig:
+        return grpc.StrictModeMultivectorConfig(
+            multivector_config=dict((key, cls.convert_strict_mode_multivector(val)) for key, val in model.items())
+        )
+
+    @classmethod
+    def convert_strict_mode_sparse(cls, model: rest.StrictModeSparse) -> grpc.StrictModeSparse:
+        return grpc.StrictModeSparse(
+            max_length=model.max_length,
+        )
+
+    @classmethod
+    def convert_strict_mode_sparse_config(cls, model: rest.StrictModeSparseConfig) -> grpc.StrictModeSparseConfig:
+        return grpc.StrictModeSparseConfig(
+            sparse_config=dict((key, cls.convert_strict_mode_sparse(val)) for key, val in model.items())
+        )
+
+    @classmethod
     def convert_strict_mode_config(cls, model: rest.StrictModeConfig) -> grpc.StrictModeConfig:
         return grpc.StrictModeConfig(
             enabled=model.enabled,
@@ -4003,6 +4056,11 @@ class RestToGrpc:
             read_rate_limit=model.read_rate_limit,
             write_rate_limit=model.write_rate_limit,
             max_collection_payload_size_bytes=model.max_collection_payload_size_bytes,
+            max_points_count=model.max_points_count,
             filter_max_conditions=model.filter_max_conditions,
             condition_max_size=model.condition_max_size,
+            multivector_config=cls.convert_strict_mode_multivector_config(model.multivector_config)
+            if model.multivector_config else None,
+            sparse_config=cls.convert_strict_mode_sparse_config(model.sparse_config)
+            if model.sparse_config else None,
         )

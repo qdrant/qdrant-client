@@ -26,6 +26,7 @@ For fixes:
 * [ ] (MacOS) make sure to have `gnu-sed` installed and aliased to `sed`: `brew install gnu-sed`. Instructions to set alias can be found via `brew info gnu-sed`
 * [ ] Generate REST code: `bash -x tools/generate_rest_client.sh` - will automatically fetch openapi from `qdrant:dev`.
 * [ ] Generate gRPC code: `bash -x tools/generate_grpc_client.sh` - will automatically fetch proto from `qdrant:dev`.
+* [ ] Populate inspection cache: `bash -x tools/populate_inspection_cache.sh`
 
 ---
 
