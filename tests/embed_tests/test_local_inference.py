@@ -1052,11 +1052,11 @@ def test_update_vectors(prefer_grpc):
 def test_propagate_options(prefer_grpc):
     params = {
         "lazy_load": True,
-        "cache_dir": "models",
+        "cache_dir": None,
         "threads": None,
         "device_ids": None,
         "cuda": False,
-        "providers": ["CPUExecutionProvider"],
+        "providers": None,
         "local_files_only": False,
     }
     local_client = QdrantClient(":memory:")
