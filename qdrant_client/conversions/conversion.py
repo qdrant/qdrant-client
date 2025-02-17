@@ -4059,6 +4059,8 @@ class RestToGrpc:
             max_points_count=model.max_points_count,
             filter_max_conditions=model.filter_max_conditions,
             condition_max_size=model.condition_max_size,
-            multivector_config=cls.convert_strict_mode_multivector_config(model.multivector_config),
-            sparse_config=cls.convert_strict_mode_sparse_config(model.sparse_config),
+            multivector_config=cls.convert_strict_mode_multivector_config(model.multivector_config)
+            if model.multivector_config else None,
+            sparse_config=cls.convert_strict_mode_sparse_config(model.sparse_config)
+            if model.sparse_config else None,
         )

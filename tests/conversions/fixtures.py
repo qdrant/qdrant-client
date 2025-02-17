@@ -305,6 +305,11 @@ strict_mode_config = grpc.StrictModeConfig(
     ),
 )
 
+strict_mode_config_empty = grpc.StrictModeConfig(
+    enabled=True,
+    max_query_limit=100,
+)
+
 collection_config = grpc.CollectionConfig(
     params=collection_params,
     hnsw_config=hnsw_config,
@@ -1560,7 +1565,7 @@ fixtures = {
     "HealthCheckReply": [health_check_reply],
     "SearchMatrixPairs": [search_matrix_pairs],
     "SearchMatrixOffsets": [search_matrix_offsets],
-    "StrictModeConfig": [strict_mode_config],
+    "StrictModeConfig": [strict_mode_config, strict_mode_config_empty],
 }
 
 
