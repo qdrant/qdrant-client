@@ -179,7 +179,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
                 if not server_version:
                     show_warning(
-                        message=f"Failed to obtain server version. Unable to check client-server compatibility. Set check_compatibility=False to skip version check.",
+                        message="Failed to obtain server version. Unable to check client-server compatibility. Set check_compatibility=False to skip version check.",
                         category=UserWarning,
                         stacklevel=4,
                     )
