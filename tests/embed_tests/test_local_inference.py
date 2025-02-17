@@ -1057,7 +1057,7 @@ def test_propagate_options(prefer_grpc):
         "device_ids": None,
         "cuda": False,
         "providers": ["CPUExecutionProvider"],
-        "local_files_only": True,
+        "local_files_only": False,
     }
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
