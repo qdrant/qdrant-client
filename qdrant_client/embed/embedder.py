@@ -190,6 +190,8 @@ class Embedder:
         is_query: bool = False,
         batch_size: int = 32,
     ) -> NumericVector:
+        task_id = options.get("task_id") if options else None
+
         if (texts is None) is (images is None):
             raise ValueError("Either documents or images should be provided")
         if model_name in SUPPORTED_EMBEDDING_MODELS:
@@ -199,7 +201,7 @@ class Embedder:
                 embeddings = [
                     embedding.tolist()
                     for embedding in embedding_model_inst.embed(
-                        documents=texts, batch_size=batch_size
+                        documents=texts, batch_size=batch_size, task_id=task_id
                     )
                 ]
             else:
