@@ -40,7 +40,7 @@ from qdrant_client.common.version_check import is_compatible, parse_version
         "Both versions are None, negative",
     ],
 )
-def test_check_versions(client_version, server_version, expected_result):
+def test_check_compatibility(client_version, server_version, expected_result):
     assert (
         is_compatible(client_version=client_version, server_version=server_version)
         is expected_result
