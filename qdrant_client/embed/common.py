@@ -1,4 +1,4 @@
-from typing import Type, Union
+from typing import Union
 
 from qdrant_client.http import models
 
