@@ -921,7 +921,9 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def create_collection(
         self,
         collection_name: str,
-        vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        vectors_config: Optional[
+            Union[types.VectorParams, Mapping[str, types.VectorParams]]
+        ] = None,
         init_from: Optional[types.InitFrom] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
@@ -942,7 +944,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             os.makedirs(collection_path, exist_ok=True)
         collection = LocalCollection(
             rest_models.CreateCollection(
-                vectors=vectors_config, sparse_vectors=sparse_vectors_config
+                vectors=vectors_config or {}, sparse_vectors=sparse_vectors_config
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,

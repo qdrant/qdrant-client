@@ -2232,7 +2232,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     async def create_collection(
         self,
         collection_name: str,
-        vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        vectors_config: Optional[
+            Union[types.VectorParams, Mapping[str, types.VectorParams]]
+        ] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         shard_number: Optional[int] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
@@ -2297,6 +2299,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Operation result
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        if vectors_config is None and sparse_vectors_config is None:
+            raise ValueError(
+                "At least one of `vectors_config` or `sparse_vectors_config` should be provided."
+            )
         return await self._client.create_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,

@@ -1,6 +1,8 @@
 from time import sleep
 from typing import Callable
 
+import pytest
+
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
@@ -165,6 +167,62 @@ def test_init_from():
         len(points),
         collection_name=new_collection_name,
     )
+
+
+def test_config_variations():
+    def check_variation(vectors_config, sparse_vectors_config):
+        if remote_client.collection_exists(COLLECTION_NAME):
+            remote_client.delete_collection(COLLECTION_NAME)
+        if local_client.collection_exists(COLLECTION_NAME):
+            local_client.delete_collection(COLLECTION_NAME)
+
+        remote_client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
+        )
+        local_client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
+        )
+
+        remote_client_config_params = remote_client.get_collection(COLLECTION_NAME).config.params
+        local_client_config_params = local_client.get_collection(COLLECTION_NAME).config.params
+
+        assert remote_client_config_params.vectors == local_client_config_params.vectors
+        assert (
+            remote_client_config_params.sparse_vectors == local_client_config_params.sparse_vectors
+        )
+
+        remote_grpc_client.delete_collection(COLLECTION_NAME)
+        remote_grpc_client.create_collection(
+            COLLECTION_NAME,
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
+        )
+
+        assert remote_client_config_params.vectors == local_client_config_params.vectors
+        assert (
+            remote_client_config_params.sparse_vectors == local_client_config_params.sparse_vectors
+        )
+
+    remote_client = init_remote()
+    remote_grpc_client = init_remote(prefer_grpc=True)
+    local_client = init_local()
+
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
+
+    sparse_vectors_config = {"sparse": models.SparseVectorParams()}
+
+    check_variation(vectors_config, sparse_vectors_config)
+    check_variation(vectors_config, None)
+    check_variation(None, sparse_vectors_config)
+    check_variation({"text": vectors_config}, sparse_vectors_config)
+    check_variation({"text": vectors_config}, None)
+
+    with pytest.raises(ValueError, match="At least"):
+        check_variation(None, None)
 
 
 def wait_for(condition: Callable, *args, **kwargs):
