@@ -15,6 +15,7 @@ from qdrant_client.fastembed_common import (
     _IMAGE_EMBEDDING_MODELS,
     OnnxProvider,
     ImageInput,
+    _MULTITASK_EMBEDDING_MODELS,
 )
 
 
@@ -196,12 +197,16 @@ class Embedder:
             embedding_model_inst = self.get_or_init_model(model_name=model_name, **options or {})
 
             if not is_query:
-                embeddings = [
-                    embedding.tolist()
-                    for embedding in embedding_model_inst.embed(
-                        documents=texts, batch_size=batch_size
+                embeddings_gen = (
+                    embedding_model_inst.embed(documents=texts, batch_size=batch_size)
+                    if model_name not in _MULTITASK_EMBEDDING_MODELS
+                    else embedding_model_inst.embed(
+                        documents=texts,
+                        batch_size=batch_size,
+                        task_id=options.pop("task_id", None) if options else None,
                     )
-                ]
+                )
+                embeddings = [embedding.tolist() for embedding in embeddings_gen]
             else:
                 embeddings = [
                     embedding.tolist()
