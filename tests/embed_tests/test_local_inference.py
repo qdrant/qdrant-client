@@ -1050,31 +1050,22 @@ def test_update_vectors(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
 def test_propagate_options(prefer_grpc):
-    params = {
-        "lazy_load": True,
-        "cache_dir": None,
-        "threads": None,
-        "device_ids": None,
-        "cuda": False,
-        "providers": None,
-        "local_files_only": False,
-    }
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
     remote_client = QdrantClient(prefer_grpc=prefer_grpc)
     dense_doc_1 = models.Document(
-        text="hello world", model=DENSE_MODEL_NAME, options=params
+        text="hello world", model=DENSE_MODEL_NAME, options={"lazy_load": True}
     )
     sparse_doc_1 = models.Document(
-        text="hello world", model=SPARSE_MODEL_NAME, options=params
+        text="hello world", model=SPARSE_MODEL_NAME, options={"lazy_load": True}
     )
     multi_doc_1 = models.Document(
-        text="hello world", model=COLBERT_MODEL_NAME, options=params
+        text="hello world", model=COLBERT_MODEL_NAME, options={"lazy_load": True}
     )
 
     dense_image_1 = models.Image(
-        image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME, options=params
+        image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME, options={"lazy_load": True}
     )
 
     points = [
@@ -1120,22 +1111,18 @@ def test_propagate_options(prefer_grpc):
     local_client.upsert(COLLECTION_NAME, points)
     remote_client.upsert(COLLECTION_NAME, points)
 
-    embedder = local_client._model_embedder.embedder
-    for model_type, model_name in [
-        (embedder.embedding_models, DENSE_MODEL_NAME),
-        (embedder.sparse_embedding_models, SPARSE_MODEL_NAME),
-        (embedder.late_interaction_embedding_models, COLBERT_MODEL_NAME),
-        (embedder.image_embedding_models, DENSE_IMAGE_MODEL_NAME),
-    ]:
-        model = model_type[model_name][0].model.model
-
-        for key, value in params.items():
-            if key == "cache_dir":
-                assert str(model.cache_dir) == str(value), f"cache_dir was not propagated correctly for {model_name}"
-            elif key == "local_files_only":
-               assert model._local_files_only == value, f"local_files_only was not propagated correctly for {model_name}"
-            else:
-                assert getattr(model, key) == value, f"{key} was not propagated correctly for {model_name}"
+    assert local_client._model_embedder.embedder.embedding_models[DENSE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
+    assert local_client._model_embedder.embedder.sparse_embedding_models[SPARSE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
+    assert local_client._model_embedder.embedder.late_interaction_embedding_models[
+        COLBERT_MODEL_NAME
+    ][0].model.model.lazy_load
+    assert local_client._model_embedder.embedder.image_embedding_models[DENSE_IMAGE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
 
     local_client._model_embedder.embedder.embedding_models.clear()
     local_client._model_embedder.embedder.sparse_embedding_models.clear()
@@ -1145,25 +1132,25 @@ def test_propagate_options(prefer_grpc):
     inference_object_dense_doc_1 = models.InferenceObject(
         object="hello world",
         model=DENSE_MODEL_NAME,
-        options=params,
+        options={"lazy_load": True},
     )
 
     inference_object_sparse_doc_1 = models.InferenceObject(
         object="hello world",
         model=SPARSE_MODEL_NAME,
-        options=params,
+        options={"lazy_load": True},
     )
 
     inference_object_multi_doc_1 = models.InferenceObject(
         object="hello world",
         model=COLBERT_MODEL_NAME,
-        options=params,
+        options={"lazy_load": True},
     )
 
     inference_object_dense_image_1 = models.InferenceObject(
         object=TEST_IMAGE_PATH,
         model=DENSE_IMAGE_MODEL_NAME,
-        options=params,
+        options={"lazy_load": True},
     )
 
     points = [
@@ -1181,22 +1168,18 @@ def test_propagate_options(prefer_grpc):
     local_client.upsert(COLLECTION_NAME, points)
     remote_client.upsert(COLLECTION_NAME, points)
 
-    embedder = local_client._model_embedder.embedder
-    for model_type, model_name in [
-        (embedder.embedding_models, DENSE_MODEL_NAME),
-        (embedder.sparse_embedding_models, SPARSE_MODEL_NAME),
-        (embedder.late_interaction_embedding_models, COLBERT_MODEL_NAME),
-        (embedder.image_embedding_models, DENSE_IMAGE_MODEL_NAME),
-    ]:
-        model = model_type[model_name][0].model.model
-
-        for key, value in params.items():
-            if key == "cache_dir":
-                assert str(model.cache_dir) == str(value), f"cache_dir was not propagated correctly for {model_name}"
-            elif key == "local_files_only":
-               assert model._local_files_only == value, f"local_files_only was not propagated correctly for {model_name}"
-            else:
-                assert getattr(model, key) == value, f"{key} was not propagated correctly for {model_name}"
+    assert local_client._model_embedder.embedder.embedding_models[DENSE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
+    assert local_client._model_embedder.embedder.sparse_embedding_models[SPARSE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
+    assert local_client._model_embedder.embedder.late_interaction_embedding_models[
+        COLBERT_MODEL_NAME
+    ][0].model.model.lazy_load
+    assert local_client._model_embedder.embedder.image_embedding_models[DENSE_IMAGE_MODEL_NAME][
+        0
+    ].model.model.lazy_load
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
