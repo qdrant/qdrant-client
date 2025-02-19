@@ -21,6 +21,11 @@ except ImportError:
     ImageEmbedding = None
     ImageInput = None
 
+try:  # requires fastembed >0.5.1
+    from fastembed.text.multitask_embedding import JinaEmbeddingV3 as _MultitaskTextEmbedding
+except ImportError:
+    _MultitaskTextEmbedding = None
+
 
 SUPPORTED_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
     {
@@ -62,6 +67,15 @@ _IMAGE_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
         for model in ImageEmbedding.list_supported_models()
     }
     if ImageEmbedding
+    else {}
+)
+
+_MULTITASK_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
+    {
+        model.model: (model.dim, models.Distance.COSINE)
+        for model in _MultitaskTextEmbedding._list_supported_models()
+    }
+    if _MultitaskTextEmbedding
     else {}
 )
 
