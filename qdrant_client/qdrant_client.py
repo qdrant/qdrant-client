@@ -2379,11 +2379,6 @@ class QdrantClient(QdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
 
-        if vectors_config is None and sparse_vectors_config is None:
-            raise ValueError(
-                "At least one of `vectors_config` or `sparse_vectors_config` should be provided."
-            )
-
         return self._client.create_collection(
             collection_name=collection_name,
             vectors_config=vectors_config,

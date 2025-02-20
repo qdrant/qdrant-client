@@ -220,9 +220,7 @@ def test_config_variations():
     check_variation(None, sparse_vectors_config)
     check_variation({"text": vectors_config}, sparse_vectors_config)
     check_variation({"text": vectors_config}, None)
-
-    with pytest.raises(ValueError, match="At least"):
-        check_variation(None, None)
+    check_variation(None, None)
 
 
 def wait_for(condition: Callable, *args, **kwargs):
