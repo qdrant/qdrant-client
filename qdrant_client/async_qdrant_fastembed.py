@@ -42,7 +42,7 @@ from qdrant_client.fastembed_common import (
 
 class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     DEFAULT_EMBEDDING_MODEL = "BAAI/bge-small-en"
-    DEFAULT_BATCH_SIZE = 16
+    DEFAULT_BATCH_SIZE = 8
     _FASTEMBED_INSTALLED: bool
 
     def __init__(self, parser: ModelSchemaParser, **kwargs: Any):

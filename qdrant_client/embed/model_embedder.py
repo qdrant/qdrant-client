@@ -49,7 +49,7 @@ class ModelEmbedder:
         self,
         raw_models: Union[BaseModel, Iterable[BaseModel]],
         is_query: bool = False,
-        batch_size: int = 16,
+        batch_size: int = 8,
     ) -> Iterable[BaseModel]:
         """Embed raw data fields in models and return models with vectors
 
@@ -65,12 +65,14 @@ class ModelEmbedder:
         if isinstance(raw_models, BaseModel):
             raw_models = [raw_models]
         for raw_models_batch in iter_batch(raw_models, batch_size):
-            yield from self.embed_models_batch(raw_models_batch, is_query)
+            yield from self.embed_models_batch(
+                raw_models_batch, is_query, inference_batch_size=batch_size
+            )
 
     def embed_models_strict(
         self,
         raw_models: Iterable[Union[dict[str, BaseModel], BaseModel]],
-        batch_size: int = 16,
+        batch_size: int = 8,
         parallel: Optional[int] = None,
     ) -> Iterable[Union[dict[str, BaseModel], BaseModel]]:
         """Embed raw data fields in models and return models with vectors
@@ -94,7 +96,7 @@ class ModelEmbedder:
 
         if parallel is None or parallel == 1 or is_small:
             for batch in iter_batch(raw_models, batch_size):
-                yield from self.embed_models_batch(batch)
+                yield from self.embed_models_batch(batch, inference_batch_size=batch_size)
         else:
             raw_models_batches = iter_batch(
                 raw_models, size=1
@@ -119,6 +121,7 @@ class ModelEmbedder:
         self,
         raw_models: list[Union[dict[str, BaseModel], BaseModel]],
         is_query: bool = False,
+        inference_batch_size: int = 8,
     ) -> Iterable[BaseModel]:
         """Embed a batch of models with raw data fields and return models with vectors
 
@@ -127,6 +130,7 @@ class ModelEmbedder:
         Args:
             raw_models: list[Union[dict[str, BaseModel], BaseModel]] - models which can contain fields with raw data
             is_query: bool - flag to determine which embed method to use. Defaults to False.
+            inference_batch_size: int - batch size for inference
         Returns:
             Iterable[BaseModel]: models with embedded fields
         """
@@ -137,7 +141,12 @@ class ModelEmbedder:
             yield from raw_models
         else:
             yield from (
-                self._process_model(raw_model, is_query=is_query, accumulating=False)
+                self._process_model(
+                    raw_model,
+                    is_query=is_query,
+                    accumulating=False,
+                    inference_batch_size=inference_batch_size,
+                )
                 for raw_model in raw_models
             )
 
@@ -147,6 +156,7 @@ class ModelEmbedder:
         paths: Optional[list[FieldPath]] = None,
         is_query: bool = False,
         accumulating: bool = False,
+        inference_batch_size: Optional[int] = None,
     ) -> Union[dict[str, BaseModel], dict[str, NumericVector], BaseModel, NumericVector]:
         """Embed model's fields requiring inference
 
@@ -155,6 +165,7 @@ class ModelEmbedder:
             paths: Path to fields to embed. E.g. [FieldPath(current="recommend", tail=[FieldPath(current="negative", tail=None)])]
             is_query: Flag to determine which embed method to use. Defaults to False.
             accumulating: Flag to determine if we are accumulating models for batch embedding. Defaults to False.
+            inference_batch_size: Optional[int] - batch size for inference
 
         Returns:
             A deepcopy of the method with embedded fields
@@ -164,7 +175,9 @@ class ModelEmbedder:
             if accumulating:
                 self._accumulate(model)  # type: ignore
             else:
-                return self._drain_accumulator(model, is_query=is_query)  # type: ignore
+                return self._drain_accumulator(
+                    model, is_query=is_query, inference_batch_size=inference_batch_size
+                )  # type: ignore
 
         if paths is None:
             model = deepcopy(model) if not accumulating else model
@@ -197,7 +210,9 @@ class ModelEmbedder:
 
                     if not accumulating:
                         embeddings = [
-                            self._drain_accumulator(data, is_query=is_query)
+                            self._drain_accumulator(
+                                data, is_query=is_query, inference_batch_size=inference_batch_size
+                            )
                             for data in current_model
                         ]
                         if was_list:
@@ -238,7 +253,9 @@ class ModelEmbedder:
             self._batch_accumulator[data.model] = []
         self._batch_accumulator[data.model].append(data)
 
-    def _drain_accumulator(self, data: models.VectorStruct, is_query: bool) -> models.VectorStruct:
+    def _drain_accumulator(
+        self, data: models.VectorStruct, is_query: bool, inference_batch_size: int = 8
+    ) -> models.VectorStruct:
         """Drain accumulator and replaces inference objects with computed embeddings
             It is assumed objects are traversed in the same order as they were added to the accumulator
 
@@ -246,13 +263,16 @@ class ModelEmbedder:
             data: models.VectorStruct - any vector struct data, if inference object types instances in `data` - replace
                 them with computed embeddings. If embeddings haven't yet been computed - compute them and then replace
                 inference objects.
+            inference_batch_size: int - batch size for inference
 
         Returns:
             models.VectorStruct: data with replaced inference objects
         """
         if isinstance(data, dict):
             for key, value in data.items():
-                data[key] = self._drain_accumulator(value, is_query=is_query)
+                data[key] = self._drain_accumulator(
+                    value, is_query=is_query, inference_batch_size=inference_batch_size
+                )
             return data
 
         if isinstance(data, list):
@@ -260,29 +280,31 @@ class ModelEmbedder:
                 if not isinstance(value, get_args(INFERENCE_OBJECT_TYPES)):  # if value is vector
                     return data
 
-                data[i] = self._drain_accumulator(value, is_query=is_query)
+                data[i] = self._drain_accumulator(
+                    value, is_query=is_query, inference_batch_size=inference_batch_size
+                )
             return data
 
         if not isinstance(data, get_args(INFERENCE_OBJECT_TYPES)):
             return data
 
         if not self._embed_storage or not self._embed_storage.get(data.model, None):
-            self._embed_accumulator(is_query=is_query)
+            self._embed_accumulator(is_query=is_query, inference_batch_size=inference_batch_size)
 
         return self._next_embed(data.model)
 
-    def _embed_accumulator(self, is_query: bool = False) -> None:
+    def _embed_accumulator(self, is_query: bool = False, inference_batch_size: int = 8) -> None:
         """Embed all accumulated objects for all models
 
         Args:
             is_query: bool - flag to determine which embed method to use. Defaults to False.
-
+            inference_batch_size: int - batch size for inference
         Returns:
             None
         """
 
         def embed(
-            objects: list[INFERENCE_OBJECT_TYPES], model_name: str, is_text: bool
+            objects: list[INFERENCE_OBJECT_TYPES], model_name: str, is_text: bool, batch_size: int
         ) -> list[NumericVector]:
             """Assemble batches by groups, embeds and return embeddings in the original order"""
             unique_options: list[dict[str, Any]] = []
@@ -311,6 +333,7 @@ class ModelEmbedder:
                             images=batches[i] if not is_text else None,
                             is_query=is_query,
                             options=options or {},
+                            batch_size=batch_size,
                         )
                     ]
                 )
@@ -337,9 +360,13 @@ class ModelEmbedder:
                 *SUPPORTED_SPARSE_EMBEDDING_MODELS,
                 *_LATE_INTERACTION_EMBEDDING_MODELS,
             ]:
-                embeddings = embed(objects=data, model_name=model, is_text=True)
+                embeddings = embed(
+                    objects=data, model_name=model, is_text=True, batch_size=inference_batch_size
+                )
             else:
-                embeddings = embed(objects=data, model_name=model, is_text=False)
+                embeddings = embed(
+                    objects=data, model_name=model, is_text=False, batch_size=inference_batch_size
+                )
 
             self._embed_storage[model] = embeddings
         self._batch_accumulator.clear()
