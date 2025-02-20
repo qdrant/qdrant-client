@@ -24,16 +24,24 @@ from qdrant_client.uploader.uploader import iter_batch
 
 
 class ModelEmbedderWorker(Worker):
-    def __init__(self, **kwargs: Any):
+    def __init__(self, batch_size: int, **kwargs: Any):
         self.model_embedder = ModelEmbedder(**kwargs)
+        self.batch_size = batch_size
 
     @classmethod
-    def start(cls, **kwargs: Any) -> "ModelEmbedderWorker":
-        return cls(threads=1, **kwargs)
+    def start(cls, batch_size: int, **kwargs: Any) -> "ModelEmbedderWorker":
+        return cls(threads=1, batch_size=batch_size, **kwargs)
 
     def process(self, items: Iterable[tuple[int, Any]]) -> Iterable[tuple[int, Any]]:
         for idx, batch in items:
-            yield idx, list(self.model_embedder.embed_models_batch(batch))
+            yield (
+                idx,
+                list(
+                    self.model_embedder.embed_models_batch(
+                        batch, inference_batch_size=self.batch_size
+                    )
+                ),
+            )
 
 
 class ModelEmbedder:
@@ -98,10 +106,9 @@ class ModelEmbedder:
             for batch in iter_batch(raw_models, batch_size):
                 yield from self.embed_models_batch(batch, inference_batch_size=batch_size)
         else:
-            raw_models_batches = iter_batch(
-                raw_models, size=1
-            )  # larger batch sizes do not help with data parallel
+            multiprocessing_batch_size = 1  # larger batch sizes do not help with data parallel
             # on cpu. todo: adjust when multi-gpu is available
+            raw_models_batches = iter_batch(raw_models, size=multiprocessing_batch_size)
             if parallel == 0:
                 parallel = os.cpu_count()
 
@@ -114,7 +121,9 @@ class ModelEmbedder:
                 max_internal_batch_size=self.MAX_INTERNAL_BATCH_SIZE,
             )
 
-            for batch in pool.ordered_map(raw_models_batches):
+            for batch in pool.ordered_map(
+                raw_models_batches,
+            ):
                 yield from batch
 
     def embed_models_batch(
@@ -175,9 +184,14 @@ class ModelEmbedder:
             if accumulating:
                 self._accumulate(model)  # type: ignore
             else:
+                assert (
+                    inference_batch_size is not None
+                ), "inference_batch_size should be passed for inference"
                 return self._drain_accumulator(
-                    model, is_query=is_query, inference_batch_size=inference_batch_size
-                )  # type: ignore
+                    model,
+                    is_query=is_query,
+                    inference_batch_size=inference_batch_size,  # type: ignore
+                )
 
         if paths is None:
             model = deepcopy(model) if not accumulating else model
@@ -209,6 +223,9 @@ class ModelEmbedder:
                     current_model = current_model if was_list else [current_model]
 
                     if not accumulating:
+                        assert (
+                            inference_batch_size is not None
+                        ), "inference_batch_size should be passed for inference"
                         embeddings = [
                             self._drain_accumulator(
                                 data, is_query=is_query, inference_batch_size=inference_batch_size
