@@ -1,5 +1,4 @@
 import logging
-import warnings
 from typing import Any, Optional
 from collections import namedtuple
 

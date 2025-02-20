@@ -1,7 +1,6 @@
 import importlib.metadata
 import itertools
 import json
-import logging
 import os
 import shutil
 from copy import deepcopy
@@ -995,7 +994,9 @@ class QdrantLocal(QdrantBase):
     def create_collection(
         self,
         collection_name: str,
-        vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        vectors_config: Optional[
+            Union[types.VectorParams, Mapping[str, types.VectorParams]]
+        ] = None,
         init_from: Optional[types.InitFrom] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
@@ -1019,7 +1020,7 @@ class QdrantLocal(QdrantBase):
 
         collection = LocalCollection(
             rest_models.CreateCollection(
-                vectors=vectors_config,
+                vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
             ),
             location=collection_path,
