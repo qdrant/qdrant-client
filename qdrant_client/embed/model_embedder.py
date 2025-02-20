@@ -188,9 +188,9 @@ class ModelEmbedder:
                     inference_batch_size is not None
                 ), "inference_batch_size should be passed for inference"
                 return self._drain_accumulator(
-                    model,
+                    model,  # type: ignore
                     is_query=is_query,
-                    inference_batch_size=inference_batch_size,  # type: ignore
+                    inference_batch_size=inference_batch_size,
                 )
 
         if paths is None:
