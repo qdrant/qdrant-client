@@ -122,7 +122,7 @@ class ModelEmbedder:
             )
 
             for batch in pool.ordered_map(
-                raw_models_batches,
+                raw_models_batches, batch_size=multiprocessing_batch_size
             ):
                 yield from batch
 
