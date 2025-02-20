@@ -2232,7 +2232,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     async def create_collection(
         self,
         collection_name: str,
-        vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
+        vectors_config: Optional[
+            Union[types.VectorParams, Mapping[str, types.VectorParams]]
+        ] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         shard_number: Optional[int] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
