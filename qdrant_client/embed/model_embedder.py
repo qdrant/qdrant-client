@@ -202,7 +202,11 @@ class ModelEmbedder:
                     self._process_model(value, paths, accumulating=True)
                 else:
                     model[key] = self._process_model(
-                        value, paths, is_query=is_query, accumulating=False
+                        value,
+                        paths,
+                        is_query=is_query,
+                        accumulating=False,
+                        inference_batch_size=inference_batch_size,
                     )
             return model
 
@@ -216,7 +220,11 @@ class ModelEmbedder:
                     continue
                 if path.tail:
                     self._process_model(
-                        current_model, path.tail, is_query=is_query, accumulating=accumulating
+                        current_model,
+                        path.tail,
+                        is_query=is_query,
+                        accumulating=accumulating,
+                        inference_batch_size=inference_batch_size,
                     )
                 else:
                     was_list = isinstance(current_model, list)
