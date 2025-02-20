@@ -1672,10 +1672,9 @@ def test_batch_size_propagation():
     local_client = QdrantClient(":memory:", local_inference_batch_size=inference_batch_size)
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
-    # local_client._model_embedder.embedder.embed = mock(
-    #     local_client._model_embedder.embedder.embed, param_storage
-    # )
-    Embedder.embed = mock(Embedder.embed, param_storage)
+    local_client._model_embedder.embedder.embed = mock(
+        local_client._model_embedder.embedder.embed, param_storage
+    )
 
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
