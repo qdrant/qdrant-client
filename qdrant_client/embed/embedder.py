@@ -5,16 +5,18 @@ from pydantic import BaseModel
 from qdrant_client.http import models
 from qdrant_client.embed.models import NumericVector
 from qdrant_client.fastembed_common import (
+    OnnxProvider,
+    ImageInput,
     TextEmbedding,
     SparseTextEmbedding,
     LateInteractionTextEmbedding,
+    LateInteractionMultimodalEmbedding,
     ImageEmbedding,
     SUPPORTED_EMBEDDING_MODELS,
     SUPPORTED_SPARSE_EMBEDDING_MODELS,
     _LATE_INTERACTION_EMBEDDING_MODELS,
     _IMAGE_EMBEDDING_MODELS,
-    OnnxProvider,
-    ImageInput,
+    _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS,
 )
 
 
@@ -39,6 +41,9 @@ class Embedder:
         self.image_embedding_models: dict[str, list[ModelInstance[ImageEmbedding]]] = defaultdict(
             list
         )
+        self.late_interaction_multimodal_embedding_models: dict[
+            str, list[ModelInstance[LateInteractionMultimodalEmbedding]]
+        ] = defaultdict(list)
         self._threads = threads
 
     def get_or_init_model(
@@ -149,6 +154,40 @@ class Embedder:
         self.late_interaction_embedding_models[model_name].append(model_instance)
         return model
 
+    def get_or_init_late_interaction_multimodal_model(
+        self,
+        model_name: str,
+        cache_dir: Optional[str] = None,
+        threads: Optional[int] = None,
+        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cuda: bool = False,
+        device_ids: Optional[list[int]] = None,
+        **kwargs: Any,
+    ) -> LateInteractionMultimodalEmbedding:
+        if model_name not in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+            raise ValueError(
+                f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS}"
+            )
+        options = {
+            "cache_dir": cache_dir,
+            "threads": threads or self._threads,
+            "providers": providers,
+            "cuda": cuda,
+            "device_ids": device_ids,
+            **kwargs,
+        }
+
+        for instance in self.late_interaction_multimodal_embedding_models[model_name]:
+            if instance.options == options:
+                return instance.model
+
+        model = LateInteractionMultimodalEmbedding(model_name=model_name, **options)
+        model_instance: ModelInstance[LateInteractionMultimodalEmbedding] = ModelInstance(
+            model=model, options=options
+        )
+        self.late_interaction_multimodal_embedding_models[model_name].append(model_instance)
+        return model
+
     def get_or_init_image_model(
         self,
         model_name: str,
@@ -192,63 +231,148 @@ class Embedder:
     ) -> NumericVector:
         if (texts is None) is (images is None):
             raise ValueError("Either documents or images should be provided")
+
+        embeddings: NumericVector  # define type for a static type checker
         if model_name in SUPPORTED_EMBEDDING_MODELS:
-            embedding_model_inst = self.get_or_init_model(model_name=model_name, **options or {})
-
-            if not is_query:
-                embeddings_gen = embedding_model_inst.embed(documents=texts, batch_size=batch_size)
-                embeddings = [embedding.tolist() for embedding in embeddings_gen]
-            else:
-                embeddings = [
-                    embedding.tolist()
-                    for embedding in embedding_model_inst.query_embed(query=texts)
-                ]
-        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS.keys():
-            embedding_model_inst = self.get_or_init_sparse_model(
-                model_name=model_name, **options or {}
-            )
-            if not is_query:
-                embeddings = [
-                    models.SparseVector(
-                        indices=sparse_embedding.indices.tolist(),
-                        values=sparse_embedding.values.tolist(),
-                    )
-                    for sparse_embedding in embedding_model_inst.embed(
-                        documents=texts, batch_size=batch_size
-                    )
-                ]
-            else:
-                embeddings = [
-                    models.SparseVector(
-                        indices=sparse_embedding.indices.tolist(),
-                        values=sparse_embedding.values.tolist(),
-                    )
-                    for sparse_embedding in embedding_model_inst.query_embed(query=texts)
-                ]
-
+            assert (
+                    texts is not None
+            ), f"Texts should be provided for dense text embeddings. Model: {model_name}"
+            embeddings = self._embed_dense_text(texts, model_name, options, is_query, batch_size)
+        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            assert (
+                    texts is not None
+            ), f"Texts should be provided for sparse text embeddings. Model: {model_name}"
+            embeddings = self._embed_sparse_text(texts, model_name, options, is_query, batch_size)
         elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
-            embedding_model_inst = self.get_or_init_late_interaction_model(
-                model_name=model_name, **options or {}
+            assert (
+                    texts is not None
+            ), f"Texts should be provided for late interaction embeddings. Model {model_name}"
+            embeddings = self._embed_late_interaction_text(
+                texts, model_name, options, is_query, batch_size
             )
-            if not is_query:
-                embeddings = [
-                    embedding.tolist()
-                    for embedding in embedding_model_inst.embed(
-                        documents=texts, batch_size=batch_size
-                    )
-                ]
-            else:
-                embeddings = [
-                    embedding.tolist()
-                    for embedding in embedding_model_inst.query_embed(query=texts)
-                ]
+        elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+            embeddings = self._embed_late_interaction_multimodal(
+                texts, images, model_name, options, batch_size
+            )
         else:
-            embedding_model_inst = self.get_or_init_image_model(
-                model_name=model_name, **options or {}
-            )
+            assert (
+                    images is not None
+            ), f"Images should be provided for image embeddings. Model: {model_name}"
+            embeddings = self._embed_dense_image(images, model_name, options, batch_size)
+
+        return embeddings
+
+    def _embed_dense_text(
+        self,
+        texts: list[str],
+        model_name: str,
+        options: Optional[dict[str, Any]],
+        is_query: bool,
+        batch_size: int,
+    ) -> list[list[float]]:
+        embedding_model_inst = self.get_or_init_model(model_name=model_name, **options or {})
+
+        if not is_query:
+            embeddings = [embedding.tolist() for embedding in embedding_model_inst.embed(documents=texts, batch_size=batch_size)]
+        else:
+            embeddings = [
+                embedding.tolist() for embedding in embedding_model_inst.query_embed(query=texts)
+            ]
+        return embeddings
+
+    def _embed_sparse_text(
+        self,
+        texts: list[str],
+        model_name: str,
+        options: Optional[dict[str, Any]],
+        is_query: bool,
+        batch_size: int,
+    ) -> list[models.SparseVector]:
+        embedding_model_inst = self.get_or_init_sparse_model(
+            model_name=model_name, **options or {}
+        )
+        if not is_query:
+            embeddings = [
+                models.SparseVector(
+                    indices=sparse_embedding.indices.tolist(),
+                    values=sparse_embedding.values.tolist(),
+                )
+                for sparse_embedding in embedding_model_inst.embed(
+                    documents=texts, batch_size=batch_size
+                )
+            ]
+        else:
+            embeddings = [
+                models.SparseVector(
+                    indices=sparse_embedding.indices.tolist(),
+                    values=sparse_embedding.values.tolist(),
+                )
+                for sparse_embedding in embedding_model_inst.query_embed(query=texts)
+            ]
+        return embeddings
+
+    def _embed_late_interaction_text(
+        self,
+        texts: list[str],
+        model_name: str,
+        options: Optional[dict[str, Any]],
+        is_query: bool,
+        batch_size: int,
+    ) -> list[list[list[float]]]:
+        embedding_model_inst = self.get_or_init_late_interaction_model(
+            model_name=model_name, **options or {}
+        )
+        if not is_query:
             embeddings = [
                 embedding.tolist()
-                for embedding in embedding_model_inst.embed(images=images, batch_size=batch_size)
+                for embedding in embedding_model_inst.embed(documents=texts, batch_size=batch_size)
             ]
+        else:
+            embeddings = [
+                embedding.tolist() for embedding in embedding_model_inst.query_embed(query=texts)
+            ]
+        return embeddings
 
+    def _embed_late_interaction_multimodal(
+        self,
+        texts: Optional[list[str]],
+        images: Optional[list[ImageInput]],
+        model_name: str,
+        options: Optional[dict[str, Any]],
+        batch_size: int,
+    ) -> list[list[list[float]]]:
+        embedding_model_inst = self.get_or_init_late_interaction_multimodal_model(
+            model_name=model_name, **options or {}
+        )
+        if texts and images:
+            raise ValueError("Either documents or images should be provided")
+
+        if texts:
+            embeddings = [
+                embedding.tolist()
+                for embedding in embedding_model_inst.embed_text(
+                    documents=texts, batch_size=batch_size
+                )
+            ]
+        else:
+            embeddings = [
+                embedding.tolist()
+                for embedding in embedding_model_inst.embed_image(
+                    images=images, batch_size=batch_size
+                )
+            ]
+        return embeddings
+
+    def _embed_dense_image(
+        self,
+        images: list[ImageInput],
+        model_name: str,
+        options: Optional[dict[str, Any]],
+        batch_size: int,
+    ) -> list[list[float]]:
+        embedding_model_inst = self.get_or_init_image_model(model_name=model_name, **options or {})
+        embeddings = [
+            embedding.tolist()
+            for embedding in embedding_model_inst.embed(images=images, batch_size=batch_size)
+        ]
         return embeddings
