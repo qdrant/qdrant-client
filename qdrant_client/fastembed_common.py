@@ -11,19 +11,18 @@ try:
         TextEmbedding,
         LateInteractionTextEmbedding,
         ImageEmbedding,
+        LateInteractionMultimodalEmbedding,
     )
+    from fastembed.text.multitask_embedding import JinaEmbeddingV3 as _MultitaskTextEmbedding
     from fastembed.common import OnnxProvider, ImageInput
 except ImportError:
     TextEmbedding = None
     SparseTextEmbedding = None
     OnnxProvider = None
     LateInteractionTextEmbedding = None
+    LateInteractionMultimodalEmbedding = None
     ImageEmbedding = None
     ImageInput = None
-
-try:  # requires fastembed >0.5.1
-    from fastembed.text.multitask_embedding import JinaEmbeddingV3 as _MultitaskTextEmbedding
-except ImportError:
     _MultitaskTextEmbedding = None
 
 
@@ -76,6 +75,15 @@ _MULTITASK_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
         for model in _MultitaskTextEmbedding._list_supported_models()
     }
     if _MultitaskTextEmbedding
+    else {}
+)
+
+_LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS: dict[str, tuple[int, models.Distance]] = (
+    {
+        model["model"]: (model["dim"], models.Distance.COSINE)
+        for model in LateInteractionMultimodalEmbedding.list_supported_models()
+    }
+    if LateInteractionMultimodalEmbedding
     else {}
 )
 
