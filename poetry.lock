@@ -603,18 +603,20 @@ tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipyth
 
 [[package]]
 name = "fastembed"
-version = "0.5.1"
+version = "0.6.0"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 optional = true
 python-versions = ">=3.9.0"
 groups = ["main"]
 markers = "extra == \"fastembed\""
-files = []
-develop = false
+files = [
+    {file = "fastembed-0.6.0-py3-none-any.whl", hash = "sha256:a08385e9388adea0529a586004f2d588c9787880a510e4e5d167127a11e75328"},
+    {file = "fastembed-0.6.0.tar.gz", hash = "sha256:5c9ead25f23449535b07243bbe1f370b820dcc77ec2931e61674e3fe7ff24733"},
+]
 
 [package.dependencies]
 huggingface-hub = ">=0.20,<1.0"
-loguru = "^0.7.2"
+loguru = ">=0.7.2,<0.8.0"
 mmh3 = ">=4.1.0,<6.0.0"
 numpy = [
     {version = ">=2.1.0", markers = "python_version >= \"3.13\""},
@@ -625,37 +627,31 @@ numpy = [
 onnxruntime = [
     {version = ">1.20.0", markers = "python_version >= \"3.13\""},
     {version = ">=1.17.0,<1.20.0", markers = "python_version < \"3.10\""},
-    {version = ">=1.17.0,!=1.20.0", markers = "python_version >= \"3.10\" and python_version < \"3.13\""},
+    {version = ">=1.17.0,<1.20.0 || >1.20.0", markers = "python_version >= \"3.10\" and python_version < \"3.13\""},
 ]
 pillow = ">=10.3.0,<12.0.0"
-py-rust-stemmers = "^0.1.0"
-requests = "^2.31"
+py-rust-stemmers = ">=0.1.0,<0.2.0"
+requests = ">=2.31,<3.0"
 tokenizers = ">=0.15,<1.0"
-tqdm = "^4.66"
-
-[package.source]
-type = "git"
-url = "https://github.com/qdrant/fastembed.git"
-reference = "HEAD"
-resolved_reference = "58ee7cc95c55d2994d776758a1facb51f3b968d2"
+tqdm = ">=4.66,<5.0"
 
 [[package]]
 name = "fastembed-gpu"
-version = "0.5.1"
+version = "0.6.0"
 description = "Fast, light, accurate library built for retrieval embedding generation"
 optional = true
 python-versions = ">=3.9.0"
 groups = ["main"]
 markers = "extra == \"fastembed-gpu\""
 files = [
-    {file = "fastembed_gpu-0.5.1-py3-none-any.whl", hash = "sha256:60af8090ef206343a6d1f613ae24dfb380e31d8abf66cbffc34e5594569b4456"},
-    {file = "fastembed_gpu-0.5.1.tar.gz", hash = "sha256:2f6e40d97138b67b54d0bdb6a2b3f03a08c760550ace7bb32269b30709212494"},
+    {file = "fastembed_gpu-0.6.0-py3-none-any.whl", hash = "sha256:a4b8b0ffdd0004c011fa435e79e31e2b2b58740a74e5f425144b9a53e70c8c8f"},
+    {file = "fastembed_gpu-0.6.0.tar.gz", hash = "sha256:8a6ceb102e976c4325ce393e2bac5654319a56e2216ad0e9c0cb45bc9e743a86"},
 ]
 
 [package.dependencies]
 huggingface-hub = ">=0.20,<1.0"
 loguru = ">=0.7.2,<0.8.0"
-mmh3 = ">=4.1.0,<5.0.0"
+mmh3 = ">=4.1.0,<6.0.0"
 numpy = [
     {version = ">=2.1.0", markers = "python_version >= \"3.13\""},
     {version = ">=1.21,<2.1.0", markers = "python_version < \"3.10\""},
@@ -667,7 +663,7 @@ onnxruntime-gpu = [
     {version = ">=1.17.0,<1.20.0", markers = "python_version < \"3.10\""},
     {version = ">=1.17.0,<1.20.0 || >1.20.0", markers = "python_version >= \"3.10\" and python_version < \"3.13\""},
 ]
-pillow = ">=10.3.0,<11.0.0"
+pillow = ">=10.3.0,<12.0.0"
 py-rust-stemmers = ">=0.1.0,<0.2.0"
 requests = ">=2.31,<3.0"
 tokenizers = ">=0.15,<1.0"
@@ -3490,4 +3486,4 @@ fastembed-gpu = ["fastembed-gpu"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "8e3e14337ffa2d04f1418bacec06f2e5f82e46c224a4e4fe3cbded1108408045"
+content-hash = "9be6c63f95cde34d499374c0e27395c707b9c49622310907e42d55ef53518c1b"
