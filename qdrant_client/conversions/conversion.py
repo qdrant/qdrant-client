@@ -1,6 +1,8 @@
 from datetime import date, datetime, timezone
+import re
 from typing import Any, Mapping, Optional, Sequence, Union, get_args
 
+from google.protobuf.internal.containers import MessageMap
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
 
@@ -90,7 +92,7 @@ def payload_to_grpc(payload: dict[str, Any]) -> dict[str, Value]:
     return dict((key, json_to_value(val)) for key, val in payload.items())
 
 
-def grpc_to_payload(grpc_: dict[str, Value]) -> dict[str, Any]:
+def grpc_to_payload(grpc_: MessageMap[str, Value]) -> dict[str, Any]:
     return dict((key, value_to_json(val)) for key, val in grpc_.items())
 
 
@@ -1183,6 +1185,78 @@ class GrpcToRest:
         raise ValueError(f"invalid Sample model: {model}")  # pragma: no cover
 
     @classmethod
+    def convert_formula_query(cls, model: grpc.Formula) -> rest.FormulaQuery:
+        defaults = grpc_to_payload(model.defaults)
+        return rest.FormulaQuery(
+            formula=cls.convert_expression(model.expression), defaults=defaults
+        )
+
+    @classmethod
+    def convert_expression(cls, model: grpc.Expression) -> rest.Expression:
+        name = model.WhichOneof("variant")
+        if name is None:
+            raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
+
+        if name == "constant":
+            return model.constant
+        if name == "variable":
+            return model.variable
+        if name == "condition":
+            return cls.convert_condition(model.condition)
+        if name == "sum":
+            return cls.convert_sum_expression(model.sum)
+        if name == "mult":
+            return cls.convert_mult_expression(model.mult)
+        if name == "div":
+            return cls.convert_div_expression(model.div)
+        if name == "abs":
+            return rest.AbsExpression(abs=cls.convert_expression(model.abs))
+        if name == "neg":
+            return rest.NegExpression(neg=cls.convert_expression(model.neg))
+        if name == "log10":
+            return rest.Log10Expression(log10=cls.convert_expression(model.log10))
+        if name == "ln":
+            return rest.LnExpression(ln=cls.convert_expression(model.ln))
+        if name == "sqrt":
+            return rest.SqrtExpression(sqrt=cls.convert_expression(model.sqrt))
+        if name == "exp":
+            return rest.ExpExpression(exp=cls.convert_expression(model.exp))
+        if name == "pow":
+            return cls.convert_pow_expression(model.pow)
+        if name == "geo_distance":
+            return cls.convert_geo_distance(model.geo_distance)
+
+        raise ValueError(f"Unknown function name: {name}")
+
+    @classmethod
+    def convert_sum_expression(cls, model: grpc.SumExpression) -> rest.SumExpression:
+        return rest.SumExpression(sum=[cls.convert_expression(expr) for expr in model.sum])
+
+    @classmethod
+    def convert_mult_expression(cls, model: grpc.MultExpression) -> rest.MultExpression:
+        return rest.MultExpression(mult=[cls.convert_expression(expr) for expr in model.mult])
+
+    @classmethod
+    def convert_div_expression(cls, model: grpc.DivExpression) -> rest.DivExpression:
+        left = cls.convert_expression(model.left)
+        right = cls.convert_expression(model.right)
+        params = rest.DivParams(left=left, right=right, by_zero_default=model.by_zero_default)
+        return rest.DivExpression(div=params)
+
+    @classmethod
+    def convert_pow_expression(cls, model: grpc.PowExpression) -> rest.PowExpression:
+        base = cls.convert_expression(model.base)
+        exponent = cls.convert_expression(model.exponent)
+        params = rest.PowParams(base=base, exponent=exponent)
+        return rest.PowExpression(pow=params)
+
+    @classmethod
+    def convert_geo_distance(cls, model: grpc.GeoDistance) -> rest.GeoDistance:
+        origin = cls.convert_geo_point(model.origin)
+        params = rest.GeoDistanceParams(origin=origin, to=model.to)
+        return rest.GeoDistance(geo_distance=params)
+
+    @classmethod
     def convert_query(cls, model: grpc.Query) -> rest.Query:
         name = model.WhichOneof("variant")
         if name is None:
@@ -1209,6 +1283,9 @@ class GrpcToRest:
 
         if name == "sample":
             return rest.SampleQuery(sample=cls.convert_sample(val))
+
+        if name == "formula":
+            return cls.convert_formula_query(val)
 
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
 
@@ -3367,7 +3444,79 @@ class RestToGrpc:
         if isinstance(model, rest.SampleQuery):
             return grpc.Query(sample=cls.convert_sample(model.sample))
 
+        if isinstance(model, rest.FormulaQuery):
+            return grpc.Query(formula=cls.convert_formula_query(model))
+
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_formula_query(cls, model: rest.FormulaQuery) -> grpc.Formula:
+        defaults = payload_to_grpc(model.defaults) if model.defaults is not None else None
+        expression = cls.convert_expression(model.formula)
+        return grpc.Formula(defaults=defaults, expression=expression)
+
+    @classmethod
+    def convert_expression(cls, model: rest.Expression) -> grpc.Expression:
+        if model is rest.StrictFloat or model is rest.StrictInt:
+            return grpc.Expression(constant=model)
+        if model is rest.StrictStr:
+            return grpc.Expression(variable=model)
+        if isinstance(model, rest.Condition):
+            return grpc.Expression(condition=cls.convert_condition(model))
+        if isinstance(model, rest.NegExpression):
+            return grpc.Expression(neg=cls.convert_expression(model))
+        if isinstance(model, rest.SumExpression):
+            return grpc.Expression(sum=cls.convert_sum_expression(model))
+        if isinstance(model, rest.MultExpression):
+            return grpc.Expression(mult=cls.convert_mult_expression(model))
+        if isinstance(model, rest.DivExpression):
+            return grpc.Expression(div=cls.convert_div_expression(model))
+        if isinstance(model, rest.PowExpression):
+            return grpc.Expression(pow=cls.convert_pow_expression(model))
+        if isinstance(model, rest.Log10Expression):
+            return grpc.Expression(log10=cls.convert_expression(model))
+        if isinstance(model, rest.LnExpression):
+            return grpc.Expression(ln=cls.convert_expression(model))
+        if isinstance(model, rest.AbsExpression):
+            return grpc.Expression(abs=cls.convert_expression(model))
+        if isinstance(model, rest.SqrtExpression):
+            return grpc.Expression(sqrt=cls.convert_expression(model))
+        if isinstance(model, rest.ExpExpression):
+            return grpc.Expression(exp=cls.convert_expression(model))
+        if isinstance(model, rest.GeoDistance):
+            return grpc.Expression(geo_distance=cls.convert_geo_distance(model))
+
+        raise ValueError(f"invalid Expression model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_sum_expression(cls, model: rest.SumExpression) -> grpc.SumExpression:
+        return grpc.SumExpression(sum=[cls.convert_expression(expr) for expr in model.sum])
+
+    @classmethod
+    def convert_mult_expression(cls, model: rest.MultExpression) -> grpc.MultExpression:
+        return grpc.MultExpression(mult=[cls.convert_expression(expr) for expr in model.mult])
+
+    @classmethod
+    def convert_div_expression(cls, model: rest.DivExpression) -> grpc.DivExpression:
+        return grpc.DivExpression(
+            left=cls.convert_expression(model.div.left),
+            right=cls.convert_expression(model.div.right),
+            by_zero_default=model.div.by_zero_default,
+        )
+
+    @classmethod
+    def convert_pow_expression(cls, model: rest.PowExpression) -> grpc.PowExpression:
+        return grpc.PowExpression(
+            base=cls.convert_expression(model.pow.base),
+            exponent=cls.convert_expression(model.pow.exponent),
+        )
+
+    @classmethod
+    def convert_geo_distance(cls, model: rest.GeoDistance) -> grpc.GeoDistance:
+        return grpc.GeoDistance(
+            origin=cls.convert_geo_point(model.geo_distance.origin),
+            to=model.geo_distance.to,
+        )
 
     @classmethod
     def convert_query_interface(cls, model: rest.QueryInterface) -> grpc.Query:
