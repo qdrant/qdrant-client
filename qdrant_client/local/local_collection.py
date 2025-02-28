@@ -14,7 +14,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from qdrant_client import grpc as grpc
+from qdrant_client import grpc as grpc, hybrid
 from qdrant_client.common.client_warnings import show_warning_once
 from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
 from qdrant_client.conversions import common_types as types
@@ -23,6 +23,7 @@ from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models import ScoredPoint
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
+from qdrant_client.hybrid.formula import evaluate_expression
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 from qdrant_client.local.distances import (
     ContextPair,
@@ -515,6 +516,14 @@ class LocalCollection:
 
         return mask
 
+    def _calculate_has_vector(self, internal_id: int) -> dict[str, bool]:
+        has_vector: dict[str, bool] = {}
+        for vector_name, deleted in self.deleted_per_vector.items():
+            if not deleted[internal_id]:
+                has_vector[vector_name] = True
+
+        return has_vector
+
     def search(
         self,
         query_vector: Union[
@@ -786,8 +795,20 @@ class LocalCollection:
                 scored.vector = fetched.vector
 
             return fused[offset:]
+
+        elif isinstance(query, models.FormulaQuery):
+            # Re-score with formula
+            rescored = self._rescore_with_formula(
+                query=query,
+                prefetches_results=sources,
+                limit=limit + offset,
+                with_payload=with_payload,
+                with_vectors=with_vectors,
+            )
+
+            return rescored[offset:]
         else:
-            # Re-score
+            # Re-score with vector
             sources_ids = set()
             for source in sources:
                 for point in source:
@@ -903,6 +924,8 @@ class LocalCollection:
                 raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):
             raise AssertionError("Cannot perform fusion without prefetches")
+        elif isinstance(query, models.FormulaQuery):
+            raise AssertionError("Cannot perform formula without prefetches")
         else:
             # most likely a VectorInput, delegate to search
             return self.search(
@@ -1970,6 +1993,54 @@ class LocalCollection:
             result.append(scored_point)
 
         return result
+
+    def _rescore_with_formula(
+        self,
+        query: models.FormulaQuery,
+        prefetches_results: list[list[models.ScoredPoint]],
+        limit: int,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector],
+        with_vectors: Union[bool, Sequence[str]],
+    ) -> list[models.ScoredPoint]:
+        # collect prefetches in vec of dicts for faster lookup
+        prefetches_scores = [
+            dict((point.id, point.score) for point in prefetch) for prefetch in prefetches_results
+        ]
+
+        defaults = query.defaults or {}
+
+        points_to_rescore: set[models.ExtendedPointId] = set()
+        for prefetch in prefetches_results:
+            for point in prefetch:
+                points_to_rescore.add(point.id)
+
+        # Evaluate formula for each point
+        rescored: list[models.ScoredPoint] = []
+        for point_id in points_to_rescore:
+            internal_id = self.ids[point_id]
+            payload = self._get_payload(internal_id, True) or {}
+            has_vector = self._calculate_has_vector(internal_id)
+            score = evaluate_expression(
+                expression=query.formula,
+                point_id=point_id,
+                scores=prefetches_scores,
+                payload=payload,
+                has_vector=has_vector,
+                defaults=defaults,
+            )
+            point = construct(
+                models.ScoredPoint,
+                id=point_id,
+                score=score,
+                version=0,
+                payload=self._get_payload(internal_id, with_payload),
+                vector=self._get_vectors(internal_id, with_vectors),
+            )
+            rescored.append(point)
+
+        rescored.sort(key=lambda x: x.score, reverse=True)
+
+        return rescored[:limit]
 
     def _update_point(self, point: models.PointStruct) -> None:
         idx = self.ids[point.id]
