@@ -3022,6 +3022,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(field_schema, models.PayloadSchemaType):
                 field_schema = RestToGrpc.convert_payload_schema_type(field_schema)
 
+            if isinstance(field_schema, str):
+                field_schema = RestToGrpc.convert_payload_schema_type(models.PayloadSchemaType(field_schema))
+
             if isinstance(field_schema, int):
                 # There are no means to distinguish grpc.PayloadSchemaType and grpc.FieldType,
                 # as both of them are just ints
