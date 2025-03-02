@@ -2741,6 +2741,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             field_index_params = None
             if isinstance(field_schema, models.PayloadSchemaType):
                 field_schema = RestToGrpc.convert_payload_schema_type(field_schema)
+            if isinstance(field_schema, str):
+                field_schema = RestToGrpc.convert_payload_schema_type(
+                    models.PayloadSchemaType(field_schema)
+                )
             if isinstance(field_schema, int):
                 field_schema = grpc_payload_schema_to_field_type(field_schema)
             if isinstance(field_schema, get_args(models.PayloadSchemaParams)):
