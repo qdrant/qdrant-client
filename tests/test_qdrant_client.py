@@ -15,7 +15,7 @@ from grpc import Compression, RpcError
 import qdrant_client.http.exceptions
 from qdrant_client import QdrantClient, models
 from qdrant_client._pydantic_compat import to_dict
-from qdrant_client.conversions.common_types import PointVectors, Record
+from qdrant_client.conversions.common_types import PointVectors, Record, StrictModeConfig
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.models import (
@@ -2275,6 +2275,20 @@ def test_create_payload_index(prefer_grpc):
             wait=True,
         )
 
+@pytest.mark.parametrize("prefer_grpc", (False, True))
+def test_strict_mode(prefer_grpc):
+    client = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(client, COLLECTION_NAME, vectors_config={})
+
+    strict_mode_config = StrictModeConfig(
+        enabled=True,
+        max_points_count=100,
+    )
+    client.update_collection(COLLECTION_NAME, strict_mode_config=strict_mode_config)
+    collection_info = client.get_collection(COLLECTION_NAME)
+    strict_mode_config = collection_info.config.strict_mode_config
+    assert strict_mode_config.enabled is True
+    assert strict_mode_config.max_points_count == 100
 
 if __name__ == "__main__":
     test_qdrant_client_integration()
@@ -2282,3 +2296,4 @@ if __name__ == "__main__":
     test_has_id_condition()
     test_insert_float()
     test_create_payload_index()
+    test_strict_mode()
