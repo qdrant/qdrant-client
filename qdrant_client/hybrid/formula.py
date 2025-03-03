@@ -2,14 +2,15 @@ from qdrant_client._pydantic_compat import construct
 from qdrant_client.http import models
 from typing import Union, Any
 import math
+import numpy as np
 
 from qdrant_client.local.geo import geo_distance
 from qdrant_client.local.payload_filters import check_condition
 from qdrant_client.local.payload_value_extractor import value_by_key
 
-DEFAULT_SCORE = 0.0
+DEFAULT_SCORE = np.float32(0.0)
 
-UNDEFINED_SCORE = float("-inf")
+DEFAULT_BY_ZERO = np.float32(1.0)
 
 
 def evaluate_expression(
@@ -19,28 +20,37 @@ def evaluate_expression(
     payload: models.Payload,
     has_vector: dict[str, bool],
     defaults: dict[str, Any],
-) -> float:
-    if isinstance(expression, (models.StrictFloat, models.StrictInt)):  # Constant
-        return expression
-    elif isinstance(expression, models.StrictStr):  # Variable
+) -> np.float32:
+    if isinstance(expression, (float, int)):  # Constant
+        return np.float32(expression)
+
+    elif isinstance(expression, str):  # Variable
         return evaluate_variable(expression, point_id, scores, payload, has_vector, defaults)
 
     elif isinstance(expression, models.Condition):
         if check_condition(expression, payload, point_id, has_vector):
-            return 1.0
-        return 0.0
+            return np.float32(1.0)
+        return np.float32(0.0)
 
     elif isinstance(expression, models.MultExpression):
-        return math.prod(
-            evaluate_expression(expr, point_id, scores, payload, has_vector, defaults)
-            for expr in expression.mult
+        result = np.prod(
+            [
+                evaluate_expression(expr, point_id, scores, payload, has_vector, defaults)
+                for expr in expression.mult
+            ],
+            dtype=np.float32,
         )
+        return np.float32(result)
 
     elif isinstance(expression, models.SumExpression):
-        return math.fsum(
-            evaluate_expression(expr, point_id, scores, payload, has_vector, defaults)
-            for expr in expression.sum
+        result = np.sum(
+            [
+                evaluate_expression(expr, point_id, scores, payload, has_vector, defaults)
+                for expr in expression.sum
+            ],
+            dtype=np.float32,
         )
+        return np.float32(result)
 
     elif isinstance(expression, models.NegExpression):
         return -evaluate_expression(
@@ -57,14 +67,17 @@ def evaluate_expression(
             expression.div.left, point_id, scores, payload, has_vector, defaults
         )
 
-        if left == 0.0:
-            if expression.div.by_zero_default:
-                return expression.div.by_zero_default
-            return float("inf")
+        if left == np.float32(0.0):
+            return left
 
         right = evaluate_expression(
-            expression.right, point_id, scores, payload, has_vector, defaults
+            expression.div.right, point_id, scores, payload, has_vector, defaults
         )
+
+        if right == 0.0:
+            if expression.div.by_zero_default is not None:
+                return np.float32(expression.div.by_zero_default)
+            return np.float32(DEFAULT_BY_ZERO)
 
         return left / right
 
@@ -73,10 +86,12 @@ def evaluate_expression(
             expression.sqrt, point_id, scores, payload, has_vector, defaults
         )
 
-        if value < 0.0:
-            return UNDEFINED_SCORE
+        sqrt_value = np.sqrt(value, dtype=np.float32)
 
-        return math.sqrt(value)
+        if np.isfinite(sqrt_value):
+            return np.float32(sqrt_value)
+
+        raise_non_finite_error(f"√{value}")
 
     elif isinstance(expression, models.PowExpression):
         base = evaluate_expression(
@@ -86,36 +101,38 @@ def evaluate_expression(
             expression.pow.exponent, point_id, scores, payload, has_vector, defaults
         )
 
-        power = math.pow(base, exponent)
+        power = np.power(base, exponent, dtype=np.float32)
 
-        if power == float("nan"):
-            return UNDEFINED_SCORE
+        if np.isfinite(power):
+            return np.float32(power)
 
-        return power
+        raise_non_finite_error(f"{base}^{exponent}")
 
     elif isinstance(expression, models.ExpExpression):
         value = evaluate_expression(
             expression.exp, point_id, scores, payload, has_vector, defaults
         )
+        return np.exp(value, dtype=np.float32)
 
-        return math.exp(value)
     elif isinstance(expression, models.Log10Expression):
         value = evaluate_expression(
             expression.log10, point_id, scores, payload, has_vector, defaults
         )
 
-        if value <= 0.0:
-            return UNDEFINED_SCORE
+        log_value = np.log10(value, dtype=np.float32)
+        if np.isfinite(log_value):
+            return log_value
 
-        return math.log(value)
+        raise_non_finite_error(f"log10({value})")
 
     elif isinstance(expression, models.LnExpression):
         value = evaluate_expression(expression.ln, point_id, scores, payload, has_vector, defaults)
 
-        if value <= 0.0:
-            return UNDEFINED_SCORE
+        log_value = np.log(value, dtype=np.float32)
+        if np.isfinite(log_value):
+            return log_value
 
-        return math.log(value)
+        raise_non_finite_error(f"ln({value})")
 
     elif isinstance(expression, models.GeoDistance):
         origin = expression.geo_distance.origin
@@ -132,10 +149,9 @@ def evaluate_expression(
 
         destination = construct(models.GeoPoint, **value)
 
-        return geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
+        return np.float32(geo_distance(origin.lon, origin.lat, destination.lon, destination.lat))
 
-    else:
-        raise ValueError(f"Unsupported expression type: {type(expression)}")
+    raise ValueError(f"Unsupported expression type: {type(expression)}")
 
 
 def evaluate_variable(
@@ -145,33 +161,33 @@ def evaluate_variable(
     payload: models.Payload,
     has_vector: dict[str, bool],
     defaults: dict[str, Any],
-) -> float:
+) -> np.float32:
     var = parse_variable(variable)
-    if isinstance(var, models.StrictStr):
+    if isinstance(var, str):
         # Get value from payload
         value = value_by_key(payload, var)
 
         if value is not None and len(value) > 0:
             value = value[0]
             try:
-                return float(value)
+                return np.float32(value)
             except ValueError:
                 # try to get from defaults
                 pass
 
         defined_default = defaults.get(var, None)
         try:
-            return float(defined_default)
+            return np.float32(defined_default)
         except ValueError:
             return DEFAULT_SCORE
 
-    elif isinstance(var, models.StrictInt):
+    elif isinstance(var, int):
         # Get score from scores
         score = None
         if var < len(scores):
             score = scores[var].get(point_id, None)
             if score is not None:
-                return score
+                return np.float32(score)
 
         defined_default = defaults.get(variable, None)
         if defined_default is None:
@@ -212,6 +228,10 @@ def parse_variable(var: str) -> Union[models.StrictStr, int]:
         raise ValueError(f"Invalid score pattern: {var}")
 
     return idx
+
+
+def raise_non_finite_error(expression: str):
+    raise ValueError(f"The expression {expression} produced a non-finite number")
 
 
 def test_parsing_variable():
