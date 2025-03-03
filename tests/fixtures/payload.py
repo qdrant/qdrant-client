@@ -219,6 +219,18 @@ def one_random_payload_please(idx: int) -> dict[str, Any]:
         "city": random_city(),
         "rand_tuple": tuple(random.randint(0, 100) for _ in range(random.randint(1, 5))),
         "rand_bool": random.random() < 0.2,
+        "mixed_type": random.choice(
+            [
+                None,
+                random_real_word(),
+                random.randint(0, 9),  # int
+                [random.randint(0, 9) for _ in range(3)],  # list of ints
+                round(random.random(), 5),  # float
+                [round(random.random(), 5) for _ in range(3)],  # list of floats
+                random.random() < 0.5,  # bool
+                {"key": "value"},
+            ]
+        ),
     }
 
     if random.random() < 0.5:
