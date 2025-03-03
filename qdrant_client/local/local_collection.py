@@ -2031,7 +2031,7 @@ class LocalCollection:
             point = construct(
                 models.ScoredPoint,
                 id=point_id,
-                score=score,
+                score=float(score),
                 version=0,
                 payload=self._get_payload(internal_id, with_payload),
                 vector=self._get_vectors(internal_id, with_vectors),
