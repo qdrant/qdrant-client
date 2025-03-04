@@ -107,11 +107,11 @@ class ApiClient:
         response = self.middleware(request, self.send_inner)
 
         if response.status_code == 429:
-            retry_after_s = response.headers.get("Retry-After", 0)
+            retry_after_s = response.headers.get("Retry-After", None)
             message = (
                 response.json()["status"]["error"]
                 if response.json()["status"] and response.json()["status"]["error"]
-                else ""
+                else None
             )
             raise ResourceExhaustedResponse(message, retry_after_s)
 
