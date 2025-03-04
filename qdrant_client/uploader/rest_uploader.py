@@ -1,9 +1,11 @@
 from itertools import count
+from time import sleep
 from typing import Any, Iterable, Optional, Union
 from uuid import uuid4
 
 import numpy as np
 
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http import SyncApis
 from qdrant_client.http.models import Batch, PointsList, PointStruct, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
@@ -40,6 +42,14 @@ def upload_batch(
                 wait=wait,
             )
             break
+        except ResourceExhaustedResponse as ex:
+            show_warning(
+                message=f"Batch upload failed due to rate limit. Waiting for {ex.retry_after_s} seconds before retrying...",
+                category=UserWarning,
+                stacklevel=7,
+            )
+            sleep(ex.retry_after_s)
+            attempt -= 1
         except Exception as e:
             show_warning(
                 message=f"Batch upload failed {attempt + 1} times. Retrying...",

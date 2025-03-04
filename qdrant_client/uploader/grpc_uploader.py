@@ -1,9 +1,10 @@
-import logging
 from itertools import count
+from time import sleep
 from typing import Any, Generator, Iterable, Optional, Union
 from uuid import uuid4
 
 from qdrant_client import grpc as grpc
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
 from qdrant_client.grpc import PointId, PointsStub, PointStruct
@@ -49,6 +50,14 @@ def upload_batch_grpc(
                 timeout=timeout,
             )
             break
+        except ResourceExhaustedResponse as ex:
+            show_warning(
+                message=f"Batch upload failed due to rate limit. Waiting for {ex.retry_after_s} seconds before retrying...",
+                category=UserWarning,
+                stacklevel=8,
+            )
+            sleep(ex.retry_after_s)
+            attempt -= 1
         except Exception as e:
             show_warning(
                 message=f"Batch upload failed {attempt + 1} times. Retrying...",
