@@ -3457,14 +3457,14 @@ class RestToGrpc:
 
     @classmethod
     def convert_expression(cls, model: rest.Expression) -> grpc.Expression:
-        if model is rest.StrictFloat or model is rest.StrictInt:
-            return grpc.Expression(constant=model)
-        if model is rest.StrictStr:
+        if isinstance(model, (float, int)):
+            return grpc.Expression(constant=float(model))
+        if isinstance(model, str):
             return grpc.Expression(variable=model)
         if isinstance(model, rest.Condition):
             return grpc.Expression(condition=cls.convert_condition(model))
         if isinstance(model, rest.NegExpression):
-            return grpc.Expression(neg=cls.convert_expression(model))
+            return grpc.Expression(neg=cls.convert_expression(model.neg))
         if isinstance(model, rest.SumExpression):
             return grpc.Expression(sum=cls.convert_sum_expression(model))
         if isinstance(model, rest.MultExpression):
@@ -3474,15 +3474,15 @@ class RestToGrpc:
         if isinstance(model, rest.PowExpression):
             return grpc.Expression(pow=cls.convert_pow_expression(model))
         if isinstance(model, rest.Log10Expression):
-            return grpc.Expression(log10=cls.convert_expression(model))
+            return grpc.Expression(log10=cls.convert_expression(model.log10))
         if isinstance(model, rest.LnExpression):
-            return grpc.Expression(ln=cls.convert_expression(model))
+            return grpc.Expression(ln=cls.convert_expression(model.ln))
         if isinstance(model, rest.AbsExpression):
-            return grpc.Expression(abs=cls.convert_expression(model))
+            return grpc.Expression(abs=cls.convert_expression(model.abs))
         if isinstance(model, rest.SqrtExpression):
-            return grpc.Expression(sqrt=cls.convert_expression(model))
+            return grpc.Expression(sqrt=cls.convert_expression(model.sqrt))
         if isinstance(model, rest.ExpExpression):
-            return grpc.Expression(exp=cls.convert_expression(model))
+            return grpc.Expression(exp=cls.convert_expression(model.exp))
         if isinstance(model, rest.GeoDistance):
             return grpc.Expression(geo_distance=cls.convert_geo_distance(model))
 
