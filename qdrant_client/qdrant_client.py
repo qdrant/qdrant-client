@@ -19,6 +19,7 @@ from qdrant_client.common.client_warnings import show_warning_once
 from qdrant_client.conversions import common_types as types
 from qdrant_client.embed.type_inspector import Inspector
 from qdrant_client.http import ApiClient, SyncApis
+from qdrant_client.http.models.models import FormulaQuery
 from qdrant_client.local.qdrant_local import QdrantLocal
 from qdrant_client.migrate import migrate
 from qdrant_client.qdrant_fastembed import QdrantFastembedMixin
@@ -556,7 +557,9 @@ class QdrantClient(QdrantFastembedMixin):
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
         query = self._resolve_query(query)
-        requires_inference = self._inference_inspector.inspect([query, prefetch])
+        requires_inference = not isinstance(
+            query, FormulaQuery
+        ) and self._inference_inspector.inspect([query, prefetch])
         if requires_inference and not self.cloud_inference:
             query = (
                 next(
