@@ -1,5 +1,8 @@
 from math import asin, cos, radians, sin, sqrt
 
+# Radius of earth in meters, [as recommended by the IUGG](ftp://athena.fsv.cvut.cz/ZFG/grs80-Moritz.pdf)
+MEAN_EARTH_RADIUS = 6371008.8
+
 
 def geo_distance(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     """
@@ -22,9 +25,8 @@ def geo_distance(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     dlat = lat2 - lat1
     a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
     c = 2 * asin(sqrt(a))
-    # Radius of earth in kilometers is 6371
-    km = 6371 * c
-    return km * 1000
+
+    return MEAN_EARTH_RADIUS * c
 
 
 def test_geo_distance() -> None:
