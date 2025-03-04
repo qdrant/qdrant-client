@@ -220,6 +220,14 @@ CACHE_STR_PATH = {
     "StartReshardingOperation": [],
     "StrictModeMultivector": [],
     "StrictModeSparse": [],
+    "DivExpression": [],
+    "DivParams": [],
+    "FormulaQuery": [],
+    "GeoDistance": [],
+    "GeoDistanceParams": [],
+    "MultExpression": [],
+    "NegExpression": [],
+    "SumExpression": [],
 }
 DEFS = {
     "AbortShardTransfer": {
@@ -482,6 +490,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsEmptyCondition"},
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -492,6 +501,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsEmptyCondition"},
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -514,6 +524,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsEmptyCondition"},
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -524,6 +535,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsEmptyCondition"},
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -541,6 +553,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsEmptyCondition"},
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -551,6 +564,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsEmptyCondition"},
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -591,11 +605,11 @@ DEFS = {
         "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
         "properties": {
             "top_left": {
-                "allOf": [{"$ref": "#/$defs/GeoPoint"}],
+                "$ref": "#/$defs/GeoPoint",
                 "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
             },
             "bottom_right": {
-                "allOf": [{"$ref": "#/$defs/GeoPoint"}],
+                "$ref": "#/$defs/GeoPoint",
                 "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
             },
         },
@@ -634,7 +648,7 @@ DEFS = {
         "description": "Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
         "properties": {
             "exterior": {
-                "allOf": [{"$ref": "#/$defs/GeoLineString"}],
+                "$ref": "#/$defs/GeoLineString",
                 "description": "Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
             },
             "interiors": {
@@ -656,7 +670,7 @@ DEFS = {
         "description": "Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
         "properties": {
             "center": {
-                "allOf": [{"$ref": "#/$defs/GeoPoint"}],
+                "$ref": "#/$defs/GeoPoint",
                 "description": "Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
             },
             "radius": {
@@ -689,7 +703,7 @@ DEFS = {
         "description": "Select points with empty payload for a specified field",
         "properties": {
             "is_empty": {
-                "allOf": [{"$ref": "#/$defs/PayloadField"}],
+                "$ref": "#/$defs/PayloadField",
                 "description": "Select points with empty payload for a specified field",
             }
         },
@@ -702,7 +716,7 @@ DEFS = {
         "description": "Select points with null payload for a specified field",
         "properties": {
             "is_null": {
-                "allOf": [{"$ref": "#/$defs/PayloadField"}],
+                "$ref": "#/$defs/PayloadField",
                 "description": "Select points with null payload for a specified field",
             }
         },
@@ -783,6 +797,7 @@ DEFS = {
                         {"$ref": "#/$defs/IsEmptyCondition"},
                         {"$ref": "#/$defs/IsNullCondition"},
                         {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
                         {"$ref": "#/$defs/NestedCondition"},
                         {"$ref": "#/$defs/Filter"},
                     ]
@@ -806,7 +821,7 @@ DEFS = {
                 "type": "string",
             },
             "filter": {
-                "allOf": [{"$ref": "#/$defs/Filter"}],
+                "$ref": "#/$defs/Filter",
                 "description": "Select points with payload for a specified nested field",
             },
         },
@@ -816,7 +831,7 @@ DEFS = {
     },
     "NestedCondition": {
         "additionalProperties": False,
-        "properties": {"nested": {"allOf": [{"$ref": "#/$defs/Nested"}], "description": ""}},
+        "properties": {"nested": {"$ref": "#/$defs/Nested", "description": ""}},
         "required": ["nested"],
         "title": "NestedCondition",
         "type": "object",
@@ -3093,8 +3108,224 @@ DEFS = {
         "title": "StartResharding",
         "type": "object",
     },
+    "DivExpression": {
+        "additionalProperties": False,
+        "properties": {"div": {"$ref": "#/$defs/DivParams", "description": ""}},
+        "required": ["div"],
+        "title": "DivExpression",
+        "type": "object",
+    },
+    "DivParams": {
+        "additionalProperties": False,
+        "properties": {
+            "left": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Left",
+            },
+            "right": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Right",
+            },
+            "by_zero_default": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "By Zero Default",
+            },
+        },
+        "required": ["left", "right"],
+        "title": "DivParams",
+        "type": "object",
+    },
+    "GeoDistance": {
+        "additionalProperties": False,
+        "properties": {"geo_distance": {"$ref": "#/$defs/GeoDistanceParams", "description": ""}},
+        "required": ["geo_distance"],
+        "title": "GeoDistance",
+        "type": "object",
+    },
+    "GeoDistanceParams": {
+        "additionalProperties": False,
+        "properties": {
+            "origin": {"$ref": "#/$defs/GeoPoint", "description": ""},
+            "to": {
+                "description": "Payload field with the destination geo point",
+                "title": "To",
+                "type": "string",
+            },
+        },
+        "required": ["origin", "to"],
+        "title": "GeoDistanceParams",
+        "type": "object",
+    },
+    "HasVectorCondition": {
+        "additionalProperties": False,
+        "description": "Filter points which have specific vector assigned",
+        "properties": {
+            "has_vector": {
+                "description": "Filter points which have specific vector assigned",
+                "title": "Has Vector",
+                "type": "string",
+            }
+        },
+        "required": ["has_vector"],
+        "title": "HasVectorCondition",
+        "type": "object",
+    },
+    "MultExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "mult": {
+                "description": "",
+                "items": {
+                    "anyOf": [
+                        {"type": "number"},
+                        {"type": "string"},
+                        {"$ref": "#/$defs/FieldCondition"},
+                        {"$ref": "#/$defs/IsEmptyCondition"},
+                        {"$ref": "#/$defs/IsNullCondition"},
+                        {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/NestedCondition"},
+                        {"$ref": "#/$defs/Filter"},
+                        {"$ref": "#/$defs/MultExpression"},
+                        {"$ref": "#/$defs/SumExpression"},
+                        {"$ref": "#/$defs/NegExpression"},
+                        {"$ref": "#/$defs/DivExpression"},
+                        {"$ref": "#/$defs/GeoDistance"},
+                    ]
+                },
+                "title": "Mult",
+                "type": "array",
+            }
+        },
+        "required": ["mult"],
+        "title": "MultExpression",
+        "type": "object",
+    },
+    "NegExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "neg": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Neg",
+            }
+        },
+        "required": ["neg"],
+        "title": "NegExpression",
+        "type": "object",
+    },
+    "SumExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "sum": {
+                "description": "",
+                "items": {
+                    "anyOf": [
+                        {"type": "number"},
+                        {"type": "string"},
+                        {"$ref": "#/$defs/FieldCondition"},
+                        {"$ref": "#/$defs/IsEmptyCondition"},
+                        {"$ref": "#/$defs/IsNullCondition"},
+                        {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/NestedCondition"},
+                        {"$ref": "#/$defs/Filter"},
+                        {"$ref": "#/$defs/MultExpression"},
+                        {"$ref": "#/$defs/SumExpression"},
+                        {"$ref": "#/$defs/NegExpression"},
+                        {"$ref": "#/$defs/DivExpression"},
+                        {"$ref": "#/$defs/GeoDistance"},
+                    ]
+                },
+                "title": "Sum",
+                "type": "array",
+            }
+        },
+        "required": ["sum"],
+        "title": "SumExpression",
+        "type": "object",
+    },
 }
-RECURSIVE_REFS = ["Filter", "MinShould", "Nested", "NestedCondition", "Prefetch"]
+RECURSIVE_REFS = [
+    "DivExpression",
+    "DivParams",
+    "Filter",
+    "MinShould",
+    "MultExpression",
+    "NegExpression",
+    "Nested",
+    "NestedCondition",
+    "Prefetch",
+    "SumExpression",
+]
 INCLUDED_RECURSIVE_REFS = ["Prefetch"]
-EXCLUDED_RECURSIVE_REFS = ["Filter", "MinShould", "Nested", "NestedCondition"]
-NAME_RECURSIVE_REF_MAPPING = {"nested": "Nested", "prefetch": "Prefetch"}
+EXCLUDED_RECURSIVE_REFS = [
+    "DivExpression",
+    "DivParams",
+    "Filter",
+    "MinShould",
+    "MultExpression",
+    "NegExpression",
+    "Nested",
+    "NestedCondition",
+    "SumExpression",
+]
+NAME_RECURSIVE_REF_MAPPING = {
+    "nested": "Nested",
+    "prefetch": "Prefetch",
+    "mult": "NegExpression",
+    "sum": "NegExpression",
+    "neg": "NegExpression",
+    "left": "DivExpression",
+    "right": "DivExpression",
+    "div": "DivParams",
+}
