@@ -1,3 +1,4 @@
+import warnings
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.http import models
 from typing import Union, Any
@@ -77,19 +78,20 @@ def evaluate_expression(
         if right == 0.0:
             if expression.div.by_zero_default is not None:
                 return np.float32(expression.div.by_zero_default)
-            return np.float32(DEFAULT_BY_ZERO)
+            raise_non_finite_error(f"{left}/{right}")
 
-        return left / right
+        with np.errstate(invalid="ignore"):
+            return left / right
 
     elif isinstance(expression, models.SqrtExpression):
         value = evaluate_expression(
             expression.sqrt, point_id, scores, payload, has_vector, defaults
         )
 
-        sqrt_value = np.sqrt(value, dtype=np.float32)
-
-        if np.isfinite(sqrt_value):
-            return np.float32(sqrt_value)
+        with np.errstate(invalid="ignore"):
+            sqrt_value = np.sqrt(value, dtype=np.float32)
+            if np.isfinite(sqrt_value):
+                return np.float32(sqrt_value)
 
         raise_non_finite_error(f"√{value}")
 
@@ -101,10 +103,11 @@ def evaluate_expression(
             expression.pow.exponent, point_id, scores, payload, has_vector, defaults
         )
 
-        power = np.power(base, exponent, dtype=np.float32)
-
-        if np.isfinite(power):
-            return np.float32(power)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            power = np.power(base, exponent, dtype=np.float32)
+            if np.isfinite(power):
+                return np.float32(power)
 
         raise_non_finite_error(f"{base}^{exponent}")
 
@@ -119,18 +122,22 @@ def evaluate_expression(
             expression.log10, point_id, scores, payload, has_vector, defaults
         )
 
-        log_value = np.log10(value, dtype=np.float32)
-        if np.isfinite(log_value):
-            return log_value
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            log_value = np.log10(value, dtype=np.float32)
+            if np.isfinite(log_value):
+                return log_value
 
         raise_non_finite_error(f"log10({value})")
 
     elif isinstance(expression, models.LnExpression):
         value = evaluate_expression(expression.ln, point_id, scores, payload, has_vector, defaults)
 
-        log_value = np.log(value, dtype=np.float32)
-        if np.isfinite(log_value):
-            return log_value
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            ln_value = np.log(value, dtype=np.float32)
+            if np.isfinite(ln_value):
+                return ln_value
 
         raise_non_finite_error(f"ln({value})")
 
@@ -171,11 +178,13 @@ def evaluate_variable(
             value = value[0]
             try:
                 return np.float32(value)
-            except ValueError:
+            except (TypeError, ValueError):
                 # try to get from defaults
                 pass
 
         defined_default = defaults.get(var, None)
+
+        print(f"defined_default: {defined_default}")
         try:
             return np.float32(defined_default)
         except ValueError:
