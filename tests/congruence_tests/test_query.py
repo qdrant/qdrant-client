@@ -1,10 +1,8 @@
 from typing import Tuple, Callable, Any
 
-from grpc import RpcError
-from httpx import HTTPError
+from grpcio import RpcError
 import numpy as np
 import pytest
-import random
 
 from qdrant_client import QdrantClient
 from qdrant_client.client_base import QdrantBase
@@ -728,15 +726,15 @@ class TestSimpleSearcher:
                 query=formula,
                 limit=100,
             )
-        except ValueError as e:
+        except ValueError as e:  # local mode error
             if non_finite_message in str(e):
                 return non_finite_message
             raise e
-        except UnexpectedResponse as e:
+        except UnexpectedResponse as e:  # rest error
             if non_finite_message in str(e):
                 return non_finite_message
             raise e
-        except RpcError as e:
+        except RpcError as e:  # grpc error
             if non_finite_message in str(e):
                 return non_finite_message
             raise e
@@ -1531,7 +1529,7 @@ def test_random_sampling():
 
 
 def test_formula_query():
-    fixture_points = generate_fixtures(1)
+    fixture_points = generate_fixtures(100)
 
     searcher = TestSimpleSearcher()
 
