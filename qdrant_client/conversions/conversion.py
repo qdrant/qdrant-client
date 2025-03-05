@@ -290,17 +290,16 @@ class GrpcToRest:
         name = model.WhichOneof("variant")
         if name is None:
             raise ValueError(f"invalid MaxOptimizationThreads model: {model}")  # pragma: no cover
-        val = getattr(model, name)
 
         if name == "setting":
-            if val == grpc.MaxOptimizationThreads.Setting.Auto:
+            if model.setting == grpc.MaxOptimizationThreads.Setting.Auto:
                 return rest.MaxOptimizationThreadsSetting.AUTO
             else:
                 raise ValueError(
                     f"invalid MaxOptimizationThreads model: {model}"
                 )  # pragma: no cover
         elif name == "value":
-            return val
+            return model.value
         else:
             raise ValueError(f"invalid MaxOptimizationThreads model: {model}")  # pragma: no cover
 
@@ -313,7 +312,7 @@ class GrpcToRest:
             max_optimization_threads = cls.convert_max_optimization_threads(
                 model.max_optimization_threads
             )
-            if not isinstance(max_optimization_threads, int):
+            if max_optimization_threads == rest.MaxOptimizationThreadsSetting.AUTO:
                 max_optimization_threads = None
 
         return rest.OptimizersConfig(
