@@ -1,6 +1,6 @@
 from typing import Tuple, Callable, Any
 
-from grpcio import RpcError
+from grpc import RpcError
 import numpy as np
 import pytest
 
@@ -27,7 +27,7 @@ from tests.congruence_tests.test_common import (
     multi_vector_config,
 )
 from tests.fixtures.expressions import one_random_expression_please
-from tests.fixtures.filters import one_random_condition_please, one_random_filter_please
+from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import (
     generate_random_sparse_vector,
     generate_random_multivector,
@@ -1544,7 +1544,7 @@ def test_formula_query():
 
     for _ in range(50):
         formula = models.FormulaQuery(
-            formula=one_random_expression_please(max_depth=1), defaults=defaults
+            formula=one_random_expression_please(max_depth=5), defaults=defaults
         )
         try:
             compare_clients_results(
