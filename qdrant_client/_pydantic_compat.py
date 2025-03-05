@@ -53,3 +53,10 @@ def model_json_schema(model: Type[BaseModel], *args: Any, **kwargs: Any) -> dict
         return model.model_json_schema(*args, **kwargs)
     else:
         return json.loads(model.schema_json(*args, **kwargs))
+
+
+def model_config(model: Type[BaseModel]) -> dict[str, Any]:
+    if PYDANTIC_V2:
+        return model.model_config
+    else:
+        return dict(vars(model.__config__))
