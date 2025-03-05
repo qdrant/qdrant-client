@@ -8,6 +8,7 @@ from types import ModuleType
 from pydantic import BaseModel
 
 from qdrant_client import models
+from qdrant_client._pydantic_compat import model_config
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 
 
@@ -45,7 +46,8 @@ if __name__ == "__main__":
         if not issubclass(model, BaseModel) or model == BaseModel:
             continue
 
-        if "extra" not in model.model_config or model.model_config["extra"] != "forbid":  # type: ignore
+        config = model_config(model)
+        if "extra" not in config or config["extra"] != "forbid":  # type: ignore
             continue
 
         parser.parse_model(model)

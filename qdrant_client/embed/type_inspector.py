@@ -2,6 +2,7 @@ from typing import Union, Optional, Iterable, get_args
 
 from pydantic import BaseModel
 
+from qdrant_client._pydantic_compat import model_fields_set
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 
 from qdrant_client.embed.schema_parser import ModelSchemaParser
@@ -68,7 +69,7 @@ class Inspector:
     ) -> bool:
         def inspect_recursive(member: BaseModel) -> bool:
             recursive_paths = []
-            for field_name in member.model_fields_set:
+            for field_name in model_fields_set(member):
                 if field_name in self.parser.name_recursive_ref_mapping:
                     mapped_model_name = self.parser.name_recursive_ref_mapping[field_name]
                     recursive_paths.extend(self.parser.path_cache[mapped_model_name])
