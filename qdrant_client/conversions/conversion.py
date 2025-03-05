@@ -2023,28 +2023,28 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_strict_mode_multivector(cls, model: grpc.StrictModeMultivector) -> rest.StrictModeMultivector:
-        return rest.StrictModeMultivector(
+    def convert_strict_mode_multivector(cls, model: grpc.StrictModeMultivector) -> rest.StrictModeMultivectorOutput:
+        return rest.StrictModeMultivectorOutput(
             max_vectors=model.max_vectors if model.HasField("max_vectors") else None
         )
 
     @classmethod
-    def convert_strict_mode_multivector_config(cls, model: grpc.StrictModeMultivectorConfig) -> rest.StrictModeMultivectorConfig:
+    def convert_strict_mode_multivector_config(cls, model: grpc.StrictModeMultivectorConfig) -> rest.StrictModeMultivectorConfigOutput:
         return dict((key, cls.convert_strict_mode_multivector(val)) for key, val in model.multivector_config.items())
 
     @classmethod
-    def convert_strict_mode_sparse(cls, model: grpc.StrictModeSparse) -> rest.StrictModeSparse:
-        return rest.StrictModeSparse(
+    def convert_strict_mode_sparse(cls, model: grpc.StrictModeSparse) -> rest.StrictModeSparseOutput:
+        return rest.StrictModeSparseOutput(
             max_length=model.max_length if model.HasField("max_length") else None
         )
 
     @classmethod
-    def convert_strict_mode_sparse_config(cls, model: grpc.StrictModeSparseConfig) -> rest.StrictModeSparseConfig:
+    def convert_strict_mode_sparse_config(cls, model: grpc.StrictModeSparseConfig) -> rest.StrictModeSparseConfigOutput:
         return dict((key, cls.convert_strict_mode_sparse(val)) for key, val in model.sparse_config.items())
 
     @classmethod
-    def convert_strict_mode_config(cls, model: grpc.StrictModeConfig) -> rest.StrictModeConfig:
-        return rest.StrictModeConfig(
+    def convert_strict_mode_config(cls, model: grpc.StrictModeConfig) -> rest.StrictModeConfigOutput:
+        return rest.StrictModeConfigOutput(
             enabled=model.enabled if model.HasField("enabled") else None,
             max_query_limit=model.max_query_limit if model.HasField("max_query_limit") else None,
             max_timeout=model.max_timeout if model.HasField("max_timeout") else None,
