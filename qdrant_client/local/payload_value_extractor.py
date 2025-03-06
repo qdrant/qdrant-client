@@ -8,7 +8,7 @@ from qdrant_client.local.json_path_parser import (
 )
 
 
-def value_by_key(payload: dict, key: str, flat: bool = True) -> Optional[list[Any]]:
+def value_by_key(payload: dict[str, Any], key: str, flat: bool = True) -> Optional[list[Any]]:
     """
     Get value from payload by key.
     Args:

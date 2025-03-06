@@ -41,18 +41,16 @@ def evaluate_expression(
 
             factors.append(factor)
 
-        result = np.prod(factors, dtype=np.float32)
-        return np.float32(result)
+        return np.prod(factors, dtype=np.float32)
 
     elif isinstance(expression, models.SumExpression):
-        result = np.sum(
+        return np.sum(
             [
                 evaluate_expression(expr, point_id, scores, payload, has_vector, defaults)
                 for expr in expression.sum
             ],
             dtype=np.float32,
         )
-        return np.float32(result)
 
     elif isinstance(expression, models.NegExpression):
         return -evaluate_expression(
@@ -157,17 +155,20 @@ def evaluate_expression(
         to = expression.geo_distance.to
 
         # Get value from payload
-        value = value_by_key(payload, to)
-        if value is not None and len(value) > 0:
-            value = value[0]
+        geo_value = value_by_key(payload, to)
+        if geo_value is not None and len(geo_value) > 0:
+            geo_value = geo_value[0]
         else:
-            value = defaults.get(to, None)
-            if value is None:
+            geo_value = defaults.get(to, None)
+            if geo_value is None:
                 raise ValueError(f"Missing value for {to}")
 
-        destination = construct(models.GeoPoint, **value)
-
-        return np.float32(geo_distance(origin.lon, origin.lat, destination.lon, destination.lat))
+        if isinstance(geo_value, dict):
+            # let this fail if it isn not a valid geo point
+            destination = construct(models.GeoPoint, **geo_value)
+            return np.float32(
+                geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
+            )
 
     raise ValueError(f"Unsupported expression type: {type(expression)}")
 
@@ -255,7 +256,7 @@ def parse_variable(var: str) -> Union[models.StrictStr, int]:
     return idx
 
 
-def raise_non_finite_error(expression: str):
+def raise_non_finite_error(expression: str) -> None:
     raise ValueError(f"The expression {expression} produced a non-finite number")
 
 
@@ -263,7 +264,7 @@ def is_number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def test_parsing_variable():
+def test_parsing_variable() -> None:
     assert parse_variable("$score") == 0
     assert parse_variable("$score[0]") == 0
     assert parse_variable("$score[1]") == 1

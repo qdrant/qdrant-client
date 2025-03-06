@@ -1,4 +1,4 @@
-from typing import Tuple, Callable, Any
+from typing import Tuple, Callable, Any, Union
 
 from grpc import RpcError
 import numpy as np
@@ -715,7 +715,7 @@ class TestSimpleSearcher:
 
     def score_boosting(
         self, client: QdrantBase, formula: models.FormulaQuery
-    ) -> models.QueryResponse | str:
+    ) -> Union[models.QueryResponse, str]:
         prefetch = models.Prefetch(query=self.dense_vector_query_text, limit=100, using="text")
 
         non_finite_message = "produced a non-finite number"
