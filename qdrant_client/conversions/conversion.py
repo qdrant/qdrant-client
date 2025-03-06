@@ -3460,7 +3460,7 @@ class RestToGrpc:
             return grpc.Expression(constant=float(model))
         if isinstance(model, str):
             return grpc.Expression(variable=model)
-        if isinstance(model, rest.Condition):
+        if isinstance(model, get_args_subscribed(rest.Condition)):
             return grpc.Expression(condition=cls.convert_condition(model))
         if isinstance(model, rest.NegExpression):
             return grpc.Expression(neg=cls.convert_expression(model.neg))
