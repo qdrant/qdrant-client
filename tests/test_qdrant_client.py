@@ -543,6 +543,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         COLLECTION_NAME, field_name="rand_number", field_schema=PayloadSchemaType.FLOAT
     )
     pprint(to_dict(index_create_result))
+    # Again, with string field
+    index_create_result = client.create_payload_index(
+        COLLECTION_NAME, field_name="rand_number", field_schema="float"
+    )
+    pprint(to_dict(index_create_result))
 
     # Let's now check details about our new collection
     test_collection = client.get_collection(COLLECTION_NAME_ALIAS)
