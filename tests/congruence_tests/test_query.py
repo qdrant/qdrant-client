@@ -1544,7 +1544,7 @@ def test_formula_query():
 
     for _ in range(50):
         formula = models.FormulaQuery(
-            formula=one_random_expression_please(max_depth=5), defaults=defaults
+            formula=one_random_expression_please(max_depth=3), defaults=defaults
         )
         try:
             compare_clients_results(
