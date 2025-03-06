@@ -15,3 +15,4 @@ local_cache/*/*
 .python-version
 docs/source/examples/local_cache/*
 docs/source/examples/path/to/db/*
+embed/_inspection_cache.py.diff

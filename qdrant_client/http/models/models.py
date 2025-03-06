@@ -27,6 +27,10 @@ class AbortTransferOperation(BaseModel, extra="forbid"):
     abort_transfer: "AbortShardTransfer" = Field(..., description="")
 
 
+class AbsExpression(BaseModel, extra="forbid"):
+    abs: "Expression" = Field(..., description="")
+
+
 class AliasDescription(BaseModel):
     alias_name: str = Field(..., description="")
     collection_name: str = Field(..., description="")
@@ -632,6 +636,16 @@ class Distance(str, Enum):
     MANHATTAN = "Manhattan"
 
 
+class DivExpression(BaseModel, extra="forbid"):
+    div: "DivParams" = Field(..., description="")
+
+
+class DivParams(BaseModel, extra="forbid"):
+    left: "Expression" = Field(..., description="")
+    right: "Expression" = Field(..., description="")
+    by_zero_default: Optional[float] = Field(default=None, description="")
+
+
 class Document(BaseModel, extra="forbid"):
     """
     WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.
@@ -668,6 +682,10 @@ class ErrorResponseStatus(BaseModel):
     error: Optional[str] = Field(default=None, description="Description of the occurred error.")
 
 
+class ExpExpression(BaseModel, extra="forbid"):
+    exp: "Expression" = Field(..., description="")
+
+
 class FacetRequest(BaseModel, extra="forbid"):
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
     key: str = Field(..., description="Payload key to use for faceting.")
@@ -699,13 +717,21 @@ class FieldCondition(BaseModel, extra="forbid"):
     match: Optional["Match"] = Field(default=None, description="Check if point has field with a given value")
     range: Optional["RangeInterface"] = Field(default=None, description="Check if points value lies in a given range")
     geo_bounding_box: Optional["GeoBoundingBox"] = Field(
-        default=None, description="Check if points geo location lies in a given area"
+        default=None, description="Check if points geolocation lies in a given area"
     )
     geo_radius: Optional["GeoRadius"] = Field(default=None, description="Check if geo point is within a given radius")
     geo_polygon: Optional["GeoPolygon"] = Field(
         default=None, description="Check if geo point is within a given polygon"
     )
     values_count: Optional["ValuesCount"] = Field(default=None, description="Check number of values of the field")
+    is_empty: Optional[bool] = Field(
+        default=None,
+        description="Check that the field is empty, alternative syntax for `is_empty: \&quot;field_name\&quot;`",
+    )
+    is_null: Optional[bool] = Field(
+        default=None,
+        description="Check that the field is null, alternative syntax for `is_null: \&quot;field_name\&quot;`",
+    )
 
 
 class Filter(BaseModel, extra="forbid"):
@@ -739,6 +765,11 @@ class FloatIndexType(str, Enum):
     FLOAT = "float"
 
 
+class FormulaQuery(BaseModel, extra="forbid"):
+    formula: "Expression" = Field(..., description="")
+    defaults: Optional[Dict[str, Any]] = Field(default={}, description="")
+
+
 class Fusion(str, Enum):
     """
     Fusion algorithm allows to combine results of multiple prefetches.  Available fusion algorithms:  * `rrf` - Reciprocal Rank Fusion * `dbsf` - Distribution-Based Score Fusion
@@ -768,6 +799,15 @@ class GeoBoundingBox(BaseModel, extra="forbid"):
         ...,
         description="Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
     )
+
+
+class GeoDistance(BaseModel, extra="forbid"):
+    geo_distance: "GeoDistanceParams" = Field(..., description="")
+
+
+class GeoDistanceParams(BaseModel, extra="forbid"):
+    origin: "GeoPoint" = Field(..., description="")
+    to: str = Field(..., description="Payload field with the destination geo point")
 
 
 class GeoIndexParams(BaseModel, extra="forbid"):
@@ -1224,6 +1264,10 @@ class KeywordIndexType(str, Enum):
     KEYWORD = "keyword"
 
 
+class LnExpression(BaseModel, extra="forbid"):
+    ln: "Expression" = Field(..., description="")
+
+
 class LocalShardInfo(BaseModel):
     shard_id: int = Field(..., description="Local shard id")
     shard_key: Optional["ShardKey"] = Field(default=None, description="User-defined sharding key")
@@ -1243,6 +1287,10 @@ class LocalShardTelemetry(BaseModel):
 class LocksOption(BaseModel, extra="forbid"):
     error_message: Optional[str] = Field(default=None, description="")
     write: bool = Field(..., description="")
+
+
+class Log10Expression(BaseModel, extra="forbid"):
+    log10: "Expression" = Field(..., description="")
 
 
 class LookupLocation(BaseModel, extra="forbid"):
@@ -1349,6 +1397,10 @@ class MoveShardOperation(BaseModel, extra="forbid"):
     move_shard: "MoveShard" = Field(..., description="")
 
 
+class MultExpression(BaseModel, extra="forbid"):
+    mult: List["Expression"] = Field(..., description="")
+
+
 class MultiVectorComparator(str, Enum):
     MAX_SIM = "max_sim"
 
@@ -1377,6 +1429,10 @@ class NamedVector(BaseModel, extra="forbid"):
 
 class NearestQuery(BaseModel, extra="forbid"):
     nearest: "VectorInput" = Field(..., description="")
+
+
+class NegExpression(BaseModel, extra="forbid"):
+    neg: "Expression" = Field(..., description="")
 
 
 class Nested(BaseModel, extra="forbid"):
@@ -1639,6 +1695,15 @@ class PointsBatch(BaseModel, extra="forbid"):
 class PointsList(BaseModel, extra="forbid"):
     points: List["PointStruct"] = Field(..., description="")
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+
+
+class PowExpression(BaseModel, extra="forbid"):
+    pow: "PowParams" = Field(..., description="")
+
+
+class PowParams(BaseModel, extra="forbid"):
+    base: "Expression" = Field(..., description="")
+    exponent: "Expression" = Field(..., description="")
 
 
 class Prefetch(BaseModel, extra="forbid"):
@@ -2632,6 +2697,10 @@ class SparseVectorStorageTypeOneOf1(str, Enum):
     MMAP = "mmap"
 
 
+class SqrtExpression(BaseModel, extra="forbid"):
+    sqrt: "Expression" = Field(..., description="")
+
+
 class StartResharding(BaseModel, extra="forbid"):
     direction: "ReshardingDirection" = Field(..., description="")
     peer_id: Optional[int] = Field(default=None, description="")
@@ -2703,6 +2772,10 @@ class StrictModeMultivector(BaseModel, extra="forbid"):
 
 class StrictModeSparse(BaseModel, extra="forbid"):
     max_length: Optional[int] = Field(default=None, description="Max length of sparse vector")
+
+
+class SumExpression(BaseModel, extra="forbid"):
+    sum: List["Expression"] = Field(..., description="")
 
 
 class TelemetryData(BaseModel):
@@ -3161,6 +3234,7 @@ Query = Union[
     ContextQuery,
     OrderByQuery,
     FusionQuery,
+    FormulaQuery,
     SampleQuery,
 ]
 RangeInterface = Union[
@@ -3269,6 +3343,22 @@ BatchVectorStruct = Union[
     List[Document],
     List[Image],
     List[InferenceObject],
+]
+Expression = Union[
+    StrictFloat,
+    StrictStr,
+    Condition,
+    MultExpression,
+    SumExpression,
+    NegExpression,
+    AbsExpression,
+    DivExpression,
+    SqrtExpression,
+    PowExpression,
+    ExpExpression,
+    Log10Expression,
+    LnExpression,
+    GeoDistance,
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,

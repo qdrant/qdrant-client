@@ -121,7 +121,7 @@ class ModelSchemaParser:
                     schemes[k] = self._replace_refs(schema=v, parent=k, seen_refs=copy(seen_refs))
                 else:
                     schemes[k] = self._replace_refs(
-                        schema=v, parent=parent, seen_refs=copy(seen_refs)
+                        schema=v, parent=k, seen_refs=copy(seen_refs)
                     )
             return schemes
         elif isinstance(schema, list):
