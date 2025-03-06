@@ -175,13 +175,13 @@ class CollectionConfig(BaseModel):
     )
 
 
-class CollectionConfigInternal(BaseModel):
+class CollectionConfigTelemetry(BaseModel):
     params: "CollectionParams" = Field(..., description="")
     hnsw_config: "HnswConfig" = Field(..., description="")
     optimizer_config: "OptimizersConfig" = Field(..., description="")
     wal_config: "WalConfig" = Field(..., description="")
     quantization_config: Optional["QuantizationConfig"] = Field(default=None, description="")
-    strict_mode_config: Optional["StrictModeConfig"] = Field(default=None, description="")
+    strict_mode_config: Optional["StrictModeConfigOutput"] = Field(default=None, description="")
     uuid: Optional[UUID] = Field(default=None, description="")
 
 
@@ -282,7 +282,7 @@ class CollectionStatus(str, Enum):
 class CollectionTelemetry(BaseModel):
     id: str = Field(..., description="")
     init_time_ms: int = Field(..., description="")
-    config: "CollectionConfigInternal" = Field(..., description="")
+    config: "CollectionConfigTelemetry" = Field(..., description="")
     shards: List["ReplicaSetTelemetry"] = Field(..., description="")
     transfers: List["ShardTransferInfo"] = Field(..., description="")
     resharding: List["ReshardingInfo"] = Field(..., description="")
