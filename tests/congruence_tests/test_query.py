@@ -1,5 +1,6 @@
-from typing import Tuple, Callable, Any
+from typing import Tuple, Callable, Any, Union
 
+from grpc import RpcError
 import numpy as np
 import pytest
 
@@ -25,6 +26,7 @@ from tests.congruence_tests.test_common import (
     generate_multivector_fixtures,
     multi_vector_config,
 )
+from tests.fixtures.expressions import one_random_expression_please
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import (
     generate_random_sparse_vector,
@@ -707,6 +709,37 @@ class TestSimpleSearcher:
         )
 
         # sort to be able to compare
+        result.points.sort(key=lambda point: point.id)
+
+        return result
+
+    def score_boosting(
+        self, client: QdrantBase, formula: models.FormulaQuery
+    ) -> Union[models.QueryResponse, str]:
+        prefetch = models.Prefetch(query=self.dense_vector_query_text, limit=100, using="text")
+
+        non_finite_message = "produced a non-finite number"
+        try:
+            result = client.query_points(
+                collection_name=COLLECTION_NAME,
+                prefetch=prefetch,
+                query=formula,
+                limit=100,
+            )
+        except ValueError as e:  # local mode error
+            if non_finite_message in str(e):
+                return non_finite_message
+            raise e
+        except UnexpectedResponse as e:  # rest error
+            if non_finite_message in str(e):
+                return non_finite_message
+            raise e
+        except RpcError as e:  # grpc error
+            if non_finite_message in str(e):
+                return non_finite_message
+            raise e
+
+        # sort to be able to compare equally-scored points
         result.points.sort(key=lambda point: point.id)
 
         return result
@@ -1493,3 +1526,34 @@ def test_random_sampling():
     local_client, http_client, grpc_client = init_clients(fixture_points)
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.random_query)
+
+
+def test_formula_query():
+    fixture_points = generate_fixtures(100)
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    defaults = {
+        "rand_digit": 5,
+        "maybe_null": None,
+        "mixed_type": 0.3,
+        "city.geo": {"lon": 0.4, "lat": 0.5},
+    }
+
+    for _ in range(50):
+        formula = models.FormulaQuery(
+            formula=one_random_expression_please(max_depth=3), defaults=defaults
+        )
+        try:
+            compare_clients_results(
+                local_client,
+                http_client,
+                grpc_client,
+                searcher.score_boosting,
+                formula=formula,
+            )
+        except AssertionError as e:
+            print(f"\nFailed with formula {formula}")
+            raise e
