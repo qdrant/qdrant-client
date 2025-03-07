@@ -6,7 +6,7 @@ cd "$(dirname "$0")/../"
 # Keep current version of file to check
 ROOT_DIR=$(pwd)
 CLIENT_DIR=$ROOT_DIR/qdrant_client
-cd $CLIENT_DIR
+cd "$CLIENT_DIR"
 
 inspection_cache_file=embed/_inspection_cache.py
 
@@ -15,9 +15,9 @@ if [ ! -f $inspection_cache_file ]; then
     exit 1
 fi
 
-cp $inspection_cache_file{,.diff}
+cp $inspection_cache_file $inspection_cache_file.diff
 
-$ROOT_DIR/tools/populate_inspection_cache.sh
+"$ROOT_DIR"/tools/populate_inspection_cache.sh
 
 # Ensure generated files are the same as files in this repository
 
