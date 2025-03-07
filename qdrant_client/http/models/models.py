@@ -632,6 +632,16 @@ class Distance(str, Enum):
     MANHATTAN = "Manhattan"
 
 
+class DivExpression(BaseModel, extra="forbid"):
+    div: "DivParams" = Field(..., description="")
+
+
+class DivParams(BaseModel, extra="forbid"):
+    left: "Expression" = Field(..., description="")
+    right: "Expression" = Field(..., description="")
+    by_zero_default: Optional[float] = Field(default=None, description="")
+
+
 class Document(BaseModel, extra="forbid"):
     """
     WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.
@@ -739,6 +749,11 @@ class FloatIndexType(str, Enum):
     FLOAT = "float"
 
 
+class FormulaQuery(BaseModel, extra="forbid"):
+    formula: "Expression" = Field(..., description="")
+    defaults: Dict[str, Any] = Field(..., description="")
+
+
 class Fusion(str, Enum):
     """
     Fusion algorithm allows to combine results of multiple prefetches.  Available fusion algorithms:  * `rrf` - Reciprocal Rank Fusion * `dbsf` - Distribution-Based Score Fusion
@@ -768,6 +783,15 @@ class GeoBoundingBox(BaseModel, extra="forbid"):
         ...,
         description="Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
     )
+
+
+class GeoDistance(BaseModel, extra="forbid"):
+    geo_distance: "GeoDistanceParams" = Field(..., description="")
+
+
+class GeoDistanceParams(BaseModel, extra="forbid"):
+    origin: "GeoPoint" = Field(..., description="")
+    to: str = Field(..., description="Payload field with the destination geo point")
 
 
 class GeoIndexParams(BaseModel, extra="forbid"):
@@ -1349,6 +1373,10 @@ class MoveShardOperation(BaseModel, extra="forbid"):
     move_shard: "MoveShard" = Field(..., description="")
 
 
+class MultExpression(BaseModel, extra="forbid"):
+    mult: List["Expression"] = Field(..., description="")
+
+
 class MultiVectorComparator(str, Enum):
     MAX_SIM = "max_sim"
 
@@ -1377,6 +1405,10 @@ class NamedVector(BaseModel, extra="forbid"):
 
 class NearestQuery(BaseModel, extra="forbid"):
     nearest: "VectorInput" = Field(..., description="")
+
+
+class NegExpression(BaseModel, extra="forbid"):
+    neg: "Expression" = Field(..., description="")
 
 
 class Nested(BaseModel, extra="forbid"):
@@ -2705,6 +2737,10 @@ class StrictModeSparse(BaseModel, extra="forbid"):
     max_length: Optional[int] = Field(default=None, description="Max length of sparse vector")
 
 
+class SumExpression(BaseModel, extra="forbid"):
+    sum: List["Expression"] = Field(..., description="")
+
+
 class TelemetryData(BaseModel):
     id: str = Field(..., description="")
     app: "AppBuildTelemetry" = Field(..., description="")
@@ -3161,6 +3197,7 @@ Query = Union[
     ContextQuery,
     OrderByQuery,
     FusionQuery,
+    FormulaQuery,
     SampleQuery,
 ]
 RangeInterface = Union[
@@ -3269,6 +3306,16 @@ BatchVectorStruct = Union[
     List[Document],
     List[Image],
     List[InferenceObject],
+]
+Expression = Union[
+    StrictFloat,
+    StrictStr,
+    Condition,
+    MultExpression,
+    SumExpression,
+    NegExpression,
+    DivExpression,
+    GeoDistance,
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,
