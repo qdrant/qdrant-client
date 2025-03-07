@@ -1,5 +1,6 @@
 import warnings
 from qdrant_client._pydantic_compat import construct
+from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.http import models
 from typing import Union, Any
 import numpy as np
@@ -25,8 +26,8 @@ def evaluate_expression(
     elif isinstance(expression, str):  # Variable
         return evaluate_variable(expression, point_id, scores, payload, has_vector, defaults)
 
-    elif isinstance(expression, models.Condition):
-        if check_condition(expression, payload, point_id, has_vector):
+    elif isinstance(expression, get_args_subscribed(models.Condition)):
+        if check_condition(expression, payload, point_id, has_vector):  # type: ignore
             return np.float32(1.0)
         return np.float32(0.0)
 

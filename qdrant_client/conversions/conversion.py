@@ -3461,7 +3461,7 @@ class RestToGrpc:
         if isinstance(model, str):
             return grpc.Expression(variable=model)
         if isinstance(model, get_args_subscribed(rest.Condition)):
-            return grpc.Expression(condition=cls.convert_condition(model))
+            return grpc.Expression(condition=cls.convert_condition(model))  # type: ignore
         if isinstance(model, rest.NegExpression):
             return grpc.Expression(neg=cls.convert_expression(model.neg))
         if isinstance(model, rest.SumExpression):
