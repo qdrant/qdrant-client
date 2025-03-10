@@ -76,5 +76,5 @@ jobs:
       - name: Run fastembed tests without fastembed
         run: |
           pip3 uninstall fastembed -y
-          time pytest tests/test_fastembed.py --durations=0
+          time pytest tests/test_fastembed.py -n auto --durations=0
         shell: bash
