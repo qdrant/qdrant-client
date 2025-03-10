@@ -36,7 +36,8 @@ def upload_batch_grpc(
         for idx, vector, payload in zip(ids_batch, vectors_batch, payload_batch)
     ]
 
-    for attempt in range(max_retries):
+    attempt = 0
+    while attempt < max_retries:
         try:
             points_client.Upsert(
                 grpc.UpsertPoints(
@@ -57,8 +58,8 @@ def upload_batch_grpc(
                 stacklevel=8,
             )
             sleep(ex.retry_after_s)
-            if attempt == max_retries - 1:
-                raise ex
+            attempt -= 1
+
         except Exception as e:
             show_warning(
                 message=f"Batch upload failed {attempt + 1} times. Retrying...",
@@ -68,6 +69,7 @@ def upload_batch_grpc(
 
             if attempt == max_retries - 1:
                 raise e
+        attempt += 1
     return True
 
 
