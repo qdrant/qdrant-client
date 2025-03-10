@@ -4,6 +4,8 @@ from typing import Any, Awaitable, Callable, Optional, Union
 
 import grpc
 
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse, ResourceQuotaExceeded
+
 
 # type: ignore # noqa: F401
 # Source <https://github.com/grpc/grpc/blob/master/examples/python/interceptors/headers/generic_client_interceptor.py>
@@ -130,6 +132,23 @@ def header_adder_interceptor(
     new_metadata: list[tuple[str, str]],
     auth_token_provider: Optional[Callable[[], str]] = None,
 ) -> _GenericClientInterceptor:
+    def process_response(response: Any) -> Any:
+        if response.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
+            retry_after = None
+            for item in response.trailing_metadata():
+                if item.key == "retry-after":
+                    try:
+                        retry_after = int(item.value)
+                    except Exception:
+                        retry_after = None
+                    break
+            reason_phrase = response.details() if response.details() else ""
+            if retry_after:
+                raise ResourceExhaustedResponse(message=reason_phrase, retry_after_s=retry_after)
+            else:
+                raise ResourceQuotaExceeded(message=reason_phrase)
+        return response
+
     def intercept_call(
         client_call_details: _ClientCallDetails,
         request_iterator: Any,
@@ -160,7 +179,7 @@ def header_adder_interceptor(
             metadata,
             client_call_details.credentials,
         )
-        return client_call_details, request_iterator, None
+        return client_call_details, request_iterator, process_response
 
     return create_generic_client_interceptor(intercept_call)
 
