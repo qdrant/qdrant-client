@@ -134,12 +134,16 @@ def header_adder_interceptor(
 ) -> _GenericClientInterceptor:
     def process_response(response: Any) -> Any:
         if response.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
-            retry_after = next(
-                (item.value for item in response.trailing_metadata() if item.key == "retry-after"),
-                None,
-            )
+            retry_after = None
+            for item in response.trailing_metadata():
+                if item.key == "retry-after":
+                    try:
+                        retry_after = int(item.value)
+                    except Exception:
+                        retry_after = None
+                    break
             if retry_after:
-                reason_phrase = response.details() if response.details() else None
+                reason_phrase = response.details() if response.details() else ""
                 raise ResourceExhaustedResponse(message=reason_phrase, retry_after_s=retry_after)
         return response
 

@@ -113,10 +113,10 @@ class ApiClient:
                     message = (
                         response.json()["status"]["error"]
                         if response.json()["status"] and response.json()["status"]["error"]
-                        else None
+                        else ""
                     )
                 except Exception:
-                    message = None
+                    message = ""
                 raise ResourceExhaustedResponse(message, retry_after_s)
 
         if response.status_code in [200, 201, 202]:
@@ -191,6 +191,20 @@ class AsyncApiClient:
 
     async def send(self, request: Request, type_: Type[T]) -> T:
         response = await self.middleware(request, self.send_inner)
+
+        if response.status_code == 429:
+            retry_after_s = response.headers.get("Retry-After", None)
+            if retry_after_s:
+                try:
+                    message = (
+                        response.json()["status"]["error"]
+                        if response.json()["status"] and response.json()["status"]["error"]
+                        else ""
+                    )
+                except Exception:
+                    message = ""
+                raise ResourceExhaustedResponse(message, retry_after_s)
+
         if response.status_code in [200, 201, 202]:
             try:
                 return parse_as_type(response.json(), type_)
