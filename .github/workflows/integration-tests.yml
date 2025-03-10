@@ -2,8 +2,8 @@ name: Integration tests
 
 on:
   push:
-    branches: [ master, dev ]
-  pull_request:
+    branches: [ master, dev, speedup-ci ]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -69,5 +69,5 @@ jobs:
       - name: Run fastembed tests without fastembed
         run: |
           pip3 uninstall fastembed -y
-          pytest tests/test_fastembed.py
+          time pytest tests/test_fastembed.py --durations=0
         shell: bash
