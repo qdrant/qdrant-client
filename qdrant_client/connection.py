@@ -4,7 +4,7 @@ from typing import Any, Awaitable, Callable, Optional, Union
 
 import grpc
 
-from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse, ResourceQuotaExceeded
 
 
 # type: ignore # noqa: F401
@@ -142,9 +142,11 @@ def header_adder_interceptor(
                     except Exception:
                         retry_after = None
                     break
+            reason_phrase = response.details() if response.details() else ""
             if retry_after:
-                reason_phrase = response.details() if response.details() else ""
                 raise ResourceExhaustedResponse(message=reason_phrase, retry_after_s=retry_after)
+            else:
+                raise ResourceQuotaExceeded(message=reason_phrase)
         return response
 
     def intercept_call(
