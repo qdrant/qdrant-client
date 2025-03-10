@@ -4,12 +4,21 @@ class QdrantException(Exception):
 
 class ResourceExhaustedResponse(QdrantException):
     def __init__(self, message: str, retry_after_s: int) -> None:
-        self.message = message
+        self.message = message if message else "Resource Exhausted Response"
         try:
-            self.retry_after_s = int(retry_after_s) if retry_after_s else 1
+            self.retry_after_s = int(retry_after_s)
         except Exception:
-            self.retry_after_s = 1
+            raise QdrantException(
+                f"Retry-After header value is not a valid integer: {retry_after_s}"
+            )
 
     def __str__(self) -> str:
-        reason_phrase_str = f"{self.message}" if self.message else "Resource Exhausted Response"
-        return f"{reason_phrase_str}".strip()
+        return self.message.strip()
+
+
+class ResourceQuotaExceeded(QdrantException):
+    def __init__(self, message: str) -> None:
+        self.message = message if message else "Quota Exceeded Response"
+
+    def __str__(self) -> str:
+        return self.message.strip()
