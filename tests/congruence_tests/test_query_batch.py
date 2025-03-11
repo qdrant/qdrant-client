@@ -101,80 +101,126 @@ class TestQueryBatchSearcher:
                 )
             )
 
-    def sparse_query_batch_text(self, client: QdrantBase) -> models.QueryResponse:
+    def sparse_query_batch_text(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_batch_points(
-            collection_name=COLLECTION_NAME, requests=self.sparse_vector_query_batch_text
+            collection_name=collection_name, requests=self.sparse_vector_query_batch_text
         )
 
-    def multivec_query_batch_text(self, client: QdrantBase) -> models.QueryResponse:
+    def multivec_query_batch_text(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_batch_points(
-            collection_name=COLLECTION_NAME, requests=self.multivector_query_batch_text
+            collection_name=collection_name, requests=self.multivector_query_batch_text
         )
 
-    def dense_query_batch_text(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_batch_text(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_batch_points(
-            collection_name=COLLECTION_NAME, requests=self.dense_vector_query_batch_text
+            collection_name=collection_name, requests=self.dense_vector_query_batch_text
         )
 
-    def dense_query_batch_image(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_batch_image(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_batch_points(
-            collection_name=COLLECTION_NAME, requests=self.dense_vector_query_batch_image
+            collection_name=collection_name, requests=self.dense_vector_query_batch_image
         )
 
-    def dense_query_batch_code(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_batch_code(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_batch_points(
-            collection_name=COLLECTION_NAME, requests=self.dense_vector_query_batch_code
+            collection_name=collection_name, requests=self.dense_vector_query_batch_code
         )
 
     @staticmethod
-    def dense_query_batch_empty(client: QdrantBase) -> models.QueryResponse:
-        return client.query_batch_points(collection_name=COLLECTION_NAME, requests=[])
+    def dense_query_batch_empty(
+        client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
+        return client.query_batch_points(collection_name=collection_name, requests=[])
 
 
 # ---- TESTS  ---- #
 
 
-def test_sparse_query_batch():
+def test_sparse_query_batch(collection_name: str):
     fixture_points = generate_sparse_fixtures()
 
     searcher = TestQueryBatchSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+    init_client(
+        local_client, fixture_points, collection_name, sparse_vectors_config=sparse_vectors_config
+    )
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+    init_client(
+        remote_client, fixture_points, collection_name, sparse_vectors_config=sparse_vectors_config
+    )
 
-    compare_client_results(local_client, remote_client, searcher.sparse_query_batch_text)
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.sparse_query_batch_text,
+        collection_name=collection_name,
+    )
 
 
-def test_multivec_query_batch():
+def test_multivec_query_batch(collection_name: str):
     fixture_points = generate_multivector_fixtures()
 
     searcher = TestQueryBatchSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+    init_client(local_client, fixture_points, collection_name, vectors_config=multi_vector_config)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
+    init_client(remote_client, fixture_points, collection_name, vectors_config=multi_vector_config)
 
-    compare_client_results(local_client, remote_client, searcher.multivec_query_batch_text)
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.multivec_query_batch_text,
+        collection_name=collection_name,
+    )
 
 
 @pytest.mark.parametrize("prefer_grpc", (False, True))
-def test_dense_query_batch(prefer_grpc):
+def test_dense_query_batch(prefer_grpc: bool, collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestQueryBatchSearcher()
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
 
     remote_client = init_remote(prefer_grpc=prefer_grpc)
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, collection_name)
 
-    compare_client_results(local_client, remote_client, searcher.dense_query_batch_text)
-    compare_client_results(local_client, remote_client, searcher.dense_query_batch_image)
-    compare_client_results(local_client, remote_client, searcher.dense_query_batch_code)
-    compare_client_results(local_client, remote_client, searcher.dense_query_batch_empty)
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_query_batch_text,
+        collection_name=collection_name,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_query_batch_image,
+        collection_name=collection_name,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_query_batch_code,
+        collection_name=collection_name,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.dense_query_batch_empty,
+        collection_name=collection_name,
+    )
