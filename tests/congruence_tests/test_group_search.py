@@ -1,4 +1,3 @@
-import uuid
 from pathlib import Path
 from typing import Sequence, Union
 
@@ -16,7 +15,6 @@ from tests.congruence_tests.test_common import (
     image_vector_size,
     init_client,
     init_local,
-    init_remote,
     text_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
@@ -251,13 +249,14 @@ def group_by_keys():
     return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
 
 
-def test_group_search_types(local_client: QdrantBase, remote_client: QdrantBase):
+def test_group_search_types(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     fixture_points = generate_fixtures(vectors_sizes=50)
     vectors_config = models.VectorParams(size=50, distance=models.Distance.EUCLID)
 
     searcher = TestGroupSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(
         local_client,
         fixture_points,
@@ -318,7 +317,12 @@ def test_group_search_types(local_client: QdrantBase, remote_client: QdrantBase)
     delete_fixture_collection(remote_client, collection_name=collection_name)
 
 
-def test_simple_group_search(local_client: QdrantBase, remote_client: QdrantBase):
+def test_simple_group_search(
+    local_client: QdrantBase,
+    remote_client: QdrantBase,
+    collection_name: str,
+    secondary_collection_name: str,
+):
     fixture_points = generate_fixtures()
 
     lookup_points = generate_fixtures(
@@ -328,13 +332,11 @@ def test_simple_group_search(local_client: QdrantBase, remote_client: QdrantBase
 
     searcher = TestGroupSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
-    lookup_collection_name = f"{LOOKUP_COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(local_client, fixture_points, collection_name=collection_name)
-    init_client(local_client, lookup_points, collection_name=lookup_collection_name)
+    init_client(local_client, lookup_points, collection_name=secondary_collection_name)
 
     init_client(remote_client, fixture_points, collection_name=collection_name)
-    init_client(remote_client, lookup_points, collection_name=lookup_collection_name)
+    init_client(remote_client, lookup_points, collection_name=secondary_collection_name)
 
     searcher.group_size = 1
     searcher.limit = 2
@@ -371,14 +373,14 @@ def test_simple_group_search(local_client: QdrantBase, remote_client: QdrantBase
         remote_client,
         searcher.group_search_image_with_lookup,
         collection_name=collection_name,
-        lookup_collection_name=lookup_collection_name,
+        lookup_collection_name=secondary_collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.group_search_image_with_lookup_2,
         collection_name=collection_name,
-        lookup_collection_name=lookup_collection_name,
+        lookup_collection_name=secondary_collection_name,
     )
     compare_client_results(
         local_client,
@@ -420,7 +422,7 @@ def test_simple_group_search(local_client: QdrantBase, remote_client: QdrantBase
             raise e
 
 
-def test_single_vector(local_client: QdrantBase, remote_client: QdrantBase):
+def test_single_vector(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
     fixture_points = generate_fixtures(num=200, vectors_sizes=text_vector_size)
 
     searcher = TestGroupSearcher()
@@ -430,7 +432,6 @@ def test_single_vector(local_client: QdrantBase, remote_client: QdrantBase):
         distance=models.Distance.DOT,
     )
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(
         local_client,
         fixture_points,
@@ -464,7 +465,7 @@ def test_single_vector(local_client: QdrantBase, remote_client: QdrantBase):
 
 
 def test_search_with_persistence(
-    local_client: QdrantBase, remote_client: QdrantBase, tmp_path: Path
+    local_client: QdrantBase, remote_client: QdrantBase, tmp_path: Path, collection_name: str
 ):
     fixture_points = generate_fixtures()
     searcher = TestGroupSearcher()
@@ -472,7 +473,7 @@ def test_search_with_persistence(
     tmpdir: str = str(tmp_path)
 
     local_client = init_local(tmpdir)
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+
     init_client(local_client, fixture_points, collection_name=collection_name)
 
     payload_update_filter = one_random_filter_please()
