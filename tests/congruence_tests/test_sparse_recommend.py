@@ -1,5 +1,7 @@
-import numpy as np
+import uuid
 import pytest
+
+import numpy as np
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -9,8 +11,6 @@ from tests.congruence_tests.test_common import (
     compare_client_results,
     generate_sparse_fixtures,
     init_client,
-    init_local,
-    init_remote,
     sparse_image_vector_size,
     sparse_vectors_config,
 )
@@ -29,9 +29,11 @@ class TestSimpleRecommendation:
         ]
 
     @classmethod
-    def simple_recommend_image(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def simple_recommend_image(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10],
             negative=[],
             with_payload=True,
@@ -40,9 +42,11 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def many_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def many_recommend(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10, 19],
             with_payload=True,
             limit=10,
@@ -50,9 +54,11 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def simple_recommend_negative(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def simple_recommend_negative(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10],
             negative=[15, 7],
             with_payload=True,
@@ -61,26 +67,34 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def recommend_from_another_collection(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def recommend_from_another_collection(
+        cls,
+        client: QdrantBase,
+        collection_name_1: str = COLLECTION_NAME,
+        collection_name_2: str = secondary_collection_name,
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name_1,
             positive=[10],
             negative=[15, 7],
             with_payload=True,
             limit=10,
             using="sparse-image",
             lookup_from=models.LookupLocation(
-                collection=secondary_collection_name,
+                collection=collection_name_2,
                 vector="sparse-image",
             ),
         )
 
     @classmethod
     def filter_recommend_text(
-        cls, client: QdrantBase, query_filter: models.Filter
+        cls,
+        client: QdrantBase,
+        query_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
     ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10],
             query_filter=query_filter,
             with_payload=True,
@@ -89,9 +103,11 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def best_score_recommend(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[
                 10,
                 20,
@@ -104,9 +120,11 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def best_score_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def best_score_recommend_euclid(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[
                 10,
                 20,
@@ -119,9 +137,11 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def only_negatives_best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def only_negatives_best_score_recommend(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=None,
             negative=[10, 12],
             with_payload=True,
@@ -132,10 +152,10 @@ class TestSimpleRecommendation:
 
     @classmethod
     def only_negatives_best_score_recommend_euclid(
-        cls, client: QdrantBase
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
     ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=None,
             negative=[10, 12],
             with_payload=True,
@@ -145,9 +165,11 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
-    def avg_vector_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def avg_vector_recommend(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10, 13],
             negative=[],
             with_payload=True,
@@ -156,9 +178,11 @@ class TestSimpleRecommendation:
             strategy=models.RecommendStrategy.AVERAGE_VECTOR,
         )
 
-    def recommend_from_raw_vectors(self, client: QdrantBase) -> list[models.ScoredPoint]:
+    def recommend_from_raw_vectors(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[self.query_image],
             negative=[],
             with_payload=True,
@@ -166,9 +190,11 @@ class TestSimpleRecommendation:
             using="sparse-image",
         )
 
-    def recommend_from_raw_vectors_and_ids(self, client: QdrantBase) -> list[models.ScoredPoint]:
+    def recommend_from_raw_vectors_and_ids(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[self.query_image, 10],
             negative=[],
             with_payload=True,
@@ -177,9 +203,13 @@ class TestSimpleRecommendation:
         )
 
     @staticmethod
-    def recommend_batch(client: QdrantBase) -> list[list[models.ScoredPoint]]:
+    def recommend_batch(
+        client: QdrantBase,
+        collection_name_1: str = COLLECTION_NAME,
+        collection_name_2: str = secondary_collection_name,
+    ) -> list[list[models.ScoredPoint]]:
         return client.recommend_batch(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name_1,
             requests=[
                 models.RecommendRequest(
                     positive=[3],
@@ -195,7 +225,7 @@ class TestSimpleRecommendation:
                     using="sparse-image",
                     strategy=models.RecommendStrategy.BEST_SCORE,
                     lookup_from=models.LookupLocation(
-                        collection=secondary_collection_name,
+                        collection=collection_name_2,
                         vector="sparse-image",
                     ),
                 ),
@@ -210,16 +240,19 @@ def test_simple_recommend(local_client: QdrantBase, remote_client: QdrantBase) -
 
     searcher = TestSimpleRecommendation()
 
+    collection_name_1 = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    collection_name_2 = f"{secondary_collection_name}_{uuid.uuid4().hex}"
     init_client(
         local_client,
         fixture_points,
+        collection_name=collection_name_1,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
     init_client(
         local_client,
         secondary_collection_points,
-        secondary_collection_name,
+        collection_name=collection_name_2,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
@@ -227,32 +260,83 @@ def test_simple_recommend(local_client: QdrantBase, remote_client: QdrantBase) -
     init_client(
         remote_client,
         fixture_points,
+        collection_name=collection_name_1,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
     init_client(
         remote_client,
         secondary_collection_points,
-        secondary_collection_name,
+        collection_name=collection_name_2,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
 
-    compare_client_results(local_client, remote_client, searcher.simple_recommend_image)
-    compare_client_results(local_client, remote_client, searcher.many_recommend)
-    compare_client_results(local_client, remote_client, searcher.simple_recommend_negative)
-    compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
-    compare_client_results(local_client, remote_client, searcher.best_score_recommend)
-    compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
     compare_client_results(
-        local_client, remote_client, searcher.only_negatives_best_score_recommend
+        local_client,
+        remote_client,
+        searcher.simple_recommend_image,
+        collection_name=collection_name_1,
     )
-    compare_client_results(local_client, remote_client, searcher.avg_vector_recommend)
-    compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors)
     compare_client_results(
-        local_client, remote_client, searcher.recommend_from_raw_vectors_and_ids
+        local_client, remote_client, searcher.many_recommend, collection_name=collection_name_1
     )
-    compare_client_results(local_client, remote_client, searcher.recommend_batch)
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.simple_recommend_negative,
+        collection_name=collection_name_1,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.recommend_from_another_collection,
+        collection_name_1=collection_name_1,
+        collection_name_2=collection_name_2,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.best_score_recommend,
+        collection_name=collection_name_1,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.best_score_recommend_euclid,
+        collection_name=collection_name_1,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.only_negatives_best_score_recommend,
+        collection_name=collection_name_1,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.avg_vector_recommend,
+        collection_name=collection_name_1,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.recommend_from_raw_vectors,
+        collection_name=collection_name_1,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.recommend_from_raw_vectors_and_ids,
+        collection_name=collection_name_1,
+    )
+    compare_client_results(
+        local_client,
+        remote_client,
+        searcher.recommend_batch,
+        collection_name_1=collection_name_1,
+        collection_name_2=collection_name_2,
+    )
 
     for _ in range(10):
         query_filter = one_random_filter_please()
@@ -262,6 +346,7 @@ def test_simple_recommend(local_client: QdrantBase, remote_client: QdrantBase) -
                 remote_client,
                 searcher.filter_recommend_text,
                 query_filter=query_filter,
+                collection_name=collection_name_1,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
@@ -275,22 +360,25 @@ def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase) -> 
     sparse_vector.values[0] = np.nan
     using = "sparse-image"
 
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(
         local_client,
         fixture_points,
+        collection_name=collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
     init_client(
         remote_client,
         fixture_points,
+        collection_name=collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
 
     with pytest.raises(AssertionError):
         local_client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[sparse_vector],
             negative=[],
             using=using,
@@ -298,7 +386,7 @@ def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase) -> 
 
     with pytest.raises(UnexpectedResponse):
         remote_client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[sparse_vector],
             negative=[],
             using=using,
@@ -306,7 +394,7 @@ def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase) -> 
 
     with pytest.raises(AssertionError):
         local_client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[1],
             negative=[sparse_vector],
             using=using,
@@ -314,7 +402,7 @@ def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase) -> 
 
     with pytest.raises(UnexpectedResponse):
         remote_client.recommend(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[1],
             negative=[sparse_vector],
             using=using,
