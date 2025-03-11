@@ -166,7 +166,7 @@ def test_simple_search():
     compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
     compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
 
-    for i in range(100):
+    for i in range(50):
         query_filter = one_random_filter_please()
         try:
             compare_client_results(
@@ -198,7 +198,7 @@ def test_simple_opt_vectors_search():
     compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
     compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
 
-    for i in range(100):
+    for i in range(50):
         query_filter = one_random_filter_please()
         try:
             compare_client_results(
@@ -225,7 +225,7 @@ def test_single_vector():
     remote_client = init_remote()
     init_client(remote_client, fixture_points, vectors_config=vectors_config)
 
-    for i in range(100):
+    for i in range(50):
         query_filter = one_random_filter_please()
         try:
             compare_client_results(

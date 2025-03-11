@@ -14,13 +14,13 @@ from qdrant_client.embed.embedder import Embedder
 
 
 COLLECTION_NAME = "inference_collection"
-DENSE_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+DENSE_MODEL_NAME = "BAAI/bge-small-en-v1.5"
 DENSE_DIM = 384
 SPARSE_MODEL_NAME = "Qdrant/bm42-all-minilm-l6-v2-attentions"
-COLBERT_MODEL_NAME = "colbert-ir/colbertv2.0"
-COLBERT_DIM = 128
-DENSE_IMAGE_MODEL_NAME = "Qdrant/resnet50-onnx"
-DENSE_IMAGE_DIM = 2048
+COLBERT_MODEL_NAME = "answerdotai/answerai-colbert-small-v1"
+COLBERT_DIM = 96
+DENSE_IMAGE_MODEL_NAME = "Qdrant/clip-ViT-B-32-vision"
+DENSE_IMAGE_DIM = 512
 
 TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 

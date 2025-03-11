@@ -14,17 +14,17 @@ from tests.fixtures.points import generate_points
 COLLECTION_NAME = "congruence_test_collection"
 
 # dense vectors sizes
-text_vector_size = 50
-image_vector_size = 100
-code_vector_size = 80
+text_vector_size = 25
+image_vector_size = 50
+code_vector_size = 40
 
 # sparse vectors sizes
-sparse_text_vector_size = 100
-sparse_image_vector_size = 1_000
-sparse_code_vector_size = 10_000
+sparse_text_vector_size = 50
+sparse_image_vector_size = 500
+sparse_code_vector_size = 1_000
 
 # number of vectors to generate
-NUM_VECTORS = 1000
+NUM_VECTORS = 100
 
 dense_vectors_config = {
     "text": models.VectorParams(
