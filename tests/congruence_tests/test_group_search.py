@@ -303,7 +303,7 @@ def test_simple_group_search():
     compare_client_results(local_client, remote_client, searcher.group_search_image_select_vector)
     compare_client_results(local_client, remote_client, searcher.group_search_payload_exclude)
 
-    for i in range(50):
+    for i in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_client_results(
