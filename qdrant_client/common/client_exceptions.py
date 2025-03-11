@@ -1,8 +1,11 @@
+from grpc.aio import AioRpcError
+
+
 class QdrantException(Exception):
     """Base class"""
 
 
-class ResourceExhaustedResponse(QdrantException):
+class ResourceExhaustedResponse(QdrantException, AioRpcError):
     def __init__(self, message: str, retry_after_s: int) -> None:
         self.message = message if message else "Resource Exhausted Response"
         try:
