@@ -14,11 +14,10 @@ from tests.congruence_tests.test_common import (
 )
 
 
-def test_delete_points(local_client: QdrantBase, remote_client: QdrantBase):
+def test_delete_points(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
     points = generate_fixtures(100)
     vector = points[0].vector["image"]
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     initialize_fixture_collection(local_client, collection_name)
     initialize_fixture_collection(remote_client, collection_name)
     local_client.upload_points(collection_name, points)
@@ -65,11 +64,12 @@ def test_delete_points(local_client: QdrantBase, remote_client: QdrantBase):
     )
 
 
-def test_delete_sparse_points(local_client: QdrantBase, remote_client: QdrantBase):
+def test_delete_sparse_points(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     points = generate_sparse_fixtures(100)
     vector = points[0].vector["sparse-image"]
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(local_client, [], collection_name, sparse_vectors_config=sparse_vectors_config)
     init_client(remote_client, [], collection_name, sparse_vectors_config=sparse_vectors_config)
 

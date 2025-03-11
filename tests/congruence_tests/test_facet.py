@@ -1,4 +1,6 @@
+import uuid
 import random
+from typing import Any
 
 import pytest
 
@@ -32,43 +34,43 @@ def fixture_points() -> list[models.PointStruct]:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def local_client(fixture_points) -> QdrantClient:
+def local_client(fixture_points: list[models.PointStruct], collection_name: str) -> QdrantClient:
     client = init_local()
-    init_client(client, fixture_points)
+    init_client(client, fixture_points, collection_name)
     return client
 
 
 @pytest.fixture(scope="module", autouse=True)
-def http_client(fixture_points) -> QdrantClient:
+def http_client(fixture_points: list[models.PointStruct], collection_name: str) -> QdrantClient:
     client = init_remote()
-    init_client(client, fixture_points)
+    init_client(client, fixture_points, collection_name)
     client.create_payload_index(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         field_name=INT_KEY,
         field_schema=models.PayloadSchemaType.INTEGER,
     )
     client.create_payload_index(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         field_name=INT_ID_KEY,
         field_schema=models.PayloadSchemaType.INTEGER,
     )
     client.create_payload_index(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         field_name=UUID_KEY,
         field_schema=models.PayloadSchemaType.UUID,
     )
     client.create_payload_index(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         field_name=STRING_KEY,
         field_schema=models.PayloadSchemaType.KEYWORD,
     )
     client.create_payload_index(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         field_name=STRING_ID_KEY,
         field_schema=models.PayloadSchemaType.KEYWORD,
     )
     client.create_payload_index(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         field_name=BOOL_KEY,
         field_schema=models.PayloadSchemaType.BOOL,
     )
@@ -76,35 +78,49 @@ def http_client(fixture_points) -> QdrantClient:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def grpc_client(fixture_points) -> QdrantClient:
+def grpc_client(fixture_points: list[models.PointStruct]) -> QdrantClient:
     client = init_remote(prefer_grpc=True)
     return client
 
 
 def test_minimal(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
-    def f(client: QdrantBase, facet_key: str, **kwargs) -> models.FacetResponse:
+    def f(
+        client: QdrantBase, facet_key: str, collection_name: str = COLLECTION_NAME, **kwargs: Any
+    ) -> models.FacetResponse:
         return client.facet(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             key=facet_key,
         )
 
     for key in all_facet_keys():
-        compare_client_results(grpc_client, http_client, f, facet_key=key)
-        compare_client_results(local_client, http_client, f, facet_key=key)
+        compare_client_results(
+            grpc_client, http_client, f, facet_key=key, collection_name=collection_name
+        )
+        compare_client_results(
+            local_client, http_client, f, facet_key=key, collection_name=collection_name
+        )
 
 
 def test_limit(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
-    def f(client: QdrantBase, facet_key: str, limit: int, **kwargs) -> models.FacetResponse:
+    def f(
+        client: QdrantBase,
+        facet_key: str,
+        limit: int,
+        collection_name: str = COLLECTION_NAME,
+        **kwargs: Any,
+    ) -> models.FacetResponse:
         return client.facet(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             key=facet_key,
             limit=limit,
         )
@@ -112,38 +128,64 @@ def test_limit(
     for _ in range(10):
         rand_num = random.randint(1, 100)
         for key in all_facet_keys():
-            compare_client_results(grpc_client, http_client, f, facet_key=key, limit=rand_num)
-            compare_client_results(local_client, http_client, f, facet_key=key, limit=rand_num)
+            compare_client_results(
+                grpc_client,
+                http_client,
+                f,
+                facet_key=key,
+                limit=rand_num,
+                collection_name=collection_name,
+            )
+            compare_client_results(
+                local_client,
+                http_client,
+                f,
+                facet_key=key,
+                limit=rand_num,
+                collection_name=collection_name,
+            )
 
 
 def test_exact(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
-    def f(client: QdrantBase, facet_key: str, **kwargs) -> models.FacetResponse:
+    def f(
+        client: QdrantBase, facet_key: str, collection_name: str = COLLECTION_NAME, **kwargs: Any
+    ) -> models.FacetResponse:
         return client.facet(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             key=facet_key,
             limit=5000,
             exact=True,
         )
 
     for key in all_facet_keys():
-        compare_client_results(grpc_client, http_client, f, facet_key=key)
-        compare_client_results(local_client, http_client, f, facet_key=key)
+        compare_client_results(
+            grpc_client, http_client, f, facet_key=key, collection_name=collection_name
+        )
+        compare_client_results(
+            local_client, http_client, f, facet_key=key, collection_name=collection_name
+        )
 
 
 def test_filtered(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
     def f(
-        client: QdrantBase, facet_key: str, facet_filter: models.Filter, **kwargs
+        client: QdrantBase,
+        facet_key: str,
+        facet_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
+        **kwargs: Any,
     ) -> models.FacetResponse:
         return client.facet(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             key=facet_key,
             facet_filter=facet_filter,
             exact=False,
@@ -153,23 +195,38 @@ def test_filtered(
         filter_ = one_random_filter_please()
         for _ in range(10):
             compare_client_results(
-                grpc_client, http_client, f, facet_key=key, facet_filter=filter_
+                grpc_client,
+                http_client,
+                f,
+                facet_key=key,
+                facet_filter=filter_,
+                collection_name=collection_name,
             )
             compare_client_results(
-                local_client, http_client, f, facet_key=key, facet_filter=filter_
+                local_client,
+                http_client,
+                f,
+                facet_key=key,
+                facet_filter=filter_,
+                collection_name=collection_name,
             )
 
 
 def test_exact_filtered(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
     def f(
-        client: QdrantBase, facet_key: str, facet_filter: models.Filter, **kwargs
+        client: QdrantBase,
+        facet_key: str,
+        facet_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
+        **kwargs: Any,
     ) -> models.FacetResponse:
         return client.facet(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             key=facet_key,
             limit=5000,
             exact=True,
@@ -180,15 +237,24 @@ def test_exact_filtered(
         for _ in range(10):
             filter_ = one_random_filter_please()
             compare_client_results(
-                grpc_client, http_client, f, facet_key=key, facet_filter=filter_
+                grpc_client,
+                http_client,
+                f,
+                facet_key=key,
+                facet_filter=filter_,
+                collection_name=collection_name,
             )
             compare_client_results(
-                local_client, http_client, f, facet_key=key, facet_filter=filter_
+                local_client,
+                http_client,
+                f,
+                facet_key=key,
+                facet_filter=filter_,
+                collection_name=collection_name,
             )
 
 
-def test_other_types_in_local():
-    collection_name = "test_collection"
+def test_other_types_in_local(collection_name: str):
     client = init_local()
     client.create_collection(collection_name=collection_name, vectors_config={})
     client.upsert(

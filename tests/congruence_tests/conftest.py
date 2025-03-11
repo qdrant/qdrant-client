@@ -1,3 +1,4 @@
+import uuid
 import pytest
 
 from qdrant_client import QdrantClient
@@ -5,7 +6,6 @@ from tests.congruence_tests.test_common import (
     delete_fixture_collection,
     init_local,
     init_remote,
-    initialize_fixture_collection,
 )
 
 
@@ -22,7 +22,6 @@ def prefer_grpc() -> bool:
 @pytest.fixture(scope="session")
 def local_client(storage: str) -> QdrantClient:
     client: QdrantClient = init_local(storage=storage)
-    # initialize_fixture_collection(client)
     yield client
     delete_fixture_collection(client)
 
@@ -30,6 +29,15 @@ def local_client(storage: str) -> QdrantClient:
 @pytest.fixture(scope="session")
 def remote_client(prefer_grpc: bool) -> QdrantClient:
     client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
-    # initialize_fixture_collection(client)
     yield client
     delete_fixture_collection(client)
+
+
+@pytest.fixture(scope="session")
+def collection_name() -> str:
+    return f"collection_1_{uuid.uuid4().hex}"
+
+
+@pytest.fixture(scope="session")
+def secondary_collection_name() -> str:
+    return f"collection_2_{uuid.uuid4().hex}"

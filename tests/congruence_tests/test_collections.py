@@ -1,4 +1,3 @@
-import uuid
 from time import sleep
 from typing import Callable, Any
 
@@ -13,16 +12,13 @@ from tests.congruence_tests.test_common import (
 )
 
 
-COLLECTION_NAME = "test_collection"
-
-
-def test_get_collection():
+def test_get_collection(collection_name: str):
     # when running tests in parallel, it will fail because other tests create collections
     # and the length of collections will be different
-    wait_for(test_recreate_collection)
-    wait_for(test_collection_exists)
-    wait_for(test_init_from)
-    wait_for(test_config_variations)
+    wait_for(test_recreate_collection, collection_name)
+    wait_for(test_collection_exists, collection_name)
+    wait_for(test_init_from, collection_name)
+    wait_for(test_config_variations, collection_name)
 
     fixture_points = generate_fixtures()
 
@@ -33,10 +29,8 @@ def test_get_collection():
     for collection in remote_collections.collections:
         remote_client.delete_collection(collection.name)
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client = init_local()
     init_client(local_client, fixture_points, collection_name)
-
     init_client(remote_client, fixture_points, collection_name)
 
     local_collections = local_client.get_collections()
@@ -61,7 +55,7 @@ def test_get_collection():
     )
 
 
-def test_recreate_collection():
+def test_recreate_collection(collection_name: str):
     # this method has been marked as deprecated and should be removed in qdrant-client v1.12
     local_client = init_local()
     http_client = init_remote()
@@ -69,7 +63,6 @@ def test_recreate_collection():
 
     vector_params = models.VectorParams(size=20, distance=models.Distance.COSINE)
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client.recreate_collection(collection_name, vectors_config=vector_params)
     http_client.recreate_collection(collection_name, vectors_config=vector_params)
 
@@ -81,11 +74,10 @@ def test_recreate_collection():
     assert grpc_client.collection_exists(collection_name)
 
 
-def test_collection_exists():
+def test_collection_exists(collection_name: str):
     remote_client = init_remote()
     local_client = init_local()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     assert not remote_client.collection_exists(collection_name + "_not_exists")
     assert not local_client.collection_exists(collection_name + "_not_exists")
 
@@ -109,7 +101,7 @@ def test_collection_exists():
     assert local_client.collection_exists(collection_name)
 
 
-def test_init_from():
+def test_init_from(collection_name: str):
     vector_size = 2
 
     remote_client = init_remote()
@@ -118,7 +110,6 @@ def test_init_from():
     points = generate_fixtures(vectors_sizes=vector_size)
     vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     if remote_client.collection_exists(collection_name):
         remote_client.delete_collection(collection_name=collection_name)
     remote_client.create_collection(collection_name=collection_name, vectors_config=vector_params)
@@ -179,9 +170,7 @@ def test_init_from():
     )
 
 
-def test_config_variations():
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
-
+def test_config_variations(collection_name: str):
     def check_variation(vectors_config, sparse_vectors_config):
         if remote_client.collection_exists(collection_name):
             remote_client.delete_collection(collection_name)

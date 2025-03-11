@@ -1,5 +1,3 @@
-import uuid
-
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
@@ -25,12 +23,11 @@ class TestAliasRetriever:
         return sorted(aliases.aliases, key=lambda x: x.alias_name)
 
 
-def test_alias_changes(local_client: QdrantBase, remote_client: QdrantBase):
+def test_alias_changes(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
     fixture_points = generate_fixtures(10)
 
     retriever = TestAliasRetriever()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(local_client, fixture_points, collection_name)
     init_client(remote_client, fixture_points, collection_name)
 

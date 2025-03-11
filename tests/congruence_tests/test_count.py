@@ -1,5 +1,3 @@
-import uuid
-
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
@@ -8,8 +6,6 @@ from tests.congruence_tests.test_common import (
     generate_fixtures,
     generate_sparse_fixtures,
     init_client,
-    init_local,
-    init_remote,
     sparse_vectors_config,
 )
 from tests.fixtures.filters import one_random_filter_please
@@ -31,10 +27,9 @@ def filter_count(
     ).count
 
 
-def test_simple_count(local_client: QdrantBase, remote_client: QdrantBase):
+def test_simple_count(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
     fixture_points = generate_fixtures()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(local_client, fixture_points, collection_name)
     init_client(remote_client, fixture_points, collection_name)
 
@@ -55,10 +50,11 @@ def test_simple_count(local_client: QdrantBase, remote_client: QdrantBase):
             raise e
 
 
-def test_simple_sparse_search(local_client: QdrantBase, remote_client: QdrantBase):
+def test_simple_sparse_search(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     fixture_points = generate_sparse_fixtures()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(
         local_client, fixture_points, collection_name, sparse_vectors_config=sparse_vectors_config
     )

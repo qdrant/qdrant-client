@@ -35,25 +35,16 @@ def secondary_collection_points() -> list[models.PointStruct]:
     return generate_fixtures(100)
 
 
-@pytest.fixture(scope="module")
-def collection_names() -> tuple[str, str]:
-    """Fixture to generate unique collection names."""
-    return (
-        f"{COLLECTION_NAME}_{uuid.uuid4().hex}",
-        f"{secondary_collection_name}_{uuid.uuid4().hex}",
-    )
-
-
 @pytest.fixture(scope="module", autouse=True)
 def local_client(
     fixture_points: list[models.PointStruct],
     secondary_collection_points: list[models.PointStruct],
-    collection_names: tuple[str, str],
+    collection_name: str,
+    secondary_collection_name: str,
 ) -> QdrantClient:
-    collection_name_1, collection_name_2 = collection_names
     client = init_local()
-    init_client(client, fixture_points, collection_name_1)
-    init_client(client, secondary_collection_points, collection_name_2)
+    init_client(client, fixture_points, collection_name)
+    init_client(client, secondary_collection_points, secondary_collection_name)
     return client
 
 
@@ -61,12 +52,12 @@ def local_client(
 def http_client(
     fixture_points: list[models.PointStruct],
     secondary_collection_points: list[models.PointStruct],
-    collection_names: tuple[str, str],
+    collection_name: str,
+    secondary_collection_name: str,
 ) -> QdrantClient:
-    collection_name_1, collection_name_2 = collection_names
     client = init_remote()
-    init_client(client, fixture_points, collection_name_1)
-    init_client(client, secondary_collection_points, collection_name_2)
+    init_client(client, fixture_points, collection_name)
+    init_client(client, secondary_collection_points, secondary_collection_name)
     return client
 
 
@@ -80,7 +71,7 @@ def test_context_cosine(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -93,7 +84,6 @@ def test_context_cosine(
             using="image",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(
         grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
     )
@@ -106,7 +96,7 @@ def test_context_dot(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -119,7 +109,6 @@ def test_context_dot(
             using="text",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(
         grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
     )
@@ -132,7 +121,7 @@ def test_context_euclidean(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -145,7 +134,6 @@ def test_context_euclidean(
             using="code",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(
         grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
     )
@@ -158,7 +146,7 @@ def test_context_many_pairs(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     random_image_vector_1 = random_vector(image_vector_size)
     random_image_vector_2 = random_vector(image_vector_size)
@@ -182,7 +170,6 @@ def test_context_many_pairs(
             using="image",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(
         grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
     )
@@ -195,7 +182,7 @@ def test_discover_cosine(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -209,7 +196,6 @@ def test_discover_cosine(
             using="image",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
     compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
@@ -218,7 +204,7 @@ def test_discover_dot(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -232,7 +218,6 @@ def test_discover_dot(
             using="text",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
     compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
@@ -241,7 +226,7 @@ def test_discover_euclidean(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -255,7 +240,6 @@ def test_discover_euclidean(
             using="code",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
     compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
@@ -264,7 +248,7 @@ def test_discover_raw_target(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     random_image_vector = random_vector(image_vector_size)
 
@@ -279,7 +263,6 @@ def test_discover_raw_target(
             using="image",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
     compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
@@ -288,7 +271,7 @@ def test_context_raw_positive(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     random_image_vector = random_vector(image_vector_size)
 
@@ -303,7 +286,6 @@ def test_context_raw_positive(
             using="image",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
     compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
@@ -312,7 +294,7 @@ def test_only_target(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -325,7 +307,6 @@ def test_only_target(
             using="image",
         )
 
-    collection_name, _ = collection_names
     compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
     compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
@@ -357,36 +338,35 @@ def test_discover_from_another_collection(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
+    secondary_collection_name: str,
 ):
-    collection_name_1, collection_name_2 = collection_names
     compare_client_results(
         grpc_client,
         http_client,
         discover_from_another_collection,
-        collection_name=collection_name_1,
-        lookup_collection_name=collection_name_2,
+        collection_name=collection_name,
+        lookup_collection_name=secondary_collection_name,
     )
     compare_client_results(
         local_client,
         http_client,
         discover_from_another_collection,
-        collection_name=collection_name_1,
-        lookup_collection_name=collection_name_2,
+        collection_name=collection_name,
+        lookup_collection_name=secondary_collection_name,
     )
 
 
 def test_discover_from_another_collection_id_exclusion(
-    collection_names: tuple[str, str],
+    collection_name: str, secondary_collection_name: str
 ):
     fixture_points = generate_fixtures(10)
 
     secondary_collection_points = generate_fixtures(10)
 
-    collection_name_1, collection_name_2 = collection_names
     local_client = init_local()
-    collection_name = collection_name_1 + "_small"
-    lookup_collection_name = collection_name_2 + "_small"
+    collection_name = collection_name + "_small"
+    lookup_collection_name = secondary_collection_name + "_small"
     init_client(local_client, fixture_points, collection_name=collection_name)
     init_client(local_client, secondary_collection_points, collection_name=lookup_collection_name)
 
@@ -409,7 +389,8 @@ def test_discover_batch(
     local_client: QdrantBase,
     http_client: QdrantBase,
     grpc_client: QdrantBase,
-    collection_names: tuple[str, str],
+    collection_name: str,
+    secondary_collection_name: str,
 ):
     def f(
         client: QdrantBase,
@@ -439,20 +420,19 @@ def test_discover_batch(
             ],
         )
 
-    collection_name_1, collection_name_2 = collection_names
     compare_client_results(
         grpc_client,
         http_client,
         f,
-        collection_name_1=collection_name_1,
-        collection_name_2=collection_name_2,
+        collection_name_1=collection_name,
+        collection_name_2=secondary_collection_name,
     )
     compare_client_results(
         local_client,
         http_client,
         f,
-        collection_name_1=collection_name_1,
-        collection_name_2=collection_name_2,
+        collection_name_1=collection_name,
+        collection_name_2=secondary_collection_name,
     )
 
 
@@ -462,7 +442,7 @@ def test_discover_with_filters(
     http_client: QdrantBase,
     grpc_client: QdrantBase,
     filter: models.Filter,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -476,7 +456,6 @@ def test_discover_with_filters(
             query_filter=filter,
         )
 
-    collection_name, _ = collection_names
     compare_client_results(
         grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
     )
@@ -491,7 +470,7 @@ def test_context_with_filters(
     http_client: QdrantBase,
     grpc_client: QdrantBase,
     filter: models.Filter,
-    collection_names: tuple[str, str],
+    collection_name: str,
 ):
     def f(
         client: QdrantBase, collection_name: str = COLLECTION_NAME, **kwargs: dict[str, Any]
@@ -504,7 +483,6 @@ def test_context_with_filters(
             query_filter=filter,
         )
 
-    collection_name, _ = collection_names
     compare_client_results(
         grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
     )
@@ -513,9 +491,7 @@ def test_context_with_filters(
     )
 
 
-def test_query_with_nan(
-    collection_names: tuple[str, str],
-):
+def test_query_with_nan(collection_name: str):
     fixture_points = generate_fixtures()
     vector = np.random.random(image_vector_size)
     vector[0] = np.nan
@@ -525,7 +501,6 @@ def test_query_with_nan(
     local_client = init_local()
     remote_client = init_remote()
 
-    collection_name, _ = collection_names
     init_client(local_client, fixture_points, collection_name)
     init_client(remote_client, fixture_points, collection_name)
 
