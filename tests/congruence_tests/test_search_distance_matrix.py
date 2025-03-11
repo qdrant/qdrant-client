@@ -24,29 +24,29 @@ def fixture_points() -> list[models.PointStruct]:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def local_client(fixture_points) -> QdrantClient:
+def local_client(fixture_points: list[models.PointStruct], collection_name: str) -> QdrantClient:
     client = init_local()
-    init_client(client, fixture_points)
+    init_client(client, fixture_points, collection_name)
     return client
 
 
 @pytest.fixture(scope="module", autouse=True)
-def http_client(fixture_points) -> QdrantClient:
+def http_client(fixture_points: list[models.PointStruct], collection_name: str) -> QdrantClient:
     client = init_remote()
-    init_client(client, fixture_points)
+    init_client(client, fixture_points, collection_name)
     return client
 
 
 @pytest.fixture(scope="module", autouse=True)
-def grpc_client(fixture_points) -> QdrantClient:
+def grpc_client() -> QdrantClient:
     client = init_remote(prefer_grpc=True)
     return client
 
 
 def compare_all_clients_results(
-    local_client: QdrantClient,
-    http_client: QdrantClient,
-    grpc_client: QdrantClient,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
     foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ):
@@ -55,47 +55,66 @@ def compare_all_clients_results(
 
 
 def test_search_offsets_no_filter(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
-    def search_offsets_no_filter(client: QdrantBase) -> models.SearchMatrixOffsetsResponse:
+    def search_offsets_no_filter(
+        client: QdrantBase, collection_name: str
+    ) -> models.SearchMatrixOffsetsResponse:
         return client.search_matrix_offsets(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             sample=TEST_NUM_POINTS,
             limit=3,
             using="text",
         )
 
-    compare_all_clients_results(local_client, http_client, grpc_client, search_offsets_no_filter)
+    compare_all_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        search_offsets_no_filter,
+        collection_name=collection_name,
+    )
 
 
 def test_search_pairs_no_filter(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
-    def search_pairs_no_filter(client: QdrantBase) -> models.SearchMatrixPairsResponse:
+    def search_pairs_no_filter(
+        client: QdrantBase, collection_name: str
+    ) -> models.SearchMatrixPairsResponse:
         return client.search_matrix_pairs(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             sample=TEST_NUM_POINTS,
             limit=3,
             using="text",
         )
 
-    compare_all_clients_results(local_client, http_client, grpc_client, search_pairs_no_filter)
+    compare_all_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        search_pairs_no_filter,
+        collection_name=collection_name,
+    )
 
 
 def test_search_offsets_filter(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
     def search_offsets_filter(
-        client: QdrantBase, query_filter: models.Filter
+        client: QdrantBase, query_filter: models.Filter, collection_name: str
     ) -> models.SearchMatrixOffsetsResponse:
         return client.search_matrix_offsets(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             sample=TEST_NUM_POINTS,
             limit=3,
             using="text",
@@ -111,6 +130,7 @@ def test_search_offsets_filter(
                 grpc_client,
                 search_offsets_filter,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nAttempt {i} failed with filter {query_filter}")
@@ -118,15 +138,16 @@ def test_search_offsets_filter(
 
 
 def test_search_pairs_filter(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
     def search_pairs_filter(
-        client: QdrantBase, query_filter: models.Filter
+        client: QdrantBase, query_filter: models.Filter, collection_name: str
     ) -> models.SearchMatrixPairsResponse:
         return client.search_matrix_pairs(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             sample=TEST_NUM_POINTS,
             limit=3,
             using="text",
@@ -142,6 +163,7 @@ def test_search_pairs_filter(
                 grpc_client,
                 search_pairs_filter,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nAttempt {i} failed with filter {query_filter}")
