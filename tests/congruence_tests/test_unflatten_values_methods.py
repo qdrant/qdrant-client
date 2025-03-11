@@ -4,7 +4,6 @@ import pytest
 
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
-    COLLECTION_NAME,
     generate_fixtures,
     init_client,
     init_local,
@@ -88,16 +87,16 @@ from tests.congruence_tests.test_common import (
         ),
     ],
 )
-def test_values_count_query(payloads, filter_params, payload_key):
+def test_values_count_query(payloads, filter_params, payload_key, collection_name: str):
     fixture_points = generate_fixtures(num=len(payloads))
     for i, point in enumerate(fixture_points):
         point.payload = payloads[i]
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, collection_name)
 
     filter_ = models.Filter(
         must=[
@@ -108,14 +107,14 @@ def test_values_count_query(payloads, filter_params, payload_key):
     )
 
     local_result, _next_page = local_client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=filter_,
         limit=10,
         with_payload=True,
     )
 
     remote_result, _next_page = remote_client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=filter_,
         limit=10,
         with_payload=True,
@@ -151,30 +150,30 @@ def test_values_count_query(payloads, filter_params, payload_key):
         ([{}], "city"),
     ],
 )
-def test_is_empty(payloads: list[dict[str, Any]], payload_key: str) -> None:
+def test_is_empty(payloads: list[dict[str, Any]], payload_key: str, collection_name: str) -> None:
     fixture_points = generate_fixtures(num=len(payloads))
     for i, point in enumerate(fixture_points):
         point.payload = payloads[i]
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, collection_name)
 
     filter_ = models.Filter(
         must=[models.IsEmptyCondition(is_empty=models.PayloadField(key=payload_key))]
     )
 
     local_result, _next_page = local_client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=filter_,
         limit=10,
         with_payload=True,
     )
 
     remote_result, _next_page = remote_client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=filter_,
         limit=10,
         with_payload=True,
@@ -206,30 +205,30 @@ def test_is_empty(payloads: list[dict[str, Any]], payload_key: str) -> None:
         ([{}], "city"),
     ],
 )
-def test_is_null(payloads, payload_key):
+def test_is_null(payloads, payload_key, collection_name: str):
     fixture_points = generate_fixtures(num=len(payloads))
     for i, point in enumerate(fixture_points):
         point.payload = payloads[i]
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, collection_name)
 
     filter_ = models.Filter(
         must=[models.IsNullCondition(is_null=models.PayloadField(key=payload_key))]
     )
 
     local_result, _next_page = local_client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=filter_,
         limit=10,
         with_payload=True,
     )
 
     remote_result, _next_page = remote_client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=filter_,
         limit=10,
         with_payload=True,
