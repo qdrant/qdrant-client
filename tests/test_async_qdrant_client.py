@@ -227,7 +227,7 @@ async def test_async_qdrant_client(prefer_grpc):
     ] * 10
 
     await client.delete(COLLECTION_NAME, points_selector=[0])
-    assert (await client.count(COLLECTION_NAME)).count == 99
+    assert (await client.count(COLLECTION_NAME)).count == k - 1
 
     await client.batch_update_points(
         COLLECTION_NAME,
@@ -237,7 +237,7 @@ async def test_async_qdrant_client(prefer_grpc):
             )
         ],
     )
-    assert (await client.count(COLLECTION_NAME)).count == 100
+    assert (await client.count(COLLECTION_NAME)).count == k
 
     await client.set_payload(COLLECTION_NAME, payload={"added_payload": "zero"}, points=[0])
     assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
