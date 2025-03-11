@@ -1,3 +1,5 @@
+import uuid
+from pathlib import Path
 from typing import Tuple, Callable, Any
 
 import numpy as np
@@ -67,36 +69,44 @@ class TestSimpleSearcher:
         self.multivector_query_image = generate_random_multivector(image_vector_size, 3)
         self.multivector_query_code = generate_random_multivector(code_vector_size, 3)
 
-    def sparse_query_text(self, client: QdrantBase) -> models.QueryResponse:
+    def sparse_query_text(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.sparse_vector_query_text,
             using="sparse-text",
             with_payload=True,
             limit=10,
         )
 
-    def multivec_query_text(self, client: QdrantBase) -> models.QueryResponse:
+    def multivec_query_text(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.multivector_query_text,
             using="multi-text",
             with_payload=True,
             limit=10,
         )
 
-    def dense_query_text(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_text(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             with_payload=True,
             limit=10,
         )
 
-    def dense_query_text_np_array(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_text_np_array(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=np.array(self.dense_vector_query_text),
             using="text",
             with_payload=True,
@@ -104,36 +114,44 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_query_text_by_id(cls, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_text_by_id(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=1,
             using="text",
             with_payload=True,
             limit=10,
         )
 
-    def dense_query_image(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_image(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_image,
             using="image",
             with_payload=True,
             limit=10,
         )
 
-    def dense_query_code(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_code(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_code,
             using="code",
             with_payload=True,
             limit=10,
         )
 
-    def dense_query_text_offset(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_text_offset(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             with_payload=True,
@@ -141,9 +159,11 @@ class TestSimpleSearcher:
             offset=10,
         )
 
-    def dense_query_text_with_vector(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_text_with_vector(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             with_payload=True,
@@ -152,9 +172,11 @@ class TestSimpleSearcher:
             offset=10,
         )
 
-    def dense_query_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
+    def dense_query_score_threshold(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         res1 = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             with_payload=True,
@@ -163,7 +185,7 @@ class TestSimpleSearcher:
         ).points
 
         res2 = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             with_payload=True,
@@ -172,7 +194,7 @@ class TestSimpleSearcher:
         ).points
 
         res3 = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             with_payload=True,
@@ -182,27 +204,33 @@ class TestSimpleSearcher:
 
         return res1 + res2 + res3
 
-    def dense_query_text_select_payload(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_text_select_payload(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             with_payload=["text_array", "nested.id"],
             limit=10,
         )
 
-    def dense_payload_exclude(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_payload_exclude(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             with_payload=models.PayloadSelectorExclude(exclude=["text_array", "nested.id"]),
             limit=10,
         )
 
-    def dense_query_image_select_vector(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_image_select_vector(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_image,
             using="image",
             with_payload=False,
@@ -210,9 +238,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_group(self, client: QdrantBase) -> GroupsResult:
+    def dense_query_group(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> GroupsResult:
         return client.query_points_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             group_by=self.group_by,
@@ -221,23 +251,31 @@ class TestSimpleSearcher:
             with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
         )
 
-    def dense_query_group_with_lookup(self, client: QdrantBase) -> GroupsResult:
+    def dense_query_group_with_lookup(
+        self,
+        client: QdrantBase,
+        collection_name_1: str = COLLECTION_NAME,
+        collection_name_2: str = SECONDARY_COLLECTION_NAME,
+    ) -> GroupsResult:
         return client.query_points_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name_1,
             query=self.dense_vector_query_text,
             using="text",
             group_by=self.group_by,
             group_size=self.group_size,
             limit=self.limit,
             with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
-            with_lookup=SECONDARY_COLLECTION_NAME,
+            with_lookup=collection_name_2,
         )
 
     def filter_dense_query_group(
-        self, client: QdrantBase, query_filter: models.Filter
+        self,
+        client: QdrantBase,
+        query_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
     ) -> GroupsResult:
         return client.query_points_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             query_filter=query_filter,
             using="text",
@@ -247,9 +285,11 @@ class TestSimpleSearcher:
             with_payload=True,
         )
 
-    def dense_queries_rescore_group(self, client: QdrantBase) -> GroupsResult:
+    def dense_queries_rescore_group(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> GroupsResult:
         return client.query_points_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text,
@@ -267,10 +307,13 @@ class TestSimpleSearcher:
         )
 
     def dense_query_lookup_from_group(
-        self, client: QdrantBase, lookup_from: models.LookupLocation
+        self,
+        client: QdrantBase,
+        lookup_from: models.LookupLocation,
+        collection_name: str = COLLECTION_NAME,
     ) -> GroupsResult:
         return client.query_points_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -282,10 +325,13 @@ class TestSimpleSearcher:
         )
 
     def filter_dense_query_text(
-        self, client: QdrantBase, query_filter: models.Filter
+        self,
+        client: QdrantBase,
+        query_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
     ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             query_filter=query_filter,
@@ -294,10 +340,13 @@ class TestSimpleSearcher:
         )
 
     def filter_dense_query_text_single(
-        self, client: QdrantBase, query_filter: models.Filter
+        self,
+        client: QdrantBase,
+        query_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
     ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             query_filter=query_filter,
             with_payload=True,
@@ -307,10 +356,13 @@ class TestSimpleSearcher:
 
     @classmethod
     def filter_query_scroll(
-        cls, client: QdrantBase, query_filter: models.Filter
+        cls,
+        client: QdrantBase,
+        query_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
     ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             using="text",
             query_filter=query_filter,
             with_payload=True,
@@ -318,9 +370,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_rrf(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_rrf(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text,
@@ -332,9 +386,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_rrf_plain_prefetch(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_rrf_plain_prefetch(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=models.Prefetch(
                 query=self.dense_vector_query_text,
                 using="text",
@@ -344,9 +400,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_dbsf(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_dbsf(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text,
@@ -359,9 +417,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def deep_dense_queries_rrf(self, client: QdrantBase) -> models.QueryResponse:
+    def deep_dense_queries_rrf(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_code,
@@ -388,9 +448,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def deep_dense_queries_dbsf(self, client: QdrantBase) -> models.QueryResponse:
+    def deep_dense_queries_dbsf(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_code,
@@ -417,9 +479,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_queries_rescore(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_queries_rescore(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text,
@@ -436,9 +500,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_deep_queries_rescore(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_deep_queries_rescore(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_code,
@@ -467,10 +533,13 @@ class TestSimpleSearcher:
         )
 
     def dense_queries_prefetch_filtered(
-        self, client: QdrantBase, query_filter: models.Filter
+        self,
+        client: QdrantBase,
+        query_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
     ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text,
@@ -489,9 +558,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_queries_prefetch_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_queries_prefetch_score_threshold(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text, using="text", score_threshold=0.9
@@ -509,10 +580,13 @@ class TestSimpleSearcher:
         )
 
     def dense_queries_prefetch_parametrized(
-        self, client: QdrantBase, search_params: models.SearchParams
+        self,
+        client: QdrantBase,
+        search_params: models.SearchParams,
+        collection_name: str = COLLECTION_NAME,
     ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text, using="text", params=search_params
@@ -525,10 +599,13 @@ class TestSimpleSearcher:
         )
 
     def dense_queries_parametrized(
-        self, client: QdrantBase, search_params: models.SearchParams
+        self,
+        client: QdrantBase,
+        search_params: models.SearchParams,
+        collection_name: str = COLLECTION_NAME,
     ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=self.dense_vector_query_image,
             using="image",
             limit=10,
@@ -536,17 +613,21 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def query_scroll_offset(cls, client: QdrantBase) -> models.QueryResponse:
+    def query_scroll_offset(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             with_payload=True,
             limit=10,
             offset=10,
         )
 
-    def dense_queries_orderby(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_queries_orderby(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_text,
@@ -564,9 +645,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def deep_dense_queries_orderby(self, client: QdrantBase) -> models.QueryResponse:
+    def deep_dense_queries_orderby(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     query=self.dense_vector_query_code,
@@ -595,9 +678,11 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def dense_query_text_nested_prefetch(self, client: QdrantBase) -> models.QueryResponse:
+    def dense_query_text_nested_prefetch(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             prefetch=[
                 models.Prefetch(
                     prefetch=models.Prefetch(query=self.dense_vector_query_text, using="text"),
@@ -610,9 +695,11 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_recommend_image(cls, client: QdrantBase) -> models.QueryResponse:
+    def dense_recommend_image(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(
                     positive=[10],
@@ -624,9 +711,11 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_many_recommend(cls, client: QdrantBase) -> models.QueryResponse:
+    def dense_many_recommend(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(
                     positive=[10, 19],
@@ -638,9 +727,11 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_discovery_image(cls, client: QdrantBase) -> models.QueryResponse:
+    def dense_discovery_image(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=models.DiscoverQuery(
                 discover=models.DiscoverInput(
                     target=10,
@@ -653,9 +744,11 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_many_discover(cls, client: QdrantBase) -> models.QueryResponse:
+    def dense_many_discover(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=models.DiscoverQuery(
                 discover=models.DiscoverInput(
                     target=10,
@@ -671,9 +764,11 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_context_image(cls, client: QdrantBase, limit: int) -> models.QueryResponse:
+    def dense_context_image(
+        cls, client: QdrantBase, limit: int, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=models.ContextQuery(context=models.ContextPair(positive=11, negative=19)),
             with_payload=True,
             limit=limit,
@@ -682,10 +777,13 @@ class TestSimpleSearcher:
 
     @classmethod
     def dense_query_lookup_from(
-        cls, client: QdrantBase, lookup_from: models.LookupLocation
+        cls,
+        client: QdrantBase,
+        lookup_from: models.LookupLocation,
+        collection_name: str = COLLECTION_NAME,
     ) -> models.QueryResponse:
         return client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -695,13 +793,17 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def no_query_no_prefetch(cls, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(collection_name=COLLECTION_NAME, limit=10)
+    def no_query_no_prefetch(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
+        return client.query_points(collection_name=collection_name, limit=10)
 
     @classmethod
-    def random_query(cls, client: QdrantBase) -> models.QueryResponse:
+    def random_query(
+        cls, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.QueryResponse:
         result = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=models.SampleQuery(sample=models.Sample.RANDOM),
             limit=100,
         )
@@ -716,7 +818,9 @@ def group_by_keys():
     return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
 
 
-def init_clients(fixture_points, **kwargs) -> Tuple[QdrantClient, QdrantClient, QdrantClient]:
+def init_clients(
+    fixture_points: list[models.PointStruct], **kwargs: Any
+) -> Tuple[QdrantClient, ...]:
     local_client = init_local()
     http_client = init_remote()
     grpc_client = init_remote(prefer_grpc=True)
@@ -748,37 +852,42 @@ def test_dense_query_lookup_from_another_collection():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name_1 = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    collection_name_2 = f"{SECONDARY_COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name_1
+    )
 
-    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
-    init_client(http_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    init_client(local_client, secondary_collection_points, collection_name_2)
+    init_client(http_client, secondary_collection_points, collection_name_2)
 
     compare_clients_results(
         local_client,
         http_client,
         grpc_client,
         searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
+        lookup_from=models.LookupLocation(collection=collection_name_2, vector="text"),
+        collection_name=collection_name_1,
     )
 
 
-def test_dense_query_lookup_from_negative():
+def test_dense_query_lookup_from_negative(local_client: QdrantBase, remote_client: QdrantBase):
     fixture_points = generate_fixtures()
 
     secondary_collection_points = generate_fixtures(10)
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    collection_name_1 = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    collection_name_2 = f"{SECONDARY_COLLECTION_NAME}_{uuid.uuid4().hex}"
+    init_client(local_client, fixture_points, collection_name_1)
+    init_client(local_client, secondary_collection_points, collection_name_2)
 
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
-    init_client(remote_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    init_client(remote_client, fixture_points, collection_name_1)
+    init_client(remote_client, secondary_collection_points, collection_name_2)
 
     lookup_from = models.LookupLocation(collection="i-do-not-exist", vector="text")
     with pytest.raises(ValueError, match="Collection i-do-not-exist not found"):
         local_client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name_1,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -788,7 +897,7 @@ def test_dense_query_lookup_from_negative():
         )
     with pytest.raises(UnexpectedResponse, match="Not found: Collection"):
         remote_client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name_1,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -797,12 +906,10 @@ def test_dense_query_lookup_from_negative():
             lookup_from=lookup_from,
         )
 
-    lookup_from = models.LookupLocation(
-        collection=SECONDARY_COLLECTION_NAME, vector="i-do-not-exist"
-    )
+    lookup_from = models.LookupLocation(collection=collection_name_2, vector="i-do-not-exist")
     with pytest.raises(ValueError, match="Vector i-do-not-exist not found"):
         local_client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name_1,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -812,7 +919,7 @@ def test_dense_query_lookup_from_negative():
         )
     with pytest.raises(UnexpectedResponse, match="Not existing vector name error"):
         remote_client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name_1,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -831,13 +938,40 @@ def test_no_query_no_prefetch():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.no_query_no_prefetch)
-    compare_clients_results(http_client, grpc_client, grpc_client, searcher.no_query_no_prefetch)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.no_query_no_prefetch,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        http_client,
+        grpc_client,
+        grpc_client,
+        searcher.no_query_no_prefetch,
+        collection_name=collection_name,
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.query_scroll_offset)
-    compare_clients_results(http_client, grpc_client, grpc_client, searcher.query_scroll_offset)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.query_scroll_offset,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        http_client,
+        grpc_client,
+        grpc_client,
+        searcher.query_scroll_offset,
+        collection_name=collection_name,
+    )
 
 
 def test_dense_query_nested_prefetch():
@@ -845,10 +979,17 @@ def test_dense_query_nested_prefetch():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_nested_prefetch
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_nested_prefetch,
+        collection_name=collection_name,
     )
 
 
@@ -857,7 +998,10 @@ def test_dense_query_filtered_prefetch():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
     for i in range(100):
         query_filter = one_random_filter_please()
@@ -868,6 +1012,7 @@ def test_dense_query_filtered_prefetch():
                 grpc_client,
                 searcher.dense_queries_prefetch_filtered,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nAttempt {i} failed with filter {query_filter}")
@@ -879,10 +1024,17 @@ def test_dense_query_prefetch_score_threshold():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_queries_prefetch_score_threshold
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_queries_prefetch_score_threshold,
+        collection_name=collection_name,
     )
 
 
@@ -891,7 +1043,10 @@ def test_dense_query_prefetch_parametrized():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
     compare_clients_results(
         local_client,
@@ -899,6 +1054,7 @@ def test_dense_query_prefetch_parametrized():
         grpc_client,
         searcher.dense_queries_prefetch_parametrized,
         search_params={"exact": True},
+        collection_name=collection_name,
     )
     compare_clients_results(
         local_client,
@@ -906,6 +1062,7 @@ def test_dense_query_prefetch_parametrized():
         grpc_client,
         searcher.dense_queries_prefetch_parametrized,
         search_params={"hnsw_ef": 128},
+        collection_name=collection_name,
     )
     compare_clients_results(
         local_client,
@@ -913,6 +1070,7 @@ def test_dense_query_prefetch_parametrized():
         grpc_client,
         searcher.dense_queries_prefetch_parametrized,
         search_params={"indexed_only": True},
+        collection_name=collection_name,
     )
     compare_clients_results(
         local_client,
@@ -920,6 +1078,7 @@ def test_dense_query_prefetch_parametrized():
         grpc_client,
         searcher.dense_queries_prefetch_parametrized,
         search_params={"quantization": {"ignore": True, "rescore": True, "oversampling": 2.0}},
+        collection_name=collection_name,
     )
 
 
@@ -928,7 +1087,10 @@ def test_dense_query_parametrized():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
     compare_clients_results(
         local_client,
@@ -936,6 +1098,7 @@ def test_dense_query_parametrized():
         grpc_client,
         searcher.dense_queries_parametrized,
         search_params={"exact": True},
+        collection_name=collection_name,
     )
     compare_clients_results(
         local_client,
@@ -947,6 +1110,7 @@ def test_dense_query_parametrized():
             "indexed_only": True,
             "quantization": {"ignore": True, "rescore": True, "oversampling": 2.0},
         },
+        collection_name=collection_name,
     )
 
 
@@ -955,11 +1119,20 @@ def test_sparse_query():
 
     searcher = TestSimpleSearcher()
 
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
-        fixture_points, sparse_vectors_config=sparse_vectors_config
+        fixture_points,
+        sparse_vectors_config=sparse_vectors_config,
+        collection_name=collection_name,
     )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.sparse_query_text)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.sparse_query_text,
+        collection_name=collection_name,
+    )
 
 
 def test_multivec_query():
@@ -967,11 +1140,18 @@ def test_multivec_query():
 
     searcher = TestSimpleSearcher()
 
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
-        fixture_points, vectors_config=multi_vector_config
+        fixture_points, vectors_config=multi_vector_config, collection_name=collection_name
     )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.multivec_query_text)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.multivec_query_text,
+        collection_name=collection_name,
+    )
 
 
 def test_dense_query():
@@ -979,29 +1159,76 @@ def test_dense_query():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text)
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_image)
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_code)
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_offset
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_with_vector
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_image,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_score_threshold
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_code,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_select_payload
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_offset,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_image_select_vector
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_with_vector,
+        collection_name=collection_name,
     )
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_payload_exclude)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_score_threshold,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_select_payload,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_image_select_vector,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_payload_exclude,
+        collection_name=collection_name,
+    )
 
-    for i in range(100):
+    for _ in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
@@ -1010,6 +1237,7 @@ def test_dense_query():
                 grpc_client,
                 searcher.filter_dense_query_text,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
             compare_clients_results(
                 local_client,
@@ -1017,6 +1245,7 @@ def test_dense_query():
                 grpc_client,
                 searcher.filter_query_scroll,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
@@ -1028,15 +1257,28 @@ def test_dense_query_orderby():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
-
-    http_client.create_payload_index(
-        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
     )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_queries_orderby)
+    http_client.create_payload_index(
+        collection_name, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+    )
+
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.deep_dense_queries_orderby
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_queries_orderby,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.deep_dense_queries_orderby,
+        collection_name=collection_name,
     )
 
 
@@ -1045,10 +1287,25 @@ def test_dense_query_recommend():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_recommend_image)
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_many_recommend)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_recommend_image,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_many_recommend,
+        collection_name=collection_name,
+    )
 
 
 def test_dense_query_rescore():
@@ -1056,11 +1313,24 @@ def test_dense_query_rescore():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_queries_rescore)
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_deep_queries_rescore
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_queries_rescore,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_deep_queries_rescore,
+        collection_name=collection_name,
     )
 
 
@@ -1069,18 +1339,45 @@ def test_dense_query_fusion():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_rrf)
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_rrf_plain_prefetch
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_rrf,
+        collection_name=collection_name,
     )
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_dbsf)
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.deep_dense_queries_rrf
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_rrf_plain_prefetch,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.deep_dense_queries_dbsf
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_dbsf,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.deep_dense_queries_rrf,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.deep_dense_queries_dbsf,
+        collection_name=collection_name,
     )
 
 
@@ -1090,10 +1387,25 @@ def test_dense_query_discovery_context():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_discovery_image)
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_many_discover)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_discovery_image,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_many_discover,
+        collection_name=collection_name,
+    )
     compare_clients_results(
         local_client,
         http_client,
@@ -1101,6 +1413,7 @@ def test_dense_query_discovery_context():
         searcher.dense_context_image,
         is_context_search=True,
         limit=n_vectors,
+        collection_name=collection_name,
     )
 
 
@@ -1109,29 +1422,76 @@ def test_simple_opt_vectors_query():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text)
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_image)
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_code)
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_offset
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_with_vector
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_image,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_score_threshold
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_code,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_select_payload
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_offset,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_image_select_vector
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_with_vector,
+        collection_name=collection_name,
     )
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_payload_exclude)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_score_threshold,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_select_payload,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_image_select_vector,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_payload_exclude,
+        collection_name=collection_name,
+    )
 
-    for i in range(100):
+    for _ in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
@@ -1140,6 +1500,7 @@ def test_simple_opt_vectors_query():
                 grpc_client,
                 searcher.filter_dense_query_text,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
             compare_clients_results(
                 local_client,
@@ -1147,6 +1508,7 @@ def test_simple_opt_vectors_query():
                 grpc_client,
                 searcher.filter_query_scroll,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
@@ -1163,11 +1525,12 @@ def test_single_dense_vector():
         distance=models.Distance.DOT,
     )
 
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
-        fixture_points, vectors_config=vectors_config
+        fixture_points, vectors_config=vectors_config, collection_name=collection_name
     )
 
-    for i in range(100):
+    for _ in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
@@ -1176,95 +1539,100 @@ def test_single_dense_vector():
                 grpc_client,
                 searcher.filter_dense_query_text_single,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
 
 
-def test_search_with_persistence():
-    import tempfile
-
+def test_search_with_persistence(tmp_path: Path):
     fixture_points = generate_fixtures()
     searcher = TestSimpleSearcher()
-    with tempfile.TemporaryDirectory() as tmpdir:
-        local_client = init_local(tmpdir)
-        init_client(local_client, fixture_points)
 
-        payload_update_filter = one_random_filter_please()
-        local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+    tmpdir = str(tmp_path)
 
-        del local_client
-        local_client_2 = init_local(tmpdir)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client = init_local(tmpdir)
+    init_client(local_client, fixture_points, collection_name)
 
-        http_client = init_remote()
-        grpc_client = init_remote(prefer_grpc=True)
-        init_client(http_client, fixture_points)
+    payload_update_filter = one_random_filter_please()
+    local_client.set_payload(collection_name, {"test": f"test"}, payload_update_filter)
 
-        http_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+    del local_client
+    local_client_2 = init_local(tmpdir)
 
-        payload_update_filter = one_random_filter_please()
-        local_client_2.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
-        http_client.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+    init_client(http_client, fixture_points, collection_name)
 
-        for i in range(10):
-            query_filter = one_random_filter_please()
-            try:
-                compare_clients_results(
-                    local_client_2,
-                    http_client,
-                    grpc_client,
-                    searcher.filter_dense_query_text,
-                    query_filter=query_filter,
-                )
-            except AssertionError as e:
-                print(f"\nFailed with filter {query_filter}")
-                raise e
+    http_client.set_payload(collection_name, {"test": f"test"}, payload_update_filter)
+
+    payload_update_filter = one_random_filter_please()
+    local_client_2.set_payload(collection_name, {"test": "test2"}, payload_update_filter)
+    http_client.set_payload(collection_name, {"test": "test2"}, payload_update_filter)
+
+    for _ in range(10):
+        query_filter = one_random_filter_please()
+        try:
+            compare_clients_results(
+                local_client_2,
+                http_client,
+                grpc_client,
+                searcher.filter_dense_query_text,
+                query_filter=query_filter,
+                collection_name=collection_name,
+            )
+        except AssertionError as e:
+            print(f"\nFailed with filter {query_filter}")
+            raise e
 
 
-def test_search_with_persistence_and_skipped_vectors():
-    import tempfile
-
+def test_search_with_persistence_and_skipped_vectors(tmp_path: Path):
     fixture_points = generate_fixtures(skip_vectors=True)
     searcher = TestSimpleSearcher()
-    with tempfile.TemporaryDirectory() as tmpdir:
-        local_client = init_local(tmpdir)
-        init_client(local_client, fixture_points)
 
-        payload_update_filter = one_random_filter_please()
-        local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+    tmpdir = str(tmp_path)
 
-        count_before_load = local_client.count(COLLECTION_NAME)
-        del local_client
-        local_client_2 = init_local(tmpdir)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client = init_local(tmpdir)
+    init_client(local_client, fixture_points, collection_name)
 
-        count_after_load = local_client_2.count(COLLECTION_NAME)
+    payload_update_filter = one_random_filter_please()
+    local_client.set_payload(collection_name, {"test": f"test"}, payload_update_filter)
 
-        assert count_after_load == count_before_load
+    count_before_load = local_client.count(collection_name)
+    del local_client
+    local_client_2 = init_local(tmpdir)
 
-        http_client = init_remote()
-        grpc_client = init_remote(prefer_grpc=True)
-        init_client(http_client, fixture_points)
+    count_after_load = local_client_2.count(collection_name)
 
-        http_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
+    assert count_after_load == count_before_load
 
-        payload_update_filter = one_random_filter_please()
-        local_client_2.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
-        http_client.set_payload(COLLECTION_NAME, {"test": "test2"}, payload_update_filter)
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+    init_client(http_client, fixture_points, collection_name)
 
-        for i in range(10):
-            query_filter = one_random_filter_please()
-            try:
-                compare_clients_results(
-                    local_client_2,
-                    http_client,
-                    grpc_client,
-                    searcher.filter_dense_query_text,
-                    query_filter=query_filter,
-                )
-            except AssertionError as e:
-                print(f"\nFailed with filter {query_filter}")
-                raise e
+    http_client.set_payload(collection_name, {"test": f"test"}, payload_update_filter)
+
+    payload_update_filter = one_random_filter_please()
+    local_client_2.set_payload(collection_name, {"test": "test2"}, payload_update_filter)
+    http_client.set_payload(collection_name, {"test": "test2"}, payload_update_filter)
+
+    for i in range(10):
+        query_filter = one_random_filter_please()
+        try:
+            compare_clients_results(
+                local_client_2,
+                http_client,
+                grpc_client,
+                searcher.filter_dense_query_text,
+                query_filter=query_filter,
+                collection_name=collection_name,
+            )
+        except AssertionError as e:
+            print(f"\nFailed with filter {query_filter}")
+            raise e
 
 
 def test_query_invalid_vector_type():
@@ -1272,38 +1640,42 @@ def test_query_invalid_vector_type():
 
     fixture_points = generate_fixtures()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
     vector_invalid_type = [1, 2, 3, 4]
     with pytest.raises(ValueError):
         local_client.query_points(
-            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
+            collection_name=collection_name, query=vector_invalid_type, using="text"
         )
 
     with pytest.raises(UnexpectedResponse):
         http_client.query_points(
-            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
+            collection_name=collection_name, query=vector_invalid_type, using="text"
         )
 
     with pytest.raises(grpc.RpcError):
         grpc_client.query_points(
-            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="text"
+            collection_name=collection_name, query=vector_invalid_type, using="text"
         )
 
 
 def test_query_with_nan():
     fixture_points = generate_fixtures()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, _ = init_clients(fixture_points, collection_name=collection_name)
 
     vector = np.random.random(text_vector_size)
     vector[4] = np.nan
     query = vector.tolist()
     with pytest.raises(AssertionError):
-        local_client.query_points(COLLECTION_NAME, query=query, using="text")
+        local_client.query_points(collection_name, query=query, using="text")
 
     with pytest.raises(UnexpectedResponse):
-        http_client.query_points(COLLECTION_NAME, query=query, using="text")
+        http_client.query_points(collection_name, query=query, using="text")
 
     # TODO: this doesn't fail, instead it returns points with `nan` score
     # with pytest.raises(UnexpectedResponse):
@@ -1313,21 +1685,21 @@ def test_query_with_nan():
         size=text_vector_size, distance=models.Distance.COSINE
     )
 
-    local_client.delete_collection(COLLECTION_NAME)
-    local_client.create_collection(COLLECTION_NAME, vectors_config=single_vector_config)
+    local_client.delete_collection(collection_name)
+    local_client.create_collection(collection_name, vectors_config=single_vector_config)
 
-    http_client.delete_collection(COLLECTION_NAME)
-    http_client.create_collection(COLLECTION_NAME, vectors_config=single_vector_config)
+    http_client.delete_collection(collection_name)
+    http_client.create_collection(collection_name, vectors_config=single_vector_config)
 
     fixture_points = generate_fixtures(vectors_sizes=text_vector_size)
-    init_client(local_client, fixture_points, vectors_config=single_vector_config)
-    init_client(http_client, fixture_points, vectors_config=single_vector_config)
+    init_client(local_client, fixture_points, collection_name, vectors_config=single_vector_config)
+    init_client(http_client, fixture_points, collection_name, vectors_config=single_vector_config)
 
     with pytest.raises(AssertionError):
-        print(local_client.query_points(COLLECTION_NAME, query=query))
+        print(local_client.query_points(collection_name, query=query))
 
     with pytest.raises(UnexpectedResponse):
-        http_client.query_points(COLLECTION_NAME, query=query)
+        http_client.query_points(collection_name, query=query)
 
     # TODO: this doesn't fail, instead it returns points with `nan` score
     # with pytest.raises(UnexpectedResponse):
@@ -1339,14 +1711,31 @@ def test_flat_query_dense_interface():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text)
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_np_array
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text,
+        collection_name=collection_name,
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.dense_query_text_by_id
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_np_array,
+        collection_name=collection_name,
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.dense_query_text_by_id,
+        collection_name=collection_name,
     )
 
 
@@ -1355,11 +1744,20 @@ def test_flat_query_sparse_interface():
 
     searcher = TestSimpleSearcher()
 
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
-        fixture_points, sparse_vectors_config=sparse_vectors_config
+        fixture_points,
+        sparse_vectors_config=sparse_vectors_config,
+        collection_name=collection_name,
     )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.sparse_query_text)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.sparse_query_text,
+        collection_name=collection_name,
+    )
 
 
 def test_flat_query_multivector_interface():
@@ -1367,11 +1765,18 @@ def test_flat_query_multivector_interface():
 
     searcher = TestSimpleSearcher()
 
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
-        fixture_points, vectors_config=multi_vector_config
+        fixture_points, vectors_config=multi_vector_config, collection_name=collection_name
     )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.multivec_query_text)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.multivec_query_text,
+        collection_name=collection_name,
+    )
 
 
 def test_original_input_persistence():
@@ -1397,8 +1802,12 @@ def test_original_input_persistence():
     ]
     dense_vector_name = "text"
     sparse_vector_name = "sparse-text"
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
-        points, vectors_config=vectors_config, sparse_vectors_config=sparse_vectors_config
+        points,
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+        collection_name=collection_name,
     )
 
     point_id = 1
@@ -1410,7 +1819,7 @@ def test_original_input_persistence():
         ),
     ]
     local_client.query_points(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         prefetch=prefetch,
         query=models.RecommendQuery(recommend=shared_instance),
         using=dense_vector_name,
@@ -1424,14 +1833,14 @@ def test_original_input_persistence():
         ),
     ]
     http_client.query_points(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         prefetch=prefetch,
         query=models.RecommendQuery(recommend=shared_instance),
         using=dense_vector_name,
     )
 
     grpc_client.query_points(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         prefetch=prefetch,
         query=models.RecommendQuery(recommend=shared_instance),
         using=dense_vector_name,
@@ -1445,32 +1854,52 @@ def test_query_group():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name_1 = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    collection_name_2 = f"{SECONDARY_COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name_1
+    )
 
-    init_client(local_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
-    init_client(http_client, secondary_collection_points, SECONDARY_COLLECTION_NAME)
+    init_client(local_client, secondary_collection_points, collection_name_2)
+    init_client(http_client, secondary_collection_points, collection_name_2)
 
     searcher.group_size = 5
     searcher.limit = 3
     for key in group_by_keys():
         searcher.group_by = key
-        compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_group)
         compare_clients_results(
-            local_client, http_client, grpc_client, searcher.dense_query_group_with_lookup
+            local_client,
+            http_client,
+            grpc_client,
+            searcher.dense_query_group,
+            collection_name=collection_name_1,
         )
         compare_clients_results(
-            local_client, http_client, grpc_client, searcher.dense_queries_rescore_group
+            local_client,
+            http_client,
+            grpc_client,
+            searcher.dense_query_group_with_lookup,
+            collection_name_1=collection_name_1,
+            collection_name_2=collection_name_2,
+        )
+        compare_clients_results(
+            local_client,
+            http_client,
+            grpc_client,
+            searcher.dense_queries_rescore_group,
+            collection_name=collection_name_1,
         )
         compare_clients_results(
             local_client,
             http_client,
             grpc_client,
             searcher.dense_query_lookup_from_group,
-            lookup_from=models.LookupLocation(collection=SECONDARY_COLLECTION_NAME, vector="text"),
+            lookup_from=models.LookupLocation(collection=collection_name_2, vector="text"),
+            collection_name=collection_name_1,
         )
 
     searcher.group_by = "city.name"
-    for i in range(100):
+    for _ in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
@@ -1479,6 +1908,7 @@ def test_query_group():
                 grpc_client,
                 searcher.filter_dense_query_group,
                 query_filter=query_filter,
+                collection_name=collection_name_1,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
@@ -1490,6 +1920,15 @@ def test_random_sampling():
 
     searcher = TestSimpleSearcher()
 
-    local_client, http_client, grpc_client = init_clients(fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client, http_client, grpc_client = init_clients(
+        fixture_points, collection_name=collection_name
+    )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.random_query)
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.random_query,
+        collection_name=collection_name,
+    )
