@@ -1,7 +1,6 @@
+import uuid
 from time import sleep
-from typing import Callable
-
-import pytest
+from typing import Callable, Any
 
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
@@ -18,6 +17,13 @@ COLLECTION_NAME = "test_collection"
 
 
 def test_get_collection():
+    # when running tests in parallel, it will fail because other tests create collections
+    # and the length of collections will be different
+    wait_for(test_recreate_collection)
+    wait_for(test_collection_exists)
+    wait_for(test_init_from)
+    wait_for(test_config_variations)
+
     fixture_points = generate_fixtures()
 
     remote_client = init_remote()
@@ -27,10 +33,11 @@ def test_get_collection():
     for collection in remote_collections.collections:
         remote_client.delete_collection(collection.name)
 
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
 
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, collection_name)
 
     local_collections = local_client.get_collections()
 
@@ -62,42 +69,44 @@ def test_recreate_collection():
 
     vector_params = models.VectorParams(size=20, distance=models.Distance.COSINE)
 
-    local_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
-    http_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    local_client.recreate_collection(collection_name, vectors_config=vector_params)
+    http_client.recreate_collection(collection_name, vectors_config=vector_params)
 
-    assert local_client.collection_exists(COLLECTION_NAME)
-    assert http_client.collection_exists(COLLECTION_NAME)
+    assert local_client.collection_exists(collection_name)
+    assert http_client.collection_exists(collection_name)
 
-    http_client.delete_collection(COLLECTION_NAME)
-    grpc_client.recreate_collection(COLLECTION_NAME, vectors_config=vector_params)
-    assert grpc_client.collection_exists(COLLECTION_NAME)
+    http_client.delete_collection(collection_name)
+    grpc_client.recreate_collection(collection_name, vectors_config=vector_params)
+    assert grpc_client.collection_exists(collection_name)
 
 
 def test_collection_exists():
     remote_client = init_remote()
     local_client = init_local()
 
-    assert not remote_client.collection_exists(COLLECTION_NAME + "_not_exists")
-    assert not local_client.collection_exists(COLLECTION_NAME + "_not_exists")
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    assert not remote_client.collection_exists(collection_name + "_not_exists")
+    assert not local_client.collection_exists(collection_name + "_not_exists")
 
     vector_params = models.VectorParams(size=2, distance=models.Distance.COSINE)
 
     try:
-        remote_client.delete_collection(COLLECTION_NAME)
+        remote_client.delete_collection(collection_name)
     except UnexpectedResponse:
         pass  # collection does not exist
 
-    remote_client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
+    remote_client.create_collection(collection_name, vectors_config=vector_params)
 
     try:
-        local_client.delete_collection(COLLECTION_NAME)
+        local_client.delete_collection(collection_name)
     except ValueError:
         pass  # collection does not exist
 
-    local_client.create_collection(COLLECTION_NAME, vectors_config=vector_params)
+    local_client.create_collection(collection_name, vectors_config=vector_params)
 
-    assert remote_client.collection_exists(COLLECTION_NAME)
-    assert local_client.collection_exists(COLLECTION_NAME)
+    assert remote_client.collection_exists(collection_name)
+    assert local_client.collection_exists(collection_name)
 
 
 def test_init_from():
@@ -109,29 +118,30 @@ def test_init_from():
     points = generate_fixtures(vectors_sizes=vector_size)
     vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    if remote_client.collection_exists(collection_name):
+        remote_client.delete_collection(collection_name=collection_name)
+    remote_client.create_collection(collection_name=collection_name, vectors_config=vector_params)
 
-    if local_client.collection_exists(COLLECTION_NAME):
-        local_client.delete_collection(collection_name=COLLECTION_NAME)
-    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
+    if local_client.collection_exists(collection_name):
+        local_client.delete_collection(collection_name=collection_name)
+    local_client.create_collection(collection_name=collection_name, vectors_config=vector_params)
 
-    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
-    local_client.upload_points(COLLECTION_NAME, points)
-    compare_collections(remote_client, local_client, len(points), collection_name=COLLECTION_NAME)
+    remote_client.upload_points(collection_name, points, wait=True)
+    local_client.upload_points(collection_name, points)
+    compare_collections(remote_client, local_client, len(points), collection_name=collection_name)
 
-    new_collection_name = COLLECTION_NAME + "_new"
+    new_collection_name = collection_name + "_new"
     if remote_client.collection_exists(new_collection_name):
         remote_client.delete_collection(new_collection_name)
     remote_client.create_collection(
-        new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
+        new_collection_name, vectors_config=vector_params, init_from=collection_name
     )
 
     if local_client.collection_exists(new_collection_name):
         local_client.delete_collection(new_collection_name)
     local_client.create_collection(
-        new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
+        new_collection_name, vectors_config=vector_params, init_from=collection_name
     )
 
     # init_from is performed asynchronously, so we need to retry
@@ -149,14 +159,14 @@ def test_init_from():
     remote_client.create_collection(
         new_collection_name,
         vectors_config=vector_params,
-        init_from=models.InitFrom(collection=COLLECTION_NAME),
+        init_from=models.InitFrom(collection=collection_name),
     )
     if local_client.collection_exists(new_collection_name):
         local_client.delete_collection(new_collection_name)
     local_client.create_collection(
         new_collection_name,
         vectors_config=vector_params,
-        init_from=models.InitFrom(collection=COLLECTION_NAME),
+        init_from=models.InitFrom(collection=collection_name),
     )
 
     # init_from is performed asynchronously, so we need to retry
@@ -170,34 +180,36 @@ def test_init_from():
 
 
 def test_config_variations():
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+
     def check_variation(vectors_config, sparse_vectors_config):
-        if remote_client.collection_exists(COLLECTION_NAME):
-            remote_client.delete_collection(COLLECTION_NAME)
-        if local_client.collection_exists(COLLECTION_NAME):
-            local_client.delete_collection(COLLECTION_NAME)
+        if remote_client.collection_exists(collection_name):
+            remote_client.delete_collection(collection_name)
+        if local_client.collection_exists(collection_name):
+            local_client.delete_collection(collection_name)
 
         remote_client.create_collection(
-            COLLECTION_NAME,
+            collection_name,
             vectors_config=vectors_config,
             sparse_vectors_config=sparse_vectors_config,
         )
         local_client.create_collection(
-            COLLECTION_NAME,
+            collection_name,
             vectors_config=vectors_config,
             sparse_vectors_config=sparse_vectors_config,
         )
 
-        remote_client_config_params = remote_client.get_collection(COLLECTION_NAME).config.params
-        local_client_config_params = local_client.get_collection(COLLECTION_NAME).config.params
+        remote_client_config_params = remote_client.get_collection(collection_name).config.params
+        local_client_config_params = local_client.get_collection(collection_name).config.params
 
         assert remote_client_config_params.vectors == local_client_config_params.vectors
         assert (
             remote_client_config_params.sparse_vectors == local_client_config_params.sparse_vectors
         )
 
-        remote_grpc_client.delete_collection(COLLECTION_NAME)
+        remote_grpc_client.delete_collection(collection_name)
         remote_grpc_client.create_collection(
-            COLLECTION_NAME,
+            collection_name,
             vectors_config=vectors_config,
             sparse_vectors_config=sparse_vectors_config,
         )
@@ -223,8 +235,8 @@ def test_config_variations():
     check_variation(None, None)
 
 
-def wait_for(condition: Callable, *args, **kwargs):
-    for i in range(0, 10):
+def wait_for(condition: Callable[..., None], *args: Any, **kwargs: Any) -> None:
+    for _ in range(10):
         try:
             condition(*args, **kwargs)
         except AssertionError:
