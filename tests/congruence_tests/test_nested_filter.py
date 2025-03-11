@@ -10,14 +10,14 @@ from tests.congruence_tests.test_common import (
 )
 
 
-def test_nested_query():
+def test_nested_query(collection_name: str):
     fixture_points = generate_fixtures(num=20)
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, collection_name)
 
     filter_ = models.Filter(
         **{
@@ -48,14 +48,14 @@ def test_nested_query():
     )
 
     local_result, _next_page = local_client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=filter_,
         limit=100,
         with_payload=True,
     )
 
     remote_result, _next_page = remote_client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=filter_,
         limit=100,
         with_payload=True,
