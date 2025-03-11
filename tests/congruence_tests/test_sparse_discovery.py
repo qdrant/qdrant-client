@@ -34,10 +34,19 @@ def secondary_collection_points() -> list[models.PointStruct]:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def local_client(fixture_points, secondary_collection_points) -> QdrantClient:
+def local_client(
+    fixture_points: list[models.PointStruct],
+    secondary_collection_points: list[models.PointStruct],
+    collection_name: str,
+    secondary_collection_name: str,
+) -> QdrantClient:
     client = init_local()
     init_client(
-        client, fixture_points, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+        client,
+        fixture_points,
+        collection_name,
+        vectors_config={},
+        sparse_vectors_config=sparse_vectors_config,
     )
     init_client(
         client,
@@ -49,10 +58,19 @@ def local_client(fixture_points, secondary_collection_points) -> QdrantClient:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def http_client(fixture_points, secondary_collection_points) -> QdrantClient:
+def http_client(
+    fixture_points: list[models.PointStruct],
+    secondary_collection_points: list[models.PointStruct],
+    collection_name: str,
+    secondary_collection_name: str,
+) -> QdrantClient:
     client = init_remote()
     init_client(
-        client, fixture_points, vectors_config={}, sparse_vectors_config=sparse_vectors_config
+        client,
+        fixture_points,
+        collection_name,
+        vectors_config={},
+        sparse_vectors_config=sparse_vectors_config,
     )
     init_client(
         client,
@@ -65,33 +83,41 @@ def http_client(fixture_points, secondary_collection_points) -> QdrantClient:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def grpc_client(fixture_points, secondary_collection_points) -> QdrantClient:
+def grpc_client() -> QdrantClient:
     client = init_remote(prefer_grpc=True)
     return client
 
 
 def test_context(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+    def f(
+        client: QdrantBase, collection_name: str, **kwargs: dict[str, Any]
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
             limit=200,
             using="sparse-image",
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(
+        grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
+    )
+    compare_client_results(
+        local_client, http_client, f, is_context_search=True, collection_name=collection_name
+    )
 
 
 def test_context_many_pairs(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
     random_sparse_image_vector_1 = random_sparse_vectors(
         {"sparse-image": sparse_image_vector_size}
@@ -100,9 +126,11 @@ def test_context_many_pairs(
         {"sparse-image": sparse_image_vector_size}
     )["sparse-image"]
 
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+    def f(
+        client: QdrantBase, collection_name: str, **kwargs: dict[str, Any]
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             context=[
                 models.ContextExamplePair(positive=11, negative=19),
                 models.ContextExamplePair(positive=100, negative=199),
@@ -117,18 +145,25 @@ def test_context_many_pairs(
             using="sparse-image",
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(
+        grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
+    )
+    compare_client_results(
+        local_client, http_client, f, is_context_search=True, collection_name=collection_name
+    )
 
 
 def test_discover(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+    def f(
+        client: QdrantBase, collection_name: str, **kwargs: dict[str, Any]
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             target=10,
             context=[models.ContextExamplePair(positive=11, negative=19)],
             with_payload=True,
@@ -136,80 +171,96 @@ def test_discover(
             using="sparse-image",
         )
 
-    compare_client_results(grpc_client, http_client, f)
-    compare_client_results(local_client, http_client, f)
+    compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
+    compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
 
 def test_discover_raw_target(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
     random_sparse_image_vector = random_sparse_vectors({"sparse-image": sparse_image_vector_size})[
         "sparse-image"
     ]
 
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+    def f(
+        client: QdrantBase, collection_name: str, **kwargs: dict[str, Any]
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             target=random_sparse_image_vector,
             context=[models.ContextExamplePair(positive=10, negative=19)],
             limit=100,
             using="sparse-image",
         )
 
-    compare_client_results(grpc_client, http_client, f)
-    compare_client_results(local_client, http_client, f)
+    compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
+    compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
 
 def test_context_raw_positive(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
     random_sparse_image_vector = random_sparse_vectors({"sparse-image": sparse_image_vector_size})[
         "sparse-image"
     ]
 
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+    def f(
+        client: QdrantBase, collection_name: str, **kwargs: dict[str, Any]
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             target=10,
             context=[models.ContextExamplePair(positive=random_sparse_image_vector, negative=19)],
             limit=10,
             using="sparse-image",
         )
 
-    compare_client_results(grpc_client, http_client, f)
-    compare_client_results(local_client, http_client, f)
+    compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
+    compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
 
 def test_only_target(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
 ):
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+    def f(
+        client: QdrantBase, collection_name: str, **kwargs: dict[str, Any]
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             target=10,
             with_payload=True,
             limit=10,
             using="sparse-image",
         )
 
-    compare_client_results(grpc_client, http_client, f)
-    compare_client_results(local_client, http_client, f)
+    compare_client_results(grpc_client, http_client, f, collection_name=collection_name)
+    compare_client_results(local_client, http_client, f, collection_name=collection_name)
 
 
 def test_discover_from_another_collection(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
+    secondary_collection_name: str,
 ):
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+    def f(
+        client: QdrantBase,
+        collection_name: str,
+        secondary_collection_name: str,
+        **kwargs: dict[str, Any],
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             target=10,
             context=[models.ContextExamplePair(positive=15, negative=7)],
             with_payload=True,
@@ -221,18 +272,37 @@ def test_discover_from_another_collection(
             ),
         )
 
-    compare_client_results(grpc_client, http_client, f)
-    compare_client_results(local_client, http_client, f)
+    compare_client_results(
+        grpc_client,
+        http_client,
+        f,
+        collection_name=collection_name,
+        secondary_collection_name=secondary_collection_name,
+    )
+    compare_client_results(
+        local_client,
+        http_client,
+        f,
+        collection_name=collection_name,
+        secondary_collection_name=secondary_collection_name,
+    )
 
 
 def test_discover_batch(
-    local_client,
-    http_client,
-    grpc_client,
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
+    secondary_collection_name: str,
 ):
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[list[models.ScoredPoint]]:
+    def f(
+        client: QdrantBase,
+        collection_name: str,
+        secondary_collection_name: str,
+        **kwargs: dict[str, Any],
+    ) -> list[list[models.ScoredPoint]]:
         return client.discover_batch(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             requests=[
                 models.DiscoverRequest(
                     target=10,
@@ -253,15 +323,35 @@ def test_discover_batch(
             ],
         )
 
-    compare_client_results(grpc_client, http_client, f)
-    compare_client_results(local_client, http_client, f)
+    compare_client_results(
+        grpc_client,
+        http_client,
+        f,
+        collection_name=collection_name,
+        secondary_collection_name=secondary_collection_name,
+    )
+    compare_client_results(
+        local_client,
+        http_client,
+        f,
+        collection_name=collection_name,
+        secondary_collection_name=secondary_collection_name,
+    )
 
 
 @pytest.mark.parametrize("filter_", [one_random_filter_please() for _ in range(10)])
-def test_discover_with_filters(local_client, http_client, grpc_client, filter_: models.Filter):
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+def test_discover_with_filters(
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
+    filter_: models.Filter,
+):
+    def f(
+        client: QdrantBase, collection_name: str, **kwargs: dict[str, Any]
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             target=10,
             context=[models.ContextExamplePair(positive=15, negative=7)],
             limit=15,
@@ -271,21 +361,33 @@ def test_discover_with_filters(local_client, http_client, grpc_client, filter_: 
 
 
 @pytest.mark.parametrize("filter_", [one_random_filter_please() for _ in range(10)])
-def test_context_with_filters(local_client, http_client, grpc_client, filter_: models.Filter):
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+def test_context_with_filters(
+    local_client: QdrantBase,
+    http_client: QdrantBase,
+    grpc_client: QdrantBase,
+    collection_name: str,
+    filter_: models.Filter,
+):
+    def f(
+        client: QdrantBase, collection_name: str, **kwargs: dict[str, Any]
+    ) -> list[models.ScoredPoint]:
         return client.discover(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             context=[models.ContextExamplePair(positive=15, negative=7)],
             limit=200,
             using="sparse-image",
             query_filter=filter_,
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(
+        grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
+    )
+    compare_client_results(
+        local_client, http_client, f, is_context_search=True, collection_name=collection_name
+    )
 
 
-def test_query_with_nan():
+def test_query_with_nan(collection_name: str):
     fixture_points = generate_sparse_fixtures()
     using = "sparse-image"
 
@@ -295,12 +397,14 @@ def test_query_with_nan():
     init_client(
         local_client,
         fixture_points,
+        collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
     init_client(
         remote_client,
         fixture_points,
+        collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
@@ -323,7 +427,7 @@ def test_query_with_nan():
     ):
         with pytest.raises(AssertionError):
             local_client.discover(
-                collection_name=COLLECTION_NAME,
+                collection_name=collection_name,
                 target=target,
                 context=[ContextExamplePair(positive=pos, negative=neg)],
                 using=using,
@@ -331,7 +435,7 @@ def test_query_with_nan():
 
         with pytest.raises(UnexpectedResponse):
             remote_client.discover(
-                collection_name=COLLECTION_NAME,
+                collection_name=collection_name,
                 target=target,
                 context=[ContextExamplePair(positive=pos, negative=neg)],
                 using=using,

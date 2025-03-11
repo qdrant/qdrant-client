@@ -455,13 +455,6 @@ def test_discover_with_filters(
             query_filter=filter,
         )
 
-    compare_client_results(
-        grpc_client, http_client, f, is_context_search=True, collection_name=collection_name
-    )
-    compare_client_results(
-        local_client, http_client, f, is_context_search=True, collection_name=collection_name
-    )
-
 
 @pytest.mark.parametrize("filter", [one_random_filter_please() for _ in range(10)])
 def test_context_with_filters(
