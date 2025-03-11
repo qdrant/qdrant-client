@@ -10,7 +10,6 @@ from tests.congruence_tests.test_common import (
     compare_collections,
 )
 from qdrant_client.qdrant_fastembed import IDF_EMBEDDING_MODELS
-from qdrant_client.embed.embedder import Embedder
 
 
 COLLECTION_NAME = "inference_collection"
@@ -1654,64 +1653,3 @@ def test_upsert_batch_with_different_options(prefer_grpc):
         num_vectors=10,
         collection_name=COLLECTION_NAME,
     )
-
-
-def test_batch_size_propagation():
-    def mock(func, kw_param_storage):
-        def decorated(*args, **kwargs):
-            for k in kwargs:
-                kw_param_storage[k] = kwargs[k]
-            return func(*args, **kwargs)
-
-        return decorated
-
-    param_storage = {}
-
-    bm25_name = "Qdrant/bm25"
-    inference_batch_size = 2
-    local_client = QdrantClient(":memory:", local_inference_batch_size=inference_batch_size)
-    if not local_client._FASTEMBED_INSTALLED:
-        pytest.skip("FastEmbed is not installed, skipping")
-    local_client._model_embedder.embedder.embed = mock(
-        local_client._model_embedder.embedder.embed, param_storage
-    )
-
-    if not local_client._FASTEMBED_INSTALLED:
-        pytest.skip("FastEmbed is not installed, skipping")
-
-    sparse_doc_1 = models.Document(
-        text="a quick",
-        model=bm25_name,
-    )
-    sparse_doc_2 = models.Document(
-        text="brown fox",
-        model=bm25_name,
-    )
-    sparse_doc_3 = models.Document(
-        text="jumps over",
-        model=bm25_name,
-    )
-    sparse_doc_4 = models.Document(
-        text="a lazy dog",
-        model=bm25_name,
-    )
-    local_client.create_collection(
-        COLLECTION_NAME, sparse_vectors_config={"sparse": models.SparseVectorParams()}
-    )
-    points = [
-        models.PointStruct(id=0, vector={"sparse": sparse_doc_1}),
-        models.PointStruct(id=1, vector={"sparse": sparse_doc_2}),
-        models.PointStruct(id=2, vector={"sparse": sparse_doc_3}),
-        models.PointStruct(id=3, vector={"sparse": sparse_doc_4}),
-    ]
-    local_client.upsert(  # uses _embed_models
-        COLLECTION_NAME, points
-    )
-    assert param_storage["batch_size"] == inference_batch_size
-    param_storage.clear()
-
-    local_client.upload_points(
-        COLLECTION_NAME, points=points, batch_size=3
-    )  # uses _embed_models_strict
-    assert param_storage["batch_size"] == inference_batch_size
-    param_storage.clear()

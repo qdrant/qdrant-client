@@ -109,9 +109,9 @@ def initialize_fixture_collection(
     )
 
 
-def delete_fixture_collection(client: QdrantBase) -> None:
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(COLLECTION_NAME)
+def delete_fixture_collection(client: QdrantBase, collection_name: str = COLLECTION_NAME) -> None:
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name)
 
 
 def generate_fixtures(
