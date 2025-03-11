@@ -64,7 +64,6 @@ async def test_async_qdrant_client(prefer_grpc):
     )
     assert (await client.get_aliases()).aliases == []
 
-    k = 50
     await client.upsert(
         collection_name=COLLECTION_NAME,
         points=[
@@ -73,10 +72,10 @@ async def test_async_qdrant_client(prefer_grpc):
                 vector=np.random.rand(10).tolist(),
                 payload={"random_dig": random.randint(1, 100)},
             )
-            for i in range(k)
+            for i in range(100)
         ],
     )
-    assert (await client.count(COLLECTION_NAME)).count == k
+    assert (await client.count(COLLECTION_NAME)).count == 100
 
     assert len((await client.scroll(COLLECTION_NAME, limit=2))[0]) == 2
 
@@ -227,7 +226,7 @@ async def test_async_qdrant_client(prefer_grpc):
     ] * 10
 
     await client.delete(COLLECTION_NAME, points_selector=[0])
-    assert (await client.count(COLLECTION_NAME)).count == k - 1
+    assert (await client.count(COLLECTION_NAME)).count == 99
 
     await client.batch_update_points(
         COLLECTION_NAME,
@@ -237,7 +236,7 @@ async def test_async_qdrant_client(prefer_grpc):
             )
         ],
     )
-    assert (await client.count(COLLECTION_NAME)).count == k
+    assert (await client.count(COLLECTION_NAME)).count == 100
 
     await client.set_payload(COLLECTION_NAME, payload={"added_payload": "zero"}, points=[0])
     assert (await client.retrieve(COLLECTION_NAME, ids=[0], with_payload=["added_payload"]))[
@@ -307,7 +306,6 @@ async def test_async_qdrant_client_local():
     )
     assert await client.get_aliases()
 
-    k = 50
     await client.upsert(
         collection_name=COLLECTION_NAME,
         points=[
@@ -316,10 +314,10 @@ async def test_async_qdrant_client_local():
                 vector=np.random.rand(10).tolist(),
                 payload={"random_dig": random.randint(1, 100)},
             )
-            for i in range(k)
+            for i in range(50)
         ],
     )
-    assert (await client.count(COLLECTION_NAME)).count == k
+    assert (await client.count(COLLECTION_NAME)).count == 100
 
     assert len((await client.scroll(COLLECTION_NAME, limit=2))[0]) == 2
 
