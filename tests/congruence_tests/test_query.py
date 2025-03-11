@@ -1,4 +1,3 @@
-import uuid
 from pathlib import Path
 from typing import Tuple, Callable, Any
 
@@ -254,18 +253,18 @@ class TestSimpleSearcher:
     def dense_query_group_with_lookup(
         self,
         client: QdrantBase,
-        collection_name_1: str = COLLECTION_NAME,
-        collection_name_2: str = SECONDARY_COLLECTION_NAME,
+        collection_name: str = COLLECTION_NAME,
+        secondary_collection_name: str = SECONDARY_COLLECTION_NAME,
     ) -> GroupsResult:
         return client.query_points_groups(
-            collection_name=collection_name_1,
+            collection_name=collection_name,
             query=self.dense_vector_query_text,
             using="text",
             group_by=self.group_by,
             group_size=self.group_size,
             limit=self.limit,
             with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
-            with_lookup=collection_name_2,
+            with_lookup=secondary_collection_name,
         )
 
     def filter_dense_query_group(
@@ -845,49 +844,52 @@ def compare_clients_results(
 # ---- TESTS  ---- #
 
 
-def test_dense_query_lookup_from_another_collection():
+def test_dense_query_lookup_from_another_collection(
+    collection_name: str, secondary_collection_name: str
+):
     fixture_points = generate_fixtures(10)
 
     secondary_collection_points = generate_fixtures(10)
 
     searcher = TestSimpleSearcher()
 
-    collection_name_1 = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
-    collection_name_2 = f"{SECONDARY_COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
-        fixture_points, collection_name=collection_name_1
+        fixture_points, collection_name=collection_name
     )
 
-    init_client(local_client, secondary_collection_points, collection_name_2)
-    init_client(http_client, secondary_collection_points, collection_name_2)
+    init_client(local_client, secondary_collection_points, secondary_collection_name)
+    init_client(http_client, secondary_collection_points, secondary_collection_name)
 
     compare_clients_results(
         local_client,
         http_client,
         grpc_client,
         searcher.dense_query_lookup_from,
-        lookup_from=models.LookupLocation(collection=collection_name_2, vector="text"),
-        collection_name=collection_name_1,
+        lookup_from=models.LookupLocation(collection=secondary_collection_name, vector="text"),
+        collection_name=collection_name,
     )
 
 
-def test_dense_query_lookup_from_negative(local_client: QdrantBase, remote_client: QdrantBase):
+def test_dense_query_lookup_from_negative(
+    local_client: QdrantBase,
+    remote_client: QdrantBase,
+    collection_name: str,
+    secondary_collection_name: str,
+):
     fixture_points = generate_fixtures()
 
     secondary_collection_points = generate_fixtures(10)
 
-    collection_name_1 = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
-    collection_name_2 = f"{SECONDARY_COLLECTION_NAME}_{uuid.uuid4().hex}"
-    init_client(local_client, fixture_points, collection_name_1)
-    init_client(local_client, secondary_collection_points, collection_name_2)
+    init_client(local_client, fixture_points, collection_name)
+    init_client(local_client, secondary_collection_points, secondary_collection_name)
 
-    init_client(remote_client, fixture_points, collection_name_1)
-    init_client(remote_client, secondary_collection_points, collection_name_2)
+    init_client(remote_client, fixture_points, collection_name)
+    init_client(remote_client, secondary_collection_points, secondary_collection_name)
 
     lookup_from = models.LookupLocation(collection="i-do-not-exist", vector="text")
     with pytest.raises(ValueError, match="Collection i-do-not-exist not found"):
         local_client.query_points(
-            collection_name=collection_name_1,
+            collection_name=collection_name,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -897,7 +899,7 @@ def test_dense_query_lookup_from_negative(local_client: QdrantBase, remote_clien
         )
     with pytest.raises(UnexpectedResponse, match="Not found: Collection"):
         remote_client.query_points(
-            collection_name=collection_name_1,
+            collection_name=collection_name,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -906,10 +908,12 @@ def test_dense_query_lookup_from_negative(local_client: QdrantBase, remote_clien
             lookup_from=lookup_from,
         )
 
-    lookup_from = models.LookupLocation(collection=collection_name_2, vector="i-do-not-exist")
+    lookup_from = models.LookupLocation(
+        collection=secondary_collection_name, vector="i-do-not-exist"
+    )
     with pytest.raises(ValueError, match="Vector i-do-not-exist not found"):
         local_client.query_points(
-            collection_name=collection_name_1,
+            collection_name=collection_name,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -919,7 +923,7 @@ def test_dense_query_lookup_from_negative(local_client: QdrantBase, remote_clien
         )
     with pytest.raises(UnexpectedResponse, match="Not existing vector name error"):
         remote_client.query_points(
-            collection_name=collection_name_1,
+            collection_name=collection_name,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
             ),
@@ -929,7 +933,7 @@ def test_dense_query_lookup_from_negative(local_client: QdrantBase, remote_clien
         )
 
 
-def test_no_query_no_prefetch():
+def test_no_query_no_prefetch(collection_name: str):
     major, minor, patch, dev = read_version()
     if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 10, 1):
         pytest.skip("Works as of version 1.10.1")
@@ -938,7 +942,6 @@ def test_no_query_no_prefetch():
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -974,12 +977,11 @@ def test_no_query_no_prefetch():
     )
 
 
-def test_dense_query_nested_prefetch():
+def test_dense_query_nested_prefetch(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -993,12 +995,11 @@ def test_dense_query_nested_prefetch():
     )
 
 
-def test_dense_query_filtered_prefetch():
+def test_dense_query_filtered_prefetch(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1019,12 +1020,11 @@ def test_dense_query_filtered_prefetch():
             raise e
 
 
-def test_dense_query_prefetch_score_threshold():
+def test_dense_query_prefetch_score_threshold(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1038,12 +1038,11 @@ def test_dense_query_prefetch_score_threshold():
     )
 
 
-def test_dense_query_prefetch_parametrized():
+def test_dense_query_prefetch_parametrized(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1082,12 +1081,11 @@ def test_dense_query_prefetch_parametrized():
     )
 
 
-def test_dense_query_parametrized():
+def test_dense_query_parametrized(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1114,12 +1112,11 @@ def test_dense_query_parametrized():
     )
 
 
-def test_sparse_query():
+def test_sparse_query(collection_name: str):
     fixture_points = generate_sparse_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points,
         sparse_vectors_config=sparse_vectors_config,
@@ -1135,12 +1132,11 @@ def test_sparse_query():
     )
 
 
-def test_multivec_query():
+def test_multivec_query(collection_name: str):
     fixture_points = generate_multivector_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, vectors_config=multi_vector_config, collection_name=collection_name
     )
@@ -1154,12 +1150,11 @@ def test_multivec_query():
     )
 
 
-def test_dense_query():
+def test_dense_query(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1252,12 +1247,11 @@ def test_dense_query():
             raise e
 
 
-def test_dense_query_orderby():
+def test_dense_query_orderby(collection_name: str):
     fixture_points = generate_fixtures(200)
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1282,12 +1276,11 @@ def test_dense_query_orderby():
     )
 
 
-def test_dense_query_recommend():
+def test_dense_query_recommend(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1308,12 +1301,11 @@ def test_dense_query_recommend():
     )
 
 
-def test_dense_query_rescore():
+def test_dense_query_rescore(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1334,12 +1326,11 @@ def test_dense_query_rescore():
     )
 
 
-def test_dense_query_fusion():
+def test_dense_query_fusion(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1381,13 +1372,12 @@ def test_dense_query_fusion():
     )
 
 
-def test_dense_query_discovery_context():
+def test_dense_query_discovery_context(collection_name: str):
     n_vectors = 250
     fixture_points = generate_fixtures(n_vectors)
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1417,12 +1407,11 @@ def test_dense_query_discovery_context():
     )
 
 
-def test_simple_opt_vectors_query():
+def test_simple_opt_vectors_query(collection_name: str):
     fixture_points = generate_fixtures(skip_vectors=True)
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1515,7 +1504,7 @@ def test_simple_opt_vectors_query():
             raise e
 
 
-def test_single_dense_vector():
+def test_single_dense_vector(collection_name: str):
     fixture_points = generate_fixtures(num=200, vectors_sizes=text_vector_size)
 
     searcher = TestSimpleSearcher()
@@ -1525,7 +1514,6 @@ def test_single_dense_vector():
         distance=models.Distance.DOT,
     )
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, vectors_config=vectors_config, collection_name=collection_name
     )
@@ -1546,13 +1534,12 @@ def test_single_dense_vector():
             raise e
 
 
-def test_search_with_persistence(tmp_path: Path):
+def test_search_with_persistence(tmp_path: Path, collection_name: str):
     fixture_points = generate_fixtures()
     searcher = TestSimpleSearcher()
 
     tmpdir = str(tmp_path)
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client = init_local(tmpdir)
     init_client(local_client, fixture_points, collection_name)
 
@@ -1588,13 +1575,12 @@ def test_search_with_persistence(tmp_path: Path):
             raise e
 
 
-def test_search_with_persistence_and_skipped_vectors(tmp_path: Path):
+def test_search_with_persistence_and_skipped_vectors(tmp_path: Path, collection_name: str):
     fixture_points = generate_fixtures(skip_vectors=True)
     searcher = TestSimpleSearcher()
 
     tmpdir = str(tmp_path)
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client = init_local(tmpdir)
     init_client(local_client, fixture_points, collection_name)
 
@@ -1635,12 +1621,11 @@ def test_search_with_persistence_and_skipped_vectors(tmp_path: Path):
             raise e
 
 
-def test_query_invalid_vector_type():
+def test_query_invalid_vector_type(collection_name: str):
     import grpc
 
     fixture_points = generate_fixtures()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1662,10 +1647,9 @@ def test_query_invalid_vector_type():
         )
 
 
-def test_query_with_nan():
+def test_query_with_nan(collection_name: str):
     fixture_points = generate_fixtures()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, _ = init_clients(fixture_points, collection_name=collection_name)
 
     vector = np.random.random(text_vector_size)
@@ -1706,12 +1690,11 @@ def test_query_with_nan():
     #     print(grpc_client.query_points(COLLECTION_NAME, query=query))
 
 
-def test_flat_query_dense_interface():
+def test_flat_query_dense_interface(collection_name: str):
     fixture_points = generate_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
@@ -1739,12 +1722,11 @@ def test_flat_query_dense_interface():
     )
 
 
-def test_flat_query_sparse_interface():
+def test_flat_query_sparse_interface(collection_name: str):
     fixture_points = generate_sparse_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points,
         sparse_vectors_config=sparse_vectors_config,
@@ -1760,12 +1742,11 @@ def test_flat_query_sparse_interface():
     )
 
 
-def test_flat_query_multivector_interface():
+def test_flat_query_multivector_interface(collection_name: str):
     fixture_points = generate_multivector_fixtures()
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, vectors_config=multi_vector_config, collection_name=collection_name
     )
@@ -1779,7 +1760,7 @@ def test_flat_query_multivector_interface():
     )
 
 
-def test_original_input_persistence():
+def test_original_input_persistence(collection_name: str):
     # this test is not supposed to compare outputs, but to check that we're not modifying input structures
     # it used to fail when we were modifying input structures in local mode
     # the reason was that we were replacing point id with a sparse vector, and then, when we needed a dense vector
@@ -1802,7 +1783,7 @@ def test_original_input_persistence():
     ]
     dense_vector_name = "text"
     sparse_vector_name = "sparse-text"
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+
     local_client, http_client, grpc_client = init_clients(
         points,
         vectors_config=vectors_config,
@@ -1847,21 +1828,19 @@ def test_original_input_persistence():
     )
 
 
-def test_query_group():
+def test_query_group(collection_name: str, secondary_collection_name: str):
     fixture_points = generate_fixtures()
 
     secondary_collection_points = generate_fixtures(10)
 
     searcher = TestSimpleSearcher()
 
-    collection_name_1 = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
-    collection_name_2 = f"{SECONDARY_COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
-        fixture_points, collection_name=collection_name_1
+        fixture_points, collection_name=collection_name
     )
 
-    init_client(local_client, secondary_collection_points, collection_name_2)
-    init_client(http_client, secondary_collection_points, collection_name_2)
+    init_client(local_client, secondary_collection_points, secondary_collection_name)
+    init_client(http_client, secondary_collection_points, secondary_collection_name)
 
     searcher.group_size = 5
     searcher.limit = 3
@@ -1872,30 +1851,30 @@ def test_query_group():
             http_client,
             grpc_client,
             searcher.dense_query_group,
-            collection_name=collection_name_1,
+            collection_name=collection_name,
         )
         compare_clients_results(
             local_client,
             http_client,
             grpc_client,
             searcher.dense_query_group_with_lookup,
-            collection_name_1=collection_name_1,
-            collection_name_2=collection_name_2,
+            collection_name=collection_name,
+            secondary_collection_name=secondary_collection_name,
         )
         compare_clients_results(
             local_client,
             http_client,
             grpc_client,
             searcher.dense_queries_rescore_group,
-            collection_name=collection_name_1,
+            collection_name=collection_name,
         )
         compare_clients_results(
             local_client,
             http_client,
             grpc_client,
             searcher.dense_query_lookup_from_group,
-            lookup_from=models.LookupLocation(collection=collection_name_2, vector="text"),
-            collection_name=collection_name_1,
+            lookup_from=models.LookupLocation(collection=secondary_collection_name, vector="text"),
+            collection_name=collection_name,
         )
 
     searcher.group_by = "city.name"
@@ -1908,19 +1887,18 @@ def test_query_group():
                 grpc_client,
                 searcher.filter_dense_query_group,
                 query_filter=query_filter,
-                collection_name=collection_name_1,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
 
 
-def test_random_sampling():
+def test_random_sampling(collection_name: str):
     fixture_points = generate_fixtures(100)
 
     searcher = TestSimpleSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     local_client, http_client, grpc_client = init_clients(
         fixture_points, collection_name=collection_name
     )
