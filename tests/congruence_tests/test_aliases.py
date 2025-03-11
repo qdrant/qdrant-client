@@ -1,3 +1,5 @@
+import uuid
+
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 from tests.congruence_tests.test_common import (
@@ -5,44 +7,39 @@ from tests.congruence_tests.test_common import (
     compare_client_results,
     generate_fixtures,
     init_client,
-    init_local,
-    init_remote,
 )
 
 
 class TestAliasRetriever:
     __test__ = False
 
-    def __init__(self, collection_name=COLLECTION_NAME):
-        self.collection_name = collection_name
-
     @classmethod
     def list_aliases(cls, client: QdrantBase) -> list[models.AliasDescription]:
         aliases = client.get_aliases()
         return sorted(aliases.aliases, key=lambda x: x.alias_name)
 
-    def list_collection_aliases(self, client: QdrantBase) -> list[models.AliasDescription]:
-        aliases = client.get_collection_aliases(collection_name=self.collection_name)
+    def list_collection_aliases(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.AliasDescription]:
+        aliases = client.get_collection_aliases(collection_name=collection_name)
         return sorted(aliases.aliases, key=lambda x: x.alias_name)
 
 
-def test_alias_changes():
+def test_alias_changes(local_client: QdrantBase, remote_client: QdrantBase):
     fixture_points = generate_fixtures(10)
 
     retriever = TestAliasRetriever()
 
-    local_client = init_local()
-    init_client(local_client, fixture_points)
-
-    remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+    init_client(local_client, fixture_points, collection_name)
+    init_client(remote_client, fixture_points, collection_name)
 
     alias_name = "test_alias"
 
     ops = [
         models.CreateAliasOperation(
             create_alias=models.CreateAlias(
-                collection_name=COLLECTION_NAME,
+                collection_name=collection_name,
                 alias_name=alias_name,
             )
         )
@@ -52,18 +49,23 @@ def test_alias_changes():
     remote_client.update_collection_aliases(change_aliases_operations=ops)
 
     compare_client_results(local_client, remote_client, retriever.list_aliases)
-    compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
+    compare_client_results(
+        local_client,
+        remote_client,
+        retriever.list_collection_aliases,
+        collection_name=collection_name,
+    )
 
     ops = [
         models.CreateAliasOperation(
             create_alias=models.CreateAlias(
-                collection_name=COLLECTION_NAME,
+                collection_name=collection_name,
                 alias_name=alias_name + "_new",
             )
         ),
         models.CreateAliasOperation(
             create_alias=models.CreateAlias(
-                collection_name=COLLECTION_NAME,
+                collection_name=collection_name,
                 alias_name=alias_name + "_new2",
             )
         ),
@@ -73,7 +75,12 @@ def test_alias_changes():
     remote_client.update_collection_aliases(change_aliases_operations=ops)
 
     compare_client_results(local_client, remote_client, retriever.list_aliases)
-    compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
+    compare_client_results(
+        local_client,
+        remote_client,
+        retriever.list_collection_aliases,
+        collection_name=collection_name,
+    )
 
     ops = [
         models.DeleteAliasOperation(
@@ -91,4 +98,9 @@ def test_alias_changes():
     remote_client.update_collection_aliases(change_aliases_operations=ops)
 
     compare_client_results(local_client, remote_client, retriever.list_aliases)
-    compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
+    compare_client_results(
+        local_client,
+        remote_client,
+        retriever.list_collection_aliases,
+        collection_name=collection_name,
+    )

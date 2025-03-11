@@ -51,6 +51,7 @@ else
   tests/congruence_tests/test_group_search.py \
   tests/congruence_tests/test_sparse_search.py \
   tests/congruence_tests/test_query.py \
+  tests/congruence_tests/test_aliases.py \
   --durations=0 -vv
 fi
 
