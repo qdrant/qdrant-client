@@ -1,9 +1,6 @@
-import uuid
-
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import NamedSparseVector, NamedVector
 from tests.congruence_tests.test_common import (
-    COLLECTION_NAME,
     compare_client_results,
     compare_collections,
     generate_fixtures,
