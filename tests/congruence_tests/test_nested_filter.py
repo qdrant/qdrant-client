@@ -2,7 +2,6 @@ import json
 
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
-    COLLECTION_NAME,
     generate_fixtures,
     init_client,
     init_local,

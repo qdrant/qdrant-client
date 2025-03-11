@@ -2,7 +2,6 @@ import numpy as np
 
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
-    COLLECTION_NAME,
     NUM_VECTORS,
     compare_client_results,
     generate_fixtures,
@@ -17,26 +16,26 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.points import random_sparse_vectors
 
 
-def test_simple_opt_vectors_search():
+def test_simple_opt_vectors_search(collection_name: str):
     fixture_points = generate_fixtures()
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, collection_name)
 
     ids_to_delete = [x for x in range(NUM_VECTORS) if x % 5 == 0]
 
     vectors_to_retrieve = [x for x in range(20)]
 
     local_client.delete_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=["image"],
         points=ids_to_delete,
     )
     remote_client.delete_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=["image"],
         points=ids_to_delete,
     )
@@ -46,7 +45,7 @@ def test_simple_opt_vectors_search():
         remote_client,
         lambda c: sorted(
             c.retrieve(
-                COLLECTION_NAME,
+                collection_name,
                 vectors_to_retrieve,
                 with_payload=False,
                 with_vectors=["image", "code"],
@@ -65,12 +64,12 @@ def test_simple_opt_vectors_search():
     ]
 
     local_client.update_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=update_vectors,
     )
 
     remote_client.update_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=update_vectors,
     )
 
@@ -79,7 +78,7 @@ def test_simple_opt_vectors_search():
         remote_client,
         lambda c: sorted(
             c.retrieve(
-                COLLECTION_NAME,
+                collection_name,
                 vectors_to_retrieve,
                 with_payload=False,
                 with_vectors=["image", "code"],
@@ -89,13 +88,14 @@ def test_simple_opt_vectors_search():
     )
 
 
-def test_simple_opt_sparse_vectors_search():
+def test_simple_opt_sparse_vectors_search(collection_name: str):
     fixture_points = generate_sparse_fixtures()
 
     local_client = init_local()
     init_client(
         local_client,
         fixture_points,
+        collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
@@ -104,6 +104,7 @@ def test_simple_opt_sparse_vectors_search():
     init_client(
         remote_client,
         fixture_points,
+        collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
@@ -113,12 +114,12 @@ def test_simple_opt_sparse_vectors_search():
     vectors_to_retrieve = [x for x in range(20)]
 
     local_client.delete_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=["sparse-image"],
         points=ids_to_delete,
     )
     remote_client.delete_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=["sparse-image"],
         points=ids_to_delete,
     )
@@ -128,7 +129,7 @@ def test_simple_opt_sparse_vectors_search():
         remote_client,
         lambda c: sorted(
             c.retrieve(
-                COLLECTION_NAME,
+                collection_name,
                 vectors_to_retrieve,
                 with_payload=False,
                 with_vectors=["sparse-image", "sparse-code"],
@@ -147,12 +148,12 @@ def test_simple_opt_sparse_vectors_search():
     ]
 
     local_client.update_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=update_vectors,
     )
 
     remote_client.update_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=update_vectors,
     )
 
@@ -161,7 +162,7 @@ def test_simple_opt_sparse_vectors_search():
         remote_client,
         lambda c: sorted(
             c.retrieve(
-                COLLECTION_NAME,
+                collection_name,
                 vectors_to_retrieve,
                 with_payload=False,
                 with_vectors=["sparse-image", "sparse-code"],
