@@ -1,4 +1,3 @@
-import uuid
 import pytest
 
 import numpy as np
@@ -70,18 +69,18 @@ class TestSimpleRecommendation:
     def recommend_from_another_collection(
         cls,
         client: QdrantBase,
-        collection_name_1: str = COLLECTION_NAME,
-        collection_name_2: str = secondary_collection_name,
+        collection_name: str = COLLECTION_NAME,
+        secondary_collection_name: str = secondary_collection_name,
     ) -> list[models.ScoredPoint]:
         return client.recommend(
-            collection_name=collection_name_1,
+            collection_name=collection_name,
             positive=[10],
             negative=[15, 7],
             with_payload=True,
             limit=10,
             using="sparse-image",
             lookup_from=models.LookupLocation(
-                collection=collection_name_2,
+                collection=secondary_collection_name,
                 vector="sparse-image",
             ),
         )
@@ -205,11 +204,11 @@ class TestSimpleRecommendation:
     @staticmethod
     def recommend_batch(
         client: QdrantBase,
-        collection_name_1: str = COLLECTION_NAME,
-        collection_name_2: str = secondary_collection_name,
+        collection_name: str = COLLECTION_NAME,
+        secondary_collection_name: str = secondary_collection_name,
     ) -> list[list[models.ScoredPoint]]:
         return client.recommend_batch(
-            collection_name=collection_name_1,
+            collection_name=collection_name,
             requests=[
                 models.RecommendRequest(
                     positive=[3],
@@ -225,7 +224,7 @@ class TestSimpleRecommendation:
                     using="sparse-image",
                     strategy=models.RecommendStrategy.BEST_SCORE,
                     lookup_from=models.LookupLocation(
-                        collection=collection_name_2,
+                        collection=secondary_collection_name,
                         vector="sparse-image",
                     ),
                 ),
@@ -233,26 +232,29 @@ class TestSimpleRecommendation:
         )
 
 
-def test_simple_recommend(local_client: QdrantBase, remote_client: QdrantBase) -> None:
+def test_simple_recommend(
+    local_client: QdrantBase,
+    remote_client: QdrantBase,
+    collection_name: str,
+    secondary_collection_name: str,
+) -> None:
     fixture_points = generate_sparse_fixtures()
 
     secondary_collection_points = generate_sparse_fixtures(100)
 
     searcher = TestSimpleRecommendation()
 
-    collection_name_1 = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
-    collection_name_2 = f"{secondary_collection_name}_{uuid.uuid4().hex}"
     init_client(
         local_client,
         fixture_points,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
     init_client(
         local_client,
         secondary_collection_points,
-        collection_name=collection_name_2,
+        collection_name=secondary_collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
@@ -260,14 +262,14 @@ def test_simple_recommend(local_client: QdrantBase, remote_client: QdrantBase) -
     init_client(
         remote_client,
         fixture_points,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
     init_client(
         remote_client,
         secondary_collection_points,
-        collection_name=collection_name_2,
+        collection_name=secondary_collection_name,
         vectors_config={},
         sparse_vectors_config=sparse_vectors_config,
     )
@@ -276,66 +278,66 @@ def test_simple_recommend(local_client: QdrantBase, remote_client: QdrantBase) -
         local_client,
         remote_client,
         searcher.simple_recommend_image,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
     )
     compare_client_results(
-        local_client, remote_client, searcher.many_recommend, collection_name=collection_name_1
+        local_client, remote_client, searcher.many_recommend, collection_name=collection_name
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.simple_recommend_negative,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.recommend_from_another_collection,
-        collection_name_1=collection_name_1,
-        collection_name_2=collection_name_2,
+        collection_name=collection_name,
+        secondary_collection_name=secondary_collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.best_score_recommend,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.best_score_recommend_euclid,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.only_negatives_best_score_recommend,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.avg_vector_recommend,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.recommend_from_raw_vectors,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.recommend_from_raw_vectors_and_ids,
-        collection_name=collection_name_1,
+        collection_name=collection_name,
     )
     compare_client_results(
         local_client,
         remote_client,
         searcher.recommend_batch,
-        collection_name_1=collection_name_1,
-        collection_name_2=collection_name_2,
+        collection_name=collection_name,
+        secondary_collection_name=secondary_collection_name,
     )
 
     for _ in range(10):
@@ -346,21 +348,22 @@ def test_simple_recommend(local_client: QdrantBase, remote_client: QdrantBase) -
                 remote_client,
                 searcher.filter_recommend_text,
                 query_filter=query_filter,
-                collection_name=collection_name_1,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
 
 
-def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase) -> None:
+def test_query_with_nan(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+) -> None:
     fixture_points = generate_sparse_fixtures()
     sparse_vector_dict = random_sparse_vectors({"sparse-image": sparse_image_vector_size})
     sparse_vector = sparse_vector_dict["sparse-image"]
     sparse_vector.values[0] = np.nan
     using = "sparse-image"
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(
         local_client,
         fixture_points,

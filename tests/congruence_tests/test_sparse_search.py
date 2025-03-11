@@ -1,4 +1,3 @@
-import uuid
 import pytest
 from pathlib import Path
 
@@ -14,7 +13,6 @@ from tests.congruence_tests.test_common import (
     generate_sparse_fixtures,
     init_client,
     init_local,
-    init_remote,
     sparse_code_vector_size,
     sparse_image_vector_size,
     sparse_text_vector_size,
@@ -166,12 +164,11 @@ class TestSimpleSparseSearcher:
         )
 
 
-def test_simple_search(local_client: QdrantBase, remote_client: QdrantBase):
+def test_simple_search(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
     fixture_points = generate_sparse_fixtures()
 
     searcher = TestSimpleSparseSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(
         local_client,
         fixture_points,
@@ -240,12 +237,13 @@ def test_simple_search(local_client: QdrantBase, remote_client: QdrantBase):
             raise e
 
 
-def test_simple_opt_vectors_search(local_client: QdrantBase, remote_client: QdrantBase):
+def test_simple_opt_vectors_search(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     fixture_points = generate_sparse_fixtures(skip_vectors=True)
 
     searcher = TestSimpleSparseSearcher()
 
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     init_client(
         local_client,
         fixture_points,
@@ -315,9 +313,8 @@ def test_simple_opt_vectors_search(local_client: QdrantBase, remote_client: Qdra
 
 
 def test_search_with_persistence(
-    local_client: QdrantBase, remote_client: QdrantBase, tmp_path: Path
+    local_client: QdrantBase, remote_client: QdrantBase, tmp_path: Path, collection_name: str
 ):
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     fixture_points = generate_sparse_fixtures()
     searcher = TestSimpleSparseSearcher()
 
@@ -366,9 +363,8 @@ def test_search_with_persistence(
 
 
 def test_search_with_persistence_and_skipped_vectors(
-    local_client: QdrantBase, remote_client: QdrantBase, tmp_path: Path
+    local_client: QdrantBase, remote_client: QdrantBase, tmp_path: Path, collection_name: str
 ):
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
     fixture_points = generate_sparse_fixtures(skip_vectors=True)
     searcher = TestSimpleSparseSearcher()
 
@@ -421,8 +417,7 @@ def test_search_with_persistence_and_skipped_vectors(
             raise e
 
 
-def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase):
-    collection_name = f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
     fixture_points = generate_sparse_fixtures()
     sparse_vector = random_sparse_vectors({"sparse-text": sparse_text_vector_size})
     named_sparse_vector = models.NamedSparseVector(
