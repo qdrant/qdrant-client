@@ -9,17 +9,27 @@ from tests.congruence_tests.test_common import (
 )
 
 
-@pytest.fixture
-def local_client() -> QdrantClient:
-    client: QdrantClient = init_local()
-    initialize_fixture_collection(client)
+@pytest.fixture(scope="session")
+def storage() -> str:
+    return ":memory:"
+
+
+@pytest.fixture(scope="session")
+def prefer_grpc() -> bool:
+    return False
+
+
+@pytest.fixture(scope="session")
+def local_client(storage: str) -> QdrantClient:
+    client: QdrantClient = init_local(storage=storage)
+    # initialize_fixture_collection(client)
     yield client
     delete_fixture_collection(client)
 
 
-@pytest.fixture
-def remote_client() -> QdrantClient:
-    client: QdrantClient = init_remote()
-    initialize_fixture_collection(client)
+@pytest.fixture(scope="session")
+def remote_client(prefer_grpc: bool) -> QdrantClient:
+    client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    # initialize_fixture_collection(client)
     yield client
     delete_fixture_collection(client)

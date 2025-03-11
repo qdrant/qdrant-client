@@ -203,14 +203,13 @@ class TestSimpleRecommendation:
         )
 
 
-def test_simple_recommend() -> None:
+def test_simple_recommend(local_client: QdrantBase, remote_client: QdrantBase) -> None:
     fixture_points = generate_sparse_fixtures()
 
     secondary_collection_points = generate_sparse_fixtures(100)
 
     searcher = TestSimpleRecommendation()
 
-    local_client = init_local()
     init_client(
         local_client,
         fixture_points,
@@ -225,7 +224,6 @@ def test_simple_recommend() -> None:
         sparse_vectors_config=sparse_vectors_config,
     )
 
-    remote_client = init_remote()
     init_client(
         remote_client,
         fixture_points,
@@ -270,15 +268,12 @@ def test_simple_recommend() -> None:
             raise e
 
 
-def test_query_with_nan():
+def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase) -> None:
     fixture_points = generate_sparse_fixtures()
     sparse_vector_dict = random_sparse_vectors({"sparse-image": sparse_image_vector_size})
     sparse_vector = sparse_vector_dict["sparse-image"]
     sparse_vector.values[0] = np.nan
     using = "sparse-image"
-
-    local_client = init_local()
-    remote_client = init_remote()
 
     init_client(
         local_client,
