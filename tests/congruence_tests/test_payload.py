@@ -10,50 +10,63 @@ from qdrant_client.http import models
 from qdrant_client.http.models import PointStruct
 from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
-    COLLECTION_NAME,
     compare_collections,
     generate_fixtures,
     init_local,
     init_remote,
+    initialize_fixture_collection,
 )
 
 NUM_VECTORS = 100
 
 
-def upload(client_1: QdrantClient, client_2: QdrantClient, num_vectors=NUM_VECTORS):
+def upload(
+    client_1: QdrantClient,
+    client_2: QdrantClient,
+    collection_name: str,
+    num_vectors: int = NUM_VECTORS,
+):
     points = generate_fixtures(num_vectors)
 
-    client_1.upload_points(COLLECTION_NAME, points, wait=True)
-    client_2.upload_points(COLLECTION_NAME, points, wait=True)
+    initialize_fixture_collection(client_1, collection_name)
+    initialize_fixture_collection(client_2, collection_name)
+
+    client_1.upload_points(collection_name, points, wait=True)
+    client_2.upload_points(collection_name, points, wait=True)
     return points
 
 
-def test_delete_payload(local_client: QdrantClient, remote_client: QdrantClient):
-    points = upload(local_client, remote_client)
+def test_delete_payload(
+    local_client: QdrantClient, remote_client: QdrantClient, collection_name: str
+):
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
+
+    points = upload(local_client, remote_client, collection_name)
 
     # region delete one point
     id_ = points[0].id
-    local_point = local_client.retrieve(COLLECTION_NAME, [id_])
-    remote_point = remote_client.retrieve(COLLECTION_NAME, [id_])
+    local_point = local_client.retrieve(collection_name, [id_])
+    remote_point = remote_client.retrieve(collection_name, [id_])
 
     assert local_point == remote_point
 
     key = "text_data"
-    local_client.delete_payload(COLLECTION_NAME, keys=[key], points=[id_])
-    remote_client.delete_payload(COLLECTION_NAME, keys=[key], points=[id_], wait=True)
+    local_client.delete_payload(collection_name, keys=[key], points=[id_])
+    remote_client.delete_payload(collection_name, keys=[key], points=[id_], wait=True)
 
-    assert local_client.retrieve(COLLECTION_NAME, [id_]) == remote_client.retrieve(
-        COLLECTION_NAME, [id_]
+    assert local_client.retrieve(collection_name, [id_]) == remote_client.retrieve(
+        collection_name, [id_]
     )
     # endregion
 
     # region delete multiple points
     keys_to_delete = ["rand_number", "text_array"]
     ids = [points[1].id, points[2].id]
-    local_client.delete_payload(COLLECTION_NAME, keys=keys_to_delete, points=ids)
-    remote_client.delete_payload(COLLECTION_NAME, keys=keys_to_delete, points=ids, wait=True)
+    local_client.delete_payload(collection_name, keys=keys_to_delete, points=ids)
+    remote_client.delete_payload(collection_name, keys=keys_to_delete, points=ids, wait=True)
 
-    compare_collections(local_client, remote_client, NUM_VECTORS)
+    compare_collections(local_client, remote_client, NUM_VECTORS, collection_name=collection_name)
     # endregion
 
     # region delete by filter
@@ -64,23 +77,28 @@ def test_delete_payload(local_client: QdrantClient, remote_client: QdrantClient)
         must=[models.FieldCondition(key=key, match=models.MatchValue(value=value))]
     )
 
-    local_client.delete_payload(COLLECTION_NAME, keys=["text_data"], points=delete_filter)
+    local_client.delete_payload(collection_name, keys=["text_data"], points=delete_filter)
     remote_client.delete_payload(
-        COLLECTION_NAME, keys=["text_data"], points=delete_filter, wait=True
+        collection_name, keys=["text_data"], points=delete_filter, wait=True
     )
 
-    compare_collections(local_client, remote_client, NUM_VECTORS)
+    compare_collections(local_client, remote_client, NUM_VECTORS, collection_name=collection_name)
     # endregion
 
 
-def test_clear_payload(local_client: QdrantClient, remote_client: QdrantClient):
-    points = upload(local_client, remote_client)
+def test_clear_payload(
+    local_client: QdrantClient, remote_client: QdrantClient, collection_name: str
+):
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
+
+    points = upload(local_client, remote_client, collection_name)
 
     points_selector = [point.id for point in points[:5]]
-    local_client.clear_payload(COLLECTION_NAME, points_selector)
-    remote_client.clear_payload(COLLECTION_NAME, points_selector)
+    local_client.clear_payload(collection_name, points_selector)
+    remote_client.clear_payload(collection_name, points_selector)
 
-    compare_collections(local_client, remote_client, NUM_VECTORS)
+    compare_collections(local_client, remote_client, NUM_VECTORS, collection_name=collection_name)
 
     payload = points[42].payload
     key = "text_data"
@@ -88,25 +106,30 @@ def test_clear_payload(local_client: QdrantClient, remote_client: QdrantClient):
     points_selector = models.Filter(
         must=[models.FieldCondition(key=key, match=models.MatchValue(value=value))]
     )
-    local_client.clear_payload(COLLECTION_NAME, points_selector)
-    remote_client.clear_payload(COLLECTION_NAME, points_selector)
+    local_client.clear_payload(collection_name, points_selector)
+    remote_client.clear_payload(collection_name, points_selector)
 
-    compare_collections(local_client, remote_client, NUM_VECTORS)
+    compare_collections(local_client, remote_client, NUM_VECTORS, collection_name=collection_name)
 
 
-def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient):
-    points = upload(local_client, remote_client)
+def test_update_payload(
+    local_client: QdrantClient, remote_client: QdrantClient, collection_name: str
+):
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
+
+    points = upload(local_client, remote_client, collection_name)
 
     # region fetch point
     id_ = points[0].id
     id_filter = models.Filter(must=[models.HasIdCondition(has_id=[id_])])
     local_point = local_client.scroll(
-        COLLECTION_NAME,
+        collection_name,
         scroll_filter=id_filter,
         limit=1,
     )
     remote_point = remote_client.scroll(
-        COLLECTION_NAME,
+        collection_name,
         scroll_filter=id_filter,
         limit=1,
     )
@@ -115,16 +138,16 @@ def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient)
     # endregion
 
     # region set payload
-    local_client.set_payload(COLLECTION_NAME, {"new_field": "new_value"}, id_filter)
-    remote_client.set_payload(COLLECTION_NAME, {"new_field": "new_value"}, id_filter)
+    local_client.set_payload(collection_name, {"new_field": "new_value"}, id_filter)
+    remote_client.set_payload(collection_name, {"new_field": "new_value"}, id_filter)
 
     local_new_point = local_client.scroll(
-        COLLECTION_NAME,
+        collection_name,
         scroll_filter=id_filter,
         limit=1,
     )
     remote_new_point = remote_client.scroll(
-        COLLECTION_NAME,
+        collection_name,
         scroll_filter=id_filter,
         limit=1,
     )
@@ -133,16 +156,16 @@ def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient)
     # endregion
 
     # region overwrite payload
-    local_client.overwrite_payload(COLLECTION_NAME, {"new_field": "overwritten_value"}, id_filter)
-    remote_client.overwrite_payload(COLLECTION_NAME, {"new_field": "overwritten_value"}, id_filter)
+    local_client.overwrite_payload(collection_name, {"new_field": "overwritten_value"}, id_filter)
+    remote_client.overwrite_payload(collection_name, {"new_field": "overwritten_value"}, id_filter)
 
     local_new_point = local_client.scroll(
-        COLLECTION_NAME,
+        collection_name,
         scroll_filter=id_filter,
         limit=1,
     )
     remote_new_point = remote_client.scroll(
-        COLLECTION_NAME,
+        collection_name,
         scroll_filter=id_filter,
         limit=1,
     )
@@ -150,10 +173,12 @@ def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient)
     assert local_new_point == remote_new_point
     # endregion
 
-    compare_collections(local_client, remote_client, NUM_VECTORS)  # sanity check
+    compare_collections(
+        local_client, remote_client, NUM_VECTORS, collection_name=collection_name
+    )  # sanity check
 
 
-def test_not_jsonable_payload():
+def test_not_jsonable_payload(collection_name: str):
     local_client = init_local()
     remote_client = init_remote()
 
@@ -161,13 +186,13 @@ def test_not_jsonable_payload():
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
     local_client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=vectors_config,
     )
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    if remote_client.collection_exists(collection_name):
+        remote_client.delete_collection(collection_name=collection_name)
     remote_client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=vectors_config,
     )
 
@@ -191,19 +216,19 @@ def test_not_jsonable_payload():
     ]
 
     for point in points:  # for better debugging
-        local_client.upsert(COLLECTION_NAME, [point])
-        remote_client.upsert(COLLECTION_NAME, [point])
+        local_client.upsert(collection_name, [point])
+        remote_client.upsert(collection_name, [point])
 
-    compare_collections(local_client, remote_client, len(points))
+    compare_collections(local_client, remote_client, len(points), collection_name=collection_name)
 
-    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    local_client.delete_collection(collection_name=collection_name)
     local_client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=vectors_config,
     )
-    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.delete_collection(collection_name=collection_name)
     remote_client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=vectors_config,
     )
 
@@ -211,39 +236,39 @@ def test_not_jsonable_payload():
     for point in points:
         point.payload = None
         point_ids.append(point.id)
-        local_client.upsert(COLLECTION_NAME, [point])
-        remote_client.upsert(COLLECTION_NAME, [point])
+        local_client.upsert(collection_name, [point])
+        remote_client.upsert(collection_name, [point])
 
     for point_id, payload in zip(point_ids, payloads):
         local_client.set_payload(
-            COLLECTION_NAME,
+            collection_name,
             payload,
             models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
         )
         remote_client.set_payload(
-            COLLECTION_NAME,
+            collection_name,
             payload,
             models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
         )
 
-    compare_collections(local_client, remote_client, len(points))
+    compare_collections(local_client, remote_client, len(points), collection_name=collection_name)
 
     for point_id, payload in zip(point_ids[::-1], payloads):
         local_client.overwrite_payload(
-            COLLECTION_NAME,
+            collection_name,
             payload,
             models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
         )
         remote_client.overwrite_payload(
-            COLLECTION_NAME,
+            collection_name,
             payload,
             models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
         )
 
-    compare_collections(local_client, remote_client, len(points))
+    compare_collections(local_client, remote_client, len(points), collection_name=collection_name)
 
 
-def test_set_payload_with_key():
+def test_set_payload_with_key(collection_name: str):
     local_client = init_local()
     remote_client = init_remote()
 
@@ -251,13 +276,13 @@ def test_set_payload_with_key():
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
     local_client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=vectors_config,
     )
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    if remote_client.collection_exists(collection_name):
+        remote_client.delete_collection(collection_name=collection_name)
     remote_client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=vectors_config,
     )
 
@@ -265,7 +290,7 @@ def test_set_payload_with_key():
 
     def set_payload(payload, new_payload, key):
         local_client.upsert(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             points=[
                 PointStruct(
                     id=9999,
@@ -276,7 +301,7 @@ def test_set_payload_with_key():
             wait=True,
         )
         remote_client.upsert(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             points=[
                 PointStruct(
                     id=9999,
@@ -288,18 +313,18 @@ def test_set_payload_with_key():
         )
 
         local_client.set_payload(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             payload=new_payload,
             points=[9999],
             key=key,
         )
         remote_client.set_payload(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             payload=new_payload,
             points=[9999],
             key=key,
         )
-        compare_collections(local_client, remote_client, 1)
+        compare_collections(local_client, remote_client, 1, collection_name=collection_name)
 
     payload = {"nest": [{"a": "100", "b": "200"}]}
     new_payload = {"a": "101"}
@@ -368,7 +393,7 @@ def test_set_payload_with_key():
     new_payload = {"": "bbb"}
     key = ""
     local_client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(
                 id=9999,
@@ -379,7 +404,7 @@ def test_set_payload_with_key():
         wait=True,
     )
     remote_client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(
                 id=9999,
@@ -392,14 +417,14 @@ def test_set_payload_with_key():
 
     with pytest.raises(ValueError):
         local_client.set_payload(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             payload=new_payload,
             points=[9999],
             key=key,
         )
     with pytest.raises(UnexpectedResponse):
         remote_client.set_payload(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             payload=new_payload,
             points=[9999],
             key=key,
@@ -410,18 +435,18 @@ def test_set_payload_with_key():
     )
     with pytest.raises(ValueError):
         local_client.set_payload(
-            collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
+            collection_name=collection_name, payload=new_payload, points=filter_
         )
 
     with pytest.raises(UnexpectedResponse):
         remote_client.set_payload(
-            collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
+            collection_name=collection_name, payload=new_payload, points=filter_
         )
 
     filter_ = models.Filter(
         must=[models.FieldCondition(key='""', match=models.MatchValue(value="xc"))]
     )
 
-    remote_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
-    local_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
-    compare_collections(local_client, remote_client, 1)
+    remote_client.set_payload(collection_name=collection_name, payload=new_payload, points=filter_)
+    local_client.set_payload(collection_name=collection_name, payload=new_payload, points=filter_)
+    compare_collections(local_client, remote_client, 1, collection_name=collection_name)
