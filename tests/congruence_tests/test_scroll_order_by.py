@@ -11,7 +11,9 @@ from tests.congruence_tests.test_common import (
 )
 
 
-def scroll_all_with_key(client: QdrantBase, key: str) -> list[models.Record]:
+def scroll_all_with_key(
+    client: QdrantBase, key: str, collection_name: str = COLLECTION_NAME
+) -> list[models.Record]:
     all_records = []
 
     last_seen_value = None
@@ -25,7 +27,7 @@ def scroll_all_with_key(client: QdrantBase, key: str) -> list[models.Record]:
             start_from = last_seen_value
 
         records, next_page = client.scroll(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             limit=20,
             order_by=models.OrderBy(**{"key": key, "start_from": start_from}),
             scroll_filter=models.Filter(**{"must_not": [{"has_id": last_value_ids}]}),
@@ -74,44 +76,56 @@ def subsorted_by_id(all_records: list[models.Record], key: str) -> list[models.R
     return resorted_records
 
 
-def scroll_all_integers(client: QdrantBase) -> list[models.Record]:
-    return scroll_all_with_key(client, "rand_digit")
+def scroll_all_integers(client: QdrantBase, collection_name: str) -> list[models.Record]:
+    return scroll_all_with_key(client, "rand_digit", collection_name)
 
 
-def scroll_all_floats(client: QdrantBase) -> list[models.Record]:
-    return scroll_all_with_key(client, "rand_number")
+def scroll_all_floats(client: QdrantBase, collection_name: str) -> list[models.Record]:
+    return scroll_all_with_key(client, "rand_number", collection_name)
 
 
-def scroll_all_datetimes(client: QdrantBase) -> list[models.Record]:
-    return scroll_all_with_key(client, "rand_datetime")
+def scroll_all_datetimes(client: QdrantBase, collection_name: str) -> list[models.Record]:
+    return scroll_all_with_key(client, "rand_datetime", collection_name)
 
 
-def test_simple_scroll() -> None:
+def test_simple_scroll(collection_name: str) -> None:
     fixture_points = generate_fixtures(200)
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
 
     http_client = init_remote()
-    init_client(http_client, fixture_points)
+    init_client(http_client, fixture_points, collection_name)
     http_client.create_payload_index(
-        COLLECTION_NAME, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
+        collection_name, "rand_digit", models.PayloadSchemaType.INTEGER, wait=True
     )
     http_client.create_payload_index(
-        COLLECTION_NAME, "rand_number", models.PayloadSchemaType.FLOAT, wait=True
+        collection_name, "rand_number", models.PayloadSchemaType.FLOAT, wait=True
     )
     http_client.create_payload_index(
-        COLLECTION_NAME, "rand_datetime", models.PayloadSchemaType.DATETIME, wait=True
+        collection_name, "rand_datetime", models.PayloadSchemaType.DATETIME, wait=True
     )
 
     grpc_client = init_remote(prefer_grpc=True)
 
     # integers test the case of same-value records, since we generate only 10 different values
-    compare_client_results(grpc_client, http_client, scroll_all_integers)
-    compare_client_results(local_client, http_client, scroll_all_integers)
+    compare_client_results(
+        grpc_client, http_client, scroll_all_integers, collection_name=collection_name
+    )
+    compare_client_results(
+        local_client, http_client, scroll_all_integers, collection_name=collection_name
+    )
 
-    compare_client_results(grpc_client, http_client, scroll_all_floats)
-    compare_client_results(local_client, http_client, scroll_all_floats)
+    compare_client_results(
+        grpc_client, http_client, scroll_all_floats, collection_name=collection_name
+    )
+    compare_client_results(
+        local_client, http_client, scroll_all_floats, collection_name=collection_name
+    )
 
-    compare_client_results(grpc_client, http_client, scroll_all_datetimes)
-    compare_client_results(local_client, http_client, scroll_all_datetimes)
+    compare_client_results(
+        grpc_client, http_client, scroll_all_datetimes, collection_name=collection_name
+    )
+    compare_client_results(
+        local_client, http_client, scroll_all_datetimes, collection_name=collection_name
+    )
