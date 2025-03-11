@@ -14,11 +14,3 @@ class ResourceExhaustedResponse(QdrantException):
 
     def __str__(self) -> str:
         return self.message.strip()
-
-
-class ResourceQuotaExceeded(QdrantException):
-    def __init__(self, message: str) -> None:
-        self.message = message if message else "Quota Exceeded Response"
-
-    def __str__(self) -> str:
-        return self.message.strip()

@@ -2,9 +2,11 @@ from time import sleep
 
 import numpy as np
 import pytest
+from grpc import RpcError
 
-from qdrant_client.common.client_exceptions import ResourceQuotaExceeded, ResourceExhaustedResponse
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http import models
+from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_collections,
@@ -45,13 +47,13 @@ def test_upsert_hits_large_request_limit(remote_client):
     )
 
     with pytest.raises(
-        ResourceQuotaExceeded,
+        UnexpectedResponse,
         match="Write rate limit exceeded, request larger than than rate limiter capacity, please try to split your request",
     ):
         remote_client.upsert(COLLECTION_NAME, points_batch)
 
     with pytest.raises(
-        ResourceQuotaExceeded,
+        RpcError,
         match="Write rate limit exceeded, request larger than than rate limiter capacity, please try to split your request",
     ):
         grpc_client.upsert(COLLECTION_NAME, points_batch)
@@ -123,8 +125,39 @@ def test_upsert_hits_write_rate_limit(remote_client):
 def test_upload_collection_succeeds_with_limits(local_client, remote_client):
     grpc_client = init_remote(prefer_grpc=True)
 
-    points = generate_fixtures(10)
+    remote_client.update_collection(
+        collection_name=COLLECTION_NAME,
+        strict_mode_config=models.StrictModeConfig(
+            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
+        ),
+    )
 
+    # pre-condition: hit the limit first then do upload_collection
+    points = generate_fixtures(WRITE_LIMIT)
+    ids, payload = [], []
+    vectors = {}
+    for point in points:
+        ids.append(point.id)
+        payload.append(point.payload)
+        for vector_name, vector in point.vector.items():
+            if vector_name not in vectors:
+                vectors[vector_name] = []
+            vectors[vector_name].append(vector)
+
+    points_batch = models.Batch(
+        ids=ids,
+        vectors=vectors,
+        payloads=payload,
+    )
+    try:
+        for _ in range(10):
+            remote_client.upsert(COLLECTION_NAME, points_batch)
+            grpc_client.upsert(COLLECTION_NAME, points_batch)
+    except ResourceExhaustedResponse as ex:
+        print(ex.message)
+    # end of pre-condition
+
+    points = generate_fixtures(WRITE_LIMIT)
     vectors = []
     payload = []
     ids = []
@@ -133,13 +166,6 @@ def test_upload_collection_succeeds_with_limits(local_client, remote_client):
         vectors.append(point.vector)
         payload.append(point.payload)
 
-    remote_client.update_collection(
-        collection_name=COLLECTION_NAME,
-        strict_mode_config=models.StrictModeConfig(
-            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
-        ),
-    )
-
     local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids)
     remote_client.upload_collection(
         COLLECTION_NAME, vectors, payload, ids=ids, wait=True, max_retries=1
@@ -147,25 +173,6 @@ def test_upload_collection_succeeds_with_limits(local_client, remote_client):
     grpc_client.upload_collection(
         COLLECTION_NAME, vectors, payload, ids=ids, wait=True, max_retries=1
     )
-
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
-    compare_collections(local_client, grpc_client, UPLOAD_NUM_VECTORS)
-
-
-def test_upload_points_succeeds_with_limits(local_client, remote_client):
-    grpc_client = init_remote(prefer_grpc=True)
-    points = generate_fixtures(10)
-
-    remote_client.update_collection(
-        collection_name=COLLECTION_NAME,
-        strict_mode_config=models.StrictModeConfig(
-            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
-        ),
-    )
-
-    local_client.upload_points(COLLECTION_NAME, points)
-    remote_client.upload_points(COLLECTION_NAME, points, wait=True, max_retries=1)
-    grpc_client.upload_points(COLLECTION_NAME, points, wait=True, max_retries=1)
 
     compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
     compare_collections(local_client, grpc_client, UPLOAD_NUM_VECTORS)

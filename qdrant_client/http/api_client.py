@@ -5,7 +5,7 @@ from urllib.parse import urljoin
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
-from qdrant_client.common.client_exceptions import ResourceExhaustedResponse, ResourceQuotaExceeded
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
 from qdrant_client.http.api.beta_api import AsyncBetaApi, SyncBetaApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
@@ -119,8 +119,6 @@ class ApiClient:
 
             if retry_after_s:
                 raise ResourceExhaustedResponse(message, retry_after_s)
-            else:
-                raise ResourceQuotaExceeded(message=message)
 
         if response.status_code in [200, 201, 202]:
             try:
@@ -208,8 +206,6 @@ class AsyncApiClient:
 
             if retry_after_s:
                 raise ResourceExhaustedResponse(message, retry_after_s)
-            else:
-                raise ResourceQuotaExceeded(message=message)
 
         if response.status_code in [200, 201, 202]:
             try:
