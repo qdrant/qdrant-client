@@ -74,6 +74,11 @@ COLLECTION_NAME_ALIAS = "client_test_alias"
 TIMEOUT = 60
 
 
+@pytest.fixture()
+def collection_name() -> str:
+    return f"{COLLECTION_NAME}_{uuid.uuid4().hex}"
+
+
 def create_random_vectors():
     vectors_path = os.path.join(mkdtemp(), "vectors.npy")
     fp = np.memmap(vectors_path, dtype="float32", mode="w+", shape=(NUM_VECTORS, DIM))
@@ -201,7 +206,7 @@ def test_client_init():
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("parallel", [1, 2])
-def test_records_upload(prefer_grpc, parallel):
+def test_records_upload(prefer_grpc, parallel, collection_name: str):
     import warnings
 
     warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -216,27 +221,27 @@ def test_records_upload(prefer_grpc, parallel):
     )
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
 
-    client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=parallel)
+    client.upload_records(collection_name=collection_name, records=records, parallel=parallel)
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
     # Let's give it a second to actually add all points to a collection.
     # If you need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
     sleep(1)
 
-    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+    collection_info = client.get_collection(collection_name=collection_name)
 
     assert collection_info.points_count == NUM_VECTORS
 
     result_count = client.count(
-        COLLECTION_NAME,
+        collection_name,
         count_filter=Filter(
             must=[
                 FieldCondition(
@@ -252,25 +257,25 @@ def test_records_upload(prefer_grpc, parallel):
 
     records = (Record(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(NUM_VECTORS))
 
-    client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
 
     client.upload_records(
-        collection_name=COLLECTION_NAME, records=records, parallel=parallel, wait=True
+        collection_name=collection_name, records=records, parallel=parallel, wait=True
     )
 
-    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+    collection_info = client.get_collection(collection_name=collection_name)
 
     assert collection_info.points_count == NUM_VECTORS
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("parallel", [1, 2])
-def test_point_upload(prefer_grpc, parallel):
+def test_point_upload(prefer_grpc, parallel, collection_name: str):
     points = (
         PointStruct(
             id=idx,
@@ -282,27 +287,27 @@ def test_point_upload(prefer_grpc, parallel):
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
 
-    client.upload_points(collection_name=COLLECTION_NAME, points=points, parallel=parallel)
+    client.upload_points(collection_name=collection_name, points=points, parallel=parallel)
 
     # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
     # Let's give it a second to actually add all points to a collection.
     # If you need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
     sleep(1)
 
-    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+    collection_info = client.get_collection(collection_name=collection_name)
 
     assert collection_info.points_count == NUM_VECTORS
 
     result_count = client.count(
-        COLLECTION_NAME,
+        collection_name,
         count_filter=Filter(
             must=[
                 FieldCondition(
@@ -316,9 +321,9 @@ def test_point_upload(prefer_grpc, parallel):
     assert result_count.count < 900
     assert result_count.count > 100
 
-    client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
@@ -328,25 +333,25 @@ def test_point_upload(prefer_grpc, parallel):
     )
 
     client.upload_points(
-        collection_name=COLLECTION_NAME, points=points, parallel=parallel, wait=True
+        collection_name=collection_name, points=points, parallel=parallel, wait=True
     )
 
-    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
+    collection_info = client.get_collection(collection_name=collection_name)
 
     assert collection_info.points_count == NUM_VECTORS
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("parallel", [1, 2])
-def test_upload_collection(prefer_grpc, parallel):
+def test_upload_collection(prefer_grpc, parallel, collection_name: str):
     size = 3
     batch_size = 2
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=size, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
@@ -361,24 +366,24 @@ def test_upload_collection(prefer_grpc, parallel):
     ids = [1, 2, 3, 4, 5]
 
     client.upload_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=vectors,
         parallel=parallel,
         wait=True,
         batch_size=batch_size,
     )
 
-    assert client.get_collection(collection_name=COLLECTION_NAME).points_count == 5
+    assert client.get_collection(collection_name=collection_name).points_count == 5
 
-    client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=size, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
 
     client.upload_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=vectors,
         payload=payload,
         ids=ids,
@@ -387,11 +392,11 @@ def test_upload_collection(prefer_grpc, parallel):
         batch_size=batch_size,
     )
 
-    assert client.get_collection(collection_name=COLLECTION_NAME).points_count == 5
+    assert client.get_collection(collection_name=collection_name).points_count == 5
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_multiple_vectors(prefer_grpc):
+def test_multiple_vectors(prefer_grpc, collection_name: str):
     num_vectors = 100
     points = [
         PointStruct(
@@ -406,10 +411,10 @@ def test_multiple_vectors(prefer_grpc):
     ]
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config={
             "image": VectorParams(size=DIM, distance=Distance.DOT),
             "text": VectorParams(size=DIM * 2, distance=Distance.COSINE),
@@ -417,12 +422,12 @@ def test_multiple_vectors(prefer_grpc):
         timeout=TIMEOUT,
     )
 
-    client.upload_points(collection_name=COLLECTION_NAME, points=points, parallel=1)
+    client.upload_points(collection_name=collection_name, points=points, parallel=1)
 
     query_vector = list(np.random.rand(DIM))
 
     hits = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=("image", query_vector),
         with_vectors=True,
         limit=5,  # Return 5 closest points
@@ -433,7 +438,7 @@ def test_multiple_vectors(prefer_grpc):
     assert "text" in hits[0].vector
 
     hits = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=("text", query_vector * 2),
         with_vectors=True,
         limit=5,  # Return 5 closest points
@@ -447,7 +452,7 @@ def test_multiple_vectors(prefer_grpc):
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("numpy_upload", [False, True])
 @pytest.mark.parametrize("local_mode", [False, True])
-def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
+def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode, collection_name: str):
     major, minor, patch, dev = read_version()
 
     vectors_path = create_random_vectors()
@@ -465,16 +470,16 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         client = QdrantClient(location=":memory:", prefer_grpc=prefer_grpc)
     else:
         client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
-        assert client.collection_exists(collection_name=COLLECTION_NAME)
+        assert client.collection_exists(collection_name=collection_name)
         assert not client.collection_exists(collection_name="non_existing_collection")
 
     # Call Qdrant API to retrieve list of existing collections
@@ -485,12 +490,12 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         print(to_dict(collection))
 
     # Retrieve detailed information about newly created collection
-    test_collection = client.get_collection(COLLECTION_NAME)
+    test_collection = client.get_collection(collection_name)
     pprint(to_dict(test_collection))
 
     # Upload data to a new collection
     client.upload_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=vectors,
         payload=payload,
         ids=range(len(vectors)),
@@ -503,7 +508,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     sleep(1)
 
     result_count = client.count(
-        COLLECTION_NAME,
+        collection_name,
         count_filter=Filter(
             must=[
                 FieldCondition(
@@ -521,31 +526,31 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         change_aliases_operations=[
             CreateAliasOperation(
                 create_alias=CreateAlias(
-                    collection_name=COLLECTION_NAME, alias_name=COLLECTION_NAME_ALIAS
+                    collection_name=collection_name, alias_name=COLLECTION_NAME_ALIAS
                 )
             )
         ]
     )
 
-    collection_aliases = client.get_collection_aliases(COLLECTION_NAME)
+    collection_aliases = client.get_collection_aliases(collection_name)
 
-    assert collection_aliases.aliases[0].collection_name == COLLECTION_NAME
+    assert collection_aliases.aliases[0].collection_name == collection_name
     assert collection_aliases.aliases[0].alias_name == COLLECTION_NAME_ALIAS
 
     all_aliases = client.get_aliases()
 
-    assert all_aliases.aliases[0].collection_name == COLLECTION_NAME
+    assert all_aliases.aliases[0].collection_name == collection_name
     assert all_aliases.aliases[0].alias_name == COLLECTION_NAME_ALIAS
 
     # Create payload index for field `rand_number`
     # If indexed field appear in filtering condition - search operation could be performed faster
     index_create_result = client.create_payload_index(
-        COLLECTION_NAME, field_name="rand_number", field_schema=PayloadSchemaType.FLOAT
+        collection_name, field_name="rand_number", field_schema=PayloadSchemaType.FLOAT
     )
     pprint(to_dict(index_create_result))
     # Again, with string field
     index_create_result = client.create_payload_index(
-        COLLECTION_NAME, field_name="rand_number", field_schema="float"
+        collection_name, field_name="rand_number", field_schema="float"
     )
     pprint(to_dict(index_create_result))
 
@@ -562,7 +567,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     #  and use it as a query
     hits = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         query_filter=None,  # Don't use any filters for now, search across all indexed points
         with_payload=True,  # Also return a stored payload for found points
@@ -576,10 +581,10 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     for hit in hits:
         print(hit)
 
-    client.create_payload_index(COLLECTION_NAME, "id_str", field_schema=PayloadSchemaType.KEYWORD)
+    client.create_payload_index(collection_name, "id_str", field_schema=PayloadSchemaType.KEYWORD)
     #  and use it as a query
     hits = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         query_filter=Filter(must=[FieldCondition(key="id_str", match=MatchValue(value="11"))]),
         with_payload=True,
@@ -589,7 +594,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert "11" in hits[0].payload["id_str"]
 
     hits_should = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         query_filter=Filter(
             should=[
@@ -602,7 +607,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
 
     hits_match_any = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         query_filter=Filter(
             must=[
@@ -619,7 +624,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
         hits_min_should = client.search(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query_vector=query_vector,
             query_filter=Filter(
                 min_should=models.MinShould(
@@ -637,7 +642,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         assert len(hits_min_should) > 0
 
         hits_min_should_empty = client.search(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query_vector=query_vector,
             query_filter=Filter(
                 min_should=models.MinShould(
@@ -654,7 +659,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     # Let's now query same vector with filter condition
     hits = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         query_filter=Filter(
             must=[  # These conditions are required for search results
@@ -674,7 +679,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
         query_response = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=query_vector,
             limit=5,
         )
@@ -682,7 +687,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         assert len(query_response.points) == 5
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[1, 2, 3],
         with_payload=True,
         with_vectors=True,
@@ -692,7 +697,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     # Create index for full-text search
     client.create_payload_index(
-        COLLECTION_NAME,
+        collection_name,
         "words",
         field_schema=TextIndexParams(
             type="text",
@@ -706,7 +711,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     for i in range(10):
         query_word = random_real_word()
         hits, _offset = client.scroll(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             scroll_filter=Filter(
                 must=[FieldCondition(key="words", match=MatchText(text=query_word))]
             ),
@@ -745,26 +750,26 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         ),
     ]
     single_search_result_1 = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector_1,
         query_filter=filter_1,
         limit=5,
     )
     single_search_result_2 = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector_2,
         query_filter=filter_2,
         limit=5,
     )
     single_search_result_3 = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector_3,
         query_filter=filter_3,
         limit=5,
     )
 
     batch_search_result = client.search_batch(
-        collection_name=COLLECTION_NAME, requests=search_queries
+        collection_name=collection_name, requests=search_queries
     )
 
     assert len(batch_search_result) == 3
@@ -796,17 +801,17 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         ),
     ]
     reco_result_1 = client.recommend(
-        collection_name=COLLECTION_NAME, positive=[1], query_filter=filter_1, limit=5
+        collection_name=collection_name, positive=[1], query_filter=filter_1, limit=5
     )
     reco_result_2 = client.recommend(
-        collection_name=COLLECTION_NAME, positive=[2], query_filter=filter_2, limit=5
+        collection_name=collection_name, positive=[2], query_filter=filter_2, limit=5
     )
     reco_result_3 = client.recommend(
-        collection_name=COLLECTION_NAME, positive=[3], query_filter=filter_3, limit=5
+        collection_name=collection_name, positive=[3], query_filter=filter_3, limit=5
     )
 
     batch_reco_result = client.recommend_batch(
-        collection_name=COLLECTION_NAME, requests=recommend_queries
+        collection_name=collection_name, requests=recommend_queries
     )
 
     assert len(batch_reco_result) == 3
@@ -836,26 +841,26 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
             ),
         ]
         single_query_result_1 = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=query_vector_1,
             query_filter=filter_1,
             limit=5,
         )
         single_query_result_2 = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=query_vector_2,
             query_filter=filter_2,
             limit=5,
         )
         single_query_result_3 = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=query_vector_3,
             query_filter=filter_3,
             limit=5,
         )
 
         batch_query_result = client.query_batch_points(
-            collection_name=COLLECTION_NAME, requests=query_points_requests
+            collection_name=collection_name, requests=query_points_requests
         )
 
         assert len(batch_query_result) == 3
@@ -868,13 +873,13 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert len(got_points) == 3
 
     client.delete(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         wait=True,
         points_selector=PointIdsList(points=[2, 3]),
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[1, 2, 3],
         with_payload=True,
         with_vectors=True,
@@ -883,13 +888,13 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert len(got_points) == 1
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         wait=True,
         points=[PointStruct(id=2, payload={"hello": "world"}, vector=vectors_2)],
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[1, 2, 3],
         with_payload=True,
         with_vectors=True,
@@ -898,14 +903,14 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert len(got_points) == 2
 
     client.set_payload(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         payload={"new_key": 123},
         points=[1, 2],
         wait=True,
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[1, 2],
         with_payload=True,
         with_vectors=True,
@@ -915,25 +920,25 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         assert point.payload.get("new_key") == 123
 
     client.delete_payload(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         keys=["new_key"],
         points=[1],
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME, ids=[1], with_payload=True, with_vectors=True
+        collection_name=collection_name, ids=[1], with_payload=True, with_vectors=True
     )
 
     for point in got_points:
         assert "new_key" not in point.payload
 
     client.clear_payload(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points_selector=PointIdsList(points=[1, 2]),
     )
 
     got_points = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[1, 2],
         with_payload=True,
         with_vectors=True,
@@ -950,7 +955,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         negative = []
 
     recommended_points = client.recommend(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         positive=positive,
         negative=negative,
         query_filter=Filter(
@@ -969,7 +974,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert len(recommended_points) == 5
 
     scrolled_points, next_page = client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=Filter(
             must=[  # These conditions are required for scroll results
                 FieldCondition(
@@ -989,7 +994,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert len(scrolled_points) == 5
 
     _, next_page = client.scroll(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         scroll_filter=Filter(
             must=[  # These conditions are required for scroll results
                 FieldCondition(
@@ -1007,7 +1012,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     assert next_page is None
 
     client.batch_update_points(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ordering=models.WriteOrdering.STRONG,
         update_operations=[
             models.UpsertOperation(
@@ -1061,12 +1066,12 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_qdrant_client_integration_update_collection(prefer_grpc):
+def test_qdrant_client_integration_update_collection(prefer_grpc, collection_name: str):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config={
             "text": VectorParams(size=DIM, distance=Distance.DOT),
         },
@@ -1074,7 +1079,7 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
     )
 
     client.update_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config={
             "text": VectorParamsDiff(
                 hnsw_config=HnswConfigDiff(
@@ -1103,7 +1108,7 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
         optimizers_config=OptimizersConfigDiff(max_segment_size=10000),
     )
 
-    collection_info = client.get_collection(COLLECTION_NAME)
+    collection_info = client.get_collection(collection_name)
 
     assert collection_info.config.params.vectors["text"].hnsw_config.m == 32
     assert collection_info.config.params.vectors["text"].hnsw_config.ef_construct == 123
@@ -1122,19 +1127,19 @@ def test_qdrant_client_integration_update_collection(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_points_crud(prefer_grpc):
+def test_points_crud(prefer_grpc, collection_name: str):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
 
     # Create a single point
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(id=123, payload={"test": "value"}, vector=np.random.rand(DIM).tolist())
         ],
@@ -1142,7 +1147,7 @@ def test_points_crud(prefer_grpc):
     )
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=Batch(
             ids=[3, 4],
             vectors=[np.random.rand(DIM).tolist(), np.random.rand(DIM).tolist()],
@@ -1155,29 +1160,29 @@ def test_points_crud(prefer_grpc):
 
     # Read a single point
 
-    points = client.retrieve(COLLECTION_NAME, ids=[123])
+    points = client.retrieve(collection_name, ids=[123])
 
     print("read a single point", points)
 
     # Update a single point
 
     client.set_payload(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         payload={"test2": ["value2", "value3"]},
         points=[123],
     )
 
     # Delete a single point
-    client.delete(collection_name=COLLECTION_NAME, points_selector=PointIdsList(points=[123]))
+    client.delete(collection_name=collection_name, points_selector=PointIdsList(points=[123]))
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_quantization_config(prefer_grpc):
+def test_quantization_config(prefer_grpc, collection_name: str):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         quantization_config=ScalarQuantization(
             scalar=ScalarQuantizationConfig(
@@ -1190,7 +1195,7 @@ def test_quantization_config(prefer_grpc):
     )
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(id=2001, vector=np.random.rand(DIM).tolist()),
             PointStruct(id=2002, vector=np.random.rand(DIM).tolist()),
@@ -1200,7 +1205,7 @@ def test_quantization_config(prefer_grpc):
         wait=True,
     )
 
-    collection_info = client.get_collection(COLLECTION_NAME)
+    collection_info = client.get_collection(collection_name)
 
     quantization_config = collection_info.config.quantization_config
 
@@ -1210,7 +1215,7 @@ def test_quantization_config(prefer_grpc):
     assert quantization_config.scalar.always_ram is True
 
     _res = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=np.random.rand(DIM),
         search_params=SearchParams(
             quantization=QuantizationSearchParams(
@@ -1221,7 +1226,7 @@ def test_quantization_config(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_custom_sharding(prefer_grpc):
+def test_custom_sharding(prefer_grpc, collection_name: str):
     major, minor, patch, dev = read_version()
     if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
         pytest.skip("Custom sharding is supported since v1.7.0")
@@ -1233,16 +1238,16 @@ def test_custom_sharding(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     def init_collection():
-        if client.collection_exists(COLLECTION_NAME):
-            client.delete_collection(collection_name=COLLECTION_NAME)
+        if client.collection_exists(collection_name):
+            client.delete_collection(collection_name=collection_name)
         client.create_collection(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
             sharding_method=models.ShardingMethod.CUSTOM,
         )
 
-        client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=cats_shard_key)
-        client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=dogs_shard_key)
+        client.create_shard_key(collection_name=collection_name, shard_key=cats_shard_key)
+        client.create_shard_key(collection_name=collection_name, shard_key=dogs_shard_key)
 
     cat_ids = [1, 2, 3]
     cat_vectors = [np.random.rand(DIM).tolist() for _ in range(len(cat_ids))]
@@ -1267,20 +1272,20 @@ def test_custom_sharding(prefer_grpc):
     init_collection()
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=cat_points,
         shard_key_selector=cats_shard_key,
     )
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=dog_points,
         shard_key_selector=dogs_shard_key,
     )
 
     query_vector = np.random.rand(DIM)
     res = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         shard_key_selector=cats_shard_key,
     )
@@ -1290,20 +1295,20 @@ def test_custom_sharding(prefer_grpc):
 
     if query_api_available:
         query_res = client.query_points(
-            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
+            collection_name=collection_name, query=query_vector, shard_key_selector=cats_shard_key
         )
         assert query_res.points == res
 
     query_vector = np.random.rand(DIM)
     res = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         shard_key_selector=[cats_shard_key, dogs_shard_key],
     )
     assert len(res) == 6
     if query_api_available:
         query_res = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=query_vector,
             shard_key_selector=[cats_shard_key, dogs_shard_key],
         )
@@ -1311,14 +1316,14 @@ def test_custom_sharding(prefer_grpc):
 
     query_vector = np.random.rand(DIM)
     res = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
     )
     assert len(res) == 6
 
     if query_api_available:
         query_res = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=query_vector,
         )
         assert res == query_res.points
@@ -1328,7 +1333,7 @@ def test_custom_sharding(prefer_grpc):
     init_collection()
 
     client.upload_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=cat_vectors,
         ids=cat_ids,
         payload=cat_payload,
@@ -1337,7 +1342,7 @@ def test_custom_sharding(prefer_grpc):
 
     query_vector = np.random.rand(DIM)
     res = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         shard_key_selector=cats_shard_key,
     )
@@ -1348,7 +1353,7 @@ def test_custom_sharding(prefer_grpc):
 
     if query_api_available:
         query_res = client.query_points(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query=query_vector,
             shard_key_selector=cats_shard_key,
         )
@@ -1365,14 +1370,14 @@ def test_custom_sharding(prefer_grpc):
     ]
 
     client.upload_points(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=cat_points,
         shard_key_selector=cats_shard_key,
     )
 
     query_vector = np.random.rand(DIM)
     res = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         shard_key_selector=cats_shard_key,
     )
@@ -1380,39 +1385,39 @@ def test_custom_sharding(prefer_grpc):
 
     if query_api_available:
         query_res = client.query_points(
-            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
+            collection_name=collection_name, query=query_vector, shard_key_selector=cats_shard_key
         )
         assert res == query_res.points
 
     query_vector = np.random.rand(DIM)
     res = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         shard_key_selector=dogs_shard_key,
     )
     assert len(res) == 0
     if query_api_available:
         query_res = client.query_points(
-            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=dogs_shard_key
+            collection_name=collection_name, query=query_vector, shard_key_selector=dogs_shard_key
         )
         assert res == query_res.points
 
     # endregion
 
-    client.delete_shard_key(collection_name=COLLECTION_NAME, shard_key=dogs_shard_key)
+    client.delete_shard_key(collection_name=collection_name, shard_key=dogs_shard_key)
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_sparse_vectors(prefer_grpc):
+def test_sparse_vectors(prefer_grpc, collection_name: str):
     major, minor, patch, dev = read_version()
     if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
         pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config={},
         sparse_vectors_config={
             "text": models.SparseVectorParams(
@@ -1425,7 +1430,7 @@ def test_sparse_vectors(prefer_grpc):
     )
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             models.PointStruct(
                 id=1,
@@ -1458,7 +1463,7 @@ def test_sparse_vectors(prefer_grpc):
     )
 
     result = client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=models.NamedSparseVector(
             name="text",
             vector=models.SparseVector(
@@ -1483,16 +1488,16 @@ def test_sparse_vectors(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_sparse_vectors_batch(prefer_grpc):
+def test_sparse_vectors_batch(prefer_grpc, collection_name: str):
     major, minor, patch, dev = read_version()
     if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
         pytest.skip("Sparse vectors are supported since v1.7.0")
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config={},
         sparse_vectors_config={
             "text": models.SparseVectorParams(
@@ -1505,7 +1510,7 @@ def test_sparse_vectors_batch(prefer_grpc):
     )
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             models.PointStruct(
                 id=1,
@@ -1550,7 +1555,7 @@ def test_sparse_vectors_batch(prefer_grpc):
     )
 
     results = client.search_batch(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         requests=[request],
     )
 
@@ -1570,12 +1575,12 @@ def test_sparse_vectors_batch(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_vector_update(prefer_grpc):
+def test_vector_update(prefer_grpc, collection_name: str):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
@@ -1586,7 +1591,7 @@ def test_vector_update(prefer_grpc):
     uuid4 = str(uuid.uuid4())
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(id=uuid1, payload={"a": 1}, vector=np.random.rand(DIM).tolist()),
             PointStruct(id=uuid2, payload={"a": 2}, vector=np.random.rand(DIM).tolist()),
@@ -1597,7 +1602,7 @@ def test_vector_update(prefer_grpc):
     )
 
     client.update_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointVectors(
                 id=uuid2,
@@ -1607,7 +1612,7 @@ def test_vector_update(prefer_grpc):
     )
 
     result = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[uuid2],
         with_vectors=True,
     )[0]
@@ -1615,13 +1620,13 @@ def test_vector_update(prefer_grpc):
     assert result.vector == [1] * DIM
 
     client.delete_vectors(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors=[""],
         points=Filter(must=[FieldCondition(key="b", range=Range(gte=1))]),
     )
 
     result = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[uuid4],
         with_vectors=True,
     )[0]
@@ -1630,12 +1635,12 @@ def test_vector_update(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_conditional_payload_update(prefer_grpc):
+def test_conditional_payload_update(prefer_grpc, collection_name: str):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
@@ -1646,7 +1651,7 @@ def test_conditional_payload_update(prefer_grpc):
     uuid4 = str(uuid.uuid4())
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(id=uuid1, payload={"a": 1}, vector=np.random.rand(DIM).tolist()),
             PointStruct(id=uuid2, payload={"a": 2}, vector=np.random.rand(DIM).tolist()),
@@ -1657,7 +1662,7 @@ def test_conditional_payload_update(prefer_grpc):
     )
 
     res = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[uuid1, uuid2, uuid4],
     )
 
@@ -1670,18 +1675,18 @@ def test_conditional_payload_update(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_conditional_payload_update_2(prefer_grpc):
+def test_conditional_payload_update_2(prefer_grpc, collection_name: str):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(id=1001, payload={"a": 1}, vector=np.random.rand(DIM).tolist()),
             PointStruct(id=1002, payload={"a": 2}, vector=np.random.rand(DIM).tolist()),
@@ -1692,14 +1697,14 @@ def test_conditional_payload_update_2(prefer_grpc):
     )
 
     client.set_payload(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         payload={"c": 1},
         points=Filter(must=[FieldCondition(key="a", range=Range(gte=1))]),
         wait=True,
     )
 
     points = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[1001, 1002, 1003, 1004],
         with_payload=True,
         with_vectors=False,
@@ -1713,13 +1718,13 @@ def test_conditional_payload_update_2(prefer_grpc):
     assert points[3].payload.get("c") is None
 
     client.overwrite_payload(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         payload={"c": 2},
         points=Filter(must=[FieldCondition(key="b", range=Range(lt=10))]),
     )
 
     points = client.retrieve(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         ids=[1001, 1002, 1003, 1004],
         with_payload=True,
         with_vectors=False,
@@ -1751,12 +1756,12 @@ def test_insert_float():
     assert isinstance(point.payload["value"], float)
 
 
-def test_locks():
+def test_locks(collection_name: str):
     client = QdrantClient(timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
     )
@@ -1766,7 +1771,7 @@ def test_locks():
     try:
         # Create a single point
         client.upsert(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             points=[
                 PointStruct(
                     id=123,
@@ -1789,7 +1794,7 @@ def test_locks():
 
     # should be fine now
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(id=123, payload={"test": "value"}, vector=np.random.rand(DIM).tolist())
         ],
@@ -1798,18 +1803,18 @@ def test_locks():
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_empty_vector(prefer_grpc):
+def test_empty_vector(prefer_grpc, collection_name: str):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=TIMEOUT)
     client.create_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config={},
         timeout=TIMEOUT,
     )
 
     client.upsert(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         points=[
             PointStruct(id=123, payload={"test": "value"}, vector={}),
         ],
@@ -1946,7 +1951,7 @@ def test_client_close():
     # endregion local
 
 
-def test_timeout_propagation():
+def test_timeout_propagation(collection_name: str):
     client = QdrantClient()
     vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)
     with pytest.raises(
@@ -1955,14 +1960,14 @@ def test_timeout_propagation():
         # timeout is Optional[int]
         # if we set it to 0 - recreate_collection raises operation is in progress instead of timed out
         client.http.client._client._timeout = Timeout(0.01)
-        if client.collection_exists(COLLECTION_NAME):
-            client.delete_collection(collection_name=COLLECTION_NAME)
-        client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+        if client.collection_exists(collection_name):
+            client.delete_collection(collection_name=collection_name)
+        client.create_collection(collection_name=collection_name, vectors_config=vectors_config)
     sleep(0.5)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=10)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name=collection_name, timeout=10)
     client.create_collection(
-        collection_name=COLLECTION_NAME, vectors_config=vectors_config, timeout=10
+        collection_name=collection_name, vectors_config=vectors_config, timeout=10
     )
 
 
@@ -2092,34 +2097,34 @@ def test_async_auth_token_provider():
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_read_consistency(prefer_grpc):
+def test_read_consistency(prefer_grpc, collection_name: str):
     fixture_points = generate_fixtures(vectors_sizes=DIM, num=NUM_VECTORS)
     client = init_remote(prefer_grpc=prefer_grpc)
     init_client(
         client,
         fixture_points,
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
     )
 
     query_vector = fixture_points[0].vector
 
     client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         limit=5,  # Return 5 closest points
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
     client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         limit=5,  # Return 5 closest points
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
     client.search(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         query_vector=query_vector,
         limit=5,  # Return 5 closest points
         consistency=2,
@@ -2127,20 +2132,20 @@ def test_read_consistency(prefer_grpc):
 
     search_requests = [models.SearchRequest(vector=query_vector, limit=5)]
     client.search_batch(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         requests=search_requests,
     )
 
     client.search_batch(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         requests=search_requests,
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
-    client.search_batch(collection_name=COLLECTION_NAME, requests=search_requests, consistency=2)
+    client.search_batch(collection_name=collection_name, requests=search_requests, consistency=2)
 
     client.search_groups(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         group_by="word",
         query_vector=query_vector,
         limit=5,  # Return 5 closest points
@@ -2148,7 +2153,7 @@ def test_read_consistency(prefer_grpc):
     )
 
     client.search_groups(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         group_by="word",
         query_vector=query_vector,
         limit=5,  # Return 5 closest points
@@ -2156,7 +2161,7 @@ def test_read_consistency(prefer_grpc):
     )
 
     client.search_groups(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         group_by="word",
         query_vector=query_vector,
         limit=5,  # Return 5 closest points
@@ -2165,28 +2170,28 @@ def test_read_consistency(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", (False, True))
-def test_create_payload_index(prefer_grpc):
+def test_create_payload_index(prefer_grpc, collection_name: str):
     client = init_remote(prefer_grpc=prefer_grpc)
-    initialize_fixture_collection(client, COLLECTION_NAME, vectors_config={})
+    initialize_fixture_collection(client, collection_name, vectors_config={})
 
     client.create_payload_index(
-        COLLECTION_NAME, "keyword", models.PayloadSchemaType.KEYWORD, wait=True
+        collection_name, "keyword", models.PayloadSchemaType.KEYWORD, wait=True
     )
     client.create_payload_index(
-        COLLECTION_NAME, "integer", models.PayloadSchemaType.INTEGER, wait=True
+        collection_name, "integer", models.PayloadSchemaType.INTEGER, wait=True
     )
     client.create_payload_index(
-        COLLECTION_NAME, "float", models.PayloadSchemaType.FLOAT, wait=True
+        collection_name, "float", models.PayloadSchemaType.FLOAT, wait=True
     )
-    client.create_payload_index(COLLECTION_NAME, "geo", models.PayloadSchemaType.GEO, wait=True)
-    client.create_payload_index(COLLECTION_NAME, "text", models.PayloadSchemaType.TEXT, wait=True)
-    client.create_payload_index(COLLECTION_NAME, "bool", models.PayloadSchemaType.BOOL, wait=True)
+    client.create_payload_index(collection_name, "geo", models.PayloadSchemaType.GEO, wait=True)
+    client.create_payload_index(collection_name, "text", models.PayloadSchemaType.TEXT, wait=True)
+    client.create_payload_index(collection_name, "bool", models.PayloadSchemaType.BOOL, wait=True)
     client.create_payload_index(
-        COLLECTION_NAME, "datetime", models.PayloadSchemaType.DATETIME, wait=True
+        collection_name, "datetime", models.PayloadSchemaType.DATETIME, wait=True
     )
 
     client.create_payload_index(
-        COLLECTION_NAME,
+        collection_name,
         "text_parametrized",
         models.TextIndexParams(
             type=models.TextIndexType.TEXT,
@@ -2201,23 +2206,23 @@ def test_create_payload_index(prefer_grpc):
     major, minor, patch, dev = read_version()
     if major is None or dev or (major, minor, patch) >= (1, 11, 0):
         client.create_payload_index(
-            COLLECTION_NAME, "uuid", models.PayloadSchemaType.UUID, wait=True
+            collection_name, "uuid", models.PayloadSchemaType.UUID, wait=True
         )
 
         client.create_payload_index(
-            COLLECTION_NAME,
+            collection_name,
             "keyword_parametrized",
             models.KeywordIndexParams(
                 type=models.KeywordIndexType.KEYWORD, is_tenant=False, on_disk=True
             ),
             wait=True,
         )
-        payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
+        payload_schema = client.get_collection(collection_name).payload_schema
         assert payload_schema["keyword_parametrized"].params.is_tenant is False
         assert payload_schema["keyword_parametrized"].params.on_disk is True
 
         client.create_payload_index(
-            COLLECTION_NAME,
+            collection_name,
             "integer_parametrized",
             models.IntegerIndexParams(
                 type=models.IntegerIndexType.INTEGER,
@@ -2230,15 +2235,15 @@ def test_create_payload_index(prefer_grpc):
         )
         if prefer_grpc:
             rest_client = QdrantClient()
-            _ = rest_client.get_collection(COLLECTION_NAME).payload_schema
-        payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
+            _ = rest_client.get_collection(collection_name).payload_schema
+        payload_schema = client.get_collection(collection_name).payload_schema
         assert payload_schema["integer_parametrized"].params.lookup is True
         assert payload_schema["integer_parametrized"].params.range is False
         assert payload_schema["integer_parametrized"].params.is_principal is False
         assert payload_schema["integer_parametrized"].params.on_disk is True
 
         client.create_payload_index(
-            COLLECTION_NAME,
+            collection_name,
             "float_parametrized",
             models.FloatIndexParams(
                 type=models.FloatIndexType.FLOAT, is_principal=False, on_disk=True
@@ -2247,7 +2252,7 @@ def test_create_payload_index(prefer_grpc):
         )
 
         client.create_payload_index(
-            COLLECTION_NAME,
+            collection_name,
             "datetime_parametrized",
             models.DatetimeIndexParams(
                 type=models.DatetimeIndexType.DATETIME, is_principal=False, on_disk=True
@@ -2255,7 +2260,7 @@ def test_create_payload_index(prefer_grpc):
             wait=True,
         )
         client.create_payload_index(
-            COLLECTION_NAME,
+            collection_name,
             "uuid_parametrized",
             models.UuidIndexParams(type=models.UuidIndexType.UUID, is_tenant=False, on_disk=True),
             wait=True,
@@ -2263,13 +2268,13 @@ def test_create_payload_index(prefer_grpc):
 
     if major is None or dev or (major, minor, patch) >= (1, 11, 1):
         client.create_payload_index(
-            COLLECTION_NAME,
+            collection_name,
             "geo_parametrized",
             models.GeoIndexParams(type=models.GeoIndexType.GEO),
             wait=True,
         )
         client.create_payload_index(
-            COLLECTION_NAME,
+            collection_name,
             "bool_parametrized",
             models.BoolIndexParams(type=models.BoolIndexType.BOOL),
             wait=True,
