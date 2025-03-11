@@ -2,8 +2,8 @@ name: Integration tests
 
 on:
   push:
-    branches: [ master, dev, speedup-ci ]
-  workflow_dispatch:
+    branches: [ master, dev ]
+  pull_request:
 
 env:
   CARGO_TERM_COLOR: always
@@ -37,13 +37,6 @@ jobs:
           python -m pip install poetry
           poetry config virtualenvs.create false
           poetry install --no-interaction --no-ansi --all-extras
-      # - name: Set up cache for FastEmbed models
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: /tmp/fastembed_cache
-      #     key: fastembed-cache
-      #     restore-keys: |
-      #       fastembed-cache
       - name: Run async client generation tests
         run: |
           if [[ ${{ matrix.python-version }} == "3.10.x" ]]; then
@@ -76,5 +69,5 @@ jobs:
       - name: Run fastembed tests without fastembed
         run: |
           pip3 uninstall fastembed -y
-          time pytest tests/test_fastembed.py -n auto --durations=0
+          pytest -n auto tests/test_fastembed.py
         shell: bash
