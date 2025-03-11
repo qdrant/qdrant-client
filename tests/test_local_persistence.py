@@ -37,7 +37,7 @@ def ingest_dense_vector_data(
         collection_name=collection_name,
         points=construct(
             rest.Batch,
-            ids=random.sample(range(50), len(lines)),
+            ids=random.sample(range(100), len(lines)),
             vectors=embeddings,
         ),
     )
@@ -67,7 +67,7 @@ def ingest_sparse_vector_data(
 
     batch = construct(
         rest.Batch,
-        ids=random.sample(range(50), vector_count),
+        ids=random.sample(range(100), vector_count),
         vectors={"text": sparse_vectors},
     )
 

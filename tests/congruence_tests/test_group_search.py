@@ -336,7 +336,7 @@ def test_single_vector():
     for group_size in (1, 5):
         searcher.group_size = group_size
 
-        for i in range(50):
+        for i in range(100):
             query_filter = one_random_filter_please()
 
             try:

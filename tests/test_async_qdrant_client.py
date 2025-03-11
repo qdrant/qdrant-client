@@ -314,7 +314,7 @@ async def test_async_qdrant_client_local():
                 vector=np.random.rand(10).tolist(),
                 payload={"random_dig": random.randint(1, 100)},
             )
-            for i in range(50)
+            for i in range(100)
         ],
     )
     assert (await client.count(COLLECTION_NAME)).count == 100

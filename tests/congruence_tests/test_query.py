@@ -859,7 +859,7 @@ def test_dense_query_filtered_prefetch():
 
     local_client, http_client, grpc_client = init_clients(fixture_points)
 
-    for i in range(50):
+    for i in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
@@ -1001,7 +1001,7 @@ def test_dense_query():
     )
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_payload_exclude)
 
-    for i in range(50):
+    for i in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
@@ -1131,7 +1131,7 @@ def test_simple_opt_vectors_query():
     )
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_payload_exclude)
 
-    for i in range(50):
+    for i in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
@@ -1167,7 +1167,7 @@ def test_single_dense_vector():
         fixture_points, vectors_config=vectors_config
     )
 
-    for i in range(50):
+    for i in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
@@ -1470,7 +1470,7 @@ def test_query_group():
         )
 
     searcher.group_by = "city.name"
-    for i in range(50):
+    for i in range(100):
         query_filter = one_random_filter_please()
         try:
             compare_clients_results(
