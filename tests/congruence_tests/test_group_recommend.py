@@ -20,9 +20,11 @@ class TestGroupRecommendation:
         self.group_by = "rand_digit"
         self.group_size = 1
 
-    def simple_recommend_groups_image(self, client: QdrantBase) -> models.GroupsResult:
+    def simple_recommend_groups_image(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.GroupsResult:
         return client.recommend_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10],
             negative=[],
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
@@ -33,9 +35,11 @@ class TestGroupRecommendation:
             search_params=models.SearchParams(exact=True),
         )
 
-    def simple_recommend_groups_best_scores(self, client: QdrantBase) -> models.GroupsResult:
+    def simple_recommend_groups_best_scores(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.GroupsResult:
         return client.recommend_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10],
             negative=[],
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
@@ -47,9 +51,11 @@ class TestGroupRecommendation:
             search_params=models.SearchParams(exact=True),
         )
 
-    def many_recommend_groups(self, client: QdrantBase) -> models.GroupsResult:
+    def many_recommend_groups(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.GroupsResult:
         return client.recommend_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10, 19],
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=10,
@@ -59,9 +65,11 @@ class TestGroupRecommendation:
             search_params=models.SearchParams(exact=True),
         )
 
-    def simple_recommend_groups_negative(self, client: QdrantBase) -> models.GroupsResult:
+    def simple_recommend_groups_negative(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> models.GroupsResult:
         return client.recommend_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10],
             negative=[15, 7],
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
@@ -72,9 +80,14 @@ class TestGroupRecommendation:
             search_params=models.SearchParams(exact=True),
         )
 
-    def recommend_groups_from_another_collection(self, client: QdrantBase) -> models.GroupsResult:
+    def recommend_groups_from_another_collection(
+        self,
+        client: QdrantBase,
+        collection_name: str = COLLECTION_NAME,
+        secondary_collection_name: str = secondary_collection_name,
+    ) -> models.GroupsResult:
         return client.recommend_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10],
             negative=[15, 7],
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
@@ -90,10 +103,13 @@ class TestGroupRecommendation:
         )
 
     def filter_recommend_groups_text(
-        self, client: QdrantBase, query_filter: models.Filter
+        self,
+        client: QdrantBase,
+        query_filter: models.Filter,
+        collection_name: str = COLLECTION_NAME,
     ) -> models.GroupsResult:
         return client.recommend_groups(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             positive=[10],
             query_filter=query_filter,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
@@ -109,7 +125,7 @@ def group_by_keys():
     return ["id", "rand_digit", "two_words", "city.name", "maybe", "maybe_null"]
 
 
-def test_simple_recommend_groups() -> None:
+def test_simple_recommend_groups(collection_name: str, secondary_collection_name: str) -> None:
     fixture_points = generate_fixtures()
 
     secondary_collection_points = generate_fixtures(100)
@@ -117,49 +133,78 @@ def test_simple_recommend_groups() -> None:
     recommender = TestGroupRecommendation()
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, collection_name)
     init_client(local_client, secondary_collection_points, secondary_collection_name)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, collection_name)
     init_client(remote_client, secondary_collection_points, secondary_collection_name)
 
     for group_size in (3, 5):
         recommender.group_size = group_size
         compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_image
+            local_client,
+            remote_client,
+            recommender.simple_recommend_groups_image,
+            collection_name=collection_name,
         )
         compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_best_scores
+            local_client,
+            remote_client,
+            recommender.simple_recommend_groups_best_scores,
+            collection_name=collection_name,
         )
-        compare_client_results(local_client, remote_client, recommender.many_recommend_groups)
         compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_negative
+            local_client,
+            remote_client,
+            recommender.many_recommend_groups,
+            collection_name=collection_name,
+        )
+        compare_client_results(
+            local_client,
+            remote_client,
+            recommender.simple_recommend_groups_negative,
+            collection_name=collection_name,
         )
         compare_client_results(
             local_client,
             remote_client,
             recommender.recommend_groups_from_another_collection,
+            collection_name=collection_name,
+            secondary_collection_name=secondary_collection_name,
         )
 
     for key in group_by_keys():
         recommender.group_by = key
         compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_image
+            local_client,
+            remote_client,
+            recommender.simple_recommend_groups_image,
+            collection_name=collection_name,
         )
-        compare_client_results(local_client, remote_client, recommender.many_recommend_groups)
         compare_client_results(
-            local_client, remote_client, recommender.simple_recommend_groups_negative
+            local_client,
+            remote_client,
+            recommender.many_recommend_groups,
+            collection_name=collection_name,
+        )
+        compare_client_results(
+            local_client,
+            remote_client,
+            recommender.simple_recommend_groups_negative,
+            collection_name=collection_name,
         )
         compare_client_results(
             local_client,
             remote_client,
             recommender.recommend_groups_from_another_collection,
+            collection_name=collection_name,
+            secondary_collection_name=secondary_collection_name,
         )
 
     recommender.group_by = "rand_digit"
 
-    for i in range(10):
+    for _ in range(10):
         query_filter = one_random_filter_please()
         try:
             compare_client_results(
@@ -167,6 +212,7 @@ def test_simple_recommend_groups() -> None:
                 remote_client,
                 recommender.filter_recommend_groups_text,
                 query_filter=query_filter,
+                collection_name=collection_name,
             )
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
