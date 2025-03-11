@@ -5,6 +5,7 @@ from collections import defaultdict
 import numpy as np
 import pytest
 
+from qdrant_client.client_base import QdrantBase
 import qdrant_client.http.exceptions
 from qdrant_client.http import models
 from tests.congruence_tests.settings import TIMEOUT
@@ -14,13 +15,17 @@ from tests.congruence_tests.test_common import (
     generate_fixtures,
     init_local,
     init_remote,
+    initialize_fixture_collection,
 )
 from tests.fixtures.payload import one_random_payload_please
 
 UPLOAD_NUM_VECTORS = 100
 
 
-def test_upsert(local_client, remote_client):
+def test_upsert(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
+
     # region upload data
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
     ids, payload = [], []
@@ -39,8 +44,8 @@ def test_upsert(local_client, remote_client):
         payloads=payload,
     )
 
-    local_client.upsert(COLLECTION_NAME, points_batch)
-    remote_client.upsert(COLLECTION_NAME, points_batch)
+    local_client.upsert(collection_name, points_batch)
+    remote_client.upsert(collection_name, points_batch)
 
     id_ = ids[0]
     vector = {k: v[0] for k, v in vectors.items()}
@@ -49,11 +54,11 @@ def test_upsert(local_client, remote_client):
     id_filter = models.Filter(must=[models.HasIdCondition(has_id=[id_])])
 
     local_old_point = local_client.scroll(
-        COLLECTION_NAME,
+        collection_name,
         scroll_filter=id_filter,
         limit=1,
     )[0][0]
-    remote_old_point = remote_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][
+    remote_old_point = remote_client.scroll(collection_name, scroll_filter=id_filter, limit=1)[0][
         0
     ]
 
@@ -65,27 +70,34 @@ def test_upsert(local_client, remote_client):
     assert old_payload != new_payload
 
     local_client.upsert(
-        COLLECTION_NAME,
+        collection_name,
         [models.PointStruct(id=id_, vector=vector, payload=new_payload)],
     )
     remote_client.upsert(
-        COLLECTION_NAME,
+        collection_name,
         [models.PointStruct(id=id_, vector=vector, payload=new_payload)],
     )
 
-    local_new_point = local_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][0]
-    remote_new_point = remote_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][
+    local_new_point = local_client.scroll(collection_name, scroll_filter=id_filter, limit=1)[0][0]
+    remote_new_point = remote_client.scroll(collection_name, scroll_filter=id_filter, limit=1)[0][
         0
     ]
 
     assert local_new_point == remote_new_point
     # endregion
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
 
 
-def test_upload_collection(local_client, remote_client):
+def test_upload_collection(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
+
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
 
     vectors = []
     payload = []
@@ -95,15 +107,23 @@ def test_upload_collection(local_client, remote_client):
         vectors.append(point.vector)
         payload.append(point.payload)
 
-    local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=ids, wait=True)
+    local_client.upload_collection(collection_name, vectors, payload, ids=ids)
+    remote_client.upload_collection(collection_name, vectors, payload, ids=ids, wait=True)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
 
 
 @pytest.mark.timeout(60)  # normally takes less than a second
-def test_upload_collection_generators(local_client, remote_client):
+def test_upload_collection_generators(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
+
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
+
     vectors = []
     payload = []
 
@@ -112,25 +132,38 @@ def test_upload_collection_generators(local_client, remote_client):
         payload.append(point.payload)
 
     payload = itertools.cycle(payload)
-    local_client.upload_collection(COLLECTION_NAME, vectors, payload, ids=itertools.count())
+    local_client.upload_collection(collection_name, vectors, payload, ids=itertools.count())
     remote_client.upload_collection(
-        COLLECTION_NAME, vectors, payload, ids=itertools.count(), wait=True
+        collection_name, vectors, payload, ids=itertools.count(), wait=True
     )
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
 
 
-def test_upload_points(local_client, remote_client):
+def test_upload_points(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
 
-    local_client.upload_points(COLLECTION_NAME, points)
-    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.upload_points(collection_name, points)
+    remote_client.upload_points(collection_name, points, wait=True)
+
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
 
 
-def test_upload_uuid_in_batches(local_client, remote_client):
+def test_upload_uuid_in_batches(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
+
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
+
     vectors = defaultdict(list)
 
     for point in points:
@@ -143,13 +176,15 @@ def test_upload_uuid_in_batches(local_client, remote_client):
         payloads=[point.payload for point in points],
     )
 
-    local_client.upsert(COLLECTION_NAME, batch)
-    remote_client.upsert(COLLECTION_NAME, batch)
+    local_client.upsert(collection_name, batch)
+    remote_client.upsert(collection_name, batch)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
 
 
-def test_upload_collection_float_list():
+def test_upload_collection_float_list(collection_name: str):
     vectors_dim = 50
     local_client = init_local()
     remote_client = init_remote()
@@ -157,34 +192,44 @@ def test_upload_collection_float_list():
     vectors = np.random.randn(UPLOAD_NUM_VECTORS, vectors_dim).tolist()
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
 
-    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT)
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    local_client.create_collection(collection_name, vectors_config=vectors_config, timeout=TIMEOUT)
+    if remote_client.collection_exists(collection_name):
+        remote_client.delete_collection(collection_name, timeout=TIMEOUT)
     remote_client.create_collection(
-        COLLECTION_NAME, vectors_config=vectors_config, timeout=TIMEOUT
+        collection_name, vectors_config=vectors_config, timeout=TIMEOUT
     )
 
     ids = list(range(len(vectors)))
-    local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
+    local_client.upload_collection(collection_name, vectors, ids=ids)
+    remote_client.upload_collection(collection_name, vectors, ids=ids, wait=True)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
-    local_client.delete_collection(COLLECTION_NAME)
-    remote_client.delete_collection(COLLECTION_NAME)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
+    local_client.delete_collection(collection_name)
+    remote_client.delete_collection(collection_name)
 
 
-def test_upload_collection_named_float_list_vectors(local_client, remote_client):
+def test_upload_collection_named_float_list_vectors(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
+
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
+
     vectors = []  # list[dict[str, float]]
     for point in points:
         vectors.append(point.vector)
     ids = [point.id for point in points]
-    local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.upload_collection(collection_name, vectors, ids=ids)
+    remote_client.upload_collection(collection_name, vectors, ids=ids, wait=True)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
 
 
-def test_upload_collection_np_array_2d():
+def test_upload_collection_np_array_2d(collection_name: str):
     vectors_dim = 50
     local_client = init_local()
     remote_client = init_remote()
@@ -194,27 +239,29 @@ def test_upload_collection_np_array_2d():
     vectors_config = models.VectorParams(size=vectors_dim, distance=models.Distance.EUCLID)
 
     local_client.create_collection(
-        COLLECTION_NAME,
+        collection_name,
         vectors_config=vectors_config,
         timeout=TIMEOUT,
     )
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    if remote_client.collection_exists(collection_name):
+        remote_client.delete_collection(collection_name, timeout=TIMEOUT)
     remote_client.create_collection(
-        COLLECTION_NAME,
+        collection_name,
         vectors_config=vectors_config,
         timeout=TIMEOUT,
     )
 
-    local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
+    local_client.upload_collection(collection_name, vectors, ids=ids)
+    remote_client.upload_collection(collection_name, vectors, ids=ids, wait=True)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
-    local_client.delete_collection(COLLECTION_NAME)
-    remote_client.delete_collection(COLLECTION_NAME)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
+    local_client.delete_collection(collection_name)
+    remote_client.delete_collection(collection_name)
 
 
-def test_upload_collection_list_np_arrays():
+def test_upload_collection_list_np_arrays(collection_name: str):
     vectors_dim = 50
     local_client = init_local()
     remote_client = init_remote()
@@ -225,28 +272,36 @@ def test_upload_collection_list_np_arrays():
     ids = list(range(len(vectors)))
 
     local_client.create_collection(
-        COLLECTION_NAME,
+        collection_name,
         vectors_config=vectors_config,
         timeout=TIMEOUT,
     )
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    if remote_client.collection_exists(collection_name):
+        remote_client.delete_collection(collection_name, timeout=TIMEOUT)
     remote_client.create_collection(
-        COLLECTION_NAME,
+        collection_name,
         vectors_config=vectors_config,
         timeout=TIMEOUT,
     )
 
-    local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
+    local_client.upload_collection(collection_name, vectors, ids=ids)
+    remote_client.upload_collection(collection_name, vectors, ids=ids, wait=True)
 
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
-    local_client.delete_collection(COLLECTION_NAME)
-    remote_client.delete_collection(COLLECTION_NAME)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
+    local_client.delete_collection(collection_name)
+    remote_client.delete_collection(collection_name)
 
 
-def test_upload_collection_dict_np_arrays(local_client, remote_client):
+def test_upload_collection_dict_np_arrays(
+    local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
+):
     points = generate_fixtures(UPLOAD_NUM_VECTORS)
+
+    initialize_fixture_collection(local_client, collection_name)
+    initialize_fixture_collection(remote_client, collection_name)
+
     intermediate_vectors: dict[str, list[float]] = defaultdict(list)
     vectors: dict[str, np.ndarray] = {}
     ids = [point.id for point in points]
@@ -257,17 +312,19 @@ def test_upload_collection_dict_np_arrays(local_client, remote_client):
     for key in intermediate_vectors:
         vectors[key] = np.array(intermediate_vectors[key])
 
-    local_client.upload_collection(COLLECTION_NAME, vectors, ids=ids)
-    remote_client.upload_collection(COLLECTION_NAME, vectors, ids=ids, wait=True)
-    compare_collections(local_client, remote_client, UPLOAD_NUM_VECTORS)
+    local_client.upload_collection(collection_name, vectors, ids=ids)
+    remote_client.upload_collection(collection_name, vectors, ids=ids, wait=True)
+    compare_collections(
+        local_client, remote_client, UPLOAD_NUM_VECTORS, collection_name=collection_name
+    )
 
 
-def test_upload_wrong_vectors():
+def test_upload_wrong_vectors(collection_name: str):
     local_client = init_local()
     remote_client = init_remote()
 
     vector_size = 2
-    wrong_vectors_collection = "test_collection"
+    wrong_vectors_collection = collection_name
     vectors_config = {
         "text": models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
     }
@@ -339,22 +396,22 @@ def test_upload_wrong_vectors():
         )
 
 
-def test_upsert_without_vector_name():
+def test_upsert_without_vector_name(collection_name: str):
     local_client = init_local()
     remote_client = init_remote()
 
-    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config={})
-    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
-        remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config={})
+    local_client.create_collection(collection_name=collection_name, vectors_config={})
+    if remote_client.collection_exists(collection_name=collection_name):
+        remote_client.delete_collection(collection_name=collection_name)
+    remote_client.create_collection(collection_name=collection_name, vectors_config={})
 
     with pytest.raises(ValueError, match="Not existing vector name error"):
         local_client.upsert(
-            COLLECTION_NAME, points=[models.PointStruct(id=1, vector=[0.1, 0.2, 0.3])]
+            collection_name, points=[models.PointStruct(id=1, vector=[0.1, 0.2, 0.3])]
         )
     with pytest.raises(
         qdrant_client.http.exceptions.UnexpectedResponse, match="Not existing vector name error"
     ):
         remote_client.upsert(
-            COLLECTION_NAME, points=[models.PointStruct(id=1, vector=[0.1, 0.2, 0.3])]
+            collection_name, points=[models.PointStruct(id=1, vector=[0.1, 0.2, 0.3])]
         )

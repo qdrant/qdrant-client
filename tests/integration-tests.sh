@@ -39,23 +39,9 @@ done
 # Backwards compatibility tests are enabled by setting QDRANT_VERSION to a version that is not the latest
 # OR by setting IGNORE_CONGRUENCE_TESTS to true
 if [[ "$QDRANT_VERSION" != "$QDRANT_LATEST" ]] || [[ "$IGNORE_CONGRUENCE_TESTS" == "true" ]]; then
-  QDRANT_VERSION=$QDRANT_VERSION time pytest -n auto \
-  tests/congruence_tests/test_sparse_recommend.py \
-  tests/congruence_tests/test_group_search.py \
-  tests/congruence_tests/test_sparse_search.py \
-  tests/congruence_tests/test_query.py \
-  tests/congruence_tests/test_collections.py \
-  tests/congruence_tests/test_aliases.py \
-  --durations=0 -vv
+  QDRANT_VERSION=$QDRANT_VERSION pytest --ignore=tests/congruence_tests
 else
-  QDRANT_VERSION=$QDRANT_VERSION time pytest -n auto \
-  # tests/congruence_tests/test_sparse_recommend.py \
-  # tests/congruence_tests/test_group_search.py \
-  tests/congruence_tests/test_sparse_search.py \
-  # tests/congruence_tests/test_query.py \
-  # tests/congruence_tests/test_collections.py \
-  # tests/congruence_tests/test_aliases.py \
-  --durations=0 -vv
+  QDRANT_VERSION=$QDRANT_VERSION pytest
 fi
 
 
