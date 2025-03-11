@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions.common_types import NamedSparseVector
 from qdrant_client.http.models import models
@@ -25,9 +27,11 @@ class TestSimpleSparseSearcher:
     def __init__(self):
         self.query_text = generate_random_sparse_vector(sparse_text_vector_size, density=0.1)
 
-    def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
+    def simple_search_text(
+        self, client: QdrantBase, collection_name: str = COLLECTION_NAME
+    ) -> list[models.ScoredPoint]:
         return client.search(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
             with_payload=True,
             with_vectors=["sparse-text"],
@@ -35,7 +39,7 @@ class TestSimpleSparseSearcher:
         )
 
 
-def test_simple_search():
+def test_simple_search(collection_name: str):
     fixture_points = generate_sparse_fixtures(
         vectors_sizes={"sparse-text": sparse_text_vector_size},
         even_sparse=False,
@@ -48,12 +52,13 @@ def test_simple_search():
     init_client(
         local_client,
         fixture_points,
+        collection_name,
         sparse_vectors_config=sparse_vectors_idf_config,
         vectors_config={},
     )
 
     assert (
-        local_client.get_collection(COLLECTION_NAME)
+        local_client.get_collection(collection_name)
         .config.params.sparse_vectors["sparse-text"]
         .modifier
         == models.Modifier.IDF
@@ -63,14 +68,17 @@ def test_simple_search():
     init_client(
         remote_client,
         fixture_points,
+        collection_name,
         sparse_vectors_config=sparse_vectors_idf_config,
         vectors_config={},
     )
 
-    compare_client_results(local_client, remote_client, searcher.simple_search_text)
+    compare_client_results(
+        local_client, remote_client, searcher.simple_search_text, collection_name=collection_name
+    )
 
     local_client.update_collection(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         sparse_vectors_config={
             "sparse-text": models.SparseVectorParams(
                 modifier=models.Modifier.NONE,
@@ -79,40 +87,44 @@ def test_simple_search():
     )
 
     assert (
-        local_client.get_collection(COLLECTION_NAME)
+        local_client.get_collection(collection_name)
         .config.params.sparse_vectors["sparse-text"]
         .modifier
         == models.Modifier.NONE
     )
 
 
-def test_search_with_persistence():
-    import tempfile
-
+def test_search_with_persistence(tmp_path: Path, collection_name: str):
     fixture_points = generate_sparse_fixtures(
         vectors_sizes={"sparse-text": sparse_text_vector_size},
         even_sparse=False,
         with_payload=False,
     )
     searcher = TestSimpleSparseSearcher()
-    with tempfile.TemporaryDirectory() as tmpdir:
-        local_client = init_local(tmpdir)
-        init_client(
-            local_client,
-            fixture_points,
-            sparse_vectors_config=sparse_vectors_idf_config,
-            vectors_config={},
-        )
 
-        del local_client
-        local_client_2 = init_local(tmpdir)
+    tmpdir = str(tmp_path)
 
-        remote_client = init_remote()
-        init_client(
-            remote_client,
-            fixture_points,
-            sparse_vectors_config=sparse_vectors_idf_config,
-            vectors_config={},
-        )
+    local_client = init_local(tmpdir)
+    init_client(
+        local_client,
+        fixture_points,
+        collection_name,
+        sparse_vectors_config=sparse_vectors_idf_config,
+        vectors_config={},
+    )
 
-        compare_client_results(local_client_2, remote_client, searcher.simple_search_text)
+    del local_client
+    local_client_2 = init_local(tmpdir)
+
+    remote_client = init_remote()
+    init_client(
+        remote_client,
+        fixture_points,
+        collection_name,
+        sparse_vectors_config=sparse_vectors_idf_config,
+        vectors_config={},
+    )
+
+    compare_client_results(
+        local_client_2, remote_client, searcher.simple_search_text, collection_name=collection_name
+    )
