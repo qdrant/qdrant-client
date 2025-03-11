@@ -42,11 +42,13 @@ if [[ "$QDRANT_VERSION" != "$QDRANT_LATEST" ]] || [[ "$IGNORE_CONGRUENCE_TESTS" 
   QDRANT_VERSION=$QDRANT_VERSION time pytest -n auto \
   tests/congruence_tests/test_sparse_recommend.py \
   tests/congruence_tests/test_group_search.py \
+  tests/congruence_tests/test_sparse_search.py \
   --durations=0 -vv
 else
   QDRANT_VERSION=$QDRANT_VERSION time pytest -n auto \
   tests/congruence_tests/test_sparse_recommend.py \
   tests/congruence_tests/test_group_search.py \
+  tests/congruence_tests/test_sparse_search.py \
   --durations=0 -vv
 fi
 
