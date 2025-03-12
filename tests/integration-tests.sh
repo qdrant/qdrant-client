@@ -39,10 +39,10 @@ done
 # Backwards compatibility tests are enabled by setting QDRANT_VERSION to a version that is not the latest
 # OR by setting IGNORE_CONGRUENCE_TESTS to true
 if [[ "$QDRANT_VERSION" != "$QDRANT_LATEST" ]] || [[ "$IGNORE_CONGRUENCE_TESTS" == "true" ]]; then
-  QDRANT_VERSION=$QDRANT_VERSION pytest -n auto --ignore=tests/congruence_tests --ignore=tests/test_migrate.py &
+  QDRANT_VERSION=$QDRANT_VERSION pytest -n auto  --durations=0 --ignore=tests/congruence_tests --ignore=tests/test_migrate.py &
   QDRANT_VERSION=$QDRANT_VERSION pytest tests/test_migrate.py &
 else
-  QDRANT_VERSION=$QDRANT_VERSION pytest -n auto --ignore=tests/test_migrate.py &
+  QDRANT_VERSION=$QDRANT_VERSION pytest -n auto  --durations=0 --ignore=tests/test_migrate.py &
   QDRANT_VERSION=$QDRANT_VERSION pytest tests/test_migrate.py &
 fi
 
