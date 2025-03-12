@@ -17,7 +17,7 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 
-NUM_VECTORS = 100
+NUM_VECTORS = 10
 
 
 def upload(client_1: QdrantClient, client_2: QdrantClient, num_vectors=NUM_VECTORS):

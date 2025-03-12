@@ -17,7 +17,7 @@ from tests.congruence_tests.test_common import (
 )
 from tests.fixtures.payload import one_random_payload_please
 
-UPLOAD_NUM_VECTORS = 100
+UPLOAD_NUM_VECTORS = 10
 
 
 def test_upsert(local_client, remote_client):

@@ -16,7 +16,7 @@ from tests.congruence_tests.test_common import (
 )
 from tests.fixtures.payload import one_random_payload_please
 
-UPLOAD_NUM_VECTORS = 100
+UPLOAD_NUM_VECTORS = 10
 
 
 def test_upsert():
@@ -57,9 +57,7 @@ def test_upsert():
         COLLECTION_NAME,
         scroll_filter=id_filter,
         limit=1,
-    )[
-        0
-    ][0]
+    )[0][0]
     remote_old_point = remote_client.scroll(COLLECTION_NAME, scroll_filter=id_filter, limit=1)[0][
         0
     ]

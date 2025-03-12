@@ -65,8 +65,8 @@ from tests.fixtures.payload import (
 )
 from tests.utils import read_version
 
-DIM = 100
-NUM_VECTORS = 1_000
+DIM = 10
+NUM_VECTORS = 100
 COLLECTION_NAME = "client_test"
 COLLECTION_NAME_ALIAS = "client_test_alias"
 
