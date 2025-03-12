@@ -19,9 +19,9 @@ image_vector_size = 10
 code_vector_size = 8
 
 # sparse vectors sizes
-sparse_text_vector_size = 100
-sparse_image_vector_size = 1_000
-sparse_code_vector_size = 1_0000
+sparse_text_vector_size = 10
+sparse_image_vector_size = 1_00
+sparse_code_vector_size = 1_000
 
 # number of vectors to generate
 NUM_VECTORS = 100

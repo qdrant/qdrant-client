@@ -248,7 +248,7 @@ def test_records_upload(prefer_grpc, parallel):
     )
 
     assert result_count.count < NUM_VECTORS
-    assert result_count.count > 10
+    assert result_count.count > NUM_VECTORS * 0.1
 
     records = (Record(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(NUM_VECTORS))
 
@@ -314,7 +314,7 @@ def test_point_upload(prefer_grpc, parallel):
     )
 
     assert result_count.count < NUM_VECTORS
-    assert result_count.count > 10
+    assert result_count.count > NUM_VECTORS * 0.1
 
     client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
@@ -515,7 +515,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     )
 
     assert result_count.count < NUM_VECTORS
-    assert result_count.count > 10
+    assert result_count.count > NUM_VECTORS * 0.1
 
     client.update_collection_aliases(
         change_aliases_operations=[
