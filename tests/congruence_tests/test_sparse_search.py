@@ -21,6 +21,8 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, random_sparse_vectors
 
+NUM_VECTORS = 1000
+
 
 class TestSimpleSparseSearcher:
     __test__ = False
@@ -165,7 +167,7 @@ class TestSimpleSparseSearcher:
 
 
 def test_simple_search(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS)
 
     searcher = TestSimpleSparseSearcher()
 
@@ -240,7 +242,7 @@ def test_simple_search(local_client: QdrantBase, remote_client: QdrantBase, coll
 def test_simple_opt_vectors_search(
     local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
 ):
-    fixture_points = generate_sparse_fixtures(skip_vectors=True)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS, skip_vectors=True)
 
     searcher = TestSimpleSparseSearcher()
 
@@ -315,7 +317,7 @@ def test_simple_opt_vectors_search(
 def test_search_with_persistence(
     local_client: QdrantBase, remote_client: QdrantBase, tmp_path: Path, collection_name: str
 ):
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS)
     searcher = TestSimpleSparseSearcher()
 
     tmpdir = str(tmp_path)
@@ -365,7 +367,7 @@ def test_search_with_persistence(
 def test_search_with_persistence_and_skipped_vectors(
     local_client: QdrantBase, remote_client: QdrantBase, tmp_path: Path, collection_name: str
 ):
-    fixture_points = generate_sparse_fixtures(skip_vectors=True)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS, skip_vectors=True)
     searcher = TestSimpleSparseSearcher()
 
     tmpdir = str(tmp_path)
@@ -418,7 +420,7 @@ def test_search_with_persistence_and_skipped_vectors(
 
 
 def test_query_with_nan(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS)
     sparse_vector = random_sparse_vectors({"sparse-text": sparse_text_vector_size})
     named_sparse_vector = models.NamedSparseVector(
         name="sparse-text", vector=sparse_vector["sparse-text"]

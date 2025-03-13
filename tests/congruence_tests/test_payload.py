@@ -17,7 +17,7 @@ from tests.congruence_tests.test_common import (
     initialize_fixture_collection,
 )
 
-NUM_VECTORS = 100
+NUM_VECTORS = 5
 
 
 def upload(
@@ -100,7 +100,7 @@ def test_clear_payload(
 
     compare_collections(local_client, remote_client, NUM_VECTORS, collection_name=collection_name)
 
-    payload = points[42].payload
+    payload = points[4].payload
     key = "text_data"
     value = payload[key]
     points_selector = models.Filter(

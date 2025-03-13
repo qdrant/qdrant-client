@@ -157,7 +157,7 @@ def test_context_many_pairs(
             collection_name=collection_name,
             context=[
                 models.ContextExamplePair(positive=11, negative=19),
-                models.ContextExamplePair(positive=400, negative=200),
+                models.ContextExamplePair(positive=90, negative=80),
                 models.ContextExamplePair(
                     positive=random_image_vector_1, negative=random_image_vector_2
                 ),

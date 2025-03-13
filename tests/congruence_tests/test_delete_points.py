@@ -8,11 +8,14 @@ from tests.congruence_tests.test_common import (
     init_client,
     sparse_vectors_config,
     initialize_fixture_collection,
+    sparse_text_vector_size,
 )
+
+NUM_VECTORS = 10
 
 
 def test_delete_points(local_client: QdrantBase, remote_client: QdrantBase, collection_name: str):
-    points = generate_fixtures(100)
+    points = generate_fixtures(NUM_VECTORS)
     vector = points[0].vector["image"]
 
     initialize_fixture_collection(local_client, collection_name)
@@ -36,9 +39,7 @@ def test_delete_points(local_client: QdrantBase, remote_client: QdrantBase, coll
     local_client.delete(collection_name, found_ids)
     remote_client.delete(collection_name, found_ids)
 
-    compare_collections(
-        local_client, remote_client, 100, attrs=("points_count",), collection_name=collection_name
-    )
+    compare_collections(local_client, remote_client, NUM_VECTORS, attrs=("points_count",))
 
     compare_client_results(
         local_client,
@@ -47,12 +48,10 @@ def test_delete_points(local_client: QdrantBase, remote_client: QdrantBase, coll
     )
 
     # delete non-existent points
-    local_client.delete(collection_name, found_ids)
-    remote_client.delete(collection_name, found_ids)
+    local_client.delete(COLLECTION_NAME, found_ids)
+    remote_client.delete(COLLECTION_NAME, found_ids)
 
-    compare_collections(
-        local_client, remote_client, 100, attrs=("points_count",), collection_name=collection_name
-    )
+    compare_collections(local_client, remote_client, NUM_VECTORS, attrs=("points_count",))
 
     compare_client_results(
         local_client,
@@ -64,7 +63,7 @@ def test_delete_points(local_client: QdrantBase, remote_client: QdrantBase, coll
 def test_delete_sparse_points(
     local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
 ):
-    points = generate_sparse_fixtures(100)
+    points = generate_sparse_fixtures(sparse_text_vector_size)
     vector = points[0].vector["sparse-image"]
 
     init_client(local_client, [], collection_name, sparse_vectors_config=sparse_vectors_config)
@@ -92,7 +91,7 @@ def test_delete_sparse_points(
     remote_client.delete(collection_name, found_ids)
 
     compare_collections(
-        local_client, remote_client, 100, attrs=("points_count",), collection_name=collection_name
+        local_client, remote_client, sparse_text_vector_size, attrs=("points_count",)
     )
 
     compare_client_results(

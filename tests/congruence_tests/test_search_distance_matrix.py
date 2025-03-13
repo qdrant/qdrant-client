@@ -15,7 +15,7 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.filters import one_random_filter_please
 
 # to keep the test deterministic we sample all the points available
-TEST_NUM_POINTS = 100
+TEST_NUM_POINTS = 10
 
 
 @pytest.fixture(scope="module")

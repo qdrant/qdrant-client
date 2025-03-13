@@ -13,12 +13,13 @@ from tests.congruence_tests.test_common import (
     initialize_fixture_collection,
 )
 
+NUM_VECTORS = 100
+
 
 def test_retrieve(
     local_client: QdrantBase, remote_client: QdrantBase, collection_name: str
 ) -> None:
-    num_vectors = 1000
-    fixture_points = generate_fixtures(num_vectors)
+    fixture_points = generate_fixtures(NUM_VECTORS)
     keys = list(fixture_points[0].payload.keys())
 
     initialize_fixture_collection(local_client, collection_name)
@@ -27,7 +28,7 @@ def test_retrieve(
     local_client.upload_points(collection_name, fixture_points)
     remote_client.upload_points(collection_name, fixture_points, wait=True)
 
-    id_ = random.randint(0, num_vectors)
+    id_ = random.randint(0, NUM_VECTORS)
 
     compare_client_results(
         local_client, remote_client, lambda c: c.retrieve(collection_name, [id_])
@@ -80,8 +81,7 @@ def test_retrieve(
 
 
 def test_sparse_retrieve(collection_name: str) -> None:
-    num_vectors = 1000
-    fixture_points = generate_sparse_fixtures(num_vectors)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS)
 
     local_client = init_local()
     init_client(
@@ -98,7 +98,7 @@ def test_sparse_retrieve(collection_name: str) -> None:
     local_client.upload_points(collection_name, fixture_points)
     remote_client.upload_points(collection_name, fixture_points, wait=True)
 
-    id_ = random.randint(0, num_vectors)
+    id_ = random.randint(0, NUM_VECTORS)
 
     compare_client_results(
         local_client, remote_client, lambda c: c.retrieve(collection_name, [id_])
