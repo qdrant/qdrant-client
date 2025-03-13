@@ -86,7 +86,7 @@ class ModelSchemaParser:
         self.path_cache: dict[str, list[FieldPath]] = {
             model: convert_paths(paths) for model, paths in self._cache.items()
         }
-        self._processed_recursive_defs = {}
+        self._processed_recursive_defs: dict[str, Any] = {}
 
     def _replace_refs(
         self,
