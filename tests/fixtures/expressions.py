@@ -17,10 +17,11 @@ def one_random_expression_please(current_depth: int = 0, max_depth: int = 5) -> 
 
     def rand_decay_params():
         return models.DecayParamsExpression(
-            x=one_random_expression_please(current_depth + 1, max_depth),
-            target=one_random_expression_please(current_depth + 1, max_depth),
+            # limit nesting to avoid precision errors
+            x=one_random_expression_please(max_depth, max_depth),
+            target=one_random_expression_please(max_depth, max_depth),
             midpoint=round(random.uniform(0.00001, 0.99999), 5),
-            scale=round(random.uniform(-1_000_000.0, 1_000_000.0), 5),
+            scale=round(random.uniform(0.000_000_1, 1_000_000.0), 5),
         )
 
     # Choose a random expression type with possible nesting
@@ -39,6 +40,15 @@ def one_random_expression_please(current_depth: int = 0, max_depth: int = 5) -> 
             ]
         ),
         lambda: one_random_condition_please(),  # Condition
+        lambda: models.GeoDistance(
+            geo_distance=models.GeoDistanceParams(
+                origin=models.GeoPoint(
+                    lon=round(random.uniform(-180, 180), 5),
+                    lat=round(random.uniform(-90, 90), 5),
+                ),
+                to="city.geo",  # Using a field that would contain geo coordinates
+            )
+        ),
         # Nested expressions
         lambda: models.MultExpression(
             mult=[
@@ -81,16 +91,6 @@ def one_random_expression_please(current_depth: int = 0, max_depth: int = 5) -> 
             log10=one_random_expression_please(current_depth + 1, max_depth)
         ),
         lambda: models.LnExpression(ln=one_random_expression_please(current_depth + 1, max_depth)),
-        # GeoDistance is a special case - needs specific structure
-        lambda: models.GeoDistance(
-            geo_distance=models.GeoDistanceParams(
-                origin=models.GeoPoint(
-                    lon=round(random.uniform(-180, 180), 5),
-                    lat=round(random.uniform(-90, 90), 5),
-                ),
-                to="city.geo",  # Using a field that would contain geo coordinates
-            )
-        ),
         lambda: models.LinDecayExpression(lin_decay=rand_decay_params()),
         lambda: models.ExpDecayExpression(exp_decay=rand_decay_params()),
         lambda: models.GaussDecayExpression(gauss_decay=rand_decay_params()),
@@ -98,11 +98,11 @@ def one_random_expression_please(current_depth: int = 0, max_depth: int = 5) -> 
     # If we've reached max depth, return a terminal expression (no nesting)
     if current_depth >= max_depth:  # Limit nesting depth
         # Return a simple expression at max depth
-        return random.choice(expression_choices[:3])()
+        return random.choice(expression_choices[:4])()
 
     # Give higher weight to terminal expressions at deeper levels
     if current_depth > 2:
         # Add more terminal expressions to increase their probability
-        expression_choices = expression_choices[:3] * 3 + expression_choices[3:]
+        expression_choices = expression_choices[:4] * 3 + expression_choices[4:]
 
     return random.choice(expression_choices)()

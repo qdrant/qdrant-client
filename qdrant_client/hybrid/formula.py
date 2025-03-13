@@ -225,7 +225,13 @@ def evaluate_decay_params(
     midpoint = (
         np.float32(params.midpoint) if params.midpoint is not None else DEFAULT_DECAY_MIDPOINT
     )
+
+    if midpoint <= 0.0 or midpoint >= 1.0:
+        raise ValueError(f"Midpoint must be between 0 and 1, got {midpoint}")
+
     scale = np.float32(params.scale) if params.scale is not None else DEFAULT_DECAY_SCALE
+    if scale <= 0.0:
+        raise ValueError(f"Scale must be non-zero positive, got {scale}")
 
     return x, target, midpoint, scale
 
