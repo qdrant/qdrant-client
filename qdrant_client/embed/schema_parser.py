@@ -72,6 +72,7 @@ class ModelSchemaParser:
     INFERENCE_OBJECT_NAMES = {"Document", "Image", "InferenceObject"}
 
     def __init__(self) -> None:
+        # self._defs does not include the whole schema, but only the part with the structures used in $defs
         self._defs: dict[str, Union[dict[str, Any], list[dict[str, Any]]]] = deepcopy(DEFS)  # type: ignore[arg-type]
         self._cache: dict[str, list[str]] = deepcopy(CACHE_STR_PATH)
 
@@ -85,6 +86,7 @@ class ModelSchemaParser:
         self.path_cache: dict[str, list[FieldPath]] = {
             model: convert_paths(paths) for model, paths in self._cache.items()
         }
+        self._processed_recursive_defs = {}
 
     def _replace_refs(
         self,
@@ -109,20 +111,36 @@ class ModelSchemaParser:
             if "$ref" in schema:
                 ref_path = schema["$ref"]
                 def_key = ref_path.split("/")[-1]
+                if def_key in self._processed_recursive_defs:
+                    return self._processed_recursive_defs[def_key]
+
                 if def_key == parent or def_key in seen_refs:
                     self._recursive_refs.add(def_key)
+                    self._processed_recursive_defs[def_key] = schema
                     return schema
+
                 seen_refs.add(def_key)
-                return self._replace_refs(schema=self._defs[def_key], seen_refs=copy(seen_refs))
+
+                return self._replace_refs(
+                    self._defs[def_key], parent=def_key, seen_refs=copy(seen_refs)
+                )
 
             schemes = {}
-            for k, v in schema.items():
-                if isinstance(v, dict) and "properties" in v:
-                    schemes[k] = self._replace_refs(schema=v, parent=k, seen_refs=copy(seen_refs))
-                else:
+            if "properties" in schema:
+                for k, v in schema.items():
+                    if k == "properties":
+                        schemes[k] = self._replace_refs(
+                            schema=v, parent=parent, seen_refs=copy(seen_refs)
+                        )
+                    else:
+                        schemes[k] = v
+            else:
+                for k, v in schema.items():
+                    parent_key = k if isinstance(v, dict) and "properties" in v else parent
                     schemes[k] = self._replace_refs(
-                        schema=v, parent=parent, seen_refs=copy(seen_refs)
+                        schema=v, parent=parent_key, seen_refs=copy(seen_refs)
                     )
+
             return schemes
         elif isinstance(schema, list):
             return [
@@ -174,10 +192,18 @@ class ModelSchemaParser:
                 model_name = value.split("/")[-1]
 
                 value = self._defs[model_name]
-                if model_name in self._excluded_recursive_refs:
+                if model_name in seen_recursive_refs:
                     continue
 
-                if model_name in self._recursive_refs:
+                if (
+                    model_name in self._excluded_recursive_refs
+                ):  # on the first run it might be empty
+                    continue
+
+                if (
+                    model_name in self._recursive_refs
+                ):  # included and excluded refs might not be filled up yet, we're looking in all recursive refs
+                    # we would need to clean up name recursive ref mapping later and delete excluded refs from there
                     seen_recursive_refs.add(model_name)
                     self.name_recursive_ref_mapping[current_path.split(".")[-1]] = model_name
 
@@ -226,10 +252,21 @@ class ModelSchemaParser:
             return None
 
         schema = model_json_schema(model)
-        self._defs.update(schema.get("$defs", {}))
 
-        defs = self._replace_refs(schema)
-        self._cache[model_name] = self._find_document_paths(defs)
+        for k, v in schema.get("$defs", {}).items():
+            if k not in self._defs:
+                self._defs[k] = v
+
+        if "$defs" in schema:
+            raw_refs = (
+                {"$ref": schema["$ref"]}
+                if "$ref" in schema
+                else {"properties": schema["properties"]}
+            )
+            refs = self._replace_refs(raw_refs)
+            self._cache[model_name] = self._find_document_paths(refs)
+        else:
+            self._cache[model_name] = []
 
         for ref in self._recursive_refs:
             if ref in self._excluded_recursive_refs or ref in self._included_recursive_refs:
@@ -239,6 +276,12 @@ class ModelSchemaParser:
                 self._included_recursive_refs.add(ref)
             else:
                 self._excluded_recursive_refs.add(ref)
+
+        self.name_recursive_ref_mapping = {
+            k: v
+            for k, v in self.name_recursive_ref_mapping.items()
+            if v not in self._excluded_recursive_refs
+        }
 
         # convert str paths to FieldPath objects which group path parts and reduce the time of the traversal
         self.path_cache = {model: convert_paths(paths) for model, paths in self._cache.items()}

@@ -106,8 +106,6 @@ class InspectorEmbed:
             for field in model_fields_set(member):
                 if field in self.parser.name_recursive_ref_mapping:
                     mapped_field = self.parser.name_recursive_ref_mapping[field]
-                    if mapped_field not in self.parser.path_cache:
-                        self.parser.parse_model(getattr(models, mapped_field))
                     recursive_paths.extend(self.parser.path_cache[mapped_field])
 
             return self._inspect_model(member, copy(recursive_paths), accumulator)
