@@ -38,7 +38,7 @@ def test_simple_count():
 
     compare_client_results(local_client, remote_client, count_all)
 
-    for i in range(100):
+    for _ in range(100):
         count_filter = one_random_filter_please()
         try:
             compare_client_results(
@@ -50,7 +50,7 @@ def test_simple_count():
 
 
 def test_simple_sparse_search():
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(100)
 
     local_client = init_local()
     init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
@@ -60,7 +60,7 @@ def test_simple_sparse_search():
 
     compare_client_results(local_client, remote_client, count_all)
 
-    for i in range(100):
+    for _ in range(100):
         count_filter = one_random_filter_please()
         try:
             compare_client_results(
