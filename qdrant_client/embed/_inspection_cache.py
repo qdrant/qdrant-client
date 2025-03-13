@@ -2,6 +2,7 @@ CACHE_STR_PATH = {
     "AbortReshardingOperation": [],
     "AbortShardTransfer": [],
     "AbortTransferOperation": [],
+    "AbsExpression": [],
     "Batch": ["vectors"],
     "BinaryQuantization": [],
     "BinaryQuantizationConfig": [],
@@ -32,17 +33,23 @@ CACHE_STR_PATH = {
     "DiscoverQuery": ["discover.context.negative", "discover.context.positive", "discover.target"],
     "DiscoverRequest": [],
     "DiscoverRequestBatch": [],
+    "DivExpression": [],
+    "DivParams": [],
     "Document": [],
     "DropReplicaOperation": [],
     "DropShardingKey": [],
     "DropShardingKeyOperation": [],
+    "ExpExpression": [],
     "FacetRequest": [],
     "FieldCondition": [],
     "Filter": [],
     "FilterSelector": [],
     "FloatIndexParams": [],
+    "FormulaQuery": [],
     "FusionQuery": [],
     "GeoBoundingBox": [],
+    "GeoDistance": [],
+    "GeoDistanceParams": [],
     "GeoIndexParams": [],
     "GeoLineString": [],
     "GeoPoint": [],
@@ -58,7 +65,9 @@ CACHE_STR_PATH = {
     "IsEmptyCondition": [],
     "IsNullCondition": [],
     "KeywordIndexParams": [],
+    "LnExpression": [],
     "LocksOption": [],
+    "Log10Expression": [],
     "LookupLocation": [],
     "MatchAny": [],
     "MatchExcept": [],
@@ -67,10 +76,12 @@ CACHE_STR_PATH = {
     "MinShould": [],
     "MoveShard": [],
     "MoveShardOperation": [],
+    "MultExpression": [],
     "MultiVectorConfig": [],
     "NamedSparseVector": [],
     "NamedVector": [],
     "NearestQuery": ["nearest"],
+    "NegExpression": [],
     "Nested": [],
     "NestedCondition": [],
     "OptimizersConfigDiff": [],
@@ -86,6 +97,8 @@ CACHE_STR_PATH = {
     "PointVectors": ["vector"],
     "PointsBatch": ["batch.vectors"],
     "PointsList": ["points.vector"],
+    "PowExpression": [],
+    "PowParams": [],
     "Prefetch": [
         "prefetch.query",
         "prefetch.query.context.negative",
@@ -199,11 +212,13 @@ CACHE_STR_PATH = {
     "SparseIndexParams": [],
     "SparseVector": [],
     "SparseVectorParams": [],
+    "SqrtExpression": [],
     "StartResharding": [],
     "StartReshardingOperation": [],
     "StrictModeConfig": [],
     "StrictModeMultivector": [],
     "StrictModeSparse": [],
+    "SumExpression": [],
     "TextIndexParams": [],
     "UpdateCollection": [],
     "UpdateOperations": [
@@ -231,6 +246,980 @@ DEFS = {
         },
         "required": ["shard_id", "to_peer_id", "from_peer_id"],
         "title": "AbortShardTransfer",
+        "type": "object",
+    },
+    "AbsExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "abs": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Abs",
+            }
+        },
+        "required": ["abs"],
+        "title": "AbsExpression",
+        "type": "object",
+    },
+    "DatetimeRange": {
+        "additionalProperties": False,
+        "description": "Range filter request",
+        "properties": {
+            "lt": {
+                "anyOf": [
+                    {"format": "date-time", "type": "string"},
+                    {"format": "date", "type": "string"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "point.key &lt; range.lt",
+                "title": "Lt",
+            },
+            "gt": {
+                "anyOf": [
+                    {"format": "date-time", "type": "string"},
+                    {"format": "date", "type": "string"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "point.key &gt; range.gt",
+                "title": "Gt",
+            },
+            "gte": {
+                "anyOf": [
+                    {"format": "date-time", "type": "string"},
+                    {"format": "date", "type": "string"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "point.key &gt;= range.gte",
+                "title": "Gte",
+            },
+            "lte": {
+                "anyOf": [
+                    {"format": "date-time", "type": "string"},
+                    {"format": "date", "type": "string"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "point.key &lt;= range.lte",
+                "title": "Lte",
+            },
+        },
+        "title": "DatetimeRange",
+        "type": "object",
+    },
+    "DivExpression": {
+        "additionalProperties": False,
+        "properties": {"div": {"$ref": "#/$defs/DivParams", "description": ""}},
+        "required": ["div"],
+        "title": "DivExpression",
+        "type": "object",
+    },
+    "DivParams": {
+        "additionalProperties": False,
+        "properties": {
+            "left": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Left",
+            },
+            "right": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Right",
+            },
+            "by_zero_default": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "By Zero Default",
+            },
+        },
+        "required": ["left", "right"],
+        "title": "DivParams",
+        "type": "object",
+    },
+    "ExpExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "exp": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Exp",
+            }
+        },
+        "required": ["exp"],
+        "title": "ExpExpression",
+        "type": "object",
+    },
+    "FieldCondition": {
+        "additionalProperties": False,
+        "description": "All possible payload filtering conditions",
+        "properties": {
+            "key": {"description": "Payload key", "title": "Key", "type": "string"},
+            "match": {
+                "anyOf": [
+                    {"$ref": "#/$defs/MatchValue"},
+                    {"$ref": "#/$defs/MatchText"},
+                    {"$ref": "#/$defs/MatchAny"},
+                    {"$ref": "#/$defs/MatchExcept"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Check if point has field with a given value",
+                "title": "Match",
+            },
+            "range": {
+                "anyOf": [
+                    {"$ref": "#/$defs/Range"},
+                    {"$ref": "#/$defs/DatetimeRange"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Check if points value lies in a given range",
+                "title": "Range",
+            },
+            "geo_bounding_box": {
+                "anyOf": [{"$ref": "#/$defs/GeoBoundingBox"}, {"type": "null"}],
+                "default": None,
+                "description": "Check if points geolocation lies in a given area",
+            },
+            "geo_radius": {
+                "anyOf": [{"$ref": "#/$defs/GeoRadius"}, {"type": "null"}],
+                "default": None,
+                "description": "Check if geo point is within a given radius",
+            },
+            "geo_polygon": {
+                "anyOf": [{"$ref": "#/$defs/GeoPolygon"}, {"type": "null"}],
+                "default": None,
+                "description": "Check if geo point is within a given polygon",
+            },
+            "values_count": {
+                "anyOf": [{"$ref": "#/$defs/ValuesCount"}, {"type": "null"}],
+                "default": None,
+                "description": "Check number of values of the field",
+            },
+            "is_empty": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Check that the field is empty, alternative syntax for `is_empty: \\&quot;field_name\\&quot;`",
+                "title": "Is Empty",
+            },
+            "is_null": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Check that the field is null, alternative syntax for `is_null: \\&quot;field_name\\&quot;`",
+                "title": "Is Null",
+            },
+        },
+        "required": ["key"],
+        "title": "FieldCondition",
+        "type": "object",
+    },
+    "Filter": {
+        "additionalProperties": False,
+        "properties": {
+            "should": {
+                "anyOf": [
+                    {
+                        "items": {
+                            "anyOf": [
+                                {"$ref": "#/$defs/FieldCondition"},
+                                {"$ref": "#/$defs/IsEmptyCondition"},
+                                {"$ref": "#/$defs/IsNullCondition"},
+                                {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
+                                {"$ref": "#/$defs/NestedCondition"},
+                                {"$ref": "#/$defs/Filter"},
+                            ]
+                        },
+                        "type": "array",
+                    },
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "At least one of those conditions should match",
+                "title": "Should",
+            },
+            "min_should": {
+                "anyOf": [{"$ref": "#/$defs/MinShould"}, {"type": "null"}],
+                "default": None,
+                "description": "At least minimum amount of given conditions should match",
+            },
+            "must": {
+                "anyOf": [
+                    {
+                        "items": {
+                            "anyOf": [
+                                {"$ref": "#/$defs/FieldCondition"},
+                                {"$ref": "#/$defs/IsEmptyCondition"},
+                                {"$ref": "#/$defs/IsNullCondition"},
+                                {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
+                                {"$ref": "#/$defs/NestedCondition"},
+                                {"$ref": "#/$defs/Filter"},
+                            ]
+                        },
+                        "type": "array",
+                    },
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "All conditions must match",
+                "title": "Must",
+            },
+            "must_not": {
+                "anyOf": [
+                    {
+                        "items": {
+                            "anyOf": [
+                                {"$ref": "#/$defs/FieldCondition"},
+                                {"$ref": "#/$defs/IsEmptyCondition"},
+                                {"$ref": "#/$defs/IsNullCondition"},
+                                {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
+                                {"$ref": "#/$defs/NestedCondition"},
+                                {"$ref": "#/$defs/Filter"},
+                            ]
+                        },
+                        "type": "array",
+                    },
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "All conditions must NOT match",
+                "title": "Must Not",
+            },
+        },
+        "title": "Filter",
+        "type": "object",
+    },
+    "GeoBoundingBox": {
+        "additionalProperties": False,
+        "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
+        "properties": {
+            "top_left": {
+                "$ref": "#/$defs/GeoPoint",
+                "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
+            },
+            "bottom_right": {
+                "$ref": "#/$defs/GeoPoint",
+                "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
+            },
+        },
+        "required": ["top_left", "bottom_right"],
+        "title": "GeoBoundingBox",
+        "type": "object",
+    },
+    "GeoDistance": {
+        "additionalProperties": False,
+        "properties": {"geo_distance": {"$ref": "#/$defs/GeoDistanceParams", "description": ""}},
+        "required": ["geo_distance"],
+        "title": "GeoDistance",
+        "type": "object",
+    },
+    "GeoDistanceParams": {
+        "additionalProperties": False,
+        "properties": {
+            "origin": {"$ref": "#/$defs/GeoPoint", "description": ""},
+            "to": {
+                "description": "Payload field with the destination geo point",
+                "title": "To",
+                "type": "string",
+            },
+        },
+        "required": ["origin", "to"],
+        "title": "GeoDistanceParams",
+        "type": "object",
+    },
+    "GeoLineString": {
+        "additionalProperties": False,
+        "description": "Ordered sequence of GeoPoints representing the line",
+        "properties": {
+            "points": {
+                "description": "Ordered sequence of GeoPoints representing the line",
+                "items": {"$ref": "#/$defs/GeoPoint"},
+                "title": "Points",
+                "type": "array",
+            }
+        },
+        "required": ["points"],
+        "title": "GeoLineString",
+        "type": "object",
+    },
+    "GeoPoint": {
+        "additionalProperties": False,
+        "description": "Geo point payload schema",
+        "properties": {
+            "lon": {"description": "Geo point payload schema", "title": "Lon", "type": "number"},
+            "lat": {"description": "Geo point payload schema", "title": "Lat", "type": "number"},
+        },
+        "required": ["lon", "lat"],
+        "title": "GeoPoint",
+        "type": "object",
+    },
+    "GeoPolygon": {
+        "additionalProperties": False,
+        "description": "Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
+        "properties": {
+            "exterior": {
+                "$ref": "#/$defs/GeoLineString",
+                "description": "Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
+            },
+            "interiors": {
+                "anyOf": [
+                    {"items": {"$ref": "#/$defs/GeoLineString"}, "type": "array"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Interior lines (if present) bound holes within the surface each GeoLineString must consist of a minimum of 4 points, and the first and last points must be the same.",
+                "title": "Interiors",
+            },
+        },
+        "required": ["exterior"],
+        "title": "GeoPolygon",
+        "type": "object",
+    },
+    "GeoRadius": {
+        "additionalProperties": False,
+        "description": "Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
+        "properties": {
+            "center": {
+                "$ref": "#/$defs/GeoPoint",
+                "description": "Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
+            },
+            "radius": {
+                "description": "Radius of the area in meters",
+                "title": "Radius",
+                "type": "number",
+            },
+        },
+        "required": ["center", "radius"],
+        "title": "GeoRadius",
+        "type": "object",
+    },
+    "HasIdCondition": {
+        "additionalProperties": False,
+        "description": "ID-based filtering condition",
+        "properties": {
+            "has_id": {
+                "description": "ID-based filtering condition",
+                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                "title": "Has Id",
+                "type": "array",
+            }
+        },
+        "required": ["has_id"],
+        "title": "HasIdCondition",
+        "type": "object",
+    },
+    "HasVectorCondition": {
+        "additionalProperties": False,
+        "description": "Filter points which have specific vector assigned",
+        "properties": {
+            "has_vector": {
+                "description": "Filter points which have specific vector assigned",
+                "title": "Has Vector",
+                "type": "string",
+            }
+        },
+        "required": ["has_vector"],
+        "title": "HasVectorCondition",
+        "type": "object",
+    },
+    "IsEmptyCondition": {
+        "additionalProperties": False,
+        "description": "Select points with empty payload for a specified field",
+        "properties": {
+            "is_empty": {
+                "$ref": "#/$defs/PayloadField",
+                "description": "Select points with empty payload for a specified field",
+            }
+        },
+        "required": ["is_empty"],
+        "title": "IsEmptyCondition",
+        "type": "object",
+    },
+    "IsNullCondition": {
+        "additionalProperties": False,
+        "description": "Select points with null payload for a specified field",
+        "properties": {
+            "is_null": {
+                "$ref": "#/$defs/PayloadField",
+                "description": "Select points with null payload for a specified field",
+            }
+        },
+        "required": ["is_null"],
+        "title": "IsNullCondition",
+        "type": "object",
+    },
+    "LnExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "ln": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Ln",
+            }
+        },
+        "required": ["ln"],
+        "title": "LnExpression",
+        "type": "object",
+    },
+    "Log10Expression": {
+        "additionalProperties": False,
+        "properties": {
+            "log10": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Log10",
+            }
+        },
+        "required": ["log10"],
+        "title": "Log10Expression",
+        "type": "object",
+    },
+    "MatchAny": {
+        "additionalProperties": False,
+        "description": "Exact match on any of the given values",
+        "properties": {
+            "any": {
+                "anyOf": [
+                    {"items": {"type": "string"}, "type": "array"},
+                    {"items": {"type": "integer"}, "type": "array"},
+                ],
+                "description": "Exact match on any of the given values",
+                "title": "Any",
+            }
+        },
+        "required": ["any"],
+        "title": "MatchAny",
+        "type": "object",
+    },
+    "MatchExcept": {
+        "additionalProperties": False,
+        "description": "Should have at least one value not matching the any given values",
+        "properties": {
+            "except": {
+                "anyOf": [
+                    {"items": {"type": "string"}, "type": "array"},
+                    {"items": {"type": "integer"}, "type": "array"},
+                ],
+                "description": "Should have at least one value not matching the any given values",
+                "title": "Except",
+            }
+        },
+        "required": ["except"],
+        "title": "MatchExcept",
+        "type": "object",
+    },
+    "MatchText": {
+        "additionalProperties": False,
+        "description": "Full-text match of the strings.",
+        "properties": {
+            "text": {
+                "description": "Full-text match of the strings.",
+                "title": "Text",
+                "type": "string",
+            }
+        },
+        "required": ["text"],
+        "title": "MatchText",
+        "type": "object",
+    },
+    "MatchValue": {
+        "additionalProperties": False,
+        "description": "Exact match of the given value",
+        "properties": {
+            "value": {
+                "anyOf": [{"type": "boolean"}, {"type": "integer"}, {"type": "string"}],
+                "description": "Exact match of the given value",
+                "title": "Value",
+            }
+        },
+        "required": ["value"],
+        "title": "MatchValue",
+        "type": "object",
+    },
+    "MinShould": {
+        "additionalProperties": False,
+        "properties": {
+            "conditions": {
+                "description": "",
+                "items": {
+                    "anyOf": [
+                        {"$ref": "#/$defs/FieldCondition"},
+                        {"$ref": "#/$defs/IsEmptyCondition"},
+                        {"$ref": "#/$defs/IsNullCondition"},
+                        {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/NestedCondition"},
+                        {"$ref": "#/$defs/Filter"},
+                    ]
+                },
+                "title": "Conditions",
+                "type": "array",
+            },
+            "min_count": {"description": "", "title": "Min Count", "type": "integer"},
+        },
+        "required": ["conditions", "min_count"],
+        "title": "MinShould",
+        "type": "object",
+    },
+    "MultExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "mult": {
+                "description": "",
+                "items": {
+                    "anyOf": [
+                        {"type": "number"},
+                        {"type": "string"},
+                        {"$ref": "#/$defs/FieldCondition"},
+                        {"$ref": "#/$defs/IsEmptyCondition"},
+                        {"$ref": "#/$defs/IsNullCondition"},
+                        {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/NestedCondition"},
+                        {"$ref": "#/$defs/Filter"},
+                        {"$ref": "#/$defs/MultExpression"},
+                        {"$ref": "#/$defs/SumExpression"},
+                        {"$ref": "#/$defs/NegExpression"},
+                        {"$ref": "#/$defs/AbsExpression"},
+                        {"$ref": "#/$defs/DivExpression"},
+                        {"$ref": "#/$defs/SqrtExpression"},
+                        {"$ref": "#/$defs/PowExpression"},
+                        {"$ref": "#/$defs/ExpExpression"},
+                        {"$ref": "#/$defs/Log10Expression"},
+                        {"$ref": "#/$defs/LnExpression"},
+                        {"$ref": "#/$defs/GeoDistance"},
+                    ]
+                },
+                "title": "Mult",
+                "type": "array",
+            }
+        },
+        "required": ["mult"],
+        "title": "MultExpression",
+        "type": "object",
+    },
+    "NegExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "neg": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Neg",
+            }
+        },
+        "required": ["neg"],
+        "title": "NegExpression",
+        "type": "object",
+    },
+    "Nested": {
+        "additionalProperties": False,
+        "description": "Select points with payload for a specified nested field",
+        "properties": {
+            "key": {
+                "description": "Select points with payload for a specified nested field",
+                "title": "Key",
+                "type": "string",
+            },
+            "filter": {
+                "$ref": "#/$defs/Filter",
+                "description": "Select points with payload for a specified nested field",
+            },
+        },
+        "required": ["key", "filter"],
+        "title": "Nested",
+        "type": "object",
+    },
+    "NestedCondition": {
+        "additionalProperties": False,
+        "properties": {"nested": {"$ref": "#/$defs/Nested", "description": ""}},
+        "required": ["nested"],
+        "title": "NestedCondition",
+        "type": "object",
+    },
+    "PayloadField": {
+        "additionalProperties": False,
+        "description": "Payload field",
+        "properties": {
+            "key": {"description": "Payload field name", "title": "Key", "type": "string"}
+        },
+        "required": ["key"],
+        "title": "PayloadField",
+        "type": "object",
+    },
+    "PowExpression": {
+        "additionalProperties": False,
+        "properties": {"pow": {"$ref": "#/$defs/PowParams", "description": ""}},
+        "required": ["pow"],
+        "title": "PowExpression",
+        "type": "object",
+    },
+    "PowParams": {
+        "additionalProperties": False,
+        "properties": {
+            "base": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Base",
+            },
+            "exponent": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Exponent",
+            },
+        },
+        "required": ["base", "exponent"],
+        "title": "PowParams",
+        "type": "object",
+    },
+    "Range": {
+        "additionalProperties": False,
+        "description": "Range filter request",
+        "properties": {
+            "lt": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "point.key &lt; range.lt",
+                "title": "Lt",
+            },
+            "gt": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "point.key &gt; range.gt",
+                "title": "Gt",
+            },
+            "gte": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "point.key &gt;= range.gte",
+                "title": "Gte",
+            },
+            "lte": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "point.key &lt;= range.lte",
+                "title": "Lte",
+            },
+        },
+        "title": "Range",
+        "type": "object",
+    },
+    "SqrtExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "sqrt": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Sqrt",
+            }
+        },
+        "required": ["sqrt"],
+        "title": "SqrtExpression",
+        "type": "object",
+    },
+    "SumExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "sum": {
+                "description": "",
+                "items": {
+                    "anyOf": [
+                        {"type": "number"},
+                        {"type": "string"},
+                        {"$ref": "#/$defs/FieldCondition"},
+                        {"$ref": "#/$defs/IsEmptyCondition"},
+                        {"$ref": "#/$defs/IsNullCondition"},
+                        {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/NestedCondition"},
+                        {"$ref": "#/$defs/Filter"},
+                        {"$ref": "#/$defs/MultExpression"},
+                        {"$ref": "#/$defs/SumExpression"},
+                        {"$ref": "#/$defs/NegExpression"},
+                        {"$ref": "#/$defs/AbsExpression"},
+                        {"$ref": "#/$defs/DivExpression"},
+                        {"$ref": "#/$defs/SqrtExpression"},
+                        {"$ref": "#/$defs/PowExpression"},
+                        {"$ref": "#/$defs/ExpExpression"},
+                        {"$ref": "#/$defs/Log10Expression"},
+                        {"$ref": "#/$defs/LnExpression"},
+                        {"$ref": "#/$defs/GeoDistance"},
+                    ]
+                },
+                "title": "Sum",
+                "type": "array",
+            }
+        },
+        "required": ["sum"],
+        "title": "SumExpression",
+        "type": "object",
+    },
+    "ValuesCount": {
+        "additionalProperties": False,
+        "description": "Values count filter request",
+        "properties": {
+            "lt": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "point.key.length() &lt; values_count.lt",
+                "title": "Lt",
+            },
+            "gt": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "point.key.length() &gt; values_count.gt",
+                "title": "Gt",
+            },
+            "gte": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "point.key.length() &gt;= values_count.gte",
+                "title": "Gte",
+            },
+            "lte": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "point.key.length() &lt;= values_count.lte",
+                "title": "Lte",
+            },
+        },
+        "title": "ValuesCount",
         "type": "object",
     },
     "Document": {
@@ -416,205 +1405,6 @@ DEFS = {
         "title": "RenameAliasOperation",
         "type": "object",
     },
-    "DatetimeRange": {
-        "additionalProperties": False,
-        "description": "Range filter request",
-        "properties": {
-            "lt": {
-                "anyOf": [
-                    {"format": "date-time", "type": "string"},
-                    {"format": "date", "type": "string"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "point.key &lt; range.lt",
-                "title": "Lt",
-            },
-            "gt": {
-                "anyOf": [
-                    {"format": "date-time", "type": "string"},
-                    {"format": "date", "type": "string"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "point.key &gt; range.gt",
-                "title": "Gt",
-            },
-            "gte": {
-                "anyOf": [
-                    {"format": "date-time", "type": "string"},
-                    {"format": "date", "type": "string"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "point.key &gt;= range.gte",
-                "title": "Gte",
-            },
-            "lte": {
-                "anyOf": [
-                    {"format": "date-time", "type": "string"},
-                    {"format": "date", "type": "string"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "point.key &lt;= range.lte",
-                "title": "Lte",
-            },
-        },
-        "title": "DatetimeRange",
-        "type": "object",
-    },
-    "FieldCondition": {
-        "additionalProperties": False,
-        "description": "All possible payload filtering conditions",
-        "properties": {
-            "key": {"description": "Payload key", "title": "Key", "type": "string"},
-            "match": {
-                "anyOf": [
-                    {"$ref": "#/$defs/MatchValue"},
-                    {"$ref": "#/$defs/MatchText"},
-                    {"$ref": "#/$defs/MatchAny"},
-                    {"$ref": "#/$defs/MatchExcept"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Check if point has field with a given value",
-                "title": "Match",
-            },
-            "range": {
-                "anyOf": [
-                    {"$ref": "#/$defs/Range"},
-                    {"$ref": "#/$defs/DatetimeRange"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Check if points value lies in a given range",
-                "title": "Range",
-            },
-            "geo_bounding_box": {
-                "anyOf": [{"$ref": "#/$defs/GeoBoundingBox"}, {"type": "null"}],
-                "default": None,
-                "description": "Check if points geo location lies in a given area",
-            },
-            "geo_radius": {
-                "anyOf": [{"$ref": "#/$defs/GeoRadius"}, {"type": "null"}],
-                "default": None,
-                "description": "Check if geo point is within a given radius",
-            },
-            "geo_polygon": {
-                "anyOf": [{"$ref": "#/$defs/GeoPolygon"}, {"type": "null"}],
-                "default": None,
-                "description": "Check if geo point is within a given polygon",
-            },
-            "values_count": {
-                "anyOf": [{"$ref": "#/$defs/ValuesCount"}, {"type": "null"}],
-                "default": None,
-                "description": "Check number of values of the field",
-            },
-        },
-        "required": ["key"],
-        "title": "FieldCondition",
-        "type": "object",
-    },
-    "Filter": {
-        "additionalProperties": False,
-        "properties": {
-            "should": {
-                "anyOf": [
-                    {
-                        "items": {
-                            "anyOf": [
-                                {"$ref": "#/$defs/FieldCondition"},
-                                {"$ref": "#/$defs/IsEmptyCondition"},
-                                {"$ref": "#/$defs/IsNullCondition"},
-                                {"$ref": "#/$defs/HasIdCondition"},
-                                {"$ref": "#/$defs/HasVectorCondition"},
-                                {"$ref": "#/$defs/NestedCondition"},
-                                {"$ref": "#/$defs/Filter"},
-                            ]
-                        },
-                        "type": "array",
-                    },
-                    {"$ref": "#/$defs/FieldCondition"},
-                    {"$ref": "#/$defs/IsEmptyCondition"},
-                    {"$ref": "#/$defs/IsNullCondition"},
-                    {"$ref": "#/$defs/HasIdCondition"},
-                    {"$ref": "#/$defs/HasVectorCondition"},
-                    {"$ref": "#/$defs/NestedCondition"},
-                    {"$ref": "#/$defs/Filter"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "At least one of those conditions should match",
-                "title": "Should",
-            },
-            "min_should": {
-                "anyOf": [{"$ref": "#/$defs/MinShould"}, {"type": "null"}],
-                "default": None,
-                "description": "At least minimum amount of given conditions should match",
-            },
-            "must": {
-                "anyOf": [
-                    {
-                        "items": {
-                            "anyOf": [
-                                {"$ref": "#/$defs/FieldCondition"},
-                                {"$ref": "#/$defs/IsEmptyCondition"},
-                                {"$ref": "#/$defs/IsNullCondition"},
-                                {"$ref": "#/$defs/HasIdCondition"},
-                                {"$ref": "#/$defs/HasVectorCondition"},
-                                {"$ref": "#/$defs/NestedCondition"},
-                                {"$ref": "#/$defs/Filter"},
-                            ]
-                        },
-                        "type": "array",
-                    },
-                    {"$ref": "#/$defs/FieldCondition"},
-                    {"$ref": "#/$defs/IsEmptyCondition"},
-                    {"$ref": "#/$defs/IsNullCondition"},
-                    {"$ref": "#/$defs/HasIdCondition"},
-                    {"$ref": "#/$defs/HasVectorCondition"},
-                    {"$ref": "#/$defs/NestedCondition"},
-                    {"$ref": "#/$defs/Filter"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "All conditions must match",
-                "title": "Must",
-            },
-            "must_not": {
-                "anyOf": [
-                    {
-                        "items": {
-                            "anyOf": [
-                                {"$ref": "#/$defs/FieldCondition"},
-                                {"$ref": "#/$defs/IsEmptyCondition"},
-                                {"$ref": "#/$defs/IsNullCondition"},
-                                {"$ref": "#/$defs/HasIdCondition"},
-                                {"$ref": "#/$defs/HasVectorCondition"},
-                                {"$ref": "#/$defs/NestedCondition"},
-                                {"$ref": "#/$defs/Filter"},
-                            ]
-                        },
-                        "type": "array",
-                    },
-                    {"$ref": "#/$defs/FieldCondition"},
-                    {"$ref": "#/$defs/IsEmptyCondition"},
-                    {"$ref": "#/$defs/IsNullCondition"},
-                    {"$ref": "#/$defs/HasIdCondition"},
-                    {"$ref": "#/$defs/HasVectorCondition"},
-                    {"$ref": "#/$defs/NestedCondition"},
-                    {"$ref": "#/$defs/Filter"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "All conditions must NOT match",
-                "title": "Must Not",
-            },
-        },
-        "title": "Filter",
-        "type": "object",
-    },
     "FilterSelector": {
         "additionalProperties": False,
         "properties": {
@@ -636,266 +1426,6 @@ DEFS = {
         },
         "required": ["filter"],
         "title": "FilterSelector",
-        "type": "object",
-    },
-    "GeoBoundingBox": {
-        "additionalProperties": False,
-        "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
-        "properties": {
-            "top_left": {
-                "$ref": "#/$defs/GeoPoint",
-                "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
-            },
-            "bottom_right": {
-                "$ref": "#/$defs/GeoPoint",
-                "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
-            },
-        },
-        "required": ["top_left", "bottom_right"],
-        "title": "GeoBoundingBox",
-        "type": "object",
-    },
-    "GeoLineString": {
-        "additionalProperties": False,
-        "description": "Ordered sequence of GeoPoints representing the line",
-        "properties": {
-            "points": {
-                "description": "Ordered sequence of GeoPoints representing the line",
-                "items": {"$ref": "#/$defs/GeoPoint"},
-                "title": "Points",
-                "type": "array",
-            }
-        },
-        "required": ["points"],
-        "title": "GeoLineString",
-        "type": "object",
-    },
-    "GeoPoint": {
-        "additionalProperties": False,
-        "description": "Geo point payload schema",
-        "properties": {
-            "lon": {"description": "Geo point payload schema", "title": "Lon", "type": "number"},
-            "lat": {"description": "Geo point payload schema", "title": "Lat", "type": "number"},
-        },
-        "required": ["lon", "lat"],
-        "title": "GeoPoint",
-        "type": "object",
-    },
-    "GeoPolygon": {
-        "additionalProperties": False,
-        "description": "Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
-        "properties": {
-            "exterior": {
-                "$ref": "#/$defs/GeoLineString",
-                "description": "Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
-            },
-            "interiors": {
-                "anyOf": [
-                    {"items": {"$ref": "#/$defs/GeoLineString"}, "type": "array"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "Interior lines (if present) bound holes within the surface each GeoLineString must consist of a minimum of 4 points, and the first and last points must be the same.",
-                "title": "Interiors",
-            },
-        },
-        "required": ["exterior"],
-        "title": "GeoPolygon",
-        "type": "object",
-    },
-    "GeoRadius": {
-        "additionalProperties": False,
-        "description": "Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
-        "properties": {
-            "center": {
-                "$ref": "#/$defs/GeoPoint",
-                "description": "Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
-            },
-            "radius": {
-                "description": "Radius of the area in meters",
-                "title": "Radius",
-                "type": "number",
-            },
-        },
-        "required": ["center", "radius"],
-        "title": "GeoRadius",
-        "type": "object",
-    },
-    "HasIdCondition": {
-        "additionalProperties": False,
-        "description": "ID-based filtering condition",
-        "properties": {
-            "has_id": {
-                "description": "ID-based filtering condition",
-                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
-                "title": "Has Id",
-                "type": "array",
-            }
-        },
-        "required": ["has_id"],
-        "title": "HasIdCondition",
-        "type": "object",
-    },
-    "HasVectorCondition": {
-        "additionalProperties": False,
-        "description": "Filter points which have specific vector assigned",
-        "properties": {
-            "has_vector": {
-                "description": "Filter points which have specific vector assigned",
-                "title": "Has Vector",
-                "type": "string",
-            }
-        },
-        "required": ["has_vector"],
-        "title": "HasVectorCondition",
-        "type": "object",
-    },
-    "IsEmptyCondition": {
-        "additionalProperties": False,
-        "description": "Select points with empty payload for a specified field",
-        "properties": {
-            "is_empty": {
-                "$ref": "#/$defs/PayloadField",
-                "description": "Select points with empty payload for a specified field",
-            }
-        },
-        "required": ["is_empty"],
-        "title": "IsEmptyCondition",
-        "type": "object",
-    },
-    "IsNullCondition": {
-        "additionalProperties": False,
-        "description": "Select points with null payload for a specified field",
-        "properties": {
-            "is_null": {
-                "$ref": "#/$defs/PayloadField",
-                "description": "Select points with null payload for a specified field",
-            }
-        },
-        "required": ["is_null"],
-        "title": "IsNullCondition",
-        "type": "object",
-    },
-    "MatchAny": {
-        "additionalProperties": False,
-        "description": "Exact match on any of the given values",
-        "properties": {
-            "any": {
-                "anyOf": [
-                    {"items": {"type": "string"}, "type": "array"},
-                    {"items": {"type": "integer"}, "type": "array"},
-                ],
-                "description": "Exact match on any of the given values",
-                "title": "Any",
-            }
-        },
-        "required": ["any"],
-        "title": "MatchAny",
-        "type": "object",
-    },
-    "MatchExcept": {
-        "additionalProperties": False,
-        "description": "Should have at least one value not matching the any given values",
-        "properties": {
-            "except": {
-                "anyOf": [
-                    {"items": {"type": "string"}, "type": "array"},
-                    {"items": {"type": "integer"}, "type": "array"},
-                ],
-                "description": "Should have at least one value not matching the any given values",
-                "title": "Except",
-            }
-        },
-        "required": ["except"],
-        "title": "MatchExcept",
-        "type": "object",
-    },
-    "MatchText": {
-        "additionalProperties": False,
-        "description": "Full-text match of the strings.",
-        "properties": {
-            "text": {
-                "description": "Full-text match of the strings.",
-                "title": "Text",
-                "type": "string",
-            }
-        },
-        "required": ["text"],
-        "title": "MatchText",
-        "type": "object",
-    },
-    "MatchValue": {
-        "additionalProperties": False,
-        "description": "Exact match of the given value",
-        "properties": {
-            "value": {
-                "anyOf": [{"type": "boolean"}, {"type": "integer"}, {"type": "string"}],
-                "description": "Exact match of the given value",
-                "title": "Value",
-            }
-        },
-        "required": ["value"],
-        "title": "MatchValue",
-        "type": "object",
-    },
-    "MinShould": {
-        "additionalProperties": False,
-        "properties": {
-            "conditions": {
-                "description": "",
-                "items": {
-                    "anyOf": [
-                        {"$ref": "#/$defs/FieldCondition"},
-                        {"$ref": "#/$defs/IsEmptyCondition"},
-                        {"$ref": "#/$defs/IsNullCondition"},
-                        {"$ref": "#/$defs/HasIdCondition"},
-                        {"$ref": "#/$defs/HasVectorCondition"},
-                        {"$ref": "#/$defs/NestedCondition"},
-                        {"$ref": "#/$defs/Filter"},
-                    ]
-                },
-                "title": "Conditions",
-                "type": "array",
-            },
-            "min_count": {"description": "", "title": "Min Count", "type": "integer"},
-        },
-        "required": ["conditions", "min_count"],
-        "title": "MinShould",
-        "type": "object",
-    },
-    "Nested": {
-        "additionalProperties": False,
-        "description": "Select points with payload for a specified nested field",
-        "properties": {
-            "key": {
-                "description": "Select points with payload for a specified nested field",
-                "title": "Key",
-                "type": "string",
-            },
-            "filter": {
-                "$ref": "#/$defs/Filter",
-                "description": "Select points with payload for a specified nested field",
-            },
-        },
-        "required": ["key", "filter"],
-        "title": "Nested",
-        "type": "object",
-    },
-    "NestedCondition": {
-        "additionalProperties": False,
-        "properties": {"nested": {"$ref": "#/$defs/Nested", "description": ""}},
-        "required": ["nested"],
-        "title": "NestedCondition",
-        "type": "object",
-    },
-    "PayloadField": {
-        "additionalProperties": False,
-        "description": "Payload field",
-        "properties": {
-            "key": {"description": "Payload field name", "title": "Key", "type": "string"}
-        },
-        "required": ["key"],
-        "title": "PayloadField",
         "type": "object",
     },
     "PointIdsList": {
@@ -924,70 +1454,6 @@ DEFS = {
         },
         "required": ["points"],
         "title": "PointIdsList",
-        "type": "object",
-    },
-    "Range": {
-        "additionalProperties": False,
-        "description": "Range filter request",
-        "properties": {
-            "lt": {
-                "anyOf": [{"type": "number"}, {"type": "null"}],
-                "default": None,
-                "description": "point.key &lt; range.lt",
-                "title": "Lt",
-            },
-            "gt": {
-                "anyOf": [{"type": "number"}, {"type": "null"}],
-                "default": None,
-                "description": "point.key &gt; range.gt",
-                "title": "Gt",
-            },
-            "gte": {
-                "anyOf": [{"type": "number"}, {"type": "null"}],
-                "default": None,
-                "description": "point.key &gt;= range.gte",
-                "title": "Gte",
-            },
-            "lte": {
-                "anyOf": [{"type": "number"}, {"type": "null"}],
-                "default": None,
-                "description": "point.key &lt;= range.lte",
-                "title": "Lte",
-            },
-        },
-        "title": "Range",
-        "type": "object",
-    },
-    "ValuesCount": {
-        "additionalProperties": False,
-        "description": "Values count filter request",
-        "properties": {
-            "lt": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "point.key.length() &lt; values_count.lt",
-                "title": "Lt",
-            },
-            "gt": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "point.key.length() &gt; values_count.gt",
-                "title": "Gt",
-            },
-            "gte": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "point.key.length() &gt;= values_count.gte",
-                "title": "Gte",
-            },
-            "lte": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "point.key.length() &lt;= values_count.lte",
-                "title": "Lte",
-            },
-        },
-        "title": "ValuesCount",
         "type": "object",
     },
     "ContextPair": {
@@ -1305,13 +1771,13 @@ DEFS = {
             "unindexed_filtering_retrieve": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "Allow usage of unindexed fields in retrieval based (eg. search) filters.",
+                "description": "Allow usage of unindexed fields in retrieval based (e.g. search) filters.",
                 "title": "Unindexed Filtering Retrieve",
             },
             "unindexed_filtering_update": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "Allow usage of unindexed fields in filtered updates (eg. delete by payload).",
+                "description": "Allow usage of unindexed fields in filtered updates (e.g. delete by payload).",
                 "title": "Unindexed Filtering Update",
             },
             "search_max_hnsw_ef": {
@@ -2378,6 +2844,46 @@ DEFS = {
         "title": "DiscoverQuery",
         "type": "object",
     },
+    "FormulaQuery": {
+        "additionalProperties": False,
+        "properties": {
+            "formula": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Formula",
+            },
+            "defaults": {
+                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "default": {},
+                "description": "",
+                "title": "Defaults",
+            },
+        },
+        "required": ["formula"],
+        "title": "FormulaQuery",
+        "type": "object",
+    },
     "FusionQuery": {
         "additionalProperties": False,
         "properties": {"fusion": {"$ref": "#/$defs/Fusion", "description": ""}},
@@ -2449,6 +2955,7 @@ DEFS = {
                     {"$ref": "#/$defs/ContextQuery"},
                     {"$ref": "#/$defs/OrderByQuery"},
                     {"$ref": "#/$defs/FusionQuery"},
+                    {"$ref": "#/$defs/FormulaQuery"},
                     {"$ref": "#/$defs/SampleQuery"},
                     {"type": "null"},
                 ],
@@ -2656,6 +3163,7 @@ DEFS = {
                     {"$ref": "#/$defs/ContextQuery"},
                     {"$ref": "#/$defs/OrderByQuery"},
                     {"$ref": "#/$defs/FusionQuery"},
+                    {"$ref": "#/$defs/FormulaQuery"},
                     {"$ref": "#/$defs/SampleQuery"},
                     {"type": "null"},
                 ],
@@ -3311,7 +3819,34 @@ DEFS = {
         "type": "object",
     },
 }
-RECURSIVE_REFS = ["Filter", "Prefetch"]
+RECURSIVE_REFS = [
+    "AbsExpression",
+    "DivExpression",
+    "ExpExpression",
+    "Filter",
+    "LnExpression",
+    "Log10Expression",
+    "MultExpression",
+    "NegExpression",
+    "NestedCondition",
+    "PowExpression",
+    "Prefetch",
+    "SqrtExpression",
+    "SumExpression",
+]
 INCLUDED_RECURSIVE_REFS = ["Prefetch"]
-EXCLUDED_RECURSIVE_REFS = ["Filter"]
+EXCLUDED_RECURSIVE_REFS = [
+    "AbsExpression",
+    "DivExpression",
+    "ExpExpression",
+    "Filter",
+    "LnExpression",
+    "Log10Expression",
+    "MultExpression",
+    "NegExpression",
+    "NestedCondition",
+    "PowExpression",
+    "SqrtExpression",
+    "SumExpression",
+]
 NAME_RECURSIVE_REF_MAPPING = {"prefetch": "Prefetch"}
