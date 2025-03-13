@@ -1223,6 +1223,18 @@ class GrpcToRest:
             return cls.convert_pow_expression(model.pow)
         if name == "geo_distance":
             return cls.convert_geo_distance(model.geo_distance)
+        if name == "lin_decay":
+            return rest.LinDecayExpression(
+                lin_decay=cls.convert_decay_params_expression(model.lin_decay)
+            )
+        if name == "exp_decay":
+            return rest.ExpDecayExpression(
+                exp_decay=cls.convert_decay_params_expression(model.exp_decay)
+            )
+        if name == "gauss_decay":
+            return rest.GaussDecayExpression(
+                gauss_decay=cls.convert_decay_params_expression(model.gauss_decay)
+            )
 
         raise ValueError(f"Unknown function name: {name}")
 
@@ -1254,6 +1266,17 @@ class GrpcToRest:
         origin = cls.convert_geo_point(model.origin)
         params = rest.GeoDistanceParams(origin=origin, to=model.to)
         return rest.GeoDistance(geo_distance=params)
+
+    @classmethod
+    def convert_decay_params_expression(
+        cls, model: grpc.DecayParamsExpression
+    ) -> rest.DecayParamsExpression:
+        return rest.DecayParamsExpression(
+            x=cls.convert_expression(model.x),
+            target=cls.convert_expression(model.target) if model.target is not None else None,
+            midpoint=model.midpoint,
+            scale=model.scale,
+        )
 
     @classmethod
     def convert_query(cls, model: grpc.Query) -> rest.Query:
@@ -3484,6 +3507,14 @@ class RestToGrpc:
             return grpc.Expression(exp=cls.convert_expression(model.exp))
         if isinstance(model, rest.GeoDistance):
             return grpc.Expression(geo_distance=cls.convert_geo_distance(model))
+        if isinstance(model, rest.LinDecayExpression):
+            return grpc.Expression(lin_decay=cls.convert_decay_params_expression(model.lin_decay))
+        if isinstance(model, rest.ExpDecayExpression):
+            return grpc.Expression(exp_decay=cls.convert_decay_params_expression(model.exp_decay))
+        if isinstance(model, rest.GaussDecayExpression):
+            return grpc.Expression(
+                gauss_decay=cls.convert_decay_params_expression(model.gauss_decay)
+            )
 
         raise ValueError(f"invalid Expression model: {model}")  # pragma: no cover
 
@@ -3515,6 +3546,17 @@ class RestToGrpc:
         return grpc.GeoDistance(
             origin=cls.convert_geo_point(model.geo_distance.origin),
             to=model.geo_distance.to,
+        )
+
+    @classmethod
+    def convert_decay_params_expression(
+        cls, model: rest.DecayParamsExpression
+    ) -> grpc.DecayParamsExpression:
+        return grpc.DecayParamsExpression(
+            x=cls.convert_expression(model.x),
+            target=cls.convert_expression(model.target) if model.target is not None else None,
+            midpoint=model.midpoint,
+            scale=model.scale,
         )
 
     @classmethod
