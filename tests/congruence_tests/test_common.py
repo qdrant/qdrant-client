@@ -24,7 +24,7 @@ sparse_image_vector_size = 1_000
 sparse_code_vector_size = 10_000
 
 # number of vectors to generate
-NUM_VECTORS = 10
+NUM_VECTORS = 100
 
 dense_vectors_config = {
     "text": models.VectorParams(
