@@ -1,6 +1,5 @@
 import asyncio
 import collections
-from inspect import iscoroutinefunction
 from typing import Any, Awaitable, Callable, Optional, Union
 
 import grpc
@@ -73,10 +72,7 @@ class _GenericAsyncClientInterceptor(
         )
         next_request = next(new_request_iterator)
         response = await continuation(new_details, next_request)
-        if iscoroutinefunction(postprocess):
-            return await postprocess(response) if postprocess else response
-        else:
-            return postprocess(response) if postprocess else response
+        return await postprocess(response) if postprocess else response
 
     async def intercept_unary_stream(
         self, continuation: Any, client_call_details: Any, request: Any
@@ -85,10 +81,7 @@ class _GenericAsyncClientInterceptor(
             client_call_details, iter((request,)), False, True
         )
         response_it = await continuation(new_details, next(new_request_iterator))
-        if iscoroutinefunction(postprocess):
-            return await postprocess(response_it) if postprocess else response_it
-        else:
-            return postprocess(response_it) if postprocess else response_it
+        return await postprocess(response_it) if postprocess else response_it
 
     async def intercept_stream_unary(
         self, continuation: Any, client_call_details: Any, request_iterator: Any
@@ -97,10 +90,7 @@ class _GenericAsyncClientInterceptor(
             client_call_details, request_iterator, True, False
         )
         response = await continuation(new_details, new_request_iterator)
-        if iscoroutinefunction(postprocess):
-            return await postprocess(response) if postprocess else response
-        else:
-            return postprocess(response) if postprocess else response
+        return await postprocess(response) if postprocess else response
 
     async def intercept_stream_stream(
         self, continuation: Any, client_call_details: Any, request_iterator: Any
@@ -109,10 +99,7 @@ class _GenericAsyncClientInterceptor(
             client_call_details, request_iterator, True, True
         )
         response_it = await continuation(new_details, new_request_iterator)
-        if iscoroutinefunction(postprocess):
-            return await postprocess(response_it) if postprocess else response_it
-        else:
-            return postprocess(response_it) if postprocess else response_it
+        return await postprocess(response_it) if postprocess else response_it
 
 
 def create_generic_client_interceptor(intercept_call: Any) -> _GenericClientInterceptor:

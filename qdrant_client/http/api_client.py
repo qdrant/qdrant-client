@@ -109,11 +109,8 @@ class ApiClient:
         if response.status_code == 429:
             retry_after_s = response.headers.get("Retry-After", None)
             try:
-                message = (
-                    response.json()["status"]["error"]
-                    if response.json()["status"] and response.json()["status"]["error"]
-                    else ""
-                )
+                resp = response.json()
+                message = resp["status"]["error"] if resp["status"] and resp["status"]["error"] else ""
             except Exception:
                 message = ""
 
@@ -196,11 +193,8 @@ class AsyncApiClient:
         if response.status_code == 429:
             retry_after_s = response.headers.get("Retry-After", None)
             try:
-                message = (
-                    response.json()["status"]["error"]
-                    if response.json()["status"] and response.json()["status"]["error"]
-                    else ""
-                )
+                resp = response.json()
+                message = resp["status"]["error"] if resp["status"] and resp["status"]["error"] else ""
             except Exception:
                 message = ""
 
