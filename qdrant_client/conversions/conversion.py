@@ -616,6 +616,10 @@ class GrpcToRest:
             else None
         )
 
+        is_empty = model.is_empty if model.HasField("is_empty") else None
+
+        is_null = model.is_null if model.HasField("is_null") else None
+
         return rest.FieldCondition(
             key=model.key,
             geo_bounding_box=geo_bounding_box,
@@ -623,6 +627,8 @@ class GrpcToRest:
             match=match,
             range=range_,
             values_count=values_count,
+            is_empty=is_empty,
+            is_null=is_null,
         )
 
     @classmethod
@@ -2571,6 +2577,11 @@ class RestToGrpc:
             return grpc.FieldCondition(
                 key=model.key, values_count=cls.convert_values_count(model.values_count)
             )
+        if model.is_empty:
+            return grpc.FieldCondition(key=model.key, is_empty=model.is_empty)
+
+        if model.is_null:
+            return grpc.FieldCondition(key=model.key, is_null=model.is_null)
         raise ValueError(f"invalid FieldCondition model: {model}")  # pragma: no cover
 
     @classmethod
