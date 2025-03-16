@@ -1,7 +1,7 @@
 import time
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Any
 
-from qdrant_client._pydantic_compat import to_dict
+from qdrant_client._pydantic_compat import to_dict, model_fields
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http import models
 
@@ -113,6 +113,16 @@ def _recreate_collection(
     src_payload_schema = src_collection_info.payload_schema
     if dest_client.collection_exists(collection_name):
         dest_client.delete_collection(collection_name)
+
+    strict_mode_config: Optional[models.StrictModeConfig] = None
+    if src_config.strict_mode_config is not None:
+        strict_mode_config = models.StrictModeConfig(
+            **{
+                k: v
+                for k, v in to_dict(src_config.strict_mode_config).items()
+                if k in model_fields(models.StrictModeConfig)
+            }
+        )
     dest_client.create_collection(
         collection_name,
         vectors_config=src_config.params.vectors,
@@ -125,7 +135,7 @@ def _recreate_collection(
         optimizers_config=models.OptimizersConfigDiff(**to_dict(src_config.optimizer_config)),
         wal_config=models.WalConfigDiff(**to_dict(src_config.wal_config)),
         quantization_config=src_config.quantization_config,
-        strict_mode_config=src_config.strict_mode_config,
+        strict_mode_config=strict_mode_config,
     )
 
     _recreate_payload_schema(dest_client, collection_name, src_payload_schema)

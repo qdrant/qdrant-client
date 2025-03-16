@@ -1,6 +1,8 @@
 CACHE_STR_PATH = {
+    "AbortReshardingOperation": [],
     "AbortShardTransfer": [],
     "AbortTransferOperation": [],
+    "AbsExpression": [],
     "Batch": ["vectors"],
     "BinaryQuantization": [],
     "BinaryQuantizationConfig": [],
@@ -31,30 +33,41 @@ CACHE_STR_PATH = {
     "DiscoverQuery": ["discover.context.negative", "discover.context.positive", "discover.target"],
     "DiscoverRequest": [],
     "DiscoverRequestBatch": [],
-    "Document": [""],
+    "DivExpression": [],
+    "DivParams": [],
+    "Document": [],
     "DropReplicaOperation": [],
     "DropShardingKey": [],
     "DropShardingKeyOperation": [],
+    "ExpExpression": [],
     "FacetRequest": [],
     "FieldCondition": [],
     "Filter": [],
     "FilterSelector": [],
     "FloatIndexParams": [],
+    "FormulaQuery": [],
     "FusionQuery": [],
     "GeoBoundingBox": [],
+    "GeoDistance": [],
+    "GeoDistanceParams": [],
     "GeoIndexParams": [],
     "GeoLineString": [],
     "GeoPoint": [],
     "GeoPolygon": [],
     "GeoRadius": [],
     "HasIdCondition": [],
+    "HasVectorCondition": [],
     "HnswConfigDiff": [],
+    "Image": [],
+    "InferenceObject": [],
     "InitFrom": [],
     "IntegerIndexParams": [],
     "IsEmptyCondition": [],
     "IsNullCondition": [],
     "KeywordIndexParams": [],
+    "LnExpression": [],
     "LocksOption": [],
+    "Log10Expression": [],
     "LookupLocation": [],
     "MatchAny": [],
     "MatchExcept": [],
@@ -63,10 +76,12 @@ CACHE_STR_PATH = {
     "MinShould": [],
     "MoveShard": [],
     "MoveShardOperation": [],
+    "MultExpression": [],
     "MultiVectorConfig": [],
     "NamedSparseVector": [],
     "NamedVector": [],
     "NearestQuery": ["nearest"],
+    "NegExpression": [],
     "Nested": [],
     "NestedCondition": [],
     "OptimizersConfigDiff": [],
@@ -82,6 +97,8 @@ CACHE_STR_PATH = {
     "PointVectors": ["vector"],
     "PointsBatch": ["batch.vectors"],
     "PointsList": ["points.vector"],
+    "PowExpression": [],
+    "PowParams": [],
     "Prefetch": [
         "prefetch.query",
         "prefetch.query.context.negative",
@@ -195,6 +212,13 @@ CACHE_STR_PATH = {
     "SparseIndexParams": [],
     "SparseVector": [],
     "SparseVectorParams": [],
+    "SqrtExpression": [],
+    "StartResharding": [],
+    "StartReshardingOperation": [],
+    "StrictModeConfig": [],
+    "StrictModeMultivector": [],
+    "StrictModeSparse": [],
+    "SumExpression": [],
     "TextIndexParams": [],
     "UpdateCollection": [],
     "UpdateOperations": [
@@ -211,15 +235,6 @@ CACHE_STR_PATH = {
     "VectorParamsDiff": [],
     "WalConfigDiff": [],
     "WithLookup": [],
-    "Image": [],
-    "InferenceObject": [],
-    "StrictModeConfig": [],
-    "HasVectorCondition": [],
-    "AbortReshardingOperation": [],
-    "StartResharding": [],
-    "StartReshardingOperation": [],
-    "StrictModeMultivector": [],
-    "StrictModeSparse": [],
 }
 DEFS = {
     "AbortShardTransfer": {
@@ -233,141 +248,38 @@ DEFS = {
         "title": "AbortShardTransfer",
         "type": "object",
     },
-    "Document": {
-        "additionalProperties": False,
-        "description": "WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.",
-        "properties": {
-            "text": {
-                "description": "Text document to be embedded by FastEmbed or Cloud inference server",
-                "title": "Text",
-                "type": "string",
-            },
-            "model": {
-                "anyOf": [{"type": "string"}, {"type": "null"}],
-                "default": None,
-                "description": "Model name to be used for embedding computation",
-                "title": "Model",
-            },
-        },
-        "required": ["text"],
-        "title": "Document",
-        "type": "object",
-    },
-    "SparseVector": {
-        "additionalProperties": False,
-        "description": "Sparse vector structure",
-        "properties": {
-            "indices": {
-                "description": "Indices must be unique",
-                "items": {"type": "integer"},
-                "title": "Indices",
-                "type": "array",
-            },
-            "values": {
-                "description": "Values and indices must be the same length",
-                "items": {"type": "number"},
-                "title": "Values",
-                "type": "array",
-            },
-        },
-        "required": ["indices", "values"],
-        "title": "SparseVector",
-        "type": "object",
-    },
-    "BinaryQuantizationConfig": {
+    "AbsExpression": {
         "additionalProperties": False,
         "properties": {
-            "always_ram": {
-                "anyOf": [{"type": "boolean"}, {"type": "null"}],
-                "default": None,
+            "abs": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
                 "description": "",
-                "title": "Always Ram",
+                "title": "Abs",
             }
         },
-        "title": "BinaryQuantizationConfig",
-        "type": "object",
-    },
-    "BoolIndexType": {
-        "const": "bool",
-        "enum": ["bool"],
-        "title": "BoolIndexType",
-        "type": "string",
-    },
-    "CreateAlias": {
-        "additionalProperties": False,
-        "description": "Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
-        "properties": {
-            "collection_name": {
-                "description": "Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
-                "title": "Collection Name",
-                "type": "string",
-            },
-            "alias_name": {
-                "description": "Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
-                "title": "Alias Name",
-                "type": "string",
-            },
-        },
-        "required": ["collection_name", "alias_name"],
-        "title": "CreateAlias",
-        "type": "object",
-    },
-    "CreateAliasOperation": {
-        "additionalProperties": False,
-        "properties": {
-            "create_alias": {"allOf": [{"$ref": "#/$defs/CreateAlias"}], "description": ""}
-        },
-        "required": ["create_alias"],
-        "title": "CreateAliasOperation",
-        "type": "object",
-    },
-    "DeleteAlias": {
-        "additionalProperties": False,
-        "description": "Delete alias if exists",
-        "properties": {
-            "alias_name": {
-                "description": "Delete alias if exists",
-                "title": "Alias Name",
-                "type": "string",
-            }
-        },
-        "required": ["alias_name"],
-        "title": "DeleteAlias",
-        "type": "object",
-    },
-    "DeleteAliasOperation": {
-        "additionalProperties": False,
-        "description": "Delete alias if exists",
-        "properties": {"delete_alias": {"$ref": "#/$defs/DeleteAlias"}},
-        "required": ["delete_alias"],
-        "title": "DeleteAliasOperation",
-        "type": "object",
-    },
-    "RenameAlias": {
-        "additionalProperties": False,
-        "description": "Change alias to a new one",
-        "properties": {
-            "old_alias_name": {
-                "description": "Change alias to a new one",
-                "title": "Old Alias Name",
-                "type": "string",
-            },
-            "new_alias_name": {
-                "description": "Change alias to a new one",
-                "title": "New Alias Name",
-                "type": "string",
-            },
-        },
-        "required": ["old_alias_name", "new_alias_name"],
-        "title": "RenameAlias",
-        "type": "object",
-    },
-    "RenameAliasOperation": {
-        "additionalProperties": False,
-        "description": "Change alias to a new one",
-        "properties": {"rename_alias": {"$ref": "#/$defs/RenameAlias"}},
-        "required": ["rename_alias"],
-        "title": "RenameAliasOperation",
+        "required": ["abs"],
+        "title": "AbsExpression",
         "type": "object",
     },
     "DatetimeRange": {
@@ -418,6 +330,113 @@ DEFS = {
         "title": "DatetimeRange",
         "type": "object",
     },
+    "DivExpression": {
+        "additionalProperties": False,
+        "properties": {"div": {"$ref": "#/$defs/DivParams", "description": ""}},
+        "required": ["div"],
+        "title": "DivExpression",
+        "type": "object",
+    },
+    "DivParams": {
+        "additionalProperties": False,
+        "properties": {
+            "left": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Left",
+            },
+            "right": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Right",
+            },
+            "by_zero_default": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "By Zero Default",
+            },
+        },
+        "required": ["left", "right"],
+        "title": "DivParams",
+        "type": "object",
+    },
+    "ExpExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "exp": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Exp",
+            }
+        },
+        "required": ["exp"],
+        "title": "ExpExpression",
+        "type": "object",
+    },
     "FieldCondition": {
         "additionalProperties": False,
         "description": "All possible payload filtering conditions",
@@ -448,7 +467,7 @@ DEFS = {
             "geo_bounding_box": {
                 "anyOf": [{"$ref": "#/$defs/GeoBoundingBox"}, {"type": "null"}],
                 "default": None,
-                "description": "Check if points geo location lies in a given area",
+                "description": "Check if points geolocation lies in a given area",
             },
             "geo_radius": {
                 "anyOf": [{"$ref": "#/$defs/GeoRadius"}, {"type": "null"}],
@@ -464,6 +483,18 @@ DEFS = {
                 "anyOf": [{"$ref": "#/$defs/ValuesCount"}, {"type": "null"}],
                 "default": None,
                 "description": "Check number of values of the field",
+            },
+            "is_empty": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Check that the field is empty, alternative syntax for `is_empty: \\&quot;field_name\\&quot;`",
+                "title": "Is Empty",
+            },
+            "is_null": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Check that the field is null, alternative syntax for `is_null: \\&quot;field_name\\&quot;`",
+                "title": "Is Null",
             },
         },
         "required": ["key"],
@@ -482,6 +513,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsEmptyCondition"},
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -492,6 +524,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsEmptyCondition"},
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -514,6 +547,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsEmptyCondition"},
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -524,6 +558,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsEmptyCondition"},
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -541,6 +576,7 @@ DEFS = {
                                 {"$ref": "#/$defs/IsEmptyCondition"},
                                 {"$ref": "#/$defs/IsNullCondition"},
                                 {"$ref": "#/$defs/HasIdCondition"},
+                                {"$ref": "#/$defs/HasVectorCondition"},
                                 {"$ref": "#/$defs/NestedCondition"},
                                 {"$ref": "#/$defs/Filter"},
                             ]
@@ -551,6 +587,7 @@ DEFS = {
                     {"$ref": "#/$defs/IsEmptyCondition"},
                     {"$ref": "#/$defs/IsNullCondition"},
                     {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
                     {"$ref": "#/$defs/NestedCondition"},
                     {"$ref": "#/$defs/Filter"},
                     {"type": "null"},
@@ -563,44 +600,42 @@ DEFS = {
         "title": "Filter",
         "type": "object",
     },
-    "FilterSelector": {
-        "additionalProperties": False,
-        "properties": {
-            "filter": {"allOf": [{"$ref": "#/$defs/Filter"}], "description": ""},
-            "shard_key": {
-                "anyOf": [
-                    {"type": "integer"},
-                    {"type": "string"},
-                    {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
-                        "type": "array",
-                    },
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "",
-                "title": "Shard Key",
-            },
-        },
-        "required": ["filter"],
-        "title": "FilterSelector",
-        "type": "object",
-    },
     "GeoBoundingBox": {
         "additionalProperties": False,
         "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
         "properties": {
             "top_left": {
-                "allOf": [{"$ref": "#/$defs/GeoPoint"}],
+                "$ref": "#/$defs/GeoPoint",
                 "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
             },
             "bottom_right": {
-                "allOf": [{"$ref": "#/$defs/GeoPoint"}],
+                "$ref": "#/$defs/GeoPoint",
                 "description": "Geo filter request  Matches coordinates inside the rectangle, described by coordinates of lop-left and bottom-right edges",
             },
         },
         "required": ["top_left", "bottom_right"],
         "title": "GeoBoundingBox",
+        "type": "object",
+    },
+    "GeoDistance": {
+        "additionalProperties": False,
+        "properties": {"geo_distance": {"$ref": "#/$defs/GeoDistanceParams", "description": ""}},
+        "required": ["geo_distance"],
+        "title": "GeoDistance",
+        "type": "object",
+    },
+    "GeoDistanceParams": {
+        "additionalProperties": False,
+        "properties": {
+            "origin": {"$ref": "#/$defs/GeoPoint", "description": ""},
+            "to": {
+                "description": "Payload field with the destination geo point",
+                "title": "To",
+                "type": "string",
+            },
+        },
+        "required": ["origin", "to"],
+        "title": "GeoDistanceParams",
         "type": "object",
     },
     "GeoLineString": {
@@ -634,7 +669,7 @@ DEFS = {
         "description": "Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
         "properties": {
             "exterior": {
-                "allOf": [{"$ref": "#/$defs/GeoLineString"}],
+                "$ref": "#/$defs/GeoLineString",
                 "description": "Geo filter request  Matches coordinates inside the polygon, defined by `exterior` and `interiors`",
             },
             "interiors": {
@@ -656,7 +691,7 @@ DEFS = {
         "description": "Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
         "properties": {
             "center": {
-                "allOf": [{"$ref": "#/$defs/GeoPoint"}],
+                "$ref": "#/$defs/GeoPoint",
                 "description": "Geo filter request  Matches coordinates inside the circle of `radius` and center with coordinates `center`",
             },
             "radius": {
@@ -684,12 +719,26 @@ DEFS = {
         "title": "HasIdCondition",
         "type": "object",
     },
+    "HasVectorCondition": {
+        "additionalProperties": False,
+        "description": "Filter points which have specific vector assigned",
+        "properties": {
+            "has_vector": {
+                "description": "Filter points which have specific vector assigned",
+                "title": "Has Vector",
+                "type": "string",
+            }
+        },
+        "required": ["has_vector"],
+        "title": "HasVectorCondition",
+        "type": "object",
+    },
     "IsEmptyCondition": {
         "additionalProperties": False,
         "description": "Select points with empty payload for a specified field",
         "properties": {
             "is_empty": {
-                "allOf": [{"$ref": "#/$defs/PayloadField"}],
+                "$ref": "#/$defs/PayloadField",
                 "description": "Select points with empty payload for a specified field",
             }
         },
@@ -702,12 +751,80 @@ DEFS = {
         "description": "Select points with null payload for a specified field",
         "properties": {
             "is_null": {
-                "allOf": [{"$ref": "#/$defs/PayloadField"}],
+                "$ref": "#/$defs/PayloadField",
                 "description": "Select points with null payload for a specified field",
             }
         },
         "required": ["is_null"],
         "title": "IsNullCondition",
+        "type": "object",
+    },
+    "LnExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "ln": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Ln",
+            }
+        },
+        "required": ["ln"],
+        "title": "LnExpression",
+        "type": "object",
+    },
+    "Log10Expression": {
+        "additionalProperties": False,
+        "properties": {
+            "log10": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Log10",
+            }
+        },
+        "required": ["log10"],
+        "title": "Log10Expression",
         "type": "object",
     },
     "MatchAny": {
@@ -783,6 +900,7 @@ DEFS = {
                         {"$ref": "#/$defs/IsEmptyCondition"},
                         {"$ref": "#/$defs/IsNullCondition"},
                         {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
                         {"$ref": "#/$defs/NestedCondition"},
                         {"$ref": "#/$defs/Filter"},
                     ]
@@ -796,6 +914,77 @@ DEFS = {
         "title": "MinShould",
         "type": "object",
     },
+    "MultExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "mult": {
+                "description": "",
+                "items": {
+                    "anyOf": [
+                        {"type": "number"},
+                        {"type": "string"},
+                        {"$ref": "#/$defs/FieldCondition"},
+                        {"$ref": "#/$defs/IsEmptyCondition"},
+                        {"$ref": "#/$defs/IsNullCondition"},
+                        {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/NestedCondition"},
+                        {"$ref": "#/$defs/Filter"},
+                        {"$ref": "#/$defs/MultExpression"},
+                        {"$ref": "#/$defs/SumExpression"},
+                        {"$ref": "#/$defs/NegExpression"},
+                        {"$ref": "#/$defs/AbsExpression"},
+                        {"$ref": "#/$defs/DivExpression"},
+                        {"$ref": "#/$defs/SqrtExpression"},
+                        {"$ref": "#/$defs/PowExpression"},
+                        {"$ref": "#/$defs/ExpExpression"},
+                        {"$ref": "#/$defs/Log10Expression"},
+                        {"$ref": "#/$defs/LnExpression"},
+                        {"$ref": "#/$defs/GeoDistance"},
+                    ]
+                },
+                "title": "Mult",
+                "type": "array",
+            }
+        },
+        "required": ["mult"],
+        "title": "MultExpression",
+        "type": "object",
+    },
+    "NegExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "neg": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Neg",
+            }
+        },
+        "required": ["neg"],
+        "title": "NegExpression",
+        "type": "object",
+    },
     "Nested": {
         "additionalProperties": False,
         "description": "Select points with payload for a specified nested field",
@@ -806,7 +995,7 @@ DEFS = {
                 "type": "string",
             },
             "filter": {
-                "allOf": [{"$ref": "#/$defs/Filter"}],
+                "$ref": "#/$defs/Filter",
                 "description": "Select points with payload for a specified nested field",
             },
         },
@@ -816,7 +1005,7 @@ DEFS = {
     },
     "NestedCondition": {
         "additionalProperties": False,
-        "properties": {"nested": {"allOf": [{"$ref": "#/$defs/Nested"}], "description": ""}},
+        "properties": {"nested": {"$ref": "#/$defs/Nested", "description": ""}},
         "required": ["nested"],
         "title": "NestedCondition",
         "type": "object",
@@ -831,32 +1020,71 @@ DEFS = {
         "title": "PayloadField",
         "type": "object",
     },
-    "PointIdsList": {
+    "PowExpression": {
+        "additionalProperties": False,
+        "properties": {"pow": {"$ref": "#/$defs/PowParams", "description": ""}},
+        "required": ["pow"],
+        "title": "PowExpression",
+        "type": "object",
+    },
+    "PowParams": {
         "additionalProperties": False,
         "properties": {
-            "points": {
-                "description": "",
-                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
-                "title": "Points",
-                "type": "array",
-            },
-            "shard_key": {
+            "base": {
                 "anyOf": [
-                    {"type": "integer"},
+                    {"type": "number"},
                     {"type": "string"},
-                    {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
-                        "type": "array",
-                    },
-                    {"type": "null"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
                 ],
-                "default": None,
                 "description": "",
-                "title": "Shard Key",
+                "title": "Base",
+            },
+            "exponent": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Exponent",
             },
         },
-        "required": ["points"],
-        "title": "PointIdsList",
+        "required": ["base", "exponent"],
+        "title": "PowParams",
         "type": "object",
     },
     "Range": {
@@ -891,6 +1119,77 @@ DEFS = {
         "title": "Range",
         "type": "object",
     },
+    "SqrtExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "sqrt": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Sqrt",
+            }
+        },
+        "required": ["sqrt"],
+        "title": "SqrtExpression",
+        "type": "object",
+    },
+    "SumExpression": {
+        "additionalProperties": False,
+        "properties": {
+            "sum": {
+                "description": "",
+                "items": {
+                    "anyOf": [
+                        {"type": "number"},
+                        {"type": "string"},
+                        {"$ref": "#/$defs/FieldCondition"},
+                        {"$ref": "#/$defs/IsEmptyCondition"},
+                        {"$ref": "#/$defs/IsNullCondition"},
+                        {"$ref": "#/$defs/HasIdCondition"},
+                        {"$ref": "#/$defs/HasVectorCondition"},
+                        {"$ref": "#/$defs/NestedCondition"},
+                        {"$ref": "#/$defs/Filter"},
+                        {"$ref": "#/$defs/MultExpression"},
+                        {"$ref": "#/$defs/SumExpression"},
+                        {"$ref": "#/$defs/NegExpression"},
+                        {"$ref": "#/$defs/AbsExpression"},
+                        {"$ref": "#/$defs/DivExpression"},
+                        {"$ref": "#/$defs/SqrtExpression"},
+                        {"$ref": "#/$defs/PowExpression"},
+                        {"$ref": "#/$defs/ExpExpression"},
+                        {"$ref": "#/$defs/Log10Expression"},
+                        {"$ref": "#/$defs/LnExpression"},
+                        {"$ref": "#/$defs/GeoDistance"},
+                    ]
+                },
+                "title": "Sum",
+                "type": "array",
+            }
+        },
+        "required": ["sum"],
+        "title": "SumExpression",
+        "type": "object",
+    },
     "ValuesCount": {
         "additionalProperties": False,
         "description": "Values count filter request",
@@ -923,6 +1222,240 @@ DEFS = {
         "title": "ValuesCount",
         "type": "object",
     },
+    "Document": {
+        "additionalProperties": False,
+        "description": "WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.",
+        "properties": {
+            "text": {
+                "description": "Text of the document This field will be used as input for the embedding model",
+                "title": "Text",
+                "type": "string",
+            },
+            "model": {
+                "description": "Name of the model used to generate the vector List of available models depends on a provider",
+                "title": "Model",
+                "type": "string",
+            },
+            "options": {
+                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "default": None,
+                "description": "Parameters for the model Values of the parameters are model-specific",
+                "title": "Options",
+            },
+        },
+        "required": ["text", "model"],
+        "title": "Document",
+        "type": "object",
+    },
+    "Image": {
+        "additionalProperties": False,
+        "description": "WARN: Work-in-progress, unimplemented  Image object for embedding. Requires inference infrastructure, unimplemented.",
+        "properties": {
+            "image": {
+                "description": "Image data: base64 encoded image or an URL",
+                "title": "Image",
+            },
+            "model": {
+                "description": "Name of the model used to generate the vector List of available models depends on a provider",
+                "title": "Model",
+                "type": "string",
+            },
+            "options": {
+                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "default": None,
+                "description": "Parameters for the model Values of the parameters are model-specific",
+                "title": "Options",
+            },
+        },
+        "required": ["image", "model"],
+        "title": "Image",
+        "type": "object",
+    },
+    "InferenceObject": {
+        "additionalProperties": False,
+        "description": "WARN: Work-in-progress, unimplemented  Custom object for embedding. Requires inference infrastructure, unimplemented.",
+        "properties": {
+            "object": {
+                "description": "Arbitrary data, used as input for the embedding model Used if the model requires more than one input or a custom input",
+                "title": "Object",
+            },
+            "model": {
+                "description": "Name of the model used to generate the vector List of available models depends on a provider",
+                "title": "Model",
+                "type": "string",
+            },
+            "options": {
+                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "default": None,
+                "description": "Parameters for the model Values of the parameters are model-specific",
+                "title": "Options",
+            },
+        },
+        "required": ["object", "model"],
+        "title": "InferenceObject",
+        "type": "object",
+    },
+    "SparseVector": {
+        "additionalProperties": False,
+        "description": "Sparse vector structure",
+        "properties": {
+            "indices": {
+                "description": "Indices must be unique",
+                "items": {"type": "integer"},
+                "title": "Indices",
+                "type": "array",
+            },
+            "values": {
+                "description": "Values and indices must be the same length",
+                "items": {"type": "number"},
+                "title": "Values",
+                "type": "array",
+            },
+        },
+        "required": ["indices", "values"],
+        "title": "SparseVector",
+        "type": "object",
+    },
+    "BinaryQuantizationConfig": {
+        "additionalProperties": False,
+        "properties": {
+            "always_ram": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Always Ram",
+            }
+        },
+        "title": "BinaryQuantizationConfig",
+        "type": "object",
+    },
+    "BoolIndexType": {"enum": ["bool"], "title": "BoolIndexType", "type": "string"},
+    "CreateAlias": {
+        "additionalProperties": False,
+        "description": "Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
+        "properties": {
+            "collection_name": {
+                "description": "Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
+                "title": "Collection Name",
+                "type": "string",
+            },
+            "alias_name": {
+                "description": "Create alternative name for a collection. Collection will be available under both names for search, retrieve,",
+                "title": "Alias Name",
+                "type": "string",
+            },
+        },
+        "required": ["collection_name", "alias_name"],
+        "title": "CreateAlias",
+        "type": "object",
+    },
+    "CreateAliasOperation": {
+        "additionalProperties": False,
+        "properties": {"create_alias": {"$ref": "#/$defs/CreateAlias", "description": ""}},
+        "required": ["create_alias"],
+        "title": "CreateAliasOperation",
+        "type": "object",
+    },
+    "DeleteAlias": {
+        "additionalProperties": False,
+        "description": "Delete alias if exists",
+        "properties": {
+            "alias_name": {
+                "description": "Delete alias if exists",
+                "title": "Alias Name",
+                "type": "string",
+            }
+        },
+        "required": ["alias_name"],
+        "title": "DeleteAlias",
+        "type": "object",
+    },
+    "DeleteAliasOperation": {
+        "additionalProperties": False,
+        "description": "Delete alias if exists",
+        "properties": {"delete_alias": {"$ref": "#/$defs/DeleteAlias"}},
+        "required": ["delete_alias"],
+        "title": "DeleteAliasOperation",
+        "type": "object",
+    },
+    "RenameAlias": {
+        "additionalProperties": False,
+        "description": "Change alias to a new one",
+        "properties": {
+            "old_alias_name": {
+                "description": "Change alias to a new one",
+                "title": "Old Alias Name",
+                "type": "string",
+            },
+            "new_alias_name": {
+                "description": "Change alias to a new one",
+                "title": "New Alias Name",
+                "type": "string",
+            },
+        },
+        "required": ["old_alias_name", "new_alias_name"],
+        "title": "RenameAlias",
+        "type": "object",
+    },
+    "RenameAliasOperation": {
+        "additionalProperties": False,
+        "description": "Change alias to a new one",
+        "properties": {"rename_alias": {"$ref": "#/$defs/RenameAlias"}},
+        "required": ["rename_alias"],
+        "title": "RenameAliasOperation",
+        "type": "object",
+    },
+    "FilterSelector": {
+        "additionalProperties": False,
+        "properties": {
+            "filter": {"$ref": "#/$defs/Filter", "description": ""},
+            "shard_key": {
+                "anyOf": [
+                    {"type": "integer"},
+                    {"type": "string"},
+                    {
+                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "type": "array",
+                    },
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "",
+                "title": "Shard Key",
+            },
+        },
+        "required": ["filter"],
+        "title": "FilterSelector",
+        "type": "object",
+    },
+    "PointIdsList": {
+        "additionalProperties": False,
+        "properties": {
+            "points": {
+                "description": "",
+                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                "title": "Points",
+                "type": "array",
+            },
+            "shard_key": {
+                "anyOf": [
+                    {"type": "integer"},
+                    {"type": "string"},
+                    {
+                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "type": "array",
+                    },
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "",
+                "title": "Shard Key",
+            },
+        },
+        "required": ["points"],
+        "title": "PointIdsList",
+        "type": "object",
+    },
     "ContextPair": {
         "additionalProperties": False,
         "properties": {
@@ -934,6 +1467,8 @@ DEFS = {
                     {"type": "integer"},
                     {"type": "string"},
                     {"$ref": "#/$defs/Document"},
+                    {"$ref": "#/$defs/Image"},
+                    {"$ref": "#/$defs/InferenceObject"},
                 ],
                 "description": "",
                 "title": "Positive",
@@ -946,6 +1481,8 @@ DEFS = {
                     {"type": "integer"},
                     {"type": "string"},
                     {"$ref": "#/$defs/Document"},
+                    {"$ref": "#/$defs/Image"},
+                    {"$ref": "#/$defs/InferenceObject"},
                 ],
                 "description": "",
                 "title": "Negative",
@@ -957,9 +1494,7 @@ DEFS = {
     },
     "BinaryQuantization": {
         "additionalProperties": False,
-        "properties": {
-            "binary": {"allOf": [{"$ref": "#/$defs/BinaryQuantizationConfig"}], "description": ""}
-        },
+        "properties": {"binary": {"$ref": "#/$defs/BinaryQuantizationConfig", "description": ""}},
         "required": ["binary"],
         "title": "BinaryQuantization",
         "type": "object",
@@ -1033,6 +1568,11 @@ DEFS = {
         "title": "InitFrom",
         "type": "object",
     },
+    "MaxOptimizationThreadsSetting": {
+        "enum": ["auto"],
+        "title": "MaxOptimizationThreadsSetting",
+        "type": "string",
+    },
     "Modifier": {
         "description": "If used, include weight modification, which will be applied to sparse vectors at query time: None - no modification (default) Idf - inverse document frequency, based on statistics of the collection",
         "enum": ["none", "idf"],
@@ -1040,16 +1580,13 @@ DEFS = {
         "type": "string",
     },
     "MultiVectorComparator": {
-        "const": "max_sim",
         "enum": ["max_sim"],
         "title": "MultiVectorComparator",
         "type": "string",
     },
     "MultiVectorConfig": {
         "additionalProperties": False,
-        "properties": {
-            "comparator": {"allOf": [{"$ref": "#/$defs/MultiVectorComparator"}], "description": ""}
-        },
+        "properties": {"comparator": {"$ref": "#/$defs/MultiVectorComparator", "description": ""}},
         "required": ["comparator"],
         "title": "MultiVectorConfig",
         "type": "object",
@@ -1084,7 +1621,7 @@ DEFS = {
             "memmap_threshold": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
-                "description": "Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmaped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`.  Note: 1Kb = 1 vector of size 256",
+                "description": "Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmapped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`.  Note: 1Kb = 1 vector of size 256",
                 "title": "Memmap Threshold",
             },
             "indexing_threshold": {
@@ -1100,9 +1637,13 @@ DEFS = {
                 "title": "Flush Interval Sec",
             },
             "max_optimization_threads": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "anyOf": [
+                    {"type": "integer"},
+                    {"$ref": "#/$defs/MaxOptimizationThreadsSetting"},
+                    {"type": "null"},
+                ],
                 "default": None,
-                "description": "Max number of threads (jobs) for running optimizations per shard. Note: each optimization job will also use `max_indexing_threads` threads by itself for index building. If null - have no limit and choose dynamically to saturate CPU. If 0 - no optimization threads, optimizations will be disabled.",
+                "description": "Max number of threads (jobs) for running optimizations per shard. Note: each optimization job will also use `max_indexing_threads` threads by itself for index building. If &quot;auto&quot; - have no limit and choose dynamically to saturate CPU. If 0 - no optimization threads, optimizations will be disabled.",
                 "title": "Max Optimization Threads",
             },
         },
@@ -1112,10 +1653,7 @@ DEFS = {
     "ProductQuantization": {
         "additionalProperties": False,
         "properties": {
-            "product": {
-                "allOf": [{"$ref": "#/$defs/ProductQuantizationConfig"}],
-                "description": "",
-            }
+            "product": {"$ref": "#/$defs/ProductQuantizationConfig", "description": ""}
         },
         "required": ["product"],
         "title": "ProductQuantization",
@@ -1124,7 +1662,7 @@ DEFS = {
     "ProductQuantizationConfig": {
         "additionalProperties": False,
         "properties": {
-            "compression": {"allOf": [{"$ref": "#/$defs/CompressionRatio"}], "description": ""},
+            "compression": {"$ref": "#/$defs/CompressionRatio", "description": ""},
             "always_ram": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
@@ -1138,9 +1676,7 @@ DEFS = {
     },
     "ScalarQuantization": {
         "additionalProperties": False,
-        "properties": {
-            "scalar": {"allOf": [{"$ref": "#/$defs/ScalarQuantizationConfig"}], "description": ""}
-        },
+        "properties": {"scalar": {"$ref": "#/$defs/ScalarQuantizationConfig", "description": ""}},
         "required": ["scalar"],
         "title": "ScalarQuantization",
         "type": "object",
@@ -1148,7 +1684,7 @@ DEFS = {
     "ScalarQuantizationConfig": {
         "additionalProperties": False,
         "properties": {
-            "type": {"allOf": [{"$ref": "#/$defs/ScalarType"}], "description": ""},
+            "type": {"$ref": "#/$defs/ScalarType", "description": ""},
             "quantile": {
                 "anyOf": [{"type": "number"}, {"type": "null"}],
                 "default": None,
@@ -1166,7 +1702,7 @@ DEFS = {
         "title": "ScalarQuantizationConfig",
         "type": "object",
     },
-    "ScalarType": {"const": "int8", "enum": ["int8"], "title": "ScalarType", "type": "string"},
+    "ScalarType": {"enum": ["int8"], "title": "ScalarType", "type": "string"},
     "ShardingMethod": {"enum": ["auto", "custom"], "title": "ShardingMethod", "type": "string"},
     "SparseIndexParams": {
         "additionalProperties": False,
@@ -1211,13 +1747,166 @@ DEFS = {
         "title": "SparseVectorParams",
         "type": "object",
     },
+    "StrictModeConfig": {
+        "additionalProperties": False,
+        "properties": {
+            "enabled": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Whether strict mode is enabled for a collection or not.",
+                "title": "Enabled",
+            },
+            "max_query_limit": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max allowed `limit` parameter for all APIs that don&#x27;t have their own max limit.",
+                "title": "Max Query Limit",
+            },
+            "max_timeout": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max allowed `timeout` parameter.",
+                "title": "Max Timeout",
+            },
+            "unindexed_filtering_retrieve": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Allow usage of unindexed fields in retrieval based (e.g. search) filters.",
+                "title": "Unindexed Filtering Retrieve",
+            },
+            "unindexed_filtering_update": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Allow usage of unindexed fields in filtered updates (e.g. delete by payload).",
+                "title": "Unindexed Filtering Update",
+            },
+            "search_max_hnsw_ef": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max HNSW value allowed in search parameters.",
+                "title": "Search Max Hnsw Ef",
+            },
+            "search_allow_exact": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Whether exact search is allowed or not.",
+                "title": "Search Allow Exact",
+            },
+            "search_max_oversampling": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "Max oversampling value allowed in search.",
+                "title": "Search Max Oversampling",
+            },
+            "upsert_max_batchsize": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max batchsize when upserting",
+                "title": "Upsert Max Batchsize",
+            },
+            "max_collection_vector_size_bytes": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max size of a collections vector storage in bytes, ignoring replicas.",
+                "title": "Max Collection Vector Size Bytes",
+            },
+            "read_rate_limit": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max number of read operations per minute per replica",
+                "title": "Read Rate Limit",
+            },
+            "write_rate_limit": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max number of write operations per minute per replica",
+                "title": "Write Rate Limit",
+            },
+            "max_collection_payload_size_bytes": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max size of a collections payload storage in bytes",
+                "title": "Max Collection Payload Size Bytes",
+            },
+            "max_points_count": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max number of points estimated in a collection",
+                "title": "Max Points Count",
+            },
+            "filter_max_conditions": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max conditions a filter can have.",
+                "title": "Filter Max Conditions",
+            },
+            "condition_max_size": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max size of a condition, eg. items in `MatchAny`.",
+                "title": "Condition Max Size",
+            },
+            "multivector_config": {
+                "anyOf": [
+                    {
+                        "additionalProperties": {"$ref": "#/$defs/StrictModeMultivector"},
+                        "type": "object",
+                    },
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Multivector configuration",
+                "title": "Multivector Config",
+            },
+            "sparse_config": {
+                "anyOf": [
+                    {
+                        "additionalProperties": {"$ref": "#/$defs/StrictModeSparse"},
+                        "type": "object",
+                    },
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Sparse vector configuration",
+                "title": "Sparse Config",
+            },
+        },
+        "title": "StrictModeConfig",
+        "type": "object",
+    },
+    "StrictModeMultivector": {
+        "additionalProperties": False,
+        "properties": {
+            "max_vectors": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max number of vectors in a multivector",
+                "title": "Max Vectors",
+            }
+        },
+        "title": "StrictModeMultivector",
+        "type": "object",
+    },
+    "StrictModeSparse": {
+        "additionalProperties": False,
+        "properties": {
+            "max_length": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max length of sparse vector",
+                "title": "Max Length",
+            }
+        },
+        "title": "StrictModeSparse",
+        "type": "object",
+    },
     "VectorParams": {
         "additionalProperties": False,
         "description": "Params of single vector data storage",
         "properties": {
             "size": {"description": "Size of a vectors used", "title": "Size", "type": "integer"},
             "distance": {
-                "allOf": [{"$ref": "#/$defs/Distance"}],
+                "$ref": "#/$defs/Distance",
                 "description": "Params of single vector data storage",
             },
             "hnsw_config": {
@@ -1278,7 +1967,15 @@ DEFS = {
     },
     "BoolIndexParams": {
         "additionalProperties": False,
-        "properties": {"type": {"allOf": [{"$ref": "#/$defs/BoolIndexType"}], "description": ""}},
+        "properties": {
+            "type": {"$ref": "#/$defs/BoolIndexType", "description": ""},
+            "on_disk": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "If true, store the index on disk. Default: false.",
+                "title": "On Disk",
+            },
+        },
         "required": ["type"],
         "title": "BoolIndexParams",
         "type": "object",
@@ -1286,7 +1983,7 @@ DEFS = {
     "DatetimeIndexParams": {
         "additionalProperties": False,
         "properties": {
-            "type": {"allOf": [{"$ref": "#/$defs/DatetimeIndexType"}], "description": ""},
+            "type": {"$ref": "#/$defs/DatetimeIndexType", "description": ""},
             "is_principal": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
@@ -1304,16 +2001,11 @@ DEFS = {
         "title": "DatetimeIndexParams",
         "type": "object",
     },
-    "DatetimeIndexType": {
-        "const": "datetime",
-        "enum": ["datetime"],
-        "title": "DatetimeIndexType",
-        "type": "string",
-    },
+    "DatetimeIndexType": {"enum": ["datetime"], "title": "DatetimeIndexType", "type": "string"},
     "FloatIndexParams": {
         "additionalProperties": False,
         "properties": {
-            "type": {"allOf": [{"$ref": "#/$defs/FloatIndexType"}], "description": ""},
+            "type": {"$ref": "#/$defs/FloatIndexType", "description": ""},
             "is_principal": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
@@ -1331,16 +2023,11 @@ DEFS = {
         "title": "FloatIndexParams",
         "type": "object",
     },
-    "FloatIndexType": {
-        "const": "float",
-        "enum": ["float"],
-        "title": "FloatIndexType",
-        "type": "string",
-    },
+    "FloatIndexType": {"enum": ["float"], "title": "FloatIndexType", "type": "string"},
     "GeoIndexParams": {
         "additionalProperties": False,
         "properties": {
-            "type": {"allOf": [{"$ref": "#/$defs/GeoIndexType"}], "description": ""},
+            "type": {"$ref": "#/$defs/GeoIndexType", "description": ""},
             "on_disk": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
@@ -1352,11 +2039,11 @@ DEFS = {
         "title": "GeoIndexParams",
         "type": "object",
     },
-    "GeoIndexType": {"const": "geo", "enum": ["geo"], "title": "GeoIndexType", "type": "string"},
+    "GeoIndexType": {"enum": ["geo"], "title": "GeoIndexType", "type": "string"},
     "IntegerIndexParams": {
         "additionalProperties": False,
         "properties": {
-            "type": {"allOf": [{"$ref": "#/$defs/IntegerIndexType"}], "description": ""},
+            "type": {"$ref": "#/$defs/IntegerIndexType", "description": ""},
             "lookup": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
@@ -1386,16 +2073,11 @@ DEFS = {
         "title": "IntegerIndexParams",
         "type": "object",
     },
-    "IntegerIndexType": {
-        "const": "integer",
-        "enum": ["integer"],
-        "title": "IntegerIndexType",
-        "type": "string",
-    },
+    "IntegerIndexType": {"enum": ["integer"], "title": "IntegerIndexType", "type": "string"},
     "KeywordIndexParams": {
         "additionalProperties": False,
         "properties": {
-            "type": {"allOf": [{"$ref": "#/$defs/KeywordIndexType"}], "description": ""},
+            "type": {"$ref": "#/$defs/KeywordIndexType", "description": ""},
             "is_tenant": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
@@ -1413,12 +2095,7 @@ DEFS = {
         "title": "KeywordIndexParams",
         "type": "object",
     },
-    "KeywordIndexType": {
-        "const": "keyword",
-        "enum": ["keyword"],
-        "title": "KeywordIndexType",
-        "type": "string",
-    },
+    "KeywordIndexType": {"enum": ["keyword"], "title": "KeywordIndexType", "type": "string"},
     "PayloadSchemaType": {
         "description": "All possible names of payload types",
         "enum": ["keyword", "integer", "float", "geo", "text", "bool", "datetime", "uuid"],
@@ -1428,7 +2105,7 @@ DEFS = {
     "TextIndexParams": {
         "additionalProperties": False,
         "properties": {
-            "type": {"allOf": [{"$ref": "#/$defs/TextIndexType"}], "description": ""},
+            "type": {"$ref": "#/$defs/TextIndexType", "description": ""},
             "tokenizer": {
                 "anyOf": [{"$ref": "#/$defs/TokenizerType"}, {"type": "null"}],
                 "default": None,
@@ -1463,12 +2140,7 @@ DEFS = {
         "title": "TextIndexParams",
         "type": "object",
     },
-    "TextIndexType": {
-        "const": "text",
-        "enum": ["text"],
-        "title": "TextIndexType",
-        "type": "string",
-    },
+    "TextIndexType": {"enum": ["text"], "title": "TextIndexType", "type": "string"},
     "TokenizerType": {
         "enum": ["prefix", "whitespace", "word", "multilingual"],
         "title": "TokenizerType",
@@ -1477,7 +2149,7 @@ DEFS = {
     "UuidIndexParams": {
         "additionalProperties": False,
         "properties": {
-            "type": {"allOf": [{"$ref": "#/$defs/UuidIndexType"}], "description": ""},
+            "type": {"$ref": "#/$defs/UuidIndexType", "description": ""},
             "is_tenant": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
@@ -1495,12 +2167,7 @@ DEFS = {
         "title": "UuidIndexParams",
         "type": "object",
     },
-    "UuidIndexType": {
-        "const": "uuid",
-        "enum": ["uuid"],
-        "title": "UuidIndexType",
-        "type": "string",
-    },
+    "UuidIndexType": {"enum": ["uuid"], "title": "UuidIndexType", "type": "string"},
     "CreateShardingKey": {
         "additionalProperties": False,
         "properties": {
@@ -1634,6 +2301,8 @@ DEFS = {
                     {"type": "integer"},
                     {"type": "string"},
                     {"$ref": "#/$defs/Document"},
+                    {"$ref": "#/$defs/Image"},
+                    {"$ref": "#/$defs/InferenceObject"},
                 ],
                 "description": "",
                 "title": "Target",
@@ -1926,24 +2595,27 @@ DEFS = {
         "type": "string",
     },
     "ShardTransferMethodOneOf": {
-        "const": "stream_records",
         "description": "Stream all shard records in batches until the whole shard is transferred.",
         "enum": ["stream_records"],
         "title": "ShardTransferMethodOneOf",
         "type": "string",
     },
     "ShardTransferMethodOneOf1": {
-        "const": "snapshot",
         "description": "Snapshot the shard, transfer and restore it on the receiver.",
         "enum": ["snapshot"],
         "title": "ShardTransferMethodOneOf1",
         "type": "string",
     },
     "ShardTransferMethodOneOf2": {
-        "const": "wal_delta",
         "description": "Attempt to transfer shard difference by WAL delta.",
         "enum": ["wal_delta"],
         "title": "ShardTransferMethodOneOf2",
+        "type": "string",
+    },
+    "ShardTransferMethodOneOf3": {
+        "description": "Shard transfer for resharding: stream all records in batches until all points are transferred.",
+        "enum": ["resharding_stream_records"],
+        "title": "ShardTransferMethodOneOf3",
         "type": "string",
     },
     "MoveShard": {
@@ -1957,6 +2629,7 @@ DEFS = {
                     {"$ref": "#/$defs/ShardTransferMethodOneOf"},
                     {"$ref": "#/$defs/ShardTransferMethodOneOf1"},
                     {"$ref": "#/$defs/ShardTransferMethodOneOf2"},
+                    {"$ref": "#/$defs/ShardTransferMethodOneOf3"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -2076,6 +2749,8 @@ DEFS = {
                                         "type": "array",
                                     },
                                     {"$ref": "#/$defs/Document"},
+                                    {"$ref": "#/$defs/Image"},
+                                    {"$ref": "#/$defs/InferenceObject"},
                                 ]
                             },
                             "type": "array",
@@ -2083,6 +2758,8 @@ DEFS = {
                         "type": "object",
                     },
                     {"items": {"$ref": "#/$defs/Document"}, "type": "array"},
+                    {"items": {"$ref": "#/$defs/Image"}, "type": "array"},
+                    {"items": {"$ref": "#/$defs/InferenceObject"}, "type": "array"},
                 ],
                 "description": "",
                 "title": "Vectors",
@@ -2120,11 +2797,15 @@ DEFS = {
                                     "type": "array",
                                 },
                                 {"$ref": "#/$defs/Document"},
+                                {"$ref": "#/$defs/Image"},
+                                {"$ref": "#/$defs/InferenceObject"},
                             ]
                         },
                         "type": "object",
                     },
                     {"$ref": "#/$defs/Document"},
+                    {"$ref": "#/$defs/Image"},
+                    {"$ref": "#/$defs/InferenceObject"},
                 ],
                 "description": "",
                 "title": "Vector",
@@ -2158,16 +2839,54 @@ DEFS = {
     },
     "DiscoverQuery": {
         "additionalProperties": False,
-        "properties": {
-            "discover": {"allOf": [{"$ref": "#/$defs/DiscoverInput"}], "description": ""}
-        },
+        "properties": {"discover": {"$ref": "#/$defs/DiscoverInput", "description": ""}},
         "required": ["discover"],
         "title": "DiscoverQuery",
         "type": "object",
     },
+    "FormulaQuery": {
+        "additionalProperties": False,
+        "properties": {
+            "formula": {
+                "anyOf": [
+                    {"type": "number"},
+                    {"type": "string"},
+                    {"$ref": "#/$defs/FieldCondition"},
+                    {"$ref": "#/$defs/IsEmptyCondition"},
+                    {"$ref": "#/$defs/IsNullCondition"},
+                    {"$ref": "#/$defs/HasIdCondition"},
+                    {"$ref": "#/$defs/HasVectorCondition"},
+                    {"$ref": "#/$defs/NestedCondition"},
+                    {"$ref": "#/$defs/Filter"},
+                    {"$ref": "#/$defs/MultExpression"},
+                    {"$ref": "#/$defs/SumExpression"},
+                    {"$ref": "#/$defs/NegExpression"},
+                    {"$ref": "#/$defs/AbsExpression"},
+                    {"$ref": "#/$defs/DivExpression"},
+                    {"$ref": "#/$defs/SqrtExpression"},
+                    {"$ref": "#/$defs/PowExpression"},
+                    {"$ref": "#/$defs/ExpExpression"},
+                    {"$ref": "#/$defs/Log10Expression"},
+                    {"$ref": "#/$defs/LnExpression"},
+                    {"$ref": "#/$defs/GeoDistance"},
+                ],
+                "description": "",
+                "title": "Formula",
+            },
+            "defaults": {
+                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "default": {},
+                "description": "",
+                "title": "Defaults",
+            },
+        },
+        "required": ["formula"],
+        "title": "FormulaQuery",
+        "type": "object",
+    },
     "FusionQuery": {
         "additionalProperties": False,
-        "properties": {"fusion": {"allOf": [{"$ref": "#/$defs/Fusion"}], "description": ""}},
+        "properties": {"fusion": {"$ref": "#/$defs/Fusion", "description": ""}},
         "required": ["fusion"],
         "title": "FusionQuery",
         "type": "object",
@@ -2183,6 +2902,8 @@ DEFS = {
                     {"type": "integer"},
                     {"type": "string"},
                     {"$ref": "#/$defs/Document"},
+                    {"$ref": "#/$defs/Image"},
+                    {"$ref": "#/$defs/InferenceObject"},
                 ],
                 "description": "",
                 "title": "Nearest",
@@ -2226,12 +2947,15 @@ DEFS = {
                     {"type": "integer"},
                     {"type": "string"},
                     {"$ref": "#/$defs/Document"},
+                    {"$ref": "#/$defs/Image"},
+                    {"$ref": "#/$defs/InferenceObject"},
                     {"$ref": "#/$defs/NearestQuery"},
                     {"$ref": "#/$defs/RecommendQuery"},
                     {"$ref": "#/$defs/DiscoverQuery"},
                     {"$ref": "#/$defs/ContextQuery"},
                     {"$ref": "#/$defs/OrderByQuery"},
                     {"$ref": "#/$defs/FusionQuery"},
+                    {"$ref": "#/$defs/FormulaQuery"},
                     {"$ref": "#/$defs/SampleQuery"},
                     {"type": "null"},
                 ],
@@ -2293,6 +3017,8 @@ DEFS = {
                                 {"type": "integer"},
                                 {"type": "string"},
                                 {"$ref": "#/$defs/Document"},
+                                {"$ref": "#/$defs/Image"},
+                                {"$ref": "#/$defs/InferenceObject"},
                             ]
                         },
                         "type": "array",
@@ -2317,6 +3043,8 @@ DEFS = {
                                 {"type": "integer"},
                                 {"type": "string"},
                                 {"$ref": "#/$defs/Document"},
+                                {"$ref": "#/$defs/Image"},
+                                {"$ref": "#/$defs/InferenceObject"},
                             ]
                         },
                         "type": "array",
@@ -2338,9 +3066,7 @@ DEFS = {
     },
     "RecommendQuery": {
         "additionalProperties": False,
-        "properties": {
-            "recommend": {"allOf": [{"$ref": "#/$defs/RecommendInput"}], "description": ""}
-        },
+        "properties": {"recommend": {"$ref": "#/$defs/RecommendInput", "description": ""}},
         "required": ["recommend"],
         "title": "RecommendQuery",
         "type": "object",
@@ -2351,10 +3077,10 @@ DEFS = {
         "title": "RecommendStrategy",
         "type": "string",
     },
-    "Sample": {"const": "random", "enum": ["random"], "title": "Sample", "type": "string"},
+    "Sample": {"enum": ["random"], "title": "Sample", "type": "string"},
     "SampleQuery": {
         "additionalProperties": False,
-        "properties": {"sample": {"allOf": [{"$ref": "#/$defs/Sample"}], "description": ""}},
+        "properties": {"sample": {"$ref": "#/$defs/Sample", "description": ""}},
         "required": ["sample"],
         "title": "SampleQuery",
         "type": "object",
@@ -2429,12 +3155,15 @@ DEFS = {
                     {"type": "integer"},
                     {"type": "string"},
                     {"$ref": "#/$defs/Document"},
+                    {"$ref": "#/$defs/Image"},
+                    {"$ref": "#/$defs/InferenceObject"},
                     {"$ref": "#/$defs/NearestQuery"},
                     {"$ref": "#/$defs/RecommendQuery"},
                     {"$ref": "#/$defs/DiscoverQuery"},
                     {"$ref": "#/$defs/ContextQuery"},
                     {"$ref": "#/$defs/OrderByQuery"},
                     {"$ref": "#/$defs/FusionQuery"},
+                    {"$ref": "#/$defs/FormulaQuery"},
                     {"$ref": "#/$defs/SampleQuery"},
                     {"type": "null"},
                 ],
@@ -2644,6 +3373,7 @@ DEFS = {
                     {"$ref": "#/$defs/ShardTransferMethodOneOf"},
                     {"$ref": "#/$defs/ShardTransferMethodOneOf1"},
                     {"$ref": "#/$defs/ShardTransferMethodOneOf2"},
+                    {"$ref": "#/$defs/ShardTransferMethodOneOf3"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -2666,6 +3396,7 @@ DEFS = {
                     {"$ref": "#/$defs/ShardTransferMethodOneOf"},
                     {"$ref": "#/$defs/ShardTransferMethodOneOf1"},
                     {"$ref": "#/$defs/ShardTransferMethodOneOf2"},
+                    {"$ref": "#/$defs/ShardTransferMethodOneOf3"},
                 ],
                 "description": "",
                 "title": "Method",
@@ -2681,7 +3412,7 @@ DEFS = {
         "properties": {
             "name": {"description": "Name of vector data", "title": "Name", "type": "string"},
             "vector": {
-                "allOf": [{"$ref": "#/$defs/SparseVector"}],
+                "$ref": "#/$defs/SparseVector",
                 "description": "Sparse vector data with name",
             },
         },
@@ -2787,10 +3518,50 @@ DEFS = {
         "type": "object",
     },
     "SnapshotPriority": {
-        "description": "Defines source of truth for snapshot recovery: `NoSync` means - restore snapshot without *any* additional synchronization. `Snapshot` means - prefer snapshot data over the current state. `Replica` means - prefer existing data over the snapshot.",
+        "description": "Defines source of truth for snapshot recovery:  `NoSync` means - restore snapshot without *any* additional synchronization. `Snapshot` means - prefer snapshot data over the current state. `Replica` means - prefer existing data over the snapshot.",
         "enum": ["no_sync", "snapshot", "replica"],
         "title": "SnapshotPriority",
         "type": "string",
+    },
+    "ReshardingDirectionOneOf": {
+        "description": "Scale up, add a new shard",
+        "enum": ["up"],
+        "title": "ReshardingDirectionOneOf",
+        "type": "string",
+    },
+    "ReshardingDirectionOneOf1": {
+        "description": "Scale down, remove a shard",
+        "enum": ["down"],
+        "title": "ReshardingDirectionOneOf1",
+        "type": "string",
+    },
+    "StartResharding": {
+        "additionalProperties": False,
+        "properties": {
+            "direction": {
+                "anyOf": [
+                    {"$ref": "#/$defs/ReshardingDirectionOneOf"},
+                    {"$ref": "#/$defs/ReshardingDirectionOneOf1"},
+                ],
+                "description": "",
+                "title": "Direction",
+            },
+            "peer_id": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Peer Id",
+            },
+            "shard_key": {
+                "anyOf": [{"type": "integer"}, {"type": "string"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+                "title": "Shard Key",
+            },
+        },
+        "required": ["direction"],
+        "title": "StartResharding",
+        "type": "object",
     },
     "CollectionParamsDiff": {
         "additionalProperties": False,
@@ -2823,7 +3594,7 @@ DEFS = {
         "title": "CollectionParamsDiff",
         "type": "object",
     },
-    "Disabled": {"const": "Disabled", "enum": ["Disabled"], "title": "Disabled", "type": "string"},
+    "Disabled": {"enum": ["Disabled"], "title": "Disabled", "type": "string"},
     "VectorParamsDiff": {
         "additionalProperties": False,
         "properties": {
@@ -2882,27 +3653,21 @@ DEFS = {
     },
     "DeletePayloadOperation": {
         "additionalProperties": False,
-        "properties": {
-            "delete_payload": {"allOf": [{"$ref": "#/$defs/DeletePayload"}], "description": ""}
-        },
+        "properties": {"delete_payload": {"$ref": "#/$defs/DeletePayload", "description": ""}},
         "required": ["delete_payload"],
         "title": "DeletePayloadOperation",
         "type": "object",
     },
     "DeleteVectorsOperation": {
         "additionalProperties": False,
-        "properties": {
-            "delete_vectors": {"allOf": [{"$ref": "#/$defs/DeleteVectors"}], "description": ""}
-        },
+        "properties": {"delete_vectors": {"$ref": "#/$defs/DeleteVectors", "description": ""}},
         "required": ["delete_vectors"],
         "title": "DeleteVectorsOperation",
         "type": "object",
     },
     "OverwritePayloadOperation": {
         "additionalProperties": False,
-        "properties": {
-            "overwrite_payload": {"allOf": [{"$ref": "#/$defs/SetPayload"}], "description": ""}
-        },
+        "properties": {"overwrite_payload": {"$ref": "#/$defs/SetPayload", "description": ""}},
         "required": ["overwrite_payload"],
         "title": "OverwritePayloadOperation",
         "type": "object",
@@ -2929,11 +3694,15 @@ DEFS = {
                                     "type": "array",
                                 },
                                 {"$ref": "#/$defs/Document"},
+                                {"$ref": "#/$defs/Image"},
+                                {"$ref": "#/$defs/InferenceObject"},
                             ]
                         },
                         "type": "object",
                     },
                     {"$ref": "#/$defs/Document"},
+                    {"$ref": "#/$defs/Image"},
+                    {"$ref": "#/$defs/InferenceObject"},
                 ],
                 "description": "",
                 "title": "Vector",
@@ -2946,7 +3715,7 @@ DEFS = {
     "PointsBatch": {
         "additionalProperties": False,
         "properties": {
-            "batch": {"allOf": [{"$ref": "#/$defs/Batch"}], "description": ""},
+            "batch": {"$ref": "#/$defs/Batch", "description": ""},
             "shard_key": {
                 "anyOf": [
                     {"type": "integer"},
@@ -2996,9 +3765,7 @@ DEFS = {
     },
     "SetPayloadOperation": {
         "additionalProperties": False,
-        "properties": {
-            "set_payload": {"allOf": [{"$ref": "#/$defs/SetPayload"}], "description": ""}
-        },
+        "properties": {"set_payload": {"$ref": "#/$defs/SetPayload", "description": ""}},
         "required": ["set_payload"],
         "title": "SetPayloadOperation",
         "type": "object",
@@ -3033,9 +3800,7 @@ DEFS = {
     },
     "UpdateVectorsOperation": {
         "additionalProperties": False,
-        "properties": {
-            "update_vectors": {"allOf": [{"$ref": "#/$defs/UpdateVectors"}], "description": ""}
-        },
+        "properties": {"update_vectors": {"$ref": "#/$defs/UpdateVectors", "description": ""}},
         "required": ["update_vectors"],
         "title": "UpdateVectorsOperation",
         "type": "object",
@@ -3053,48 +3818,35 @@ DEFS = {
         "title": "UpsertOperation",
         "type": "object",
     },
-    "ReshardingDirectionOneOf": {
-        "description": "Scale up, add a new shard",
-        "enum": ["up"],
-        "title": "ReshardingDirectionOneOf",
-        "type": "string",
-    },
-    "ReshardingDirectionOneOf1": {
-        "description": "Scale down, remove a shard",
-        "enum": ["down"],
-        "title": "ReshardingDirectionOneOf1",
-        "type": "string",
-    },
-    "StartResharding": {
-        "additionalProperties": False,
-        "properties": {
-            "direction": {
-                "anyOf": [
-                    {"$ref": "#/$defs/ReshardingDirectionOneOf"},
-                    {"$ref": "#/$defs/ReshardingDirectionOneOf1"},
-                ],
-                "description": "",
-                "title": "Direction",
-            },
-            "peer_id": {
-                "anyOf": [{"type": "integer"}, {"type": "null"}],
-                "default": None,
-                "description": "",
-                "title": "Peer Id",
-            },
-            "shard_key": {
-                "anyOf": [{"type": "integer"}, {"type": "string"}, {"type": "null"}],
-                "default": None,
-                "description": "",
-                "title": "Shard Key",
-            },
-        },
-        "required": ["direction"],
-        "title": "StartResharding",
-        "type": "object",
-    },
 }
-RECURSIVE_REFS = ["Filter", "MinShould", "Nested", "NestedCondition", "Prefetch"]
+RECURSIVE_REFS = [
+    "AbsExpression",
+    "DivExpression",
+    "ExpExpression",
+    "Filter",
+    "LnExpression",
+    "Log10Expression",
+    "MultExpression",
+    "NegExpression",
+    "NestedCondition",
+    "PowExpression",
+    "Prefetch",
+    "SqrtExpression",
+    "SumExpression",
+]
 INCLUDED_RECURSIVE_REFS = ["Prefetch"]
-EXCLUDED_RECURSIVE_REFS = ["Filter", "MinShould", "Nested", "NestedCondition"]
-NAME_RECURSIVE_REF_MAPPING = {"nested": "Nested", "prefetch": "Prefetch"}
+EXCLUDED_RECURSIVE_REFS = [
+    "AbsExpression",
+    "DivExpression",
+    "ExpExpression",
+    "Filter",
+    "LnExpression",
+    "Log10Expression",
+    "MultExpression",
+    "NegExpression",
+    "NestedCondition",
+    "PowExpression",
+    "SqrtExpression",
+    "SumExpression",
+]
+NAME_RECURSIVE_REF_MAPPING = {"prefetch": "Prefetch"}

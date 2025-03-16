@@ -244,9 +244,11 @@ class GrpcToRest:
                 if model.HasField("quantization_config")
                 else None
             ),
-            strict_mode_config=cls.convert_strict_mode_config(model.strict_mode_config)
-            if model.HasField("strict_mode_config")
-            else None,
+            strict_mode_config=(
+                cls.convert_strict_mode_config_output(model.strict_mode_config)
+                if model.HasField("strict_mode_config")
+                else None
+            ),
         )
 
     @classmethod
@@ -546,9 +548,9 @@ class GrpcToRest:
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload) if has_field(model, "payload") else None,
             score=model.score,
-            vector=cls.convert_vectors_output(model.vectors)
-            if model.HasField("vectors")
-            else None,
+            vector=(
+                cls.convert_vectors_output(model.vectors) if model.HasField("vectors") else None
+            ),
             version=model.version,
             shard_key=(
                 cls.convert_shard_key(model.shard_key) if model.HasField("shard_key") else None
@@ -614,6 +616,10 @@ class GrpcToRest:
             else None
         )
 
+        is_empty = model.is_empty if model.HasField("is_empty") else None
+
+        is_null = model.is_null if model.HasField("is_null") else None
+
         return rest.FieldCondition(
             key=model.key,
             geo_bounding_box=geo_bounding_box,
@@ -621,6 +627,8 @@ class GrpcToRest:
             match=match,
             range=range_,
             values_count=values_count,
+            is_empty=is_empty,
+            is_null=is_null,
         )
 
     @classmethod
@@ -678,12 +686,16 @@ class GrpcToRest:
                 if model.HasField("write_consistency_factor")
                 else None
             ),
-            sparse_vectors=cls.convert_sparse_vector_config(model.sparse_vectors_config)
-            if model.HasField("sparse_vectors_config")
-            else None,
-            sharding_method=cls.convert_sharding_method(model.sharding_method)
-            if model.HasField("sharding_method")
-            else None,
+            sparse_vectors=(
+                cls.convert_sparse_vector_config(model.sparse_vectors_config)
+                if model.HasField("sparse_vectors_config")
+                else None
+            ),
+            sharding_method=(
+                cls.convert_sharding_method(model.sharding_method)
+                if model.HasField("sharding_method")
+                else None
+            ),
         )
 
     @classmethod
@@ -787,7 +799,9 @@ class GrpcToRest:
 
     @classmethod
     def convert_points_selector(
-        cls, model: grpc.PointsSelector, shard_key_selector: Optional[grpc.ShardKeySelector] = None
+        cls,
+        model: grpc.PointsSelector,
+        shard_key_selector: Optional[grpc.ShardKeySelector] = None,
     ) -> rest.PointsSelector:
         name = model.WhichOneof("points_selector_one_of")
         if name is None:
@@ -835,9 +849,9 @@ class GrpcToRest:
         return rest.Record(
             id=cls.convert_point_id(model.id),
             payload=cls.convert_payload(model.payload),
-            vector=cls.convert_vectors_output(model.vectors)
-            if model.HasField("vectors")
-            else None,
+            vector=(
+                cls.convert_vectors_output(model.vectors) if model.HasField("vectors") else None
+            ),
             shard_key=(
                 cls.convert_shard_key(model.shard_key) if model.HasField("shard_key") else None
             ),
@@ -1126,9 +1140,11 @@ class GrpcToRest:
         return rest.RecommendInput(
             positive=[cls.convert_vector_input(vector) for vector in model.positive],
             negative=[cls.convert_vector_input(vector) for vector in model.negative],
-            strategy=cls.convert_recommend_strategy(model.strategy)
-            if model.HasField("strategy")
-            else None,
+            strategy=(
+                cls.convert_recommend_strategy(model.strategy)
+                if model.HasField("strategy")
+                else None
+            ),
         )
 
     @classmethod
@@ -1199,18 +1215,22 @@ class GrpcToRest:
     @classmethod
     def convert_prefetch_query(cls, model: grpc.PrefetchQuery) -> rest.Prefetch:
         return rest.Prefetch(
-            prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
-            if len(model.prefetch) != 0
-            else None,
+            prefetch=(
+                [cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
+                if len(model.prefetch) != 0
+                else None
+            ),
             query=cls.convert_query(model.query) if model.HasField("query") else None,
             using=model.using if model.HasField("using") else None,
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
             params=cls.convert_search_params(model.params) if model.HasField("params") else None,
             score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
             limit=model.limit if model.HasField("limit") else None,
-            lookup_from=cls.convert_lookup_location(model.lookup_from)
-            if model.HasField("lookup_from")
-            else None,
+            lookup_from=(
+                cls.convert_lookup_location(model.lookup_from)
+                if model.HasField("lookup_from")
+                else None
+            ),
         )
 
     @classmethod
@@ -1276,9 +1296,11 @@ class GrpcToRest:
                 if model.HasField("shard_key_selector")
                 else None
             ),
-            prefetch=[cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
-            if len(model.prefetch) != 0
-            else None,
+            prefetch=(
+                [cls.convert_prefetch_query(prefetch) for prefetch in model.prefetch]
+                if len(model.prefetch) != 0
+                else None
+            ),
             query=cls.convert_query(model.query) if model.HasField("query") else None,
             using=model.using if model.HasField("using") else None,
             filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
@@ -2023,14 +2045,21 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_strict_mode_multivector(cls, model: grpc.StrictModeMultivector) -> rest.StrictModeMultivector:
+    def convert_strict_mode_multivector(
+        cls, model: grpc.StrictModeMultivector
+    ) -> rest.StrictModeMultivector:
         return rest.StrictModeMultivector(
             max_vectors=model.max_vectors if model.HasField("max_vectors") else None
         )
 
     @classmethod
-    def convert_strict_mode_multivector_config(cls, model: grpc.StrictModeMultivectorConfig) -> rest.StrictModeMultivectorConfig:
-        return dict((key, cls.convert_strict_mode_multivector(val)) for key, val in model.multivector_config.items())
+    def convert_strict_mode_multivector_config(
+        cls, model: grpc.StrictModeMultivectorConfig
+    ) -> rest.StrictModeMultivectorConfig:
+        return dict(
+            (key, cls.convert_strict_mode_multivector(val))
+            for key, val in model.multivector_config.items()
+        )
 
     @classmethod
     def convert_strict_mode_sparse(cls, model: grpc.StrictModeSparse) -> rest.StrictModeSparse:
@@ -2039,8 +2068,12 @@ class GrpcToRest:
         )
 
     @classmethod
-    def convert_strict_mode_sparse_config(cls, model: grpc.StrictModeSparseConfig) -> rest.StrictModeSparseConfig:
-        return dict((key, cls.convert_strict_mode_sparse(val)) for key, val in model.sparse_config.items())
+    def convert_strict_mode_sparse_config(
+        cls, model: grpc.StrictModeSparseConfig
+    ) -> rest.StrictModeSparseConfig:
+        return dict(
+            (key, cls.convert_strict_mode_sparse(val)) for key, val in model.sparse_config.items()
+        )
 
     @classmethod
     def convert_strict_mode_config(cls, model: grpc.StrictModeConfig) -> rest.StrictModeConfig:
@@ -2048,49 +2081,164 @@ class GrpcToRest:
             enabled=model.enabled if model.HasField("enabled") else None,
             max_query_limit=model.max_query_limit if model.HasField("max_query_limit") else None,
             max_timeout=model.max_timeout if model.HasField("max_timeout") else None,
-            unindexed_filtering_retrieve=model.unindexed_filtering_retrieve
-            if model.HasField("unindexed_filtering_retrieve")
-            else None,
-            unindexed_filtering_update=model.unindexed_filtering_update
-            if model.HasField("unindexed_filtering_update")
-            else None,
-            search_max_hnsw_ef=model.search_max_hnsw_ef
-            if model.HasField("search_max_hnsw_ef")
-            else None,
-            search_allow_exact=model.search_allow_exact
-            if model.HasField("search_allow_exact")
-            else None,
-            search_max_oversampling=model.search_max_oversampling
-            if model.HasField("search_max_oversampling")
-            else None,
-            upsert_max_batchsize=model.upsert_max_batchsize
-            if model.HasField("upsert_max_batchsize")
-            else None,
-            max_collection_vector_size_bytes=model.max_collection_vector_size_bytes
-            if model.HasField("max_collection_vector_size_bytes")
-            else None,
+            unindexed_filtering_retrieve=(
+                model.unindexed_filtering_retrieve
+                if model.HasField("unindexed_filtering_retrieve")
+                else None
+            ),
+            unindexed_filtering_update=(
+                model.unindexed_filtering_update
+                if model.HasField("unindexed_filtering_update")
+                else None
+            ),
+            search_max_hnsw_ef=(
+                model.search_max_hnsw_ef if model.HasField("search_max_hnsw_ef") else None
+            ),
+            search_allow_exact=(
+                model.search_allow_exact if model.HasField("search_allow_exact") else None
+            ),
+            search_max_oversampling=(
+                model.search_max_oversampling
+                if model.HasField("search_max_oversampling")
+                else None
+            ),
+            upsert_max_batchsize=(
+                model.upsert_max_batchsize if model.HasField("upsert_max_batchsize") else None
+            ),
+            max_collection_vector_size_bytes=(
+                model.max_collection_vector_size_bytes
+                if model.HasField("max_collection_vector_size_bytes")
+                else None
+            ),
             read_rate_limit=model.read_rate_limit if model.HasField("read_rate_limit") else None,
-            write_rate_limit=model.write_rate_limit
-            if model.HasField("write_rate_limit")
-            else None,
-            max_collection_payload_size_bytes=model.max_collection_payload_size_bytes
-            if model.HasField("max_collection_payload_size_bytes")
-            else None,
-            max_points_count=model.max_points_count
-            if model.HasField("max_points_count")
-            else None,
-            filter_max_conditions=model.filter_max_conditions
-            if model.HasField("filter_max_conditions")
-            else None,
-            condition_max_size=model.condition_max_size
-            if model.HasField("condition_max_size")
-            else None,
-            multivector_config=cls.convert_strict_mode_multivector_config(model.multivector_config)
-            if model.HasField("multivector_config")
-            else None,
-            sparse_config=cls.convert_strict_mode_sparse_config(model.sparse_config)
-            if model.HasField("sparse_config")
-            else None,
+            write_rate_limit=(
+                model.write_rate_limit if model.HasField("write_rate_limit") else None
+            ),
+            max_collection_payload_size_bytes=(
+                model.max_collection_payload_size_bytes
+                if model.HasField("max_collection_payload_size_bytes")
+                else None
+            ),
+            max_points_count=(
+                model.max_points_count if model.HasField("max_points_count") else None
+            ),
+            filter_max_conditions=(
+                model.filter_max_conditions if model.HasField("filter_max_conditions") else None
+            ),
+            condition_max_size=(
+                model.condition_max_size if model.HasField("condition_max_size") else None
+            ),
+            multivector_config=(
+                cls.convert_strict_mode_multivector_config(model.multivector_config)
+                if model.HasField("multivector_config")
+                else None
+            ),
+            sparse_config=(
+                cls.convert_strict_mode_sparse_config(model.sparse_config)
+                if model.HasField("sparse_config")
+                else None
+            ),
+        )
+
+    @classmethod
+    def convert_strict_mode_config_output(
+        cls, model: grpc.StrictModeConfig
+    ) -> rest.StrictModeConfigOutput:
+        return rest.StrictModeConfigOutput(
+            enabled=model.enabled if model.HasField("enabled") else None,
+            max_query_limit=model.max_query_limit if model.HasField("max_query_limit") else None,
+            max_timeout=model.max_timeout if model.HasField("max_timeout") else None,
+            unindexed_filtering_retrieve=(
+                model.unindexed_filtering_retrieve
+                if model.HasField("unindexed_filtering_retrieve")
+                else None
+            ),
+            unindexed_filtering_update=(
+                model.unindexed_filtering_update
+                if model.HasField("unindexed_filtering_update")
+                else None
+            ),
+            search_max_hnsw_ef=(
+                model.search_max_hnsw_ef if model.HasField("search_max_hnsw_ef") else None
+            ),
+            search_allow_exact=(
+                model.search_allow_exact if model.HasField("search_allow_exact") else None
+            ),
+            search_max_oversampling=(
+                model.search_max_oversampling
+                if model.HasField("search_max_oversampling")
+                else None
+            ),
+            upsert_max_batchsize=(
+                model.upsert_max_batchsize if model.HasField("upsert_max_batchsize") else None
+            ),
+            max_collection_vector_size_bytes=(
+                model.max_collection_vector_size_bytes
+                if model.HasField("max_collection_vector_size_bytes")
+                else None
+            ),
+            read_rate_limit=model.read_rate_limit if model.HasField("read_rate_limit") else None,
+            write_rate_limit=(
+                model.write_rate_limit if model.HasField("write_rate_limit") else None
+            ),
+            max_collection_payload_size_bytes=(
+                model.max_collection_payload_size_bytes
+                if model.HasField("max_collection_payload_size_bytes")
+                else None
+            ),
+            max_points_count=(
+                model.max_points_count if model.HasField("max_points_count") else None
+            ),
+            filter_max_conditions=(
+                model.filter_max_conditions if model.HasField("filter_max_conditions") else None
+            ),
+            condition_max_size=(
+                model.condition_max_size if model.HasField("condition_max_size") else None
+            ),
+            multivector_config=(
+                cls.convert_strict_mode_multivector_config_output(model.multivector_config)
+                if model.HasField("multivector_config")
+                else None
+            ),
+            sparse_config=(
+                cls.convert_strict_mode_sparse_config_output(model.sparse_config)
+                if model.HasField("sparse_config")
+                else None
+            ),
+        )
+
+    @classmethod
+    def convert_strict_mode_multivector_config_output(
+        cls, model: grpc.StrictModeMultivectorConfig
+    ) -> rest.StrictModeMultivectorConfigOutput:
+        return dict(
+            (key, cls.convert_strict_mode_multivector_output(val))
+            for key, val in model.multivector_config.items()
+        )
+
+    @classmethod
+    def convert_strict_mode_sparse_config_output(
+        cls, model: grpc.StrictModeSparseConfig
+    ) -> rest.StrictModeSparseConfigOutput:
+        return dict(
+            (key, cls.convert_strict_mode_sparse_output(val))
+            for key, val in model.sparse_config.items()
+        )
+
+    @classmethod
+    def convert_strict_mode_sparse_output(
+        cls, model: grpc.StrictModeSparse
+    ) -> rest.StrictModeSparseOutput:
+        return rest.StrictModeSparseOutput(
+            max_length=model.max_length if model.HasField("max_length") else None
+        )
+
+    @classmethod
+    def convert_strict_mode_multivector_output(
+        cls, model: grpc.StrictModeMultivector
+    ) -> rest.StrictModeMultivectorOutput:
+        return rest.StrictModeMultivectorOutput(
+            max_vectors=model.max_vectors if model.HasField("max_vectors") else None
         )
 
 
@@ -2358,9 +2506,11 @@ class RestToGrpc:
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload) if model.payload is not None else None,
             score=model.score,
-            vectors=cls.convert_vector_struct_output(model.vector)
-            if model.vector is not None
-            else None,
+            vectors=(
+                cls.convert_vector_struct_output(model.vector)
+                if model.vector is not None
+                else None
+            ),
             version=model.version,
             shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
             order_value=cls.convert_order_value(model.order_value) if model.order_value else None,
@@ -2414,7 +2564,8 @@ class RestToGrpc:
                 return grpc.FieldCondition(key=model.key, range=cls.convert_range(model.range))
             if isinstance(model.range, rest.DatetimeRange):
                 return grpc.FieldCondition(
-                    key=model.key, datetime_range=cls.convert_datetime_range(model.range)
+                    key=model.key,
+                    datetime_range=cls.convert_datetime_range(model.range),
                 )
         if model.geo_bounding_box:
             return grpc.FieldCondition(
@@ -2429,6 +2580,11 @@ class RestToGrpc:
             return grpc.FieldCondition(
                 key=model.key, values_count=cls.convert_values_count(model.values_count)
             )
+        if model.is_empty:
+            return grpc.FieldCondition(key=model.key, is_empty=model.is_empty)
+
+        if model.is_null:
+            return grpc.FieldCondition(key=model.key, is_null=model.is_null)
         raise ValueError(f"invalid FieldCondition model: {model}")  # pragma: no cover
 
     @classmethod
@@ -2451,7 +2607,7 @@ class RestToGrpc:
                 else None
             ),
             strict_mode_config=(
-                cls.convert_strict_mode_config(model.strict_mode_config)
+                cls.convert_strict_mode_config_output(model.strict_mode_config)
                 if model.strict_mode_config is not None
                 else None
             ),
@@ -2528,11 +2684,11 @@ class RestToGrpc:
             deleted_threshold=model.deleted_threshold,
             flush_interval_sec=model.flush_interval_sec,
             indexing_threshold=model.indexing_threshold,
-            max_optimization_threads=cls.convert_max_optimization_threads(
-                model.max_optimization_threads
-            )
-            if model.max_optimization_threads is not None
-            else None,
+            max_optimization_threads=(
+                cls.convert_max_optimization_threads(model.max_optimization_threads)
+                if model.max_optimization_threads is not None
+                else None
+            ),
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
@@ -2552,11 +2708,11 @@ class RestToGrpc:
             deleted_threshold=model.deleted_threshold,
             flush_interval_sec=model.flush_interval_sec,
             indexing_threshold=model.indexing_threshold,
-            max_optimization_threads=cls.convert_max_optimization_threads(
-                model.max_optimization_threads
-            )
-            if model.max_optimization_threads is not None
-            else None,
+            max_optimization_threads=(
+                cls.convert_max_optimization_threads(model.max_optimization_threads)
+                if model.max_optimization_threads is not None
+                else None
+            ),
             max_segment_size=model.max_segment_size,
             memmap_threshold=model.memmap_threshold,
             vacuum_min_vector_number=model.vacuum_min_vector_number,
@@ -2862,9 +3018,11 @@ class RestToGrpc:
         return grpc.RetrievedPoint(
             id=cls.convert_extended_point_id(model.id),
             payload=cls.convert_payload(model.payload),
-            vectors=cls.convert_vector_struct_output(model.vector)
-            if model.vector is not None
-            else None,
+            vectors=(
+                cls.convert_vector_struct_output(model.vector)
+                if model.vector is not None
+                else None
+            ),
             shard_key=cls.convert_shard_key(model.shard_key) if model.shard_key else None,
             order_value=cls.convert_order_value(model.order_value) if model.order_value else None,
         )
@@ -2954,7 +3112,9 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_struct(cls, model: rest.VectorStruct) -> grpc.Vectors:
-        def convert_vector(vector: Union[list[float], list[list[float]]]) -> grpc.Vector:
+        def convert_vector(
+            vector: Union[list[float], list[list[float]]],
+        ) -> grpc.Vector:
             if len(vector) != 0 and isinstance(
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
@@ -2995,7 +3155,9 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_struct_output(cls, model: rest.VectorStructOutput) -> grpc.VectorsOutput:
-        def convert_vector(vector: Union[list[float], list[list[float]]]) -> grpc.VectorOutput:
+        def convert_vector(
+            vector: Union[list[float], list[list[float]]],
+        ) -> grpc.VectorOutput:
             if len(vector) != 0 and isinstance(
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
@@ -3055,7 +3217,11 @@ class RestToGrpc:
         elif isinstance(model, rest.NamedVector):
             return model.vector, None, model.name
         elif isinstance(model, rest.NamedSparseVector):
-            return model.vector.values, grpc.SparseIndices(data=model.vector.indices), model.name
+            return (
+                model.vector.values,
+                grpc.SparseIndices(data=model.vector.indices),
+                model.name,
+            )
         else:
             raise ValueError(f"invalid NamedVectorStruct model: {model}")  # pragma: no cover
 
@@ -3119,15 +3285,21 @@ class RestToGrpc:
     @classmethod
     def convert_recommend_input(cls, model: rest.RecommendInput) -> grpc.RecommendInput:
         return grpc.RecommendInput(
-            positive=[cls.convert_vector_input(vector) for vector in model.positive]
-            if model.positive is not None
-            else None,
-            negative=[cls.convert_vector_input(vector) for vector in model.negative]
-            if model.negative is not None
-            else None,
-            strategy=cls.convert_recommend_strategy(model.strategy)
-            if model.strategy is not None
-            else None,
+            positive=(
+                [cls.convert_vector_input(vector) for vector in model.positive]
+                if model.positive is not None
+                else None
+            ),
+            negative=(
+                [cls.convert_vector_input(vector) for vector in model.negative]
+                if model.negative is not None
+                else None
+            ),
+            strategy=(
+                cls.convert_recommend_strategy(model.strategy)
+                if model.strategy is not None
+                else None
+            ),
         )
 
     @classmethod
@@ -3223,9 +3395,11 @@ class RestToGrpc:
             params=cls.convert_search_params(model.params) if model.params is not None else None,
             score_threshold=model.score_threshold,
             limit=model.limit if model.limit is not None else None,
-            lookup_from=cls.convert_lookup_location(model.lookup_from)
-            if model.lookup_from is not None
-            else None,
+            lookup_from=(
+                cls.convert_lookup_location(model.lookup_from)
+                if model.lookup_from is not None
+                else None
+            ),
         )
 
     @classmethod
@@ -3274,9 +3448,11 @@ class RestToGrpc:
         )
         return grpc.QueryPoints(
             collection_name=collection_name,
-            prefetch=[cls.convert_prefetch_query(p) for p in prefetch]
-            if model.prefetch is not None
-            else None,
+            prefetch=(
+                [cls.convert_prefetch_query(p) for p in prefetch]
+                if model.prefetch is not None
+                else None
+            ),
             query=cls.convert_query_interface(model.query) if model.query is not None else None,
             using=model.using,
             filter=cls.convert_filter(model.filter) if model.filter is not None else None,
@@ -3284,9 +3460,11 @@ class RestToGrpc:
             score_threshold=model.score_threshold,
             limit=model.limit,
             offset=model.offset,
-            with_vectors=cls.convert_with_vectors(model.with_vector)
-            if model.with_vector is not None
-            else None,
+            with_vectors=(
+                cls.convert_with_vectors(model.with_vector)
+                if model.with_vector is not None
+                else None
+            ),
             with_payload=(
                 cls.convert_with_payload_interface(model.with_payload)
                 if model.with_payload is not None
@@ -3297,9 +3475,11 @@ class RestToGrpc:
                 if model.shard_key is not None
                 else None
             ),
-            lookup_from=cls.convert_lookup_location(model.lookup_from)
-            if model.lookup_from is not None
-            else None,
+            lookup_from=(
+                cls.convert_lookup_location(model.lookup_from)
+                if model.lookup_from is not None
+                else None
+            ),
         )
 
     @classmethod
@@ -4017,15 +4197,21 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_strict_mode_multivector(cls, model: rest.StrictModeMultivector) -> grpc.StrictModeMultivector:
+    def convert_strict_mode_multivector(
+        cls, model: rest.StrictModeMultivector
+    ) -> grpc.StrictModeMultivector:
         return grpc.StrictModeMultivector(
             max_vectors=model.max_vectors,
         )
 
     @classmethod
-    def convert_strict_mode_multivector_config(cls, model: rest.StrictModeMultivectorConfig) -> grpc.StrictModeMultivectorConfig:
+    def convert_strict_mode_multivector_config(
+        cls, model: rest.StrictModeMultivectorConfig
+    ) -> grpc.StrictModeMultivectorConfig:
         return grpc.StrictModeMultivectorConfig(
-            multivector_config=dict((key, cls.convert_strict_mode_multivector(val)) for key, val in model.items())
+            multivector_config=dict(
+                (key, cls.convert_strict_mode_multivector(val)) for key, val in model.items()
+            )
         )
 
     @classmethod
@@ -4035,9 +4221,13 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_strict_mode_sparse_config(cls, model: rest.StrictModeSparseConfig) -> grpc.StrictModeSparseConfig:
+    def convert_strict_mode_sparse_config(
+        cls, model: rest.StrictModeSparseConfig
+    ) -> grpc.StrictModeSparseConfig:
         return grpc.StrictModeSparseConfig(
-            sparse_config=dict((key, cls.convert_strict_mode_sparse(val)) for key, val in model.items())
+            sparse_config=dict(
+                (key, cls.convert_strict_mode_sparse(val)) for key, val in model.items()
+            )
         )
 
     @classmethod
@@ -4059,8 +4249,84 @@ class RestToGrpc:
             max_points_count=model.max_points_count,
             filter_max_conditions=model.filter_max_conditions,
             condition_max_size=model.condition_max_size,
-            multivector_config=cls.convert_strict_mode_multivector_config(model.multivector_config)
-            if model.multivector_config else None,
-            sparse_config=cls.convert_strict_mode_sparse_config(model.sparse_config)
-            if model.sparse_config else None,
+            multivector_config=(
+                cls.convert_strict_mode_multivector_config(model.multivector_config)
+                if model.multivector_config
+                else None
+            ),
+            sparse_config=(
+                cls.convert_strict_mode_sparse_config(model.sparse_config)
+                if model.sparse_config
+                else None
+            ),
+        )
+
+    @classmethod
+    def convert_strict_mode_config_output(
+        cls, model: rest.StrictModeConfigOutput
+    ) -> grpc.StrictModeConfig:
+        return grpc.StrictModeConfig(
+            enabled=model.enabled,
+            max_query_limit=model.max_query_limit,
+            max_timeout=model.max_timeout,
+            unindexed_filtering_retrieve=model.unindexed_filtering_retrieve,
+            unindexed_filtering_update=model.unindexed_filtering_update,
+            search_max_hnsw_ef=model.search_max_hnsw_ef,
+            search_allow_exact=model.search_allow_exact,
+            search_max_oversampling=model.search_max_oversampling,
+            upsert_max_batchsize=model.upsert_max_batchsize,
+            max_collection_vector_size_bytes=model.max_collection_vector_size_bytes,
+            read_rate_limit=model.read_rate_limit,
+            write_rate_limit=model.write_rate_limit,
+            max_collection_payload_size_bytes=model.max_collection_payload_size_bytes,
+            max_points_count=model.max_points_count,
+            filter_max_conditions=model.filter_max_conditions,
+            condition_max_size=model.condition_max_size,
+            multivector_config=(
+                cls.convert_strict_mode_multivector_config_output(model.multivector_config)
+                if model.multivector_config
+                else None
+            ),
+            sparse_config=(
+                cls.convert_strict_mode_sparse_config_output(model.sparse_config)
+                if model.sparse_config
+                else None
+            ),
+        )
+
+    @classmethod
+    def convert_strict_mode_multivector_config_output(
+        cls, model: rest.StrictModeMultivectorConfigOutput
+    ) -> grpc.StrictModeMultivectorConfig:
+        return grpc.StrictModeMultivectorConfig(
+            multivector_config=dict(
+                (key, cls.convert_strict_mode_multivector_output(val))
+                for key, val in model.items()
+            )
+        )
+
+    @classmethod
+    def convert_strict_mode_sparse_config_output(
+        cls, model: rest.StrictModeSparseConfigOutput
+    ) -> grpc.StrictModeSparseConfig:
+        return grpc.StrictModeSparseConfig(
+            sparse_config=dict(
+                (key, cls.convert_strict_mode_sparse_output(val)) for key, val in model.items()
+            )
+        )
+
+    @classmethod
+    def convert_strict_mode_multivector_output(
+        cls, model: rest.StrictModeMultivectorOutput
+    ) -> grpc.StrictModeMultivector:
+        return grpc.StrictModeMultivector(
+            max_vectors=model.max_vectors,
+        )
+
+    @classmethod
+    def convert_strict_mode_sparse_output(
+        cls, model: rest.StrictModeSparseOutput
+    ) -> grpc.StrictModeSparse:
+        return grpc.StrictModeSparse(
+            max_length=model.max_length,
         )
