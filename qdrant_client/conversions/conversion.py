@@ -799,7 +799,9 @@ class GrpcToRest:
 
     @classmethod
     def convert_points_selector(
-        cls, model: grpc.PointsSelector, shard_key_selector: Optional[grpc.ShardKeySelector] = None
+        cls,
+        model: grpc.PointsSelector,
+        shard_key_selector: Optional[grpc.ShardKeySelector] = None,
     ) -> rest.PointsSelector:
         name = model.WhichOneof("points_selector_one_of")
         if name is None:
@@ -2562,7 +2564,8 @@ class RestToGrpc:
                 return grpc.FieldCondition(key=model.key, range=cls.convert_range(model.range))
             if isinstance(model.range, rest.DatetimeRange):
                 return grpc.FieldCondition(
-                    key=model.key, datetime_range=cls.convert_datetime_range(model.range)
+                    key=model.key,
+                    datetime_range=cls.convert_datetime_range(model.range),
                 )
         if model.geo_bounding_box:
             return grpc.FieldCondition(
@@ -3109,7 +3112,9 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_struct(cls, model: rest.VectorStruct) -> grpc.Vectors:
-        def convert_vector(vector: Union[list[float], list[list[float]]]) -> grpc.Vector:
+        def convert_vector(
+            vector: Union[list[float], list[list[float]]],
+        ) -> grpc.Vector:
             if len(vector) != 0 and isinstance(
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
@@ -3150,7 +3155,9 @@ class RestToGrpc:
 
     @classmethod
     def convert_vector_struct_output(cls, model: rest.VectorStructOutput) -> grpc.VectorsOutput:
-        def convert_vector(vector: Union[list[float], list[list[float]]]) -> grpc.VectorOutput:
+        def convert_vector(
+            vector: Union[list[float], list[list[float]]],
+        ) -> grpc.VectorOutput:
             if len(vector) != 0 and isinstance(
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
@@ -3210,7 +3217,11 @@ class RestToGrpc:
         elif isinstance(model, rest.NamedVector):
             return model.vector, None, model.name
         elif isinstance(model, rest.NamedSparseVector):
-            return model.vector.values, grpc.SparseIndices(data=model.vector.indices), model.name
+            return (
+                model.vector.values,
+                grpc.SparseIndices(data=model.vector.indices),
+                model.name,
+            )
         else:
             raise ValueError(f"invalid NamedVectorStruct model: {model}")  # pragma: no cover
 
