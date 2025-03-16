@@ -1,14 +1,15 @@
 import importlib.util
 import sys
+import time
 from pathlib import Path
 from typing import Union
+from types import ModuleType
 
 from pydantic import BaseModel
 
 from qdrant_client import models
 from qdrant_client._pydantic_compat import model_config
 from qdrant_client.embed.schema_parser import ModelSchemaParser
-from types import ModuleType
 
 
 def dynamic_import(file_path: Union[str, Path], module_name: str) -> ModuleType:
@@ -29,7 +30,11 @@ def dynamic_import(file_path: Union[str, Path], module_name: str) -> ModuleType:
 
 
 if __name__ == "__main__":
+    current_path = Path(__name__)
+    file_path = current_path.parent.parent / "qdrant_client" / "embed" / "_inspection_cache.py"
+
     parser = ModelSchemaParser()
+    a = time.perf_counter()
     for model_name in dir(models):
         if not model_name[0].isupper():
             continue
@@ -46,11 +51,8 @@ if __name__ == "__main__":
             continue
 
         parser.parse_model(model)
+    print(time.perf_counter() - a)
 
-    current_path = Path(__name__)
-    file_path = str(
-        current_path.parent.parent / "qdrant_client" / "embed" / "_inspection_cache.py"
-    )
     parser._persist(file_path)
     module_name = "_inspections_cache"
 

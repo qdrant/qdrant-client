@@ -88,6 +88,8 @@ values_count = grpc.ValuesCount(
 )
 
 field_condition_values_count = grpc.FieldCondition(key="match_field", values_count=values_count)
+field_condition_is_empty = grpc.FieldCondition(key="is_empty_field", is_empty=True)
+field_condition_is_null = grpc.FieldCondition(key="is_null_field", is_null=True)
 
 condition_has_id = grpc.Condition(has_id=has_id)
 condition_has_vector = grpc.Condition(has_vector=has_vector)
@@ -99,6 +101,8 @@ condition_range = grpc.Condition(field=field_condition_range)
 condition_geo_radius = grpc.Condition(field=field_condition_geo_radius)
 condition_geo_bounding_box = grpc.Condition(field=field_condition_geo_bounding_box)
 condition_values_count = grpc.Condition(field=field_condition_values_count)
+condition_field_is_empty = grpc.Condition(field=field_condition_is_empty)
+condition_field_is_null = grpc.Condition(field=field_condition_is_null)
 
 condition_keywords = grpc.Condition(field=field_condition_match_keywords)
 condition_integers = grpc.Condition(field=field_condition_match_integers)
@@ -128,6 +132,8 @@ filter_ = grpc.Filter(
     should=[
         condition_field_match,
         condition_nested,
+        condition_field_is_empty,
+        condition_field_is_null,
     ],
     must_not=[
         grpc.Condition(filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)]))
@@ -139,6 +145,8 @@ filter_ = grpc.Filter(
             condition_is_empty,
             condition_except_keywords,
             condition_except_integers,
+            condition_field_is_empty,
+            condition_field_is_null,
         ],
         min_count=3,
     ),

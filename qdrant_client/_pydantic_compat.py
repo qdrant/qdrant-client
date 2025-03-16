@@ -48,6 +48,13 @@ def model_fields_set(model: BaseModel) -> set:
         return model.__fields_set__
 
 
+def model_fields(model: Type[BaseModel]) -> dict:
+    if PYDANTIC_V2:
+        return model.model_fields  # type: ignore # pydantic type issue
+    else:
+        return model.__fields__
+
+
 def model_json_schema(model: Type[BaseModel], *args: Any, **kwargs: Any) -> dict[str, Any]:
     if PYDANTIC_V2:
         return model.model_json_schema(*args, **kwargs)

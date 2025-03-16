@@ -72,9 +72,6 @@ class Inspector:
             for field_name in model_fields_set(member):
                 if field_name in self.parser.name_recursive_ref_mapping:
                     mapped_model_name = self.parser.name_recursive_ref_mapping[field_name]
-                    if mapped_model_name not in self.parser.path_cache:
-                        # We found a model, which we haven't parsed yet, need to fill up the cache with its paths
-                        self.parser.parse_model(getattr(models, mapped_model_name))
                     recursive_paths.extend(self.parser.path_cache[mapped_model_name])
 
             if recursive_paths:
