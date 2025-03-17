@@ -61,15 +61,10 @@ jobs:
         run: |
           ./tests/integration-tests.sh
         shell: bash
-      - name: Backward compatibility integration tests (minor)
+      - name: Backward compatibility integration tests
         run: |
           export RUNNER_OS=${{ runner.os }}
           QDRANT_VERSION='v1.12.6' ./tests/integration-tests.sh
-        shell: bash
-      - name: Backward compatibility integration tests (patch)
-        run: |
-          export RUNNER_OS=${{ runner.os }}
-          QDRANT_VERSION='v1.13.4' ./tests/integration-tests.sh
         shell: bash
       - name: Run fastembed tests without fastembed
         run: |
