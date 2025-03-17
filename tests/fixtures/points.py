@@ -10,20 +10,28 @@ from qdrant_client.http.models import SparseVector
 from qdrant_client.local.sparse import validate_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
+ROUND_PRECISION = 3
+
+def check_distance(vectors: np.ndarray, threshold: float = 10**(-ROUND_PRECISION) -> bool:
+    vectors_norm = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+    cosine_sim_matrix = vectors_norm @ vectors_norm.T
+    np.fill_diagonal(cosine_sim_matrix, -np.inf)
+    max_cosine_similarity = np.max(cosine_sim_matrix)
+    min_cosine_distance = 1 - max_cosine_similarity
+    return min_cosine_distance < threshold
 
 def random_vectors(
     vector_sizes: Union[dict[str, int], int],
 ) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
-        return np.random.random(vector_sizes).round(3).tolist()
+        return np.random.random(vector_sizes).round(ROUND_PRECISION).tolist()
     elif isinstance(vector_sizes, dict):
         vectors = {}
         for vector_name, vector_size in vector_sizes.items():
-            vectors[vector_name] = np.random.random(vector_size).round(3).tolist()
+            vectors[vector_name] = np.random.random(vector_size).round(ROUND_PRECISION).tolist()
         return vectors
     else:
         raise ValueError("vector_sizes must be int or dict")
-
 
 def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
@@ -40,9 +48,12 @@ def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.Vect
 
 
 def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
-    multivec = []
-    for _ in range(vec_count):
-        multivec.append(np.random.random(vec_size).round(3).tolist())
+    while True:
+        multivec = []
+        for _ in range(vec_count):
+            multivec.append(np.random.random(vec_size).round(ROUND_PRECISION).tolist())
+        if check_distance(np.array(multivec)):
+            break
     return multivec
 
 
