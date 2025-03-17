@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any, Awaitable, Callable, Dict, Generic, Type, TypeVar, overload
 from urllib.parse import urljoin
 
+import orjson
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
@@ -106,7 +107,8 @@ class ApiClient:
         response = self.middleware(request, self.send_inner)
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                response_json = orjson.loads(response.content)
+                return parse_as_type(response_json, type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
@@ -178,7 +180,8 @@ class AsyncApiClient:
         response = await self.middleware(request, self.send_inner)
         if response.status_code in [200, 201, 202]:
             try:
-                return parse_as_type(response.json(), type_)
+                response_json = orjson.loads(response.content)
+                return parse_as_type(response_json, type_)
             except ValidationError as e:
                 raise ResponseHandlingException(e)
         raise UnexpectedResponse.for_response(response)
