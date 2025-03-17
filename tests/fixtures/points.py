@@ -12,7 +12,7 @@ from tests.fixtures.payload import one_random_payload_please
 
 ROUND_PRECISION = 3
 
-def check_distance(vectors: np.ndarray, threshold: float = 10**(-ROUND_PRECISION) -> bool:
+def check_distance(vectors: np.ndarray, threshold: float = 10**(-ROUND_PRECISION)) -> bool:
     vectors_norm = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
     cosine_sim_matrix = vectors_norm @ vectors_norm.T
     np.fill_diagonal(cosine_sim_matrix, -np.inf)
