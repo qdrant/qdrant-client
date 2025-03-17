@@ -29,6 +29,10 @@ class AbortTransferOperation(BaseModel, extra="forbid"):
     abort_transfer: "AbortShardTransfer" = Field(..., description="")
 
 
+class AbsExpression(BaseModel, extra="forbid"):
+    abs: "Expression" = Field(..., description="")
+
+
 class AliasDescription(BaseModel):
     alias_name: str = Field(..., description="")
     collection_name: str = Field(..., description="")
@@ -680,6 +684,10 @@ class ErrorResponseStatus(BaseModel):
     error: Optional[str] = Field(default=None, description="Description of the occurred error.")
 
 
+class ExpExpression(BaseModel, extra="forbid"):
+    exp: "Expression" = Field(..., description="")
+
+
 class FacetRequest(BaseModel, extra="forbid"):
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
     key: str = Field(..., description="Payload key to use for faceting.")
@@ -761,7 +769,7 @@ class FloatIndexType(str, Enum):
 
 class FormulaQuery(BaseModel, extra="forbid"):
     formula: "Expression" = Field(..., description="")
-    defaults: Dict[str, Any] = Field(..., description="")
+    defaults: Optional[Dict[str, Any]] = Field(default={}, description="")
 
 
 class Fusion(str, Enum):
@@ -1259,6 +1267,10 @@ class KeywordIndexType(str, Enum):
     KEYWORD = "keyword"
 
 
+class LnExpression(BaseModel, extra="forbid"):
+    ln: "Expression" = Field(..., description="")
+
+
 class LocalShardInfo(BaseModel):
     shard_id: int = Field(..., description="Local shard id")
     shard_key: Optional["ShardKey"] = Field(default=None, description="User-defined sharding key")
@@ -1278,6 +1290,10 @@ class LocalShardTelemetry(BaseModel):
 class LocksOption(BaseModel, extra="forbid"):
     error_message: Optional[str] = Field(default=None, description="")
     write: bool = Field(..., description="")
+
+
+class Log10Expression(BaseModel, extra="forbid"):
+    log10: "Expression" = Field(..., description="")
 
 
 class LookupLocation(BaseModel, extra="forbid"):
@@ -1682,6 +1698,15 @@ class PointsBatch(BaseModel, extra="forbid"):
 class PointsList(BaseModel, extra="forbid"):
     points: List["PointStruct"] = Field(..., description="")
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+
+
+class PowExpression(BaseModel, extra="forbid"):
+    pow: "PowParams" = Field(..., description="")
+
+
+class PowParams(BaseModel, extra="forbid"):
+    base: "Expression" = Field(..., description="")
+    exponent: "Expression" = Field(..., description="")
 
 
 class Prefetch(BaseModel, extra="forbid"):
@@ -2675,6 +2700,10 @@ class SparseVectorStorageTypeOneOf1(str, Enum):
     MMAP = "mmap"
 
 
+class SqrtExpression(BaseModel, extra="forbid"):
+    sqrt: "Expression" = Field(..., description="")
+
+
 class StartResharding(BaseModel, extra="forbid"):
     direction: "ReshardingDirection" = Field(..., description="")
     peer_id: Optional[int] = Field(default=None, description="")
@@ -3376,7 +3405,13 @@ Expression = Union[
     MultExpression,
     SumExpression,
     NegExpression,
+    AbsExpression,
     DivExpression,
+    SqrtExpression,
+    PowExpression,
+    ExpExpression,
+    Log10Expression,
+    LnExpression,
     GeoDistance,
 ]
 PayloadFieldSchema = Union[
