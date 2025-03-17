@@ -20,8 +20,6 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, random_sparse_vectors
 
-NUM_VECTORS = 100
-
 
 class TestSimpleSparseSearcher:
     __test__ = False
@@ -144,7 +142,7 @@ class TestSimpleSparseSearcher:
 
 
 def test_simple_search():
-    fixture_points = generate_sparse_fixtures(NUM_VECTORS)
+    fixture_points = generate_sparse_fixtures()
 
     searcher = TestSimpleSparseSearcher()
 
@@ -175,7 +173,7 @@ def test_simple_search():
 
 
 def test_simple_opt_vectors_search():
-    fixture_points = generate_sparse_fixtures(NUM_VECTORS, skip_vectors=True)
+    fixture_points = generate_sparse_fixtures(skip_vectors=True)
 
     searcher = TestSimpleSparseSearcher()
 
@@ -208,7 +206,7 @@ def test_simple_opt_vectors_search():
 def test_search_with_persistence():
     import tempfile
 
-    fixture_points = generate_sparse_fixtures(NUM_VECTORS)
+    fixture_points = generate_sparse_fixtures()
     searcher = TestSimpleSparseSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
@@ -246,7 +244,7 @@ def test_search_with_persistence():
 def test_search_with_persistence_and_skipped_vectors():
     import tempfile
 
-    fixture_points = generate_sparse_fixtures(NUM_VECTORS, skip_vectors=True)
+    fixture_points = generate_sparse_fixtures(skip_vectors=True)
     searcher = TestSimpleSparseSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
@@ -290,7 +288,7 @@ def test_query_with_nan():
     local_client = init_local()
     remote_client = init_remote()
 
-    fixture_points = generate_sparse_fixtures(NUM_VECTORS)
+    fixture_points = generate_sparse_fixtures()
     sparse_vector = random_sparse_vectors({"sparse-text": sparse_text_vector_size})
     named_sparse_vector = models.NamedSparseVector(
         name="sparse-text", vector=sparse_vector["sparse-text"]

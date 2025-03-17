@@ -38,7 +38,7 @@ def test_simple_count():
 
     compare_client_results(local_client, remote_client, count_all)
 
-    for _ in range(100):
+    for i in range(100):
         count_filter = one_random_filter_please()
         try:
             compare_client_results(
@@ -60,7 +60,7 @@ def test_simple_sparse_search():
 
     compare_client_results(local_client, remote_client, count_all)
 
-    for _ in range(100):
+    for i in range(100):
         count_filter = one_random_filter_please()
         try:
             compare_client_results(
