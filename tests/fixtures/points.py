@@ -18,7 +18,7 @@ def check_distance(vectors: np.ndarray, threshold: float = 10**(-ROUND_PRECISION
     np.fill_diagonal(cosine_sim_matrix, -np.inf)
     max_cosine_similarity = np.max(cosine_sim_matrix)
     min_cosine_distance = 1 - max_cosine_similarity
-    return min_cosine_distance < threshold
+    return min_cosine_distance > threshold
 
 def random_vectors(
     vector_sizes: Union[dict[str, int], int],
