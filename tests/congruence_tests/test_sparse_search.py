@@ -20,7 +20,7 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, random_sparse_vectors
 
-NUM_VECTORS = 1000
+NUM_VECTORS = 100
 
 
 class TestSimpleSparseSearcher:

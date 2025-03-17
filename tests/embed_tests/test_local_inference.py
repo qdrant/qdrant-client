@@ -14,7 +14,7 @@ from qdrant_client.embed.embedder import Embedder
 
 
 COLLECTION_NAME = "inference_collection"
-DENSE_MODEL_NAME = "BAAI/bge-small-en-v1.5"
+DENSE_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 DENSE_DIM = 384
 SPARSE_MODEL_NAME = "Qdrant/bm42-all-minilm-l6-v2-attentions"
 COLBERT_MODEL_NAME = "answerdotai/answerai-colbert-small-v1"

@@ -16,7 +16,7 @@ from tests.congruence_tests.test_common import (
 from tests.utils import read_version
 
 
-VECTOR_NUMBER = 100
+VECTOR_NUMBER = 1000
 
 
 @pytest.fixture

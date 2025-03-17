@@ -9,10 +9,9 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
     sparse_vectors_config,
-    sparse_text_vector_size,
 )
 
-NUM_VECTORS = 10
+NUM_VECTORS = 100
 
 
 def test_delete_points(local_client, remote_client):
@@ -59,7 +58,7 @@ def test_delete_points(local_client, remote_client):
 
 
 def test_delete_sparse_points():
-    points = generate_sparse_fixtures(sparse_text_vector_size)
+    points = generate_sparse_fixtures(NUM_VECTORS)
     vector = points[0].vector["sparse-image"]
 
     local_client = init_local()
@@ -89,9 +88,7 @@ def test_delete_sparse_points():
     local_client.delete(COLLECTION_NAME, found_ids)
     remote_client.delete(COLLECTION_NAME, found_ids)
 
-    compare_collections(
-        local_client, remote_client, sparse_text_vector_size, attrs=("points_count",)
-    )
+    compare_collections(local_client, remote_client, NUM_VECTORS, attrs=("points_count",))
 
     compare_client_results(
         local_client,

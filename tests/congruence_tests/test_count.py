@@ -50,7 +50,7 @@ def test_simple_count():
 
 
 def test_simple_sparse_search():
-    fixture_points = generate_sparse_fixtures(100)
+    fixture_points = generate_sparse_fixtures()
 
     local_client = init_local()
     init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)

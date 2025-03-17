@@ -17,7 +17,7 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 
-NUM_VECTORS = 5
+NUM_VECTORS = 100
 
 
 def upload(client_1: QdrantClient, client_2: QdrantClient, num_vectors=NUM_VECTORS):
@@ -82,7 +82,7 @@ def test_clear_payload(local_client: QdrantClient, remote_client: QdrantClient):
 
     compare_collections(local_client, remote_client, NUM_VECTORS)
 
-    payload = points[4].payload
+    payload = points[42].payload
     key = "text_data"
     value = payload[key]
     points_selector = models.Filter(
