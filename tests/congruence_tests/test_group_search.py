@@ -20,6 +20,7 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.filters import one_random_filter_please
 
 LOOKUP_COLLECTION_NAME = "lookup_collection"
+QUERY_VECTORS_NUM = 1000
 
 
 class TestGroupSearcher:
@@ -354,7 +355,7 @@ def test_single_vector():
 def test_search_with_persistence():
     import tempfile
 
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(QUERY_VECTORS_NUM)
     searcher = TestGroupSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
