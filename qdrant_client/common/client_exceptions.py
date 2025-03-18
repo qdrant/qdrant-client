@@ -10,10 +10,10 @@ class ResourceExhaustedResponse(QdrantException, AioRpcError):
         self.message = message if message else "Resource Exhausted Response"
         try:
             self.retry_after_s = int(retry_after_s)
-        except Exception:
+        except Exception as ex:
             raise QdrantException(
                 f"Retry-After header value is not a valid integer: {retry_after_s}"
-            )
+            ) from ex
 
     def __str__(self) -> str:
         return self.message.strip()
