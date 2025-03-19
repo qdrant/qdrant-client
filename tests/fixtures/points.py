@@ -1,5 +1,6 @@
 import random
 import uuid
+from tabnanny import check
 from typing import Union
 
 import numpy as np
@@ -12,13 +13,16 @@ from tests.fixtures.payload import one_random_payload_please
 
 ROUND_PRECISION = 3
 
-def check_distance(vectors: np.ndarray, threshold: float = 10**(-ROUND_PRECISION)) -> bool:
+def find_mind_dist(vectors: np.ndarray):
     vectors_norm = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
     cosine_sim_matrix = vectors_norm @ vectors_norm.T
     np.fill_diagonal(cosine_sim_matrix, -np.inf)
     max_cosine_similarity = np.max(cosine_sim_matrix)
     min_cosine_distance = 1 - max_cosine_similarity
-    return min_cosine_distance > threshold
+    return min_cosine_distance
+
+def check_distance(vectors: np.ndarray, threshold: float = 10**(-ROUND_PRECISION + 1)) -> bool:
+    return find_mind_dist(vectors) > threshold
 
 def random_vectors(
     vector_sizes: Union[dict[str, int], int],
@@ -48,12 +52,9 @@ def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.Vect
 
 
 def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
-    while True:
-        multivec = []
-        for _ in range(vec_count):
-            multivec.append(np.random.random(vec_size).round(ROUND_PRECISION).tolist())
-        if check_distance(np.array(multivec)):
-            break
+    multivec = []
+    for _ in range(vec_count):
+        multivec.append(np.random.random(vec_size).round(ROUND_PRECISION).tolist())
     return multivec
 
 
@@ -112,34 +113,85 @@ def generate_points(
         raise ValueError("skip_vectors is not supported for single vector")
 
     points = []
-    for i in range(num_points):
-        payload = None
-        if with_payload:
-            payload = one_random_payload_please(i)
+    if not sparse and not multivector:
+        if isinstance(vector_sizes, int):
+            vectors = np.random.random(size=(num_points, vector_sizes)).round(ROUND_PRECISION).tolist()
+            while not check_distance(vectors):
+                vectors = np.random.random(size=(num_points, vector_sizes)).round(ROUND_PRECISION).tolist()
 
-        idx = i
-        if random_ids:
-            idx = str(uuid.uuid4())
+            for i, vector in enumerate(vectors):
+                idx = i
+                payload=None
+                if random_ids:
+                    idx = str(uuid.uuid4())
 
-        if sparse:
-            vectors = random_sparse_vectors(vector_sizes, even=even_sparse)
-        elif multivector:
-            vectors = random_multivectors(vector_sizes)
-        else:
-            vectors = random_vectors(vector_sizes)
+                if with_payload:
+                    payload = one_random_payload_please(i)
 
-        if skip_vectors:
-            if random.random() > 0.8:
-                vector_to_skip = random.choice(list(vectors.keys()))
-                vectors.pop(vector_to_skip)
-
-        points.append(
-            construct(
-                models.PointStruct,
-                id=idx,
-                vector=vectors,
-                payload=payload,
+                points.append(
+                    construct(
+                        models.PointStruct,
+                        id=idx,
+                        vector=vectors[i],
+                        payload=payload,
+                    )
             )
-        )
+        elif isinstance(vector_sizes, dict):
+            pre_vectors = {}
+            for vector_name, vector_size in vector_sizes.items():
+                pre_vectors[vector_name] = np.random.random(size = (num_points, vector_size)).round(ROUND_PRECISION).tolist()
+                while not check_distance(pre_vectors[vector_name]):
+                    pre_vectors[vector_name] = np.random.random(size=(num_points, vector_size)).round(
+                        ROUND_PRECISION).tolist()
+
+
+            for i in range(num_points):
+                idx = i
+                payload = None
+                if random_ids:
+                    idx = str(uuid.uuid4())
+
+                if with_payload:
+                    payload = one_random_payload_please(i)
+                vectors = {}
+                for vector_name in vector_sizes.keys():
+                    vectors[vector_name] = pre_vectors[vector_name][i]
+
+                points.append(
+                    construct(
+                        models.PointStruct,
+                        id=idx,
+                        vector=vectors,
+                        payload=payload,
+                    )
+                )
+    else:
+        for i in range(num_points):
+            payload = None
+            if with_payload:
+                payload = one_random_payload_please(i)
+
+            idx = i
+            if random_ids:
+                idx = str(uuid.uuid4())
+
+            if sparse:
+                vectors = random_sparse_vectors(vector_sizes, even=even_sparse)
+            elif multivector:
+                vectors = random_multivectors(vector_sizes)
+
+            if skip_vectors:
+                if random.random() > 0.8:
+                    vector_to_skip = random.choice(list(vectors.keys()))
+                    vectors.pop(vector_to_skip)
+
+            points.append(
+                construct(
+                    models.PointStruct,
+                    id=idx,
+                    vector=vectors,
+                    payload=payload,
+                )
+            )
 
     return points

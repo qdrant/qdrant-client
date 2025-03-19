@@ -101,12 +101,12 @@ def test_collection_exists():
 
 
 def test_init_from():
-    vector_size = 2
+    vector_size = 200
 
     remote_client = init_remote()
     local_client = init_local()
 
-    points = generate_fixtures(vectors_sizes=vector_size)
+    points = generate_fixtures(vectors_sizes=vector_size, )
     vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
     if remote_client.collection_exists(COLLECTION_NAME):
