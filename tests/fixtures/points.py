@@ -57,9 +57,6 @@ def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[floa
         multivec.append(np.random.random(vec_size).round(ROUND_PRECISION).tolist())
     return multivec
 
-
-# Generate random sparse vector with given size and density
-# The density is the probability of non-zero value over the whole vector
 def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
     num_non_zero = int(size * density)
     indices: list[int] = random.sample(range(size), num_non_zero)
@@ -99,99 +96,112 @@ def random_sparse_vectors(
     return vectors
 
 
+def generate_dense_vectors(num: int, size: int) -> list[list[float]]:
+    vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).tolist()
+    while not check_distance(vectors):
+        vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).tolist()
+    return vectors
+
+
+def create_point(index: int, vector: any, with_payload: bool, random_ids: bool) -> models.PointStruct:
+    point_id = str(uuid.uuid4()) if random_ids else index
+    payload = one_random_payload_please(index) if with_payload else None
+    return construct(models.PointStruct, id=point_id, vector=vector, payload=payload)
+
+
+def get_vector_for_point(
+        vector_sizes: Union[int, dict[str, int]],
+        sparse: bool,
+        even_sparse: bool,
+        multivector: bool,
+        skip_vectors: bool
+) -> any:
+    if sparse:
+        vec = random_sparse_vectors(vector_sizes, even=even_sparse)
+    elif multivector:
+        vec = random_multivectors(vector_sizes)
+    else:
+        raise
+
+    if skip_vectors and vec and random.random() > 0.8:
+        key_to_skip = random.choice(list(vec.keys()))
+        vec.pop(key_to_skip)
+    return vec
+
+
+def generate_dense_points_single(
+        num_points: int,
+        vector_size: int,
+        with_payload: bool,
+        random_ids: bool
+) -> list[models.PointStruct]:
+    dense_vectors = generate_dense_vectors(num_points, vector_size)
+    points = []
+    for i, vec in enumerate(dense_vectors):
+        points.append(create_point(i, vec, with_payload, random_ids))
+    return points
+
+
+def generate_dense_points_multi(
+        num_points: int,
+        vector_sizes: dict[str, int],
+        with_payload: bool,
+        random_ids: bool
+) -> list[models.PointStruct]:
+    dense_vectors_dict = {
+        name: generate_dense_vectors(num_points, size)
+        for name, size in vector_sizes.items()
+    }
+    points = []
+    for i in range(num_points):
+        combined_vector = {name: dense_vectors_dict[name][i] for name in vector_sizes}
+        points.append(create_point(i, combined_vector, with_payload, random_ids))
+    return points
+
+
+def generate_sparse_or_multivector_points(
+        num_points: int,
+        vector_sizes: Union[int, dict[str, int]],
+        with_payload: bool,
+        random_ids: bool,
+        skip_vectors: bool,
+        sparse: bool,
+        even_sparse: bool,
+        multivector: bool
+) -> list[models.PointStruct]:
+    points = []
+    for i in range(num_points):
+        vec = get_vector_for_point(vector_sizes, sparse, even_sparse, multivector, skip_vectors)
+        points.append(create_point(i, vec, with_payload, random_ids))
+    return points
+
+
 def generate_points(
-    num_points: int,
-    vector_sizes: Union[dict[str, int], int],
-    with_payload: bool = False,
-    random_ids: bool = False,
-    skip_vectors: bool = False,
-    sparse: bool = False,
-    even_sparse: bool = True,
-    multivector: bool = False,
+        num_points: int,
+        vector_sizes: Union[dict[str, int], int],
+        with_payload: bool = False,
+        random_ids: bool = False,
+        skip_vectors: bool = False,
+        sparse: bool = False,
+        even_sparse: bool = True,
+        multivector: bool = False,
 ) -> list[models.PointStruct]:
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
 
-    points = []
     if not sparse and not multivector:
         if isinstance(vector_sizes, int):
-            vectors = np.random.random(size=(num_points, vector_sizes)).round(ROUND_PRECISION).tolist()
-            while not check_distance(vectors):
-                vectors = np.random.random(size=(num_points, vector_sizes)).round(ROUND_PRECISION).tolist()
-
-            for i, vector in enumerate(vectors):
-                idx = i
-                payload=None
-                if random_ids:
-                    idx = str(uuid.uuid4())
-
-                if with_payload:
-                    payload = one_random_payload_please(i)
-
-                points.append(
-                    construct(
-                        models.PointStruct,
-                        id=idx,
-                        vector=vectors[i],
-                        payload=payload,
-                    )
-            )
+            return generate_dense_points_single(num_points, vector_sizes, with_payload, random_ids)
         elif isinstance(vector_sizes, dict):
-            pre_vectors = {}
-            for vector_name, vector_size in vector_sizes.items():
-                pre_vectors[vector_name] = np.random.random(size = (num_points, vector_size)).round(ROUND_PRECISION).tolist()
-                while not check_distance(pre_vectors[vector_name]):
-                    pre_vectors[vector_name] = np.random.random(size=(num_points, vector_size)).round(
-                        ROUND_PRECISION).tolist()
-
-
-            for i in range(num_points):
-                idx = i
-                payload = None
-                if random_ids:
-                    idx = str(uuid.uuid4())
-
-                if with_payload:
-                    payload = one_random_payload_please(i)
-                vectors = {}
-                for vector_name in vector_sizes.keys():
-                    vectors[vector_name] = pre_vectors[vector_name][i]
-
-                points.append(
-                    construct(
-                        models.PointStruct,
-                        id=idx,
-                        vector=vectors,
-                        payload=payload,
-                    )
-                )
+            return generate_dense_points_multi(num_points, vector_sizes, with_payload, random_ids)
     else:
-        for i in range(num_points):
-            payload = None
-            if with_payload:
-                payload = one_random_payload_please(i)
-
-            idx = i
-            if random_ids:
-                idx = str(uuid.uuid4())
-
-            if sparse:
-                vectors = random_sparse_vectors(vector_sizes, even=even_sparse)
-            elif multivector:
-                vectors = random_multivectors(vector_sizes)
-
-            if skip_vectors:
-                if random.random() > 0.8:
-                    vector_to_skip = random.choice(list(vectors.keys()))
-                    vectors.pop(vector_to_skip)
-
-            points.append(
-                construct(
-                    models.PointStruct,
-                    id=idx,
-                    vector=vectors,
-                    payload=payload,
-                )
-            )
-
-    return points
+        return generate_sparse_or_multivector_points(
+            num_points,
+            vector_sizes,
+            with_payload,
+            random_ids,
+            skip_vectors,
+            sparse,
+            even_sparse,
+            multivector
+        )
