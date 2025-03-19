@@ -22,12 +22,15 @@ def find_mind_dist(vectors: np.ndarray) -> float:
     """
     Calculate the minimum cosine distance between vectors.
     """
-    vectors_norm = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
-    cosine_sim_matrix = vectors_norm @ vectors_norm.T
-    np.fill_diagonal(cosine_sim_matrix, -np.inf)
-    max_cosine_similarity = np.max(cosine_sim_matrix)
-    min_cosine_distance = 1 - max_cosine_similarity
-    return min_cosine_distance
+    if len(vectors) > 1:
+        vectors_norm = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+        cosine_sim_matrix = vectors_norm @ vectors_norm.T
+        np.fill_diagonal(cosine_sim_matrix, -np.inf)
+        max_cosine_similarity = np.max(cosine_sim_matrix)
+        min_cosine_distance = 1 - max_cosine_similarity
+        return min_cosine_distance
+    else:
+        return 1.0
 
 
 def check_distance(vectors: np.ndarray, threshold: float = 10 ** (-ROUND_PRECISION + 1)) -> bool:
@@ -37,13 +40,17 @@ def check_distance(vectors: np.ndarray, threshold: float = 10 ** (-ROUND_PRECISI
     return find_mind_dist(vectors) > threshold
 
 
-def generate_dense_vectors(num: int, size: int) -> list[list[float]]:
+def generate_dense_vectors(num: int, size: int, tries=10) -> list[list[float]]:
     """
     Generate a list of dense vectors with a minimum distance check.
     """
     vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
+
     while not check_distance(vectors):
         vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
+        tries-=1
+        if tries < 0:
+            raise RuntimeError(f"Can not find a dense vector in {tries} runs")
     return vectors.tolist()
 
 
