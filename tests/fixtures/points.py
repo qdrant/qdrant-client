@@ -18,7 +18,7 @@ ROUND_PRECISION = 3
 # Utility Functions for Dense Vectors
 # =============================================================================
 
-def find_mind_dist(vectors: np.ndarray) -> float:
+def find_min_dist(vectors: np.ndarray) -> float:
     """
     Calculate the minimum cosine distance between vectors.
     """
@@ -37,19 +37,19 @@ def check_distance(vectors: np.ndarray, threshold: float = 10 ** (-ROUND_PRECISI
     """
     Check if the minimum cosine distance of vectors exceeds a threshold.
     """
-    return find_mind_dist(vectors) > threshold
+    return find_min_dist(vectors) > threshold
 
 
-def generate_dense_vectors(num: int, size: int, tries=10) -> list[list[float]]:
+def generate_dense_vectors(num: int, size: int, tries=1000) -> list[list[float]]:
     """
     Generate a list of dense vectors with a minimum distance check.
     """
     vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
-
+    tries_counter = 0
     while not check_distance(vectors):
         vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
-        tries-=1
-        if tries < 0:
+        tries_counter+=1
+        if tries_counter > tries:
             raise RuntimeError(f"Can not find a dense vector in {tries} runs")
     return vectors.tolist()
 
