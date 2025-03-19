@@ -41,10 +41,10 @@ def generate_dense_vectors(num: int, size: int) -> list[list[float]]:
     """
     Generate a list of dense vectors with a minimum distance check.
     """
-    vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).tolist()
+    vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
     while not check_distance(vectors):
-        vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).tolist()
-    return vectors
+        vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
+    return vectors.tolist()
 
 
 def random_vectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
