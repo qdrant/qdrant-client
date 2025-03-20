@@ -1357,6 +1357,13 @@ formula_defaults = payload_to_grpc(
     }
 )
 
+decay_params_expression = grpc.DecayParamsExpression(
+    x=grpc.Expression(variable="x"),
+    target=grpc.Expression(constant=0.0),
+    scale=0.9,
+    midpoint=0.5,
+)
+
 expression = grpc.Expression(
     sum=grpc.SumExpression(
         sum=[
@@ -1388,6 +1395,9 @@ expression = grpc.Expression(
                     by_zero_default=0.0,
                 )
             ),
+            grpc.Expression(exp_decay=decay_params_expression),
+            grpc.Expression(gauss_decay=decay_params_expression),
+            grpc.Expression(lin_decay=decay_params_expression),
         ]
     )
 )
