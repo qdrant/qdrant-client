@@ -50,7 +50,6 @@ def upload_batch(
                 stacklevel=7,
             )
             sleep(ex.retry_after_s)
-            attempt -= 1
 
         except Exception as e:
             show_warning(
@@ -61,7 +60,8 @@ def upload_batch(
 
             if attempt == max_retries - 1:
                 raise e
-        attempt += 1
+
+            attempt += 1
     return True
 
 

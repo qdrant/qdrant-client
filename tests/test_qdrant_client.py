@@ -15,6 +15,7 @@ from grpc import Compression, RpcError
 import qdrant_client.http.exceptions
 from qdrant_client import QdrantClient, models
 from qdrant_client._pydantic_compat import to_dict
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.conversions.common_types import PointVectors, Record
 from qdrant_client.conversions.conversion import grpc_to_payload, json_to_value
 from qdrant_client.local.qdrant_local import QdrantLocal
@@ -63,12 +64,15 @@ from tests.fixtures.payload import (
     random_payload,
     random_real_word,
 )
+from tests.fixtures.points import generate_points
 from tests.utils import read_version
 
 DIM = 100
 NUM_VECTORS = 1_000
 COLLECTION_NAME = "client_test"
 COLLECTION_NAME_ALIAS = "client_test_alias"
+WRITE_LIMIT = 3
+READ_LIMIT = 2
 
 
 TIMEOUT = 60
@@ -2274,6 +2278,204 @@ def test_create_payload_index(prefer_grpc):
             models.BoolIndexParams(type=models.BoolIndexType.BOOL),
             wait=True,
         )
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upsert_hits_large_request_limit(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config={},
+        timeout=TIMEOUT,
+    )
+
+    points = generate_points(num_points=100, vector_sizes=DIM)
+    ids = []
+    vectors = []
+    for point in points:
+        ids.append(point.id)
+        vectors.append(point.vector)
+
+    points_batch = models.Batch(
+        ids=ids,
+        vectors=vectors,
+        payloads=None,
+    )
+
+    client.update_collection(
+        collection_name=COLLECTION_NAME,
+        strict_mode_config=models.StrictModeConfig(
+            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
+        ),
+    )
+
+    if prefer_grpc:
+        with pytest.raises(
+            RpcError,
+            match="Write rate limit exceeded",
+        ):
+            client.upsert(COLLECTION_NAME, points_batch)
+    else:
+        with pytest.raises(
+            qdrant_client.http.exceptions.UnexpectedResponse,
+            match="Write rate limit exceeded",
+        ):
+            client.upsert(COLLECTION_NAME, points_batch)
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upsert_hits_write_rate_limit(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    points = generate_points(num_points=WRITE_LIMIT, vector_sizes=DIM)
+    ids = []
+    vectors = []
+    for point in points:
+        ids.append(point.id)
+        vectors.append(point.vector)
+
+    points_batch = models.Batch(
+        ids=ids,
+        vectors=vectors,
+        payloads=None,
+    )
+
+    client.update_collection(
+        collection_name=COLLECTION_NAME,
+        strict_mode_config=models.StrictModeConfig(
+            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
+        ),
+    )
+
+    flag = False
+    time_to_sleep = 0
+    try:
+        for _ in range(10):
+            client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
+    except ResourceExhaustedResponse as ex:
+        print(ex.message)
+        assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
+        flag = True
+        time_to_sleep = int(ex.retry_after_s)
+
+    if flag:
+        # verify next response after sleep succeeds
+        sleep(time_to_sleep)
+        client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
+    else:
+        raise AssertionError("No ResourceExhaustedResponse exception was raised.")
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_query_hits_read_rate_limit(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        timeout=TIMEOUT,
+    )
+
+    dense_vector_query_batch_text = []
+    for _ in range(READ_LIMIT):
+        dense_vector_query_batch_text.append(
+            models.QueryRequest(
+                query=np.random.random(DIM).tolist(),
+                prefetch=models.Prefetch(query=np.random.random(DIM).tolist(), limit=5),
+                limit=5,
+                with_payload=True,
+            )
+        )
+
+    client.update_collection(
+        collection_name=COLLECTION_NAME,
+        strict_mode_config=models.StrictModeConfig(
+            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
+        ),
+    )
+
+    flag = False
+    time_to_sleep = 0
+    try:
+        for _ in range(10):
+            client.query_batch_points(
+                collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
+            )
+    except ResourceExhaustedResponse as ex:
+        print(ex.message)
+        assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
+        flag = True
+        time_to_sleep = int(ex.retry_after_s)
+
+    if flag:
+        # verify next response after sleep succeeds
+        sleep(time_to_sleep)
+        client.query_batch_points(
+            collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
+        )
+    else:
+        raise AssertionError(
+            "No ResourceExhaustedResponse exception was raised for remote_client."
+        )
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_upload_collection_succeeds_with_limits(prefer_grpc):
+    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        timeout=TIMEOUT,
+        strict_mode_config=models.StrictModeConfig(
+            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
+        ),
+    )
+    # pre-condition: hit the limit first then do upload_collection
+    points = generate_points(num_points=WRITE_LIMIT, vector_sizes=DIM)
+    ids = []
+    vectors = []
+    for point in points:
+        ids.append(point.id)
+        vectors.append(point.vector)
+
+    points_batch = models.Batch(ids=ids, vectors=vectors, payloads=None)
+    try:
+        for _ in range(10):
+            client.upsert(COLLECTION_NAME, points_batch)
+    except ResourceExhaustedResponse as ex:
+        print(ex.message)
+    # end of pre-condition
+
+    points = generate_points(num_points=WRITE_LIMIT, vector_sizes=DIM)
+    ids = []
+    vectors = []
+    for point in points:
+        ids.append(point.id)
+        vectors.append(point.vector)
+
+    client.upload_collection(
+        COLLECTION_NAME, vectors, payload=None, ids=ids, wait=True, max_retries=1
+    )
+
+    results = client.scroll(
+        collection_name=COLLECTION_NAME,
+        with_vectors=False,
+        with_payload=False,
+    )
+    result = results[0]
+    assert len(result) == WRITE_LIMIT
 
 
 if __name__ == "__main__":

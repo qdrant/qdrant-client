@@ -58,7 +58,6 @@ def upload_batch_grpc(
                 stacklevel=8,
             )
             sleep(ex.retry_after_s)
-            attempt -= 1
 
         except Exception as e:
             show_warning(
@@ -69,7 +68,8 @@ def upload_batch_grpc(
 
             if attempt == max_retries - 1:
                 raise e
-        attempt += 1
+
+            attempt += 1
     return True
 
 
