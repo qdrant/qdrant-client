@@ -28,7 +28,7 @@ def all_facet_keys() -> list[str]:
 
 @pytest.fixture(scope="module")
 def fixture_points() -> list[models.PointStruct]:
-    return generate_fixtures()
+    return generate_fixtures(1000)
 
 
 @pytest.fixture(scope="module", autouse=True)
