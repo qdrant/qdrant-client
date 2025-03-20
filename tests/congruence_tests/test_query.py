@@ -714,11 +714,24 @@ class TestSimpleSearcher:
         return result
 
     def score_boosting(
-        self, client: QdrantBase, formula: models.FormulaQuery
+        self, client: QdrantBase, formula: models.FormulaQuery, point_id: int
     ) -> Union[models.QueryResponse, str]:
-        prefetch = models.Prefetch(query=self.dense_vector_query_text, limit=100, using="text")
+        def comparable_error(exception: Exception):
+            non_finite_message = "produced a non-finite number"
+            unexpected_type_message = "in the payload and/or in the formula defaults"
 
-        non_finite_message = "produced a non-finite number"
+            if non_finite_message in str(exception):
+                return non_finite_message
+            elif unexpected_type_message in str(exception):
+                return unexpected_type_message
+            raise exception
+
+        prefetch = models.Prefetch(
+            filter=models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
+            limit=100,
+            using="text",
+        )
+
         try:
             result = client.query_points(
                 collection_name=COLLECTION_NAME,
@@ -727,20 +740,11 @@ class TestSimpleSearcher:
                 limit=100,
             )
         except ValueError as e:  # local mode error
-            if non_finite_message in str(e):
-                return non_finite_message
-            raise e
+            return comparable_error(e)
         except UnexpectedResponse as e:  # rest error
-            if non_finite_message in str(e):
-                return non_finite_message
-            raise e
+            return comparable_error(e)
         except RpcError as e:  # grpc error
-            if non_finite_message in str(e):
-                return non_finite_message
-            raise e
-
-        # sort to be able to compare equally-scored points
-        result.points.sort(key=lambda point: point.id)
+            return comparable_error(e)
 
         return result
 
@@ -1529,7 +1533,8 @@ def test_random_sampling():
 
 
 def test_formula_query():
-    fixture_points = generate_fixtures(100)
+    points_count = 100
+    fixture_points = generate_fixtures(points_count)
 
     searcher = TestSimpleSearcher()
 
@@ -1544,16 +1549,23 @@ def test_formula_query():
 
     for _ in range(50):
         formula = models.FormulaQuery(
-            formula=one_random_expression_please(max_depth=3), defaults=defaults
+            formula=one_random_expression_please(max_depth=2), defaults=defaults
         )
-        try:
-            compare_clients_results(
-                local_client,
-                http_client,
-                grpc_client,
-                searcher.score_boosting,
-                formula=formula,
-            )
-        except AssertionError as e:
-            print(f"\nFailed with formula {formula}")
-            raise e
+
+        # We need to score point by point to make sure that the errors that come up correspond to the same point.
+        #
+        # Otherwise, we can have discrepancy where one point produced one error,
+        # and another caused a different error in the other client
+        for point_id in range(points_count):
+            try:
+                compare_clients_results(
+                    local_client,
+                    http_client,
+                    grpc_client,
+                    searcher.score_boosting,
+                    formula=formula,
+                    point_id=point_id,
+                )
+            except Exception as e:
+                print(f"\nFailed with formula {formula} on point {fixture_points[point_id]}")
+                raise e

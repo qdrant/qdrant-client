@@ -1,3 +1,4 @@
+import pytest
 import warnings
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions.common_types import get_args_subscribed
@@ -24,7 +25,7 @@ def evaluate_expression(
         return np.float32(expression)
 
     elif isinstance(expression, str):  # Variable
-        return evaluate_variable(expression, point_id, scores, payload, has_vector, defaults)
+        return evaluate_variable(expression, point_id, scores, payload, defaults)
 
     elif isinstance(expression, get_args_subscribed(models.Condition)):
         if check_condition(expression, payload, point_id, has_vector):  # type: ignore
@@ -156,22 +157,41 @@ def evaluate_expression(
         to = expression.geo_distance.to
 
         # Get value from payload
-        geo_value = value_by_key(payload, to)
-        if geo_value is not None and len(geo_value) > 0:
-            geo_value = geo_value[0]
-        else:
-            geo_value = defaults.get(to, None)
-            if geo_value is None:
-                raise ValueError(f"Missing value for {to}")
+        geo_value = try_extract_payload_value(to, payload, defaults)
 
         if isinstance(geo_value, dict):
-            # let this fail if it isn not a valid geo point
+            # let this fail if it is not a valid geo point
             destination = construct(models.GeoPoint, **geo_value)
             return np.float32(
                 geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
             )
 
+        raise ValueError(
+            f"Expected geo point for {to} in the payload and/or in the formula defaults."
+        )
+
     raise ValueError(f"Unsupported expression type: {type(expression)}")
+
+
+def try_extract_payload_value(key: str, payload: models.Payload, defaults: dict[str, Any]) -> Any:
+    # Get value from payload
+    value = value_by_key(payload, key)
+
+    if value is None or len(value) == 0:
+        # Or from defaults
+        value = defaults.get(key, None)
+        # Consider it None if it is an empty list
+        if isinstance(value, list) and len(value) == 0:
+            value = None
+
+    # Consider it a single value if it's a list with one element
+    if isinstance(value, list) and len(value) == 1:
+        return value[0]
+
+    if value is None:
+        raise ValueError(f"No value found for {key} in the payload nor the formula defaults")
+
+    return value
 
 
 def evaluate_variable(
@@ -179,34 +199,18 @@ def evaluate_variable(
     point_id: models.ExtendedPointId,
     scores: list[dict[models.ExtendedPointId, float]],
     payload: models.Payload,
-    has_vector: dict[str, bool],
     defaults: dict[str, Any],
 ) -> np.float32:
     var = parse_variable(variable)
     if isinstance(var, str):
-        # Get value from payload
-        value = value_by_key(payload, var)
-
-        if isinstance(value, list) and len(value) > 0:
-            value = value[0]
+        value = try_extract_payload_value(var, payload, defaults)
 
         if is_number(value):
-            try:
-                return np.float32(value)
-            except (TypeError, ValueError):
-                # try to get from defaults
-                pass
+            return value
 
-        defined_default = defaults.get(var, None)
-
-        if is_number(defined_default):
-            try:
-                return np.float32(defined_default)
-            except (TypeError, ValueError):
-                # try to get from defaults
-                pass
-
-        return DEFAULT_SCORE
+        raise ValueError(
+            f"Expected number value for {var} in the payload and/or in the formula defaults. Error: Value is not a number"
+        )
 
     elif isinstance(var, int):
         # Get score from scores
@@ -217,14 +221,15 @@ def evaluate_variable(
                 return np.float32(score)
 
         defined_default = defaults.get(variable, None)
-        if defined_default is None:
-            return DEFAULT_SCORE
-        return defined_default
+        if defined_default is not None:
+            return defined_default
+
+        return DEFAULT_SCORE
 
     raise ValueError(f"Invalid variable type: {type(var)}")
 
 
-def parse_variable(var: str) -> Union[models.StrictStr, int]:
+def parse_variable(var: str) -> Union[str, int]:
     # Try to parse score pattern
     if not var.startswith("$score"):
         # Treat as payload path
@@ -282,3 +287,16 @@ def test_parsing_variable() -> None:
         assert False
     except ValueError as e:
         assert str(e) == "Invalid score pattern: $score[10].other"
+
+
+@pytest.mark.parametrize(
+    "payload_value, expected", [(1.2, 1.2), ([1.2], 1.2), ([1.2, 2.3], [1.2, 2.3])]
+)
+def test_try_extract_payload_value(payload_value: Any, expected: Any) -> None:
+    defaults: dict[str, Any] = {}
+    payload = {"key": payload_value}
+    assert try_extract_payload_value("key", payload, defaults) == expected
+
+    defaults = {"key": payload_value}
+    payload: dict[str, Any] = {}
+    assert try_extract_payload_value("key", payload, defaults) == expected
