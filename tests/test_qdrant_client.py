@@ -61,7 +61,6 @@ from tests.congruence_tests.test_common import (
     init_remote,
     initialize_fixture_collection,
 )
-from tests.conversions.fixtures import match_text
 from tests.fixtures.payload import (
     one_random_payload_please,
     random_payload,
