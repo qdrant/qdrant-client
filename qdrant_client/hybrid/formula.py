@@ -235,28 +235,28 @@ def parse_variable(var: str) -> Union[str, int]:
         # Treat as payload path
         return var
 
-    remainder = var[6:]
-    if remainder == "":
+    remaining = var.replace("$score", "", 1)
+    if remaining == "":
         # end of string, default idx is 0
         return 0
 
     # it must proceed with brackets
-    if not remainder.startswith("["):
+    if not remaining.startswith("["):
         raise ValueError(f"Invalid score pattern: {var}")
 
-    remainder = remainder[1:]
-    bracket_end = remainder.find("]")
+    remaining = remaining.replace("[", "", 1)
+    bracket_end = remaining.find("]")
     if bracket_end == -1:
         raise ValueError(f"Invalid score pattern: {var}")
 
     # try parsing the content in between brackets as integer
     try:
-        idx = int(remainder[:bracket_end])
+        idx = int(remaining[:bracket_end])
     except ValueError:
         raise ValueError(f"Invalid score pattern: {var}")
 
     # make sure the string ends after the closing bracket
-    if len(remainder) > bracket_end + 1:
+    if len(remaining) > bracket_end + 1:
         raise ValueError(f"Invalid score pattern: {var}")
 
     return idx
