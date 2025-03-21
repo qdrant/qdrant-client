@@ -1364,6 +1364,10 @@ decay_params_expression = grpc.DecayParamsExpression(
     midpoint=0.5,
 )
 
+decay_params_expression_optionals = grpc.DecayParamsExpression(
+    x=grpc.Expression(variable="some var"),
+)
+
 expression = grpc.Expression(
     sum=grpc.SumExpression(
         sum=[
@@ -1634,6 +1638,7 @@ fixtures = {
     "SearchMatrixPairs": [search_matrix_pairs],
     "SearchMatrixOffsets": [search_matrix_offsets],
     "StrictModeConfig": [strict_mode_config, strict_mode_config_empty],
+    "DecayParamsExpression": [decay_params_expression_optionals],
 }
 
 

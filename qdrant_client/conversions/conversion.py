@@ -1273,9 +1273,9 @@ class GrpcToRest:
     ) -> rest.DecayParamsExpression:
         return rest.DecayParamsExpression(
             x=cls.convert_expression(model.x),
-            target=cls.convert_expression(model.target) if model.target is not None else None,
-            midpoint=model.midpoint,
-            scale=model.scale,
+            target=cls.convert_expression(model.target) if model.HasField("target") else None,
+            midpoint=model.midpoint if model.HasField("midpoint") else None,
+            scale=model.scale if model.HasField("scale") else None,
         )
 
     @classmethod
