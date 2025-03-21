@@ -59,6 +59,7 @@ from tests.congruence_tests.test_common import (
     init_remote,
     initialize_fixture_collection,
 )
+from tests.conversions.fixtures import match_text
 from tests.fixtures.payload import (
     one_random_payload_please,
     random_payload,
@@ -2311,6 +2312,8 @@ def test_strict_mode(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_upsert_hits_large_request_limit(prefer_grpc):
+    major, minor, patch, dev = read_version()
+
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
@@ -2340,22 +2343,25 @@ def test_upsert_hits_large_request_limit(prefer_grpc):
         ),
     )
 
-    if prefer_grpc:
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
+        if prefer_grpc:
+            exception_class = RpcError
+        else:
+            exception_class = qdrant_client.http.exceptions.UnexpectedResponse
+
         with pytest.raises(
-            RpcError,
+            exception_class,
             match="Write rate limit exceeded",
         ):
             client.upsert(COLLECTION_NAME, points_batch)
     else:
-        with pytest.raises(
-            qdrant_client.http.exceptions.UnexpectedResponse,
-            match="Write rate limit exceeded",
-        ):
-            client.upsert(COLLECTION_NAME, points_batch)
+        client.upsert(COLLECTION_NAME, points_batch)
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_upsert_hits_write_rate_limit(prefer_grpc):
+    major, minor, patch, dev = read_version()
+
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
@@ -2385,27 +2391,41 @@ def test_upsert_hits_write_rate_limit(prefer_grpc):
         ),
     )
 
-    flag = False
-    time_to_sleep = 0
-    try:
-        for _ in range(10):
-            client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
-    except ResourceExhaustedResponse as ex:
-        print(ex.message)
-        assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
-        flag = True
-        time_to_sleep = int(ex.retry_after_s)
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
+        flag = False
+        time_to_sleep = 0
+        try:
+            for _ in range(10):
+                client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
+        except ResourceExhaustedResponse as ex:
+            print(ex.message)
+            assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
+            flag = True
+            time_to_sleep = int(ex.retry_after_s)
 
-    if flag:
-        # verify next response after sleep succeeds
-        sleep(time_to_sleep)
-        client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
+        if flag:
+            # verify next response after sleep succeeds
+            sleep(time_to_sleep)
+            client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
+        else:
+            raise AssertionError("No ResourceExhaustedResponse exception was raised.")
     else:
-        raise AssertionError("No ResourceExhaustedResponse exception was raised.")
+        if prefer_grpc:
+            exception_class = RpcError
+        else:
+            exception_class = qdrant_client.http.exceptions.UnexpectedResponse
+
+        with pytest.raises(
+            exception_class,
+        ):
+            for _ in range(10):
+                client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_query_hits_read_rate_limit(prefer_grpc):
+    major, minor, patch, dev = read_version()
+
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
@@ -2433,33 +2453,49 @@ def test_query_hits_read_rate_limit(prefer_grpc):
         ),
     )
 
-    flag = False
-    time_to_sleep = 0
-    try:
-        for _ in range(10):
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
+        flag = False
+        time_to_sleep = 0
+        try:
+            for _ in range(10):
+                client.query_batch_points(
+                    collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
+                )
+        except ResourceExhaustedResponse as ex:
+            print(ex.message)
+            assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
+            flag = True
+            time_to_sleep = int(ex.retry_after_s)
+
+        if flag:
+            # verify next response after sleep succeeds
+            sleep(time_to_sleep)
             client.query_batch_points(
                 collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
             )
-    except ResourceExhaustedResponse as ex:
-        print(ex.message)
-        assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
-        flag = True
-        time_to_sleep = int(ex.retry_after_s)
-
-    if flag:
-        # verify next response after sleep succeeds
-        sleep(time_to_sleep)
-        client.query_batch_points(
-            collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
-        )
+        else:
+            raise AssertionError(
+                "No ResourceExhaustedResponse exception was raised for remote_client."
+            )
     else:
-        raise AssertionError(
-            "No ResourceExhaustedResponse exception was raised for remote_client."
-        )
+        if prefer_grpc:
+            exception_class = RpcError
+        else:
+            exception_class = qdrant_client.http.exceptions.UnexpectedResponse
+
+        with pytest.raises(
+            exception_class,
+        ):
+            for _ in range(10):
+                client.query_batch_points(
+                    collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
+                )
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_upload_collection_succeeds_with_limits(prefer_grpc):
+    major, minor, patch, dev = read_version()
+
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
@@ -2483,8 +2519,8 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc):
     try:
         for _ in range(10):
             client.upsert(COLLECTION_NAME, points_batch)
-    except ResourceExhaustedResponse as ex:
-        print(ex.message)
+    except Exception as ex:
+        print(ex)
     # end of pre-condition
 
     points = generate_points(num_points=WRITE_LIMIT, vector_sizes=DIM)
@@ -2494,17 +2530,28 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc):
         ids.append(point.id)
         vectors.append(point.vector)
 
-    client.upload_collection(
-        COLLECTION_NAME, vectors, payload=None, ids=ids, wait=True, max_retries=1
-    )
+    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
+        client.upload_collection(
+            COLLECTION_NAME, vectors, payload=None, ids=ids, wait=True, max_retries=1
+        )
 
-    results = client.scroll(
-        collection_name=COLLECTION_NAME,
-        with_vectors=False,
-        with_payload=False,
-    )
-    result = results[0]
-    assert len(result) == WRITE_LIMIT
+        results = client.scroll(
+            collection_name=COLLECTION_NAME,
+            with_vectors=False,
+            with_payload=False,
+        )
+        result = results[0]
+        assert len(result) == WRITE_LIMIT
+    else:
+        if prefer_grpc:
+            exception_class = RpcError
+        else:
+            exception_class = qdrant_client.http.exceptions.UnexpectedResponse
+
+        with pytest.raises(exception_class):
+            client.upload_collection(
+                COLLECTION_NAME, vectors, payload=None, ids=ids, wait=True, max_retries=1
+            )
 
 
 if __name__ == "__main__":
