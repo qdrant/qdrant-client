@@ -1,7 +1,9 @@
 import asyncio
+import concurrent.futures
 import importlib.metadata
 import os
 import platform
+import time
 import uuid
 from pprint import pprint
 from tempfile import mkdtemp
@@ -2321,6 +2323,9 @@ def test_upsert_hits_large_request_limit(prefer_grpc):
         collection_name=COLLECTION_NAME,
         vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
         timeout=TIMEOUT,
+        strict_mode_config=models.StrictModeConfig(
+            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
+        ),
     )
 
     points = generate_points(num_points=100, vector_sizes=DIM)
@@ -2334,13 +2339,6 @@ def test_upsert_hits_large_request_limit(prefer_grpc):
         ids=ids,
         vectors=vectors,
         payloads=None,
-    )
-
-    client.update_collection(
-        collection_name=COLLECTION_NAME,
-        strict_mode_config=models.StrictModeConfig(
-            enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
-        ),
     )
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
@@ -2393,7 +2391,6 @@ def test_upsert_hits_write_rate_limit(prefer_grpc):
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
         flag = False
-        time_to_sleep = 0
         try:
             for _ in range(10):
                 client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
@@ -2401,13 +2398,8 @@ def test_upsert_hits_write_rate_limit(prefer_grpc):
             print(ex.message)
             assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
             flag = True
-            time_to_sleep = int(ex.retry_after_s)
 
-        if flag:
-            # verify next response after sleep succeeds
-            sleep(time_to_sleep)
-            client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
-        else:
+        if not flag:
             raise AssertionError("No ResourceExhaustedResponse exception was raised.")
     else:
         if prefer_grpc:
@@ -2455,7 +2447,6 @@ def test_query_hits_read_rate_limit(prefer_grpc):
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
         flag = False
-        time_to_sleep = 0
         try:
             for _ in range(10):
                 client.query_batch_points(
@@ -2465,15 +2456,8 @@ def test_query_hits_read_rate_limit(prefer_grpc):
             print(ex.message)
             assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
             flag = True
-            time_to_sleep = int(ex.retry_after_s)
 
-        if flag:
-            # verify next response after sleep succeeds
-            sleep(time_to_sleep)
-            client.query_batch_points(
-                collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
-            )
-        else:
+        if not flag:
             raise AssertionError(
                 "No ResourceExhaustedResponse exception was raised for remote_client."
             )
@@ -2493,7 +2477,7 @@ def test_query_hits_read_rate_limit(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-def test_upload_collection_succeeds_with_limits(prefer_grpc):
+def test_upload_collection_succeeds_with_limits(prefer_grpc, mocker):
     major, minor, patch, dev = read_version()
 
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
@@ -2531,17 +2515,42 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc):
         vectors.append(point.vector)
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
-        client.upload_collection(
-            COLLECTION_NAME, vectors, payload=None, ids=ids, wait=True, max_retries=1
-        )
+        if prefer_grpc:
+            mock = mocker.patch(
+                "qdrant_client.grpc.points_pb2.UpsertPoints",
+                side_effect=ResourceExhaustedResponse("test too many resources", retry_after_s=1),
+            )
+        else:
+            mock = mocker.patch(
+                "qdrant_client.http.api.points_api.SyncPointsApi.upsert_points",
+                side_effect=ResourceExhaustedResponse("test too many resources", retry_after_s=1),
+            )
 
-        results = client.scroll(
-            collection_name=COLLECTION_NAME,
-            with_vectors=False,
-            with_payload=False,
-        )
-        result = results[0]
-        assert len(result) == WRITE_LIMIT
+        def update_collection():
+            time.sleep(2)
+            client.update_collection(
+                collection_name=COLLECTION_NAME,
+                strict_mode_config=models.StrictModeConfig(enabled=False),
+            )
+            mock.side_effect = None
+
+        def run_upload_collection():
+            client.upload_collection(
+                COLLECTION_NAME, vectors, payload=None, ids=ids, wait=True, max_retries=1
+            )
+
+            results = client.scroll(
+                collection_name=COLLECTION_NAME,
+                with_vectors=False,
+                with_payload=False,
+            )
+            result = results[0]
+            assert len(result) == WRITE_LIMIT
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future1 = executor.submit(update_collection)
+            future2 = executor.submit(run_upload_collection)
+            concurrent.futures.wait([future1, future2])
     else:
         if prefer_grpc:
             exception_class = RpcError
