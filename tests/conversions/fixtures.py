@@ -1375,6 +1375,7 @@ expression = grpc.Expression(
             grpc.Expression(variable="some_variable"),
             grpc.Expression(condition=grpc.Condition(field=field_condition_match)),
             grpc.Expression(geo_distance=grpc.GeoDistance(origin=geo_point, to="my_field")),
+            grpc.Expression(datetime="some_datetime_variable"),
             grpc.Expression(neg=grpc.Expression(constant=1.0)),
             grpc.Expression(abs=grpc.Expression(variable="my_variable")),
             grpc.Expression(sqrt=grpc.Expression(constant=4.0)),

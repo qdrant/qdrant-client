@@ -728,7 +728,7 @@ class TestSimpleSearcher:
 
         prefetch = models.Prefetch(
             filter=models.Filter(must=[models.HasIdCondition(has_id=[point_id])]),
-            limit=100,
+            limit=1,
             using="text",
         )
 
@@ -737,7 +737,7 @@ class TestSimpleSearcher:
                 collection_name=COLLECTION_NAME,
                 prefetch=prefetch,
                 query=formula,
-                limit=100,
+                limit=1,
             )
         except ValueError as e:  # local mode error
             return comparable_error(e)

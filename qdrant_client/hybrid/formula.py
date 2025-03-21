@@ -6,6 +6,7 @@ from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.http import models
 from typing import Union, Any, Tuple
 
+from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import geo_distance
 from qdrant_client.local.payload_filters import check_condition
 from qdrant_client.local.payload_value_extractor import value_by_key
@@ -185,6 +186,21 @@ def evaluate_expression(
         raise ValueError(
             f"Expected geo point for {to} in the payload and/or in the formula defaults."
         )
+
+    elif isinstance(expression, models.DatetimeExpression):
+        # try to parse as datetime
+        dt = datetime_utils.parse(expression.datetime)
+        if dt is None:
+            # it must be a payload key, get from payload
+            dt_str = try_extract_payload_value(expression.datetime, payload, defaults)
+            dt = datetime_utils.parse(dt_str)
+            if dt is None:
+                raise ValueError(
+                    f"Expected datetime for {expression.datetime} in the payload and/or in the formula defaults."
+                )
+
+        return dt.timestamp()
+
     elif isinstance(expression, models.LinDecayExpression):
         x, target, midpoint, scale = evaluate_decay_params(
             expression.lin_decay, point_id, scores, payload, has_vector, defaults

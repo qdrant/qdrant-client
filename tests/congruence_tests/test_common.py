@@ -306,7 +306,7 @@ def compare_client_results(
             compare_records(sorted_1, sorted_2, abs_tol=1e-5)
         else:
             compare_records(res1, res2)
-    elif isinstance(res1, models.QueryResponse):
+    elif isinstance(res1, models.QueryResponse) and isinstance(res2, models.QueryResponse):
         if is_context_search is True:
             sorted_1 = sorted(res1.points, key=lambda x: (x.id))
             sorted_2 = sorted(res2.points, key=lambda x: (x.id))
