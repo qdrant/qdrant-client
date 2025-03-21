@@ -2316,7 +2316,7 @@ def test_upsert_hits_large_request_limit(prefer_grpc):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
     client.create_collection(
         collection_name=COLLECTION_NAME,
-        vectors_config={},
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
         timeout=TIMEOUT,
     )
 
