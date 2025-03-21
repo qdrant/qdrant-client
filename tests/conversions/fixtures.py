@@ -1379,6 +1379,12 @@ expression = grpc.Expression(
                 div=grpc.DivExpression(
                     left=grpc.Expression(constant=10.0),
                     right=grpc.Expression(constant=2.0),
+                )
+            ),
+            grpc.Expression(
+                div=grpc.DivExpression(
+                    left=grpc.Expression(constant=10.0),
+                    right=grpc.Expression(constant=2.0),
                     by_zero_default=0.0,
                 )
             ),

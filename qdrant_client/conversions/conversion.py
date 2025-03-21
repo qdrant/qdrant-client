@@ -1239,7 +1239,8 @@ class GrpcToRest:
     def convert_div_expression(cls, model: grpc.DivExpression) -> rest.DivExpression:
         left = cls.convert_expression(model.left)
         right = cls.convert_expression(model.right)
-        params = rest.DivParams(left=left, right=right, by_zero_default=model.by_zero_default)
+        by_zero_default = model.by_zero_default if model.HasField("by_zero_default") else None
+        params = rest.DivParams(left=left, right=right, by_zero_default=by_zero_default)
         return rest.DivExpression(div=params)
 
     @classmethod

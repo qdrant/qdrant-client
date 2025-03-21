@@ -8,7 +8,7 @@ def one_random_expression_please(current_depth: int = 0, max_depth: int = 5) -> 
     """Generate a random expression for testing purposes.
 
     Args:
-        depth: Current depth of expression nesting
+        current_depth: Current depth of expression nesting
         max_depth: Maximum allowed depth for nested expressions
 
     Returns:

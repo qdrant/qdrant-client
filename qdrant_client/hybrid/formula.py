@@ -293,10 +293,10 @@ def test_parsing_variable() -> None:
     "payload_value, expected", [(1.2, 1.2), ([1.2], 1.2), ([1.2, 2.3], [1.2, 2.3])]
 )
 def test_try_extract_payload_value(payload_value: Any, expected: Any) -> None:
-    defaults: dict[str, Any] = {}
+    empty_defaults: dict[str, Any] = {}
     payload = {"key": payload_value}
-    assert try_extract_payload_value("key", payload, defaults) == expected
+    assert try_extract_payload_value("key", payload, empty_defaults) == expected
 
     defaults = {"key": payload_value}
-    payload: dict[str, Any] = {}
-    assert try_extract_payload_value("key", payload, defaults) == expected
+    empty_payload: dict[str, Any] = {}
+    assert try_extract_payload_value("key", empty_payload, defaults) == expected
