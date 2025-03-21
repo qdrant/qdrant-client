@@ -2507,13 +2507,6 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc, mocker):
         print(ex)
     # end of pre-condition
 
-    points = generate_points(num_points=WRITE_LIMIT, vector_sizes=DIM)
-    ids = []
-    vectors = []
-    for point in points:
-        ids.append(point.id)
-        vectors.append(point.vector)
-
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
         if prefer_grpc:
             mock = mocker.patch(
