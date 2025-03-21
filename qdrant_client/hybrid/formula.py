@@ -94,13 +94,8 @@ def evaluate_expression(
             expression.sqrt, point_id, scores, payload, has_vector, defaults
         )
 
-        try:
-            sqrt_value = math.sqrt(value)
-            if math.isfinite(sqrt_value):
-                return sqrt_value
-        except ValueError as e:
-            if "domain error" not in str(e):
-                raise e
+        if value >= 0:
+            return math.sqrt(value)
 
         raise_non_finite_error(f"√{value}")
 
@@ -112,15 +107,12 @@ def evaluate_expression(
             expression.pow.exponent, point_id, scores, payload, has_vector, defaults
         )
 
-        try:
-            power = math.pow(base, exponent)
-            if math.isfinite(power):
-                return power
-        except ValueError as e:
-            if "domain error" not in str(e):
-                raise e
-        except OverflowError:
-            pass
+        # Check for valid input
+        if base >= 0 or (base != 0 and exponent.is_integer()):
+            try:
+                return math.pow(base, exponent)
+            except OverflowError:
+                pass
 
         raise_non_finite_error(f"{base}^{exponent}")
 
@@ -130,44 +122,31 @@ def evaluate_expression(
         )
 
         try:
-            exp_value = math.exp(value)
-            if math.isfinite(exp_value):
-                return exp_value
-        except ValueError as e:
-            if "domain error" not in str(e):
-                raise e
+            return math.exp(value)
         except OverflowError:
-            pass
-
-        raise_non_finite_error(f"exp({value})")
+            raise_non_finite_error(f"exp({value})")
 
     elif isinstance(expression, models.Log10Expression):
         value = evaluate_expression(
             expression.log10, point_id, scores, payload, has_vector, defaults
         )
 
-        try:
-            log_value = math.log10(value)
-            if math.isfinite(log_value):
-                return log_value
-        except ValueError as e:
-            if "domain error" not in str(e):
-                raise e
+        if value > 0:
+            try:
+                return math.log10(value)
+            except OverflowError:
+                pass
 
         raise_non_finite_error(f"log10({value})")
 
     elif isinstance(expression, models.LnExpression):
         value = evaluate_expression(expression.ln, point_id, scores, payload, has_vector, defaults)
 
-        try:
-            ln_value = math.log(value)
-            if math.isfinite(ln_value):
-                return ln_value
-        except ValueError as e:
-            if "domain error" not in str(e):
-                raise e
-        except OverflowError:
-            pass
+        if value > 0:
+            try:
+                return math.log(value)
+            except OverflowError:
+                pass
 
         raise_non_finite_error(f"ln({value})")
 
@@ -180,7 +159,7 @@ def evaluate_expression(
 
         if isinstance(geo_value, dict):
             # let this fail if it is not a valid geo point
-            destination = construct(models.GeoPoint, **geo_value)
+            destination = models.GeoPoint(**geo_value)
             return geo_distance(origin.lon, origin.lat, destination.lon, destination.lat)
 
         raise ValueError(
