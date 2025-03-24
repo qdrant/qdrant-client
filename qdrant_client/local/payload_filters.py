@@ -164,7 +164,7 @@ def check_nested_filter(nested_filter: models.Filter, values: list[Any]) -> bool
 
 def check_condition(
     condition: models.Condition,
-    payload: dict,
+    payload: dict[str, Any],
     point_id: models.ExtendedPointId,
     has_vector: Dict[str, bool],
 ) -> bool:

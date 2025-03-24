@@ -1346,6 +1346,54 @@ context_input_pair = grpc.ContextInputPair(
 context_input = grpc.ContextInput(pairs=[context_input_pair])
 discover_input = grpc.DiscoverInput(target=vector_input_dense, context=context_input)
 
+formula_defaults = payload_to_grpc(
+    {
+        "some_string": "some_value",
+        "some_number": 42.666,
+        "some_boolean": True,
+        "some_array": [1, 2, 3],
+        "some_object": {"key": "value"},
+        "some_null": None,
+    }
+)
+
+expression = grpc.Expression(
+    sum=grpc.SumExpression(
+        sum=[
+            grpc.Expression(mult=grpc.MultExpression(mult=[grpc.Expression(constant=0.1)])),
+            grpc.Expression(variable="some_variable"),
+            grpc.Expression(condition=grpc.Condition(field=field_condition_match)),
+            grpc.Expression(geo_distance=grpc.GeoDistance(origin=geo_point, to="my_field")),
+            grpc.Expression(neg=grpc.Expression(constant=1.0)),
+            grpc.Expression(abs=grpc.Expression(variable="my_variable")),
+            grpc.Expression(sqrt=grpc.Expression(constant=4.0)),
+            grpc.Expression(
+                pow=grpc.PowExpression(
+                    base=grpc.Expression(constant=2.0), exponent=grpc.Expression(constant=3.0)
+                )
+            ),
+            grpc.Expression(exp=grpc.Expression(constant=1.0)),
+            grpc.Expression(log10=grpc.Expression(constant=100.0)),
+            grpc.Expression(ln=grpc.Expression(constant=2.718)),
+            grpc.Expression(
+                div=grpc.DivExpression(
+                    left=grpc.Expression(constant=10.0),
+                    right=grpc.Expression(constant=2.0),
+                )
+            ),
+            grpc.Expression(
+                div=grpc.DivExpression(
+                    left=grpc.Expression(constant=10.0),
+                    right=grpc.Expression(constant=2.0),
+                    by_zero_default=0.0,
+                )
+            ),
+        ]
+    )
+)
+
+formula = grpc.Formula(defaults=formula_defaults, expression=expression)
+
 query_nearest = grpc.Query(nearest=vector_input_sparse)
 query_recommend = grpc.Query(recommend=recommend_input)
 query_recommend_id = grpc.Query(recommend=recommend_input_strategy)
@@ -1356,6 +1404,7 @@ query_order_by = grpc.Query(order_by=order_by)
 query_fusion = grpc.Query(fusion=grpc.Fusion.RRF)
 query_fusion_dbsf = grpc.Query(fusion=grpc.Fusion.DBSF)
 query_sample = grpc.Query(sample=grpc.Sample.Random)
+query_formula = grpc.Query(formula=formula)
 
 deep_prefetch_query = grpc.PrefetchQuery(query=query_recommend)
 prefetch_query = grpc.PrefetchQuery(
@@ -1567,6 +1616,7 @@ fixtures = {
         query_order_by,
         query_fusion,
         query_recommend_id,
+        query_formula,
     ],
     "FacetValueHit": [facet_string_hit, facet_integer_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
