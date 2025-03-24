@@ -1,5 +1,5 @@
 import warnings
-from typing import Union, Any
+from typing import Union, Any, Tuple
 
 import pytest
 import numpy as np
