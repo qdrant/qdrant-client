@@ -4,6 +4,8 @@ from typing import Any, Awaitable, Callable, Optional, Union
 
 import grpc
 
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
+
 
 # type: ignore # noqa: F401
 # Source <https://github.com/grpc/grpc/blob/master/examples/python/interceptors/headers/generic_client_interceptor.py>
@@ -70,7 +72,7 @@ class _GenericAsyncClientInterceptor(
         )
         next_request = next(new_request_iterator)
         response = await continuation(new_details, next_request)
-        return postprocess(response) if postprocess else response
+        return await postprocess(response) if postprocess else response
 
     async def intercept_unary_stream(
         self, continuation: Any, client_call_details: Any, request: Any
@@ -79,7 +81,7 @@ class _GenericAsyncClientInterceptor(
             client_call_details, iter((request,)), False, True
         )
         response_it = await continuation(new_details, next(new_request_iterator))
-        return postprocess(response_it) if postprocess else response_it
+        return await postprocess(response_it) if postprocess else response_it
 
     async def intercept_stream_unary(
         self, continuation: Any, client_call_details: Any, request_iterator: Any
@@ -88,7 +90,7 @@ class _GenericAsyncClientInterceptor(
             client_call_details, request_iterator, True, False
         )
         response = await continuation(new_details, new_request_iterator)
-        return postprocess(response) if postprocess else response
+        return await postprocess(response) if postprocess else response
 
     async def intercept_stream_stream(
         self, continuation: Any, client_call_details: Any, request_iterator: Any
@@ -97,7 +99,7 @@ class _GenericAsyncClientInterceptor(
             client_call_details, request_iterator, True, True
         )
         response_it = await continuation(new_details, new_request_iterator)
-        return postprocess(response_it) if postprocess else response_it
+        return await postprocess(response_it) if postprocess else response_it
 
 
 def create_generic_client_interceptor(intercept_call: Any) -> _GenericClientInterceptor:
@@ -130,6 +132,21 @@ def header_adder_interceptor(
     new_metadata: list[tuple[str, str]],
     auth_token_provider: Optional[Callable[[], str]] = None,
 ) -> _GenericClientInterceptor:
+    def process_response(response: Any) -> Any:
+        if response.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
+            retry_after = None
+            for item in response.trailing_metadata():
+                if item.key == "retry-after":
+                    try:
+                        retry_after = int(item.value)
+                    except Exception:
+                        retry_after = None
+                    break
+            reason_phrase = response.details() if response.details() else ""
+            if retry_after:
+                raise ResourceExhaustedResponse(message=reason_phrase, retry_after_s=retry_after)
+        return response
+
     def intercept_call(
         client_call_details: _ClientCallDetails,
         request_iterator: Any,
@@ -160,7 +177,7 @@ def header_adder_interceptor(
             metadata,
             client_call_details.credentials,
         )
-        return client_call_details, request_iterator, None
+        return client_call_details, request_iterator, process_response
 
     return create_generic_client_interceptor(intercept_call)
 
@@ -169,6 +186,26 @@ def header_adder_async_interceptor(
     new_metadata: list[tuple[str, str]],
     auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
 ) -> _GenericAsyncClientInterceptor:
+    async def process_response(call: Any) -> Any:
+        try:
+            return await call
+        except grpc.aio.AioRpcError as er:
+            if er.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
+                retry_after = None
+                for item in er.trailing_metadata():
+                    if item[0] == "retry-after":
+                        try:
+                            retry_after = int(item[1])
+                        except Exception:
+                            retry_after = None
+                        break
+                reason_phrase = er.details() if er.details() else ""
+                if retry_after:
+                    raise ResourceExhaustedResponse(
+                        message=reason_phrase, retry_after_s=retry_after
+                    ) from er
+            raise
+
     async def intercept_call(
         client_call_details: grpc.aio.ClientCallDetails,
         request_iterator: Any,
@@ -194,7 +231,7 @@ def header_adder_async_interceptor(
             metadata.append(("authorization", f"Bearer {token}"))
 
         client_call_details = client_call_details._replace(metadata=metadata)
-        return client_call_details, request_iterator, None
+        return client_call_details, request_iterator, process_response
 
     return create_generic_async_client_interceptor(intercept_call)
 
