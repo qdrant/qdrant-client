@@ -2,6 +2,11 @@
 
 set -e
 
+if [ -z "$VIRTUAL_ENV" ]; then
+    echo "Not in a Poetry shell. Activating Poetry environment..."
+    exec poetry run bash "$0" "$@"
+fi
+
 PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
 
 pip install grpcio==1.48.2
