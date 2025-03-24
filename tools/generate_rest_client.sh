@@ -29,7 +29,7 @@ cp $OPENAPI_PATH openapi-qdrant.yaml
 
 PATH_TO_QDRANT_CLIENT=$PROJECT_ROOT
 
-INPUT_YAML=openapi-qdrant.yaml IMPORT_NAME="qdrant_client.http" PACKAGE_NAME=qdrant_openapi_client bash -x scripts/model_data_generator.sh
+INPUT_YAML=openapi-qdrant.yaml ROOT_PACKAGE_NAME="qdrant_client" IMPORT_NAME="qdrant_client.http" PACKAGE_NAME=qdrant_openapi_client bash -x scripts/model_data_generator.sh
 
 rm -rf ${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/
 mv scripts/output/qdrant_openapi_client ${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/

@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 
 from httpx import AsyncClient, Client, Request, Response
 from pydantic import ValidationError
+from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http.api.aliases_api import AsyncAliasesApi, SyncAliasesApi
 from qdrant_client.http.api.beta_api import AsyncBetaApi, SyncBetaApi
 from qdrant_client.http.api.collections_api import AsyncCollectionsApi, SyncCollectionsApi
@@ -104,6 +105,18 @@ class ApiClient:
 
     def send(self, request: Request, type_: Type[T]) -> T:
         response = self.middleware(request, self.send_inner)
+
+        if response.status_code == 429:
+            retry_after_s = response.headers.get("Retry-After", None)
+            try:
+                resp = response.json()
+                message = resp["status"]["error"] if resp["status"] and resp["status"]["error"] else ""
+            except Exception:
+                message = ""
+
+            if retry_after_s:
+                raise ResourceExhaustedResponse(message, retry_after_s)
+
         if response.status_code in [200, 201, 202]:
             try:
                 return parse_as_type(response.json(), type_)
@@ -176,6 +189,18 @@ class AsyncApiClient:
 
     async def send(self, request: Request, type_: Type[T]) -> T:
         response = await self.middleware(request, self.send_inner)
+
+        if response.status_code == 429:
+            retry_after_s = response.headers.get("Retry-After", None)
+            try:
+                resp = response.json()
+                message = resp["status"]["error"] if resp["status"] and resp["status"]["error"] else ""
+            except Exception:
+                message = ""
+
+            if retry_after_s:
+                raise ResourceExhaustedResponse(message, retry_after_s)
+
         if response.status_code in [200, 201, 202]:
             try:
                 return parse_as_type(response.json(), type_)
