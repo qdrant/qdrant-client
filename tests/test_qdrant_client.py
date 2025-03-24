@@ -2328,17 +2328,6 @@ def test_upsert_hits_large_request_limit(prefer_grpc):
     )
 
     points = generate_points(num_points=100, vector_sizes=DIM)
-    ids = []
-    vectors = []
-    for point in points:
-        ids.append(point.id)
-        vectors.append(point.vector)
-
-    points_batch = models.Batch(
-        ids=ids,
-        vectors=vectors,
-        payloads=None,
-    )
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
         if prefer_grpc:
@@ -2350,9 +2339,9 @@ def test_upsert_hits_large_request_limit(prefer_grpc):
             exception_class,
             match="Write rate limit exceeded",
         ):
-            client.upsert(COLLECTION_NAME, points_batch)
+            client.upsert(COLLECTION_NAME, points)
     else:
-        client.upsert(COLLECTION_NAME, points_batch)
+        client.upsert(COLLECTION_NAME, points)
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
@@ -2368,49 +2357,29 @@ def test_upsert_hits_write_rate_limit(prefer_grpc):
         timeout=TIMEOUT,
     )
 
-    points = generate_points(num_points=WRITE_LIMIT, vector_sizes=DIM)
-    ids = []
-    vectors = []
-    for point in points:
-        ids.append(point.id)
-        vectors.append(point.vector)
-
-    points_batch = models.Batch(
-        ids=ids,
-        vectors=vectors,
-        payloads=None,
-    )
-
     client.update_collection(
         collection_name=COLLECTION_NAME,
         strict_mode_config=models.StrictModeConfig(
             enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
         ),
-    )
+    )  # there is a bug in core in v1.12.6 which ignores the value set in write_rate_limit and assigns read_rate_limit
+    # value to both rate limits
+
+    points = generate_points(num_points=WRITE_LIMIT, vector_sizes=DIM)
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
-        flag = False
-        try:
-            for _ in range(10):
-                client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
-        except ResourceExhaustedResponse as ex:
-            print(ex.message)
-            assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
-            flag = True
-
-        if not flag:
-            raise AssertionError("No ResourceExhaustedResponse exception was raised.")
+        exception_class = ResourceExhaustedResponse
     else:
-        if prefer_grpc:
-            exception_class = RpcError
-        else:
-            exception_class = qdrant_client.http.exceptions.UnexpectedResponse
+        exception_class = (
+            RpcError if prefer_grpc else qdrant_client.http.exceptions.UnexpectedResponse
+        )
 
-        with pytest.raises(
-            exception_class,
-        ):
-            for _ in range(10):
-                client.upsert(collection_name=COLLECTION_NAME, points=points_batch)
+    with pytest.raises(exception_class):
+        try:
+            for _ in range(WRITE_LIMIT + 1):
+                client.upsert(collection_name=COLLECTION_NAME, points=points)
+        except Exception as e:
+            raise e
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
@@ -2424,55 +2393,33 @@ def test_query_hits_read_rate_limit(prefer_grpc):
         collection_name=COLLECTION_NAME,
         vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
         timeout=TIMEOUT,
-    )
-
-    dense_vector_query_batch_text = []
-    for _ in range(READ_LIMIT):
-        dense_vector_query_batch_text.append(
-            models.QueryRequest(
-                query=np.random.random(DIM).tolist(),
-                prefetch=models.Prefetch(query=np.random.random(DIM).tolist(), limit=5),
-                limit=5,
-                with_payload=True,
-            )
-        )
-
-    client.update_collection(
-        collection_name=COLLECTION_NAME,
         strict_mode_config=models.StrictModeConfig(
             enabled=True, read_rate_limit=READ_LIMIT, write_rate_limit=WRITE_LIMIT
         ),
     )
 
+    dense_vector_query_batch_text = [
+        models.QueryRequest(
+            query=np.random.random(DIM).tolist(),
+            prefetch=models.Prefetch(query=np.random.random(DIM).tolist(), limit=5),
+            limit=5,
+            with_payload=True,
+        )
+        for _ in range(READ_LIMIT)
+    ]
+
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
-        flag = False
-        try:
-            for _ in range(10):
-                client.query_batch_points(
-                    collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
-                )
-        except ResourceExhaustedResponse as ex:
-            print(ex.message)
-            assert ex.retry_after_s > 0, f"Unexpected retry_after_s value: {ex.retry_after_s}"
-            flag = True
-
-        if not flag:
-            raise AssertionError(
-                "No ResourceExhaustedResponse exception was raised for remote_client."
-            )
+        exception_class = ResourceExhaustedResponse
     else:
-        if prefer_grpc:
-            exception_class = RpcError
-        else:
-            exception_class = qdrant_client.http.exceptions.UnexpectedResponse
+        exception_class = (
+            RpcError if prefer_grpc else qdrant_client.http.exceptions.UnexpectedResponse
+        )
 
-        with pytest.raises(
-            exception_class,
-        ):
-            for _ in range(10):
-                client.query_batch_points(
-                    collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
-                )
+    with pytest.raises(exception_class):
+        for _ in range(READ_LIMIT + 1):
+            client.query_batch_points(
+                collection_name=COLLECTION_NAME, requests=dense_vector_query_batch_text
+            )
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
@@ -2492,18 +2439,12 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc, mocker):
     )
     # pre-condition: hit the limit first then do upload_collection
     points = generate_points(num_points=WRITE_LIMIT, vector_sizes=DIM)
-    ids = []
-    vectors = []
-    for point in points:
-        ids.append(point.id)
-        vectors.append(point.vector)
 
-    points_batch = models.Batch(ids=ids, vectors=vectors, payloads=None)
     try:
         for _ in range(10):
-            client.upsert(COLLECTION_NAME, points_batch)
+            client.upsert(COLLECTION_NAME, points)
     except Exception as ex:
-        print(ex)
+        pass
     # end of pre-condition
 
     if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 13, 0):
@@ -2526,10 +2467,8 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc, mocker):
             )
             mock.side_effect = None
 
-        def run_upload_collection():
-            client.upload_collection(
-                COLLECTION_NAME, vectors, payload=None, ids=ids, wait=True, max_retries=1
-            )
+        def run_upload_points():
+            client.upload_points(COLLECTION_NAME, points=points, wait=True, max_retries=1)
 
             results = client.scroll(
                 collection_name=COLLECTION_NAME,
@@ -2541,7 +2480,7 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc, mocker):
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future1 = executor.submit(update_collection)
-            future2 = executor.submit(run_upload_collection)
+            future2 = executor.submit(run_upload_points)
             concurrent.futures.wait([future1, future2])
     else:
         if prefer_grpc:
@@ -2550,9 +2489,7 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc, mocker):
             exception_class = qdrant_client.http.exceptions.UnexpectedResponse
 
         with pytest.raises(exception_class):
-            client.upload_collection(
-                COLLECTION_NAME, vectors, payload=None, ids=ids, wait=True, max_retries=1
-            )
+            client.upload_points(COLLECTION_NAME, points=points, wait=True, max_retries=1)
 
 
 if __name__ == "__main__":
