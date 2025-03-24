@@ -1401,7 +1401,7 @@ expression = grpc.Expression(
             ),
             grpc.Expression(exp_decay=decay_params_expression),
             grpc.Expression(gauss_decay=decay_params_expression),
-            grpc.Expression(lin_decay=decay_params_expression),
+            grpc.Expression(lin_decay=decay_params_expression_optionals),
         ]
     )
 )
@@ -1638,7 +1638,6 @@ fixtures = {
     "SearchMatrixPairs": [search_matrix_pairs],
     "SearchMatrixOffsets": [search_matrix_offsets],
     "StrictModeConfig": [strict_mode_config, strict_mode_config_empty],
-    "DecayParamsExpression": [decay_params_expression_optionals],
 }
 
 
