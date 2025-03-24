@@ -504,6 +504,21 @@ class DatetimeRange(BaseModel, extra="forbid"):
     lte: Optional[Union[datetime, date]] = Field(default=None, description="point.key &lt;= range.lte")
 
 
+class DecayParamsExpression(BaseModel, extra="forbid"):
+    x: "Expression" = Field(..., description="")
+    target: Optional["Expression"] = Field(
+        default=None, description="The target value to start decaying from. Defaults to 0."
+    )
+    scale: Optional[float] = Field(
+        default=None,
+        description="The scale factor of the decay, in terms of `x`. Defaults to 1.0. Must be a non-zero positive number.",
+    )
+    midpoint: Optional[float] = Field(
+        default=None,
+        description="The midpoint of the decay. Defaults to 0.5. Output will be this value when `|x - target| == scale`.",
+    )
+
+
 class DeleteAlias(BaseModel, extra="forbid"):
     """
     Delete alias if exists
@@ -684,6 +699,10 @@ class ErrorResponseStatus(BaseModel):
     error: Optional[str] = Field(default=None, description="Description of the occurred error.")
 
 
+class ExpDecayExpression(BaseModel, extra="forbid"):
+    exp_decay: "DecayParamsExpression" = Field(..., description="")
+
+
 class ExpExpression(BaseModel, extra="forbid"):
     exp: "Expression" = Field(..., description="")
 
@@ -786,6 +805,10 @@ class Fusion(str, Enum):
 
 class FusionQuery(BaseModel, extra="forbid"):
     fusion: "Fusion" = Field(..., description="")
+
+
+class GaussDecayExpression(BaseModel, extra="forbid"):
+    gauss_decay: "DecayParamsExpression" = Field(..., description="")
 
 
 class GeoBoundingBox(BaseModel, extra="forbid"):
@@ -1265,6 +1288,10 @@ class KeywordIndexParams(BaseModel, extra="forbid"):
 
 class KeywordIndexType(str, Enum):
     KEYWORD = "keyword"
+
+
+class LinDecayExpression(BaseModel, extra="forbid"):
+    lin_decay: "DecayParamsExpression" = Field(..., description="")
 
 
 class LnExpression(BaseModel, extra="forbid"):
@@ -3413,6 +3440,9 @@ Expression = Union[
     Log10Expression,
     LnExpression,
     GeoDistance,
+    LinDecayExpression,
+    ExpDecayExpression,
+    GaussDecayExpression,
 ]
 PayloadFieldSchema = Union[
     PayloadSchemaType,

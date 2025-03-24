@@ -238,7 +238,7 @@ def compare_scored_record(
         point1.id == point2.id
     ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
     assert math.isclose(
-        point1.score, point2.score, rel_tol=rel_tol, abs_tol=abs_tol
+        np.float32(point1.score), np.float32(point2.score), rel_tol=rel_tol, abs_tol=abs_tol
     ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, rel_tol={rel_tol}"
     assert (
         point1.payload == point2.payload
