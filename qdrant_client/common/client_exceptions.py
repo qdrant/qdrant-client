@@ -1,6 +1,3 @@
-from grpc.aio import AioRpcError
-
-
 class QdrantException(Exception):
     """Base class"""
 
