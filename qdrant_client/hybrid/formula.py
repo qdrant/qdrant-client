@@ -1,11 +1,12 @@
-import pytest
 import warnings
+from typing import Union, Any
+
+import pytest
+import numpy as np
+
 from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.http import models
-from typing import Union, Any
-import numpy as np
-
 from qdrant_client.local.geo import geo_distance
 from qdrant_client.local.payload_filters import check_condition
 from qdrant_client.local.payload_value_extractor import value_by_key

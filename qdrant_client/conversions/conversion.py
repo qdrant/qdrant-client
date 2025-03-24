@@ -1,5 +1,4 @@
 from datetime import date, datetime, timezone
-import re
 from typing import Any, Mapping, Optional, Sequence, Union, get_args
 
 from google.protobuf.internal.containers import MessageMap
