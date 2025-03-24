@@ -1,5 +1,5 @@
 import warnings
-from typing import Union, Any
+from typing import Union, Any, Tuple
 
 import pytest
 import numpy as np
@@ -12,6 +12,9 @@ from qdrant_client.local.payload_filters import check_condition
 from qdrant_client.local.payload_value_extractor import value_by_key
 
 DEFAULT_SCORE = np.float32(0.0)
+DEFAULT_DECAY_TARGET = np.float32(0.0)
+DEFAULT_DECAY_MIDPOINT = np.float32(0.5)
+DEFAULT_DECAY_SCALE = np.float32(1.0)
 
 
 def evaluate_expression(
@@ -170,8 +173,67 @@ def evaluate_expression(
         raise ValueError(
             f"Expected geo point for {to} in the payload and/or in the formula defaults."
         )
+    elif isinstance(expression, models.LinDecayExpression):
+        x, target, midpoint, scale = evaluate_decay_params(
+            expression.lin_decay, point_id, scores, payload, has_vector, defaults
+        )
+        one = np.float32(1.0)
+        zero = np.float32(0.0)
+
+        ℷ = (one - midpoint) / scale
+        diff = abs(x - target)
+        return np.fmax(zero, -ℷ * diff + one)
+
+    elif isinstance(expression, models.ExpDecayExpression):
+        x, target, midpoint, scale = evaluate_decay_params(
+            expression.exp_decay, point_id, scores, payload, has_vector, defaults
+        )
+
+        ℷ = np.log(midpoint, dtype=np.float32) / scale
+        diff = abs(x - target)
+        return np.exp(ℷ * diff)
+
+    elif isinstance(expression, models.GaussDecayExpression):
+        x, target, midpoint, scale = evaluate_decay_params(
+            expression.gauss_decay, point_id, scores, payload, has_vector, defaults
+        )
+
+        ℷ = np.log(midpoint, dtype=np.float32) / (scale * scale)
+        diff = x - target
+        return np.exp(ℷ * diff * diff)
 
     raise ValueError(f"Unsupported expression type: {type(expression)}")
+
+
+def evaluate_decay_params(
+    params: models.DecayParamsExpression,
+    point_id: models.ExtendedPointId,
+    scores: list[dict[models.ExtendedPointId, float]],
+    payload: models.Payload,
+    has_vector: dict[str, bool],
+    defaults: dict[str, Any],
+) -> Tuple[np.float32, np.float32, np.float32, np.float32]:
+    x = evaluate_expression(params.x, point_id, scores, payload, has_vector, defaults)
+
+    if params.target is None:
+        target = DEFAULT_DECAY_TARGET
+    else:
+        target = evaluate_expression(
+            params.target, point_id, scores, payload, has_vector, defaults
+        )
+
+    midpoint = (
+        np.float32(params.midpoint) if params.midpoint is not None else DEFAULT_DECAY_MIDPOINT
+    )
+
+    if midpoint <= 0.0 or midpoint >= 1.0:
+        raise ValueError(f"Midpoint must be between 0 and 1, got {midpoint}")
+
+    scale = np.float32(params.scale) if params.scale is not None else DEFAULT_DECAY_SCALE
+    if scale <= 0.0:
+        raise ValueError(f"Scale must be non-zero positive, got {scale}")
+
+    return x, target, midpoint, scale
 
 
 def try_extract_payload_value(key: str, payload: models.Payload, defaults: dict[str, Any]) -> Any:
