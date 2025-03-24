@@ -5,7 +5,7 @@ class QdrantException(Exception):
     """Base class"""
 
 
-class ResourceExhaustedResponse(QdrantException, AioRpcError):
+class ResourceExhaustedResponse(QdrantException):
     def __init__(self, message: str, retry_after_s: int) -> None:
         self.message = message if message else "Resource Exhausted Response"
         try:
