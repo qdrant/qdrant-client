@@ -3457,8 +3457,8 @@ class RestToGrpc:
 
     @classmethod
     def convert_expression(cls, model: rest.Expression) -> grpc.Expression:
-        if isinstance(model, (float, int)):
-            return grpc.Expression(constant=float(model))
+        if isinstance(model, float):
+            return grpc.Expression(constant=model)
         if isinstance(model, str):
             return grpc.Expression(variable=model)
         if isinstance(model, get_args_subscribed(rest.Condition)):
