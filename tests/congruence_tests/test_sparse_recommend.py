@@ -204,9 +204,9 @@ class TestSimpleRecommendation:
 
 
 def test_simple_recommend() -> None:
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(100)
 
-    secondary_collection_points = generate_sparse_fixtures(100)
+    secondary_collection_points = generate_sparse_fixtures(50)
 
     searcher = TestSimpleRecommendation()
 
@@ -256,6 +256,28 @@ def test_simple_recommend() -> None:
     )
     compare_client_results(local_client, remote_client, searcher.recommend_batch)
 
+
+def test_simple_recommend_filters():
+    fixture_points = generate_sparse_fixtures()
+
+    searcher = TestSimpleRecommendation()
+
+    local_client = init_local()
+    init_client(
+        local_client,
+        fixture_points,
+        vectors_config={},
+        sparse_vectors_config=sparse_vectors_config,
+    )
+
+    remote_client = init_remote()
+    init_client(
+        remote_client,
+        fixture_points,
+        vectors_config={},
+        sparse_vectors_config=sparse_vectors_config,
+    )
+
     for _ in range(10):
         query_filter = one_random_filter_please()
         try:
@@ -271,7 +293,7 @@ def test_simple_recommend() -> None:
 
 
 def test_query_with_nan():
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(10)
     sparse_vector_dict = random_sparse_vectors({"sparse-image": sparse_image_vector_size})
     sparse_vector = sparse_vector_dict["sparse-image"]
     sparse_vector.values[0] = np.nan

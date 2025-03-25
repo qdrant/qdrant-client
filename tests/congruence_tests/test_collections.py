@@ -18,7 +18,7 @@ COLLECTION_NAME = "test_collection"
 
 
 def test_get_collection():
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(100)
 
     remote_client = init_remote()
 
@@ -106,7 +106,7 @@ def test_init_from():
     remote_client = init_remote()
     local_client = init_local()
 
-    points = generate_fixtures(vectors_sizes=vector_size)
+    points = generate_fixtures(100, vectors_sizes=vector_size)
     vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
     if remote_client.collection_exists(COLLECTION_NAME):

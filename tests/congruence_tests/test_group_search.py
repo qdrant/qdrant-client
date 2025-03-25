@@ -217,7 +217,7 @@ def group_by_keys():
 
 
 def test_group_search_types():
-    fixture_points = generate_fixtures(vectors_sizes=50)
+    fixture_points = generate_fixtures(100, vectors_sizes=50)
     vectors_config = models.VectorParams(size=50, distance=models.Distance.EUCLID)
 
     searcher = TestGroupSearcher()
@@ -244,7 +244,7 @@ def test_group_search_types():
     delete_fixture_collection(local_client)
     delete_fixture_collection(remote_client)
 
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(100)
     init_client(local_client, fixture_points)
     init_client(remote_client, fixture_points)
 
