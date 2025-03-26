@@ -233,32 +233,34 @@ class Embedder:
             raise ValueError("Either documents or images should be provided")
 
         embeddings: NumericVector  # define type for a static type checker
-        if model_name in SUPPORTED_EMBEDDING_MODELS:
-            assert (
-                    texts is not None
-            ), f"Texts should be provided for dense text embeddings. Model: {model_name}"
-            embeddings = self._embed_dense_text(texts, model_name, options, is_query, batch_size)
-        elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
-            assert (
-                    texts is not None
-            ), f"Texts should be provided for sparse text embeddings. Model: {model_name}"
-            embeddings = self._embed_sparse_text(texts, model_name, options, is_query, batch_size)
-        elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
-            assert (
-                    texts is not None
-            ), f"Texts should be provided for late interaction embeddings. Model {model_name}"
-            embeddings = self._embed_late_interaction_text(
-                texts, model_name, options, is_query, batch_size
-            )
-        elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
-            embeddings = self._embed_late_interaction_multimodal(
-                texts, images, model_name, options, batch_size
-            )
+        if texts:
+            if model_name in SUPPORTED_EMBEDDING_MODELS:
+                embeddings = self._embed_dense_text(
+                    texts, model_name, options, is_query, batch_size
+                )
+            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+                embeddings = self._embed_sparse_text(
+                    texts, model_name, options, is_query, batch_size
+                )
+            elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
+                embeddings = self._embed_late_interaction_text(
+                    texts, model_name, options, is_query, batch_size
+                )
+            elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+                embeddings = self._embed_late_interaction_multimodal(
+                    texts, images, model_name, options, batch_size
+                )
+            else:
+                raise ValueError(f"Unsupported embedding model: {model_name}")
         else:
-            assert (
-                    images is not None
-            ), f"Images should be provided for image embeddings. Model: {model_name}"
-            embeddings = self._embed_dense_image(images, model_name, options, batch_size)
+            if model_name in _IMAGE_EMBEDDING_MODELS:
+                embeddings = self._embed_dense_image(images, model_name, options, batch_size)
+            elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+                embeddings = self._embed_late_interaction_multimodal(
+                    texts, images, model_name, options, batch_size
+                )
+            else:
+                raise ValueError(f"Unsupported embedding model: {model_name}")
 
         return embeddings
 
