@@ -233,7 +233,7 @@ class Embedder:
             raise ValueError("Either documents or images should be provided")
 
         embeddings: NumericVector  # define type for a static type checker
-        if texts:
+        if texts is not None:
             if model_name in SUPPORTED_EMBEDDING_MODELS:
                 embeddings = self._embed_dense_text(
                     texts, model_name, options, is_query, batch_size
@@ -253,6 +253,9 @@ class Embedder:
             else:
                 raise ValueError(f"Unsupported embedding model: {model_name}")
         else:
+            assert (
+                images is not None
+            )  # just to satisfy mypy which can't infer it from the previous conditions
             if model_name in _IMAGE_EMBEDDING_MODELS:
                 embeddings = self._embed_dense_image(images, model_name, options, batch_size)
             elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
