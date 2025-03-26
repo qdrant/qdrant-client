@@ -1,5 +1,5 @@
 import math
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, get_args
 
 import numpy as np
 
@@ -294,7 +294,9 @@ def compare_client_results(
 
     # compare scroll results
     if isinstance(res1, tuple) and len(res1) == 2:
-        if isinstance(res1[0], list) and (res1[1] is None or isinstance(res1[1], types.PointId)):
+        if isinstance(res1[0], list) and (
+            res1[1] is None or isinstance(res1[1], get_args(types.PointId))
+        ):
             res1, offset1 = res1
             res2, offset2 = res2
             assert offset1 == offset2, f"offset1 = {offset1}, offset2 = {offset2}"
