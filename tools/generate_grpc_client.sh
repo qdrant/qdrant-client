@@ -4,25 +4,23 @@ set -e
 PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
 
 TMP_QDRANT=$(mktemp -d)
-TMP_POETRY=$(mktemp -d)
-TMP_POETRY_PROJECT=$(mktemp -d)
+TMP_VENV=$(mktemp -d)
+TMP_CLIENT=$(mktemp -d)
 
 cleanup() {
   echo "Cleaning up temporary directories..."
-  rm -rf "$TMP_QDRANT" "$TMP_POETRY" "$TMP_POETRY_PROJECT"
+  rm -rf "$TMP_QDRANT" "$TMP_VENV" "$TMP_CLIENT"
 }
 trap cleanup EXIT
 
-export POETRY_VIRTUALENVS_PATH="$TMP_POETRY"
-cd "$TMP_POETRY_PROJECT"
-poetry init --no-interaction --name temp-proj
-# Force Poetry to use Python 3.10, won't work if python3.10 is not available at PATH
-poetry env use python3.10
+python3.10 -m venv "$TMP_VENV"
+source "$TMP_VENV/bin/activate"
 
-PYTHON_VERSION=$(poetry run python --version)
+PYTHON_VERSION=$(python --version)
 echo "Using Python version: $PYTHON_VERSION"
 
-poetry run pip install grpcio==1.48.2 grpcio-tools==1.48.2
+pip install --upgrade pip
+pip install grpcio==1.48.2 grpcio-tools==1.48.2
 
 cd "$TMP_QDRANT"
 git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
@@ -34,6 +32,7 @@ PROTO_DIR="$(pwd)/lib/api/src/grpc/proto"
 cd "$PROJECT_ROOT"
 
 CLIENT_DIR="qdrant_client/proto"
+GRPC_OUT_DIR="qdrant_client/grpc"
 
 cp "$PROTO_DIR"/*.proto "$CLIENT_DIR/"
 
@@ -53,10 +52,13 @@ grep -v 'collections_internal_service.proto' "$CLIENT_DIR/qdrant.proto" \
   > "$CLIENT_DIR/qdrant_tmp.proto"
 mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
 
-poetry run python -m grpc_tools.protoc --proto_path=qdrant_client/proto/ \
-  -I ./qdrant_client/grpc \
-  ./qdrant_client/proto/*.proto \
-  --python_out=./qdrant_client/grpc \
-  --grpc_python_out=./qdrant_client/grpc
+python -m grpc_tools.protoc --proto_path="$CLIENT_DIR" \
+  -I ./"$GRPC_OUT_DIR" \
+  "$CLIENT_DIR"/*.proto \
+  --python_out=./"$GRPC_OUT_DIR" \
+  --grpc_python_out=./"$GRPC_OUT_DIR"
 
-sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./qdrant_client/grpc/*.py
+# Fix imports
+sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./"$GRPC_OUT_DIR"/*.py
+
+deactivate

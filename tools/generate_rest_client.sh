@@ -5,11 +5,11 @@ PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
 
 TMP_QDRANT=$(mktemp -d)
 TMP_PYDANTIC=$(mktemp -d)
-TMP_POETRY_ENV=$(mktemp -d)
+TMP_VENV=$(mktemp -d)
 
 cleanup() {
   echo "Cleaning up temporary directories..."
-  rm -rf "$TMP_QDRANT" "$TMP_PYDANTIC" "$TMP_POETRY_ENV"
+  rm -rf "$TMP_QDRANT" "$TMP_PYDANTIC" "$TMP_VENV"
 }
 trap cleanup EXIT
 
@@ -28,9 +28,11 @@ cd "$TMP_PYDANTIC"
 git clone git@github.com:qdrant/pydantic_openapi_v3.git
 cd pydantic_openapi_v3
 
-export POETRY_VIRTUALENVS_PATH="$TMP_POETRY_ENV"
-poetry env use python3.10
-poetry install
+# Set up venv instead of poetry
+python3.10 -m venv "$TMP_VENV"
+source "$TMP_VENV/bin/activate"
+pip install --upgrade pip
+pip install .
 
 cp "$OPENAPI_PATH" openapi-qdrant.yaml
 
@@ -43,3 +45,5 @@ bash -x scripts/model_data_generator.sh
 
 rm -rf "${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/"
 mv scripts/output/qdrant_openapi_client "${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/"
+
+deactivate
