@@ -19,15 +19,22 @@ class MultiRecoQuery:
         self,
         positive: Optional[list[list[list[float]]]] = None,  # list of matrices
         negative: Optional[list[list[list[float]]]] = None,  # list of matrices
+        strategy: Optional[models.RecommendStrategy] = None,
     ):
+        assert strategy is not None, "Recommend strategy must be provided"
+
+        self.strategy = strategy
+
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
 
+        for vector in positive:
+            assert not np.isnan(vector).any(), "Positive vectors must not contain NaN"
+        for vector in negative:
+            assert not np.isnan(vector).any(), "Negative vectors must not contain NaN"
+
         self.positive: list[types.NumpyArray] = [np.array(vector) for vector in positive]
         self.negative: list[types.NumpyArray] = [np.array(vector) for vector in negative]
-
-        assert not np.isnan(self.positive).any(), "Positive vectors must not contain NaN"
-        assert not np.isnan(self.negative).any(), "Negative vectors must not contain NaN"
 
 
 class MultiContextPair:
@@ -73,7 +80,7 @@ def calculate_multi_distance(
     for matrix in matrices:
         sim_matrix = calculate_distance(query_matrix, matrix, distance_type)
         op = np.max if not reverse else np.min
-        similarity = float(np.sum(op(sim_matrix, axis=-1)))
+        similarity = float(np.sum(op(sim_matrix[: query_matrix.shape[0]], axis=-1)))
         similarities.append(similarity)
     return np.array(similarities)
 
@@ -84,10 +91,10 @@ def calculate_multi_distance_core(
     distance_type: models.Distance,
 ) -> types.NumpyArray:
     def euclidean(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
-        return -np.square(m - q, dtype=np.float32).sum(axis=1, dtype=np.float32)
+        return -np.square(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
     def manhattan(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
-        return -np.abs(m - q, dtype=np.float32).sum(axis=1, dtype=np.float32)
+        return -np.abs(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
     assert not np.isnan(query_matrix).any(), "Query vector must not contain NaN"
     if distance_type in [models.Distance.EUCLID, models.Distance.MANHATTAN]:
@@ -132,6 +139,29 @@ def calculate_multi_recommend_best_scores(
         np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
         np.fromiter((-scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
     )
+
+
+def calculate_multi_recommend_sum_scores(
+    query: MultiRecoQuery, matrices: list[types.NumpyArray], distance_type: models.Distance
+) -> types.NumpyArray:
+    def get_sum_scores(examples: list[types.NumpyArray]) -> types.NumpyArray:
+        matrix_count = len(matrices)
+
+        scores: list[types.NumpyArray] = []
+        for example in examples:
+            score = calculate_multi_distance_core(example, matrices, distance_type)
+            scores.append(score)
+
+        if len(scores) == 0:
+            scores.append(np.zeros(matrix_count))
+
+        sum_scores = np.array(scores, dtype=np.float32).sum(axis=0)
+        return sum_scores
+
+    pos = get_sum_scores(query.positive)
+    neg = get_sum_scores(query.negative)
+
+    return pos - neg
 
 
 def calculate_multi_discovery_ranks(

@@ -18,7 +18,12 @@ class SparseRecoQuery:
         self,
         positive: Optional[list[SparseVector]] = None,
         negative: Optional[list[SparseVector]] = None,
+        strategy: Optional[types.RecommendStrategy] = None,
     ):
+        assert strategy is not None, "Recommend strategy must be provided"
+
+        self.strategy = strategy
+
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
 
@@ -211,12 +216,35 @@ def calculate_sparse_recommend_best_scores(
     neg = get_best_scores(query.negative)
 
     # Choose from best positive or best negative,
-    # in in both cases we apply sigmoid and then negate depending on the order
+    # in both cases we apply sigmoid and then negate depending on the order
     return np.where(
         pos > neg,
         np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
         np.fromiter((-scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
     )
+
+
+def calculate_sparse_recommend_sum_scores(
+    query: SparseRecoQuery, vectors: list[SparseVector]
+) -> types.NumpyArray:
+    def get_sum_scores(examples: list[SparseVector]) -> types.NumpyArray:
+        vector_count = len(vectors)
+
+        scores: list[types.NumpyArray] = []
+        for example in examples:
+            score = calculate_distance_sparse(example, vectors)
+            scores.append(score)
+
+        if len(scores) == 0:
+            scores.append(np.zeros(vector_count))
+
+        sum_scores = np.array(scores, dtype=np.float32).sum(axis=0)
+        return sum_scores
+
+    pos = get_sum_scores(query.positive)
+    neg = get_sum_scores(query.negative)
+
+    return pos - neg
 
 
 # Expects sorted indices
