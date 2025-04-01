@@ -1,49 +1,48 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEMP_ENV=$(mktemp -d)
+VENV_DIR="$TEMP_ENV/venv"
 
-TMP_QDRANT=$(mktemp -d)
-TMP_PYDANTIC=$(mktemp -d)
-TMP_VENV=$(mktemp -d)
+python -m venv "$VENV_DIR"
+source "$VENV_DIR/bin/activate"
 
-cleanup() {
-  echo "Cleaning up temporary directories..."
-  rm -rf "$TMP_QDRANT" "$TMP_PYDANTIC" "$TMP_VENV"
-}
-trap cleanup EXIT
+if ! command -v poetry &>/dev/null; then
+    echo "Installing poetry in virtualenv..."
+    "$VENV_DIR/bin/python" -m pip install --upgrade pip
+    pip install poetry
+fi
 
-cd "$TMP_QDRANT"
+cd "$PROJECT_ROOT"
+poetry install
+
+cd $(mktemp -d)
 git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
 cd qdrant
 git sparse-checkout add docs/redoc/master
 
 OPENAPI_PATH="$(pwd)/docs/redoc/master/openapi.json"
+
 if [ ! -f "$OPENAPI_PATH" ]; then
-  echo "Failed to generate inference structures"
+  echo "Failed to get OpenAPI spec from Qdrant"
   exit 1
 fi
 
-cd "$TMP_PYDANTIC"
+cd $(mktemp -d)
 git clone git@github.com:qdrant/pydantic_openapi_v3.git
 cd pydantic_openapi_v3
 
-# Set up venv instead of poetry
-python3.10 -m venv "$TMP_VENV"
-source "$TMP_VENV/bin/activate"
-pip install --upgrade pip
-pip install .
+poetry install
 
 cp "$OPENAPI_PATH" openapi-qdrant.yaml
 
-PATH_TO_QDRANT_CLIENT="$PROJECT_ROOT"
-INPUT_YAML=openapi-qdrant.yaml \
-ROOT_PACKAGE_NAME="qdrant_client" \
-IMPORT_NAME="qdrant_client.http" \
-PACKAGE_NAME=qdrant_openapi_client \
-bash -x scripts/model_data_generator.sh
+PATH_TO_QDRANT_CLIENT=$PROJECT_ROOT
+
+INPUT_YAML="openapi-qdrant.yaml" ROOT_PACKAGE_NAME="qdrant_client" IMPORT_NAME="qdrant_client.http" PACKAGE_NAME=qdrant_openapi_client bash -x scripts/model_data_generator.sh
 
 rm -rf "${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/"
 mv scripts/output/qdrant_openapi_client "${PATH_TO_QDRANT_CLIENT}/qdrant_client/http/"
 
 deactivate
+rm -rf "$TEMP_ENV"

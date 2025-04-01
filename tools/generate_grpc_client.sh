@@ -1,64 +1,47 @@
 #!/usr/bin/env bash
-set -e
 
-PROJECT_ROOT="$(pwd)/$(dirname "$0")/../"
+set -euo pipefail
 
-TMP_QDRANT=$(mktemp -d)
-TMP_VENV=$(mktemp -d)
-TMP_CLIENT=$(mktemp -d)
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEMP_ENV=$(mktemp -d)
+VENV_DIR="$TEMP_ENV/venv"
 
-cleanup() {
-  echo "Cleaning up temporary directories..."
-  rm -rf "$TMP_QDRANT" "$TMP_VENV" "$TMP_CLIENT"
-}
-trap cleanup EXIT
-
-python3.10 -m venv "$TMP_VENV"
-source "$TMP_VENV/bin/activate"
-
-PYTHON_VERSION=$(python --version)
-echo "Using Python version: $PYTHON_VERSION"
+python3.10 -m venv "$VENV_DIR"
+source "$VENV_DIR/bin/activate"
 
 pip install --upgrade pip
 pip install grpcio==1.48.2 grpcio-tools==1.48.2
 
-cd "$TMP_QDRANT"
+cd $(mktemp -d)
 git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
 cd qdrant
 git sparse-checkout add lib/api/src/grpc/proto
-
 PROTO_DIR="$(pwd)/lib/api/src/grpc/proto"
 
 cd "$PROJECT_ROOT"
-
 CLIENT_DIR="qdrant_client/proto"
-GRPC_OUT_DIR="qdrant_client/grpc"
-
 cp "$PROTO_DIR"/*.proto "$CLIENT_DIR/"
 
-rm "$CLIENT_DIR"/collections_internal_service.proto \
-   "$CLIENT_DIR"/points_internal_service.proto \
-   "$CLIENT_DIR"/qdrant_internal_service.proto \
-   "$CLIENT_DIR"/shard_snapshots_service.proto \
-   "$CLIENT_DIR"/raft_service.proto \
-   "$CLIENT_DIR"/health_check.proto
+rm -f $CLIENT_DIR/collections_internal_service.proto
+rm -f $CLIENT_DIR/points_internal_service.proto
+rm -f $CLIENT_DIR/qdrant_internal_service.proto
+rm -f $CLIENT_DIR/shard_snapshots_service.proto
+rm -f $CLIENT_DIR/raft_service.proto
+rm -f $CLIENT_DIR/health_check.proto
 
-grep -v 'collections_internal_service.proto' "$CLIENT_DIR/qdrant.proto" \
-  | grep -v 'points_internal_service.proto' \
-  | grep -v 'qdrant_internal_service.proto' \
-  | grep -v 'shard_snapshots_service.proto' \
-  | grep -v 'raft_service.proto' \
-  | grep -v 'health_check.proto' \
-  > "$CLIENT_DIR/qdrant_tmp.proto"
+# Clean qdrant.proto references to those removed files
+grep -vE 'collections_internal_service.proto|points_internal_service.proto|qdrant_internal_service.proto|shard_snapshots_service.proto|raft_service.proto|health_check.proto' \
+  "$CLIENT_DIR/qdrant.proto" > "$CLIENT_DIR/qdrant_tmp.proto"
 mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
 
-python -m grpc_tools.protoc --proto_path="$CLIENT_DIR" \
-  -I ./"$GRPC_OUT_DIR" \
-  "$CLIENT_DIR"/*.proto \
-  --python_out=./"$GRPC_OUT_DIR" \
-  --grpc_python_out=./"$GRPC_OUT_DIR"
+"$VENV_DIR/bin/python" -m grpc_tools.protoc \
+  --proto_path=qdrant_client/proto/ \
+  -I ./qdrant_client/grpc \
+  ./qdrant_client/proto/*.proto \
+  --python_out=./qdrant_client/grpc \
+  --grpc_python_out=./qdrant_client/grpc
 
-# Fix imports
-sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./"$GRPC_OUT_DIR"/*.py
+sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./qdrant_client/grpc/*.py
 
 deactivate
+rm -rf "$TEMP_ENV"
