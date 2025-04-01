@@ -434,24 +434,19 @@ class AsyncQdrantLocal(AsyncQdrantBase):
     async def query_batch_points(
         self, collection_name: str, requests: Sequence[types.QueryRequest], **kwargs: Any
     ) -> list[types.QueryResponse]:
-        collection = self._get_collection(collection_name)
         return [
-            collection.query_points(
+            await self.query_points(
+                collection_name=collection_name,
                 query=request.query,
                 prefetch=request.prefetch,
                 query_filter=request.filter,
                 limit=request.limit,
-                offset=request.offset or 0,
+                offset=request.offset,
                 with_payload=request.with_payload,
                 with_vectors=request.with_vector,
                 score_threshold=request.score_threshold,
                 using=request.using,
-                lookup_from_collection=self._get_collection(request.lookup_from.collection)
-                if request.lookup_from
-                else None,
-                lookup_from_vector_name=request.lookup_from.vector
-                if request.lookup_from
-                else None,
+                lookup_from=request.lookup_from,
             )
             for request in requests
         ]
