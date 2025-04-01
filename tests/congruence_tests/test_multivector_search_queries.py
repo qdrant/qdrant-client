@@ -75,10 +75,10 @@ def test_simple():
     remote_client = init_remote()
     init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
 
-    # compare_client_results(local_client, remote_client, searcher.simple_search_text)
-    # compare_client_results(local_client, remote_client, searcher.simple_search_image)
+    compare_client_results(local_client, remote_client, searcher.simple_search_text)
+    compare_client_results(local_client, remote_client, searcher.simple_search_image)
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
-    # compare_client_results(local_client, remote_client, searcher.simple_search_unnamed)
+    compare_client_results(local_client, remote_client, searcher.simple_search_unnamed)
 
 
 def test_single_vector():
