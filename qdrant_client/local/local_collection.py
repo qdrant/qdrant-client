@@ -553,7 +553,6 @@ class LocalCollection:
         score_threshold: Optional[float] = None,
     ) -> list[models.ScoredPoint]:
         name, query_vector = self._resolve_query_vector_name(query_vector)
-
         result: list[models.ScoredPoint] = []
         sparse_scoring = False
         rescore_idf = False
@@ -581,6 +580,7 @@ class LocalCollection:
             distance = self.get_vector_params(name).distance
 
         vectors = vectors[: len(self.payload)]
+
         if isinstance(query_vector, np.ndarray):
             if len(query_vector.shape) == 1:
                 scores = calculate_distance(query_vector, vectors, distance)
@@ -1356,6 +1356,18 @@ class LocalCollection:
             vector = mean_positive_vector
         return vector
 
+    @staticmethod
+    def _recommend_average_multi(
+        positive_vectors: list[list[list[float]]], negative_vectors: list[list[list[float]]]
+    ) -> list[list[float]]:
+        recommend_vector = [vector for multi_vector in positive_vectors for vector in multi_vector]
+        if len(negative_vectors) > 0:
+            for multi_vector in negative_vectors:
+                for vector in multi_vector:
+                    recommend_vector.append([-value for value in vector])
+
+        return recommend_vector
+
     def _construct_recommend_query(
         self,
         positive: Optional[Sequence[models.VectorInput]] = None,
@@ -1402,9 +1414,8 @@ class LocalCollection:
                     sparse_negative_vectors,
                 )
             elif multi_positive_vectors:
-                raise TypeError(
-                    "Multivectors do not support recommend average, consider using "
-                    "strategy=models.RecommendStrategy.BEST_SCORE"
+                query_vector = self._recommend_average_multi(
+                    multi_positive_vectors, multi_negative_vectors
                 )
             else:
                 raise ValueError("No positive examples given with 'average_vector' strategy")
@@ -1735,7 +1746,6 @@ class LocalCollection:
             raise ValueError(
                 "All context example pairs must be either dense or sparse or multi vectors"
             )
-
         return dense_context_vectors, sparse_context_vectors, multi_context_vectors, mentioned_ids
 
     def _preprocess_discover(
@@ -1839,7 +1849,6 @@ class LocalCollection:
             raise ValueError("No target or context given")
 
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
-
         return self.search(
             query_vector=(search_in_vector_name, query_vector),
             query_filter=edited_query_filter,

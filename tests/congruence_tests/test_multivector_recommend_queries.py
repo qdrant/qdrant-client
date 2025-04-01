@@ -1,4 +1,5 @@
-import numpy as np
+from typing import Optional
+
 
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.models import models
@@ -7,7 +8,6 @@ from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
     generate_multivector_fixtures,
-    image_vector_size,
     init_client,
     init_local,
     init_remote,
@@ -20,8 +20,70 @@ secondary_collection_name = "congruence_secondary_collection"
 class TestSimpleRecommendation:
     __test__ = False
 
-    def __init__(self):
-        self.query_image = np.random.random(image_vector_size).tolist()
+    @classmethod
+    def simple_recommend_image(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10],
+                    negative=[],
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="multi-image",
+        ).points
+
+    @classmethod
+    def many_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 19],
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="multi-text",
+        ).points
+
+    @classmethod
+    def simple_recommend_negative(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10],
+                    negative=[15, 7],
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="multi-image",
+        ).points
+
+    @classmethod
+    def recommend_from_another_collection(
+        cls, client: QdrantBase, positive_point_id: Optional[int] = None
+    ) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10] if positive_point_id is None else [positive_point_id],
+                    negative=[15, 7] if positive_point_id is None else [],
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="multi-image",
+            lookup_from=models.LookupLocation(
+                collection=secondary_collection_name,
+                vector="multi-image",
+            ),
+        ).points
 
     @classmethod
     def best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
@@ -166,7 +228,7 @@ class TestSimpleRecommendation:
                             recommend=models.RecommendInput(
                                 positive=[10],
                                 negative=[],
-                                strategy=models.RecommendStrategy.BEST_SCORE,
+                                strategy=models.RecommendStrategy.AVERAGE_VECTOR,
                             )
                         ),
                         limit=2,
@@ -179,13 +241,13 @@ class TestSimpleRecommendation:
                     models.QueryRequest(
                         query=models.RecommendQuery(
                             recommend=models.RecommendInput(
-                                positive=[4],
+                                positive=[3],
                                 negative=[],
-                                strategy=models.RecommendStrategy.SUM_SCORES,
+                                strategy=models.RecommendStrategy.BEST_SCORE,
                             )
                         ),
                         limit=2,
-                        using="multi-image",
+                        using="multi-code",
                     ),
                 ],
             )
@@ -216,7 +278,10 @@ def test_simple_recommend() -> None:
         secondary_collection_name,
         vectors_config=multi_vector_config,
     )
-
+    compare_client_results(local_client, remote_client, searcher.simple_recommend_image)
+    compare_client_results(local_client, remote_client, searcher.many_recommend)
+    compare_client_results(local_client, remote_client, searcher.simple_recommend_negative)
+    compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
     compare_client_results(
