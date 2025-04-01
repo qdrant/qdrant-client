@@ -4290,7 +4290,7 @@ class RestToGrpc:
             return grpc.RecommendStrategy.AverageVector
         elif model == rest.RecommendStrategy.BEST_SCORE:
             return grpc.RecommendStrategy.BestScore
-        elif model == reset.RecommendStrategy.SUM_SCORES:
+        elif model == rest.RecommendStrategy.SUM_SCORES:
             return grpc.RecommendStrategy.SumScores
         else:
             raise ValueError(f"invalid RecommendStrategy model: {model}")  # pragma: no cover

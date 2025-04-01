@@ -314,7 +314,7 @@ def test_simple_recommend() -> None:
         local_client, remote_client, searcher.only_negatives_sum_scores_recommend
     )
     compare_client_results(
-        local_client, remote_client, searcher.only_negatives_best_score_recommend_euclid
+        local_client, remote_client, searcher.only_negatives_sum_scores_recommend_euclid
     )
 
     compare_client_results(local_client, remote_client, searcher.avg_vector_recommend)

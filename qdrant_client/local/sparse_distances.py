@@ -44,6 +44,7 @@ class SparseRecoQuery:
         return SparseRecoQuery(
             positive=[foo(vector) for vector in self.positive],
             negative=[foo(vector) for vector in self.negative],
+            strategy=self.strategy,
         )
 
 

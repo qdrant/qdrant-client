@@ -80,7 +80,7 @@ def calculate_multi_distance(
     for matrix in matrices:
         sim_matrix = calculate_distance(query_matrix, matrix, distance_type)
         op = np.max if not reverse else np.min
-        similarity = float(np.sum(op(sim_matrix[: query_matrix.shape[0]], axis=-1)))
+        similarity = float(np.sum(op(sim_matrix, axis=-1)))
         similarities.append(similarity)
     return np.array(similarities)
 
