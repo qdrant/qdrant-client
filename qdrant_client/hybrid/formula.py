@@ -170,13 +170,17 @@ def evaluate_expression(
         # try to parse as datetime
         dt = datetime_utils.parse(expression.datetime)
         if dt is None:
-            # it must be a payload key, get from payload
-            dt_str = try_extract_payload_value(expression.datetime, payload, defaults)
-            dt = datetime_utils.parse(dt_str)
-            if dt is None:
-                raise ValueError(
-                    f"Expected datetime for {expression.datetime} in the payload and/or in the formula defaults."
-                )
+            raise ValueError(f"Expected datetime in supported format for {expression.datetime}")
+
+        return dt.timestamp()
+
+    elif isinstance(expression, models.DatetimeKeyExpression):
+        dt_str = try_extract_payload_value(expression.datetime_key, payload, defaults)
+        dt = datetime_utils.parse(dt_str)
+        if dt is None:
+            raise ValueError(
+                f"Expected datetime for {expression.datetime_key} in the payload and/or in the formula defaults."
+            )
 
         return dt.timestamp()
 

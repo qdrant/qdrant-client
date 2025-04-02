@@ -1203,6 +1203,8 @@ class GrpcToRest:
             return cls.convert_condition(model.condition)
         if name == "datetime":
             return rest.DatetimeExpression(datetime=model.datetime)
+        if name == "datetime_key":
+            return rest.DatetimeKeyExpression(datetime_key=model.datetime_key)
         if name == "sum":
             return cls.convert_sum_expression(model.sum)
         if name == "mult":
@@ -3489,6 +3491,8 @@ class RestToGrpc:
             return grpc.Expression(condition=cls.convert_condition(model))
         if isinstance(model, rest.DatetimeExpression):
             return grpc.Expression(datetime=model.datetime)
+        if isinstance(model, rest.DatetimeKeyExpression):
+            return grpc.Expression(datetime_key=model.datetime_key)
         if isinstance(model, rest.NegExpression):
             return grpc.Expression(neg=cls.convert_expression(model.neg))
         if isinstance(model, rest.SumExpression):

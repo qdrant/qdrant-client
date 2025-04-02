@@ -50,9 +50,8 @@ def one_random_expression_please(current_depth: int = 0, max_depth: int = 5) -> 
                 to="city.geo",  # Using a field that would contain geo coordinates
             )
         ),
-        lambda: models.DatetimeExpression(
-            datetime=random.choice([str(random_datetime()), "rand_datetime"])
-        ),
+        lambda: models.DatetimeExpression(datetime=str(random_datetime())),
+        lambda: models.DatetimeKeyExpression(datetime_key="rand_datetime"),
         # Nested expressions
         lambda: models.MultExpression(
             mult=[
@@ -102,11 +101,11 @@ def one_random_expression_please(current_depth: int = 0, max_depth: int = 5) -> 
     # If we've reached max depth, return a terminal expression (no nesting)
     if current_depth >= max_depth:  # Limit nesting depth
         # Return a simple expression at max depth
-        return random.choice(expression_choices[:5])()
+        return random.choice(expression_choices[:6])()
 
     # Give higher weight to terminal expressions at deeper levels
     if current_depth > 2:
         # Add more terminal expressions to increase their probability
-        expression_choices = expression_choices[:5] * 3 + expression_choices[5:]
+        expression_choices = expression_choices[:6] * 3 + expression_choices[6:]
 
     return random.choice(expression_choices)()
