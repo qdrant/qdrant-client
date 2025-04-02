@@ -5,14 +5,18 @@ set -euo pipefail
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMP_ENV=$(mktemp -d)
 VENV_DIR="$TEMP_ENV/venv"
+QDRANT_PATH=$(mktemp -d)
+
+trap "rm -rf \"$TEMP_ENV\"; rm -rf \"$QDRANT_PATH\"" EXIT
 
 python3.10 -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 
 pip install --upgrade pip
-pip install grpcio==1.48.2 grpcio-tools==1.48.2
+pip install "grpcio==1.48.2"
+pip install "grpcio-tools==1.48.2"
 
-cd $(mktemp -d)
+cd "$QDRANT_PATH"
 git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
 cd qdrant
 git sparse-checkout add lib/api/src/grpc/proto
@@ -44,4 +48,3 @@ mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
 sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./qdrant_client/grpc/*.py
 
 deactivate
-rm -rf "$TEMP_ENV"
