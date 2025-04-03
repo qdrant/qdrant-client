@@ -480,6 +480,10 @@ class Datatype(str, Enum):
     FLOAT16 = "float16"
 
 
+class DatetimeExpression(BaseModel, extra="forbid"):
+    datetime: str = Field(..., description="")
+
+
 class DatetimeIndexParams(BaseModel, extra="forbid"):
     type: "DatetimeIndexType" = Field(..., description="")
     is_principal: Optional[bool] = Field(
@@ -491,6 +495,10 @@ class DatetimeIndexParams(BaseModel, extra="forbid"):
 
 class DatetimeIndexType(str, Enum):
     DATETIME = "datetime"
+
+
+class DatetimeKeyExpression(BaseModel, extra="forbid"):
+    datetime_key: str = Field(..., description="")
 
 
 class DatetimeRange(BaseModel, extra="forbid"):
@@ -913,6 +921,9 @@ class HardwareUsage(BaseModel):
     payload_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
     payload_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
     payload_index_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
+    payload_index_io_write: int = Field(
+        ..., description="Usage of the hardware resources, spent to process the request"
+    )
     vector_io_read: int = Field(..., description="Usage of the hardware resources, spent to process the request")
     vector_io_write: int = Field(..., description="Usage of the hardware resources, spent to process the request")
 
@@ -3429,6 +3440,9 @@ Expression = Union[
     StrictFloat,
     StrictStr,
     Condition,
+    GeoDistance,
+    DatetimeExpression,
+    DatetimeKeyExpression,
     MultExpression,
     SumExpression,
     NegExpression,
@@ -3439,7 +3453,6 @@ Expression = Union[
     ExpExpression,
     Log10Expression,
     LnExpression,
-    GeoDistance,
     LinDecayExpression,
     ExpDecayExpression,
     GaussDecayExpression,
