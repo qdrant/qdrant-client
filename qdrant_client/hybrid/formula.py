@@ -1,7 +1,6 @@
 import math
 import pytest
 
-from qdrant_client._pydantic_compat import construct
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.http import models
 from typing import Union, Any, Tuple
@@ -189,27 +188,27 @@ def evaluate_expression(
             expression.lin_decay, point_id, scores, payload, has_vector, defaults
         )
 
-        ℷ = (1.0 - midpoint) / scale
+        lambda_factor = (1.0 - midpoint) / scale
         diff = abs(x - target)
-        return max(0.0, -ℷ * diff + 1.0)
+        return max(0.0, -lambda_factor * diff + 1.0)
 
     elif isinstance(expression, models.ExpDecayExpression):
         x, target, midpoint, scale = evaluate_decay_params(
             expression.exp_decay, point_id, scores, payload, has_vector, defaults
         )
 
-        ℷ = math.log(midpoint) / scale
+        lambda_factor = math.log(midpoint) / scale
         diff = abs(x - target)
-        return math.exp(ℷ * diff)
+        return math.exp(lambda_factor * diff)
 
     elif isinstance(expression, models.GaussDecayExpression):
         x, target, midpoint, scale = evaluate_decay_params(
             expression.gauss_decay, point_id, scores, payload, has_vector, defaults
         )
 
-        ℷ = math.log(midpoint) / (scale * scale)
+        lambda_factor = math.log(midpoint) / (scale * scale)
         diff = x - target
-        return math.exp(ℷ * diff * diff)
+        return math.exp(lambda_factor * diff * diff)
 
     raise ValueError(f"Unsupported expression type: {type(expression)}")
 
