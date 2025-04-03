@@ -11,10 +11,11 @@ from typing import (
     get_args,
 )
 from copy import deepcopy
+import warnings
 
 import numpy as np
 
-from qdrant_client import grpc as grpc, hybrid
+from qdrant_client import grpc as grpc
 from qdrant_client.common.client_warnings import show_warning_once
 from qdrant_client._pydantic_compat import construct, to_jsonable_python as _to_jsonable_python
 from qdrant_client.conversions import common_types as types
@@ -23,7 +24,7 @@ from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.http import models
 from qdrant_client.http.models import ScoredPoint
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
-from qdrant_client.hybrid.formula import evaluate_expression
+from qdrant_client.hybrid.formula import evaluate_expression, raise_non_finite_error
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 from qdrant_client.local.distances import (
     ContextPair,
@@ -2028,10 +2029,16 @@ class LocalCollection:
                 has_vector=has_vector,
                 defaults=defaults,
             )
+            # Turn score into np.float32 to match core
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                score_f32 = np.float32(score)
+                if not np.isfinite(score_f32):
+                    raise_non_finite_error(f"{score} as f32 = {score_f32}")
             point = construct(
                 models.ScoredPoint,
                 id=point_id,
-                score=float(score),
+                score=float(score_f32),
                 version=0,
                 payload=self._get_payload(internal_id, with_payload),
                 vector=self._get_vectors(internal_id, with_vectors),
@@ -2222,7 +2229,7 @@ class LocalCollection:
                     f"{vector_names}, {multivector_names}"
                 )
             if not self.vectors and not self.multivectors:
-                raise ValueError(f"Wrong input: Not existing vector name error")
+                raise ValueError("Wrong input: Not existing vector name error")
 
         if point.id in self.ids:
             self._update_point(point)
