@@ -1426,7 +1426,7 @@ DEFS = {
                 "type": "string",
             },
             "options": {
-                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
+                "anyOf": [{"type": "object"}, {"type": "null"}],
                 "default": None,
                 "description": "Parameters for the model Values of the parameters are model-specific",
                 "title": "Options",
@@ -1450,7 +1450,7 @@ DEFS = {
                 "type": "string",
             },
             "options": {
-                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
+                "anyOf": [{"type": "object"}, {"type": "null"}],
                 "default": None,
                 "description": "Parameters for the model Values of the parameters are model-specific",
                 "title": "Options",
@@ -1474,7 +1474,7 @@ DEFS = {
                 "type": "string",
             },
             "options": {
-                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
+                "anyOf": [{"type": "object"}, {"type": "null"}],
                 "default": None,
                 "description": "Parameters for the model Values of the parameters are model-specific",
                 "title": "Options",
@@ -2862,7 +2862,6 @@ DEFS = {
         "description": "This data structure is used in API interface and applied across multiple shards",
         "properties": {
             "payload": {
-                "additionalProperties": True,
                 "description": "This data structure is used in API interface and applied across multiple shards",
                 "title": "Payload",
                 "type": "object",
@@ -2955,10 +2954,7 @@ DEFS = {
                 "title": "Vectors",
             },
             "payloads": {
-                "anyOf": [
-                    {"items": {"additionalProperties": True, "type": "object"}, "type": "array"},
-                    {"type": "null"},
-                ],
+                "anyOf": [{"items": {"type": "object"}, "type": "array"}, {"type": "null"}],
                 "default": None,
                 "description": "",
                 "title": "Payloads",
@@ -3004,7 +3000,7 @@ DEFS = {
                 "title": "Vector",
             },
             "payload": {
-                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
+                "anyOf": [{"type": "object"}, {"type": "null"}],
                 "default": None,
                 "description": "Payload values (optional)",
                 "title": "Payload",
@@ -3072,7 +3068,7 @@ DEFS = {
                 "title": "Formula",
             },
             "defaults": {
-                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
+                "anyOf": [{"type": "object"}, {"type": "null"}],
                 "default": {},
                 "description": "",
                 "title": "Defaults",
