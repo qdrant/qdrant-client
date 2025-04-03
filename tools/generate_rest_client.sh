@@ -5,12 +5,27 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMP_ENV=$(mktemp -d)
 QDRANT_PATH=$(mktemp -d)
 GENERATOR_PATH=$(mktemp -d)
-VENV_DIR="$TEMP_ENV/venv"
+VENV_DIR="$TEMP_ENV/rest_generator_venv"
+
+PYTHON_BIN=""
+
+if [[ "$(python --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+    PYTHON_BIN="python"
+elif [[ "$(python3 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+    PYTHON_BIN="python3"
+elif [[ "$(python3.10 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+    PYTHON_BIN="python3.10"
+fi
+
+if [[ -z "$PYTHON_BIN" ]]; then
+    echo "Error: No suitable Python 3.10.10 installation found looked among {python, python3, python3.10}" >&2
+    exit 1
+fi
 
 
 trap "rm -rf \"$TEMP_ENV\"; rm -rf \"$QDRANT_PATH\"; rm -rf \"$GENERATOR_PATH\"" EXIT
 
-python3.10 -m venv "$VENV_DIR"
+"$PYTHON_BIN" -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 
 if ! command -v poetry &>/dev/null; then
