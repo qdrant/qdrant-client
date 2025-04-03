@@ -22,8 +22,7 @@ if [[ -z "$PYTHON_BIN" ]]; then
     exit 1
 fi
 
-
-trap "rm -rf \"$TEMP_ENV\"; rm -rf \"$QDRANT_PATH\"; rm -rf \"$GENERATOR_PATH\"" EXIT
+trap 'rm -rf "$TEMP_ENV"; rm -rf "$QDRANT_PATH"; rm -rf "$GENERATOR_PATH"' EXIT
 
 "$PYTHON_BIN" -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
