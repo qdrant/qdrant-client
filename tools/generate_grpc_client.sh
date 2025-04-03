@@ -18,7 +18,7 @@ elif [[ "$(python3.10 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
 fi
 
 if [[ -z "$PYTHON_BIN" ]]; then
-    echo "Error: No suitable Python 3.10.10 installation found looked among {python, python3, python3.10}" >&2
+    echo "Error: No suitable Python 3.10.10 installation found among {python, python3, python3.10}" >&2
     exit 1
 fi
 
