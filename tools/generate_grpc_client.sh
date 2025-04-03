@@ -4,15 +4,32 @@ set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TEMP_ENV=$(mktemp -d)
-VENV_DIR="$TEMP_ENV/venv"
+VENV_DIR="$TEMP_ENV/grpc_generator_venv"
+QDRANT_PATH=$(mktemp -d)
 
-python3.10 -m venv "$VENV_DIR"
+trap "rm -rf \"$TEMP_ENV\"; rm -rf \"$QDRANT_PATH\"" EXIT
+
+if [[ "$(python --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+    PYTHON_BIN="python"
+elif [[ "$(python3 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+    PYTHON_BIN="python3"
+elif [[ "$(python3.10 --version 2>&1 | awk '{print $2}')" == "3.10.10" ]]; then
+    PYTHON_BIN="python3.10"
+fi
+
+if [[ -z "$PYTHON_BIN" ]]; then
+    echo "Error: No suitable Python 3.10.10 installation found among {python, python3, python3.10}" >&2
+    exit 1
+fi
+
+"$PYTHON_BIN" -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 
 pip install --upgrade pip
-pip install grpcio==1.48.2 grpcio-tools==1.48.2
+pip install "grpcio==1.48.2"
+pip install "grpcio-tools==1.48.2"
 
-cd $(mktemp -d)
+cd "$QDRANT_PATH"
 git clone --sparse --filter=blob:none --depth=1 -b dev git@github.com:qdrant/qdrant.git
 cd qdrant
 git sparse-checkout add lib/api/src/grpc/proto
@@ -44,4 +61,3 @@ mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
 sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./qdrant_client/grpc/*.py
 
 deactivate
-rm -rf "$TEMP_ENV"
