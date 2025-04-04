@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 import numpy as np
 
@@ -88,10 +88,10 @@ def calculate_multi_distance_core(
     matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
-    def euclidean(q: types.NumpyArray, m: types.NumpyArray, *_) -> types.NumpyArray:
+    def euclidean(q: types.NumpyArray, m: types.NumpyArray, *_: Any) -> types.NumpyArray:
         return -np.square(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
-    def manhattan(q: types.NumpyArray, m: types.NumpyArray, *_) -> types.NumpyArray:
+    def manhattan(q: types.NumpyArray, m: types.NumpyArray, *_: Any) -> types.NumpyArray:
         return -np.abs(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
     assert not np.isnan(query_matrix).any(), "Query vector must not contain NaN"
@@ -101,7 +101,7 @@ def calculate_multi_distance_core(
         query_matrix = query_matrix[:, np.newaxis]
         dist_func = euclidean if distance_type == models.Distance.EUCLID else manhattan
     else:
-        dist_func = calculate_distance
+        dist_func = calculate_distance  # type: ignore
 
     for matrix in matrices:
         sim_matrix = dist_func(query_matrix, matrix, distance_type)
