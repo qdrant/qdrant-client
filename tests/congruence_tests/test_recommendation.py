@@ -119,6 +119,21 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
+    def best_score_recommend_manhattan(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[
+                10,
+                20,
+            ],
+            negative=[11, 21],
+            with_payload=True,
+            limit=10,
+            using="audio",
+            strategy=models.RecommendStrategy.BEST_SCORE,
+        )
+
+    @classmethod
     def only_negatives_best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
@@ -141,6 +156,20 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="code",
+            strategy="best_score",  # type: ignore  # check it works with a literal
+        )
+
+    @classmethod
+    def only_negatives_best_score_recommend_manhattan(
+        cls, client: QdrantBase
+    ) -> list[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=None,
+            negative=[10, 12],
+            with_payload=True,
+            limit=10,
+            using="audio",
             strategy="best_score",  # type: ignore  # check it works with a literal
         )
 
@@ -175,6 +204,21 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
+    def sum_scores_recommend_manhattan(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[
+                10,
+                20,
+            ],
+            negative=[11, 21],
+            with_payload=True,
+            limit=10,
+            using="audio",
+            strategy=models.RecommendStrategy.SUM_SCORES,
+        )
+
+    @classmethod
     def only_negatives_sum_scores_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
@@ -197,6 +241,20 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="code",
+            strategy="sum_scores",  # type: ignore  # check it works with a literal
+        )
+
+    @classmethod
+    def only_negatives_sum_scores_recommend_manhattan(
+        cls, client: QdrantBase
+    ) -> list[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=None,
+            negative=[10, 12],
+            with_payload=True,
+            limit=10,
+            using="audio",
             strategy="sum_scores",  # type: ignore  # check it works with a literal
         )
 
@@ -248,18 +306,25 @@ class TestSimpleRecommendation:
                     positive=[10],
                     negative=[],
                     limit=2,
-                    using="image",
+                    using="text",
                     strategy=models.RecommendStrategy.BEST_SCORE,
                     lookup_from=models.LookupLocation(
                         collection=secondary_collection_name,
-                        vector="image",
+                        vector="text",
                     ),
                 ),
                 models.RecommendRequest(
                     positive=[4],
                     negative=[],
                     limit=2,
-                    using="image",
+                    using="code",
+                    strategy=models.RecommendStrategy.SUM_SCORES,
+                ),
+                models.RecommendRequest(
+                    positive=[6],
+                    negative=[],
+                    limit=2,
+                    using="audio",
                     strategy=models.RecommendStrategy.SUM_SCORES,
                 ),
             ],
@@ -310,19 +375,27 @@ def test_simple_recommend() -> None:
     compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
+    compare_client_results(local_client, remote_client, searcher.best_score_recommend_manhattan)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend
     )
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend_euclid
     )
+    compare_client_results(
+        local_client, remote_client, searcher.only_negatives_best_score_recommend_manhattan
+    )
     compare_client_results(local_client, remote_client, searcher.sum_scores_recommend)
     compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_euclid)
+    compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_manhattan)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_sum_scores_recommend
     )
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_sum_scores_recommend_euclid
+    )
+    compare_client_results(
+        local_client, remote_client, searcher.only_negatives_sum_scores_recommend_manhattan
     )
     compare_client_results(local_client, remote_client, searcher.avg_vector_recommend)
     compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors)

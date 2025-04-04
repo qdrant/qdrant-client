@@ -14,6 +14,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
     text_vector_size,
+    audio_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
 
@@ -25,6 +26,7 @@ class TestSimpleSearcher:
         self.query_text = np.random.random(text_vector_size).tolist()
         self.query_image = np.random.random(image_vector_size).tolist()
         self.query_code = np.random.random(code_vector_size).tolist()
+        self.query_audio = np.random.random(audio_vector_size).tolist()
 
     def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(
@@ -46,6 +48,14 @@ class TestSimpleSearcher:
         return client.search(
             collection_name=COLLECTION_NAME,
             query_vector=("code", self.query_code),
+            with_payload=True,
+            limit=10,
+        )
+
+    def simple_search_audio(self, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.search(
+            collection_name=COLLECTION_NAME,
+            query_vector=("audio", self.query_audio),
             with_payload=True,
             limit=10,
         )
@@ -159,6 +169,7 @@ def test_simple_search():
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
+    compare_client_results(local_client, remote_client, searcher.simple_search_audio)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
     compare_client_results(local_client, remote_client, searcher.search_score_threshold)
@@ -191,6 +202,7 @@ def test_simple_opt_vectors_search():
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
+    compare_client_results(local_client, remote_client, searcher.simple_search_audio)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
     compare_client_results(local_client, remote_client, searcher.search_score_threshold)

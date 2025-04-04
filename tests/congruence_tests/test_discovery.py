@@ -110,6 +110,24 @@ def test_context_euclidean(
     compare_client_results(local_client, http_client, f, is_context_search=True)
 
 
+def test_context_manhattan(
+    local_client,
+    http_client,
+    grpc_client,
+):
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+        return client.discover(
+            collection_name=COLLECTION_NAME,
+            context=[models.ContextExamplePair(positive=11, negative=19)],
+            with_payload=True,
+            limit=1000,
+            using="audio",
+        )
+
+    compare_client_results(grpc_client, http_client, f, is_context_search=True)
+    compare_client_results(local_client, http_client, f, is_context_search=True)
+
+
 def test_context_many_pairs(
     local_client,
     http_client,
@@ -190,6 +208,25 @@ def test_discover_euclidean(
             with_payload=True,
             limit=10,
             using="code",
+        )
+
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
+
+
+def test_discover_manhattan(
+    local_client,
+    http_client,
+    grpc_client,
+):
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
+        return client.discover(
+            collection_name=COLLECTION_NAME,
+            target=10,
+            context=[models.ContextExamplePair(positive=11, negative=19)],
+            with_payload=True,
+            limit=10,
+            using="audio",
         )
 
     compare_client_results(grpc_client, http_client, f)

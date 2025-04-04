@@ -78,24 +78,6 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def multivec_query_text(self, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=self.multivector_query_text,
-            using="multi-text",
-            with_payload=True,
-            limit=10,
-        )
-
-    def multivec_query_code(self, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=self.multivector_query_code,
-            using="multi-code",
-            with_payload=True,
-            limit=10,
-        )
-
     def dense_query_text(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -1017,8 +999,12 @@ def test_multivec_query():
         fixture_points, vectors_config=multi_vector_config
     )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.multivec_query_text)
-    compare_clients_results(local_client, http_client, grpc_client, searcher.multivec_query_code)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.multivector_query_text
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.multivector_query_code
+    )
 
 
 def test_dense_query():
@@ -1418,7 +1404,9 @@ def test_flat_query_multivector_interface():
         fixture_points, vectors_config=multi_vector_config
     )
 
-    compare_clients_results(local_client, http_client, grpc_client, searcher.multivec_query_text)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.multivector_query_text
+    )
 
 
 def test_original_input_persistence():
