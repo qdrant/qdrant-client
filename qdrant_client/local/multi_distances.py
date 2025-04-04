@@ -97,6 +97,8 @@ def calculate_multi_distance_core(
     assert not np.isnan(query_matrix).any(), "Query vector must not contain NaN"
     similarities: list[float] = []
 
+    # Euclid and Manhattan are the only ones which are calculated differently during candidate selection
+    # in core, here we make sure to use the same internal similarity function as in core.
     if distance_type in [models.Distance.EUCLID, models.Distance.MANHATTAN]:
         query_matrix = query_matrix[:, np.newaxis]
         dist_func = euclidean if distance_type == models.Distance.EUCLID else manhattan
