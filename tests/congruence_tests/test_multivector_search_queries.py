@@ -8,7 +8,6 @@ from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     code_vector_size,
     compare_client_results,
-    generate_fixtures,
     image_vector_size,
     init_client,
     init_local,
@@ -16,6 +15,7 @@ from tests.congruence_tests.test_common import (
     text_vector_size,
     multi_vector_config,
     generate_multivector_fixtures,
+    audio_vector_size,
 )
 from tests.fixtures.points import generate_random_multivector
 
@@ -27,6 +27,7 @@ class TestSimpleSearcher:
         self.query_text = generate_random_multivector(text_vector_size, 10)
         self.query_image = generate_random_multivector(image_vector_size, 10)
         self.query_code = generate_random_multivector(code_vector_size, 10)
+        self.query_audio = generate_random_multivector(audio_vector_size, 10)
 
     def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
@@ -55,6 +56,15 @@ class TestSimpleSearcher:
             limit=10,
         ).points
 
+    def simple_search_audio(self, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=self.query_audio,
+            using="multi-audio",
+            with_payload=True,
+            limit=10,
+        ).points
+
     def simple_search_unnamed(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -77,7 +87,8 @@ def test_simple():
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
-    # compare_client_results(local_client, remote_client, searcher.simple_search_code)  # todo: uncomment once fixed in core
+    compare_client_results(local_client, remote_client, searcher.simple_search_code)
+    compare_client_results(local_client, remote_client, searcher.simple_search_audio)
 
 
 def test_single_vector():
@@ -119,7 +130,8 @@ def test_search_with_persistence():
 
         compare_client_results(local_client_2, remote_client, searcher.simple_search_text)
         compare_client_results(local_client_2, remote_client, searcher.simple_search_image)
-        # compare_client_results(local_client_2, remote_client, searcher.simple_search_code)  # todo: uncomment once fixed in core
+        compare_client_results(local_client_2, remote_client, searcher.simple_search_code)
+        compare_client_results(local_client_2, remote_client, searcher.simple_search_audio)
 
 
 def test_search_invalid_vector_type():

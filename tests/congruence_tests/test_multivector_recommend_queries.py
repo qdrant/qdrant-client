@@ -36,17 +36,48 @@ class TestSimpleRecommendation:
         ).points
 
     @classmethod
-    def many_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def simple_recommend_text(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(
-                    positive=[10, 19],
+                    positive=[10],
+                    negative=[],
                 )
             ),
             with_payload=True,
             limit=10,
             using="multi-text",
+        ).points
+
+    @classmethod
+    def simple_recommend_code(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 11],
+                    negative=[12],
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="multi-code",
+        ).points
+
+    @classmethod
+    def simple_recommend_audio(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 11],
+                    negative=[12],
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="multi-audio",
         ).points
 
     @classmethod
@@ -101,13 +132,28 @@ class TestSimpleRecommendation:
         ).points
 
     @classmethod
-    def best_score_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+    def best_score_recommend_manhattan(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(
                     positive=[10, 20],
-                    negative=[11, 21],
+                    strategy=models.RecommendStrategy.BEST_SCORE,
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="multi-audio",
+        ).points
+
+    @classmethod
+    def best_score_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10],
+                    negative=[],
                     strategy=models.RecommendStrategy.BEST_SCORE,
                 )
             ),
@@ -166,6 +212,22 @@ class TestSimpleRecommendation:
         ).points
 
     @classmethod
+    def sum_scores_recommend_manhattan(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 11],
+                    negative=[],
+                    strategy=models.RecommendStrategy.SUM_SCORES,
+                )
+            ),
+            with_payload=True,
+            limit=10,
+            using="multi-audio",
+        ).points
+
+    @classmethod
     def sum_scores_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -173,9 +235,8 @@ class TestSimpleRecommendation:
                 recommend=models.RecommendInput(
                     positive=[
                         10,
-                        20,
                     ],
-                    negative=[11, 21],
+                    negative=[],
                     strategy=models.RecommendStrategy.SUM_SCORES,
                 )
             ),
@@ -279,20 +340,24 @@ def test_simple_recommend() -> None:
         vectors_config=multi_vector_config,
     )
     compare_client_results(local_client, remote_client, searcher.simple_recommend_image)
-    compare_client_results(local_client, remote_client, searcher.many_recommend)
+    compare_client_results(local_client, remote_client, searcher.simple_recommend_text)
+    compare_client_results(local_client, remote_client, searcher.simple_recommend_code)
+    compare_client_results(local_client, remote_client, searcher.simple_recommend_audio)
     compare_client_results(local_client, remote_client, searcher.simple_recommend_negative)
     compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
+    compare_client_results(local_client, remote_client, searcher.best_score_recommend_manhattan)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend
     )
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend_euclid
     )
-
+    #
     compare_client_results(local_client, remote_client, searcher.sum_scores_recommend)
     compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_euclid)
+    compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_manhattan)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_sum_scores_recommend
     )

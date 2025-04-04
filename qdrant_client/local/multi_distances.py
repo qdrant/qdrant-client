@@ -74,15 +74,13 @@ def calculate_multi_distance(
     assert not np.isnan(query_matrix).any(), "Query matrix must not contain NaN"
     assert len(query_matrix.shape) == 2, "Query must be a matrix"
 
-    reverse = distance_to_order(distance_type) == DistanceOrder.SMALLER_IS_BETTER
-    similarities: list[float] = []
-    # max sim
-    for matrix in matrices:
-        sim_matrix = calculate_distance(query_matrix, matrix, distance_type)
-        op = np.max if not reverse else np.min
-        similarity = float(np.sum(op(sim_matrix, axis=-1)))
-        similarities.append(similarity)
-    return np.array(similarities)
+    distances = calculate_multi_distance_core(query_matrix, matrices, distance_type)
+
+    if distance_type == models.Distance.EUCLID:
+        distances = np.sqrt(np.abs(distances))
+    elif distance_type == models.Distance.MANHATTAN:
+        distances = np.abs(distances)
+    return distances
 
 
 def calculate_multi_distance_core(
@@ -90,24 +88,26 @@ def calculate_multi_distance_core(
     matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
-    def euclidean(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
+    def euclidean(q: types.NumpyArray, m: types.NumpyArray, *_) -> types.NumpyArray:
         return -np.square(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
-    def manhattan(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
+    def manhattan(q: types.NumpyArray, m: types.NumpyArray, *_) -> types.NumpyArray:
         return -np.abs(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
     assert not np.isnan(query_matrix).any(), "Query vector must not contain NaN"
+    similarities: list[float] = []
+
     if distance_type in [models.Distance.EUCLID, models.Distance.MANHATTAN]:
         query_matrix = query_matrix[:, np.newaxis]
-        similarities: list[float] = []
         dist_func = euclidean if distance_type == models.Distance.EUCLID else manhattan
-        for matrix in matrices:
-            sim_matrix = dist_func(matrix, query_matrix)
-            similarity = float(np.sum(np.max(sim_matrix, axis=-1)))
-            similarities.append(similarity)
-        return np.array(similarities)
+    else:
+        dist_func = calculate_distance
 
-    return calculate_multi_distance(query_matrix, matrices, distance_type)
+    for matrix in matrices:
+        sim_matrix = dist_func(query_matrix, matrix, distance_type)
+        similarity = float(np.sum(np.max(sim_matrix, axis=-1)))
+        similarities.append(similarity)
+    return np.array(similarities)
 
 
 def calculate_multi_recommend_best_scores(
