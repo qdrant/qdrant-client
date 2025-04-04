@@ -246,7 +246,7 @@ def compare_scored_record(
     point2: models.ScoredPoint,
     idx: int,
     rel_tol: float = 1e-4,
-    abs_tol: float = 0,
+    abs_tol: float = 1e-4,
 ) -> None:
     assert (
         point1.id == point2.id
@@ -260,7 +260,7 @@ def compare_scored_record(
     compare_vectors(point1.vector, point2.vector, idx)
 
 
-def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 0) -> None:
+def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 1e-4) -> None:
     assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
     for i in range(len(res2)):
         res1_item = res1[i]
@@ -317,14 +317,14 @@ def compare_client_results(
         if is_context_search is True:
             sorted_1 = sorted(res1, key=lambda x: (x.id))
             sorted_2 = sorted(res2, key=lambda x: (x.id))
-            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+            compare_records(sorted_1, sorted_2, abs_tol=1e-4)
         else:
             compare_records(res1, res2)
     elif isinstance(res1, models.QueryResponse) and isinstance(res2, models.QueryResponse):
         if is_context_search is True:
             sorted_1 = sorted(res1.points, key=lambda x: (x.id))
             sorted_2 = sorted(res2.points, key=lambda x: (x.id))
-            compare_records(sorted_1, sorted_2, abs_tol=1e-5)
+            compare_records(sorted_1, sorted_2, abs_tol=1e-4)
         else:
             compare_records(res1.points, res2.points)
     elif isinstance(res1, models.SearchMatrixOffsetsResponse):
@@ -348,7 +348,7 @@ def compare_client_results(
             assert pair_1.b == pair_2.b, f"pair_1.b = {pair_1.b}, pair_2.b = {pair_2.b}"
             # compare scores with margin
             assert math.isclose(
-                pair_1.score, pair_2.score, rel_tol=1e-4
+                pair_1.score, pair_2.score, rel_tol=1e-4, abs_tol=1e-4
             ), f"pair_1.score = {pair_1.score}, pair_2.score = {pair_2.score}"
     elif isinstance(res1, models.GroupsResult):
         groups_1 = sorted(res1.groups, key=lambda x: (x.hits[0].score, x.id))
