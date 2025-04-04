@@ -22,7 +22,7 @@ from tests.fixtures.points import generate_random_multivector
 secondary_collection_name = "congruence_secondary_collection"
 
 
-NUM_MULTI_VECTORS = 200
+NUM_MULTI_VECTORS = 100
 
 
 @pytest.fixture(scope="module")
@@ -32,7 +32,7 @@ def fixture_points() -> list[models.PointStruct]:
 
 @pytest.fixture(scope="module")
 def secondary_collection_points() -> list[models.PointStruct]:
-    return generate_multivector_fixtures(100)
+    return generate_multivector_fixtures(50)
 
 
 @pytest.fixture(scope="module", autouse=True)

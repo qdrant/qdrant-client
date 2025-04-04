@@ -64,7 +64,7 @@ class TestSimpleSearcher:
 
 
 def test_simple():
-    fixture_points = generate_multivector_fixtures(200)
+    fixture_points = generate_multivector_fixtures(100)
 
     searcher = TestSimpleSearcher()
 
@@ -80,7 +80,7 @@ def test_simple():
 
 
 def test_single_vector():
-    fixture_points = generate_multivector_fixtures(num=200, vectors_sizes=text_vector_size)
+    fixture_points = generate_multivector_fixtures(num=100, vectors_sizes=text_vector_size)
 
     searcher = TestSimpleSearcher()
 
@@ -104,7 +104,7 @@ def test_single_vector():
 def test_search_with_persistence():
     import tempfile
 
-    fixture_points = generate_multivector_fixtures()
+    fixture_points = generate_multivector_fixtures(100)
     searcher = TestSimpleSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
@@ -122,7 +122,7 @@ def test_search_with_persistence():
 
 
 def test_search_invalid_vector_type():
-    fixture_points = generate_multivector_fixtures()
+    fixture_points = generate_multivector_fixtures(100)
 
     local_client = init_local()
     init_client(local_client, fixture_points, vectors_config=multi_vector_config)

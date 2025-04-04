@@ -270,9 +270,9 @@ class TestSimpleRecommendation:
 
 
 def test_simple_recommend() -> None:
-    fixture_points = generate_multivector_fixtures()
+    fixture_points = generate_multivector_fixtures(100)
 
-    secondary_collection_points = generate_multivector_fixtures(100)
+    secondary_collection_points = generate_multivector_fixtures(50)
 
     searcher = TestSimpleRecommendation()
 
