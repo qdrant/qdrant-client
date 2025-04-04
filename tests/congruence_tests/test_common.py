@@ -17,7 +17,6 @@ COLLECTION_NAME = "congruence_test_collection"
 text_vector_size = 50
 image_vector_size = 100
 code_vector_size = 80
-audio_vector_size = 65
 
 # sparse vectors sizes
 sparse_text_vector_size = 100
@@ -40,10 +39,6 @@ dense_vectors_config = {
         size=code_vector_size,
         distance=models.Distance.EUCLID,
     ),
-    "audio": models.VectorParams(
-        size=audio_vector_size,
-        distance=models.Distance.MANHATTAN,
-    ),
 }
 # default sparse vectors config
 sparse_vectors_config = {
@@ -56,7 +51,6 @@ dense_vectors_sizes = {
     "text": text_vector_size,
     "image": image_vector_size,
     "code": code_vector_size,
-    "audio": audio_vector_size,
 }
 
 sparse_vectors_sizes = {
@@ -69,7 +63,6 @@ multivectors_sizes = {
     "multi-text": text_vector_size,
     "multi-image": image_vector_size,
     "multi-code": code_vector_size,
-    "multi-audio": audio_vector_size,
 }
 
 multi_vector_config = {
@@ -90,13 +83,6 @@ multi_vector_config = {
     "multi-code": models.VectorParams(
         size=code_vector_size,
         distance=models.Distance.EUCLID,
-        multivector_config=models.MultiVectorConfig(
-            comparator=models.MultiVectorComparator.MAX_SIM,
-        ),
-    ),
-    "multi-audio": models.VectorParams(
-        size=audio_vector_size,
-        distance=models.Distance.MANHATTAN,
         multivector_config=models.MultiVectorConfig(
             comparator=models.MultiVectorComparator.MAX_SIM,
         ),

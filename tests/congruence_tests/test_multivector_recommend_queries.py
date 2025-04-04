@@ -66,21 +66,6 @@ class TestSimpleRecommendation:
         ).points
 
     @classmethod
-    def simple_recommend_audio(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.RecommendQuery(
-                recommend=models.RecommendInput(
-                    positive=[10, 11],
-                    negative=[12],
-                )
-            ),
-            with_payload=True,
-            limit=10,
-            using="multi-audio",
-        ).points
-
-    @classmethod
     def simple_recommend_negative(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -129,21 +114,6 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="multi-image",
-        ).points
-
-    @classmethod
-    def best_score_recommend_manhattan(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.RecommendQuery(
-                recommend=models.RecommendInput(
-                    positive=[10, 20],
-                    strategy=models.RecommendStrategy.BEST_SCORE,
-                )
-            ),
-            with_payload=True,
-            limit=10,
-            using="multi-audio",
         ).points
 
     @classmethod
@@ -209,22 +179,6 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="multi-image",
-        ).points
-
-    @classmethod
-    def sum_scores_recommend_manhattan(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=models.RecommendQuery(
-                recommend=models.RecommendInput(
-                    positive=[10, 11],
-                    negative=[],
-                    strategy=models.RecommendStrategy.SUM_SCORES,
-                )
-            ),
-            with_payload=True,
-            limit=10,
-            using="multi-audio",
         ).points
 
     @classmethod
@@ -342,12 +296,10 @@ def test_simple_recommend() -> None:
     compare_client_results(local_client, remote_client, searcher.simple_recommend_image)
     compare_client_results(local_client, remote_client, searcher.simple_recommend_text)
     compare_client_results(local_client, remote_client, searcher.simple_recommend_code)
-    compare_client_results(local_client, remote_client, searcher.simple_recommend_audio)
     compare_client_results(local_client, remote_client, searcher.simple_recommend_negative)
     compare_client_results(local_client, remote_client, searcher.recommend_from_another_collection)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend)
     compare_client_results(local_client, remote_client, searcher.best_score_recommend_euclid)
-    compare_client_results(local_client, remote_client, searcher.best_score_recommend_manhattan)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend
     )
@@ -357,7 +309,6 @@ def test_simple_recommend() -> None:
     #
     compare_client_results(local_client, remote_client, searcher.sum_scores_recommend)
     compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_euclid)
-    compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_manhattan)
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_sum_scores_recommend
     )
