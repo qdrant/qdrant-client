@@ -28,6 +28,7 @@ source "$VENV_DIR/bin/activate"
 pip install --upgrade pip
 pip install "grpcio==1.48.2"
 pip install "grpcio-tools==1.48.2"
+pip install "mypy-protobuf==3.3.0"  # ^3.3.0
 
 cd "$QDRANT_PATH"
 git clone --sparse --filter=blob:none --depth=1 git@github.com:qdrant/qdrant.git
@@ -48,8 +49,14 @@ rm -f $CLIENT_DIR/raft_service.proto
 rm -f $CLIENT_DIR/health_check.proto
 
 # Clean qdrant.proto references to those removed files
-grep -vE 'collections_internal_service.proto|points_internal_service.proto|qdrant_internal_service.proto|shard_snapshots_service.proto|raft_service.proto|health_check.proto' \
-  "$CLIENT_DIR/qdrant.proto" > "$CLIENT_DIR/qdrant_tmp.proto"
+cat $CLIENT_DIR/qdrant.proto \
+ | grep -v 'collections_internal_service.proto' \
+ | grep -v 'points_internal_service.proto' \
+ | grep -v 'qdrant_internal_service.proto' \
+ | grep -v 'shard_snapshots_service.proto' \
+ | grep -v 'raft_service.proto' \
+ | grep -v 'health_check.proto' \
+  > $CLIENT_DIR/qdrant_tmp.proto
 mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
 
 "$VENV_DIR/bin/python" -m grpc_tools.protoc \
@@ -57,8 +64,11 @@ mv "$CLIENT_DIR/qdrant_tmp.proto" "$CLIENT_DIR/qdrant.proto"
   -I ./qdrant_client/grpc \
   ./qdrant_client/proto/*.proto \
   --python_out=./qdrant_client/grpc \
-  --grpc_python_out=./qdrant_client/grpc
+  --grpc_python_out=./qdrant_client/grpc \
+  --mypy_out=./qdrant_client/grpc
 
+# maybe I'll remove this crutch when google makes normal imports for issue from 2016
+# https://github.com/protocolbuffers/protobuf/issues/1491
 sed -i -re 's/^import (\w*)_pb2/from . import \1_pb2/g' ./qdrant_client/grpc/*.py
 
 deactivate
