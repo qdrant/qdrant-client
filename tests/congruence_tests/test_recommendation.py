@@ -29,6 +29,7 @@ class TestSimpleRecommendation:
     @classmethod
     def simple_recommend_image(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[10],
             negative=[],
@@ -40,6 +41,7 @@ class TestSimpleRecommendation:
     @classmethod
     def many_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[10, 19],
             with_payload=True,
@@ -50,6 +52,7 @@ class TestSimpleRecommendation:
     @classmethod
     def simple_recommend_negative(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[10],
             negative=[15, 7],
@@ -63,6 +66,7 @@ class TestSimpleRecommendation:
         cls, client: QdrantBase, positive_point_id: Optional[int] = None
     ) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[10] if positive_point_id is None else [positive_point_id],
             negative=[15, 7] if positive_point_id is None else [],
@@ -80,6 +84,7 @@ class TestSimpleRecommendation:
         cls, client: QdrantBase, query_filter: models.Filter
     ) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[10],
             query_filter=query_filter,
@@ -91,6 +96,7 @@ class TestSimpleRecommendation:
     @classmethod
     def best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[
                 10,
@@ -106,6 +112,7 @@ class TestSimpleRecommendation:
     @classmethod
     def best_score_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[
                 10,
@@ -121,6 +128,7 @@ class TestSimpleRecommendation:
     @classmethod
     def only_negatives_best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=None,
             negative=[10, 12],
@@ -135,6 +143,7 @@ class TestSimpleRecommendation:
         cls, client: QdrantBase
     ) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=None,
             negative=[10, 12],
@@ -147,6 +156,7 @@ class TestSimpleRecommendation:
     @classmethod
     def avg_vector_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[10, 13],
             negative=[],
@@ -158,6 +168,7 @@ class TestSimpleRecommendation:
 
     def recommend_from_raw_vectors(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             positive=[self.query_image],
             negative=[],
@@ -174,11 +185,13 @@ class TestSimpleRecommendation:
             with_payload=True,
             limit=10,
             using="image",
+            with_vectors=True
         )
 
     @staticmethod
     def recommend_batch(client: QdrantBase) -> list[list[models.ScoredPoint]]:
         return client.recommend_batch(
+            with_vectors=True,
             collection_name=COLLECTION_NAME,
             requests=[
                 models.RecommendRequest(
@@ -225,7 +238,7 @@ def test_recommend_from_another_collection():
             positive_point_id=i,
         )
 
-
+@pytest.mark.floatprecision
 def test_simple_recommend() -> None:
     fixture_points = generate_fixtures()
 

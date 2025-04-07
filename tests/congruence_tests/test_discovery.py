@@ -109,7 +109,7 @@ def test_context_euclidean(
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
     compare_client_results(local_client, http_client, f, is_context_search=True)
 
-
+@pytest.mark.floatprecision
 def test_context_many_pairs(
     local_client,
     http_client,
@@ -195,7 +195,7 @@ def test_discover_euclidean(
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
 
-
+@pytest.mark.floatprecision
 def test_discover_raw_target(
     local_client,
     http_client,
@@ -215,7 +215,7 @@ def test_discover_raw_target(
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
 
-
+@pytest.mark.floatprecision
 def test_context_raw_positive(
     local_client,
     http_client,

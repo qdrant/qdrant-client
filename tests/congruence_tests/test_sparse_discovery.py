@@ -139,7 +139,7 @@ def test_discover(
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
 
-
+@pytest.mark.floatprecision
 def test_discover_raw_target(
     local_client,
     http_client,

@@ -961,7 +961,7 @@ def test_sparse_query():
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.sparse_query_text)
 
-
+@pytest.mark.floatprecision
 def test_multivec_query():
     fixture_points = generate_multivector_fixtures()
 
@@ -973,7 +973,7 @@ def test_multivec_query():
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.multivec_query_text)
 
-
+@pytest.mark.floatprecision
 def test_dense_query():
     fixture_points = generate_fixtures()
 
@@ -1437,10 +1437,9 @@ def test_original_input_persistence():
         using=dense_vector_name,
     )
 
-
+@pytest.mark.floatprecision
 def test_query_group():
     fixture_points = generate_fixtures()
-
     secondary_collection_points = generate_fixtures(10)
 
     searcher = TestSimpleSearcher()

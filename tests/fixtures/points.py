@@ -23,7 +23,8 @@ def find_min_dist(vectors: np.ndarray) -> float:
     Calculate the minimum cosine distance between vectors.
     """
     if len(vectors) > 1:
-        vectors_norm = vectors / np.linalg.norm(vectors, axis=1, keepdims=True)
+        norm = np.linalg.norm(vectors, axis=1, keepdims=True)
+        vectors_norm = vectors / norm
         cosine_sim_matrix = vectors_norm @ vectors_norm.T
         np.fill_diagonal(cosine_sim_matrix, -np.inf)
         max_cosine_similarity = np.max(cosine_sim_matrix)
@@ -33,7 +34,7 @@ def find_min_dist(vectors: np.ndarray) -> float:
         return 1.0
 
 
-def check_distance(vectors: np.ndarray, threshold: float = 10 ** (-ROUND_PRECISION + 1)) -> bool:
+def check_distance(vectors: np.ndarray, threshold: float = 2 * 10 ** (-ROUND_PRECISION + 1)) -> bool:
     """
     Check if the minimum cosine distance of vectors exceeds a threshold.
     """
@@ -44,9 +45,10 @@ def generate_dense_vectors(num: int, size: int, tries=1000) -> list[list[float]]
     """
     Generate a list of dense vectors with a minimum distance check.
     """
-    vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
+    vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).astype(np.float32)
     tries_counter = 0
     while not check_distance(vectors):
+        raise RuntimeError(f"Regeneration")
         vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
         tries_counter+=1
         if tries_counter > tries:
@@ -77,7 +79,7 @@ def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[floa
     """
     Generate a list of multivectors (each a list of floats).
     """
-    return [np.random.random(vec_size).round(ROUND_PRECISION).tolist() for _ in range(vec_count)]
+    return np.random.random((vec_count, vec_size)).round(ROUND_PRECISION).tolist()
 
 
 def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
