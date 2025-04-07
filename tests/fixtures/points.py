@@ -48,8 +48,7 @@ def generate_dense_vectors(num: int, size: int, tries=1000) -> list[list[float]]
     vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).astype(np.float32)
     tries_counter = 0
     while not check_distance(vectors):
-        raise RuntimeError(f"Regeneration")
-        vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION)
+        vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).astype(float32)
         tries_counter+=1
         if tries_counter > tries:
             raise RuntimeError(f"Can not find a dense vector in {tries} runs")
