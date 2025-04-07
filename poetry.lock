@@ -3512,4 +3512,4 @@ fastembed-gpu = ["fastembed-gpu"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9"
-content-hash = "7a5860e8baccbb41de799fc7c5c4e258c4061a74414d56b0e2180d3aa52d515d"
+content-hash = "a34c0bae4254e8b9b862c8d8cd870598d4ade96f8d132f5d259b9175d991f7e6"
