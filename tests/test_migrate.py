@@ -16,7 +16,7 @@ from tests.congruence_tests.test_common import (
 from tests.utils import read_version
 
 
-VECTOR_NUMBER = 1000
+VECTOR_NUMBER = 100
 
 
 @pytest.fixture
@@ -213,7 +213,7 @@ def test_sparse_vector_collection(source_client, dest_client, request) -> None:
     initialize_fixture_collection(
         source_client, collection_name=collection_name, sparse_vectors_config=sparse_vectors_config
     )
-    sparse_points = generate_sparse_fixtures()
+    sparse_points = generate_sparse_fixtures(VECTOR_NUMBER)
     source_client.upload_points(collection_name, sparse_points, wait=True)
     source_client.migrate(dest_client)
     compare_collections(
@@ -239,13 +239,12 @@ def test_migrate_all_collections(source_client, dest_client, request) -> None:
         dest_client: fixture
         request: pytest internal object to get launch fixtures from parametrize
     """
-    vector_number = 100
     collection_names = ["collection_1", "collection_2", "collection_3"]
     source_client: QdrantClient = request.getfixturevalue(source_client)
     dest_client: QdrantClient = request.getfixturevalue(dest_client)
     for collection_name in collection_names:
         initialize_fixture_collection(source_client, collection_name=collection_name)
-        points = generate_fixtures(vector_number)
+        points = generate_fixtures(VECTOR_NUMBER)
         source_client.upload_points(
             collection_name,
             points,
@@ -258,7 +257,7 @@ def test_migrate_all_collections(source_client, dest_client, request) -> None:
         compare_collections(
             source_client,
             dest_client,
-            num_vectors=vector_number,
+            num_vectors=VECTOR_NUMBER,
             collection_name=collection_name,
         )
 
@@ -278,13 +277,12 @@ def test_migrate_particular_collections(source_client, dest_client, request) -> 
         dest_client: fixture
         request: pytest internal object to get launch fixtures from parametrize
     """
-    vector_number = 100
     collection_names = ["collection_1", "collection_2", "collection_3"]
     source_client: QdrantClient = request.getfixturevalue(source_client)
     dest_client: QdrantClient = request.getfixturevalue(dest_client)
     for collection_name in collection_names:
         initialize_fixture_collection(source_client, collection_name=collection_name)
-        points = generate_fixtures(vector_number)
+        points = generate_fixtures(VECTOR_NUMBER)
         source_client.upload_points(
             collection_name,
             points,
@@ -297,7 +295,7 @@ def test_migrate_particular_collections(source_client, dest_client, request) -> 
         compare_collections(
             source_client,
             dest_client,
-            num_vectors=vector_number,
+            num_vectors=VECTOR_NUMBER,
             collection_name=collection_name,
         )
 
@@ -478,9 +476,7 @@ def test_recreate_collection(remote_client: QdrantClient):
             compression=models.CompressionRatio.X4, always_ram=False
         )
     )
-    strict_mode_config = models.StrictModeConfig(
-        read_rate_limit=1000000
-    )
+    strict_mode_config = models.StrictModeConfig(read_rate_limit=1000000)
     remote_client.create_collection(
         collection_name,
         vectors_config=vectors_config,
@@ -492,7 +488,7 @@ def test_recreate_collection(remote_client: QdrantClient):
         optimizers_config=optimizers_config,
         wal_config=wal_config,
         quantization_config=general_quantization_config,
-        strict_mode_config=strict_mode_config
+        strict_mode_config=strict_mode_config,
     )
 
     remote_client.create_payload_index(

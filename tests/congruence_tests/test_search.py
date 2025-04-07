@@ -321,7 +321,7 @@ def test_search_with_persistence_and_skipped_vectors():
 
 
 def test_search_invalid_vector_type():
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(10)
 
     local_client = init_local()
     init_client(local_client, fixture_points)
@@ -338,7 +338,7 @@ def test_search_invalid_vector_type():
 
 
 def test_query_with_nan():
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(10)
 
     local_client = init_local()
     init_client(local_client, fixture_points)

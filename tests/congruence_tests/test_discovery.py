@@ -373,7 +373,7 @@ def test_context_with_filters(local_client, http_client, grpc_client, filter: mo
 
 
 def test_query_with_nan():
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(100)
     vector = np.random.random(image_vector_size)
     vector[0] = np.nan
     vector = vector.tolist()

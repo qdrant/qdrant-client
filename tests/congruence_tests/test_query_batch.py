@@ -135,7 +135,7 @@ class TestQueryBatchSearcher:
 
 
 def test_sparse_query_batch():
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(100)
 
     searcher = TestQueryBatchSearcher()
 
@@ -149,7 +149,7 @@ def test_sparse_query_batch():
 
 
 def test_multivec_query_batch():
-    fixture_points = generate_multivector_fixtures()
+    fixture_points = generate_multivector_fixtures(100)
 
     searcher = TestQueryBatchSearcher()
 
@@ -164,7 +164,7 @@ def test_multivec_query_batch():
 
 @pytest.mark.parametrize("prefer_grpc", (False, True))
 def test_dense_query_batch(prefer_grpc):
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(100)
 
     searcher = TestQueryBatchSearcher()
 

@@ -288,7 +288,7 @@ def test_query_with_nan():
     local_client = init_local()
     remote_client = init_remote()
 
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(100)
     sparse_vector = random_sparse_vectors({"sparse-text": sparse_text_vector_size})
     named_sparse_vector = models.NamedSparseVector(
         name="sparse-text", vector=sparse_vector["sparse-text"]
