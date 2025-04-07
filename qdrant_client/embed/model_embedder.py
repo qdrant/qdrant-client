@@ -338,7 +338,10 @@ class ModelEmbedder:
             Assemble batches by options and data type based groups, embeds and return embeddings in the original order
             """
             unique_options: list[dict[str, Any]] = []
-            unique_options_is_text: list[bool] = []
+            unique_options_is_text: list[
+                bool
+            ] = []  # multimodal models can have both text and image data,
+            # we need to track which data we process to construct separate batches for texts and images
             batches: list[Any] = []
             group_indices: dict[int, list[int]] = defaultdict(list)
             for i, obj in enumerate(objects):
@@ -357,9 +360,9 @@ class ModelEmbedder:
                     unique_options_is_text.append(is_text)
                     batches.append([obj.text if is_text else obj.image])
 
-            embeds = []
+            embeddings = []
             for i, (options, is_text) in enumerate(zip(unique_options, unique_options_is_text)):
-                embeds.extend(
+                embeddings.extend(
                     [
                         embedding
                         for embedding in self.embedder.embed(
@@ -373,11 +376,11 @@ class ModelEmbedder:
                     ]
                 )
 
-            iter_embeds = iter(embeds)
+            iter_embeddings = iter(embeddings)
             ordered_embeddings: list[list[NumericVector]] = [[]] * len(objects)
             for indices in group_indices.values():
                 for index in indices:
-                    ordered_embeddings[index] = next(iter_embeds)
+                    ordered_embeddings[index] = next(iter_embeddings)
             return ordered_embeddings
 
         for model in self._batch_accumulator:
