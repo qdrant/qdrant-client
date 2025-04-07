@@ -247,8 +247,8 @@ class Embedder:
                     texts, model_name, options, is_query, batch_size
                 )
             elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
-                embeddings = self._embed_late_interaction_multimodal(
-                    texts, images, model_name, options, batch_size
+                embeddings = self._embed_late_interaction_multimodal_text(
+                    texts, model_name, options, batch_size
                 )
             else:
                 raise ValueError(f"Unsupported embedding model: {model_name}")
@@ -259,8 +259,8 @@ class Embedder:
             if model_name in _IMAGE_EMBEDDING_MODELS:
                 embeddings = self._embed_dense_image(images, model_name, options, batch_size)
             elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
-                embeddings = self._embed_late_interaction_multimodal(
-                    texts, images, model_name, options, batch_size
+                embeddings = self._embed_late_interaction_multimodal_image(
+                    images, model_name, options, batch_size
                 )
             else:
                 raise ValueError(f"Unsupported embedding model: {model_name}")
@@ -338,10 +338,9 @@ class Embedder:
             ]
         return embeddings
 
-    def _embed_late_interaction_multimodal(
+    def _embed_late_interaction_multimodal_text(
         self,
-        texts: Optional[list[str]],
-        images: Optional[list[ImageInput]],
+        texts: list[str],
         model_name: str,
         options: Optional[dict[str, Any]],
         batch_size: int,
@@ -349,24 +348,27 @@ class Embedder:
         embedding_model_inst = self.get_or_init_late_interaction_multimodal_model(
             model_name=model_name, **options or {}
         )
-        if texts and images:
-            raise ValueError("Either documents or images should be provided")
+        return [
+            embedding.tolist()
+            for embedding in embedding_model_inst.embed_text(
+                documents=texts, batch_size=batch_size
+            )
+        ]
 
-        if texts:
-            embeddings = [
-                embedding.tolist()
-                for embedding in embedding_model_inst.embed_text(
-                    documents=texts, batch_size=batch_size
-                )
-            ]
-        else:
-            embeddings = [
-                embedding.tolist()
-                for embedding in embedding_model_inst.embed_image(
-                    images=images, batch_size=batch_size
-                )
-            ]
-        return embeddings
+    def _embed_late_interaction_multimodal_image(
+        self,
+        images: list[ImageInput],
+        model_name: str,
+        options: Optional[dict[str, Any]],
+        batch_size: int,
+    ) -> list[list[list[float]]]:
+        embedding_model_inst = self.get_or_init_late_interaction_multimodal_model(
+            model_name=model_name, **options or {}
+        )
+        return [
+            embedding.tolist()
+            for embedding in embedding_model_inst.embed_image(images=images, batch_size=batch_size)
+        ]
 
     def _embed_dense_image(
         self,
