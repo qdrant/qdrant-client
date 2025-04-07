@@ -21,7 +21,7 @@ numpy = [
     { version = ">=1.21", python = ">=3.10,<3.12" },
     { version = ">=1.26", python = ">=3.12,<3.13" },
 ]
-pydantic = ">=1.10.8"
+pydantic = ">=1.10.8,!=2.0.*,!=2.1.*,!=2.2.0"  # can't use poetry ">=1.10.8,<2.0 || >=2.2.1" since pip is complaining
 grpcio = { version = ">=1.41.0", allow-prereleases = true }
 protobuf = ">=3.20.0"
 urllib3 = ">=1.26.14,<3"
