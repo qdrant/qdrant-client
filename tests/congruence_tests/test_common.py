@@ -193,7 +193,7 @@ def compare_collections(
     compare_client_results(
         client_1,
         client_2,
-        lambda client: client.scroll(collection_name, with_vectors=True, limit=num_vectors * 2),
+        lambda client: client.scroll(collection_name, with_vectors=True, limit=num_vectors * 2, order_by="timestamp"),
     )
 
 
