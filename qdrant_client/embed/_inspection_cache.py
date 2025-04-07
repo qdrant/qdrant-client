@@ -1426,7 +1426,7 @@ DEFS = {
                 "type": "string",
             },
             "options": {
-                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
                 "default": None,
                 "description": "Parameters for the model Values of the parameters are model-specific",
                 "title": "Options",
@@ -1450,7 +1450,7 @@ DEFS = {
                 "type": "string",
             },
             "options": {
-                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
                 "default": None,
                 "description": "Parameters for the model Values of the parameters are model-specific",
                 "title": "Options",
@@ -1474,7 +1474,7 @@ DEFS = {
                 "type": "string",
             },
             "options": {
-                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
                 "default": None,
                 "description": "Parameters for the model Values of the parameters are model-specific",
                 "title": "Options",
@@ -2862,6 +2862,7 @@ DEFS = {
         "description": "This data structure is used in API interface and applied across multiple shards",
         "properties": {
             "payload": {
+                "additionalProperties": True,
                 "description": "This data structure is used in API interface and applied across multiple shards",
                 "title": "Payload",
                 "type": "object",
@@ -2954,7 +2955,10 @@ DEFS = {
                 "title": "Vectors",
             },
             "payloads": {
-                "anyOf": [{"items": {"type": "object"}, "type": "array"}, {"type": "null"}],
+                "anyOf": [
+                    {"items": {"additionalProperties": True, "type": "object"}, "type": "array"},
+                    {"type": "null"},
+                ],
                 "default": None,
                 "description": "",
                 "title": "Payloads",
@@ -3000,7 +3004,7 @@ DEFS = {
                 "title": "Vector",
             },
             "payload": {
-                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
                 "default": None,
                 "description": "Payload values (optional)",
                 "title": "Payload",
@@ -3068,7 +3072,7 @@ DEFS = {
                 "title": "Formula",
             },
             "defaults": {
-                "anyOf": [{"type": "object"}, {"type": "null"}],
+                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
                 "default": {},
                 "description": "",
                 "title": "Defaults",
@@ -3266,8 +3270,8 @@ DEFS = {
         "type": "object",
     },
     "RecommendStrategy": {
-        "description": "How to use positive and negative examples to find the results, default is `average_vector`:  * `average_vector` - Average positive and negative vectors and create a single query with the formula `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.  * `best_score` - Uses custom search objective. Each candidate is compared against all examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. If the `max_neg_score` is chosen then it is squared and negated, otherwise it is just the `max_pos_score`.",
-        "enum": ["average_vector", "best_score"],
+        "description": "How to use positive and negative examples to find the results, default is `average_vector`:  * `average_vector` - Average positive and negative vectors and create a single query with the formula `query = avg_pos + avg_pos - avg_neg`. Then performs normal search.  * `best_score` - Uses custom search objective. Each candidate is compared against all examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`. If the `max_neg_score` is chosen then it is squared and negated, otherwise it is just the `max_pos_score`.  * `sum_scores` - Uses custom search objective. Compares against all inputs, sums all the scores. Scores against positive vectors are added, against negatives are subtracted.",
+        "enum": ["average_vector", "best_score", "sum_scores"],
         "title": "RecommendStrategy",
         "type": "string",
     },

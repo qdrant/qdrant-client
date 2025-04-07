@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 import numpy as np
 
@@ -19,15 +19,22 @@ class MultiRecoQuery:
         self,
         positive: Optional[list[list[list[float]]]] = None,  # list of matrices
         negative: Optional[list[list[list[float]]]] = None,  # list of matrices
+        strategy: Optional[models.RecommendStrategy] = None,
     ):
+        assert strategy is not None, "Recommend strategy must be provided"
+
+        self.strategy = strategy
+
         positive = positive if positive is not None else []
         negative = negative if negative is not None else []
 
+        for vector in positive:
+            assert not np.isnan(vector).any(), "Positive vectors must not contain NaN"
+        for vector in negative:
+            assert not np.isnan(vector).any(), "Negative vectors must not contain NaN"
+
         self.positive: list[types.NumpyArray] = [np.array(vector) for vector in positive]
         self.negative: list[types.NumpyArray] = [np.array(vector) for vector in negative]
-
-        assert not np.isnan(self.positive).any(), "Positive vectors must not contain NaN"
-        assert not np.isnan(self.negative).any(), "Negative vectors must not contain NaN"
 
 
 class MultiContextPair:
@@ -67,15 +74,13 @@ def calculate_multi_distance(
     assert not np.isnan(query_matrix).any(), "Query matrix must not contain NaN"
     assert len(query_matrix.shape) == 2, "Query must be a matrix"
 
-    reverse = distance_to_order(distance_type) == DistanceOrder.SMALLER_IS_BETTER
-    similarities: list[float] = []
-    # max sim
-    for matrix in matrices:
-        sim_matrix = calculate_distance(query_matrix, matrix, distance_type)
-        op = np.max if not reverse else np.min
-        similarity = float(np.sum(op(sim_matrix, axis=-1)))
-        similarities.append(similarity)
-    return np.array(similarities)
+    distances = calculate_multi_distance_core(query_matrix, matrices, distance_type)
+
+    if distance_type == models.Distance.EUCLID:
+        distances = np.sqrt(np.abs(distances))
+    elif distance_type == models.Distance.MANHATTAN:
+        distances = np.abs(distances)
+    return distances
 
 
 def calculate_multi_distance_core(
@@ -83,24 +88,28 @@ def calculate_multi_distance_core(
     matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
-    def euclidean(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
-        return -np.square(m - q, dtype=np.float32).sum(axis=1, dtype=np.float32)
+    def euclidean(q: types.NumpyArray, m: types.NumpyArray, *_: Any) -> types.NumpyArray:
+        return -np.square(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
-    def manhattan(m: types.NumpyArray, q: types.NumpyArray) -> types.NumpyArray:
-        return -np.abs(m - q, dtype=np.float32).sum(axis=1, dtype=np.float32)
+    def manhattan(q: types.NumpyArray, m: types.NumpyArray, *_: Any) -> types.NumpyArray:
+        return -np.abs(m - q, dtype=np.float32).sum(axis=-1, dtype=np.float32)
 
     assert not np.isnan(query_matrix).any(), "Query vector must not contain NaN"
+    similarities: list[float] = []
+
+    # Euclid and Manhattan are the only ones which are calculated differently during candidate selection
+    # in core, here we make sure to use the same internal similarity function as in core.
     if distance_type in [models.Distance.EUCLID, models.Distance.MANHATTAN]:
         query_matrix = query_matrix[:, np.newaxis]
-        similarities: list[float] = []
         dist_func = euclidean if distance_type == models.Distance.EUCLID else manhattan
-        for matrix in matrices:
-            sim_matrix = dist_func(matrix, query_matrix)
-            similarity = float(np.sum(np.max(sim_matrix, axis=-1)))
-            similarities.append(similarity)
-        return np.array(similarities)
+    else:
+        dist_func = calculate_distance  # type: ignore
 
-    return calculate_multi_distance(query_matrix, matrices, distance_type)
+    for matrix in matrices:
+        sim_matrix = dist_func(query_matrix, matrix, distance_type)
+        similarity = float(np.sum(np.max(sim_matrix, axis=-1)))
+        similarities.append(similarity)
+    return np.array(similarities)
 
 
 def calculate_multi_recommend_best_scores(
@@ -132,6 +141,29 @@ def calculate_multi_recommend_best_scores(
         np.fromiter((scaled_fast_sigmoid(xi) for xi in pos), pos.dtype),
         np.fromiter((-scaled_fast_sigmoid(xi) for xi in neg), neg.dtype),
     )
+
+
+def calculate_multi_recommend_sum_scores(
+    query: MultiRecoQuery, matrices: list[types.NumpyArray], distance_type: models.Distance
+) -> types.NumpyArray:
+    def get_sum_scores(examples: list[types.NumpyArray]) -> types.NumpyArray:
+        matrix_count = len(matrices)
+
+        scores: list[types.NumpyArray] = []
+        for example in examples:
+            score = calculate_multi_distance_core(example, matrices, distance_type)
+            scores.append(score)
+
+        if len(scores) == 0:
+            scores.append(np.zeros(matrix_count))
+
+        sum_scores = np.array(scores, dtype=np.float32).sum(axis=0)
+        return sum_scores
+
+    pos = get_sum_scores(query.positive)
+    neg = get_sum_scores(query.negative)
+
+    return pos - neg
 
 
 def calculate_multi_discovery_ranks(
