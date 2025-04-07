@@ -338,10 +338,8 @@ class ModelEmbedder:
             Assemble batches by options and data type based groups, embeds and return embeddings in the original order
             """
             unique_options: list[dict[str, Any]] = []
-            unique_options_is_text: list[
-                bool
-            ] = []  # multimodal models can have both text and image data,
-            # we need to track which data we process to construct separate batches for texts and images
+            unique_options_is_text: list[bool] = []  # multimodal models can have both text
+            # and image data, we need to track which data we process to construct separate batches for texts and images
             batches: list[Any] = []
             group_indices: dict[int, list[int]] = defaultdict(list)
             for i, obj in enumerate(objects):
