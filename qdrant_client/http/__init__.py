@@ -10,6 +10,7 @@ from qdrant_client.http.api_client import (  # noqa F401
 )
 from qdrant_client.http.models import models as models  # noqa F401
 
+# pydantic v2 had a problem with parsing recursive models from 2.0 till 2.2.1
 for model in inspect.getmembers(models, inspect.isclass):
     if model[1].__module__ == "qdrant_client.http.models.models":
         model_class = model[1]
