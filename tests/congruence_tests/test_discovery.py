@@ -67,7 +67,7 @@ def test_context_cosine(
             context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
             limit=1000,
-            using="image",
+            using="text",
         )
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
@@ -85,7 +85,7 @@ def test_context_dot(
             context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
             limit=1000,
-            using="text",
+            using="image",
         )
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
@@ -151,7 +151,7 @@ def test_discover_cosine(
             context=[models.ContextExamplePair(positive=11, negative=19)],
             with_payload=True,
             limit=10,
-            using="image",
+            using="text",
         )
 
     compare_client_results(grpc_client, http_client, f)
@@ -170,7 +170,7 @@ def test_discover_dot(
             context=[models.ContextExamplePair(positive=11, negative=19)],
             with_payload=True,
             limit=10,
-            using="text",
+            using="image",
         )
 
     compare_client_results(grpc_client, http_client, f)
@@ -264,8 +264,8 @@ def discover_from_another_collection(
     return client.discover(
         collection_name=collection_name,
         target=5,
-        context=[models.ContextExamplePair(positive=3, negative=6)]
-        if positive_point_id is None
+        context=[models.ContextExamplePair(positive=positive_point_id, negative=6)]
+        if positive_point_id is not None
         else [],
         with_payload=True,
         limit=10,

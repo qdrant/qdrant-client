@@ -11,6 +11,8 @@ from qdrant_client import models
 from qdrant_client._pydantic_compat import model_config
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 
+from pydantic.version import VERSION as PYDANTIC_VERSION
+
 
 def dynamic_import(file_path: Union[str, Path], module_name: str) -> ModuleType:
     # Create a module spec from the file path
@@ -30,6 +32,12 @@ def dynamic_import(file_path: Union[str, Path], module_name: str) -> ModuleType:
 
 
 if __name__ == "__main__":
+    semver = PYDANTIC_VERSION.split(".")
+    major, minor, patch = int(semver[0]), int(semver[1]), int(semver[2])
+    if (major, minor, patch) < (2, 11, 0):
+        raise RuntimeError(
+            f"populate_inspection_cache.py requires pydantic >= 2.11.0, current version is: {PYDANTIC_VERSION}"
+        )
     current_path = Path(__name__)
     file_path = current_path.parent.parent / "qdrant_client" / "embed" / "_inspection_cache.py"
 

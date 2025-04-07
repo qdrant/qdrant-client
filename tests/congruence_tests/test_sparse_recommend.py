@@ -145,6 +145,62 @@ class TestSimpleRecommendation:
         )
 
     @classmethod
+    def sum_scores_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[
+                10,
+                20,
+            ],
+            negative=[],
+            with_payload=True,
+            limit=10,
+            using="sparse-image",
+            strategy=models.RecommendStrategy.SUM_SCORES,
+        )
+
+    @classmethod
+    def sum_scores_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=[
+                10,
+                20,
+            ],
+            negative=[11, 21],
+            with_payload=True,
+            limit=10,
+            using="sparse-code",
+            strategy=models.RecommendStrategy.SUM_SCORES,
+        )
+
+    @classmethod
+    def only_negatives_sum_scores_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=None,
+            negative=[10, 12],
+            with_payload=True,
+            limit=10,
+            using="sparse-image",
+            strategy=models.RecommendStrategy.SUM_SCORES,
+        )
+
+    @classmethod
+    def only_negatives_sum_scores_recommend_euclid(
+        cls, client: QdrantBase
+    ) -> list[models.ScoredPoint]:
+        return client.recommend(
+            collection_name=COLLECTION_NAME,
+            positive=None,
+            negative=[10, 12],
+            with_payload=True,
+            limit=10,
+            using="sparse-code",
+            strategy=models.RecommendStrategy.SUM_SCORES,
+        )
+
+    @classmethod
     def avg_vector_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.recommend(
             collection_name=COLLECTION_NAME,
@@ -249,6 +305,18 @@ def test_simple_recommend() -> None:
     compare_client_results(
         local_client, remote_client, searcher.only_negatives_best_score_recommend
     )
+    compare_client_results(
+        local_client, remote_client, searcher.only_negatives_best_score_recommend_euclid
+    )
+    compare_client_results(local_client, remote_client, searcher.sum_scores_recommend)
+    compare_client_results(local_client, remote_client, searcher.sum_scores_recommend_euclid)
+    compare_client_results(
+        local_client, remote_client, searcher.only_negatives_sum_scores_recommend
+    )
+    compare_client_results(
+        local_client, remote_client, searcher.only_negatives_sum_scores_recommend_euclid
+    )
+
     compare_client_results(local_client, remote_client, searcher.avg_vector_recommend)
     compare_client_results(local_client, remote_client, searcher.recommend_from_raw_vectors)
     compare_client_results(

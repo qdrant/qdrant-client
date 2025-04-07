@@ -38,6 +38,7 @@ from qdrant_client.local.distances import (
     calculate_distance,
     calculate_recommend_best_scores,
     distance_to_order,
+    calculate_recommend_sum_scores,
 )
 from qdrant_client.local.multi_distances import (
     MultiQueryVector,
@@ -49,6 +50,7 @@ from qdrant_client.local.multi_distances import (
     calculate_multi_recommend_best_scores,
     calculate_multi_discovery_scores,
     calculate_multi_context_scores,
+    calculate_multi_recommend_sum_scores,
 )
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
@@ -73,6 +75,7 @@ from qdrant_client.local.sparse_distances import (
     calculate_sparse_recommend_best_scores,
     merge_positive_and_negative_avg,
     sparse_avg,
+    calculate_sparse_recommend_sum_scores,
 )
 
 DEFAULT_VECTOR_NAME = ""
@@ -550,7 +553,6 @@ class LocalCollection:
         score_threshold: Optional[float] = None,
     ) -> list[models.ScoredPoint]:
         name, query_vector = self._resolve_query_vector_name(query_vector)
-
         result: list[models.ScoredPoint] = []
         sparse_scoring = False
         rescore_idf = False
@@ -578,19 +580,44 @@ class LocalCollection:
             distance = self.get_vector_params(name).distance
 
         vectors = vectors[: len(self.payload)]
+
         if isinstance(query_vector, np.ndarray):
             if len(query_vector.shape) == 1:
                 scores = calculate_distance(query_vector, vectors, distance)
             else:
                 scores = calculate_multi_distance(query_vector, vectors, distance)
         elif isinstance(query_vector, RecoQuery):
-            scores = calculate_recommend_best_scores(query_vector, vectors, distance)
+            if query_vector.strategy == models.RecommendStrategy.BEST_SCORE:
+                scores = calculate_recommend_best_scores(query_vector, vectors, distance)
+            elif query_vector.strategy == models.RecommendStrategy.SUM_SCORES:
+                scores = calculate_recommend_sum_scores(query_vector, vectors, distance)
+            else:
+                raise TypeError(
+                    f"Recommend strategy is expected to be either "
+                    f"BEST_SCORE or SUM_SCORES, got: {query_vector.strategy}"
+                )
         elif isinstance(query_vector, SparseRecoQuery):
             if rescore_idf:
                 query_vector = query_vector.transform_sparse(lambda x: self._rescore_idf(x, name))
-            scores = calculate_sparse_recommend_best_scores(query_vector, vectors)
+            if query_vector.strategy == models.RecommendStrategy.BEST_SCORE:
+                scores = calculate_sparse_recommend_best_scores(query_vector, vectors)
+            elif query_vector.strategy == models.RecommendStrategy.SUM_SCORES:
+                scores = calculate_sparse_recommend_sum_scores(query_vector, vectors)
+            else:
+                raise TypeError(
+                    f"Recommend strategy is expected to be either "
+                    f"BEST_SCORE or SUM_SCORES, got: {query_vector.strategy}"
+                )
         elif isinstance(query_vector, MultiRecoQuery):
-            scores = calculate_multi_recommend_best_scores(query_vector, vectors, distance)
+            if query_vector.strategy == models.RecommendStrategy.BEST_SCORE:
+                scores = calculate_multi_recommend_best_scores(query_vector, vectors, distance)
+            elif query_vector.strategy == models.RecommendStrategy.SUM_SCORES:
+                scores = calculate_multi_recommend_sum_scores(query_vector, vectors, distance)
+            else:
+                raise TypeError(
+                    f"Recommend strategy is expected to be either "
+                    f"BEST_SCORE or SUM_SCORES, got: {query_vector.strategy}"
+                )
         elif isinstance(query_vector, DiscoveryQuery):
             scores = calculate_discovery_scores(query_vector, vectors, distance)
         elif isinstance(query_vector, SparseDiscoveryQuery):
@@ -635,6 +662,7 @@ class LocalCollection:
             order = np.argsort(scores)[::-1]
         else:
             order = np.argsort(scores)
+
         offset = offset if offset is not None else 0
         for idx in order:
             if len(result) >= limit + offset:
@@ -688,6 +716,7 @@ class LocalCollection:
 
         Assumes all vectors have been homogenized so that there are no ids in the inputs
         """
+
         prefetches = []
         if prefetch is not None:
             prefetches = prefetch if isinstance(prefetch, list) else [prefetch]
@@ -1220,6 +1249,7 @@ class LocalCollection:
 
                     idx = collection.ids[example]
                     vec = collection_vectors[vector_name][idx]
+
                     if isinstance(vec, np.ndarray):
                         vec = vec.tolist()
                     acc.append(vec)
@@ -1243,7 +1273,10 @@ class LocalCollection:
         if strategy == types.RecommendStrategy.AVERAGE_VECTOR:
             if len(positive) == 0:
                 raise ValueError("Positive list is empty")
-        elif strategy == types.RecommendStrategy.BEST_SCORE:
+        elif (
+            strategy == types.RecommendStrategy.BEST_SCORE
+            or strategy == types.RecommendStrategy.SUM_SCORES
+        ):
             if len(positive) == 0 and len(negative) == 0:
                 raise ValueError("No positive or negative examples given")
 
@@ -1323,6 +1356,18 @@ class LocalCollection:
             vector = mean_positive_vector
         return vector
 
+    @staticmethod
+    def _recommend_average_multi(
+        positive_vectors: list[list[list[float]]], negative_vectors: list[list[list[float]]]
+    ) -> list[list[float]]:
+        recommend_vector = [vector for multi_vector in positive_vectors for vector in multi_vector]
+        if len(negative_vectors) > 0:
+            for multi_vector in negative_vectors:
+                for vector in multi_vector:
+                    recommend_vector.append([-value for value in vector])
+
+        return recommend_vector
+
     def _construct_recommend_query(
         self,
         positive: Optional[Sequence[models.VectorInput]] = None,
@@ -1369,30 +1414,37 @@ class LocalCollection:
                     sparse_negative_vectors,
                 )
             elif multi_positive_vectors:
-                raise TypeError(
-                    "Multivectors do not support recommend average, consider using "
-                    "strategy=models.RecommendStrategy.BEST_SCORE"
+                query_vector = self._recommend_average_multi(
+                    multi_positive_vectors, multi_negative_vectors
                 )
             else:
                 raise ValueError("No positive examples given with 'average_vector' strategy")
 
-        elif strategy == types.RecommendStrategy.BEST_SCORE:
+        elif (
+            strategy == types.RecommendStrategy.BEST_SCORE
+            or strategy == types.RecommendStrategy.SUM_SCORES
+        ):
             if positive_vectors or negative_vectors:
                 query_vector = RecoQuery(
                     positive=positive_vectors,
                     negative=negative_vectors,
+                    strategy=strategy,
                 )
             elif sparse_positive_vectors or sparse_negative_vectors:
                 query_vector = SparseRecoQuery(
-                    positive=sparse_positive_vectors, negative=sparse_negative_vectors
+                    positive=sparse_positive_vectors,
+                    negative=sparse_negative_vectors,
+                    strategy=strategy,
                 )
             elif multi_positive_vectors or multi_negative_vectors:
                 query_vector = MultiRecoQuery(
-                    positive=multi_positive_vectors, negative=multi_negative_vectors
+                    positive=multi_positive_vectors,
+                    negative=multi_negative_vectors,
+                    strategy=strategy,
                 )
             else:
                 raise ValueError(
-                    "No positive or negative examples given with 'best_score' strategy"
+                    f"No positive or negative examples given with '{strategy}' strategy"
                 )
         else:
             raise ValueError(
@@ -1694,7 +1746,6 @@ class LocalCollection:
             raise ValueError(
                 "All context example pairs must be either dense or sparse or multi vectors"
             )
-
         return dense_context_vectors, sparse_context_vectors, multi_context_vectors, mentioned_ids
 
     def _preprocess_discover(
@@ -1798,7 +1849,6 @@ class LocalCollection:
             raise ValueError("No target or context given")
 
         search_in_vector_name = using if using is not None else DEFAULT_VECTOR_NAME
-
         return self.search(
             query_vector=(search_in_vector_name, query_vector),
             query_filter=edited_query_filter,

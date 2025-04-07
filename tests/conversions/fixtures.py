@@ -1009,6 +1009,7 @@ query_points = grpc.QueryPoints(
 
 recommend_strategy = grpc.RecommendStrategy.BestScore
 recommend_strategy2 = grpc.RecommendStrategy.AverageVector
+recommend_strategy3 = grpc.RecommendStrategy.SumScores
 
 recommend_points = grpc.RecommendPoints(
     collection_name="collection-123",
@@ -1563,7 +1564,7 @@ fixtures = {
     "SearchPoints": [search_points, search_points_all_vectors],
     "QueryPoints": [query_points],
     "RecommendPoints": [recommend_points, recommend_points_sparse],
-    "RecommendStrategy": [recommend_strategy, recommend_strategy2],
+    "RecommendStrategy": [recommend_strategy, recommend_strategy2, recommend_strategy3],
     "TextIndexParams": [
         text_index_params_1,
         text_index_params_2,
