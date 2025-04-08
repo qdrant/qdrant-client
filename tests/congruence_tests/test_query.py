@@ -272,7 +272,7 @@ class TestSimpleSearcher:
         return client.query_points_groups(
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
-                recommend=models.RecommendInput(positive=[1, 2], negative=[3, 4])
+                recommend=models.RecommendInput(positive=[1], negative=[2, 3])
             ),
             using="text",
             lookup_from=lookup_from,
