@@ -1,6 +1,6 @@
 from typing import Optional
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from collections import defaultdict
 from threading import Lock
 
@@ -20,10 +20,10 @@ COLLECTION_NAME = "inference_collection"
 DENSE_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 DENSE_DIM = 384
 SPARSE_MODEL_NAME = "Qdrant/bm42-all-minilm-l6-v2-attentions"
-COLBERT_MODEL_NAME = "answerdotai/answerai-colbert-small-v1"
-COLBERT_DIM = 96
-DENSE_IMAGE_MODEL_NAME = "Qdrant/clip-ViT-B-32-vision"
-DENSE_IMAGE_DIM = 512
+COLBERT_MODEL_NAME = "colbert-ir/colbertv2.0"
+COLBERT_DIM = 128
+DENSE_IMAGE_MODEL_NAME = "Qdrant/resnet50-onnx"
+DENSE_IMAGE_DIM = 2048
 
 TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 
@@ -32,7 +32,58 @@ TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 def cached_embedder():
     embedding_cache = defaultdict(list)
     cache_lock = Lock()
+    original_embed = Embedder.embed
 
+    def cached_embed(
+        self, model_name, texts=None, images=None, is_query=False, options=None, batch_size=None
+    ):
+        inputs = texts if texts is not None else images
+        if inputs is None:
+            return original_embed(
+                self,
+                model_name=model_name,
+                texts=texts,
+                images=images,
+                is_query=is_query,
+                options=options or {},
+                batch_size=batch_size,
+            )
+
+        options = options or {}
+        cache_key = (model_name, tuple(inputs), frozenset(options.items()))
+
+        if cache_key in embedding_cache:
+            return embedding_cache[cache_key]
+
+        with cache_lock:
+            if cache_key in embedding_cache:
+                return embedding_cache[cache_key]
+            embeddings = original_embed(
+                self,
+                model_name=model_name,
+                texts=texts,
+                images=images,
+                is_query=is_query,
+                options=options,
+                batch_size=batch_size,
+            )
+            embedding_cache[cache_key] = embeddings
+            if not hasattr(self, "embedding_models"):
+                self.embedding_models = defaultdict(list)
+            if not self.embedding_models[model_name]:
+                mock_model = Mock()
+                mock_model.model.lazy_load = options.get("lazy_load", False)
+                self.embedding_models[model_name].append(mock_model)
+            return embeddings
+
+    with patch.object(Embedder, "embed", cached_embed):
+        yield
+
+
+@pytest.fixture
+def cached_embeddings():
+    embedding_cache = defaultdict(list)
+    cache_lock = Lock()
     original_embed = Embedder.embed
 
     def cached_embed(
@@ -124,7 +175,7 @@ def populate_sparse_collection(
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_upsert(prefer_grpc, cached_embedder):
+def test_upsert(prefer_grpc, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -262,7 +313,7 @@ def test_upsert(prefer_grpc, cached_embedder):
 
 
 @pytest.mark.parametrize("prefer_grpc", [False])
-def test_upload(prefer_grpc, cached_embedder):
+def test_upload(prefer_grpc, cached_embeddings):
     def recreate_collection(client, collection_name):
         if client.collection_exists(collection_name):
             client.delete_collection(collection_name)
@@ -1333,7 +1384,7 @@ def test_inference_object(prefer_grpc, cached_embedder):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("parallel", [1, 2])
-def test_upload_mixed_batches_upload_points(prefer_grpc, parallel, cached_embedder):
+def test_upload_mixed_batches_upload_points(prefer_grpc, parallel, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -1481,7 +1532,7 @@ def test_upload_mixed_batches_upload_points(prefer_grpc, parallel, cached_embedd
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("parallel", [1, 2])
-def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel, cached_embedder):
+def test_upload_mixed_batches_upload_collection(prefer_grpc, parallel, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
