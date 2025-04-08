@@ -2,7 +2,7 @@ from typing import Optional
 from pathlib import Path
 from unittest.mock import patch, Mock
 from collections import defaultdict
-from threading import Lock
+from multiprocessing import Manager
 
 import numpy as np
 import pytest
@@ -28,72 +28,33 @@ DENSE_IMAGE_DIM = 2048
 TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 
 
-@pytest.fixture
-def cached_embedder():
-    embedding_cache = defaultdict(list)
-    cache_lock = Lock()
-    original_embed = Embedder.embed
-
-    def cached_embed(
-        self, model_name, texts=None, images=None, is_query=False, options=None, batch_size=None
-    ):
-        inputs = texts if texts is not None else images
-        if inputs is None:
-            return original_embed(
-                self,
-                model_name=model_name,
-                texts=texts,
-                images=images,
-                is_query=is_query,
-                options=options or {},
-                batch_size=batch_size,
-            )
-
-        options = options or {}
-        cache_key = (model_name, tuple(inputs), frozenset(options.items()))
-
-        if cache_key in embedding_cache:
-            return embedding_cache[cache_key]
-
-        with cache_lock:
-            if cache_key in embedding_cache:
-                return embedding_cache[cache_key]
-            embeddings = original_embed(
-                self,
-                model_name=model_name,
-                texts=texts,
-                images=images,
-                is_query=is_query,
-                options=options,
-                batch_size=batch_size,
-            )
-            embedding_cache[cache_key] = embeddings
-            if not hasattr(self, "embedding_models"):
-                self.embedding_models = defaultdict(list)
-            if not self.embedding_models[model_name]:
-                mock_model = Mock()
-                mock_model.model.lazy_load = options.get("lazy_load", False)
-                self.embedding_models[model_name].append(mock_model)
-            return embeddings
-
-    with patch.object(Embedder, "embed", cached_embed):
-        yield
-
-
-@pytest.fixture
+@pytest.fixture(scope="session")
 def cached_embeddings():
-    embedding_cache = defaultdict(list)
-    cache_lock = Lock()
-    original_embed = Embedder.embed
+    manager = Manager()
+    embedding_cache = manager.dict()
+    model_cache = {}
+    cache_lock = manager.Lock()
+    embedder = Embedder()
+    original_embed = embedder.embed
+    original_get_model = embedder.get_or_init_model
+
+    def cached_get_model(self, model_name, options=None, lazy_load=False):
+        options = options or {}
+        cache_key = (model_name, frozenset(options.items()))
+
+        if cache_key in model_cache:
+            return model_cache[cache_key]
+
+        model = original_get_model(model_name=model_name, options=options, lazy_load=lazy_load)
+        model_cache[cache_key] = model
+        return model
 
     def cached_embed(
-        self, model_name, texts=None, images=None, is_query=False, options=None, batch_size=None
+        self, model_name, texts=None, images=None, is_query=False, options=None, batch_size=8
     ):
-        cache_key = None
         inputs = texts if texts is not None else images
         if inputs is None:
             return original_embed(
-                self,
                 model_name=model_name,
                 texts=texts,
                 images=images,
@@ -103,14 +64,13 @@ def cached_embeddings():
             )
 
         options = options or {}
-        cache_key = (model_name, tuple(inputs), frozenset(options.items()))
+        cache_key = (model_name, tuple(inputs), is_query, frozenset(options.items()))
 
         with cache_lock:
             if cache_key in embedding_cache:
                 return embedding_cache[cache_key]
 
         embeddings = original_embed(
-            self,
             model_name=model_name,
             texts=texts,
             images=images,
@@ -118,11 +78,13 @@ def cached_embeddings():
             options=options,
             batch_size=batch_size,
         )
-        embedding_cache[cache_key] = embeddings
+        with cache_lock:
+            embedding_cache[cache_key] = embeddings
         return embeddings
 
-    with patch.object(Embedder, "embed", cached_embed):
-        yield
+    with patch.object(Embedder, "get_or_init_model", cached_get_model):
+        with patch.object(Embedder, "embed", cached_embed):
+            yield embedder
 
 
 def arg_interceptor(func, kwarg_storage):
@@ -1150,7 +1112,7 @@ def test_update_vectors(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_propagate_options(prefer_grpc, cached_embedder):
+def test_propagate_options(prefer_grpc, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -1284,7 +1246,7 @@ def test_propagate_options(prefer_grpc, cached_embedder):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_inference_object(prefer_grpc, cached_embedder):
+def test_inference_object(prefer_grpc, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
