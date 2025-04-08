@@ -9,6 +9,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
     sparse_text_vector_size,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 from tests.fixtures.points import generate_random_sparse_vector
 
@@ -37,7 +38,7 @@ class TestSimpleSparseSearcher:
 
 def test_simple_search():
     fixture_points = generate_sparse_fixtures(
-        100,
+        NUM_VECTORS_WITHOUT_PAYLOAD,
         vectors_sizes={"sparse-text": sparse_text_vector_size},
         even_sparse=False,
         with_payload=False,
@@ -91,7 +92,7 @@ def test_search_with_persistence():
     import tempfile
 
     fixture_points = generate_sparse_fixtures(
-        100,
+        NUM_VECTORS_WITHOUT_PAYLOAD,
         vectors_sizes={"sparse-text": sparse_text_vector_size},
         even_sparse=False,
         with_payload=False,

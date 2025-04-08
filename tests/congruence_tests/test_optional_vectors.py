@@ -3,6 +3,7 @@ import numpy as np
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
     compare_client_results,
     generate_fixtures,
     generate_sparse_fixtures,
@@ -17,8 +18,7 @@ from tests.fixtures.points import random_sparse_vectors
 
 
 def test_simple_opt_vectors_search():
-    num_vectors = 100
-    fixture_points = generate_fixtures(num=num_vectors)
+    fixture_points = generate_fixtures(num=NUM_VECTORS_WITHOUT_PAYLOAD)
 
     local_client = init_local()
     init_client(local_client, fixture_points)
@@ -26,7 +26,7 @@ def test_simple_opt_vectors_search():
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
 
-    ids_to_delete = [x for x in range(num_vectors) if x % 5 == 0]
+    ids_to_delete = [x for x in range(NUM_VECTORS_WITHOUT_PAYLOAD) if x % 5 == 0]
 
     vectors_to_retrieve = [x for x in range(20)]
 
@@ -90,8 +90,7 @@ def test_simple_opt_vectors_search():
 
 
 def test_simple_opt_sparse_vectors_search():
-    num_vectors = 100
-    fixture_points = generate_sparse_fixtures(num=num_vectors)
+    fixture_points = generate_sparse_fixtures(num=NUM_VECTORS_WITHOUT_PAYLOAD)
 
     local_client = init_local()
     init_client(
@@ -109,7 +108,7 @@ def test_simple_opt_sparse_vectors_search():
         sparse_vectors_config=sparse_vectors_config,
     )
 
-    ids_to_delete = [x for x in range(num_vectors) if x % 5 == 0]
+    ids_to_delete = [x for x in range(NUM_VECTORS_WITHOUT_PAYLOAD) if x % 5 == 0]
 
     vectors_to_retrieve = [x for x in range(20)]
 

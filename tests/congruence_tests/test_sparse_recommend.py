@@ -13,6 +13,7 @@ from tests.congruence_tests.test_common import (
     init_remote,
     sparse_image_vector_size,
     sparse_vectors_config,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import random_sparse_vectors
@@ -204,7 +205,7 @@ class TestSimpleRecommendation:
 
 
 def test_simple_recommend() -> None:
-    fixture_points = generate_sparse_fixtures(100)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     secondary_collection_points = generate_sparse_fixtures(50)
 

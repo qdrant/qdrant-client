@@ -14,6 +14,7 @@ from tests.congruence_tests.test_common import (
     init_client,
     init_local,
     init_remote,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 from tests.fixtures.filters import one_random_filter_please
 
@@ -275,7 +276,7 @@ def test_simple_recommend() -> None:
 
 
 def test_query_with_nan():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
     vector = np.random.random(image_vector_size)
     vector[0] = np.nan
     vector = vector.tolist()

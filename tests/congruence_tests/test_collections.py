@@ -11,6 +11,7 @@ from tests.congruence_tests.test_common import (
     init_client,
     init_local,
     init_remote,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 
 
@@ -18,7 +19,7 @@ COLLECTION_NAME = "test_collection"
 
 
 def test_get_collection():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     remote_client = init_remote()
 
@@ -106,7 +107,7 @@ def test_init_from():
     remote_client = init_remote()
     local_client = init_local()
 
-    points = generate_fixtures(100, vectors_sizes=vector_size)
+    points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD, vectors_sizes=vector_size)
     vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
     if remote_client.collection_exists(COLLECTION_NAME):

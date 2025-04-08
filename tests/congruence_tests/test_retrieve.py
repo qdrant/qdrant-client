@@ -10,11 +10,12 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
     sparse_vectors_config,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 
 
 def test_retrieve(local_client, remote_client) -> None:
-    num_vectors = 100
+    num_vectors = NUM_VECTORS_WITHOUT_PAYLOAD
     fixture_points = generate_fixtures(num_vectors)
     keys = list(fixture_points[0].payload.keys())
 
@@ -74,7 +75,7 @@ def test_retrieve(local_client, remote_client) -> None:
 
 
 def test_sparse_retrieve() -> None:
-    num_vectors = 100
+    num_vectors = NUM_VECTORS_WITHOUT_PAYLOAD
     fixture_points = generate_sparse_fixtures(num_vectors)
 
     local_client = init_local()
