@@ -1108,7 +1108,6 @@ def test_propagate_options(prefer_grpc):
         vectors_config=vectors_config,
         sparse_vectors_config=sparse_vectors_config,
     )
-
     local_client.upsert(COLLECTION_NAME, points)
     remote_client.upsert(COLLECTION_NAME, points)
 

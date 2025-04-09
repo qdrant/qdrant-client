@@ -8,7 +8,6 @@ from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 
 from qdrant_client.embed.utils import convert_paths, FieldPath
-from qdrant_client.http import models
 
 
 class InspectorEmbed:
