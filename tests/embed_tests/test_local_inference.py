@@ -1,6 +1,6 @@
-from typing import Optional, Any
+from typing import Optional
 from pathlib import Path
-from unittest.mock import patch, Mock
+from unittest.mock import patch
 from collections import defaultdict
 import contextlib
 
