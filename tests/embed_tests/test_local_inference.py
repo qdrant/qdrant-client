@@ -2,7 +2,7 @@ from typing import Optional, Any
 from pathlib import Path
 from unittest.mock import patch, Mock
 from collections import defaultdict
-from multiprocessing import Manager
+import contextlib
 
 import numpy as np
 import pytest
@@ -37,224 +37,101 @@ TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 
 @pytest.fixture(scope="function")
 def cached_embeddings():
-    embedding_cache = {}
-    model_cache = {}
+    embedding_cache = defaultdict(list)
+    model_cache = defaultdict(dict)
 
-    original_text_embed = TextEmbedding.embed
-    original_sparse_embed = SparseTextEmbedding.embed
-    original_late_embed = LateInteractionTextEmbedding.embed
-    original_image_embed = ImageEmbedding.embed
-    original_text_init = TextEmbedding.__init__
-    original_sparse_init = SparseTextEmbedding.__init__
-    original_late_init = LateInteractionTextEmbedding.__init__
-    original_image_init = ImageEmbedding.__init__
+    original_methods = {
+        "text": (TextEmbedding.__init__, TextEmbedding.embed),
+        "sparse": (SparseTextEmbedding.__init__, SparseTextEmbedding.embed),
+        "late": (LateInteractionTextEmbedding.__init__, LateInteractionTextEmbedding.embed),
+        "image": (ImageEmbedding.__init__, ImageEmbedding.embed),
+    }
 
-    def cached_text_embed(self, documents, batch_size=8, **kwargs):
-        cache_key = (self.model_name, tuple(documents), batch_size, frozenset(kwargs.items()))
+    def create_cache_key(model_name, items, batch_size, kwargs, is_init=False):
+        options = tuple(items) if not is_init else frozenset(kwargs.items())
+        return (model_name, options, batch_size if not is_init else None)
 
-        if cache_key in embedding_cache:
-            cached_result = embedding_cache[cache_key]
-            return iter(cached_result[: len(documents)])
-        embeddings = original_text_embed(
-            self, documents=documents, batch_size=batch_size, **kwargs
-        )
-        embeddings_list = list(embeddings)
-        embedding_cache[cache_key] = embeddings_list
-        return iter(embeddings_list[: len(documents)])
+    def cached_embed_factory(original_embed, is_image=False):
+        def cached_embed(self, documents=None, images=None, batch_size=8, **kwargs):
+            items = images if is_image else documents
+            cache_key = create_cache_key(self.model_name, tuple(items), batch_size, kwargs)
 
-    def cached_sparse_embed(self, documents, batch_size=8, **kwargs):
-        cache_key = (self.model_name, tuple(documents), batch_size, frozenset(kwargs.items()))
+            if cache_key in embedding_cache:
+                cached_result = embedding_cache[cache_key]
+                return iter(cached_result[: len(items)])
 
-        if cache_key in embedding_cache:
-            cached_result = embedding_cache[cache_key]
-            return iter(cached_result[: len(documents)])
-        embeddings = original_sparse_embed(
-            self, documents=documents, batch_size=batch_size, **kwargs
-        )
-        embeddings_list = list(embeddings)
+            if is_image:
+                embeddings = original_embed(self, images=images, batch_size=batch_size, **kwargs)
+            else:
+                embeddings = original_embed(
+                    self, documents=documents, batch_size=batch_size, **kwargs
+                )
 
-        embedding_cache[cache_key] = embeddings_list
-        return iter(embeddings_list[: len(documents)])
+            embeddings_list = list(embeddings)
+            embedding_cache[cache_key] = embeddings_list
+            return iter(embeddings_list[: len(items)])
 
-    def cached_late_embed(self, documents, batch_size=8, **kwargs):
-        cache_key = (self.model_name, tuple(documents), batch_size, frozenset(kwargs.items()))
+        return cached_embed
 
-        if cache_key in embedding_cache:
-            cached_result = embedding_cache[cache_key]
-            return iter(cached_result[: len(documents)])
-        embeddings = original_late_embed(
-            self, documents=documents, batch_size=batch_size, **kwargs
-        )
-        embeddings_list = list(embeddings)
-
-        embedding_cache[cache_key] = embeddings_list
-        return iter(embeddings_list[: len(documents)])
-
-    def cached_image_embed(self, images, batch_size=8, **kwargs):
-        cache_key = (self.model_name, tuple(images), batch_size, frozenset(kwargs.items()))
-
-        if cache_key in embedding_cache:
-            cached_result = embedding_cache[cache_key]
-            return iter(cached_result[: len(images)])
-        embeddings = original_image_embed(self, images=images, batch_size=batch_size, **kwargs)
-        embeddings_list = list(embeddings)
-
-        embedding_cache[cache_key] = embeddings_list
-        return iter(embeddings_list[: len(images)])
-
-    def cached_text_init(
-        self,
-        model_name,
-        cache_dir=None,
-        threads=None,
-        providers=None,
-        cuda=False,
-        device_ids=None,
-        **kwargs,
-    ):
-        options = {
-            "cache_dir": cache_dir,
-            "threads": threads,
-            "providers": providers,
-            "cuda": cuda,
-            "device_ids": device_ids,
-            **kwargs,
-        }
-        cache_key = (model_name, frozenset(options.items()))
-
-        if cache_key in model_cache:
-            self.__dict__.update(model_cache[cache_key].__dict__)
-            return
-        original_text_init(
+    def cached_init_factory(original_init):
+        def cached_init(
             self,
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            cuda=cuda,
-            device_ids=device_ids,
+            model_name,
+            cache_dir=None,
+            threads=None,
+            providers=None,
+            cuda=False,
+            device_ids=None,
             **kwargs,
+        ):
+            options = {
+                "cache_dir": cache_dir,
+                "threads": threads,
+                "providers": providers,
+                "cuda": cuda,
+                "device_ids": device_ids,
+                **kwargs,
+            }
+            cache_key = create_cache_key(model_name, None, None, options, is_init=True)
+
+            if cache_key in model_cache:
+                self.__dict__.update(model_cache[cache_key].__dict__)
+                return
+
+            original_init(
+                self,
+                model_name=model_name,
+                cache_dir=cache_dir,
+                threads=threads,
+                providers=providers,
+                cuda=cuda,
+                device_ids=device_ids,
+                **kwargs,
+            )
+            model_cache[cache_key] = self
+
+        return cached_init
+
+    patches = []
+    for embed_type, (orig_init, orig_embed) in original_methods.items():
+        cls = {
+            "text": TextEmbedding,
+            "sparse": SparseTextEmbedding,
+            "late": LateInteractionTextEmbedding,
+            "image": ImageEmbedding,
+        }[embed_type]
+        is_image = embed_type == "image"
+
+        patches.extend(
+            [
+                patch.object(cls, "__init__", cached_init_factory(orig_init)),
+                patch.object(cls, "embed", cached_embed_factory(orig_embed, is_image)),
+            ]
         )
 
-        model_cache[cache_key] = self
-
-    def cached_sparse_init(
-        self,
-        model_name,
-        cache_dir=None,
-        threads=None,
-        providers=None,
-        cuda=False,
-        device_ids=None,
-        **kwargs,
-    ):
-        options = {
-            "cache_dir": cache_dir,
-            "threads": threads,
-            "providers": providers,
-            "cuda": cuda,
-            "device_ids": device_ids,
-            **kwargs,
-        }
-        cache_key = (model_name, frozenset(options.items()))
-
-        if cache_key in model_cache:
-            self.__dict__.update(model_cache[cache_key].__dict__)
-            return
-        original_sparse_init(
-            self,
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            cuda=cuda,
-            device_ids=device_ids,
-            **kwargs,
-        )
-
-        model_cache[cache_key] = self
-
-    def cached_late_init(
-        self,
-        model_name,
-        cache_dir=None,
-        threads=None,
-        providers=None,
-        cuda=False,
-        device_ids=None,
-        **kwargs,
-    ):
-        options = {
-            "cache_dir": cache_dir,
-            "threads": threads,
-            "providers": providers,
-            "cuda": cuda,
-            "device_ids": device_ids,
-            **kwargs,
-        }
-        cache_key = (model_name, frozenset(options.items()))
-
-        if cache_key in model_cache:
-            self.__dict__.update(model_cache[cache_key].__dict__)
-            return
-        original_late_init(
-            self,
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            cuda=cuda,
-            device_ids=device_ids,
-            **kwargs,
-        )
-
-        model_cache[cache_key] = self
-
-    def cached_image_init(
-        self,
-        model_name,
-        cache_dir=None,
-        threads=None,
-        providers=None,
-        cuda=False,
-        device_ids=None,
-        **kwargs,
-    ):
-        options = {
-            "cache_dir": cache_dir,
-            "threads": threads,
-            "providers": providers,
-            "cuda": cuda,
-            "device_ids": device_ids,
-            **kwargs,
-        }
-        cache_key = (model_name, frozenset(options.items()))
-
-        if cache_key in model_cache:
-            self.__dict__.update(model_cache[cache_key].__dict__)
-            return
-        original_image_init(
-            self,
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            cuda=cuda,
-            device_ids=device_ids,
-            **kwargs,
-        )
-
-        model_cache[cache_key] = self
-
-    with patch.object(TextEmbedding, "__init__", cached_text_init), patch.object(
-        TextEmbedding, "embed", cached_text_embed
-    ), patch.object(SparseTextEmbedding, "__init__", cached_sparse_init), patch.object(
-        SparseTextEmbedding, "embed", cached_sparse_embed
-    ), patch.object(LateInteractionTextEmbedding, "__init__", cached_late_init), patch.object(
-        LateInteractionTextEmbedding, "embed", cached_late_embed
-    ), patch.object(ImageEmbedding, "__init__", cached_image_init), patch.object(
-        ImageEmbedding, "embed", cached_image_embed
-    ):
+    with contextlib.ExitStack() as stack:
+        for p in patches:
+            stack.enter_context(p)
         yield
 
 
