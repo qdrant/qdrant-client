@@ -85,7 +85,7 @@ def cosine_similarity(query: types.NumpyArray, vectors: types.NumpyArray) -> typ
     Returns:
         distances
     """
-    vectors_norm = np.linalg.norm(vectors, axis=-1)[:, np.newaxis]
+    vectors_norm = np.linalg.norm(vectors.astype(np.float32), axis=-1)[:, np.newaxis]
     vectors /= np.where(vectors_norm != 0.0, vectors_norm, EPSILON)
 
     if len(query.shape) == 1:
@@ -148,6 +148,9 @@ def calculate_distance(
 ) -> types.NumpyArray:
     assert not np.isnan(query).any(), "Query vector must not contain NaN"
 
+    query = query.astype(np.float32)
+    vectors = vectors.astype(np.float32)
+
     if distance_type == models.Distance.COSINE:
         return cosine_similarity(query, vectors)
     elif distance_type == models.Distance.DOT:
@@ -167,6 +170,9 @@ def calculate_distance_core(
     Calculate same internal distances as in core, rather than the final displayed distance
     """
     assert not np.isnan(query).any(), "Query vector must not contain NaN"
+
+    query = query.astype(np.float32)
+    vectors = vectors.astype(np.float32)
 
     if distance_type == models.Distance.EUCLID:
         return -np.square(vectors - query, dtype=np.float32).sum(axis=1, dtype=np.float32)

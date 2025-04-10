@@ -68,7 +68,8 @@ typeCheckingMode = "strict"
 [tool.pytest.ini_options]
 markers = [
     "fastembed: marks tests that require the fastembed package (deselect with '-m \"not fastembed\"')",
-    "no_fastembed: marks tests that do not require the fastembed package (deselect with '-m \"not no_fastembed\"')"
+    "no_fastembed: marks tests that do not require the fastembed package (deselect with '-m \"not no_fastembed\"')",
+    "floatprecision: marks tests that can fail with float precision error"
 ]
 
 [tool.isort]
