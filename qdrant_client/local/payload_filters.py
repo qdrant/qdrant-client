@@ -7,6 +7,7 @@ from qdrant_client.http import models
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import boolean_point_in_polygon, geo_distance
 from qdrant_client.local.payload_value_extractor import value_by_key
+from qdrant_client.conversions import common_types as types
 
 
 def get_value_counts(values: list[Any]) -> list[int]:
@@ -303,11 +304,11 @@ def calculate_payload_mask(
     payload_filter: Optional[models.Filter],
     ids_inv: list[models.ExtendedPointId],
     deleted_per_vector: Dict[str, np.ndarray],
-) -> np.ndarray:
+) -> types.NumpyArray:
     if payload_filter is None:
         return np.ones(len(payloads), dtype=bool)
 
-    mask = np.zeros(len(payloads), dtype=bool)
+    mask: types.NumpyArray = np.zeros(len(payloads), dtype=bool)
     for i, payload in enumerate(payloads):
         has_vector = {}
         for vector_name, deleted in deleted_per_vector.items():

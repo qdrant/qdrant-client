@@ -129,13 +129,13 @@ class LocalCollection:
             name: [] for name in self.multivectors_config
         }
         self.payload: list[models.Payload] = []
-        self.deleted = np.zeros(0, dtype=bool)
+        self.deleted: types.NumpyArray = np.zeros(0, dtype=bool)
         self._all_vectors_keys = (
             list(self.vectors.keys())
             + list(self.sparse_vectors.keys())
             + list(self.multivectors.keys())
         )
-        self.deleted_per_vector = {
+        self.deleted_per_vector: types.NumpyArray = {
             name: np.zeros(0, dtype=bool) for name in self._all_vectors_keys
         }
         self.ids: dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id

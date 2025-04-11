@@ -171,7 +171,7 @@ def calculate_multi_discovery_ranks(
     matrices: list[types.NumpyArray],
     distance_type: models.Distance,
 ) -> types.NumpyArray:
-    overall_ranks = np.zeros(len(matrices), dtype=np.int32)
+    overall_ranks: types.NumpyArray = np.zeros(len(matrices), dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors
         pos = calculate_multi_distance_core(pair.positive, matrices, distance_type)
@@ -207,7 +207,7 @@ def calculate_multi_discovery_scores(
 def calculate_multi_context_scores(
     query: MultiContextQuery, matrices: list[types.NumpyArray], distance_type: models.Distance
 ) -> types.NumpyArray:
-    overall_scores = np.zeros(len(matrices), dtype=np.float32)
+    overall_scores: types.NumpyArray = np.zeros(len(matrices), dtype=np.float32)
     for pair in query.context_pairs:
         # Get distances to positive and negative vectors
         pos = calculate_multi_distance_core(pair.positive, matrices, distance_type)
