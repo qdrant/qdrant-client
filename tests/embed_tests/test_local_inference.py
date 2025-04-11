@@ -35,10 +35,11 @@ DENSE_IMAGE_DIM = 2048
 TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def cached_embeddings():
     embedding_cache = defaultdict(list)
     model_cache = defaultdict(dict)
+    sparse_init_counter = defaultdict(int)
 
     original_methods = {
         "text": (TextEmbedding.__init__, TextEmbedding.embed),
@@ -48,12 +49,30 @@ def cached_embeddings():
     }
 
     def create_cache_key(model_name, items, batch_size, kwargs, is_init=False):
-        options = tuple(items) if not is_init else frozenset(kwargs.items())
-        return (model_name, options, batch_size if not is_init else None)
+        if is_init:
+            if model_name in IDF_EMBEDDING_MODELS:
+                init_id = sparse_init_counter[model_name]
+                sparse_init_counter[model_name] += 1
+                return (model_name, frozenset(kwargs.items()), init_id)
+            return (model_name, frozenset(kwargs.items()), None)
+
+        if model_name in IDF_EMBEDDING_MODELS:
+            init_id = kwargs.get("init_id", 0)
+            return (model_name, tuple(items), batch_size, init_id)
+
+        return (model_name, tuple(items), batch_size)
 
     def cached_embed_factory(original_embed, is_image=False):
         def cached_embed(self, documents=None, images=None, batch_size=8, **kwargs):
             items = images if is_image else documents
+            if self.model_name in IDF_EMBEDDING_MODELS:
+                for (m_name, _, init_id), cached_model in model_cache.items():
+                    if m_name == self.model_name and cached_model == self:
+                        kwargs["init_id"] = init_id
+                        break
+                else:
+                    kwargs["init_id"] = sparse_init_counter[self.model_name]
+
             cache_key = create_cache_key(self.model_name, tuple(items), batch_size, kwargs)
 
             if cache_key in embedding_cache:
