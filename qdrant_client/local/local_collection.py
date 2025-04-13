@@ -135,7 +135,7 @@ class LocalCollection:
             + list(self.sparse_vectors.keys())
             + list(self.multivectors.keys())
         )
-        self.deleted_per_vector: types.NumpyArray = {
+        self.deleted_per_vector: dict[str, types.NumpyArray] = {
             name: np.zeros(0, dtype=bool) for name in self._all_vectors_keys
         }
         self.ids: dict[models.ExtendedPointId, int] = {}  # Mapping from external id to internal id
