@@ -208,6 +208,16 @@ class GrpcToRest:
         return rest.GeoRadius(center=cls.convert_geo_point(model.center), radius=model.radius)
 
     @classmethod
+    def convert_geo_line_string(cls, model: grpc.GeoLineString) -> rest.GeoLineString:
+        return rest.GeoLineString(
+            points=[cls.convert_geo_point(point) for point in model.points]
+        )
+
+    @classmethod
+    def convert_geo_polygon(cls, model: grpc.GeoPolygon) -> rest.GeoPolygon:
+        return rest.GeoPolygon(exterior=cls.convert_geo_line_string(model.exterior), interiors=[])
+
+    @classmethod
     def convert_collection_description(
         cls, model: grpc.CollectionDescription
     ) -> rest.CollectionDescription:
@@ -602,6 +612,10 @@ class GrpcToRest:
             cls.convert_geo_radius(model.geo_radius) if model.HasField("geo_radius") else None
         )
 
+        geo_polygon = (
+            cls.convert_geo_polygon(model.geo_polygon) if model.HasField("geo_polygon") else None
+        )
+
         match = cls.convert_match(model.match) if model.HasField("match") else None
 
         range_: Optional[rest.RangeInterface] = None
@@ -624,6 +638,7 @@ class GrpcToRest:
             key=model.key,
             geo_bounding_box=geo_bounding_box,
             geo_radius=geo_radius,
+            geo_polygon=geo_polygon,
             match=match,
             range=range_,
             values_count=values_count,
@@ -2408,6 +2423,22 @@ class RestToGrpc:
     def convert_geo_radius(cls, model: rest.GeoRadius) -> grpc.GeoRadius:
         return grpc.GeoRadius(center=cls.convert_geo_point(model.center), radius=model.radius)
 
+
+    @classmethod
+    def convert_geo_line_string(cls, model: rest.GeoLineString) -> grpc.GeoLineString:
+        return grpc.GeoLineString(points=[cls.convert_geo_point(point) for point in model.points])
+
+    @classmethod
+    def convert_geo_polygon(cls, model: rest.GeoPolygon) -> grpc.GeoPolygon:
+        return grpc.GeoPolygon(
+            exterior=cls.convert_geo_line_string(model.exterior),
+            interiors=[
+                cls.convert_geo_line_string(interior) for interior in model.interiors
+            ]
+            if model.interiors
+            else None,
+        )
+
     @classmethod
     def convert_collection_description(
         cls, model: rest.CollectionDescription
@@ -2680,6 +2711,10 @@ class RestToGrpc:
         if model.geo_radius:
             return grpc.FieldCondition(
                 key=model.key, geo_radius=cls.convert_geo_radius(model.geo_radius)
+            )
+        if model.geo_polygon:
+            return grpc.FieldCondition(
+                key=model.key, geo_polygon=cls.convert_geo_polygon(model.geo_polygon)
             )
         if model.values_count:
             return grpc.FieldCondition(
