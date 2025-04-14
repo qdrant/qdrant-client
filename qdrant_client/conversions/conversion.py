@@ -2423,7 +2423,6 @@ class RestToGrpc:
     def convert_geo_radius(cls, model: rest.GeoRadius) -> grpc.GeoRadius:
         return grpc.GeoRadius(center=cls.convert_geo_point(model.center), radius=model.radius)
 
-
     @classmethod
     def convert_geo_line_string(cls, model: rest.GeoLineString) -> grpc.GeoLineString:
         return grpc.GeoLineString(points=[cls.convert_geo_point(point) for point in model.points])
