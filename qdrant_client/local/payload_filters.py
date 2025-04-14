@@ -277,14 +277,27 @@ def check_filter(
     point_id: models.ExtendedPointId,
     has_vector: Dict[str, bool],
 ) -> bool:
+    def ensure_condition_list(
+        condition: Union[models.Condition, list[models.Condition]],
+    ) -> list[models.Condition]:
+        if isinstance(condition, list):
+            return condition
+        return [condition]
+
     if payload_filter.must is not None:
-        if not check_must(payload_filter.must, payload, point_id, has_vector):
+        if not check_must(
+            ensure_condition_list(payload_filter.must), payload, point_id, has_vector
+        ):
             return False
     if payload_filter.must_not is not None:
-        if not check_must_not(payload_filter.must_not, payload, point_id, has_vector):
+        if not check_must_not(
+            ensure_condition_list(payload_filter.must_not), payload, point_id, has_vector
+        ):
             return False
     if payload_filter.should is not None:
-        if not check_should(payload_filter.should, payload, point_id, has_vector):
+        if not check_should(
+            ensure_condition_list(payload_filter.should), payload, point_id, has_vector
+        ):
             return False
     if payload_filter.min_should is not None:
         if not check_min_should(

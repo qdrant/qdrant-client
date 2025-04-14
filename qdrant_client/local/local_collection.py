@@ -1646,7 +1646,7 @@ class LocalCollection:
     @staticmethod
     def _preprocess_target(
         target: Optional[models.VectorInput], collection: "LocalCollection", vector_name: str
-    ) -> tuple[models.Vector, types.PointId]:
+    ) -> tuple[models.Vector, Optional[types.PointId]]:
         # todo: context can no longer be grpc.TargetVector, but models.VectorInput, currently, grpc types are not supported
         target = (
             GrpcToRest.convert_target_vector(target)
@@ -2606,11 +2606,12 @@ def ignore_mentioned_ids_filter(
     else:
         # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
         query_filter = deepcopy(query_filter)
-        # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
         if query_filter.must_not is None:  # type: ignore[union-attr]
             query_filter.must_not = [ignore_mentioned_ids]  # type: ignore[union-attr]
-        else:
+        elif isinstance(query_filter.must_not, list):
             query_filter.must_not.append(ignore_mentioned_ids)  # type: ignore[union-attr]
+        else:
+            query_filter.must_not = [query_filter.must_not, ignore_mentioned_ids]  # type: ignore[union-attr]
 
     return query_filter
 
@@ -2628,11 +2629,12 @@ def _include_ids_in_filter(
     else:
         # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
         query_filter = deepcopy(query_filter)
-        # as of mypy v1.11.0 mypy is complaining on deep-copied structures with None
         if query_filter.must is None:  # type: ignore[union-attr]
             query_filter.must = [include_ids]  # type: ignore[union-attr]
-        else:
+        elif isinstance(query_filter.must, list):
             query_filter.must.append(include_ids)  # type: ignore[union-attr]
+        else:
+            query_filter.must = [query_filter.must, include_ids]
 
     return query_filter
 

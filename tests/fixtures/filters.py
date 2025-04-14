@@ -324,11 +324,15 @@ def one_random_filter_please() -> models.Filter:
 
 
 def must_filter() -> models.Filter:
-    return models.Filter(must=[one_random_condition_please()])
+    random_condition = one_random_condition_please()
+    conditions = [random_condition] if random.random() > 0.5 else random_condition
+    return models.Filter(must=conditions)
 
 
 def should_filter() -> models.Filter:
-    return models.Filter(should=[one_random_condition_please()])
+    random_condition = one_random_condition_please()
+    conditions = [random_condition] if random.random() > 0.5 else random_condition
+    return models.Filter(should=conditions)
 
 
 def min_should_filter() -> models.Filter:
@@ -344,7 +348,9 @@ def min_should_filter() -> models.Filter:
 
 
 def must_not_filter() -> models.Filter:
-    return models.Filter(must_not=[one_random_condition_please()])
+    random_condition = one_random_condition_please()
+    conditions = [random_condition] if random.random() > 0.5 else random_condition
+    return models.Filter(must_not=conditions)
 
 
 def two_must_filter() -> models.Filter:
@@ -360,6 +366,11 @@ def two_must_not_filter() -> models.Filter:
 
 
 def should_must_filter() -> models.Filter:
-    return models.Filter(
-        should=[one_random_condition_please()], must=[one_random_condition_please()]
+    should_random_condition = one_random_condition_please()
+    should_conditions = (
+        [should_random_condition] if random.random() > 0.5 else should_random_condition
     )
+    must_random_condition = one_random_condition_please()
+    must_conditions = [must_random_condition] if random.random() > 0.5 else must_random_condition
+
+    return models.Filter(should=should_conditions, must=must_conditions)
