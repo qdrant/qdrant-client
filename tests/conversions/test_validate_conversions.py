@@ -376,7 +376,6 @@ def test_convert_geo_polygon():
         interiors=[],
     )
 
-
     rest_filter = models.Filter(
         must=[models.FieldCondition(key="geo_polygon", geo_polygon=rest_geo_polygon)]
     )

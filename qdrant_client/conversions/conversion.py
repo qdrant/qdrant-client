@@ -209,9 +209,7 @@ class GrpcToRest:
 
     @classmethod
     def convert_geo_line_string(cls, model: grpc.GeoLineString) -> rest.GeoLineString:
-        return rest.GeoLineString(
-            points=[cls.convert_geo_point(point) for point in model.points]
-        )
+        return rest.GeoLineString(points=[cls.convert_geo_point(point) for point in model.points])
 
     @classmethod
     def convert_geo_polygon(cls, model: grpc.GeoPolygon) -> rest.GeoPolygon:
@@ -2431,9 +2429,7 @@ class RestToGrpc:
     def convert_geo_polygon(cls, model: rest.GeoPolygon) -> grpc.GeoPolygon:
         return grpc.GeoPolygon(
             exterior=cls.convert_geo_line_string(model.exterior),
-            interiors=[
-                cls.convert_geo_line_string(interior) for interior in model.interiors
-            ]
+            interiors=[cls.convert_geo_line_string(interior) for interior in model.interiors]
             if model.interiors
             else None,
         )
