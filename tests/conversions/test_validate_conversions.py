@@ -367,13 +367,28 @@ def test_convert_geo_polygon():
                 models.GeoPoint(lon=point[0], lat=point[1])
                 for point in [
                     (12.123, 78.212),
-                    (12.123, 78.212),
-                    (12.123, 78.212),
+                    (12.456, 78.212),
+                    (12.456, 78.789),
+                    (12.123, 78.789),
                     (12.123, 78.212),
                 ]
             ]
         ),
-        interiors=[],
+        interiors=[
+            models.GeoLineString(
+                points=[
+                    models.GeoPoint(lon=point[0], lat=point[1])
+                    for point in [
+                        (13.123, 78.212),
+                        (13.456, 78.212),
+                        (13.456, 78.789),
+                        (13.123, 78.789),
+                        (13.123, 78.212),
+                    ]
+                ]
+            )
+            for _ in range(2)
+        ],
     )
 
     rest_filter = models.Filter(

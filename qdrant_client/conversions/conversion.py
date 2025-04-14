@@ -213,7 +213,14 @@ class GrpcToRest:
 
     @classmethod
     def convert_geo_polygon(cls, model: grpc.GeoPolygon) -> rest.GeoPolygon:
-        return rest.GeoPolygon(exterior=cls.convert_geo_line_string(model.exterior), interiors=[])
+        return rest.GeoPolygon(
+            exterior=cls.convert_geo_line_string(model.exterior),
+            interiors=(
+                [cls.convert_geo_line_string(interior) for interior in model.interiors]
+                if model.interiors
+                else []
+            ),
+        )
 
     @classmethod
     def convert_collection_description(
