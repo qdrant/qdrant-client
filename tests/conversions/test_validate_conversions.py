@@ -356,6 +356,7 @@ def test_convert_flat_filter():
     assert recovered.should[0] == rest_filter.should
     assert recovered.must_not[0] == rest_filter.must_not
 
+
 def test_convert_geo_polygon():
     from qdrant_client import models
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
