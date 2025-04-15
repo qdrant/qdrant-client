@@ -51,23 +51,26 @@ jobs:
         shell: bash
       - name: Check conversion coverage
         run: |
-          export RUNNER_OS=${{ runner.os }}
           ./tests/coverage-test.sh
         shell: bash
       - name: Run Python doc tests
         run: |
           python -m doctest qdrant_client/local/local_collection.py
       - name: Run integration tests
+        env:
+          HF_TOKEN={{ secrets.HF_TOKEN }}
         run: |
           ./tests/integration-tests.sh
         shell: bash
       - name: Backward compatibility integration tests
+        env:
+          HF_TOKEN={{ secrets.HF_TOKEN }}
         run: |
-          export RUNNER_OS=${{ runner.os }}
           QDRANT_VERSION='v1.12.6' ./tests/integration-tests.sh
         shell: bash
       - name: Run fastembed tests without fastembed
         run: |
           pip3 uninstall fastembed -y
           pytest -x tests/test_fastembed.py
+          pytest -x tests/embed_tests/test_local_inference.py
         shell: bash
