@@ -218,7 +218,7 @@ class GrpcToRest:
             interiors=(
                 [cls.convert_geo_line_string(interior) for interior in model.interiors]
                 if model.interiors
-                else []
+                else None
             ),
         )
 

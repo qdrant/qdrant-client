@@ -72,7 +72,15 @@ geo_point = grpc.GeoPoint(lon=12.123, lat=78.212)
 
 geo_radius = grpc.GeoRadius(center=geo_point, radius=10.0)
 
+geo_polygon = grpc.GeoPolygon(
+    exterior=grpc.GeoLineString(points=[geo_point]),
+    interiors=[grpc.GeoLineString(points=[grpc.GeoPoint(lon=12.12, lat=14.14)])],
+)
+geo_polygon_2 = grpc.GeoPolygon(exterior=grpc.GeoLineString(points=[geo_point]))
+
+
 field_condition_geo_radius = grpc.FieldCondition(key="match_field", geo_radius=geo_radius)
+field_condition_geo_polygon = grpc.FieldCondition(key="geo_polygon", geo_polygon=geo_polygon)
 
 geo_bounding_box = grpc.GeoBoundingBox(top_left=geo_point, bottom_right=geo_point)
 
@@ -100,6 +108,7 @@ condition_field_match = grpc.Condition(field=field_condition_match)
 condition_range = grpc.Condition(field=field_condition_range)
 condition_geo_radius = grpc.Condition(field=field_condition_geo_radius)
 condition_geo_bounding_box = grpc.Condition(field=field_condition_geo_bounding_box)
+condition_geo_polygon = grpc.Condition(field=field_condition_geo_polygon)
 condition_values_count = grpc.Condition(field=field_condition_values_count)
 condition_field_is_empty = grpc.Condition(field=field_condition_is_empty)
 condition_field_is_null = grpc.Condition(field=field_condition_is_null)
@@ -1526,6 +1535,7 @@ fixtures = {
     ],
     "CollectionDescription": [collection_description],
     "GeoPoint": [geo_point],
+    "GeoPolygon": [geo_polygon, geo_polygon_2],
     "WalConfigDiff": [wal_config],
     "HnswConfigDiff": [hnsw_config, hnsw_config_2],
     "UpdateCollection": [update_collection, update_collection_2, update_collection_3],
@@ -1533,6 +1543,7 @@ fixtures = {
         condition_field_match,
         condition_range,
         condition_geo_radius,
+        condition_geo_polygon,
         condition_geo_bounding_box,
         condition_values_count,
     ],

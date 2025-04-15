@@ -357,50 +357,6 @@ def test_convert_flat_filter():
     assert recovered.must_not[0] == rest_filter.must_not
 
 
-def test_convert_geo_polygon():
-    from qdrant_client import models
-    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
-
-    rest_geo_polygon = models.GeoPolygon(
-        exterior=models.GeoLineString(
-            points=[
-                models.GeoPoint(lon=point[0], lat=point[1])
-                for point in [
-                    (12.123, 78.212),
-                    (12.456, 78.212),
-                    (12.456, 78.789),
-                    (12.123, 78.789),
-                    (12.123, 78.212),
-                ]
-            ]
-        ),
-        interiors=[
-            models.GeoLineString(
-                points=[
-                    models.GeoPoint(lon=point[0], lat=point[1])
-                    for point in [
-                        (13.123, 78.212),
-                        (13.456, 78.212),
-                        (13.456, 78.789),
-                        (13.123, 78.789),
-                        (13.123, 78.212),
-                    ]
-                ]
-            )
-            for _ in range(2)
-        ],
-    )
-
-    rest_filter = models.Filter(
-        must=[models.FieldCondition(key="geo_polygon", geo_polygon=rest_geo_polygon)]
-    )
-    grpc_filter = RestToGrpc.convert_filter(rest_filter)
-    recovered = GrpcToRest.convert_filter(grpc_filter)
-
-    assert recovered.must[0].geo_polygon.exterior == rest_geo_polygon.exterior
-    assert recovered.must[0].geo_polygon.interiors == rest_geo_polygon.interiors
-
-
 def test_query_points():
     from qdrant_client import models
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
