@@ -58,13 +58,13 @@ jobs:
           python -m doctest qdrant_client/local/local_collection.py
       - name: Run integration tests
         env:
-          HF_TOKEN={{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           ./tests/integration-tests.sh
         shell: bash
       - name: Backward compatibility integration tests
         env:
-          HF_TOKEN={{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           QDRANT_VERSION='v1.12.6' ./tests/integration-tests.sh
         shell: bash
