@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import qdrant_client.embed.embedder
 
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
@@ -1703,9 +1704,7 @@ def test_batch_size_propagation():
         models.PointStruct(id=2, vector={"sparse": sparse_doc_3}),
         models.PointStruct(id=3, vector={"sparse": sparse_doc_4}),
     ]
-    local_client.upsert(  # uses _embed_models
-        COLLECTION_NAME, points
-    )
+    local_client.upsert(COLLECTION_NAME, points)  # uses _embed_models
     assert param_storage["batch_size"] == inference_batch_size
     param_storage.clear()
 
@@ -1714,3 +1713,104 @@ def test_batch_size_propagation():
     )  # uses _embed_models_strict
     assert param_storage["batch_size"] == inference_batch_size
     param_storage.clear()
+
+
+@pytest.fixture
+def mock_late_interaction_multimodal_embedding():
+    try:
+        import fastembed
+    except ImportError:
+        pytest.skip("FastEmbed is not installed, skipping")
+
+    class LateInteractionMultimodalEmbeddingMock:
+        text_calls = 0
+        image_calls = 0
+        num_image_columns = 10
+        num_text_columns = 20
+        text_embedding = np.array([[0.1, 0.2, 0.3]] * num_text_columns)
+        image_embedding = np.array([[0.1, 0.2, 0.3]] * num_image_columns)
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def embed_text(self, documents, *args, **kwargs):
+            LateInteractionMultimodalEmbeddingMock.text_calls += 1
+            for _ in documents:
+                yield self.text_embedding
+
+        def embed_image(self, images, *args, **kwargs):
+            LateInteractionMultimodalEmbeddingMock.image_calls += 1
+            for _ in images:
+                yield self.image_embedding
+
+    original_class = qdrant_client.embed.embedder.LateInteractionMultimodalEmbedding
+    qdrant_client.embed.embedder.LateInteractionMultimodalEmbedding = (
+        LateInteractionMultimodalEmbeddingMock
+    )
+    yield LateInteractionMultimodalEmbeddingMock
+    qdrant_client.embed.embedder.LateInteractionMultimodalEmbedding = original_class
+
+
+def test_embed_multimodal(mock_late_interaction_multimodal_embedding):
+    mock_cls = mock_late_interaction_multimodal_embedding
+
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+
+    point_1 = models.PointStruct(
+        id=1,
+        vector={
+            "text": models.Document(text="a quick brown fox", model="Qdrant/colpali-v1.3-fp16"),
+            "image": models.Image(image=TEST_IMAGE_PATH, model="Qdrant/colpali-v1.3-fp16"),
+        },
+    )
+    point_2 = models.PointStruct(
+        id=2,
+        vector={
+            "text": models.Document(
+                text="jumped over a lazy dog", model="Qdrant/colpali-v1.3-fp16"
+            ),
+        },
+    )
+
+    dim = 3
+    local_client.create_collection(
+        COLLECTION_NAME,
+        vectors_config={
+            "text": models.VectorParams(
+                size=dim,
+                distance=models.Distance.MANHATTAN,
+                multivector_config=models.MultiVectorConfig(
+                    comparator=models.MultiVectorComparator.MAX_SIM
+                ),
+            ),
+            "image": models.VectorParams(
+                size=dim,
+                distance=models.Distance.MANHATTAN,
+                multivector_config=models.MultiVectorConfig(
+                    comparator=models.MultiVectorComparator.MAX_SIM
+                ),
+            ),
+        },
+    )
+
+    local_client.upsert(COLLECTION_NAME, [point_1, point_2])
+
+    assert mock_cls.text_calls == 1  # assert that text records were assembled into batches
+    assert mock_cls.image_calls == 1
+
+    records, _ = local_client.scroll(COLLECTION_NAME, limit=2, with_vectors=True)
+    assert len(records) == 2
+    assert len(records[1].vector) == 1
+
+    np_text_vectors = np.array([records[0].vector["text"], records[1].vector["text"]])
+    np_image_vector = np.array(records[0].vector["image"])
+
+    assert all(vector.shape == (mock_cls.num_text_columns, dim) for vector in np_text_vectors)
+    assert np_image_vector.shape == (mock_cls.num_image_columns, dim)
+
+    # check that embeddings order was right
+    assert np.allclose(np_text_vectors[0], mock_cls.text_embedding)
+    assert np.allclose(np_text_vectors[1], mock_cls.text_embedding)
+    assert np.allclose(np_image_vector, mock_cls.image_embedding)
