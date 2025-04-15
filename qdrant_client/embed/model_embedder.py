@@ -10,7 +10,7 @@ from qdrant_client.http import models
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.embed_inspector import InspectorEmbed
 from qdrant_client.embed.embedder import Embedder
-from qdrant_client.embed.models import NumericVector
+from qdrant_client.embed.models import NumericVector, NumericVectorStruct
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.embed.utils import FieldPath
 from qdrant_client.fastembed_common import (
@@ -18,6 +18,7 @@ from qdrant_client.fastembed_common import (
     SUPPORTED_SPARSE_EMBEDDING_MODELS,
     _LATE_INTERACTION_EMBEDDING_MODELS,
     _IMAGE_EMBEDDING_MODELS,
+    _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS,
 )
 from qdrant_client.parallel_processor import ParallelWorkerPool, Worker
 from qdrant_client.uploader.uploader import iter_batch
@@ -280,7 +281,7 @@ class ModelEmbedder:
 
     def _drain_accumulator(
         self, data: models.VectorStruct, is_query: bool, inference_batch_size: int = 8
-    ) -> models.VectorStruct:
+    ) -> NumericVectorStruct:
         """Drain accumulator and replaces inference objects with computed embeddings
             It is assumed objects are traversed in the same order as they were added to the accumulator
 
@@ -291,7 +292,7 @@ class ModelEmbedder:
             inference_batch_size: int - batch size for inference
 
         Returns:
-            models.VectorStruct: data with replaced inference objects
+            NumericVectorStruct: data with replaced inference objects
         """
         if isinstance(data, dict):
             for key, value in data.items():
@@ -310,8 +311,10 @@ class ModelEmbedder:
                 )
             return data
 
-        if not isinstance(data, get_args(INFERENCE_OBJECT_TYPES)):
-            return data
+        if not isinstance(
+            data, get_args(INFERENCE_OBJECT_TYPES)
+        ):  # ide type checker ignores `not` and scolds
+            return data  # type: ignore
 
         if not self._embed_storage or not self._embed_storage.get(data.model, None):
             self._embed_accumulator(is_query=is_query, inference_batch_size=inference_batch_size)
@@ -329,27 +332,35 @@ class ModelEmbedder:
         """
 
         def embed(
-            objects: list[INFERENCE_OBJECT_TYPES], model_name: str, is_text: bool, batch_size: int
+            objects: list[INFERENCE_OBJECT_TYPES], model_name: str, batch_size: int
         ) -> list[NumericVector]:
-            """Assemble batches by groups, embeds and return embeddings in the original order"""
+            """
+            Assemble batches by options and data type based groups, embeds and return embeddings in the original order
+            """
             unique_options: list[dict[str, Any]] = []
+            unique_options_is_text: list[bool] = []  # multimodal models can have both text
+            # and image data, we need to track which data we process to construct separate batches for texts and images
             batches: list[Any] = []
             group_indices: dict[int, list[int]] = defaultdict(list)
             for i, obj in enumerate(objects):
-                for j, options in enumerate(unique_options):
-                    if options == obj.options:
+                is_text = isinstance(obj, models.Document)
+                for j, (options, options_is_text) in enumerate(
+                    zip(unique_options, unique_options_is_text)
+                ):
+                    if options == obj.options and is_text == options_is_text:
                         group_indices[j].append(i)
                         batches[j].append(obj.text if is_text else obj.image)
                         break
                 else:
-                    # Create a new group if no match is found
+                    # Create a new group if no match was found
                     group_indices[len(unique_options)] = [i]
                     unique_options.append(obj.options)
+                    unique_options_is_text.append(is_text)
                     batches.append([obj.text if is_text else obj.image])
 
-            embeds = []
-            for i, options in enumerate(unique_options):
-                embeds.extend(
+            embeddings = []
+            for i, (options, is_text) in enumerate(zip(unique_options, unique_options_is_text)):
+                embeddings.extend(
                     [
                         embedding
                         for embedding in self.embedder.embed(
@@ -363,37 +374,27 @@ class ModelEmbedder:
                     ]
                 )
 
-            iter_embeds = iter(embeds)
+            iter_embeddings = iter(embeddings)
             ordered_embeddings: list[list[NumericVector]] = [[]] * len(objects)
             for indices in group_indices.values():
                 for index in indices:
-                    ordered_embeddings[index] = next(iter_embeds)
+                    ordered_embeddings[index] = next(iter_embeddings)
             return ordered_embeddings
 
         for model in self._batch_accumulator:
             if model not in (
-                *SUPPORTED_EMBEDDING_MODELS.keys(),
-                *SUPPORTED_SPARSE_EMBEDDING_MODELS.keys(),
-                *_LATE_INTERACTION_EMBEDDING_MODELS.keys(),
+                *SUPPORTED_EMBEDDING_MODELS,
+                *SUPPORTED_SPARSE_EMBEDDING_MODELS,
+                *_LATE_INTERACTION_EMBEDDING_MODELS,
                 *_IMAGE_EMBEDDING_MODELS,
+                *_LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS,
             ):
                 raise ValueError(f"{model} is not among supported models")
 
         for model, data in self._batch_accumulator.items():
-            if model in [
-                *SUPPORTED_EMBEDDING_MODELS,
-                *SUPPORTED_SPARSE_EMBEDDING_MODELS,
-                *_LATE_INTERACTION_EMBEDDING_MODELS,
-            ]:
-                embeddings = embed(
-                    objects=data, model_name=model, is_text=True, batch_size=inference_batch_size
-                )
-            else:
-                embeddings = embed(
-                    objects=data, model_name=model, is_text=False, batch_size=inference_batch_size
-                )
-
-            self._embed_storage[model] = embeddings
+            self._embed_storage[model] = embed(
+                objects=data, model_name=model, batch_size=inference_batch_size
+            )
         self._batch_accumulator.clear()
 
     def _next_embed(self, model_name: str) -> NumericVector:
@@ -426,13 +427,15 @@ class ModelEmbedder:
         value = data.object
         options = data.options
         if model_name in (
-            *SUPPORTED_EMBEDDING_MODELS.keys(),
-            *SUPPORTED_SPARSE_EMBEDDING_MODELS.keys(),
-            *_LATE_INTERACTION_EMBEDDING_MODELS.keys(),
+            *SUPPORTED_EMBEDDING_MODELS,
+            *SUPPORTED_SPARSE_EMBEDDING_MODELS,
+            *_LATE_INTERACTION_EMBEDDING_MODELS,
         ):
             return models.Document(model=model_name, text=value, options=options)
         if model_name in _IMAGE_EMBEDDING_MODELS:
             return models.Image(model=model_name, image=value, options=options)
+        if model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+            raise ValueError(f"{model_name} does not support `InferenceObject` interface")
 
         raise ValueError(f"{model_name} is not among supported models")
 
