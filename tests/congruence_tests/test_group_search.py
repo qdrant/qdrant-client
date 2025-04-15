@@ -16,6 +16,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
     text_vector_size,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 from tests.fixtures.filters import one_random_filter_please
 
@@ -217,7 +218,7 @@ def group_by_keys():
 
 
 def test_group_search_types():
-    fixture_points = generate_fixtures(100, vectors_sizes=50)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD, vectors_sizes=50)
     vectors_config = models.VectorParams(size=50, distance=models.Distance.EUCLID)
 
     searcher = TestGroupSearcher()
@@ -244,7 +245,7 @@ def test_group_search_types():
     delete_fixture_collection(local_client)
     delete_fixture_collection(remote_client)
 
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
     init_client(local_client, fixture_points)
     init_client(remote_client, fixture_points)
 

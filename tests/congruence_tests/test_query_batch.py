@@ -18,6 +18,7 @@ from tests.congruence_tests.test_common import (
     sparse_vectors_config,
     generate_multivector_fixtures,
     multi_vector_config,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 from tests.fixtures.points import generate_random_sparse_vector, generate_random_multivector
 
@@ -135,7 +136,7 @@ class TestQueryBatchSearcher:
 
 
 def test_sparse_query_batch():
-    fixture_points = generate_sparse_fixtures(100)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestQueryBatchSearcher()
 
@@ -149,7 +150,7 @@ def test_sparse_query_batch():
 
 
 def test_multivec_query_batch():
-    fixture_points = generate_multivector_fixtures(100)
+    fixture_points = generate_multivector_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestQueryBatchSearcher()
 
@@ -164,7 +165,7 @@ def test_multivec_query_batch():
 
 @pytest.mark.parametrize("prefer_grpc", (False, True))
 def test_dense_query_batch(prefer_grpc):
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestQueryBatchSearcher()
 

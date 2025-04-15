@@ -24,6 +24,7 @@ from tests.congruence_tests.test_common import (
     sparse_vectors_config,
     generate_multivector_fixtures,
     multi_vector_config,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import (
@@ -763,7 +764,7 @@ def test_dense_query_lookup_from_another_collection():
 
 
 def test_dense_query_lookup_from_negative():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     secondary_collection_points = generate_fixtures(10)
 
@@ -827,7 +828,7 @@ def test_no_query_no_prefetch():
     if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 10, 1):
         pytest.skip("Works as of version 1.10.1")
 
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -841,7 +842,7 @@ def test_no_query_no_prefetch():
 
 
 def test_dense_query_nested_prefetch():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -875,7 +876,7 @@ def test_dense_query_filtered_prefetch():
 
 
 def test_dense_query_prefetch_score_threshold():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -887,7 +888,7 @@ def test_dense_query_prefetch_score_threshold():
 
 
 def test_dense_query_prefetch_parametrized():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -924,7 +925,7 @@ def test_dense_query_prefetch_parametrized():
 
 
 def test_dense_query_parametrized():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -951,7 +952,7 @@ def test_dense_query_parametrized():
 
 
 def test_sparse_query():
-    fixture_points = generate_sparse_fixtures(100)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -963,7 +964,7 @@ def test_sparse_query():
 
 
 def test_multivec_query():
-    fixture_points = generate_multivector_fixtures(100)
+    fixture_points = generate_multivector_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -1024,7 +1025,7 @@ def test_dense_query():
 
 
 def test_dense_query_orderby():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -1041,7 +1042,7 @@ def test_dense_query_orderby():
 
 
 def test_dense_query_recommend():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -1052,7 +1053,7 @@ def test_dense_query_recommend():
 
 
 def test_dense_query_rescore():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -1065,7 +1066,7 @@ def test_dense_query_rescore():
 
 
 def test_dense_query_fusion():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -1335,7 +1336,7 @@ def test_query_with_nan():
 
 
 def test_flat_query_dense_interface():
-    fixture_points = generate_fixtures(100)
+    fixture_points = generate_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -1351,7 +1352,7 @@ def test_flat_query_dense_interface():
 
 
 def test_flat_query_sparse_interface():
-    fixture_points = generate_sparse_fixtures(100)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 
@@ -1363,7 +1364,7 @@ def test_flat_query_sparse_interface():
 
 
 def test_flat_query_multivector_interface():
-    fixture_points = generate_multivector_fixtures(100)
+    fixture_points = generate_multivector_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
 
     searcher = TestSimpleSearcher()
 

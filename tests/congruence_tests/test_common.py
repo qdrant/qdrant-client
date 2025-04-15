@@ -25,6 +25,8 @@ sparse_code_vector_size = 10_000
 
 # number of vectors to generate
 NUM_VECTORS = 1000
+# number of vectors for tests with no payload
+NUM_VECTORS_WITHOUT_PAYLOAD = 100
 
 dense_vectors_config = {
     "text": models.VectorParams(

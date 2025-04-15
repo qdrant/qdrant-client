@@ -16,6 +16,7 @@ from tests.congruence_tests.test_common import (
     sparse_image_vector_size,
     sparse_text_vector_size,
     sparse_vectors_config,
+    NUM_VECTORS_WITHOUT_PAYLOAD,
 )
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, random_sparse_vectors
@@ -288,7 +289,7 @@ def test_query_with_nan():
     local_client = init_local()
     remote_client = init_remote()
 
-    fixture_points = generate_sparse_fixtures(100)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS_WITHOUT_PAYLOAD)
     sparse_vector = random_sparse_vectors({"sparse-text": sparse_text_vector_size})
     named_sparse_vector = models.NamedSparseVector(
         name="sparse-text", vector=sparse_vector["sparse-text"]
