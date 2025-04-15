@@ -478,9 +478,7 @@ def test_recreate_collection(remote_client: QdrantClient):
             compression=models.CompressionRatio.X4, always_ram=False
         )
     )
-    strict_mode_config = models.StrictModeConfig(
-        read_rate_limit=1000000
-    )
+    strict_mode_config = models.StrictModeConfig(read_rate_limit=1000000)
     remote_client.create_collection(
         collection_name,
         vectors_config=vectors_config,
@@ -492,7 +490,7 @@ def test_recreate_collection(remote_client: QdrantClient):
         optimizers_config=optimizers_config,
         wal_config=wal_config,
         quantization_config=general_quantization_config,
-        strict_mode_config=strict_mode_config
+        strict_mode_config=strict_mode_config,
     )
 
     remote_client.create_payload_index(

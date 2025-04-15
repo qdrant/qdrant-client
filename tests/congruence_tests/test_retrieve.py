@@ -12,16 +12,17 @@ from tests.congruence_tests.test_common import (
     sparse_vectors_config,
 )
 
+NUM_VECTORS = 100
+
 
 def test_retrieve(local_client, remote_client) -> None:
-    num_vectors = 1000
-    fixture_points = generate_fixtures(num_vectors)
+    fixture_points = generate_fixtures(NUM_VECTORS)
     keys = list(fixture_points[0].payload.keys())
 
     local_client.upload_points(COLLECTION_NAME, fixture_points)
     remote_client.upload_points(COLLECTION_NAME, fixture_points, wait=True)
 
-    id_ = random.randint(0, num_vectors)
+    id_ = random.randint(0, NUM_VECTORS)
 
     compare_client_results(
         local_client, remote_client, lambda c: c.retrieve(COLLECTION_NAME, [id_])
@@ -74,8 +75,7 @@ def test_retrieve(local_client, remote_client) -> None:
 
 
 def test_sparse_retrieve() -> None:
-    num_vectors = 1000
-    fixture_points = generate_sparse_fixtures(num_vectors)
+    fixture_points = generate_sparse_fixtures(NUM_VECTORS)
 
     local_client = init_local()
     init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
@@ -88,7 +88,7 @@ def test_sparse_retrieve() -> None:
     local_client.upload_points(COLLECTION_NAME, fixture_points)
     remote_client.upload_points(COLLECTION_NAME, fixture_points, wait=True)
 
-    id_ = random.randint(0, num_vectors)
+    id_ = random.randint(0, NUM_VECTORS)
 
     compare_client_results(
         local_client, remote_client, lambda c: c.retrieve(COLLECTION_NAME, [id_])

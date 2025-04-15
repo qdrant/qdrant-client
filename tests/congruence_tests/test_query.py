@@ -35,6 +35,7 @@ from tests.fixtures.points import (
 from tests.utils import read_version
 
 SECONDARY_COLLECTION_NAME = "congruence_secondary_collection"
+QUERY_VECTORS_NUM = 1000
 
 
 class TestSimpleSearcher:
@@ -1232,7 +1233,7 @@ def test_single_dense_vector():
 def test_search_with_persistence():
     import tempfile
 
-    fixture_points = generate_fixtures()
+    fixture_points = generate_fixtures(QUERY_VECTORS_NUM)
     searcher = TestSimpleSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
@@ -1272,7 +1273,7 @@ def test_search_with_persistence():
 def test_search_with_persistence_and_skipped_vectors():
     import tempfile
 
-    fixture_points = generate_fixtures(skip_vectors=True)
+    fixture_points = generate_fixtures(QUERY_VECTORS_NUM, skip_vectors=True)
     searcher = TestSimpleSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)

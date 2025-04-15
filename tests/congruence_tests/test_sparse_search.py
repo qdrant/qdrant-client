@@ -20,6 +20,8 @@ from tests.congruence_tests.test_common import (
 from tests.fixtures.filters import one_random_filter_please
 from tests.fixtures.points import generate_random_sparse_vector, random_sparse_vectors
 
+QUERY_VECTORS_NUM = 1000
+
 
 class TestSimpleSparseSearcher:
     __test__ = False
@@ -206,7 +208,7 @@ def test_simple_opt_vectors_search():
 def test_search_with_persistence():
     import tempfile
 
-    fixture_points = generate_sparse_fixtures()
+    fixture_points = generate_sparse_fixtures(QUERY_VECTORS_NUM)
     searcher = TestSimpleSparseSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
@@ -244,7 +246,7 @@ def test_search_with_persistence():
 def test_search_with_persistence_and_skipped_vectors():
     import tempfile
 
-    fixture_points = generate_sparse_fixtures(skip_vectors=True)
+    fixture_points = generate_sparse_fixtures(QUERY_VECTORS_NUM, skip_vectors=True)
     searcher = TestSimpleSparseSearcher()
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)

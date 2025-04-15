@@ -15,7 +15,7 @@ from tests.congruence_tests.test_common import (
 
 
 def test_has_vector(local_client, remote_client):
-    points = generate_fixtures(100, skip_vectors=True)
+    points = generate_fixtures(skip_vectors=True)
 
     local_client.upload_points(COLLECTION_NAME, points)
     remote_client.upload_points(COLLECTION_NAME, points, wait=True)
@@ -35,7 +35,7 @@ def test_has_vector(local_client, remote_client):
 
 
 def test_has_vector_sparse():
-    points = generate_sparse_fixtures(100, skip_vectors=True)
+    points = generate_sparse_fixtures(skip_vectors=True)
 
     local_client = init_local()
     init_client(local_client, [], sparse_vectors_config=sparse_vectors_config)
@@ -60,7 +60,7 @@ def test_has_vector_sparse():
 
 
 def test_has_vector_multi():
-    points = generate_multivector_fixtures(100, skip_vectors=True)
+    points = generate_multivector_fixtures(skip_vectors=True)
 
     local_client = init_local()
     init_client(local_client, [], vectors_config=multi_vector_config)
