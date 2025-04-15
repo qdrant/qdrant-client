@@ -143,7 +143,7 @@ def calculate_sparse_discovery_ranks(
     context: list[SparseContextPair],
     vectors: list[SparseVector],
 ) -> types.NumpyArray:
-    overall_ranks = np.zeros(len(vectors), dtype=np.int32)
+    overall_ranks: types.NumpyArray = np.zeros(len(vectors), dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors
         pos = calculate_distance_sparse(pair.positive, vectors)
@@ -179,7 +179,7 @@ def calculate_sparse_discovery_scores(
 def calculate_sparse_context_scores(
     query: SparseContextQuery, vectors: list[SparseVector]
 ) -> types.NumpyArray:
-    overall_scores = np.zeros(len(vectors), dtype=np.float32)
+    overall_scores: types.NumpyArray = np.zeros(len(vectors), dtype=np.float32)
     for pair in query.context_pairs:
         # Get distances to positive and negative vectors
         pos = calculate_distance_sparse(pair.positive, vectors)
