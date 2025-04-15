@@ -2,6 +2,7 @@ from typing import Optional
 from pathlib import Path
 from unittest.mock import patch
 from collections import defaultdict
+from functools import lru_cache
 import contextlib
 
 import numpy as np
@@ -37,120 +38,113 @@ TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 
 @pytest.fixture(scope="session")
 def cached_embeddings():
-    embedding_cache = defaultdict(list)
-    model_cache = defaultdict(dict)
-    sparse_init_counter = defaultdict(int)
+    @lru_cache(maxsize=None)
+    def _cached_text_embedding(model_name, *args, **kwargs):
+        return TextEmbedding(model_name=model_name, *args, **kwargs)
 
-    original_methods = {
-        "text": (TextEmbedding.__init__, TextEmbedding.embed),
-        "sparse": (SparseTextEmbedding.__init__, SparseTextEmbedding.embed),
-        "late": (LateInteractionTextEmbedding.__init__, LateInteractionTextEmbedding.embed),
-        "image": (ImageEmbedding.__init__, ImageEmbedding.embed),
-    }
+    @lru_cache(maxsize=None)
+    def _cached_sparse_text_embedding(model_name, *args, **kwargs):
+        return SparseTextEmbedding(model_name=model_name, *args, **kwargs)
 
-    def create_cache_key(model_name, items, batch_size, kwargs, is_init=False):
-        if is_init:
-            if model_name in IDF_EMBEDDING_MODELS:
-                init_id = sparse_init_counter[model_name]
-                sparse_init_counter[model_name] += 1
-                return (model_name, frozenset(kwargs.items()), init_id)
-            return (model_name, frozenset(kwargs.items()), None)
+    @lru_cache(maxsize=None)
+    def _cached_late_interaction_text_embedding(model_name, *args, **kwargs):
+        return LateInteractionTextEmbedding(model_name=model_name, *args, **kwargs)
 
-        if model_name in IDF_EMBEDDING_MODELS:
-            init_id = kwargs.get("init_id", 0)
-            return (model_name, tuple(items), batch_size, init_id)
-
-        return (model_name, tuple(items), batch_size)
+    @lru_cache(maxsize=None)
+    def _cached_image_embedding(model_name, *args, **kwargs):
+        return ImageEmbedding(model_name=model_name, *args, **kwargs)
 
     def cached_embed_factory(original_embed, is_image=False):
+        @lru_cache(maxsize=None)
+        def compute_embedding(
+            model_name, item_key, embedder, batch_size=8, is_image_inner=False, **kwargs
+        ):
+            items = [kwargs.get("original_item", item_key)]
+            if is_image_inner:
+                embeddings_iter = original_embed(
+                    embedder, images=items, batch_size=batch_size, **kwargs
+                )
+            else:
+                embeddings_iter = original_embed(
+                    embedder, documents=items, batch_size=batch_size, **kwargs
+                )
+            return next(embeddings_iter)
+
         def cached_embed(self, documents=None, images=None, batch_size=8, **kwargs):
             items = images if is_image else documents
-            if self.model_name in IDF_EMBEDDING_MODELS:
-                for (m_name, _, init_id), cached_model in model_cache.items():
-                    if m_name == self.model_name and cached_model == self:
-                        kwargs["init_id"] = init_id
-                        break
-                else:
-                    kwargs["init_id"] = sparse_init_counter[self.model_name]
+            if items is None:
+                return iter([])
 
-            cache_key = create_cache_key(self.model_name, tuple(items), batch_size, kwargs)
+            embeddings = []
+            for item in items:
+                item_key = item
+                extra_kwargs = {}
+                if not is_image and hasattr(item, "text") and hasattr(item, "model"):
+                    item_key = item.text
+                    extra_kwargs["original_item"] = item
+                elif is_image:
+                    item_key = str(item)
 
-            if cache_key in embedding_cache:
-                cached_result = embedding_cache[cache_key]
-                return iter(cached_result[: len(items)])
-
-            if is_image:
-                embeddings = original_embed(self, images=images, batch_size=batch_size, **kwargs)
-            else:
-                embeddings = original_embed(
-                    self, documents=documents, batch_size=batch_size, **kwargs
+                embedding = compute_embedding(
+                    model_name=self.model_name,
+                    item_key=item_key,
+                    embedder=self,
+                    batch_size=batch_size,
+                    is_image_inner=is_image,
+                    **kwargs,
+                    **extra_kwargs,
                 )
+                embeddings.append(embedding)
 
-            embeddings_list = list(embeddings)
-            embedding_cache[cache_key] = embeddings_list
-            return iter(embeddings_list[: len(items)])
+            return iter(embeddings)
 
         return cached_embed
 
-    def cached_init_factory(original_init):
-        def cached_init(
-            self,
-            model_name,
-            cache_dir=None,
-            threads=None,
-            providers=None,
-            cuda=False,
-            device_ids=None,
-            **kwargs,
-        ):
-            options = {
-                "cache_dir": cache_dir,
-                "threads": threads,
-                "providers": providers,
-                "cuda": cuda,
-                "device_ids": device_ids,
-                **kwargs,
-            }
-            cache_key = create_cache_key(model_name, None, None, options, is_init=True)
-
-            if cache_key in model_cache:
-                self.__dict__.update(model_cache[cache_key].__dict__)
-                return
-
-            original_init(
-                self,
-                model_name=model_name,
-                cache_dir=cache_dir,
-                threads=threads,
-                providers=providers,
-                cuda=cuda,
-                device_ids=device_ids,
-                **kwargs,
-            )
-            model_cache[cache_key] = self
-
-        return cached_init
-
-    patches = []
-    for embed_type, (orig_init, orig_embed) in original_methods.items():
-        cls = {
-            "text": TextEmbedding,
-            "sparse": SparseTextEmbedding,
-            "late": LateInteractionTextEmbedding,
-            "image": ImageEmbedding,
-        }[embed_type]
-        is_image = embed_type == "image"
-
-        patches.extend(
-            [
-                patch.object(cls, "__init__", cached_init_factory(orig_init)),
-                patch.object(cls, "embed", cached_embed_factory(orig_embed, is_image)),
-            ]
-        )
+    original_methods = {
+        "text": TextEmbedding.embed,
+        "sparse": SparseTextEmbedding.embed,
+        "late": LateInteractionTextEmbedding.embed,
+        "image": ImageEmbedding.embed,
+    }
 
     with contextlib.ExitStack() as stack:
-        for p in patches:
-            stack.enter_context(p)
+        stack.enter_context(
+            patch(
+                "qdrant_client.embed.embedder.TextEmbedding",
+                side_effect=_cached_text_embedding,
+            )
+        )
+        stack.enter_context(
+            patch(
+                "qdrant_client.embed.embedder.SparseTextEmbedding",
+                side_effect=_cached_sparse_text_embedding,
+            )
+        )
+        stack.enter_context(
+            patch(
+                "qdrant_client.embed.embedder.LateInteractionTextEmbedding",
+                side_effect=_cached_late_interaction_text_embedding,
+            )
+        )
+        stack.enter_context(
+            patch(
+                "qdrant_client.embed.embedder.ImageEmbedding",
+                side_effect=_cached_image_embedding,
+            )
+        )
+
+        for embed_type, orig_embed in original_methods.items():
+            cls = {
+                "text": TextEmbedding,
+                "sparse": SparseTextEmbedding,
+                "late": LateInteractionTextEmbedding,
+                "image": ImageEmbedding,
+            }[embed_type]
+            is_image = embed_type == "image"
+            stack.enter_context(
+                patch.object(cls, "embed", cached_embed_factory(orig_embed, is_image))
+            )
+
         yield
 
 
@@ -521,7 +515,7 @@ def test_upload(prefer_grpc, cached_embeddings):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_query_points(prefer_grpc):
+def test_query_points(prefer_grpc, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -693,7 +687,7 @@ def test_query_points(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_query_points_is_query(prefer_grpc):
+def test_query_points_is_query(prefer_grpc, cached_embeddings):
     # dense_model_name = "jinaai/jina-embeddings-v3"
     # dense_dim = 1024
 
@@ -774,7 +768,7 @@ def test_query_points_is_query(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_query_points_groups(prefer_grpc):
+def test_query_points_groups(prefer_grpc, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -891,7 +885,7 @@ def test_query_points_groups(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_query_batch_points(prefer_grpc):
+def test_query_batch_points(prefer_grpc, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -957,7 +951,7 @@ def test_query_batch_points(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_batch_update_points(prefer_grpc):
+def test_batch_update_points(prefer_grpc, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
@@ -1101,7 +1095,7 @@ def test_batch_update_points(prefer_grpc):
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
-def test_update_vectors(prefer_grpc):
+def test_update_vectors(prefer_grpc, cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
