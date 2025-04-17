@@ -147,24 +147,32 @@ class TestSimpleSearcher:
 
 def test_simple_search():
     fixture_points = generate_fixtures()
-
+    query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
 
+    searcher.query_text = np.array(query.vector['text']).tolist()
+    searcher.query_image = np.array(query.vector['image']).tolist()
+    searcher.query_code = np.array(query.vector['code']).tolist()
     local_client = init_local()
     init_client(local_client, fixture_points)
 
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
 
-    compare_client_results(local_client, remote_client, searcher.simple_search_text)
-    compare_client_results(local_client, remote_client, searcher.simple_search_image)
-    compare_client_results(local_client, remote_client, searcher.simple_search_code)
-    compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
-    compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
-    compare_client_results(local_client, remote_client, searcher.search_score_threshold)
-    compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
-    compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
-    compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
+    remote_client.upload_points(COLLECTION_NAME + '_debug', [query], wait=True)
+
+    try:
+        compare_client_results(local_client, remote_client, searcher.simple_search_text)
+        compare_client_results(local_client, remote_client, searcher.simple_search_image)
+        compare_client_results(local_client, remote_client, searcher.simple_search_code)
+        compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
+        compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
+        compare_client_results(local_client, remote_client, searcher.search_score_threshold)
+        compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
+        compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
+        compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
+    except AssertionError as e:
+        raise ValueError("Vector:", searcher.query_text) from e
 
     for i in range(100):
         query_filter = one_random_filter_please()
@@ -173,8 +181,7 @@ def test_simple_search():
                 local_client, remote_client, searcher.filter_search_text, query_filter=query_filter
             )
         except AssertionError as e:
-            print(f"\nFailed with filter {query_filter}")
-            raise e
+            raise ValueError("Vector:", searcher.query_text, "Filter:", query_filter) from e
 
 
 def test_simple_opt_vectors_search():

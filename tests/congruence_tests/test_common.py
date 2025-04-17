@@ -379,6 +379,12 @@ def init_client(
         vectors_config=vectors_config,
         sparse_vectors_config=sparse_vectors_config,
     )
+    initialize_fixture_collection(
+        client=client,
+        collection_name=collection_name + '_debug',
+        vectors_config=vectors_config,
+        sparse_vectors_config=sparse_vectors_config,
+    )
     client.upload_points(collection_name, points, wait=True)
 
 
