@@ -1587,3 +1587,54 @@ def test_embed_multimodal(mock_late_interaction_multimodal_embedding):
     assert np.allclose(np_text_vectors[0], mock_cls.text_embedding)
     assert np.allclose(np_text_vectors[1], mock_cls.text_embedding)
     assert np.allclose(np_image_vector, mock_cls.image_embedding)
+
+
+def test_upsert_mixed_dense_models(cached_embeddings):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+    local_kwargs = {}
+    local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
+
+    model_a = "sentence-transformers/all-MiniLM-L6-v2"
+    model_b = "BAAI/bge-small-zh-v1.5"
+    dim_a = 384
+    dim_b = 512
+
+    vectors_config = {
+        "model_a": models.VectorParams(size=dim_a, distance=models.Distance.COSINE),
+        "model_b": models.VectorParams(size=dim_b, distance=models.Distance.COSINE),
+    }
+    local_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
+
+    doc_a = models.Document(text="hello world", model=model_a)
+    doc_b = models.Document(text="bye world", model=model_b)
+    points = [
+        models.PointStruct(id=1, vector={"model_a": doc_a}),
+        models.PointStruct(id=2, vector={"model_b": doc_b}),
+        models.PointStruct(id=3, vector={"model_a": doc_a, "model_b": doc_b}),
+    ]
+
+    local_client.upsert(COLLECTION_NAME, points)
+
+    vec_points = local_kwargs["points"]
+    assert len(vec_points) == 3
+    assert isinstance(vec_points[0].vector["model_a"], list)
+    assert len(vec_points[0].vector["model_a"]) == dim_a
+    assert "model_b" not in vec_points[0].vector
+    assert isinstance(vec_points[1].vector["model_b"], list)
+    assert len(vec_points[1].vector["model_b"]) == dim_b
+    assert "model_a" not in vec_points[1].vector
+    assert isinstance(vec_points[2].vector["model_a"], list)
+    assert isinstance(vec_points[2].vector["model_b"], list)
+    assert len(vec_points[2].vector["model_a"]) == dim_a
+    assert len(vec_points[2].vector["model_b"]) == dim_b
+
+    retrieved = local_client.retrieve(COLLECTION_NAME, ids=[1, 2, 3], with_vectors=True)
+    assert len(retrieved) == 3
+    assert len(retrieved[0].vector["model_a"]) == dim_a
+    assert len(retrieved[1].vector["model_b"]) == dim_b
+    assert len(retrieved[2].vector["model_a"]) == dim_a
+    assert len(retrieved[2].vector["model_b"]) == dim_b
+
+    local_client.delete_collection(COLLECTION_NAME)
