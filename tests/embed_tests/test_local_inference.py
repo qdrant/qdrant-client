@@ -675,6 +675,61 @@ def test_query_points_groups(cached_embeddings):
     local_client.delete_collection(COLLECTION_NAME)
 
 
+def test_query_points_list_prefetch(cached_embeddings):
+    local_client = QdrantClient(":memory:")
+    if not local_client._FASTEMBED_INSTALLED:
+        pytest.skip("FastEmbed is not installed, skipping")
+
+    local_kwargs = {}
+    local_client._client.query_points = arg_interceptor(
+        local_client._client.query_points, local_kwargs
+    )
+
+    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
+    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
+    sparse_doc_3 = models.Document(text="goodbye world", model=SPARSE_MODEL_NAME)
+
+    points = [
+        models.PointStruct(id=i, vector={"sparse-text": doc}, payload={"content": doc.text})
+        for i, doc in enumerate([sparse_doc_1, sparse_doc_2, sparse_doc_3])
+    ]
+
+    populate_sparse_collection(local_client, points, vector_name="sparse-text")
+
+    prefetch_list = [
+        models.Prefetch(
+            query=models.NearestQuery(nearest=sparse_doc_1), using="sparse-text", limit=5
+        ),
+        models.Prefetch(
+            query=models.NearestQuery(nearest=sparse_doc_2), using="sparse-text", limit=3
+        ),
+        models.Prefetch(
+            query=models.NearestQuery(nearest=sparse_doc_3), using="sparse-text", limit=2
+        ),
+    ]
+
+    local_client.query_points(
+        COLLECTION_NAME, query=sparse_doc_1, prefetch=prefetch_list, using="sparse-text"
+    )
+
+    current_query = local_kwargs["query"]
+    assert isinstance(current_query.nearest, models.SparseVector)
+
+    current_prefetch = local_kwargs["prefetch"]
+    assert isinstance(current_prefetch, list)
+    assert len(current_prefetch) == 3
+
+    for i, prefetch in enumerate(current_prefetch):
+        assert isinstance(prefetch.query.nearest, models.SparseVector)
+
+        retrieved_point = local_client.retrieve(COLLECTION_NAME, ids=[i], with_vectors=True)[0]
+        assert not np.allclose(
+            retrieved_point.vector["sparse-text"].values, prefetch.query.nearest.values, atol=1e-3
+        )
+
+    local_client.delete_collection(COLLECTION_NAME)
+
+
 def test_query_batch_points(cached_embeddings):
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
