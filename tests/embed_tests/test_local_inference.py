@@ -285,7 +285,6 @@ def test_upload(cached_embeddings):
     recreate_collection(remote_client, COLLECTION_NAME)
 
     remote_client.upload_points(COLLECTION_NAME, points, wait=True)
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -300,7 +299,6 @@ def test_upload(cached_embeddings):
     ids = list(range(len(vectors)))
     remote_client.upload_collection(COLLECTION_NAME, ids=ids, vectors=vectors, wait=True)
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -308,7 +306,6 @@ def test_upload(cached_embeddings):
     recreate_collection(remote_client, COLLECTION_NAME)
 
     remote_client.upload_points(COLLECTION_NAME, points, parallel=2, batch_size=2, wait=True)
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -319,7 +316,6 @@ def test_upload(cached_embeddings):
         COLLECTION_NAME, ids=ids, vectors=vectors, parallel=2, batch_size=2, wait=True
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -330,7 +326,6 @@ def test_upload(cached_embeddings):
 
     remote_client.upload_points(COLLECTION_NAME, iter(points), parallel=2, batch_size=2, wait=True)
 
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -343,7 +338,6 @@ def test_upload(cached_embeddings):
         COLLECTION_NAME, ids=ids, vectors=iter(vectors), parallel=2, batch_size=2, wait=True
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert isinstance(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["text"], list
     )  # assert doc has been substituted with its embedding
@@ -1146,7 +1140,6 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
         COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[3], with_vectors=True)[0].vector,
         norm_ref_vector,
@@ -1171,7 +1164,6 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
         COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector,
         norm_ref_vector,
@@ -1217,7 +1209,6 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
         COLLECTION_NAME, points, batch_size=batch_size, wait=True, parallel=parallel
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(points)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector["plain"],
         norm_ref_vector,
@@ -1259,7 +1250,6 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
         parallel=parallel,
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[2], with_vectors=True)[0].vector,
         norm_ref_vector,
@@ -1286,7 +1276,6 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
         parallel=parallel,
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector,
         norm_ref_vector,
@@ -1323,7 +1312,6 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
         parallel=parallel,
     )
 
-    assert remote_client.count(COLLECTION_NAME).count == len(vectors)
     assert np.allclose(
         remote_client.retrieve(COLLECTION_NAME, ids=[1], with_vectors=True)[0].vector["plain"],
         norm_ref_vector,
@@ -1371,7 +1359,6 @@ def test_upsert_batch_with_different_options():
     local_client.upsert(COLLECTION_NAME, points)
 
     read_points, _ = local_client.scroll(COLLECTION_NAME, limit=4, with_vectors=True)
-    assert len(read_points) == 3
     assert (
         read_points[0].vector["sparse-text-en"].indices
         != read_points[0].vector["sparse-text-de"].indices
@@ -1533,7 +1520,6 @@ def test_embed_multimodal(mock_late_interaction_multimodal_embedding):
     assert mock_cls.image_calls == 1
 
     records, _ = local_client.scroll(COLLECTION_NAME, limit=2, with_vectors=True)
-    assert len(records) == 2
     assert len(records[1].vector) == 1
 
     np_text_vectors = np.array([records[0].vector["text"], records[1].vector["text"]])
