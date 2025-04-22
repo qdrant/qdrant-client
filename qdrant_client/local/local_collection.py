@@ -723,7 +723,7 @@ class LocalCollection:
 
         if len(prefetches) > 0:
             # It is a hybrid/re-scoring query
-            sources = [self._prefetch(prefetch, offset) for prefetch in prefetches]
+            sources = [self._prefetch(prefetch) for prefetch in prefetches]
 
             # Merge sources
             scored_points = self._merge_sources(
@@ -752,10 +752,7 @@ class LocalCollection:
 
         return types.QueryResponse(points=scored_points)
 
-    def _prefetch(self, prefetch: types.Prefetch, offset: int) -> list[types.ScoredPoint]:
-        if prefetch.limit is not None:
-            prefetch.limit = prefetch.limit + offset
-
+    def _prefetch(self, prefetch: types.Prefetch) -> list[types.ScoredPoint]:
         inner_prefetches = []
         if prefetch.prefetch is not None:
             inner_prefetches = (
@@ -763,9 +760,7 @@ class LocalCollection:
             )
 
         if len(inner_prefetches) > 0:
-            sources = [
-                self._prefetch(inner_prefetch, offset) for inner_prefetch in inner_prefetches
-            ]
+            sources = [self._prefetch(inner_prefetch) for inner_prefetch in inner_prefetches]
 
             # Merge sources
             return self._merge_sources(
