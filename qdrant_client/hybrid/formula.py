@@ -1,5 +1,5 @@
 import math
-import pytest
+
 
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.http import models
@@ -358,14 +358,13 @@ def test_parsing_variable() -> None:
         assert str(e) == "Invalid score pattern: $score[10].other"
 
 
-@pytest.mark.parametrize(
-    "payload_value, expected", [(1.2, 1.2), ([1.2], 1.2), ([1.2, 2.3], [1.2, 2.3])]
-)
-def test_try_extract_payload_value(payload_value: Any, expected: Any) -> None:
-    empty_defaults: dict[str, Any] = {}
-    payload = {"key": payload_value}
-    assert try_extract_payload_value("key", payload, empty_defaults) == expected
+def test_try_extract_payload_value() -> None:
+    for payload_value, expected in [(1.2, 1.2), ([1.2], 1.2), ([1.2, 2.3], [1.2, 2.3])]:
+        empty_defaults: dict[str, Any] = {}
 
-    defaults = {"key": payload_value}
-    empty_payload: dict[str, Any] = {}
-    assert try_extract_payload_value("key", empty_payload, defaults) == expected
+        payload = {"key": payload_value}
+        assert try_extract_payload_value("key", payload, empty_defaults) == expected
+
+        defaults = {"key": payload_value}
+        empty_payload: dict[str, Any] = {}
+        assert try_extract_payload_value("key", empty_payload, defaults) == expected
