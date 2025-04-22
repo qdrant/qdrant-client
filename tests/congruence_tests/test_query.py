@@ -744,7 +744,7 @@ class TestSimpleSearcher:
             query=models.SampleQuery(sample=models.Sample.RANDOM),
             limit=100,
             offset=10,
-        )
+        )  # make sure that offset does not affect the number of points in the result
 
         # sort to be able to compare
         result.points.sort(key=lambda point: point.id)
