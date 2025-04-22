@@ -157,10 +157,10 @@ def test_simple_search():
     searcher.load_query_vectors(query)
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, init_debug_collection=True)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, init_debug_collection=True)
 
     remote_client.upload_points(COLLECTION_NAME + '_debug', [query], wait=True)
 
@@ -202,10 +202,10 @@ def test_simple_opt_vectors_search():
     searcher.load_query_vectors(query)
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, init_debug_collection=True)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, init_debug_collection=True)
 
     try:
         compare_client_results(local_client, remote_client, searcher.simple_search_text)
@@ -251,10 +251,10 @@ def test_single_vector():
     )
 
     local_client = init_local()
-    init_client(local_client, fixture_points, vectors_config=vectors_config)
+    init_client(local_client, fixture_points, vectors_config=vectors_config, init_debug_collection=True)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points, vectors_config=vectors_config)
+    init_client(remote_client, fixture_points, vectors_config=vectors_config, init_debug_collection=True)
 
     for i in range(100):
         query_filter = one_random_filter_please()
@@ -279,7 +279,7 @@ def test_search_with_persistence():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
-        init_client(local_client, fixture_points)
+        init_client(local_client, fixture_points, init_debug_collection=True)
 
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -288,7 +288,7 @@ def test_search_with_persistence():
         local_client_2 = init_local(tmpdir)
 
         remote_client = init_remote()
-        init_client(remote_client, fixture_points)
+        init_client(remote_client, fixture_points, init_debug_collection=True)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
@@ -319,7 +319,7 @@ def test_search_with_persistence_and_skipped_vectors():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
-        init_client(local_client, fixture_points)
+        init_client(local_client, fixture_points, init_debug_collection=True)
 
         payload_update_filter = one_random_filter_please()
         local_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
@@ -333,7 +333,7 @@ def test_search_with_persistence_and_skipped_vectors():
         assert count_after_load == count_before_load
 
         remote_client = init_remote()
-        init_client(remote_client, fixture_points)
+        init_client(remote_client, fixture_points, init_debug_collection=True)
 
         remote_client.set_payload(COLLECTION_NAME, {"test": f"test"}, payload_update_filter)
 
@@ -358,10 +358,10 @@ def test_search_invalid_vector_type():
     fixture_points = generate_fixtures()
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, init_debug_collection=True)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, init_debug_collection=True)
 
     vector_invalid_type = {"text": [1, 2, 3, 4]}
     with pytest.raises(ValueError):
@@ -375,10 +375,10 @@ def test_query_with_nan():
     fixture_points = generate_fixtures()
 
     local_client = init_local()
-    init_client(local_client, fixture_points)
+    init_client(local_client, fixture_points, init_debug_collection=True)
 
     remote_client = init_remote()
-    init_client(remote_client, fixture_points)
+    init_client(remote_client, fixture_points, init_debug_collection=True)
 
     vector = np.random.random(text_vector_size)
     vector[4] = np.nan
@@ -399,8 +399,8 @@ def test_query_with_nan():
     remote_client.create_collection(COLLECTION_NAME, vectors_config=single_vector_config)
 
     fixture_points = generate_fixtures(vectors_sizes=text_vector_size)
-    init_client(local_client, fixture_points, vectors_config=single_vector_config)
-    init_client(remote_client, fixture_points, vectors_config=single_vector_config)
+    init_client(local_client, fixture_points, vectors_config=single_vector_config, init_debug_collection=True)
+    init_client(remote_client, fixture_points, vectors_config=single_vector_config, init_debug_collection=True)
 
     with pytest.raises(AssertionError):
         local_client.search(COLLECTION_NAME, vector.tolist())

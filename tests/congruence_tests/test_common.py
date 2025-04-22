@@ -372,6 +372,7 @@ def init_client(
     collection_name: str = COLLECTION_NAME,
     vectors_config: Optional[Union[dict[str, models.VectorParams], models.VectorParams]] = None,
     sparse_vectors_config: Optional[dict[str, models.SparseVectorParams]] = None,
+    init_debug_collection : bool = False
 ) -> None:
     initialize_fixture_collection(
         client=client,
@@ -379,12 +380,13 @@ def init_client(
         vectors_config=vectors_config,
         sparse_vectors_config=sparse_vectors_config,
     )
-    initialize_fixture_collection(
-        client=client,
-        collection_name=collection_name + '_debug',
-        vectors_config=vectors_config,
-        sparse_vectors_config=sparse_vectors_config,
-    )
+    if init_debug_collection:
+        initialize_fixture_collection(
+            client=client,
+            collection_name=collection_name + '_debug',
+            vectors_config=vectors_config,
+            sparse_vectors_config=sparse_vectors_config,
+        )
     client.upload_points(collection_name, points, wait=True)
 
 
