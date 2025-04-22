@@ -7,7 +7,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
-from qdrant_client.http.models import SparseVector, VectorStruct
+from qdrant_client.http.models import SparseVector, VectorStruct, ScoredPoint
 from tests.congruence_tests.settings import TIMEOUT
 from tests.fixtures.points import generate_points
 
@@ -282,7 +282,7 @@ def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: floa
 def compare_client_results(
     client1: QdrantBase,
     client2: QdrantBase,
-    foo: Callable[[QdrantBase, Any], Any],
+    foo: Callable[[QdrantBase, Any], list[ScoredPoint]],
     **kwargs: Any,
 ) -> None:
     # context search can have many points with the same 0.0 score

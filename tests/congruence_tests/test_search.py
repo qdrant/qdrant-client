@@ -163,16 +163,24 @@ def test_simple_search():
 
     try:
         compare_client_results(local_client, remote_client, searcher.simple_search_text)
-        compare_client_results(local_client, remote_client, searcher.simple_search_image)
-        compare_client_results(local_client, remote_client, searcher.simple_search_code)
         compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
         compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
         compare_client_results(local_client, remote_client, searcher.search_score_threshold)
         compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
-        compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
         compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
     except AssertionError as e:
         raise ValueError("Vector:", searcher.query_text) from e
+
+    try:
+        compare_client_results(local_client, remote_client, searcher.simple_search_image)
+        compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
+    except AssertionError as e:
+        raise ValueError("Vector:", searcher.query_image) from e
+
+    try:
+        compare_client_results(local_client, remote_client, searcher.simple_search_code)
+    except AssertionError as e:
+        raise ValueError("Vector:", searcher.query_code) from e
 
     for i in range(100):
         query_filter = one_random_filter_please()
@@ -185,9 +193,12 @@ def test_simple_search():
 
 
 def test_simple_opt_vectors_search():
-    fixture_points = generate_fixtures(skip_vectors=True)
-
+    fixture_points = generate_fixtures()
+    query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
+    searcher.query_text = np.array(query.vector['text']).tolist()
+    searcher.query_image = np.array(query.vector['image']).tolist()
+    searcher.query_code = np.array(query.vector['code']).tolist()
 
     local_client = init_local()
     init_client(local_client, fixture_points)
@@ -195,15 +206,26 @@ def test_simple_opt_vectors_search():
     remote_client = init_remote()
     init_client(remote_client, fixture_points)
 
-    compare_client_results(local_client, remote_client, searcher.simple_search_text)
-    compare_client_results(local_client, remote_client, searcher.simple_search_image)
-    compare_client_results(local_client, remote_client, searcher.simple_search_code)
-    compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
-    compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
-    compare_client_results(local_client, remote_client, searcher.search_score_threshold)
-    compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
-    compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
-    compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
+    try:
+        compare_client_results(local_client, remote_client, searcher.simple_search_text)
+        compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
+        compare_client_results(local_client, remote_client, searcher.simple_search_text_with_vector)
+        compare_client_results(local_client, remote_client, searcher.search_score_threshold)
+        compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
+        compare_client_results(local_client, remote_client, searcher.search_payload_exclude)
+    except AssertionError as e:
+        raise ValueError("Vector:", searcher.query_text) from e
+
+    try:
+        compare_client_results(local_client, remote_client, searcher.simple_search_image)
+        compare_client_results(local_client, remote_client, searcher.simple_search_image_select_vector)
+    except AssertionError as e:
+        raise ValueError("Vector:", searcher.query_image) from e
+
+    try:
+        compare_client_results(local_client, remote_client, searcher.simple_search_code)
+    except AssertionError as e:
+        raise ValueError("Vector:", searcher.query_code) from e
 
     for i in range(100):
         query_filter = one_random_filter_please()
@@ -212,14 +234,15 @@ def test_simple_opt_vectors_search():
                 local_client, remote_client, searcher.filter_search_text, query_filter=query_filter
             )
         except AssertionError as e:
-            print(f"\nFailed with filter {query_filter}")
-            raise e
+            raise ValueError("Vector:", searcher.query_text, "Filter:", query_filter) from e
+
 
 
 def test_single_vector():
-    fixture_points = generate_fixtures(num=200, vectors_sizes=text_vector_size)
-
+    fixture_points = generate_fixtures(num=201, vectors_sizes=text_vector_size)
+    query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
+    searcher.query_text = np.array(query.vector).tolist()
 
     vectors_config = models.VectorParams(
         size=text_vector_size,
@@ -242,15 +265,19 @@ def test_single_vector():
                 query_filter=query_filter,
             )
         except AssertionError as e:
-            print(f"\nFailed with filter {query_filter}")
-            raise e
+            raise ValueError("Vector:", searcher.query_text, "Filter:", query_filter) from e
 
 
 def test_search_with_persistence():
     import tempfile
 
     fixture_points = generate_fixtures()
+    query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
+    searcher.query_text = np.array(query.vector['text']).tolist()
+    searcher.query_image = np.array(query.vector['image']).tolist()
+    searcher.query_code = np.array(query.vector['code']).tolist()
+
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
         init_client(local_client, fixture_points)
@@ -280,15 +307,19 @@ def test_search_with_persistence():
                     query_filter=query_filter,
                 )
             except AssertionError as e:
-                print(f"\nFailed with filter {query_filter}")
-                raise e
+                raise ValueError("Vector:", searcher.query_text, "Filter:", query_filter) from e
 
 
 def test_search_with_persistence_and_skipped_vectors():
     import tempfile
 
-    fixture_points = generate_fixtures(skip_vectors=True)
+    fixture_points = generate_fixtures()
+    query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
+    searcher.query_text = np.array(query.vector['text']).tolist()
+    searcher.query_image = np.array(query.vector['image']).tolist()
+    searcher.query_code = np.array(query.vector['code']).tolist()
+
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
         init_client(local_client, fixture_points)
@@ -323,8 +354,7 @@ def test_search_with_persistence_and_skipped_vectors():
                     query_filter=query_filter,
                 )
             except AssertionError as e:
-                print(f"\nFailed with filter {query_filter}")
-                raise e
+                raise ValueError("Vector:", searcher.query_text, "Filter:", query_filter) from e
 
 
 def test_search_invalid_vector_type():

@@ -72,8 +72,8 @@ def random_vectors(
         vectors = {}
         for vector_name, vector_size in vector_sizes.items():
             generated_vecs = np.random.random((num_vectors, vector_size)).round(3)
-            # while too_close(generated_vecs, vector_name, 10e-7):
-            #     generated_vecs = np.random.random((num_vectors, vector_size)).round(3)
+            while too_close(generated_vecs, vector_name, 10e-8):
+                generated_vecs = np.random.random((num_vectors, vector_size)).round(3)
             vectors[vector_name] = generated_vecs.tolist()
 
         output = []
