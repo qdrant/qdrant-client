@@ -949,7 +949,7 @@ class LocalCollection:
                     query_filter=query_filter,
                     with_payload=with_payload,
                     with_vectors=with_vectors,
-                )
+                )[offset:]
             else:
                 raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):
