@@ -283,10 +283,10 @@ class CollectionTelemetry(BaseModel):
     id: str = Field(..., description="")
     init_time_ms: int = Field(..., description="")
     config: "CollectionConfigTelemetry" = Field(..., description="")
-    shards: List["ReplicaSetTelemetry"] = Field(..., description="")
-    transfers: List["ShardTransferInfo"] = Field(..., description="")
-    resharding: List["ReshardingInfo"] = Field(..., description="")
-    shard_clean_tasks: Dict[str, "ShardCleanStatusTelemetry"] = Field(..., description="")
+    shards: Optional[List["ReplicaSetTelemetry"]] = Field(default=None, description="")
+    transfers: Optional[List["ShardTransferInfo"]] = Field(default=None, description="")
+    resharding: Optional[List["ReshardingInfo"]] = Field(default=None, description="")
+    shard_clean_tasks: Optional[Dict[str, "ShardCleanStatusTelemetry"]] = Field(default=None, description="")
 
 
 class CollectionsAggregatedTelemetry(BaseModel):
@@ -1320,7 +1320,23 @@ class LocalShardTelemetry(BaseModel):
     variant_name: Optional[str] = Field(default=None, description="")
     status: Optional["ShardStatus"] = Field(default=None, description="")
     total_optimized_points: int = Field(..., description="Total number of optimized points since the last start.")
-    segments: List["SegmentTelemetry"] = Field(..., description="")
+    vectors_size_bytes: Optional[int] = Field(
+        default=None,
+        description="An ESTIMATION of effective amount of bytes used for vectors Do NOT rely on this number unless you know what you are doing",
+    )
+    payloads_size_bytes: Optional[int] = Field(
+        default=None,
+        description="An estimation of the effective amount of bytes used for payloads Do NOT rely on this number unless you know what you are doing",
+    )
+    num_points: Optional[int] = Field(
+        default=None,
+        description="Sum of segment points This is an approximate number Do NOT rely on this number unless you know what you are doing",
+    )
+    num_vectors: Optional[int] = Field(
+        default=None,
+        description="Sum of number of vectors in all segments This is an approximate number Do NOT rely on this number unless you know what you are doing",
+    )
+    segments: Optional[List["SegmentTelemetry"]] = Field(default=None, description="")
     optimizations: "OptimizerTelemetry" = Field(..., description="")
     async_scorer: Optional[bool] = Field(default=None, description="")
 
@@ -1501,14 +1517,16 @@ class OperationDurationStatistics(BaseModel):
     max_duration_micros: Optional[float] = Field(
         default=None, description="The maximum duration of the operations across all the measurements."
     )
-    total_duration_micros: int = Field(..., description="The total duration of all operations in microseconds.")
+    total_duration_micros: Optional[int] = Field(
+        default=None, description="The total duration of all operations in microseconds."
+    )
     last_responded: Optional[Union[datetime, date]] = Field(default=None, description="")
 
 
 class OptimizerTelemetry(BaseModel):
     status: "OptimizersStatus" = Field(..., description="")
     optimizations: "OperationDurationStatistics" = Field(..., description="")
-    log: List["TrackerTelemetry"] = Field(..., description="")
+    log: Optional[List["TrackerTelemetry"]] = Field(default=None, description="")
 
 
 class OptimizersConfig(BaseModel):
@@ -1637,6 +1655,7 @@ class PayloadIndexInfo(BaseModel):
 
 class PayloadIndexTelemetry(BaseModel):
     field_name: Optional[str] = Field(default=None, description="")
+    index_type: str = Field(..., description="")
     points_values_count: int = Field(..., description="The amount of values indexed for all points.")
     points_count: int = Field(..., description="The amount of points that have at least one value indexed.")
     histogram_bucket_size: Optional[int] = Field(default=None, description="")
