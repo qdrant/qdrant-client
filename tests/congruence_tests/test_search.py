@@ -144,15 +144,18 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def load_query_vectors(self, query):
+        self.query_text = np.array(query.vector['text']).tolist()
+        self.query_image = np.array(query.vector['image']).tolist()
+        self.query_code = np.array(query.vector['code']).tolist()
+
 
 def test_simple_search():
     fixture_points = generate_fixtures()
     query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
+    searcher.load_query_vectors(query)
 
-    searcher.query_text = np.array(query.vector['text']).tolist()
-    searcher.query_image = np.array(query.vector['image']).tolist()
-    searcher.query_code = np.array(query.vector['code']).tolist()
     local_client = init_local()
     init_client(local_client, fixture_points)
 
@@ -196,9 +199,7 @@ def test_simple_opt_vectors_search():
     fixture_points = generate_fixtures()
     query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
-    searcher.query_text = np.array(query.vector['text']).tolist()
-    searcher.query_image = np.array(query.vector['image']).tolist()
-    searcher.query_code = np.array(query.vector['code']).tolist()
+    searcher.load_query_vectors(query)
 
     local_client = init_local()
     init_client(local_client, fixture_points)
@@ -274,9 +275,7 @@ def test_search_with_persistence():
     fixture_points = generate_fixtures()
     query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
-    searcher.query_text = np.array(query.vector['text']).tolist()
-    searcher.query_image = np.array(query.vector['image']).tolist()
-    searcher.query_code = np.array(query.vector['code']).tolist()
+    searcher.load_query_vectors(query)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
@@ -316,9 +315,7 @@ def test_search_with_persistence_and_skipped_vectors():
     fixture_points = generate_fixtures()
     query, fixture_points = fixture_points[-1], fixture_points[:-1]
     searcher = TestSimpleSearcher()
-    searcher.query_text = np.array(query.vector['text']).tolist()
-    searcher.query_image = np.array(query.vector['image']).tolist()
-    searcher.query_code = np.array(query.vector['code']).tolist()
+    searcher.load_query_vectors(query)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         local_client = init_local(tmpdir)
