@@ -57,8 +57,6 @@ def too_close(vectors: np.ndarray, distance: str, thold : float= 10e-5) -> bool:
     diffs = np.abs(distances[:, None] - distances[None, :])
     np.fill_diagonal(diffs, np.inf)
 
-    # if np.min(diffs) < thold:
-    #     raise ValueError(np.min(diffs))
     return np.min(diffs) < thold
 
 
@@ -104,8 +102,6 @@ def random_multivectors(vector_sizes: Union[dict[str, int], int],  num_vectors =
 def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
     return np.round(np.random.random((vec_count, vec_size)), 3).tolist()
 
-# Generate random sparse vector with given size and density
-# The density is the probability of non-zero value over the whole vector
 def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
     num_non_zero = int(size * density)
     indices: list[int] = random.sample(range(size), num_non_zero)
