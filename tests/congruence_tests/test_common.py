@@ -282,7 +282,7 @@ def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: floa
 def compare_client_results(
     client1: QdrantBase,
     client2: QdrantBase,
-    foo: Callable[[QdrantBase, Any], Union[list[ScoredPoint], tuple]],
+    foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ) -> None:
     # context search can have many points with the same 0.0 score
@@ -372,7 +372,7 @@ def init_client(
     collection_name: str = COLLECTION_NAME,
     vectors_config: Optional[Union[dict[str, models.VectorParams], models.VectorParams]] = None,
     sparse_vectors_config: Optional[dict[str, models.SparseVectorParams]] = None,
-    init_debug_collection : bool = False
+    init_debug_collection: bool = False,
 ) -> None:
     initialize_fixture_collection(
         client=client,
@@ -383,7 +383,7 @@ def init_client(
     if init_debug_collection:
         initialize_fixture_collection(
             client=client,
-            collection_name=collection_name + '_debug',
+            collection_name=collection_name + "_debug",
             vectors_config=vectors_config,
             sparse_vectors_config=sparse_vectors_config,
         )
