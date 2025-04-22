@@ -282,7 +282,7 @@ def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: floa
 def compare_client_results(
     client1: QdrantBase,
     client2: QdrantBase,
-    foo: Callable[[QdrantBase, Any], list[ScoredPoint]],
+    foo: Callable[[QdrantBase, Any], Union[list[ScoredPoint], tuple]],
     **kwargs: Any,
 ) -> None:
     # context search can have many points with the same 0.0 score
