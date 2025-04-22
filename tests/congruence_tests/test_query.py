@@ -344,6 +344,7 @@ class TestSimpleSearcher:
         )
 
     def dense_query_rrf_plain_prefetch(self, client: QdrantBase) -> models.QueryResponse:
+        # dense_query_rrf has a list of prefetches, here we have just a prefetch
         return client.query_points(
             collection_name=COLLECTION_NAME,
             prefetch=models.Prefetch(
@@ -606,6 +607,20 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_queries_prefetch_offset(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(query=self.dense_vector_query_code, using="code", limit=30),
+                models.Prefetch(query=self.dense_vector_query_text, using="text", limit=30),
+            ],
+            query=models.NearestQuery(nearest=self.dense_vector_query_image),
+            using="image",
+            with_payload=True,
+            offset=10,
+            limit=10,
+        )
+
     def dense_query_text_nested_prefetch(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
@@ -716,6 +731,20 @@ class TestSimpleSearcher:
             query=models.SampleQuery(sample=models.Sample.RANDOM),
             limit=100,
         )
+
+        # sort to be able to compare
+        result.points.sort(key=lambda point: point.id)
+
+        return result
+
+    @classmethod
+    def random_query_offset(cls, client: QdrantBase) -> models.QueryResponse:
+        result = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.SampleQuery(sample=models.Sample.RANDOM),
+            limit=100,
+            offset=10,
+        )  # make sure that offset does not affect the number of points in the result
 
         # sort to be able to compare
         result.points.sort(key=lambda point: point.id)
@@ -1027,7 +1056,6 @@ def test_dense_query():
     searcher = TestSimpleSearcher()
 
     local_client, http_client, grpc_client = init_clients(fixture_points)
-
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_text)
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_image)
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_query_code)
@@ -1047,6 +1075,9 @@ def test_dense_query():
         local_client, http_client, grpc_client, searcher.dense_query_image_select_vector
     )
     compare_clients_results(local_client, http_client, grpc_client, searcher.dense_payload_exclude)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_queries_prefetch_offset
+    )
 
     for i in range(100):
         query_filter = one_random_filter_please()
@@ -1540,6 +1571,7 @@ def test_random_sampling():
     local_client, http_client, grpc_client = init_clients(fixture_points)
 
     compare_clients_results(local_client, http_client, grpc_client, searcher.random_query)
+    compare_clients_results(local_client, http_client, grpc_client, searcher.random_query_offset)
 
 
 def test_formula_query():
