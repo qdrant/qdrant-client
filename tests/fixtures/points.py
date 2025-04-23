@@ -22,7 +22,7 @@ map_content_to_metric = {
 
 
 def too_close(
-    query: np.ndarray, vectors: np.ndarray, distance_type: models.Distance, thold: float = 1e-8
+    query: np.ndarray, vectors: np.ndarray, distance_type: models.Distance, thold: float = 1e-9
 ) -> bool:
     """
     Efficiently checks if any two distances between the last vector and the others
