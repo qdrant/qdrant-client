@@ -282,15 +282,15 @@ def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: floa
 def compare_client_results(
     client1: QdrantBase,
     client2: QdrantBase,
-    f: Callable[[QdrantBase, Any], Any],
+    foo: Callable[[QdrantBase, Any], Any],
     **kwargs: Any,
 ) -> None:
     # context search can have many points with the same 0.0 score
     is_context_search = kwargs.pop("is_context_search", False)
 
     # get results from both clients
-    res1 = f(client1, **kwargs)
-    res2 = f(client2, **kwargs)
+    res1 = foo(client1, **kwargs)
+    res2 = foo(client2, **kwargs)
 
     # compare scroll results
     if isinstance(res1, tuple) and len(res1) == 2:
