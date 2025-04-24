@@ -20,9 +20,11 @@ map_content_to_metric = {
     "text": models.Distance.COSINE,
 }
 
+round_to = 4
+
 
 def too_close(
-    query: np.ndarray, vectors: np.ndarray, distance_type: models.Distance, thold: float = 1e-9
+    query: np.ndarray, vectors: np.ndarray, distance_type: models.Distance, thold: float = 1e-8
 ) -> bool:
     """
     Efficiently checks if any two distances between the last vector and the others
@@ -53,17 +55,17 @@ def random_vectors(
     vector_sizes: Union[dict[str, int], int], num_vectors=1
 ) -> list[models.VectorStruct]:
     if isinstance(vector_sizes, int):
-        return np.random.random((num_vectors, vector_sizes)).round(3).tolist()
+        return np.random.random((num_vectors, vector_sizes)).round(round_to).tolist()
     elif isinstance(vector_sizes, dict):
         vectors = {}
         for vector_name, vector_size in vector_sizes.items():
-            generated_vecs = np.random.random((num_vectors, vector_size)).round(3)
+            generated_vecs = np.random.random((num_vectors, vector_size)).round(round_to)
             query = generated_vecs[-1]
             search_base = generated_vecs[:-1]
             while too_close(
                 query, search_base, map_content_to_metric.get(vector_name, models.Distance.COSINE)
             ):
-                generated_vecs = np.random.random((num_vectors, vector_size)).round(3)
+                generated_vecs = np.random.random((num_vectors, vector_size)).round(round_to)
             vectors[vector_name] = generated_vecs.tolist()
 
         output = []
@@ -97,7 +99,7 @@ def random_multivectors(
 
 
 def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
-    return np.round(np.random.random((vec_count, vec_size)), 3).tolist()
+    return np.round(np.random.random((vec_count, vec_size)), round_to).tolist()
 
 
 def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
