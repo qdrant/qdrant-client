@@ -527,7 +527,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         query = self._resolve_query(query)
-        requires_inference = self._inference_inspector.inspect([query, prefetch])
+        requires_inference = self._inference_inspector.inspect(query)
+        if not requires_inference:
+            requires_inference = self._inference_inspector.inspect(prefetch)
         if requires_inference and (not self.cloud_inference):
             query = (
                 next(
@@ -691,7 +693,9 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         query = self._resolve_query(query)
-        requires_inference = self._inference_inspector.inspect([query, prefetch])
+        requires_inference = self._inference_inspector.inspect(query)
+        if not requires_inference:
+            requires_inference = self._inference_inspector.inspect(prefetch)
         if requires_inference and (not self.cloud_inference):
             query = (
                 next(
