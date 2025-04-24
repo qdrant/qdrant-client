@@ -1982,6 +1982,9 @@ class LocalCollection:
 
         start_from = to_order_value(order_by.start_from)
 
+        # dedup by (value, external_id)
+        seen_tuples: set[tuple[OrderValue, ExtendedPointId]] = set()
+
         for value, external_id, internal_id in value_and_ids:
             if start_from is not None:
                 if direction == models.Direction.ASC:
@@ -1997,11 +2000,17 @@ class LocalCollection:
             if not mask[internal_id]:
                 continue
 
+            if (value, external_id) in seen_tuples:
+                continue
+
+            seen_tuples.add((value, external_id))
+
             result.append(
                 models.Record(
                     id=external_id,
                     payload=self._get_payload(internal_id, with_payload),
                     vector=self._get_vectors(internal_id, with_vectors),
+                    order_value=value,
                 )
             )
 
