@@ -45,6 +45,8 @@ class Inspector:
                     self.parser.parse_model(point.__class__)
                     if self._inspect_model(point):
                         return True
+                else:
+                    return False
         return False
 
     def _inspect_model(self, model: BaseModel, paths: Optional[list[FieldPath]] = None) -> bool:

@@ -246,6 +246,13 @@ def test_inspect_prefetch_types():
     paths = inspector_embed.inspect(doc_prefetch)
     assert len(paths) == 1 and paths[0].as_str_list() == ["query"]
 
+    no_query_list_prefetch_with_doc = models.Prefetch(
+        query=None, prefetch=[models.Prefetch(query=None), models.Prefetch(query=doc)]
+    )
+    assert inspector.inspect(no_query_list_prefetch_with_doc)
+    paths = inspector_embed.inspect(no_query_list_prefetch_with_doc)
+    assert len(paths) == 1 and paths[0].as_str_list() == ["prefetch.query"]
+
     nested_prefetch = models.Prefetch(
         query=None,
         prefetch=models.Prefetch(query=doc),
@@ -276,8 +283,8 @@ def test_inspect_prefetch_types():
         "prefetch.prefetch.query",
     }
 
-    assert inspector.inspect([None, deep_nested_prefetch])
-    paths = inspector_embed.inspect([None, deep_nested_prefetch])
+    assert inspector.inspect([none_prefetch, deep_nested_prefetch])
+    paths = inspector_embed.inspect([none_prefetch, deep_nested_prefetch])
     assert len(paths) == 1 and set(paths[0].as_str_list()) == {
         "prefetch.prefetch.prefetch.query",
         "prefetch.prefetch.query",
