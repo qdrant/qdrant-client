@@ -486,7 +486,7 @@ class QdrantLocal(QdrantBase):
                 query=request.query,
                 prefetch=request.prefetch,
                 query_filter=request.filter,
-                limit=request.limit,
+                limit=request.limit or 10,
                 offset=request.offset,
                 with_payload=request.with_payload,
                 with_vectors=request.with_vector,

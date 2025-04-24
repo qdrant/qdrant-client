@@ -101,6 +101,21 @@ class TestQueryBatchSearcher:
                 )
             )
 
+        self.dense_vector_query_batch_text_dbsf = [
+            models.QueryRequest(
+                query=models.FusionQuery(fusion=models.Fusion.DBSF),
+                prefetch=[
+                    models.Prefetch(
+                        query=np.random.random(text_vector_size).tolist(), using="text"
+                    ),
+                    models.Prefetch(
+                        query=np.random.random(text_vector_size).tolist(), using="text"
+                    ),
+                ],
+                with_payload=True,
+            )
+        ]
+
     def sparse_query_batch_text(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_batch_points(
             collection_name=COLLECTION_NAME, requests=self.sparse_vector_query_batch_text
@@ -129,6 +144,11 @@ class TestQueryBatchSearcher:
     @staticmethod
     def dense_query_batch_empty(client: QdrantBase) -> models.QueryResponse:
         return client.query_batch_points(collection_name=COLLECTION_NAME, requests=[])
+
+    def dense_query_batch_dbsf_without_limit(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_batch_points(
+            collection_name=COLLECTION_NAME, requests=self.dense_vector_query_batch_text_dbsf
+        )
 
 
 # ---- TESTS  ---- #
@@ -178,3 +198,7 @@ def test_dense_query_batch(prefer_grpc):
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_image)
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_code)
     compare_client_results(local_client, remote_client, searcher.dense_query_batch_empty)
+
+    compare_client_results(
+        local_client, remote_client, searcher.dense_query_batch_dbsf_without_limit
+    )
