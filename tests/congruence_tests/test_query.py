@@ -1611,3 +1611,23 @@ def test_formula_query():
             except Exception as e:
                 print(f"\nFailed with formula {formula} on point {fixture_points[point_id]}")
                 raise e
+
+
+def test_empty_collection_bm25_search():
+    local_client, http_client, grpc_client = init_clients(
+        [],
+        vectors_config={},
+        sparse_vectors_config={"sparse": models.SparseVectorParams(modifier=models.Modifier.IDF)},
+    )
+
+    query_vector = models.SparseVector(indices=[14, 73], values=[0.3, 0.2])
+
+    def search_please(client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=query_vector,
+            using="sparse",
+            limit=10,
+        )
+
+    compare_clients_results(local_client, http_client, grpc_client, search_please)
