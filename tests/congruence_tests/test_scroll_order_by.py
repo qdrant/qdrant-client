@@ -1,6 +1,7 @@
 from qdrant_client import models
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.local import datetime_utils
+from qdrant_client.local.order_by import to_order_value
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -37,14 +38,20 @@ def scroll_all_with_key(client: QdrantBase, key: str) -> list[models.Record]:
         if len(records) == 0:
             break
 
-        last_value = records[-1].payload[key]
+        last_value = records[-1].order_value
         if last_seen_value != last_value:
             last_seen_value = last_value
             last_value_ids = []
 
-        last_value_ids.extend(
-            [record.id for record in records if record.payload[key] == last_seen_value]
-        )
+        for record in records:
+            if isinstance(record.payload[key], list):
+                order_value_payload = [to_order_value(item) for item in record.payload[key]]
+                if last_seen_value in order_value_payload:
+                    last_value_ids.append(record.id)
+            else:
+                order_value_payload = to_order_value(record.payload[key])
+                if last_seen_value == order_value_payload:
+                    last_value_ids.append(record.id)
 
         all_records.extend(records)
 
@@ -86,6 +93,10 @@ def scroll_all_datetimes(client: QdrantBase) -> list[models.Record]:
     return scroll_all_with_key(client, "rand_datetime")
 
 
+def scroll_all_integer_arrays(client: QdrantBase) -> list[models.Record]:
+    return scroll_all_with_key(client, "integer_array")
+
+
 def test_simple_scroll() -> None:
     fixture_points = generate_fixtures(200)
 
@@ -115,3 +126,22 @@ def test_simple_scroll() -> None:
 
     compare_client_results(grpc_client, http_client, scroll_all_datetimes)
     compare_client_results(local_client, http_client, scroll_all_datetimes)
+
+
+def test_scroll_duplicated_values():
+    local_client = init_local()
+    http_client = init_remote()
+    grpc_client = init_remote(prefer_grpc=True)
+
+    fixture_points = [
+        models.PointStruct(id=1, vector=[], payload={"integer_array": [1, 2, 3, 4]}),
+        models.PointStruct(id=2, vector=[], payload={"integer_array": [2, 3, 4, 5]}),
+    ]
+    init_client(http_client, fixture_points, vectors_config={})
+    init_client(local_client, fixture_points, vectors_config={})
+
+    http_client.create_payload_index(
+        COLLECTION_NAME, "integer_array", models.PayloadSchemaType.INTEGER, wait=True
+    )
+    compare_client_results(grpc_client, http_client, scroll_all_integer_arrays)
+    compare_client_results(local_client, http_client, scroll_all_integer_arrays)
