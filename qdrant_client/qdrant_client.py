@@ -556,7 +556,9 @@ class QdrantClient(QdrantFastembedMixin):
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
         query = self._resolve_query(query)
-        requires_inference = self._inference_inspector.inspect([query, prefetch])
+        requires_inference = self._inference_inspector.inspect(query)
+        if not requires_inference:
+            requires_inference = self._inference_inspector.inspect(prefetch)
         if requires_inference and not self.cloud_inference:
             query = (
                 next(
@@ -725,7 +727,9 @@ class QdrantClient(QdrantFastembedMixin):
         # If the query contains unprocessed documents, we need to embed them and
         # replace the original query with the embedded vectors.
         query = self._resolve_query(query)
-        requires_inference = self._inference_inspector.inspect([query, prefetch])
+        requires_inference = self._inference_inspector.inspect(query)
+        if not requires_inference:
+            requires_inference = self._inference_inspector.inspect(prefetch)
         if requires_inference and not self.cloud_inference:
             query = (
                 next(
