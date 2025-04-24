@@ -190,7 +190,9 @@ class LocalCollection:
     def _rescore_idf(self, vector: SparseVector, vector_name: str) -> SparseVector:
         num_docs = self.count(count_filter=None).count
         new_values = []
-        idf_store = self.sparse_vectors_idf[vector_name]
+        idf_store = self.sparse_vectors_idf.get(vector_name)
+        if idf_store is None:
+            return vector
 
         for idx, value in zip(vector.indices, vector.values):
             document_frequency = idf_store.get(idx, 0)
