@@ -83,7 +83,7 @@ class ApiClient:
     ) -> Any:
         if path_params is None:
             path_params = {}
-        url = urljoin((self.host or ""), url.format(**path_params))
+        url = urljoin((self.host or "").lstrip("/") + "/", url.format(**path_params).lstrip("/"))
         if "params" in kwargs and "timeout" in kwargs["params"]:
             kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._client.build_request(method, url, **kwargs)
