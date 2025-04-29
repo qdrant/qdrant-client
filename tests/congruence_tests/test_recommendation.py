@@ -24,7 +24,11 @@ class TestSimpleRecommendation:
     __test__ = False
 
     def __init__(self):
-        self.query_image = np.random.random(image_vector_size).tolist()
+        _text_vectors = np.load("data/queries.npy", allow_pickle=True).astype(np.float32)
+        _text_vectors_unique = np.unique(_text_vectors, axis=0)
+        _text_vectors = _text_vectors_unique.tolist()
+        sampled_vectors = np.random.choice(len(_text_vectors), size=1, replace=False)
+        self.query_image = sampled_vectors[0].tolist()
 
     @classmethod
     def simple_recommend_image(cls, client: QdrantBase) -> list[models.ScoredPoint]:

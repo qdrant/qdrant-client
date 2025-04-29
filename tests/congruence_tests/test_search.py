@@ -22,9 +22,14 @@ class TestSimpleSearcher:
     __test__ = False
 
     def __init__(self):
-        self.query_text = np.random.random(text_vector_size).tolist()
-        self.query_image = np.random.random(image_vector_size).tolist()
-        self.query_code = np.random.random(code_vector_size).tolist()
+        _text_vectors = np.load("data/queries.npy", allow_pickle=True).astype(np.float32)
+        _text_vectors_unique = np.unique(_text_vectors, axis=0)
+        _text_vectors = _text_vectors_unique.tolist()
+        sampled_vectors = np.random.choice(len(_text_vectors), size=3, replace=False)
+
+        self.query_text = _text_vectors[sampled_vectors[0]]
+        self.query_image = _text_vectors[sampled_vectors[1]]
+        self.query_code = _text_vectors[sampled_vectors[2]]
 
     def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.search(

@@ -21,7 +21,11 @@ secondary_collection_name = "congruence_secondary_collection"
 
 
 def random_vector(dims: int) -> list[float]:
-    return np.random.random(dims).round(3).tolist()
+    _text_vectors = np.load("data/queries.npy", allow_pickle=True).astype(np.float32)
+    _text_vectors_unique = np.unique(_text_vectors, axis=0)
+    _text_vectors = _text_vectors_unique.tolist()
+    sampled_vectors = np.random.choice(len(_text_vectors), size=1, replace=False)
+    return sampled_vectors[0].tolist()
 
 
 @pytest.fixture(scope="module")

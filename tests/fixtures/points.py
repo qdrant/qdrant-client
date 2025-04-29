@@ -10,16 +10,24 @@ from qdrant_client.http.models import SparseVector
 from qdrant_client.local.sparse import validate_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
+_text_vectors = np.load("data/text.npy")
+_text_vectors_unique = np.unique(_text_vectors, axis=0)
+_text_vectors = _text_vectors_unique.tolist()
 
-def random_vectors(
-    vector_sizes: Union[dict[str, int], int],
-) -> models.VectorStruct:
+
+def random_vectors(vector_sizes: Union[dict[str, int], int], idx=None) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
-        return np.random.random(vector_sizes).round(3).tolist()
+        if idx:
+            return _text_vectors[idx]
+        else:
+            return np.random.random(vector_sizes).round(3).tolist()
     elif isinstance(vector_sizes, dict):
         vectors = {}
         for vector_name, vector_size in vector_sizes.items():
-            vectors[vector_name] = np.random.random(vector_size).round(3).tolist()
+            if idx:
+                vectors[vector_name] = _text_vectors[idx]
+            else:
+                vectors[vector_name] = np.random.random(vector_size).round(3).tolist()
         return vectors
     else:
         raise ValueError("vector_sizes must be int or dict")
@@ -100,7 +108,9 @@ def generate_points(
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
 
+    sampled_vectors = np.random.choice(len(_text_vectors), size=num_points, replace=False)
     points = []
+
     for i in range(num_points):
         payload = None
         if with_payload:
@@ -115,7 +125,7 @@ def generate_points(
         elif multivector:
             vectors = random_multivectors(vector_sizes)
         else:
-            vectors = random_vectors(vector_sizes)
+            vectors = random_vectors(vector_sizes, sampled_vectors[i])
 
         if skip_vectors:
             if random.random() > 0.8:
