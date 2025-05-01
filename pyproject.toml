@@ -42,6 +42,7 @@ pytest-timeout = "^2.1.0"
 autoflake = "^2.2.1"
 ruff = "0.4.3"
 pytest-mock = "^3.14.0"
+pre-commit = "^4.2.0"
 
 
 [tool.poetry.group.docs.dependencies]
