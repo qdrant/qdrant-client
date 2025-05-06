@@ -10,22 +10,30 @@ from qdrant_client.http.models import SparseVector
 from qdrant_client.local.sparse import validate_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
-_text_vectors = np.load("data/text.npy")
+_text_vectors = np.load("data/text.npy", mmap_mode="r")
 _text_vectors_unique = np.unique(_text_vectors, axis=0)
-_text_vectors = _text_vectors_unique.tolist()
+_text_vectors_clean = _text_vectors_unique[~np.isnan(_text_vectors_unique).any(axis=1)].tolist()
+
+
+def sample_queries(n: int) -> list[np.array]:
+    _query_vectors = np.load("data/queries.npy", allow_pickle=True).astype(np.float32)
+    _query_vectors_unique = np.unique(_query_vectors, axis=0)
+    _query_vectors = _query_vectors_unique.tolist()
+    sampled_vectors = np.random.choice(len(_query_vectors), size=n, replace=False)
+    return [_query_vectors[i] for i in sampled_vectors]
 
 
 def random_vectors(vector_sizes: Union[dict[str, int], int], idx=None) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
         if idx:
-            return _text_vectors[idx]
+            return _text_vectors_clean[idx]
         else:
             return np.random.random(vector_sizes).round(3).tolist()
     elif isinstance(vector_sizes, dict):
         vectors = {}
         for vector_name, vector_size in vector_sizes.items():
             if idx:
-                vectors[vector_name] = _text_vectors[idx]
+                vectors[vector_name] = _text_vectors_clean[idx]
             else:
                 vectors[vector_name] = np.random.random(vector_size).round(3).tolist()
         return vectors
@@ -36,12 +44,12 @@ def random_vectors(vector_sizes: Union[dict[str, int], int], idx=None) -> models
 def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
         vec_count = random.randint(1, 10)
-        return generate_random_multivector(vector_sizes, vec_count)
+        return sample_random_multivector(vector_sizes, vec_count)
     elif isinstance(vector_sizes, dict):
         vectors = {}
         for vector_name, vector_size in vector_sizes.items():
             vec_count = random.randint(1, 10)
-            vectors[vector_name] = generate_random_multivector(vector_size, vec_count)
+            vectors[vector_name] = sample_random_multivector(vector_size, vec_count)
         return vectors
     else:
         raise ValueError("vector_sizes must be int or dict")
@@ -52,6 +60,11 @@ def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[floa
     for _ in range(vec_count):
         multivec.append(np.random.random(vec_size).round(3).tolist())
     return multivec
+
+
+def sample_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
+    sampled_vectors = np.random.choice(len(_text_vectors_clean), size=vec_count, replace=False)
+    return [_text_vectors_clean[i] for i in sampled_vectors]
 
 
 # Generate random sparse vector with given size and density
@@ -108,7 +121,7 @@ def generate_points(
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
 
-    sampled_vectors = np.random.choice(len(_text_vectors), size=num_points, replace=False)
+    sampled_vectors = np.random.choice(len(_text_vectors_clean), size=num_points, replace=False)
     points = []
 
     for i in range(num_points):
