@@ -230,12 +230,13 @@ def test_group_search_types():
     remote_client = init_remote()
     init_client(remote_client, fixture_points, vectors_config=vectors_config)
 
-    query_vector_np = sample_queries(1)[0]
+    query_vector_list = sample_queries(1)[0]
+    query_vector_np = np.array(query_vector_list)
     compare_client_results(
         local_client,
         remote_client,
         searcher.group_search,
-        query_vector=np.array(query_vector_np),
+        query_vector=query_vector_np,
     )
 
     compare_client_results(
