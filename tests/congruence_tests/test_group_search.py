@@ -18,6 +18,7 @@ from tests.congruence_tests.test_common import (
     text_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
+from tests.fixtures.points import sample_queries
 
 LOOKUP_COLLECTION_NAME = "lookup_collection"
 
@@ -26,9 +27,10 @@ class TestGroupSearcher:
     __test__ = False
 
     def __init__(self):
-        self.query_text = np.random.random(text_vector_size).tolist()
-        self.query_image = np.random.random(image_vector_size).tolist()
-        self.query_code = np.random.random(code_vector_size).tolist()
+        queries = sample_queries(3)
+        self.query_text = queries[0]
+        self.query_image = queries[1]
+        self.query_code = queries[2]
         self.group_by = "rand_digit"
         self.group_size = 1
         self.limit = 10
@@ -217,8 +219,8 @@ def group_by_keys():
 
 
 def test_group_search_types():
-    fixture_points = generate_fixtures(vectors_sizes=50)
-    vectors_config = models.VectorParams(size=50, distance=models.Distance.EUCLID)
+    fixture_points = generate_fixtures(vectors_sizes=text_vector_size)
+    vectors_config = models.VectorParams(size=text_vector_size, distance=models.Distance.EUCLID)
 
     searcher = TestGroupSearcher()
 
@@ -228,17 +230,16 @@ def test_group_search_types():
     remote_client = init_remote()
     init_client(remote_client, fixture_points, vectors_config=vectors_config)
 
-    query_vector_np = np.random.random(text_vector_size)
+    query_vector_np = sample_queries(1)[0]
     compare_client_results(
         local_client,
         remote_client,
         searcher.group_search,
-        query_vector=query_vector_np,
+        query_vector=np.array(query_vector_np),
     )
 
-    query_vector_list = query_vector_np.tolist()
     compare_client_results(
-        local_client, remote_client, searcher.group_search, query_vector=query_vector_list
+        local_client, remote_client, searcher.group_search, query_vector=query_vector_np
     )
 
     delete_fixture_collection(local_client)

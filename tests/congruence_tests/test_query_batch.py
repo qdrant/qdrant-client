@@ -19,7 +19,11 @@ from tests.congruence_tests.test_common import (
     generate_multivector_fixtures,
     multi_vector_config,
 )
-from tests.fixtures.points import generate_random_sparse_vector, generate_random_multivector
+from tests.fixtures.points import (
+    generate_random_sparse_vector,
+    generate_random_multivector,
+    sample_queries,
+)
 
 
 class TestQueryBatchSearcher:
@@ -39,12 +43,11 @@ class TestQueryBatchSearcher:
         self.multivector_query_batch_code = []
 
         for _ in range(4):
+            vecs = sample_queries(4)
             self.dense_vector_query_batch_text.append(
                 models.QueryRequest(
-                    query=np.random.random(text_vector_size).tolist(),
-                    prefetch=models.Prefetch(
-                        query=np.random.random(text_vector_size).tolist(), limit=5, using="text"
-                    ),
+                    query=vecs[0],
+                    prefetch=models.Prefetch(query=vecs[1], limit=5, using="text"),
                     limit=5,
                     using="text",
                     with_payload=True,
@@ -52,7 +55,7 @@ class TestQueryBatchSearcher:
             )
             self.dense_vector_query_batch_image.append(
                 models.QueryRequest(
-                    query=np.random.random(image_vector_size).tolist(),
+                    query=vecs[2],
                     limit=5,
                     using="image",
                     with_payload=True,
@@ -60,7 +63,7 @@ class TestQueryBatchSearcher:
             )
             self.dense_vector_query_batch_code.append(
                 models.QueryRequest(
-                    query=np.random.random(code_vector_size).tolist(),
+                    query=vecs[3],
                     limit=5,
                     using="code",
                     with_payload=True,
@@ -101,16 +104,13 @@ class TestQueryBatchSearcher:
                 )
             )
 
+        vecs = sample_queries(2)
         self.dense_vector_query_batch_text_dbsf = [
             models.QueryRequest(
                 query=models.FusionQuery(fusion=models.Fusion.DBSF),
                 prefetch=[
-                    models.Prefetch(
-                        query=np.random.random(text_vector_size).tolist(), using="text"
-                    ),
-                    models.Prefetch(
-                        query=np.random.random(text_vector_size).tolist(), using="text"
-                    ),
+                    models.Prefetch(query=vecs[0], using="text"),
+                    models.Prefetch(query=vecs[1], using="text"),
                 ],
                 with_payload=True,
             )

@@ -16,16 +16,13 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 from tests.fixtures.filters import one_random_filter_please
+from tests.fixtures.points import sample_queries
 
 secondary_collection_name = "congruence_secondary_collection"
 
 
 def random_vector(dims: int) -> list[float]:
-    _text_vectors = np.load("data/queries.npy", allow_pickle=True).astype(np.float32)
-    _text_vectors_unique = np.unique(_text_vectors, axis=0)
-    _text_vectors = _text_vectors_unique.tolist()
-    sampled_vectors = np.random.choice(len(_text_vectors), size=1, replace=False)
-    return sampled_vectors[0].tolist()
+    return sample_queries(1)[0]
 
 
 @pytest.fixture(scope="module")

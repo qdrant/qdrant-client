@@ -33,6 +33,7 @@ from tests.fixtures.points import (
     generate_random_multivector,
 )
 from tests.utils import read_version
+from tests.fixtures.points import sample_queries
 
 SECONDARY_COLLECTION_NAME = "congruence_secondary_collection"
 
@@ -46,12 +47,15 @@ class TestSimpleSearcher:
         self.group_size = 3
         self.limit = 2  # number of groups
 
+        sampled_queries = sample_queries(4)
+        self.query_image = sampled_queries[0]
+
         # dense query vectors
-        self.dense_vector_query_text = np.random.random(text_vector_size).tolist()
-        self.dense_vector_query_text_bis = self.dense_vector_query_text
+        self.dense_vector_query_text = sampled_queries[1]
+        self.dense_vector_query_text_bis = sampled_queries[1]
         self.dense_vector_query_text_bis[0] += 42.0  # slightly different vector
-        self.dense_vector_query_image = np.random.random(image_vector_size).tolist()
-        self.dense_vector_query_code = np.random.random(code_vector_size).tolist()
+        self.dense_vector_query_image = sampled_queries[2]
+        self.dense_vector_query_code = sampled_queries[3]
 
         # sparse query vectors
         self.sparse_vector_query_text = generate_random_sparse_vector(
@@ -1458,9 +1462,11 @@ def test_original_input_persistence():
     # the reason was that we were replacing point id with a sparse vector, and then, when we needed a dense vector
     # from the same point id, we already had point id replaced with a sparse vector
     num_points = 50
-    vectors_config = {"text": models.VectorParams(size=50, distance=models.Distance.COSINE)}
+    vectors_config = {
+        "text": models.VectorParams(size=text_vector_size, distance=models.Distance.COSINE)
+    }
     sparse_vectors_config = {"sparse-text": models.SparseVectorParams()}
-    fixture_points = generate_fixtures(vectors_sizes={"text": 50}, num=num_points)
+    fixture_points = generate_fixtures(vectors_sizes={"text": text_vector_size}, num=num_points)
     sparse_fixture_points = generate_sparse_fixtures(num=num_points)
     points = [
         models.PointStruct(
