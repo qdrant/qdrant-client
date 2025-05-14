@@ -307,64 +307,74 @@ def test_set_payload_with_key(prefer_grpc):
         )
         compare_collections(local_client, remote_client, 1)
 
+    # update an existing field in nested array
     payload = {"nest": [{"a": "100", "b": "200"}]}
     new_payload = {"a": "101"}
     key = "nest[0]"
     set_payload(payload, new_payload, key)
 
+    # can't modify a non-existing array element
     key = "nest[1]"
     new_payload = {"d": "404"}
     set_payload(payload, new_payload, key)
 
+    # add new field to a dict in nested array
     key = "nest[].nest"
     set_payload(payload, new_payload, key)
 
+    # add new field to a dict in nested array for all array elements
     key = "nest[]"
     set_payload(payload, new_payload, key)
 
-    # payload = {}
-    # set_payload(payload, new_payload, key)  # todo: uncomnment when https://github.com/qdrant/qdrant/issues/6449 is resolved
+    # add new key to an empty payload
+    payload = {}
+    set_payload(
+        payload, new_payload, key
+    )  # todo: uncomment when https://github.com/qdrant/qdrant/issues/6449 is resolved
 
+    # can't add fields to an array
     payload = {"nest": [{"a": [], "b": "200"}]}
     new_payload = {"a": "101"}
     key = "nest[0].a[]"
     set_payload(payload, new_payload, key)
 
-    payload = {"a": []}
-    new_payload = {"b": {"c": 1}}
-    key = "a[0]"
-    set_payload(payload, new_payload, key)
-
+    # add key to a deeply nested dict
     payload = {"a": {"b": {"c": {"d": {"e": 1}}}}}
     new_payload = {"f": 2}
     key = "a.b.c.d"
     set_payload(payload, new_payload, key)
 
+    # replace an array with a dict
+    payload = {"a": []}
+    new_payload = {}
+    key = "a.b"
+    set_payload(payload, new_payload, key)
+
+    # replace an array with a dict of arrays
     payload = {"a": []}
     new_payload = {}
     key = "a.b[0]"
     set_payload(payload, new_payload, key)
 
-    payload = {"a": []}
-    new_payload = {}
-    key = "a.b"
-    set_payload(payload, new_payload, key)
-
+    # can't replace a dict with an empty dict
     payload = {"a": [[{"a": 1}]]}
     new_payload = {}
     key = "a[0][0]"
     set_payload(payload, new_payload, key)
 
+    # modify a dict in a deeply nested array
     payload = {"a": [[{"a": "w"}]]}
     new_payload = {"b": "q"}
     key = "a[0][0]"
     set_payload(payload, new_payload, key)
 
+    # replace an array with an empty dict
     payload = {"a": []}
     new_payload = {}
     key = "a.b"
     set_payload(payload, new_payload, key)
 
+    # replace a dict with a nested array
     payload = {"a": {"c": [{"d": 1}]}}
     new_payload = {"a": 1}
     key = "a.c[][]"
@@ -396,6 +406,7 @@ def test_set_payload_with_key(prefer_grpc):
         wait=True,
     )
 
+    # region invalid path blank key
     with pytest.raises(ValueError):
         local_client.set_payload(
             collection_name=COLLECTION_NAME,
@@ -410,20 +421,24 @@ def test_set_payload_with_key(prefer_grpc):
             points=[9999],
             key=key,
         )
+    # endregion
 
+    # region invalid path blank key in filter
     filter_ = models.Filter(
         must=[models.FieldCondition(key="", match=models.MatchValue(value="xc"))]
     )
+
     with pytest.raises(ValueError):
         local_client.set_payload(
             collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
         )
-
     with pytest.raises((UnexpectedResponse, grpc.RpcError)):  # type: ignore
         remote_client.set_payload(
             collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
         )
+    # endregion
 
+    # region correct way of setting payload for a blank key
     filter_ = models.Filter(
         must=[models.FieldCondition(key='""', match=models.MatchValue(value="xc"))]
     )
@@ -431,6 +446,7 @@ def test_set_payload_with_key(prefer_grpc):
     remote_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
     local_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
     compare_collections(local_client, remote_client, 1)
+    # endregion
 
 
 @pytest.mark.parametrize("prefer_grpc", [True, False])
