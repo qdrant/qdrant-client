@@ -751,14 +751,24 @@ class TestSimpleSearcher:
 
         return result
 
+    @staticmethod
     def score_boosting(
-        self, client: QdrantBase, formula: models.FormulaQuery, point_id: int
+        client: QdrantBase, formula: models.FormulaQuery, point_id: int
     ) -> Union[models.QueryResponse, str]:
         def comparable_error(exception: Exception):
             non_finite_message = "produced a non-finite number"
+            too_long_non_finite_message_end = "...'"
+            math_domain_error_message = "math domain error"
             unexpected_type_message = "in the payload and/or in the formula defaults"
 
-            if non_finite_message in str(exception):
+            if (
+                non_finite_message in str(exception)
+                or math_domain_error_message in str(exception)  # local mode
+                or str(exception).endswith(
+                    too_long_non_finite_message_end
+                )  # remote abrupt traceback
+            ):
+                # 0^-5 causes non-finite in core, math domain error in local mode
                 return non_finite_message
             elif unexpected_type_message in str(exception):
                 return unexpected_type_message
