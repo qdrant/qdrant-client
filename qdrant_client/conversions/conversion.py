@@ -1909,6 +1909,7 @@ class GrpcToRest:
                     payload=cls.convert_payload(val.payload),
                     points=points,
                     filter=filter_,
+                    key=val.key if val.HasField("key") else None,
                 )
             )
         elif name == "overwrite_payload":
@@ -1934,6 +1935,7 @@ class GrpcToRest:
                     payload=cls.convert_payload(val.payload),
                     points=points,
                     filter=filter_,
+                    key=val.key if val.HasField("key") else None,
                 )
             )
         elif name == "delete_payload":
@@ -4211,6 +4213,7 @@ class RestToGrpc:
                     payload=cls.convert_payload(model.set_payload.payload),
                     points_selector=cls.convert_points_selector(points_selector),
                     shard_key_selector=shard_key_selector,
+                    key=model.set_payload.key,
                 )
             )
         elif isinstance(model, rest.OverwritePayloadOperation):
@@ -4234,6 +4237,7 @@ class RestToGrpc:
                     payload=cls.convert_payload(model.overwrite_payload.payload),
                     points_selector=cls.convert_points_selector(points_selector),
                     shard_key_selector=shard_key_selector,
+                    key=model.overwrite_payload.key,
                 )
             )
         elif isinstance(model, rest.DeletePayloadOperation):

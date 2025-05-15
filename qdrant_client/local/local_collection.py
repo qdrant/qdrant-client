@@ -2192,7 +2192,7 @@ class LocalCollection:
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                vector_np = np.array(vector)
+                vector_np = np.array(vector, dtype=np.float32)
                 assert not np.isnan(vector_np).any(), "Vector contains NaN values"
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
@@ -2242,7 +2242,7 @@ class LocalCollection:
                     self.deleted_per_vector[vector_name], 1
                 )
             else:
-                vector_np = np.array(vector)
+                vector_np = np.array(vector, dtype=np.float32)
                 assert not np.isnan(vector_np).any(), "Vector contains NaN values"
                 params = self.get_vector_params(vector_name)
                 if params.distance == models.Distance.COSINE:
@@ -2337,6 +2337,9 @@ class LocalCollection:
         self, idx: int, vectors: dict[str, Union[list[float], SparseVector]]
     ) -> None:
         for vector_name, vector in vectors.items():
+            if vector_name not in self._all_vectors_keys:
+                raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+
             if isinstance(vector, SparseVector):
                 validate_sparse_vector(vector)
                 old_vector = self.sparse_vectors[vector_name][idx]
@@ -2345,9 +2348,19 @@ class LocalCollection:
                 self.sparse_vectors[vector_name][idx] = new_vector
                 self._update_idf_append(new_vector, vector_name)
             elif vector_name in self.vectors:
-                self.vectors[vector_name][idx] = np.array(vector)
-            else:
-                self.multivectors[vector_name][idx] = np.array(vector)
+                vector_np = np.array(vector, dtype=np.float32)
+                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
+                params = self.get_vector_params(vector_name)
+                if vector_name in self.vectors:
+                    if params.distance == models.Distance.COSINE:
+                        norm = np.linalg.norm(vector_np)
+                        vector_np = vector_np / norm if norm > EPSILON else vector_np
+                    self.vectors[vector_name][idx] = vector_np
+                else:
+                    if params.distance == models.Distance.COSINE:
+                        vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
+                        vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+                    self.multivectors[vector_name][idx] = vector_np
             self.deleted_per_vector[vector_name][idx] = 0
 
     def update_vectors(self, points: Sequence[types.PointVectors]) -> None:
@@ -2528,7 +2541,9 @@ class LocalCollection:
                 self.delete(update_op.delete)
             elif isinstance(update_op, models.SetPayloadOperation):
                 points_selector = update_op.set_payload.points or update_op.set_payload.filter
-                self.set_payload(update_op.set_payload.payload, points_selector)
+                self.set_payload(
+                    update_op.set_payload.payload, points_selector, update_op.set_payload.key
+                )
             elif isinstance(update_op, models.OverwritePayloadOperation):
                 points_selector = (
                     update_op.overwrite_payload.points or update_op.overwrite_payload.filter
