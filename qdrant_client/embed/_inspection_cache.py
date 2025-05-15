@@ -620,13 +620,13 @@ DEFS = {
             "is_empty": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "Check that the field is empty, alternative syntax for `is_empty: \\&quot;field_name\\&quot;`",
+                "description": "Check that the field is empty, alternative syntax for `is_empty: 'field_name'`",
                 "title": "Is Empty",
             },
             "is_null": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "Check that the field is null, alternative syntax for `is_null: \\&quot;field_name\\&quot;`",
+                "description": "Check that the field is null, alternative syntax for `is_null: 'field_name'`",
                 "title": "Is Null",
             },
         },
