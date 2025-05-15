@@ -101,7 +101,7 @@ def test_collection_exists():
 
 
 def test_init_from():
-    vector_size = 2
+    vector_size = 384
 
     remote_client = init_remote()
     local_client = init_local()

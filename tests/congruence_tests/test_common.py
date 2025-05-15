@@ -14,9 +14,9 @@ from tests.fixtures.points import generate_points
 COLLECTION_NAME = "congruence_test_collection"
 
 # dense vectors sizes
-text_vector_size = 50
-image_vector_size = 100
-code_vector_size = 80
+text_vector_size = 384
+image_vector_size = 384
+code_vector_size = 384
 
 # sparse vectors sizes
 sparse_text_vector_size = 100
