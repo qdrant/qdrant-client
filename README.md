@@ -78,50 +78,53 @@ Local mode is useful for development, prototyping and testing.
 pip install qdrant-client[fastembed]
 ```
 
-FastEmbed is a library for creating fast vector embeddings on CPU. It is based on ONNX Runtime and allows to run inference on CPU with GPU-like performance.
+FastEmbed is a library for creating fast vector embeddings on CPU. It is based on ONNX Runtime and allows to run inference both on CPU and GPU.
 
 Qdrant Client can use FastEmbed to create embeddings and upload them to Qdrant. This allows to simplify API and make it more intuitive.
 
 ```python
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 
-# Initialize the client
-client = QdrantClient(":memory:")  # or QdrantClient(path="path/to/db")
+# running qdrant in local mode suitable for experiments
+client = QdrantClient(":memory:")  # or QdrantClient(path="path/to/db") for local mode and persistent storage
 
-# Prepare your documents, metadata, and IDs
-docs = ["Qdrant has Langchain integrations", "Qdrant also has Llama Index integrations"]
-metadata = [
-    {"source": "Langchain-docs"},
-    {"source": "Linkedin-docs"},
+model_name = "sentence-transformers/all-MiniLM-L6-v2"
+payload = [
+    {"document": "Qdrant has Langchain integrations", "source": "Langchain-docs", },
+    {"document": "Qdrant also has Llama Index integrations", "source": "LlamaIndex-docs"},
 ]
+docs = [models.Document(text=data["document"], model=model_name) for data in payload]
 ids = [42, 2]
 
-# Use the new add method
-client.add(
-    collection_name="demo_collection",
-    documents=docs,
-    metadata=metadata,
-    ids=ids
+client.create_collection(
+    "demo_collection",
+    vectors_config=models.VectorParams(
+        size=client.get_embedding_size(model_name), distance=models.Distance.COSINE)
 )
 
-search_result = client.query(
+client.upload_collection(
     collection_name="demo_collection",
-    query_text="This is a query document"
+    vectors=docs,
+    ids=ids,
+    payload=payload,
 )
+
+search_result = client.query_points(
+    collection_name="demo_collection",
+    query=models.Document(text="This is a query document", model=model_name)
+).points
 print(search_result)
 ```
 
 FastEmbed can also utilise GPU for faster embeddings. To enable GPU support, install
+
 ```bash
 pip install 'qdrant-client[fastembed-gpu]'
 ```
 
+In order to set GPU, extend documents from the previous example with `options`.
 ```python
-from qdrant_client import QdrantClient
-
-# Initialize the client
-client = QdrantClient(":memory:")  # or QdrantClient(path="path/to/db")
-client.set_model(client.DEFAULT_EMBEDDING_MODEL, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+models.Document(text="To be computed on GPU", model=model_name, options={"cuda": True})
 ```
 
 > Note: `fastembed-gpu` and `fastembed` are mutually exclusive. You can only install one of them.
@@ -299,4 +302,4 @@ More examples can be found [here](./tests/test_async_qdrant_client.py).
 
 This project uses git hooks to run code formatters.
 
-Install `pre-commit` with `pip3 install pre-commit` and set up hooks with `pre-commit install`.
+Set up hooks with `pre-commit install` before making contributions.
