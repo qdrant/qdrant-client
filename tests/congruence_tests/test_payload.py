@@ -327,10 +327,8 @@ def test_set_payload_with_key(prefer_grpc):
     set_payload(payload, new_payload, key)
 
     # add new key to an empty payload
-    # payload = {}
-    # set_payload(
-    #     payload, new_payload, key
-    # )  # todo: uncomment when https://github.com/qdrant/qdrant/issues/6449 is resolved
+    payload = {}
+    set_payload(payload, new_payload, key)
 
     # can't add fields to an array
     payload = {"nest": [{"a": [], "b": "200"}]}
