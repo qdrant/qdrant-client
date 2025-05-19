@@ -115,7 +115,14 @@ class QdrantClient(QdrantFastembedMixin):
             for key, value in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
-        self._init_options.update(deepcopy(kwargs))
+        _safe_kwargs = {}
+        for k, v in kwargs.items():
+            try:
+                _safe_kwargs[k] = deepcopy(v)
+            except TypeError:
+                _safe_kwargs[k] = v
+
+        self._init_options.update(_safe_kwargs)
 
         self._client: QdrantBase
 
