@@ -153,6 +153,32 @@ def test_client_init():
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333/custom"
 
+    for prefix in ("api/v1", "/api/v1"):
+        client = QdrantClient(url="http://localhost:6333", prefix=prefix)
+        assert (
+            isinstance(client._client, QdrantRemote)
+            and client._client.rest_uri == "http://localhost:6333/api/v1"
+        )
+
+        client = QdrantClient(host="localhost", prefix=prefix)
+        assert (
+            isinstance(client._client, QdrantRemote)
+            and client._client.rest_uri == "http://localhost:6333/api/v1"
+        )
+
+    for prefix in ("api/v1/", "/api/v1/"):
+        client = QdrantClient(url="http://localhost:6333", prefix=prefix)
+        assert (
+            isinstance(client._client, QdrantRemote)
+            and client._client.rest_uri == "http://localhost:6333/api/v1/"
+        )
+
+        client = QdrantClient(host="localhost", prefix=prefix)
+        assert (
+            isinstance(client._client, QdrantRemote)
+            and client._client.rest_uri == "http://localhost:6333/api/v1/"
+        )
+
     client = QdrantClient(url="http://localhost:6333/custom")
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333/custom"
