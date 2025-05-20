@@ -13,13 +13,7 @@ from qdrant_client.embed.embedder import Embedder
 from qdrant_client.embed.models import NumericVector, NumericVectorStruct
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.embed.utils import FieldPath
-from qdrant_client.fastembed_common import (
-    SUPPORTED_EMBEDDING_MODELS,
-    SUPPORTED_SPARSE_EMBEDDING_MODELS,
-    _LATE_INTERACTION_EMBEDDING_MODELS,
-    _IMAGE_EMBEDDING_MODELS,
-    _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS,
-)
+from qdrant_client.fastembed_common import FastEmbedMisc
 from qdrant_client.parallel_processor import ParallelWorkerPool, Worker
 from qdrant_client.uploader.uploader import iter_batch
 
@@ -278,6 +272,7 @@ class ModelEmbedder:
         if data.model not in self._batch_accumulator:
             self._batch_accumulator[data.model] = []
         self._batch_accumulator[data.model].append(data)
+        return None
 
     def _drain_accumulator(
         self, data: models.VectorStruct, is_query: bool, inference_batch_size: int = 8
@@ -382,12 +377,14 @@ class ModelEmbedder:
             return ordered_embeddings
 
         for model in self._batch_accumulator:
-            if model not in (
-                *SUPPORTED_EMBEDDING_MODELS,
-                *SUPPORTED_SPARSE_EMBEDDING_MODELS,
-                *_LATE_INTERACTION_EMBEDDING_MODELS,
-                *_IMAGE_EMBEDDING_MODELS,
-                *_LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS,
+            if not any(
+                (
+                    FastEmbedMisc.is_supported_text_model(model),
+                    FastEmbedMisc.is_supported_sparse_model(model),
+                    FastEmbedMisc.is_supported_late_interaction_text_model(model),
+                    FastEmbedMisc.is_supported_image_model(model),
+                    FastEmbedMisc.is_supported_late_interaction_multimodal_model(model),
+                )
             ):
                 raise ValueError(f"{model} is not among supported models")
 
@@ -426,15 +423,17 @@ class ModelEmbedder:
         model_name = data.model
         value = data.object
         options = data.options
-        if model_name in (
-            *SUPPORTED_EMBEDDING_MODELS,
-            *SUPPORTED_SPARSE_EMBEDDING_MODELS,
-            *_LATE_INTERACTION_EMBEDDING_MODELS,
+        if any(
+            (
+                FastEmbedMisc.is_supported_text_model(model_name),
+                FastEmbedMisc.is_supported_sparse_model(model_name),
+                FastEmbedMisc.is_supported_late_interaction_text_model(model_name),
+            )
         ):
             return models.Document(model=model_name, text=value, options=options)
-        if model_name in _IMAGE_EMBEDDING_MODELS:
+        if FastEmbedMisc.is_supported_image_model(model_name):
             return models.Image(model=model_name, image=value, options=options)
-        if model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+        if FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
             raise ValueError(f"{model_name} does not support `InferenceObject` interface")
 
         raise ValueError(f"{model_name} is not among supported models")
