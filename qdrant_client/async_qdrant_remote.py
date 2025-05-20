@@ -145,6 +145,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         address = f"{self._host}:{self._port}" if self._port is not None else self._host
         base_url = f"{self._scheme}://{address}"
         self.rest_uri = urljoin(base_url, self._prefix)
+        self.rest_uri = self.rest_uri if self.rest_uri.endswith("/") else f"{self.rest_uri}/"
         self._rest_args = {"headers": self._rest_headers, "http2": http2, **kwargs}
         if limits is not None:
             self._rest_args["limits"] = limits
