@@ -1,5 +1,4 @@
 import warnings
-from copy import deepcopy
 from typing import (
     Any,
     Awaitable,
@@ -101,13 +100,6 @@ class QdrantClient(QdrantFastembedMixin):
         check_compatibility: bool = True,
         **kwargs: Any,
     ):
-        self._inference_inspector = Inspector()
-        super().__init__(
-            parser=self._inference_inspector.parser, **kwargs
-        )  # If we want to pass any kwargs to the parent class or ignore unexpected kwargs,
-        # we will need to pop them from **kwargs. Otherwise, they might be passed to QdrantRemote as httpx kwargs.
-        # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
-
         # Saving the init options to facilitate building AsyncQdrantClient from QdrantClient and vice versa.
         # Eg. AsyncQdrantClient(**sync_client.init_options) or QdrantClient(**async_client.init_options)
         self._init_options = {
@@ -115,7 +107,14 @@ class QdrantClient(QdrantFastembedMixin):
             for key, value in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
-        self._init_options.update(deepcopy(kwargs))
+        self._init_options.update({k: v for k, v in kwargs.items()})
+
+        self._inference_inspector = Inspector()
+        super().__init__(
+            parser=self._inference_inspector.parser, **kwargs
+        )  # If we want to pass any kwargs to the parent class or ignore unexpected kwargs,
+        # we will need to pop them from **kwargs. Otherwise, they might be passed to QdrantRemote as httpx kwargs.
+        # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
 
         self._client: QdrantBase
 

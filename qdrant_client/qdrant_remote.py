@@ -129,7 +129,7 @@ class QdrantRemote(QdrantBase):
 
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
-        self._rest_headers = kwargs.pop("metadata", {})
+        self._rest_headers = {k: v for k, v in kwargs.pop("metadata", {}).items()}
         if api_key is not None:
             if self._scheme == "http":
                 show_warning(
@@ -3028,7 +3028,9 @@ class QdrantRemote(QdrantBase):
                 field_schema = RestToGrpc.convert_payload_schema_type(field_schema)
 
             if isinstance(field_schema, str):
-                field_schema = RestToGrpc.convert_payload_schema_type(models.PayloadSchemaType(field_schema))
+                field_schema = RestToGrpc.convert_payload_schema_type(
+                    models.PayloadSchemaType(field_schema)
+                )
 
             if isinstance(field_schema, int):
                 # There are no means to distinguish grpc.PayloadSchemaType and grpc.FieldType,
