@@ -205,7 +205,7 @@ def test_client_init():
     assert client.init_options["prefix"] == "custom"
     assert client.init_options["metadata"] == {"some-rest-meta": "some-value"}
 
-    ssl_context = (ssl.create_default_context(),)
+    ssl_context = ssl.create_default_context()
     client = QdrantClient(
         ":memory:",
         verify=ssl_context,  # `verify` does not make sense for local client,
