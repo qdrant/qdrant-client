@@ -377,12 +377,14 @@ class ModelEmbedder:
             return ordered_embeddings
 
         for model in self._batch_accumulator:
-            if model not in (
-                *FastEmbedMisc.list_text_models(),
-                *FastEmbedMisc.list_sparse_models(),
-                *FastEmbedMisc.list_image_models(),
-                *FastEmbedMisc.list_late_interaction_text_models(),
-                *FastEmbedMisc.list_late_interaction_multimodal_models(),
+            if not any(
+                (
+                    FastEmbedMisc.is_supported_text_model(model),
+                    FastEmbedMisc.is_supported_sparse_model(model),
+                    FastEmbedMisc.is_supported_late_interaction_text_model(model),
+                    FastEmbedMisc.is_supported_image_model(model),
+                    FastEmbedMisc.is_supported_late_interaction_multimodal_model(model),
+                )
             ):
                 raise ValueError(f"{model} is not among supported models")
 
@@ -421,15 +423,17 @@ class ModelEmbedder:
         model_name = data.model
         value = data.object
         options = data.options
-        if model_name in (
-            *FastEmbedMisc.list_text_models(),
-            *FastEmbedMisc.list_sparse_models(),
-            *FastEmbedMisc.list_late_interaction_text_models(),
+        if any(
+            (
+                FastEmbedMisc.is_supported_text_model(model_name),
+                FastEmbedMisc.is_supported_sparse_model(model_name),
+                FastEmbedMisc.is_supported_late_interaction_text_model(model_name),
+            )
         ):
             return models.Document(model=model_name, text=value, options=options)
-        if model_name in FastEmbedMisc.list_image_models():
+        if FastEmbedMisc.is_supported_image_model(model_name):
             return models.Image(model=model_name, image=value, options=options)
-        if model_name in FastEmbedMisc.list_late_interaction_multimodal_models():
+        if FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
             raise ValueError(f"{model_name} does not support `InferenceObject` interface")
 
         raise ValueError(f"{model_name} is not among supported models")

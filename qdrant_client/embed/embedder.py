@@ -54,10 +54,9 @@ class Embedder:
         deprecated: bool = False,
         **kwargs: Any,
     ) -> TextEmbedding:
-        supported_models = FastEmbedMisc.list_text_models()
-        if model_name not in supported_models:
+        if not FastEmbedMisc.is_supported_text_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {supported_models}"
+                f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_text_models()}"
             )
         options = {
             "cache_dir": cache_dir,
@@ -91,10 +90,9 @@ class Embedder:
         deprecated: bool = False,
         **kwargs: Any,
     ) -> SparseTextEmbedding:
-        supported_models = FastEmbedMisc.list_sparse_models()
-        if model_name not in supported_models:
+        if not FastEmbedMisc.is_supported_sparse_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {supported_models}"
+                f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_sparse_models()}"
             )
 
         options = {
@@ -129,10 +127,10 @@ class Embedder:
         device_ids: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> LateInteractionTextEmbedding:
-        supported_models = FastEmbedMisc.list_late_interaction_text_models()
-        if model_name not in supported_models:
+        if not FastEmbedMisc.is_supported_late_interaction_text_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {supported_models}"
+                f"Unsupported embedding model: {model_name}. "
+                f"Supported models: {FastEmbedMisc.list_late_interaction_text_models()}"
             )
         options = {
             "cache_dir": cache_dir,
@@ -164,10 +162,10 @@ class Embedder:
         device_ids: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> LateInteractionMultimodalEmbedding:
-        supported_models = FastEmbedMisc.list_late_interaction_multimodal_models()
-        if model_name not in supported_models:
+        if not FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {supported_models}"
+                f"Unsupported embedding model: {model_name}. "
+                f"Supported models: {FastEmbedMisc.list_late_interaction_multimodal_models()}"
             )
         options = {
             "cache_dir": cache_dir,
@@ -199,10 +197,9 @@ class Embedder:
         device_ids: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> ImageEmbedding:
-        supported_models = FastEmbedMisc.list_image_models()
-        if model_name not in supported_models:
+        if not FastEmbedMisc.is_supported_image_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {supported_models}"
+                f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_image_models()}"
             )
         options = {
             "cache_dir": cache_dir,
@@ -236,19 +233,19 @@ class Embedder:
 
         embeddings: NumericVector  # define type for a static type checker
         if texts is not None:
-            if model_name in FastEmbedMisc.list_text_models():
+            if FastEmbedMisc.is_supported_text_model(model_name):
                 embeddings = self._embed_dense_text(
                     texts, model_name, options, is_query, batch_size
                 )
-            elif model_name in FastEmbedMisc.list_sparse_models():
+            elif FastEmbedMisc.is_supported_sparse_model(model_name):
                 embeddings = self._embed_sparse_text(
                     texts, model_name, options, is_query, batch_size
                 )
-            elif model_name in FastEmbedMisc.list_late_interaction_text_models():
+            elif FastEmbedMisc.is_supported_late_interaction_text_model(model_name):
                 embeddings = self._embed_late_interaction_text(
                     texts, model_name, options, is_query, batch_size
                 )
-            elif model_name in FastEmbedMisc.list_late_interaction_multimodal_models():
+            elif FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
                 embeddings = self._embed_late_interaction_multimodal_text(
                     texts, model_name, options, batch_size
                 )
@@ -258,9 +255,9 @@ class Embedder:
             assert (
                 images is not None
             )  # just to satisfy mypy which can't infer it from the previous conditions
-            if model_name in FastEmbedMisc.list_image_models():
+            if FastEmbedMisc.is_supported_image_model(model_name):
                 embeddings = self._embed_dense_image(images, model_name, options, batch_size)
-            elif model_name in FastEmbedMisc.list_late_interaction_multimodal_models():
+            elif FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
                 embeddings = self._embed_late_interaction_multimodal_image(
                     images, model_name, options, batch_size
                 )

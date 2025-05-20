@@ -35,6 +35,11 @@ class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
 
 class FastEmbedMisc:
     IS_INSTALLED: bool = False
+    _TEXT_MODELS = set()
+    _IMAGE_MODELS = set()
+    _LATE_INTERACTION_TEXT_MODELS = set()
+    _LATE_INTERACTION_MULTIMODAL_MODELS = set()
+    _SPARSE_MODELS = set()
 
     @classmethod
     def is_installed(cls) -> bool:
@@ -165,6 +170,100 @@ class FastEmbedMisc:
             for description in SparseTextEmbedding.list_supported_models():
                 descriptions[description.pop("model")] = description
         return descriptions
+
+    @classmethod
+    def is_supported_text_model(cls, model_name: str) -> bool:
+        """Checks if the model is supported by fastembed.
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        if model_name.lower() in cls._TEXT_MODELS:
+            return True
+        # update cached list in case custom models were added
+        cls._TEXT_MODELS = [model.lower() for model in cls.list_text_models()]
+        if model_name.lower() in cls._TEXT_MODELS:
+            return True
+        return False
+
+    @classmethod
+    def is_supported_image_model(cls, model_name: str) -> bool:
+        """Checks if the model is supported by fastembed.
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        if model_name.lower() in cls._IMAGE_MODELS:
+            return True
+        # update cached list in case custom models were added
+        cls._IMAGE_MODELS = [model.lower() for model in cls.list_image_models()]
+        if model_name.lower() in cls._IMAGE_MODELS:
+            return True
+        return False
+
+    @classmethod
+    def is_supported_late_interaction_text_model(cls, model_name: str) -> bool:
+        """Checks if the model is supported by fastembed.
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        if model_name.lower() in cls._LATE_INTERACTION_TEXT_MODELS:
+            return True
+        # update cached list in case custom models were added
+        cls._LATE_INTERACTION_TEXT_MODELS = [
+            model.lower() for model in cls.list_late_interaction_text_models()
+        ]
+        if model_name.lower() in cls._LATE_INTERACTION_TEXT_MODELS:
+            return True
+        return False
+
+    @classmethod
+    def is_supported_late_interaction_multimodal_model(cls, model_name: str) -> bool:
+        """Checks if the model is supported by fastembed.
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        if model_name.lower() in cls._LATE_INTERACTION_MULTIMODAL_MODELS:
+            return True
+        # update cached list in case custom models were added
+        cls._LATE_INTERACTION_MULTIMODAL_MODELS = [
+            model.lower() for model in cls.list_late_interaction_multimodal_models()
+        ]
+        if model_name.lower() in cls._LATE_INTERACTION_MULTIMODAL_MODELS:
+            return True
+        return False
+
+    @classmethod
+    def is_supported_sparse_model(cls, model_name: str) -> bool:
+        """Checks if the model is supported by fastembed.
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        if model_name.lower() in cls._SPARSE_MODELS:
+            return True
+        # update cached list in case custom models were added
+        cls._SPARSE_MODELS = [model.lower() for model in cls.list_sparse_models()]
+        if model_name.lower() in cls._SPARSE_MODELS:
+            return True
+        return False
 
 
 # region deprecated
