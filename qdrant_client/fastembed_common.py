@@ -35,11 +35,11 @@ class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
 
 class FastEmbedMisc:
     IS_INSTALLED: bool = False
-    _TEXT_MODELS = set()
-    _IMAGE_MODELS = set()
-    _LATE_INTERACTION_TEXT_MODELS = set()
-    _LATE_INTERACTION_MULTIMODAL_MODELS = set()
-    _SPARSE_MODELS = set()
+    _TEXT_MODELS: set[str] = set()
+    _IMAGE_MODELS: set[str] = set()
+    _LATE_INTERACTION_TEXT_MODELS: set[str] = set()
+    _LATE_INTERACTION_MULTIMODAL_MODELS: set[str] = set()
+    _SPARSE_MODELS: set[str] = set()
 
     @classmethod
     def is_installed(cls) -> bool:
@@ -184,7 +184,7 @@ class FastEmbedMisc:
         if model_name.lower() in cls._TEXT_MODELS:
             return True
         # update cached list in case custom models were added
-        cls._TEXT_MODELS = [model.lower() for model in cls.list_text_models()]
+        cls._TEXT_MODELS = {model.lower() for model in cls.list_text_models()}
         if model_name.lower() in cls._TEXT_MODELS:
             return True
         return False
@@ -202,7 +202,7 @@ class FastEmbedMisc:
         if model_name.lower() in cls._IMAGE_MODELS:
             return True
         # update cached list in case custom models were added
-        cls._IMAGE_MODELS = [model.lower() for model in cls.list_image_models()]
+        cls._IMAGE_MODELS = {model.lower() for model in cls.list_image_models()}
         if model_name.lower() in cls._IMAGE_MODELS:
             return True
         return False
@@ -220,9 +220,9 @@ class FastEmbedMisc:
         if model_name.lower() in cls._LATE_INTERACTION_TEXT_MODELS:
             return True
         # update cached list in case custom models were added
-        cls._LATE_INTERACTION_TEXT_MODELS = [
+        cls._LATE_INTERACTION_TEXT_MODELS = {
             model.lower() for model in cls.list_late_interaction_text_models()
-        ]
+        }
         if model_name.lower() in cls._LATE_INTERACTION_TEXT_MODELS:
             return True
         return False
@@ -240,9 +240,9 @@ class FastEmbedMisc:
         if model_name.lower() in cls._LATE_INTERACTION_MULTIMODAL_MODELS:
             return True
         # update cached list in case custom models were added
-        cls._LATE_INTERACTION_MULTIMODAL_MODELS = [
+        cls._LATE_INTERACTION_MULTIMODAL_MODELS = {
             model.lower() for model in cls.list_late_interaction_multimodal_models()
-        ]
+        }
         if model_name.lower() in cls._LATE_INTERACTION_MULTIMODAL_MODELS:
             return True
         return False
@@ -260,7 +260,7 @@ class FastEmbedMisc:
         if model_name.lower() in cls._SPARSE_MODELS:
             return True
         # update cached list in case custom models were added
-        cls._SPARSE_MODELS = [model.lower() for model in cls.list_sparse_models()]
+        cls._SPARSE_MODELS = {model.lower() for model in cls.list_sparse_models()}
         if model_name.lower() in cls._SPARSE_MODELS:
             return True
         return False
