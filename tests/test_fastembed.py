@@ -217,5 +217,7 @@ def test_get_embedding_size():
 
     assert local_client.get_embedding_size(model_name="colbert-ir/colbertv2.0") == 128
 
-    with pytest.raises(ValueError, match="Sparse embeddings do not have a fixed embedding size."):
+    with pytest.raises(
+        ValueError, match="Sparse embeddings do not return fixed embedding size and distance type"
+    ):
         local_client.get_embedding_size(model_name="Qdrant/bm25")
