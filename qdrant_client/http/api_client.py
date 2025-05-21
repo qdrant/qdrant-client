@@ -22,7 +22,7 @@ AsyncClientT = TypeVar("AsyncClientT", bound="AsyncApiClient")
 
 
 class AsyncApis(Generic[AsyncClientT]):
-    def __init__(self, host: str = None, **kwargs: Any):
+    def __init__(self, host: str, **kwargs: Any):
         self.client = AsyncApiClient(host, **kwargs)
 
         self.aliases_api = AsyncAliasesApi(self.client)
@@ -40,7 +40,7 @@ class AsyncApis(Generic[AsyncClientT]):
 
 
 class SyncApis(Generic[ClientT]):
-    def __init__(self, host: str = None, **kwargs: Any):
+    def __init__(self, host: str, **kwargs: Any):
         self.client = ApiClient(host, **kwargs)
 
         self.aliases_api = SyncAliasesApi(self.client)
@@ -65,7 +65,7 @@ AsyncMiddlewareT = Callable[[Request, SendAsync], Awaitable[Response]]
 
 
 class ApiClient:
-    def __init__(self, host: str = None, **kwargs: Any) -> None:
+    def __init__(self, host: str, **kwargs: Any) -> None:
         self.host = host
         self.middleware: MiddlewareT = BaseMiddleware()
         self._client = Client(**kwargs)
@@ -83,7 +83,12 @@ class ApiClient:
     ) -> Any:
         if path_params is None:
             path_params = {}
-        url = urljoin((self.host or ""), url.format(**path_params))
+
+        host = self.host if self.host.endswith("/") else self.host + "/"
+        url = url[1:] if url.startswith("/") else url
+        # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
+        # since url is treated as an absolute path and might truncate prefix in base_url
+        url = urljoin(host, url.format(**path_params))
         if "params" in kwargs and "timeout" in kwargs["params"]:
             kwargs["timeout"] = int(kwargs["params"]["timeout"])
         request = self._client.build_request(method, url, **kwargs)
@@ -169,7 +174,12 @@ class AsyncApiClient:
     ) -> Any:
         if path_params is None:
             path_params = {}
-        url = urljoin((self.host or ""), url.format(**path_params))
+
+        host = self.host if self.host.endswith("/") else self.host + "/"
+        url = url[1:] if url.startswith("/") else url
+        # in order to do a correct join, url join requires base_url to end with /, and url to not start with /,
+        # since url is treated as an absolute path and might truncate prefix in base_url
+        url = urljoin(host, url.format(**path_params))
         request = self._async_client.build_request(method, url, **kwargs)
         return await self.send(request, type_)
 
