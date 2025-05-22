@@ -10,11 +10,11 @@ from qdrant_client.http.models import SparseVector
 from qdrant_client.local.sparse import validate_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
-text_vector_size = 20
+text_vector_size = 384
 
 
 def generate_vectors():
-    _text_vectors = np.load("data/text.npy", mmap_mode="r")[..., :text_vector_size]
+    _text_vectors = np.load("data/queries_clean.npy", mmap_mode="r")[..., :text_vector_size]
     _text_vectors_unique = np.unique(_text_vectors, axis=0)
     _text_vectors_clean = _text_vectors_unique[
         ~np.isnan(_text_vectors_unique).any(axis=1)
@@ -26,7 +26,7 @@ _text_vectors_clean = generate_vectors()
 
 
 def sample_queries(n: int) -> list[np.array]:
-    _query_vectors = np.load("data/queries.npy", allow_pickle=True).astype(np.float32)[
+    _query_vectors = np.load("data/text_clean.npy", allow_pickle=True).astype(np.float32)[
         ..., :text_vector_size
     ]
     _query_vectors_unique = np.unique(_query_vectors, axis=0)
@@ -136,7 +136,10 @@ def generate_points(
         raise ValueError("skip_vectors is not supported for single vector")
 
     doc_vectors = _text_vectors_clean.copy()
-    sampled_vectors = np.random.choice(len(doc_vectors), size=num_points, replace=False)
+    try:
+        sampled_vectors = np.random.choice(len(doc_vectors), size=num_points, replace=False)
+    except ValueError as e:
+        raise ValueError(f"Failed to draw {num_points} vectors out of {len(doc_vectors)}") from e
     points = []
 
     for i in range(num_points):
