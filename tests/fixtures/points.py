@@ -12,9 +12,17 @@ from tests.fixtures.payload import one_random_payload_please
 
 text_vector_size = 20
 
-_text_vectors = np.load("data/text.npy", mmap_mode="r")[..., :text_vector_size]
-_text_vectors_unique = np.unique(_text_vectors, axis=0)
-_text_vectors_clean = _text_vectors_unique[~np.isnan(_text_vectors_unique).any(axis=1)].tolist()
+
+def generate_vectors():
+    _text_vectors = np.load("data/text.npy", mmap_mode="r")[..., :text_vector_size]
+    _text_vectors_unique = np.unique(_text_vectors, axis=0)
+    _text_vectors_clean = _text_vectors_unique[
+        ~np.isnan(_text_vectors_unique).any(axis=1)
+    ].tolist()
+    return _text_vectors_clean
+
+
+_text_vectors_clean = generate_vectors()
 
 
 def sample_queries(n: int) -> list[np.array]:

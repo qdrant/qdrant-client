@@ -16,15 +16,14 @@ from tests.congruence_tests.test_common import (
     text_vector_size,
 )
 from tests.fixtures.filters import one_random_filter_please
+from tests.fixtures.points import generate_vectors
 
 
 class TestSimpleSearcher:
     __test__ = False
 
     def __init__(self):
-        _text_vectors = np.load("data/queries.npy", allow_pickle=True).astype(np.float32)
-        _text_vectors_unique = np.unique(_text_vectors, axis=0)
-        _text_vectors = _text_vectors_unique.tolist()
+        _text_vectors = generate_vectors()
         sampled_vectors = np.random.choice(len(_text_vectors), size=3, replace=False)
 
         self.query_text = _text_vectors[sampled_vectors[0]]
