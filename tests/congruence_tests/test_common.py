@@ -11,12 +11,14 @@ from qdrant_client.http.models import SparseVector, VectorStruct
 from tests.congruence_tests.settings import TIMEOUT
 from tests.fixtures.points import generate_points
 
+from tests.fixtures.points import text_vector_size
+
 COLLECTION_NAME = "congruence_test_collection"
 
 # dense vectors sizes
-text_vector_size = 384
-image_vector_size = 384
-code_vector_size = 384
+text_vector_size = text_vector_size  # todo 384
+image_vector_size = text_vector_size  # todo 384
+code_vector_size = text_vector_size  # todo 384
 
 # sparse vectors sizes
 sparse_text_vector_size = 100

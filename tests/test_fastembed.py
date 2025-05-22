@@ -5,6 +5,7 @@ from qdrant_client.client_base import QdrantBase
 from tests.congruence_tests.test_common import compare_client_results
 
 from tests.utils import read_version
+from tests.congruence_tests.test_common import text_vector_size
 
 
 DOCS_EXAMPLE = {
@@ -126,7 +127,7 @@ def test_set_model():
 
     # Check if the model is initialized & cls.embeddings_models is set with expected values
     dim, dist = local_client._get_model_params(embedding_model_name)
-    assert dim == 384
+    assert dim == text_vector_size
 
     # Use the initialized model to add documents with vector embeddings
     local_client.add(collection_name=collection_name, **DOCS_EXAMPLE)
@@ -209,7 +210,7 @@ def test_get_embedding_size():
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping test")
 
-    assert local_client.get_embedding_size() == 384
+    assert local_client.get_embedding_size() == text_vector_size
 
     assert local_client.get_embedding_size(model_name="BAAI/bge-base-en-v1.5") == 768
 

@@ -12,7 +12,7 @@ from tests.congruence_tests.test_common import (
     init_local,
     init_remote,
 )
-
+from tests.congruence_tests.test_common import text_vector_size
 
 COLLECTION_NAME = "test_collection"
 
@@ -101,7 +101,7 @@ def test_collection_exists():
 
 
 def test_init_from():
-    vector_size = 384
+    vector_size = text_vector_size
 
     remote_client = init_remote()
     local_client = init_local()
