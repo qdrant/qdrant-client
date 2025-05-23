@@ -15,3 +15,5 @@ local_cache/*/*
 .python-version
 docs/source/examples/local_cache/*
 docs/source/examples/path/to/db/*
+data/queries.npy
+data/text.npy
