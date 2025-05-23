@@ -16,19 +16,16 @@ from qdrant_client.conversions.conversion import GrpcToRest
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.schema_parser import ModelSchemaParser
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion
+from qdrant_client.fastembed_common import FastEmbedMisc, OnnxProvider
+
+# region imports used in deprecated methods
 from qdrant_client.fastembed_common import (
     QueryResponse,
     TextEmbedding,
-    LateInteractionTextEmbedding,
-    ImageEmbedding,
     SparseTextEmbedding,
-    SUPPORTED_EMBEDDING_MODELS,
-    SUPPORTED_SPARSE_EMBEDDING_MODELS,
-    _LATE_INTERACTION_EMBEDDING_MODELS,
-    _IMAGE_EMBEDDING_MODELS,
     IDF_EMBEDDING_MODELS,
-    OnnxProvider,
 )
+# endregion
 
 
 class QdrantFastembedMixin(QdrantBase):
@@ -41,17 +38,53 @@ class QdrantFastembedMixin(QdrantBase):
         self._sparse_embedding_model_name: Optional[str] = None
         self._model_embedder = ModelEmbedder(parser=parser, **kwargs)
 
-        try:
-            from fastembed import SparseTextEmbedding, TextEmbedding
-
-            assert len(SparseTextEmbedding.list_supported_models()) > 0
-            assert len(TextEmbedding.list_supported_models()) > 0
-
-            self.__class__._FASTEMBED_INSTALLED = True
-        except ImportError:
-            self.__class__._FASTEMBED_INSTALLED = False
-
+        self.__class__._FASTEMBED_INSTALLED = FastEmbedMisc.is_installed()
         super().__init__(**kwargs)
+
+    @classmethod
+    def list_text_models(cls) -> dict[str, tuple[int, models.Distance]]:
+        """Lists the supported dense text models.
+
+        Returns:
+            dict[str, tuple[int, models.Distance]]: A dict of model names, their dimensions and distance metrics.
+        """
+        return FastEmbedMisc.list_text_models()
+
+    @classmethod
+    def list_image_models(cls) -> dict[str, tuple[int, models.Distance]]:
+        """Lists the supported image dense models.
+
+        Returns:
+            dict[str, tuple[int, models.Distance]]: A dict of model names, their dimensions and distance metrics.
+        """
+        return FastEmbedMisc.list_image_models()
+
+    @classmethod
+    def list_late_interaction_text_models(cls) -> dict[str, tuple[int, models.Distance]]:
+        """Lists the supported late interaction text models.
+
+        Returns:
+            dict[str, tuple[int, models.Distance]]: A dict of model names, their dimensions and distance metrics.
+        """
+        return FastEmbedMisc.list_late_interaction_text_models()
+
+    @classmethod
+    def list_late_interaction_multimodal_models(cls) -> dict[str, tuple[int, models.Distance]]:
+        """Lists the supported late interaction multimodal models.
+
+        Returns:
+            dict[str, tuple[int, models.Distance]]: A dict of model names, their dimensions and distance metrics.
+        """
+        return FastEmbedMisc.list_late_interaction_multimodal_models()
+
+    @classmethod
+    def list_sparse_models(cls) -> dict[str, dict[str, Any]]:
+        """Lists the supported sparse text models.
+
+        Returns:
+            dict[str, dict[str, Any]]: A dict of model names and their descriptions.
+        """
+        return FastEmbedMisc.list_sparse_models()
 
     @property
     def embedding_model_name(self) -> str:
@@ -175,30 +208,19 @@ class QdrantFastembedMixin(QdrantBase):
         self._sparse_embedding_model_name = embedding_model_name
 
     @classmethod
-    def _import_fastembed(cls) -> None:
-        if cls._FASTEMBED_INSTALLED:
-            return
-
-        # If it's not, ask the user to install it
-        raise ImportError(
-            "fastembed is not installed."
-            " Please install it to enable fast vector indexing with `pip install fastembed`."
-        )
-
-    @classmethod
     def _get_model_params(cls, model_name: str) -> tuple[int, models.Distance]:
-        cls._import_fastembed()
+        FastEmbedMisc.import_fastembed()
 
-        if model_name in SUPPORTED_EMBEDDING_MODELS:
-            return SUPPORTED_EMBEDDING_MODELS[model_name]
+        for descriptions in (
+            FastEmbedMisc.list_text_models(),
+            FastEmbedMisc.list_image_models(),
+            FastEmbedMisc.list_late_interaction_text_models(),
+            FastEmbedMisc.list_late_interaction_multimodal_models(),
+        ):
+            if params := descriptions.get(model_name):
+                return params
 
-        if model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
-            return _LATE_INTERACTION_EMBEDDING_MODELS[model_name]
-
-        if model_name in _IMAGE_EMBEDDING_MODELS:
-            return _IMAGE_EMBEDDING_MODELS[model_name]
-
-        if model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+        if model_name in FastEmbedMisc.list_sparse_models():
             raise ValueError(
                 "Sparse embeddings do not return fixed embedding size and distance type"
             )
@@ -214,7 +236,7 @@ class QdrantFastembedMixin(QdrantBase):
         deprecated: bool = False,
         **kwargs: Any,
     ) -> "TextEmbedding":
-        self._import_fastembed()
+        FastEmbedMisc.import_fastembed()
 
         return self._model_embedder.embedder.get_or_init_model(
             model_name=model_name,
@@ -234,7 +256,7 @@ class QdrantFastembedMixin(QdrantBase):
         deprecated: bool = False,
         **kwargs: Any,
     ) -> "SparseTextEmbedding":
-        self._import_fastembed()
+        FastEmbedMisc.import_fastembed()
 
         return self._model_embedder.embedder.get_or_init_sparse_model(
             model_name=model_name,
@@ -242,41 +264,6 @@ class QdrantFastembedMixin(QdrantBase):
             threads=threads,
             providers=providers,
             deprecated=deprecated,
-            **kwargs,
-        )
-
-    def _get_or_init_late_interaction_model(
-        self,
-        model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
-        **kwargs: Any,
-    ) -> "LateInteractionTextEmbedding":
-        self._import_fastembed()
-        return self._model_embedder.embedder.get_or_init_late_interaction_model(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
-            **kwargs,
-        )
-
-    def _get_or_init_image_model(
-        self,
-        model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
-        **kwargs: Any,
-    ) -> "ImageEmbedding":
-        self._import_fastembed()
-
-        return self._model_embedder.embedder.get_or_init_image_model(
-            model_name=model_name,
-            cache_dir=cache_dir,
-            threads=threads,
-            providers=providers,
             **kwargs,
         )
 
@@ -453,20 +440,19 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         model_name: Optional[str] = None,
     ) -> int:
-        """
-        Get the size of the embeddings produced by the specified model.
+        """Get the size of the embeddings produced by the specified model.
 
         Args:
-            model_name: optional, the name of the model to get the embedding size for. If None, the default model will be used.
+            model_name: optional, the name of the model to get the embedding size for. If None, the default model will
+                be used.
 
         Returns:
             int: the size of the embeddings produced by the model.
+
+        Raises:
+            ValueError: If sparse model name is passed or model is not found in the supported models.
         """
         model_name = model_name or self.embedding_model_name
-        if model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
-            raise ValueError(
-                f"Sparse embeddings do not have a fixed embedding size. Current model: {model_name}"
-            )
         embeddings_size, _ = self._get_model_params(model_name=model_name)
         return embeddings_size
 
@@ -884,6 +870,8 @@ class QdrantFastembedMixin(QdrantBase):
         is_query: bool = False,
         batch_size: Optional[int] = None,
     ) -> Iterable[BaseModel]:
+        FastEmbedMisc.import_fastembed()
+
         yield from self._model_embedder.embed_models(
             raw_models=raw_models,
             is_query=is_query,
@@ -896,6 +884,7 @@ class QdrantFastembedMixin(QdrantBase):
         batch_size: Optional[int] = None,
         parallel: Optional[int] = None,
     ) -> Iterable[BaseModel]:
+        FastEmbedMisc.import_fastembed()
         yield from self._model_embedder.embed_models_strict(
             raw_models=raw_models,
             batch_size=batch_size or self.DEFAULT_BATCH_SIZE,

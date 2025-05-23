@@ -92,6 +92,7 @@ def create_random_vectors():
 
 def test_client_init():
     import tempfile
+    import ssl
 
     client = QdrantClient(":memory:")
     assert isinstance(client._client, QdrantLocal)
@@ -152,6 +153,32 @@ def test_client_init():
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333/custom"
 
+    for prefix in ("api/v1", "/api/v1"):
+        client = QdrantClient(url="http://localhost:6333", prefix=prefix)
+        assert (
+            isinstance(client._client, QdrantRemote)
+            and client._client.rest_uri == "http://localhost:6333/api/v1"
+        )
+
+        client = QdrantClient(host="localhost", prefix=prefix)
+        assert (
+            isinstance(client._client, QdrantRemote)
+            and client._client.rest_uri == "http://localhost:6333/api/v1"
+        )
+
+    for prefix in ("api/v1/", "/api/v1/"):
+        client = QdrantClient(url="http://localhost:6333", prefix=prefix)
+        assert (
+            isinstance(client._client, QdrantRemote)
+            and client._client.rest_uri == "http://localhost:6333/api/v1/"
+        )
+
+        client = QdrantClient(host="localhost", prefix=prefix)
+        assert (
+            isinstance(client._client, QdrantRemote)
+            and client._client.rest_uri == "http://localhost:6333/api/v1/"
+        )
+
     client = QdrantClient(url="http://localhost:6333/custom")
     assert isinstance(client._client, QdrantRemote)
     assert client._client.rest_uri == "http://localhost:6333/custom"
@@ -203,6 +230,14 @@ def test_client_init():
     assert client.init_options["url"] == "http://localhost:6333"
     assert client.init_options["prefix"] == "custom"
     assert client.init_options["metadata"] == {"some-rest-meta": "some-value"}
+
+    ssl_context = ssl.create_default_context()
+    client = QdrantClient(
+        ":memory:",
+        verify=ssl_context,  # `verify` does not make sense for local client,
+        # it's just a mock to check creation of `init_options` with unpickleable objects like ssl context
+    )
+    assert client.init_options["verify"] is ssl_context
 
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])

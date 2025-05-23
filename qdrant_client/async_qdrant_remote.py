@@ -117,7 +117,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
-        self._rest_headers = kwargs.pop("metadata", {})
+        self._rest_headers = {k: v for (k, v) in kwargs.pop("metadata", {}).items()}
         if api_key is not None:
             if self._scheme == "http":
                 show_warning(

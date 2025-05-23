@@ -754,12 +754,10 @@ class FieldCondition(BaseModel, extra="forbid"):
     )
     values_count: Optional["ValuesCount"] = Field(default=None, description="Check number of values of the field")
     is_empty: Optional[bool] = Field(
-        default=None,
-        description="Check that the field is empty, alternative syntax for `is_empty: \&quot;field_name\&quot;`",
+        default=None, description="Check that the field is empty, alternative syntax for `is_empty: 'field_name'`"
     )
     is_null: Optional[bool] = Field(
-        default=None,
-        description="Check that the field is null, alternative syntax for `is_null: \&quot;field_name\&quot;`",
+        default=None, description="Check that the field is null, alternative syntax for `is_null: 'field_name'`"
     )
 
 

@@ -2,6 +2,7 @@ import datetime
 import random
 import uuid
 
+import grpc
 import numpy as np
 import pytest
 
@@ -15,6 +16,8 @@ from tests.congruence_tests.test_common import (
     generate_fixtures,
     init_local,
     init_remote,
+    text_vector_size,
+    initialize_fixture_collection,
 )
 
 NUM_VECTORS = 100
@@ -28,7 +31,13 @@ def upload(client_1: QdrantClient, client_2: QdrantClient, num_vectors=NUM_VECTO
     return points
 
 
-def test_delete_payload(local_client: QdrantClient, remote_client: QdrantClient):
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_delete_payload(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
+
     points = upload(local_client, remote_client)
 
     # region delete one point
@@ -73,7 +82,13 @@ def test_delete_payload(local_client: QdrantClient, remote_client: QdrantClient)
     # endregion
 
 
-def test_clear_payload(local_client: QdrantClient, remote_client: QdrantClient):
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_clear_payload(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
+
     points = upload(local_client, remote_client)
 
     points_selector = [point.id for point in points[:5]]
@@ -94,7 +109,12 @@ def test_clear_payload(local_client: QdrantClient, remote_client: QdrantClient):
     compare_collections(local_client, remote_client, NUM_VECTORS)
 
 
-def test_update_payload(local_client: QdrantClient, remote_client: QdrantClient):
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_update_payload(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
     points = upload(local_client, remote_client)
 
     # region fetch point
@@ -160,18 +180,11 @@ def test_not_jsonable_payload():
     vector_size = 2
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
-    local_client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=vectors_config,
-    )
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    remote_client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=vectors_config,
-    )
+    initialize_fixture_collection(local_client, vectors_config=vectors_config)
+    initialize_fixture_collection(remote_client, vectors_config=vectors_config)
 
     # subset of types from pydantic.json.ENCODERS_BY_TYPE (pydantic v1)
+    # is not supported by grpc
 
     payloads = [
         {"bytes": b"123"},
@@ -243,23 +256,16 @@ def test_not_jsonable_payload():
     compare_collections(local_client, remote_client, len(points))
 
 
-def test_set_payload_with_key():
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_set_payload_with_key(prefer_grpc):
     local_client = init_local()
-    remote_client = init_remote()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
 
     vector_size = 2
     vectors_config = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
 
-    local_client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=vectors_config,
-    )
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    remote_client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=vectors_config,
-    )
+    initialize_fixture_collection(local_client, vectors_config=vectors_config)
+    initialize_fixture_collection(remote_client, vectors_config=vectors_config)
 
     vector = np.random.rand(vector_size).tolist()
 
@@ -301,64 +307,72 @@ def test_set_payload_with_key():
         )
         compare_collections(local_client, remote_client, 1)
 
+    # update an existing field in nested array
     payload = {"nest": [{"a": "100", "b": "200"}]}
     new_payload = {"a": "101"}
     key = "nest[0]"
     set_payload(payload, new_payload, key)
 
+    # can't modify a non-existing array element
     key = "nest[1]"
     new_payload = {"d": "404"}
     set_payload(payload, new_payload, key)
 
+    # add new field to a dict in nested array
     key = "nest[].nest"
     set_payload(payload, new_payload, key)
 
+    # add new field to a dict in nested array for all array elements
     key = "nest[]"
     set_payload(payload, new_payload, key)
 
+    # add new key to an empty payload
     payload = {}
     set_payload(payload, new_payload, key)
 
+    # can't add fields to an array
     payload = {"nest": [{"a": [], "b": "200"}]}
     new_payload = {"a": "101"}
     key = "nest[0].a[]"
     set_payload(payload, new_payload, key)
 
-    payload = {"a": []}
-    new_payload = {"b": {"c": 1}}
-    key = "a[0]"
-    set_payload(payload, new_payload, key)
-
+    # add key to a deeply nested dict
     payload = {"a": {"b": {"c": {"d": {"e": 1}}}}}
     new_payload = {"f": 2}
     key = "a.b.c.d"
     set_payload(payload, new_payload, key)
 
+    # replace an array with a dict
+    payload = {"a": []}
+    new_payload = {}
+    key = "a.b"
+    set_payload(payload, new_payload, key)
+
+    # replace an array with a dict of arrays
     payload = {"a": []}
     new_payload = {}
     key = "a.b[0]"
     set_payload(payload, new_payload, key)
 
-    payload = {"a": []}
-    new_payload = {}
-    key = "a.b"
-    set_payload(payload, new_payload, key)
-
+    # can't replace a dict with an empty dict
     payload = {"a": [[{"a": 1}]]}
     new_payload = {}
     key = "a[0][0]"
     set_payload(payload, new_payload, key)
 
+    # modify a dict in a deeply nested array
     payload = {"a": [[{"a": "w"}]]}
     new_payload = {"b": "q"}
     key = "a[0][0]"
     set_payload(payload, new_payload, key)
 
+    # replace an array with an empty dict
     payload = {"a": []}
     new_payload = {}
     key = "a.b"
     set_payload(payload, new_payload, key)
 
+    # replace a dict with a nested array
     payload = {"a": {"c": [{"d": 1}]}}
     new_payload = {"a": 1}
     key = "a.c[][]"
@@ -390,6 +404,7 @@ def test_set_payload_with_key():
         wait=True,
     )
 
+    # region invalid path blank key
     with pytest.raises(ValueError):
         local_client.set_payload(
             collection_name=COLLECTION_NAME,
@@ -397,27 +412,31 @@ def test_set_payload_with_key():
             points=[9999],
             key=key,
         )
-    with pytest.raises(UnexpectedResponse):
+    with pytest.raises((UnexpectedResponse, grpc.RpcError)):  # type: ignore
         remote_client.set_payload(
             collection_name=COLLECTION_NAME,
             payload=new_payload,
             points=[9999],
             key=key,
         )
+    # endregion
 
+    # region invalid path blank key in filter
     filter_ = models.Filter(
         must=[models.FieldCondition(key="", match=models.MatchValue(value="xc"))]
     )
+
     with pytest.raises(ValueError):
         local_client.set_payload(
             collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
         )
-
-    with pytest.raises(UnexpectedResponse):
+    with pytest.raises((UnexpectedResponse, grpc.RpcError)):  # type: ignore
         remote_client.set_payload(
             collection_name=COLLECTION_NAME, payload=new_payload, points=filter_
         )
+    # endregion
 
+    # region correct way of setting payload for a blank key
     filter_ = models.Filter(
         must=[models.FieldCondition(key='""', match=models.MatchValue(value="xc"))]
     )
@@ -425,3 +444,227 @@ def test_set_payload_with_key():
     remote_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
     local_client.set_payload(collection_name=COLLECTION_NAME, payload=new_payload, points=filter_)
     compare_collections(local_client, remote_client, 1)
+    # endregion
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_upsert_operation(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
+
+    def do_upsert_operation(client: QdrantClient, op: models.UpsertOperation):
+        client.batch_update_points(collection_name=COLLECTION_NAME, update_operations=[op])
+
+    vector = np.random.rand(text_vector_size).tolist()
+
+    upsert_points_batch = models.UpsertOperation(
+        upsert=models.PointsBatch(
+            batch=models.Batch(
+                ids=[
+                    1,
+                ],
+                vectors={"text": [vector]},
+                payloads=[{"key": "value"}],
+            )
+        )
+    )
+    do_upsert_operation(local_client, upsert_points_batch)
+    do_upsert_operation(remote_client, upsert_points_batch)
+    compare_collections(local_client, remote_client, 10)
+
+    upsert_points_list = models.UpsertOperation(
+        upsert=models.PointsList(
+            points=[models.PointStruct(id=2, vector={"text": vector}, payload={"key": "value"})]
+        )
+    )
+    do_upsert_operation(local_client, upsert_points_list)
+    do_upsert_operation(remote_client, upsert_points_list)
+    compare_collections(local_client, remote_client, 10)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_delete_operation(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
+    num_vectors = 100
+    upload(local_client, remote_client, num_vectors)
+
+    ids_to_delete = [1, 2, 3]
+    op = models.DeleteOperation(delete=models.PointIdsList(points=ids_to_delete))
+    local_client.batch_update_points(collection_name=COLLECTION_NAME, update_operations=[op])
+    remote_client.batch_update_points(collection_name=COLLECTION_NAME, update_operations=[op])
+
+    compare_collections(local_client, remote_client, num_vectors)
+    assert local_client.count(collection_name=COLLECTION_NAME).count == (
+        num_vectors - len(ids_to_delete)
+    )
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_delete_and_clear_payload_operation(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(
+        local_client, vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE)
+    )
+    initialize_fixture_collection(
+        remote_client, vectors_config=models.VectorParams(size=2, distance=models.Distance.COSINE)
+    )
+
+    points = [
+        models.PointStruct(
+            id=i,
+            vector=[random.random(), random.random()],
+            payload={"random_digit": random.randint(0, 9)},
+        )
+        for i in range(10)
+    ]
+    local_client.upsert(COLLECTION_NAME, points)
+    remote_client.upsert(COLLECTION_NAME, points)
+
+    ids_to_delete = [1, 2, 3]
+    delete_payload_op_points = models.DeletePayloadOperation(
+        delete_payload=models.DeletePayload(keys=["random_digit"], points=ids_to_delete)
+    )
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[delete_payload_op_points]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[delete_payload_op_points]
+    )
+    compare_collections(local_client, remote_client, 10)
+
+    ids_to_delete = [4, 5, 6]
+    delete_payload_op_filter = models.DeletePayloadOperation(
+        delete_payload=models.DeletePayload(
+            keys=["random_digit"],
+            filter=models.Filter(must=[models.HasIdCondition(has_id=ids_to_delete)]),
+        )
+    )
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[delete_payload_op_filter]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[delete_payload_op_filter]
+    )
+    compare_collections(local_client, remote_client, 10)
+
+    ids_to_clear = [7, 8, 9]
+    clear_payload_op = models.ClearPayloadOperation(
+        clear_payload=models.PointIdsList(points=ids_to_clear)
+    )
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[clear_payload_op]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[clear_payload_op]
+    )
+    compare_collections(local_client, remote_client, 10)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_update_or_delete_vectors_operation(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
+
+    num_vectors = 10
+    upload(local_client, remote_client, num_vectors)
+
+    new_vector = {"text": np.random.randn(text_vector_size).round(3).tolist()}
+    update_vectors_op = models.UpdateVectorsOperation(
+        update_vectors=models.UpdateVectors(points=[models.PointVectors(id=1, vector=new_vector)])
+    )
+
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[update_vectors_op]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[update_vectors_op]
+    )
+    compare_collections(local_client, remote_client, num_vectors)
+
+    ids_to_delete = [1, 2, 3]
+    delete_vectors_op_points = models.DeleteVectorsOperation(
+        delete_vectors=models.DeleteVectors(points=ids_to_delete, vector=["text"])
+    )
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[delete_vectors_op_points]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[delete_vectors_op_points]
+    )
+    compare_collections(local_client, remote_client, num_vectors)
+
+    ids_to_delete = [4, 5, 6]
+    delete_vectors_op_filter = models.DeleteVectorsOperation(
+        delete_vectors=models.DeleteVectors(
+            filter=models.Filter(must=[models.HasIdCondition(has_id=ids_to_delete)]),
+            vector=["text"],
+        )
+    )
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[delete_vectors_op_filter]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[delete_vectors_op_filter]
+    )
+    compare_collections(local_client, remote_client, num_vectors)
+
+
+@pytest.mark.parametrize("prefer_grpc", [True, False])
+def test_set_or_overwrite_payload_operation(prefer_grpc):
+    local_client: QdrantClient = init_local()
+    initialize_fixture_collection(local_client)
+    remote_client: QdrantClient = init_remote(prefer_grpc=prefer_grpc)
+    initialize_fixture_collection(remote_client)
+    num_vectors = 10
+    upload(local_client, remote_client, num_vectors)
+
+    new_payload = {"text_data": "new_value"}
+    set_payload_op_points_no_key = models.SetPayloadOperation(
+        set_payload=models.SetPayload(points=[1], payload=new_payload)
+    )
+
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[set_payload_op_points_no_key]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[set_payload_op_points_no_key]
+    )
+    compare_collections(local_client, remote_client, num_vectors)
+
+    new_nested_payload = {"nested_data": "new_nested_value"}
+    set_payload_op_filter_key = models.SetPayloadOperation(
+        set_payload=models.SetPayload(
+            filter=models.Filter(must=[models.HasIdCondition(has_id=[1])]),
+            payload=new_nested_payload,
+            key="text_data",
+        )
+    )
+
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[set_payload_op_filter_key]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[set_payload_op_filter_key]
+    )
+    compare_collections(local_client, remote_client, num_vectors)
+
+    new_payload = {"text_data": {"some_key": "overwritten_value"}}
+    overwrite_payload_op_points_no_key = models.OverwritePayloadOperation(
+        overwrite_payload=models.SetPayload(points=[1], payload=new_payload)
+    )
+
+    local_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[overwrite_payload_op_points_no_key]
+    )
+    remote_client.batch_update_points(
+        collection_name=COLLECTION_NAME, update_operations=[overwrite_payload_op_points_no_key]
+    )
+    compare_collections(local_client, remote_client, num_vectors)

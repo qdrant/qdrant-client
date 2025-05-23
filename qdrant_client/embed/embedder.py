@@ -1,5 +1,6 @@
 from collections import defaultdict
 from typing import Optional, Sequence, Any, TypeVar, Generic
+
 from pydantic import BaseModel
 
 from qdrant_client.http import models
@@ -12,11 +13,7 @@ from qdrant_client.fastembed_common import (
     LateInteractionTextEmbedding,
     LateInteractionMultimodalEmbedding,
     ImageEmbedding,
-    SUPPORTED_EMBEDDING_MODELS,
-    SUPPORTED_SPARSE_EMBEDDING_MODELS,
-    _LATE_INTERACTION_EMBEDDING_MODELS,
-    _IMAGE_EMBEDDING_MODELS,
-    _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS,
+    FastEmbedMisc,
 )
 
 
@@ -57,9 +54,9 @@ class Embedder:
         deprecated: bool = False,
         **kwargs: Any,
     ) -> TextEmbedding:
-        if model_name not in SUPPORTED_EMBEDDING_MODELS:
+        if not FastEmbedMisc.is_supported_text_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_EMBEDDING_MODELS}"
+                f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_text_models()}"
             )
         options = {
             "cache_dir": cache_dir,
@@ -93,9 +90,9 @@ class Embedder:
         deprecated: bool = False,
         **kwargs: Any,
     ) -> SparseTextEmbedding:
-        if model_name not in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+        if not FastEmbedMisc.is_supported_sparse_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {SUPPORTED_SPARSE_EMBEDDING_MODELS}"
+                f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_sparse_models()}"
             )
 
         options = {
@@ -130,9 +127,10 @@ class Embedder:
         device_ids: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> LateInteractionTextEmbedding:
-        if model_name not in _LATE_INTERACTION_EMBEDDING_MODELS:
+        if not FastEmbedMisc.is_supported_late_interaction_text_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_EMBEDDING_MODELS}"
+                f"Unsupported embedding model: {model_name}. "
+                f"Supported models: {FastEmbedMisc.list_late_interaction_text_models()}"
             )
         options = {
             "cache_dir": cache_dir,
@@ -164,9 +162,10 @@ class Embedder:
         device_ids: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> LateInteractionMultimodalEmbedding:
-        if model_name not in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+        if not FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {_LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS}"
+                f"Unsupported embedding model: {model_name}. "
+                f"Supported models: {FastEmbedMisc.list_late_interaction_multimodal_models()}"
             )
         options = {
             "cache_dir": cache_dir,
@@ -198,9 +197,9 @@ class Embedder:
         device_ids: Optional[list[int]] = None,
         **kwargs: Any,
     ) -> ImageEmbedding:
-        if model_name not in _IMAGE_EMBEDDING_MODELS:
+        if not FastEmbedMisc.is_supported_image_model(model_name):
             raise ValueError(
-                f"Unsupported embedding model: {model_name}. Supported models: {_IMAGE_EMBEDDING_MODELS}"
+                f"Unsupported embedding model: {model_name}. Supported models: {FastEmbedMisc.list_image_models()}"
             )
         options = {
             "cache_dir": cache_dir,
@@ -234,19 +233,19 @@ class Embedder:
 
         embeddings: NumericVector  # define type for a static type checker
         if texts is not None:
-            if model_name in SUPPORTED_EMBEDDING_MODELS:
+            if FastEmbedMisc.is_supported_text_model(model_name):
                 embeddings = self._embed_dense_text(
                     texts, model_name, options, is_query, batch_size
                 )
-            elif model_name in SUPPORTED_SPARSE_EMBEDDING_MODELS:
+            elif FastEmbedMisc.is_supported_sparse_model(model_name):
                 embeddings = self._embed_sparse_text(
                     texts, model_name, options, is_query, batch_size
                 )
-            elif model_name in _LATE_INTERACTION_EMBEDDING_MODELS:
+            elif FastEmbedMisc.is_supported_late_interaction_text_model(model_name):
                 embeddings = self._embed_late_interaction_text(
                     texts, model_name, options, is_query, batch_size
                 )
-            elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+            elif FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
                 embeddings = self._embed_late_interaction_multimodal_text(
                     texts, model_name, options, batch_size
                 )
@@ -256,9 +255,9 @@ class Embedder:
             assert (
                 images is not None
             )  # just to satisfy mypy which can't infer it from the previous conditions
-            if model_name in _IMAGE_EMBEDDING_MODELS:
+            if FastEmbedMisc.is_supported_image_model(model_name):
                 embeddings = self._embed_dense_image(images, model_name, options, batch_size)
-            elif model_name in _LATE_INTERACTION_MULTIMODAL_EMBEDDING_MODELS:
+            elif FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
                 embeddings = self._embed_late_interaction_multimodal_image(
                     images, model_name, options, batch_size
                 )
@@ -278,7 +277,10 @@ class Embedder:
         embedding_model_inst = self.get_or_init_model(model_name=model_name, **options or {})
 
         if not is_query:
-            embeddings = [embedding.tolist() for embedding in embedding_model_inst.embed(documents=texts, batch_size=batch_size)]
+            embeddings = [
+                embedding.tolist()
+                for embedding in embedding_model_inst.embed(documents=texts, batch_size=batch_size)
+            ]
         else:
             embeddings = [
                 embedding.tolist() for embedding in embedding_model_inst.query_embed(query=texts)
