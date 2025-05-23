@@ -1260,8 +1260,7 @@ def test_single_dense_vector():
                 query_filter=query_filter,
             )
         except AssertionError as e:
-            print(f"\nFailed with filter {query_filter}")
-            raise e
+            raise AssertionError(f"\nFailed with filter {query_filter}") from e
 
 
 def test_search_with_persistence():
@@ -1615,8 +1614,9 @@ def test_formula_query():
                     point_id=point_id,
                 )
             except Exception as e:
-                print(f"\nFailed with formula {formula} on point {fixture_points[point_id]}")
-                raise e
+                raise AssertionError(
+                    f"\nFailed with formula {formula} on point {fixture_points[point_id]}"
+                ) from e
 
 
 def test_empty_collection_bm25_search():
