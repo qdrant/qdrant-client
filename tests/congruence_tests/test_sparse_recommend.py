@@ -258,7 +258,7 @@ class TestSimpleRecommendation:
             ],
         )
 
-
+@pytest.mark.floatprecision
 def test_simple_recommend() -> None:
     fixture_points = generate_sparse_fixtures()
 

@@ -288,7 +288,7 @@ def test_recommend_from_another_collection():
             positive_point_id=i,
         )
 
-
+@pytest.mark.floatprecision
 def test_simple_recommend() -> None:
     fixture_points = generate_fixtures()
 
