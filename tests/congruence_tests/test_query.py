@@ -28,10 +28,7 @@ from tests.congruence_tests.test_common import (
 )
 from tests.fixtures.expressions import one_random_expression_please
 from tests.fixtures.filters import one_random_filter_please
-from tests.fixtures.points import (
-    generate_random_sparse_vector,
-    generate_random_multivector,
-)
+from tests.fixtures.points import generate_random_sparse_vector, sample_random_multivector
 from tests.utils import read_version
 from tests.fixtures.points import sample_queries
 
@@ -69,9 +66,9 @@ class TestSimpleSearcher:
         )
 
         # multivector query vectors
-        self.multivector_query_text = generate_random_multivector(text_vector_size, 3)
-        self.multivector_query_image = generate_random_multivector(image_vector_size, 3)
-        self.multivector_query_code = generate_random_multivector(code_vector_size, 3)
+        self.multivector_query_text = sample_random_multivector(text_vector_size, 3)
+        self.multivector_query_image = sample_random_multivector(image_vector_size, 3)
+        self.multivector_query_code = sample_random_multivector(code_vector_size, 3)
 
     def sparse_query_text(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
