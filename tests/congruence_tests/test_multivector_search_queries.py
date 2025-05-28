@@ -16,7 +16,7 @@ from tests.congruence_tests.test_common import (
     multi_vector_config,
     generate_multivector_fixtures,
 )
-from tests.fixtures.points import generate_random_multivector
+from tests.fixtures.points import sample_random_multivector
 
 image_vector_size = 128
 text_vector_size = 128
@@ -27,9 +27,9 @@ class TestSimpleSearcher:
     __test__ = False
 
     def __init__(self):
-        self.query_text = generate_random_multivector(text_vector_size, 10)
-        self.query_image = generate_random_multivector(image_vector_size, 10)
-        self.query_code = generate_random_multivector(code_vector_size, 10)
+        self.query_text = sample_random_multivector(text_vector_size, 10)
+        self.query_image = sample_random_multivector(image_vector_size, 10)
+        self.query_code = sample_random_multivector(code_vector_size, 10)
 
     def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
@@ -151,7 +151,7 @@ def test_query_with_nan():
     remote_client = init_remote()
     init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
 
-    vector = generate_random_multivector(text_vector_size, 10)
+    vector = sample_random_multivector(text_vector_size, 10)
     vector[0][4] = np.nan
     with pytest.raises(AssertionError):
         local_client.query_points(COLLECTION_NAME, query=vector, using="multi-text")
