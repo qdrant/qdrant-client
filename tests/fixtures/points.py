@@ -10,7 +10,7 @@ from qdrant_client.http.models import SparseVector
 from qdrant_client.local.sparse import validate_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
-text_vector_size = 384
+text_vector_size = 128
 
 
 def generate_vectors():
@@ -22,7 +22,22 @@ def generate_vectors():
     return _text_vectors_clean
 
 
+def generate_vectors2():
+    loaded = np.load("data/vectors.npz")
+    vectors = []
+
+    for i in range(len(loaded.files)):
+        # Get the list of arrays
+        vec_list = loaded[f"vec_{i}"]
+        # Filter out arrays with a norm of zero
+        filtered_vecs = [vec for vec in vec_list if np.linalg.norm(vec) > 0]
+        vectors.append(filtered_vecs)
+
+    return vectors
+
+
 _text_vectors_clean = generate_vectors()
+_text_mvectors_clean = generate_vectors2()
 
 
 def sample_queries(n: int) -> list[np.array]:
@@ -74,10 +89,20 @@ def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[floa
     return multivec
 
 
-def sample_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
-    doc_vectors = _text_vectors_clean.copy()
-    sampled_vectors = np.random.choice(len(doc_vectors), size=vec_count, replace=False)
-    return [np.array(doc_vectors[i]).astype(np.float32).tolist() for i in sampled_vectors]
+def sample_random_multivector(vec_size: int, vec_count: int):
+    doc_vectors = _text_mvectors_clean.copy()
+
+    sampled_doc_indices = np.random.choice(len(doc_vectors), replace=False)
+    sampled_subvec = doc_vectors[sampled_doc_indices]
+
+    result = []
+    row_indices = np.random.choice(
+        len(sampled_subvec), size=min(len(sampled_subvec), vec_count), replace=False
+    )
+    for i in row_indices:
+        result.append(sampled_subvec[i].astype(np.float32).tolist())
+
+    return result
 
 
 # Generate random sparse vector with given size and density

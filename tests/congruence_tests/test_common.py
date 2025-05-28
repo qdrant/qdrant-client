@@ -69,21 +69,21 @@ multivectors_sizes = {
 
 multi_vector_config = {
     "multi-text": models.VectorParams(
-        size=text_vector_size,
+        size=128,
         distance=models.Distance.COSINE,
         multivector_config=models.MultiVectorConfig(
             comparator=models.MultiVectorComparator.MAX_SIM,
         ),
     ),
     "multi-image": models.VectorParams(
-        size=image_vector_size,
+        size=128,
         distance=models.Distance.DOT,
         multivector_config=models.MultiVectorConfig(
             comparator=models.MultiVectorComparator.MAX_SIM,
         ),
     ),
     "multi-code": models.VectorParams(
-        size=code_vector_size,
+        size=128,
         distance=models.Distance.EUCLID,
         multivector_config=models.MultiVectorConfig(
             comparator=models.MultiVectorComparator.MAX_SIM,

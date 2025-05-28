@@ -18,6 +18,10 @@ from tests.congruence_tests.test_common import (
 )
 from tests.fixtures.points import generate_random_multivector
 
+image_vector_size = 128
+text_vector_size = 128
+code_vector_size = 128
+
 
 class TestSimpleSearcher:
     __test__ = False

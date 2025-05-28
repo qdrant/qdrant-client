@@ -19,6 +19,7 @@ from tests.congruence_tests.test_common import (
 )
 from tests.fixtures.points import sample_random_multivector
 
+image_vector_size = 128
 secondary_collection_name = "congruence_secondary_collection"
 
 
@@ -51,6 +52,7 @@ def local_client(fixture_points, secondary_collection_points) -> QdrantClient:
 @pytest.fixture(scope="module", autouse=True)
 def http_client(fixture_points, secondary_collection_points) -> QdrantClient:
     client = init_remote()
+
     init_client(client, fixture_points, vectors_config=multi_vector_config)
     init_client(
         client,
