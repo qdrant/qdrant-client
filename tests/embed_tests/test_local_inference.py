@@ -17,11 +17,11 @@ from qdrant_client.fastembed_common import (
     LateInteractionTextEmbedding,
     ImageEmbedding,
 )
-
+from tests.congruence_tests.test_common import text_vector_size
 
 COLLECTION_NAME = "inference_collection"
 DENSE_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-DENSE_DIM = 384
+DENSE_DIM = text_vector_size
 SPARSE_MODEL_NAME = "Qdrant/bm42-all-minilm-l6-v2-attentions"
 COLBERT_MODEL_NAME = "answerdotai/answerai-colbert-small-v1"
 COLBERT_DIM = 96
