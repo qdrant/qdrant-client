@@ -15,7 +15,6 @@
     <a href="https://github.com/qdrant/qdrant-client/blob/master/LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-success" alt="Apache 2.0 License"></a>
     <a href="https://qdrant.to/discord"><img src="https://img.shields.io/badge/Discord-Qdrant-5865F2.svg?logo=discord" alt="Discord"></a>
     <a href="https://qdrant.to/roadmap"><img src="https://img.shields.io/badge/Roadmap-2025-bc1439.svg" alt="Roadmap 2025"></a>
-    <a href="https://python-client.qdrant.tech/"><img src="docs/images/api-icon.svg" width="30px"></a>
 </p>
 
 # Python Qdrant Client
@@ -28,10 +27,6 @@ Client allows calls for all [Qdrant API methods](https://api.qdrant.tech/) direc
 It also provides some additional helper methods for frequently required operations, e.g. initial collection uploading.
 
 See [QuickStart](https://qdrant.tech/documentation/quick-start/#create-collection) for more details!
-
-## API Documentation
-
-Python Client API Documentation is available at [python-client.qdrant.tech](https://python-client.qdrant.tech/)
 
 ## Installation
 
