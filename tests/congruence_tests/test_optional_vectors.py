@@ -137,7 +137,7 @@ def test_simple_opt_sparse_vectors_search():
         ),
     )
 
-    new_vector = random_sparse_vectors({"sparse-image": sparse_image_vector_size})
+    new_vector = random_sparse_vectors({"sparse-image": sparse_image_vector_size})[0]
     update_vectors = [
         models.PointVectors(
             id=i,
