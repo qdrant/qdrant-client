@@ -10,16 +10,59 @@ from qdrant_client.http.models import SparseVector
 from qdrant_client.local.sparse import validate_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
+text_vector_size = 128
 
-def random_vectors(
-    vector_sizes: Union[dict[str, int], int],
-) -> models.VectorStruct:
+
+def generate_vectors():
+    _text_vectors = np.load("data/queries_clean.npy", mmap_mode="r")[..., :text_vector_size]
+    _text_vectors_unique = np.unique(_text_vectors, axis=0)
+    _text_vectors_clean = _text_vectors_unique[
+        ~np.isnan(_text_vectors_unique).any(axis=1)
+    ].tolist()
+    return _text_vectors_clean
+
+
+def generate_vectors2():
+    loaded = np.load("data/vectors.npz")
+    vectors = []
+
+    for i in range(len(loaded.files)):
+        # Get the list of arrays
+        vec_list = loaded[f"vec_{i}"]
+        # Filter out arrays with a norm of zero
+        filtered_vecs = [vec for vec in vec_list if np.linalg.norm(vec) > 0]
+        vectors.append(filtered_vecs)
+
+    return vectors
+
+
+_text_vectors_clean = generate_vectors()
+_text_mvectors_clean = generate_vectors2()
+
+
+def sample_queries(n: int) -> list[np.array]:
+    _query_vectors = np.load("data/text_clean.npy", allow_pickle=True).astype(np.float32)[
+        ..., :text_vector_size
+    ]
+    _query_vectors_unique = np.unique(_query_vectors, axis=0)
+    _query_vectors = _query_vectors_unique.tolist()
+    sampled_vectors = np.random.choice(len(_query_vectors), size=n, replace=False)
+    return [_query_vectors[i].copy() for i in sampled_vectors]
+
+
+def random_vectors(vector_sizes: Union[dict[str, int], int], idx=None) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
-        return np.random.random(vector_sizes).round(3).tolist()
+        if idx:
+            return _text_vectors_clean[idx].copy()
+        else:
+            return np.random.random(vector_sizes).tolist()  # .round(3)
     elif isinstance(vector_sizes, dict):
         vectors = {}
         for vector_name, vector_size in vector_sizes.items():
-            vectors[vector_name] = np.random.random(vector_size).round(3).tolist()
+            if idx:
+                vectors[vector_name] = _text_vectors_clean[idx].copy()
+            else:
+                vectors[vector_name] = np.random.random(vector_size).tolist()  # .round(3)
         return vectors
     else:
         raise ValueError("vector_sizes must be int or dict")
@@ -28,12 +71,12 @@ def random_vectors(
 def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
     if isinstance(vector_sizes, int):
         vec_count = random.randint(1, 10)
-        return generate_random_multivector(vector_sizes, vec_count)
+        return sample_random_multivector(vector_sizes, vec_count)
     elif isinstance(vector_sizes, dict):
         vectors = {}
         for vector_name, vector_size in vector_sizes.items():
             vec_count = random.randint(1, 10)
-            vectors[vector_name] = generate_random_multivector(vector_size, vec_count)
+            vectors[vector_name] = sample_random_multivector(vector_size, vec_count)
         return vectors
     else:
         raise ValueError("vector_sizes must be int or dict")
@@ -42,8 +85,24 @@ def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.Vect
 def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
     multivec = []
     for _ in range(vec_count):
-        multivec.append(np.random.random(vec_size).round(3).tolist())
+        multivec.append(np.random.random(vec_size).tolist())  # .round(3).
     return multivec
+
+
+def sample_random_multivector(vec_size: int, vec_count: int):
+    doc_vectors = _text_mvectors_clean.copy()
+
+    sampled_doc_indices = np.random.choice(len(doc_vectors), replace=False)
+    sampled_subvec = doc_vectors[sampled_doc_indices]
+
+    result = []
+    row_indices = np.random.choice(
+        len(sampled_subvec), size=min(len(sampled_subvec), vec_count), replace=False
+    )
+    for i in row_indices:
+        result.append(sampled_subvec[i].astype(np.float32).tolist())
+
+    return result
 
 
 # Generate random sparse vector with given size and density
@@ -51,7 +110,8 @@ def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[floa
 def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
     num_non_zero = int(size * density)
     indices: list[int] = random.sample(range(size), num_non_zero)
-    values: list[float] = [round(random.random(), 6) for _ in range(num_non_zero)]
+    values: list[float] = [random.random() for _ in range(num_non_zero)]
+
     sparse_vector = SparseVector(indices=indices, values=values)
     validate_sparse_vector(sparse_vector)
     return sparse_vector
@@ -100,7 +160,13 @@ def generate_points(
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
 
+    doc_vectors = _text_vectors_clean.copy()
+    try:
+        sampled_vectors = np.random.choice(len(doc_vectors), size=num_points, replace=False)
+    except ValueError as e:
+        raise ValueError(f"Failed to draw {num_points} vectors out of {len(doc_vectors)}") from e
     points = []
+
     for i in range(num_points):
         payload = None
         if with_payload:
@@ -114,8 +180,16 @@ def generate_points(
             vectors = random_sparse_vectors(vector_sizes, even=even_sparse)
         elif multivector:
             vectors = random_multivectors(vector_sizes)
+            if isinstance(vectors, dict):
+                for name, vec in vectors.items():
+                    assert np.array(vec).dtype.kind in ("f", "i")  # float or int
+                    assert not np.isnan(np.array(vec)).any()
+            else:
+                for name, vec in enumerate(vectors):
+                    assert np.array(vec).dtype.kind in ("f", "i")  # float or int
+                    assert not np.isnan(np.array(vec)).any()
         else:
-            vectors = random_vectors(vector_sizes)
+            vectors = random_vectors(vector_sizes, sampled_vectors[i])
 
         if skip_vectors:
             if random.random() > 0.8:

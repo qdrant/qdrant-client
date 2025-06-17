@@ -16,6 +16,7 @@ from tests.congruence_tests.test_common import (
     init_remote,
 )
 from tests.fixtures.filters import one_random_filter_please
+from tests.fixtures.points import sample_queries
 
 secondary_collection_name = "congruence_secondary_collection"
 
@@ -24,7 +25,7 @@ class TestSimpleRecommendation:
     __test__ = False
 
     def __init__(self):
-        self.query_image = np.random.random(image_vector_size).tolist()
+        self.query_image = sample_queries(1)[0]
 
     @classmethod
     def simple_recommend_image(cls, client: QdrantBase) -> list[models.ScoredPoint]:
@@ -291,7 +292,6 @@ def test_recommend_from_another_collection():
 
 def test_simple_recommend() -> None:
     fixture_points = generate_fixtures()
-
     secondary_collection_points = generate_fixtures(100)
 
     searcher = TestSimpleRecommendation()

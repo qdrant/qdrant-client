@@ -11,12 +11,14 @@ from qdrant_client.http.models import SparseVector, VectorStruct
 from tests.congruence_tests.settings import TIMEOUT
 from tests.fixtures.points import generate_points
 
+from tests.fixtures.points import text_vector_size
+
 COLLECTION_NAME = "congruence_test_collection"
 
 # dense vectors sizes
-text_vector_size = 50
-image_vector_size = 100
-code_vector_size = 80
+text_vector_size = text_vector_size  # todo 384
+image_vector_size = text_vector_size  # todo 384
+code_vector_size = text_vector_size  # todo 384
 
 # sparse vectors sizes
 sparse_text_vector_size = 100
@@ -67,21 +69,21 @@ multivectors_sizes = {
 
 multi_vector_config = {
     "multi-text": models.VectorParams(
-        size=text_vector_size,
+        size=128,
         distance=models.Distance.COSINE,
         multivector_config=models.MultiVectorConfig(
             comparator=models.MultiVectorComparator.MAX_SIM,
         ),
     ),
     "multi-image": models.VectorParams(
-        size=image_vector_size,
+        size=128,
         distance=models.Distance.DOT,
         multivector_config=models.MultiVectorConfig(
             comparator=models.MultiVectorComparator.MAX_SIM,
         ),
     ),
     "multi-code": models.VectorParams(
-        size=code_vector_size,
+        size=128,
         distance=models.Distance.EUCLID,
         multivector_config=models.MultiVectorConfig(
             comparator=models.MultiVectorComparator.MAX_SIM,

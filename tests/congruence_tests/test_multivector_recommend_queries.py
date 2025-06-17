@@ -154,7 +154,7 @@ class TestSimpleRecommendation:
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(
-                    positive=None, negative=[10, 12], strategy="best_score"
+                    positive=None, negative=[10, 12, 14], strategy="best_score"
                 )
             ),
             with_payload=True,
@@ -168,10 +168,7 @@ class TestSimpleRecommendation:
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(
-                    positive=[
-                        10,
-                        20,
-                    ],
+                    positive=[10, 20, 30],
                     negative=[],
                     strategy=models.RecommendStrategy.SUM_SCORES,
                 )
@@ -205,7 +202,9 @@ class TestSimpleRecommendation:
             collection_name=COLLECTION_NAME,
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(
-                    positive=None, negative=[10, 12], strategy=models.RecommendStrategy.SUM_SCORES
+                    positive=None,
+                    negative=[10, 12, 14],
+                    strategy=models.RecommendStrategy.SUM_SCORES,
                 )
             ),
             with_payload=True,
@@ -222,7 +221,7 @@ class TestSimpleRecommendation:
             query=models.RecommendQuery(
                 recommend=models.RecommendInput(
                     positive=None,
-                    negative=[10, 12],
+                    negative=[10, 12, 14],
                     strategy="sum_scores",  # type: ignore  # check it works with a literal
                 )
             ),

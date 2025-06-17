@@ -17,8 +17,9 @@ from tests.congruence_tests.test_common import (
     init_remote,
     multi_vector_config,
 )
-from tests.fixtures.points import generate_random_multivector
+from tests.fixtures.points import sample_random_multivector
 
+image_vector_size = 128
 secondary_collection_name = "congruence_secondary_collection"
 
 
@@ -51,6 +52,7 @@ def local_client(fixture_points, secondary_collection_points) -> QdrantClient:
 @pytest.fixture(scope="module", autouse=True)
 def http_client(fixture_points, secondary_collection_points) -> QdrantClient:
     client = init_remote()
+
     init_client(client, fixture_points, vectors_config=multi_vector_config)
     init_client(
         client,
@@ -126,10 +128,10 @@ def test_context_many_pairs(
     http_client,
     grpc_client,
 ):
-    random_image_multivector_1 = generate_random_multivector(
+    random_image_multivector_1 = sample_random_multivector(
         image_vector_size, random.randint(2, 30)
     )
-    random_image_multivector_2 = generate_random_multivector(
+    random_image_multivector_2 = sample_random_multivector(
         image_vector_size, random.randint(2, 30)
     )
 
@@ -227,9 +229,7 @@ def test_discover_raw_target(
     http_client,
     grpc_client,
 ):
-    random_image_multivector = generate_random_multivector(
-        image_vector_size, random.randint(2, 30)
-    )
+    random_image_multivector = sample_random_multivector(image_vector_size, random.randint(2, 30))
 
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.query_points(
@@ -253,9 +253,7 @@ def test_context_raw_positive(
     http_client,
     grpc_client,
 ):
-    random_image_multivector = generate_random_multivector(
-        image_vector_size, random.randint(2, 30)
-    )
+    random_image_multivector = sample_random_multivector(image_vector_size, random.randint(2, 30))
 
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
         return client.query_points(
@@ -416,7 +414,7 @@ def test_discover_batch(
 
 def test_query_with_nan():
     fixture_points = generate_multivector_fixtures(20)
-    vector = generate_random_multivector(image_vector_size, random.randint(2, 30))
+    vector = sample_random_multivector(image_vector_size, random.randint(2, 30))
     vector[0][1] = np.nan
     using = "multi-image"
 
