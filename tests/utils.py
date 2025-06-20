@@ -1,5 +1,9 @@
 import os
 from typing import Optional
+from pathlib import Path
+
+
+TESTS_PATH = Path(__file__).parent
 
 
 def read_version() -> tuple[Optional[int], Optional[int], Optional[int], bool]:
