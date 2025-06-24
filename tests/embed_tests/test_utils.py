@@ -24,8 +24,3 @@ def test_image_path_to_b64():
     non_existent_path = Path(EMBED_TESTS_DATA / "gibberish.jpg")
     with pytest.raises(FileNotFoundError):
         to_base64(non_existent_path)
-    try:
-        to_base64(non_existent_path)
-        assert False, "Expected FileNotFoundError"
-    except FileNotFoundError:
-        pass
