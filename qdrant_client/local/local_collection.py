@@ -2181,6 +2181,7 @@ class LocalCollection:
         # dense vectors
         for vector_name, named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
+
             if named_vectors.shape[0] <= idx:
                 named_vectors = np.resize(named_vectors, (idx * 2 + 1, named_vectors.shape[1]))
 
@@ -2199,10 +2200,11 @@ class LocalCollection:
                     norm = np.linalg.norm(vector_np)
                     vector_np = vector_np / norm if norm > EPSILON else vector_np
                 named_vectors[idx] = vector_np
-                self.vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
+
+            self.vectors[vector_name] = named_vectors
 
         # sparse vectors
         for vector_name, named_vectors in self.sparse_vectors.items():
@@ -2222,10 +2224,11 @@ class LocalCollection:
             else:
                 named_vectors[idx] = vector
                 self._update_idf_append(vector, vector_name)
-                self.sparse_vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
+
+            self.sparse_vectors[vector_name] = named_vectors
 
         # multi vectors
         for vector_name, named_vectors in self.multivectors.items():
@@ -2249,10 +2252,11 @@ class LocalCollection:
                     vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
                     vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
                 named_vectors[idx] = vector_np
-                self.multivectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
+
+            self.multivectors[vector_name] = named_vectors
 
     def _upsert_point(self, point: models.PointStruct) -> None:
         if isinstance(point.id, str):
@@ -2334,11 +2338,13 @@ class LocalCollection:
             )
 
     def _update_named_vectors(
-        self, idx: int, vectors: dict[str, Union[list[float], SparseVector]]
+        self, idx: int, vectors: dict[str, Union[list[float], SparseVector, list[list[float]]]]
     ) -> None:
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
                 raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
+
+            self.deleted_per_vector[vector_name][idx] = 0
 
             if isinstance(vector, SparseVector):
                 validate_sparse_vector(vector)
@@ -2347,21 +2353,21 @@ class LocalCollection:
                 new_vector = sort_sparse_vector(vector)
                 self.sparse_vectors[vector_name][idx] = new_vector
                 self._update_idf_append(new_vector, vector_name)
-            elif vector_name in self.vectors:
-                vector_np = np.array(vector, dtype=np.float32)
-                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
-                params = self.get_vector_params(vector_name)
-                if vector_name in self.vectors:
-                    if params.distance == models.Distance.COSINE:
-                        norm = np.linalg.norm(vector_np)
-                        vector_np = vector_np / norm if norm > EPSILON else vector_np
-                    self.vectors[vector_name][idx] = vector_np
-                else:
-                    if params.distance == models.Distance.COSINE:
-                        vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                        vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
-                    self.multivectors[vector_name][idx] = vector_np
-            self.deleted_per_vector[vector_name][idx] = 0
+                continue
+
+            vector_np = np.array(vector, dtype=np.float32)
+            assert not np.isnan(vector_np).any(), "Vector contains NaN values"
+            params = self.get_vector_params(vector_name)
+            if vector_name in self.vectors:
+                if params.distance == models.Distance.COSINE:
+                    norm = np.linalg.norm(vector_np)
+                    vector_np = vector_np / norm if norm > EPSILON else vector_np
+                self.vectors[vector_name][idx] = vector_np
+            else:
+                if params.distance == models.Distance.COSINE:
+                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
+                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+                self.multivectors[vector_name][idx] = vector_np
 
     def update_vectors(self, points: Sequence[types.PointVectors]) -> None:
         for point in points:

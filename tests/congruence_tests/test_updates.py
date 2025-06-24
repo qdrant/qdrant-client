@@ -358,3 +358,138 @@ def test_upsert_without_vector_name():
         remote_client.upsert(
             COLLECTION_NAME, points=[models.PointStruct(id=1, vector=[0.1, 0.2, 0.3])]
         )
+
+
+def test_update_vectors():
+    local_client = init_local()
+    remote_client = init_remote()
+
+    # region unnamed vector in an empty collection
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+
+    points = [models.PointStruct(id=1, vector={})]
+
+    local_client.upsert(COLLECTION_NAME, points=points)
+    remote_client.upsert(COLLECTION_NAME, points=points, wait=True)
+
+    local_client.update_vectors(
+        COLLECTION_NAME, points=[models.PointVectors(id=1, vector=[0.2, 0.3])]
+    )
+    remote_client.update_vectors(
+        COLLECTION_NAME,
+        points=[models.PointVectors(id=1, vector=[0.2, 0.3])],
+    )
+
+    compare_collections(
+        local_client,
+        remote_client,
+        10,
+        collection_name=COLLECTION_NAME,
+    )
+    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    # endregion
+
+    # region sparse vector in an empty collection
+    sparse_vectors_config = {"sparse": models.SparseVectorParams()}
+    local_client.create_collection(
+        collection_name=COLLECTION_NAME, sparse_vectors_config=sparse_vectors_config
+    )
+    remote_client.create_collection(
+        collection_name=COLLECTION_NAME, sparse_vectors_config=sparse_vectors_config
+    )
+
+    points = [models.PointStruct(id=1, vector={})]
+    local_client.upsert(COLLECTION_NAME, points=points)
+    remote_client.upsert(
+        COLLECTION_NAME,
+        points=points,
+    )
+
+    sparse_points = [
+        models.PointVectors(
+            id=1,
+            vector={"sparse": models.SparseVector(indices=[0, 1], values=[0.2, 0.3])},
+        )
+    ]
+    local_client.update_vectors(COLLECTION_NAME, points=sparse_points)
+    remote_client.update_vectors(COLLECTION_NAME, points=sparse_points)
+    # endregion
+
+    # region multivector in an empty collection
+    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+
+    multivectors_config = models.VectorParams(
+        size=2,
+        distance=models.Distance.DOT,
+        multivector_config=models.MultiVectorConfig(
+            comparator=models.MultiVectorComparator.MAX_SIM
+        ),
+    )
+
+    local_client.create_collection(
+        collection_name=COLLECTION_NAME, vectors_config=multivectors_config
+    )
+    remote_client.create_collection(
+        collection_name=COLLECTION_NAME, vectors_config=multivectors_config
+    )
+
+    points = [models.PointStruct(id=1, vector={})]
+    local_client.upsert(COLLECTION_NAME, points=points)
+    remote_client.upsert(
+        COLLECTION_NAME,
+        points=points,
+    )
+    multivector_points = [models.PointVectors(id=1, vector=[[0.2, 0.3], [0.4, 0.5]])]
+    local_client.update_vectors(COLLECTION_NAME, points=multivector_points)
+    remote_client.update_vectors(COLLECTION_NAME, points=multivector_points)
+    compare_collections(
+        local_client,
+        remote_client,
+        10,
+        collection_name=COLLECTION_NAME,
+    )
+    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    # endregion
+
+    # region named vectors
+    named_vectors_config = {"text": models.VectorParams(size=2, distance=models.Distance.DOT)}
+    local_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=named_vectors_config,
+    )
+    remote_client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=named_vectors_config,
+    )
+    points = [models.PointStruct(id=1, vector={})]
+
+    local_client.upsert(COLLECTION_NAME, points=points)
+    remote_client.upsert(
+        COLLECTION_NAME,
+        points=points,
+    )
+    named_vector_points = [
+        models.PointVectors(
+            id=1,
+            vector={"text": [0.2, 0.3]},
+        )
+    ]
+
+    local_client.update_vectors(COLLECTION_NAME, points=named_vector_points)
+    remote_client.update_vectors(COLLECTION_NAME, points=named_vector_points)
+    compare_collections(
+        local_client,
+        remote_client,
+        10,
+        collection_name=COLLECTION_NAME,
+    )
+    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    # endregion
