@@ -418,6 +418,15 @@ def test_update_vectors():
     ]
     local_client.update_vectors(COLLECTION_NAME, points=sparse_points)
     remote_client.update_vectors(COLLECTION_NAME, points=sparse_points)
+
+    compare_collections(
+        local_client,
+        remote_client,
+        10,
+        collection_name=COLLECTION_NAME,
+    )
+    local_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.delete_collection(collection_name=COLLECTION_NAME)
     # endregion
 
     # region multivector in an empty collection
