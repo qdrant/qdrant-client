@@ -129,7 +129,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             self._grpc_headers.append(("api-key", api_key))
         client_version = importlib.metadata.version("qdrant-client")
         python_version = platform.python_version()
-        user_agent = f"qdrant-client/{client_version} python/{python_version}"
+        user_agent = f"python-client/{client_version} python/{python_version}"
         self._rest_headers["User-Agent"] = user_agent
         self._grpc_options["grpc.primary_user_agent"] = user_agent
         grpc_compression: Optional[Compression] = kwargs.pop("grpc_compression", None)
