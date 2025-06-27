@@ -68,9 +68,9 @@ def convert_paths(paths: list[str]) -> list[FieldPath]:
     return converted_paths
 
 
-def to_base64(image_path: Union[str, Path]) -> str:
+def read_base64(file_path: Union[str, Path]) -> str:
     """Convert a file path to a base64 encoded string."""
-    path = Path(image_path)
+    path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"The file {path} does not exist.")
 
