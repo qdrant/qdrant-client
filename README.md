@@ -67,7 +67,48 @@ Local mode is useful for development, prototyping and testing.
 - Run it in Colab or Jupyter Notebook, no extra dependencies required. See an [example](https://colab.research.google.com/drive/1Bz8RSVHwnNDaNtDwotfPj0w7AYzsdXZ-?usp=sharing)
 - When you need to scale, simply switch to server mode.
 
-## Fast Embeddings + Simpler API
+## Connect to Qdrant server
+
+To connect to Qdrant server, simply specify host and port:
+
+```python
+from qdrant_client import QdrantClient
+
+client = QdrantClient(host="localhost", port=6333)
+# or
+client = QdrantClient(url="http://localhost:6333")
+```
+
+You can run Qdrant server locally with docker:
+
+```bash
+docker run -p 6333:6333 qdrant/qdrant:latest
+```
+
+See more launch options in [Qdrant repository](https://github.com/qdrant/qdrant#usage).
+
+
+## Connect to Qdrant cloud
+
+You can register and use [Qdrant Cloud](https://cloud.qdrant.io/) to get a free tier account with 1GB RAM.
+
+Once you have your cluster and API key, you can connect to it like this:
+
+```python
+from qdrant_client import QdrantClient
+
+qdrant_client = QdrantClient(
+    url="https://xxxxxx-xxxxx-xxxxx-xxxx-xxxxxxxxx.us-east.aws.cloud.qdrant.io:6333",
+    api_key="<your-api-key>",
+)
+```
+
+## Inference API
+
+Qdrant Client has Inference API that allows to seamlessly create embeddings and use them in Qdrant.
+Inference API can be used locally with FastEmbed or remotely with models available in Qdrant Cloud.
+
+### Local Inference with FastEmbed
 
 ```
 pip install qdrant-client[fastembed]
@@ -126,41 +167,22 @@ models.Document(text="To be computed on GPU", model=model_name, options={"cuda":
 >
 > If you previously installed `fastembed`, you might need to start from a fresh environment to install `fastembed-gpu`.
 
-## Connect to Qdrant server
+### Remote inference with Qdrant Cloud
 
-To connect to Qdrant server, simply specify host and port:
+Qdrant Cloud provides a set of predefined models that can be used for inference without a need to install any additional libraries or host models locally. (Currently available only on paid plans.)
 
-```python
-from qdrant_client import QdrantClient
-
-client = QdrantClient(host="localhost", port=6333)
-# or
-client = QdrantClient(url="http://localhost:6333")
-```
-
-You can run Qdrant server locally with docker:
-
-```bash
-docker run -p 6333:6333 qdrant/qdrant:latest
-```
-
-See more launch options in [Qdrant repository](https://github.com/qdrant/qdrant#usage).
-
-
-## Connect to Qdrant cloud
-
-You can register and use [Qdrant Cloud](https://cloud.qdrant.io/) to get a free tier account with 1GB RAM.
-
-Once you have your cluster and API key, you can connect to it like this:
+Inference API is the same as in the local mode, but the client has to be instantiated with `cloud_inference=True`:
 
 ```python
 from qdrant_client import QdrantClient
-
-qdrant_client = QdrantClient(
+client = QdrantClient(
     url="https://xxxxxx-xxxxx-xxxxx-xxxx-xxxxxxxxx.us-east.aws.cloud.qdrant.io:6333",
     api_key="<your-api-key>",
+    cloud_inference=True,  # Enable remote inference
 )
 ```
+
+> Note: remote inference requires images to be provided as base64 encoded strings or urls
 
 ## Examples
 
