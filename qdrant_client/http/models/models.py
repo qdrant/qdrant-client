@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -931,7 +931,7 @@ class HasIdCondition(BaseModel, extra="forbid"):
     ID-based filtering condition
     """
 
-    has_id: List["ExtendedPointId"] = Field(..., description="ID-based filtering condition")
+    has_id: Sequence["ExtendedPointId"] = Field(..., description="ID-based filtering condition")
 
 
 class HasVectorCondition(BaseModel, extra="forbid"):
