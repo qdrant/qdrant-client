@@ -1,6 +1,7 @@
 import pytest
 import os
 import httpx
+import tempfile
 
 from qdrant_client import QdrantClient, models
 from qdrant_client.embed.utils import read_base64
@@ -23,7 +24,9 @@ def test_remove_inference_image():
 
     # Compare inference of image exposed via url and local file
     # So download image to local file and compare results
-    image_path = "/tmp/example.png"
+
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp_file:
+        image_path = tmp_file.name
 
     with httpx.Client() as httpx_client:
         response = httpx_client.get(image_url)
@@ -41,26 +44,23 @@ def test_remove_inference_image():
         ),
     )
 
-    try:
-        client.upsert(
-            collection_name=collection_name,
-            points=[
-                models.PointStruct(
-                    id=1,
-                    vector=models.Image(
-                        image=image_url,
-                        model=model_name,
-                    ),
+    client.upsert(
+        collection_name=collection_name,
+        points=[
+            models.PointStruct(
+                id=1,
+                vector=models.Image(
+                    image=image_url,
+                    model=model_name,
                 ),
-                # models.PointStruct(
-                #     id=2,
-                #     vector=models.Image(
-                #         image=read_base64(image_path),
-                #         model=model_name,
-                #     ),
-                # ),
-            ]
-        )
-    except Exception as e:
-        print(e)
-        raise e
+            ),
+            models.PointStruct(
+                id=2,
+                vector=models.Image(
+                    image=read_base64(image_path),
+                    model=model_name,
+                ),
+            ),
+        ]
+    )
+
