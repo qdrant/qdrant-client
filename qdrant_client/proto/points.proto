@@ -425,7 +425,7 @@ enum RecommendStrategy {
   // examples, its score is then chosen from the `max(max_pos_score, max_neg_score)`.
   // If the `max_neg_score` is chosen then it is squared and negated.
   BestScore = 1;
-  
+
   // Uses custom search objective. Compares against all inputs, sums all the scores.
   // Scores against positive vectors are added, against negatives are subtracted.
   SumScores = 2;
@@ -631,13 +631,13 @@ message PowExpression {
 
 message DecayParamsExpression {
     // The variable to decay
-    Expression x = 1; 
+    Expression x = 1;
     // The target value to start decaying from. Defaults to 0.
-    optional Expression target = 2; 
+    optional Expression target = 2;
     // The scale factor of the decay, in terms of `x`. Defaults to 1.0. Must be a non-zero positive number.
-    optional float scale = 3; 
+    optional float scale = 3;
     // The midpoint of the decay. Defaults to 0.5. Output will be this value when `|x - target| == scale`.
-    optional float midpoint = 4; 
+    optional float midpoint = 4;
 }
 
 message Query {
@@ -830,7 +830,7 @@ message UpdateBatchPoints {
 message PointsOperationResponse {
   UpdateResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message UpdateResult {
@@ -887,25 +887,25 @@ message GroupsResult {
 message SearchResponse {
   repeated ScoredPoint result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message QueryResponse {
   repeated ScoredPoint result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message QueryBatchResponse {
   repeated BatchResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message QueryGroupsResponse {
   GroupsResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message BatchResult {
@@ -915,26 +915,26 @@ message BatchResult {
 message SearchBatchResponse {
   repeated BatchResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message SearchGroupsResponse {
   GroupsResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message CountResponse {
   CountResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message ScrollResponse {
   optional PointId next_page_offset = 1; // Use this offset for the next query
   repeated RetrievedPoint result = 2;
   double time = 3; // Time spent to process
-  optional HardwareUsage usage = 4;
+  optional Usage usage = 4;
 }
 
 message CountResult {
@@ -953,42 +953,43 @@ message RetrievedPoint {
 message GetResponse {
   repeated RetrievedPoint result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message RecommendResponse {
   repeated ScoredPoint result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message RecommendBatchResponse {
   repeated BatchResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message DiscoverResponse {
   repeated ScoredPoint result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message DiscoverBatchResponse {
   repeated BatchResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message RecommendGroupsResponse {
   GroupsResult result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message UpdateBatchResponse {
   repeated UpdateResult result = 1;
   double time = 2; // Time spent to process
+  optional Usage usage = 3;
 }
 
 message FacetResponse {
@@ -999,13 +1000,13 @@ message FacetResponse {
 message SearchMatrixPairsResponse {
   SearchMatrixPairs result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 message SearchMatrixOffsetsResponse {
   SearchMatrixOffsets result = 1;
   double time = 2; // Time spent to process
-  optional HardwareUsage usage = 3;
+  optional Usage usage = 3;
 }
 
 // ---------------------------------------------
@@ -1080,6 +1081,7 @@ message Match {
     RepeatedIntegers integers = 6; // Match multiple integers
     RepeatedIntegers except_integers = 7; // Match any other value except those integers
     RepeatedStrings except_keywords = 8; // Match any other value except those keywords
+    string phrase = 9; // Match phrase text
   }
 }
 
@@ -1164,6 +1166,27 @@ message PointStruct {
 message GeoPoint {
   double lon = 1;
   double lat = 2;
+}
+
+// ---------------------------------------------
+// ----------- Measurements collector ----------
+// ---------------------------------------------
+message Usage {
+  optional HardwareUsage hardware = 1;
+  optional InferenceUsage inference = 2;
+}
+
+
+// ---------------------------------------------
+// ------------ Inference measurements ----------
+// ---------------------------------------------
+
+message InferenceUsage {
+  map<string, ModelUsage> models = 1;
+}
+
+message ModelUsage {
+  uint64 tokens = 1;
 }
 
 // ---------------------------------------------

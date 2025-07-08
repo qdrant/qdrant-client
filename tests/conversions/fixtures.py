@@ -34,6 +34,7 @@ match_except_keywords = grpc.Match(
     except_keywords=grpc.RepeatedStrings(strings=["hello", "world"])
 )
 match_except_integers = grpc.Match(except_integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
+match_phrase = grpc.Match(phrase="hello")
 
 field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
 
@@ -46,6 +47,7 @@ field_condition_match_except_keywords = grpc.FieldCondition(
 field_condition_match_except_integers = grpc.FieldCondition(
     key="match_field", match=match_except_integers
 )
+field_condition_match_phrase = grpc.FieldCondition(key="match_field", match=match_phrase)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -119,6 +121,8 @@ condition_integers = grpc.Condition(field=field_condition_match_integers)
 condition_except_keywords = grpc.Condition(field=field_condition_match_except_keywords)
 condition_except_integers = grpc.Condition(field=field_condition_match_except_integers)
 
+condition_phrase = grpc.Condition(field=field_condition_match_phrase)
+
 nested = grpc.NestedCondition(
     key="a.b.c", filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)])
 )
@@ -137,6 +141,7 @@ filter_ = grpc.Filter(
         condition_integers,
         condition_except_keywords,
         condition_except_integers,
+        condition_phrase,
     ],
     should=[
         condition_field_match,
@@ -216,6 +221,33 @@ scalar_quantization = grpc.ScalarQuantization(
 
 binary_quantization = grpc.BinaryQuantization(
     always_ram=True,
+)
+binary_quantization_w_encodings_0 = grpc.BinaryQuantization(
+    always_ram=True,
+    encoding=grpc.BinaryQuantizationEncoding.OneBit,
+    query_encoding=grpc.BinaryQuantizationQueryEncoding(
+        setting=grpc.BinaryQuantizationQueryEncoding.Setting.Default
+    ),
+)
+binary_quantization_w_encodings_1 = grpc.BinaryQuantization(
+    always_ram=True,
+    encoding=grpc.BinaryQuantizationEncoding.TwoBits,
+    query_encoding=grpc.BinaryQuantizationQueryEncoding(
+        setting=grpc.BinaryQuantizationQueryEncoding.Setting.Binary
+    ),
+)
+binary_quantization_w_encodings_2 = grpc.BinaryQuantization(
+    always_ram=True,
+    encoding=grpc.BinaryQuantizationEncoding.OneAndHalfBits,
+    query_encoding=grpc.BinaryQuantizationQueryEncoding(
+        setting=grpc.BinaryQuantizationQueryEncoding.Setting.Scalar4Bits
+    ),
+)
+binary_quantization_w_encodings_3 = grpc.BinaryQuantization(
+    always_ram=True,
+    query_encoding=grpc.BinaryQuantizationQueryEncoding(
+        setting=grpc.BinaryQuantizationQueryEncoding.Setting.Scalar8Bits
+    ),
 )
 
 vector_param_with_quant = grpc.VectorParams(
@@ -495,6 +527,14 @@ text_index_params_3 = grpc.TextIndexParams(
 
 text_index_params_4 = grpc.TextIndexParams(tokenizer=grpc.TokenizerType.Multilingual)
 
+text_index_params_5 = grpc.TextIndexParams(
+    phrase_matching=True,
+    on_disk=True,
+    stemmer=grpc.StemmingAlgorithm(snowball=grpc.SnowballParameters(language="English")),
+)
+
+text_index_params_6 = grpc.TextIndexParams(phrase_matching=False, on_disk=False)
+
 integer_index_params_0 = grpc.IntegerIndexParams(lookup=False, range=False)
 integer_index_params_1 = grpc.IntegerIndexParams(
     lookup=True, range=True, on_disk=True, is_principal=True
@@ -746,7 +786,18 @@ quantization_config = grpc.QuantizationConfig(
 binary_quantization_config = grpc.QuantizationConfig(
     binary=binary_quantization,
 )
-
+binary_quantization_config_0 = grpc.QuantizationConfig(
+    binary=binary_quantization_w_encodings_0,
+)
+binary_quantization_config_1 = grpc.QuantizationConfig(
+    binary=binary_quantization_w_encodings_1,
+)
+binary_quantization_config_2 = grpc.QuantizationConfig(
+    binary=binary_quantization_w_encodings_2,
+)
+binary_quantization_config_3 = grpc.QuantizationConfig(
+    binary=binary_quantization_w_encodings_3,
+)
 
 sparse_vector_params = grpc.SparseVectorParams(
     index=grpc.SparseIndexConfig(
@@ -1580,6 +1631,9 @@ fixtures = {
         text_index_params_1,
         text_index_params_2,
         text_index_params_3,
+        text_index_params_4,
+        text_index_params_5,
+        text_index_params_6,
     ],
     "IntegerIndexParams": [
         integer_index_params_0,
@@ -1594,7 +1648,14 @@ fixtures = {
         read_consistency_2,
     ],
     "WriteOrdering": [ordering_0, ordering_1, ordering_2],
-    "QuantizationConfig": [quantization_config, binary_quantization_config]
+    "QuantizationConfig": [
+        quantization_config,
+        binary_quantization_config,
+        binary_quantization_config_0,
+        binary_quantization_config_1,
+        binary_quantization_config_2,
+        binary_quantization_config_3,
+    ]
     + product_quantizations,
     "QuantizationSearchParams": [quantization_search_params],
     "PointVectors": [

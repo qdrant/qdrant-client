@@ -180,6 +180,23 @@ x32: CompressionRatio.ValueType  # 3
 x64: CompressionRatio.ValueType  # 4
 global___CompressionRatio = CompressionRatio
 
+class _BinaryQuantizationEncoding:
+    ValueType = typing.NewType("ValueType", builtins.int)
+    V: typing_extensions.TypeAlias = ValueType
+
+class _BinaryQuantizationEncodingEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_BinaryQuantizationEncoding.ValueType], builtins.type):  # noqa: F821
+    DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+    OneBit: _BinaryQuantizationEncoding.ValueType  # 0
+    TwoBits: _BinaryQuantizationEncoding.ValueType  # 1
+    OneAndHalfBits: _BinaryQuantizationEncoding.ValueType  # 2
+
+class BinaryQuantizationEncoding(_BinaryQuantizationEncoding, metaclass=_BinaryQuantizationEncodingEnumTypeWrapper): ...
+
+OneBit: BinaryQuantizationEncoding.ValueType  # 0
+TwoBits: BinaryQuantizationEncoding.ValueType  # 1
+OneAndHalfBits: BinaryQuantizationEncoding.ValueType  # 2
+global___BinaryQuantizationEncoding = BinaryQuantizationEncoding
+
 class _ShardingMethod:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
@@ -1041,20 +1058,70 @@ class ProductQuantization(google.protobuf.message.Message):
 
 global___ProductQuantization = ProductQuantization
 
+class BinaryQuantizationQueryEncoding(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    class _Setting:
+        ValueType = typing.NewType("ValueType", builtins.int)
+        V: typing_extensions.TypeAlias = ValueType
+
+    class _SettingEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[BinaryQuantizationQueryEncoding._Setting.ValueType], builtins.type):  # noqa: F821
+        DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
+        Default: BinaryQuantizationQueryEncoding._Setting.ValueType  # 0
+        Binary: BinaryQuantizationQueryEncoding._Setting.ValueType  # 1
+        Scalar4Bits: BinaryQuantizationQueryEncoding._Setting.ValueType  # 2
+        Scalar8Bits: BinaryQuantizationQueryEncoding._Setting.ValueType  # 3
+
+    class Setting(_Setting, metaclass=_SettingEnumTypeWrapper): ...
+    Default: BinaryQuantizationQueryEncoding.Setting.ValueType  # 0
+    Binary: BinaryQuantizationQueryEncoding.Setting.ValueType  # 1
+    Scalar4Bits: BinaryQuantizationQueryEncoding.Setting.ValueType  # 2
+    Scalar8Bits: BinaryQuantizationQueryEncoding.Setting.ValueType  # 3
+
+    SETTING_FIELD_NUMBER: builtins.int
+    setting: global___BinaryQuantizationQueryEncoding.Setting.ValueType
+    def __init__(
+        self,
+        *,
+        setting: global___BinaryQuantizationQueryEncoding.Setting.ValueType = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["setting", b"setting", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["setting", b"setting", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["setting"] | None: ...
+
+global___BinaryQuantizationQueryEncoding = BinaryQuantizationQueryEncoding
+
 class BinaryQuantization(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     ALWAYS_RAM_FIELD_NUMBER: builtins.int
+    ENCODING_FIELD_NUMBER: builtins.int
+    QUERY_ENCODING_FIELD_NUMBER: builtins.int
     always_ram: builtins.bool
     """If true - quantized vectors always will be stored in RAM, ignoring the config of main storage"""
+    encoding: global___BinaryQuantizationEncoding.ValueType
+    """Binary quantization encoding method"""
+    @property
+    def query_encoding(self) -> global___BinaryQuantizationQueryEncoding:
+        """
+        Asymmetric quantization configuration allows a query to have different quantization than stored vectors.
+        It can increase the accuracy of search at the cost of performance.
+        """
     def __init__(
         self,
         *,
         always_ram: builtins.bool | None = ...,
+        encoding: global___BinaryQuantizationEncoding.ValueType | None = ...,
+        query_encoding: global___BinaryQuantizationQueryEncoding | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "always_ram", b"always_ram"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "always_ram", b"always_ram"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_encoding", b"_encoding", "_query_encoding", b"_query_encoding", "always_ram", b"always_ram", "encoding", b"encoding", "query_encoding", b"query_encoding"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_always_ram", b"_always_ram", "_encoding", b"_encoding", "_query_encoding", b"_query_encoding", "always_ram", b"always_ram", "encoding", b"encoding", "query_encoding", b"query_encoding"]) -> None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_always_ram", b"_always_ram"]) -> typing_extensions.Literal["always_ram"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_encoding", b"_encoding"]) -> typing_extensions.Literal["encoding"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_query_encoding", b"_query_encoding"]) -> typing_extensions.Literal["query_encoding"] | None: ...
 
 global___BinaryQuantization = BinaryQuantization
 
@@ -1713,13 +1780,13 @@ class IntegerIndexParams(google.protobuf.message.Message):
     IS_PRINCIPAL_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     lookup: builtins.bool
-    """If true - support direct lookups."""
+    """If true - support direct lookups. Default is true."""
     range: builtins.bool
-    """If true - support ranges filters."""
+    """If true - support ranges filters. Default is true."""
     is_principal: builtins.bool
-    """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests."""
+    """If true - use this key to organize storage of the collection data. This option assumes that this key will be used in majority of filtered requests. Default is false."""
     on_disk: builtins.bool
-    """If true - store index on disk."""
+    """If true - store index on disk. Default is false."""
     def __init__(
         self,
         *,
@@ -1782,6 +1849,27 @@ class GeoIndexParams(google.protobuf.message.Message):
 
 global___GeoIndexParams = GeoIndexParams
 
+class StopwordsSet(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    LANGUAGES_FIELD_NUMBER: builtins.int
+    CUSTOM_FIELD_NUMBER: builtins.int
+    @property
+    def languages(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+        """List of languages to use stopwords from"""
+    @property
+    def custom(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+        """List of custom stopwords"""
+    def __init__(
+        self,
+        *,
+        languages: collections.abc.Iterable[builtins.str] | None = ...,
+        custom: collections.abc.Iterable[builtins.str] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["custom", b"custom", "languages", b"languages"]) -> None: ...
+
+global___StopwordsSet = StopwordsSet
+
 class TextIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -1790,6 +1878,9 @@ class TextIndexParams(google.protobuf.message.Message):
     MIN_TOKEN_LEN_FIELD_NUMBER: builtins.int
     MAX_TOKEN_LEN_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
+    STOPWORDS_FIELD_NUMBER: builtins.int
+    PHRASE_MATCHING_FIELD_NUMBER: builtins.int
+    STEMMER_FIELD_NUMBER: builtins.int
     tokenizer: global___TokenizerType.ValueType
     """Tokenizer type"""
     lowercase: builtins.bool
@@ -1800,6 +1891,14 @@ class TextIndexParams(google.protobuf.message.Message):
     """Maximal token length"""
     on_disk: builtins.bool
     """If true - store index on disk."""
+    @property
+    def stopwords(self) -> global___StopwordsSet:
+        """Stopwords for the text index"""
+    phrase_matching: builtins.bool
+    """If true - support phrase matching."""
+    @property
+    def stemmer(self) -> global___StemmingAlgorithm:
+        """Set an algorithm for stemming."""
     def __init__(
         self,
         *,
@@ -1808,9 +1907,12 @@ class TextIndexParams(google.protobuf.message.Message):
         min_token_len: builtins.int | None = ...,
         max_token_len: builtins.int | None = ...,
         on_disk: builtins.bool | None = ...,
+        stopwords: global___StopwordsSet | None = ...,
+        phrase_matching: builtins.bool | None = ...,
+        stemmer: global___StemmingAlgorithm | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "tokenizer", b"tokenizer"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_lowercase", b"_lowercase"]) -> typing_extensions.Literal["lowercase"] | None: ...
     @typing.overload
@@ -1819,8 +1921,47 @@ class TextIndexParams(google.protobuf.message.Message):
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_min_token_len", b"_min_token_len"]) -> typing_extensions.Literal["min_token_len"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk", b"_on_disk"]) -> typing_extensions.Literal["on_disk"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_phrase_matching", b"_phrase_matching"]) -> typing_extensions.Literal["phrase_matching"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_stemmer", b"_stemmer"]) -> typing_extensions.Literal["stemmer"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_stopwords", b"_stopwords"]) -> typing_extensions.Literal["stopwords"] | None: ...
 
 global___TextIndexParams = TextIndexParams
+
+class StemmingAlgorithm(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SNOWBALL_FIELD_NUMBER: builtins.int
+    @property
+    def snowball(self) -> global___SnowballParameters:
+        """Parameters for snowball stemming"""
+    def __init__(
+        self,
+        *,
+        snowball: global___SnowballParameters | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["snowball", b"snowball", "stemming_params", b"stemming_params"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["snowball", b"snowball", "stemming_params", b"stemming_params"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["stemming_params", b"stemming_params"]) -> typing_extensions.Literal["snowball"] | None: ...
+
+global___StemmingAlgorithm = StemmingAlgorithm
+
+class SnowballParameters(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    LANGUAGE_FIELD_NUMBER: builtins.int
+    language: builtins.str
+    """Which language the algorithm should stem."""
+    def __init__(
+        self,
+        *,
+        language: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["language", b"language"]) -> None: ...
+
+global___SnowballParameters = SnowballParameters
 
 class BoolIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
