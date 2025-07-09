@@ -2789,7 +2789,7 @@ class SnowballLanguage(str, Enum):
     TURKISH = "Turkish"
 
 
-class SnowballParameters(BaseModel, extra="forbid"):
+class SnowballParams(BaseModel, extra="forbid"):
     type: "Snowball" = Field(..., description="")
     language: "SnowballLanguage" = Field(..., description="")
 
@@ -3583,7 +3583,7 @@ StartFrom = Union[
     date,
 ]
 StemmingAlgorithm = Union[
-    SnowballParameters,
+    SnowballParams,
 ]
 StopwordsInterface = Union[
     Language,

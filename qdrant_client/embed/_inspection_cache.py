@@ -216,7 +216,7 @@ CACHE_STR_PATH = {
     "SetPayloadOperation": [],
     "ShardSnapshotRecover": [],
     "SnapshotRecover": [],
-    "SnowballParameters": [],
+    "SnowballParams": [],
     "SparseIndexParams": [],
     "SparseVector": [],
     "SparseVectorParams": [],
@@ -2392,14 +2392,14 @@ DEFS = {
         "title": "SnowballLanguage",
         "type": "string",
     },
-    "SnowballParameters": {
+    "SnowballParams": {
         "additionalProperties": False,
         "properties": {
             "type": {"$ref": "#/$defs/Snowball", "description": ""},
             "language": {"$ref": "#/$defs/SnowballLanguage", "description": ""},
         },
         "required": ["type", "language"],
-        "title": "SnowballParameters",
+        "title": "SnowballParams",
         "type": "object",
     },
     "StopwordsSet": {
@@ -2474,7 +2474,7 @@ DEFS = {
                 "title": "On Disk",
             },
             "stemmer": {
-                "anyOf": [{"$ref": "#/$defs/SnowballParameters"}, {"type": "null"}],
+                "anyOf": [{"$ref": "#/$defs/SnowballParams"}, {"type": "null"}],
                 "default": None,
                 "description": "Algorithm for stemming. Default: disabled.",
             },

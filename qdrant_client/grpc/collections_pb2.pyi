@@ -1935,12 +1935,12 @@ class StemmingAlgorithm(google.protobuf.message.Message):
 
     SNOWBALL_FIELD_NUMBER: builtins.int
     @property
-    def snowball(self) -> global___SnowballParameters:
+    def snowball(self) -> global___SnowballParams:
         """Parameters for snowball stemming"""
     def __init__(
         self,
         *,
-        snowball: global___SnowballParameters | None = ...,
+        snowball: global___SnowballParams | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["snowball", b"snowball", "stemming_params", b"stemming_params"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["snowball", b"snowball", "stemming_params", b"stemming_params"]) -> None: ...
@@ -1948,7 +1948,7 @@ class StemmingAlgorithm(google.protobuf.message.Message):
 
 global___StemmingAlgorithm = StemmingAlgorithm
 
-class SnowballParameters(google.protobuf.message.Message):
+class SnowballParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     LANGUAGE_FIELD_NUMBER: builtins.int
@@ -1961,7 +1961,7 @@ class SnowballParameters(google.protobuf.message.Message):
     ) -> None: ...
     def ClearField(self, field_name: typing_extensions.Literal["language", b"language"]) -> None: ...
 
-global___SnowballParameters = SnowballParameters
+global___SnowballParams = SnowballParams
 
 class BoolIndexParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor

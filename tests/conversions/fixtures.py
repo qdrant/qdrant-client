@@ -530,7 +530,7 @@ text_index_params_4 = grpc.TextIndexParams(tokenizer=grpc.TokenizerType.Multilin
 text_index_params_5 = grpc.TextIndexParams(
     phrase_matching=True,
     on_disk=True,
-    stemmer=grpc.StemmingAlgorithm(snowball=grpc.SnowballParameters(language="English")),
+    stemmer=grpc.StemmingAlgorithm(snowball=grpc.SnowballParams(language="English")),
 )
 
 text_index_params_6 = grpc.TextIndexParams(phrase_matching=False, on_disk=False)

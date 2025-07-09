@@ -1605,10 +1605,8 @@ class GrpcToRest:
         raise ValueError(f"invalid StemmingAlgorithm model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_snowball_parameters(
-        cls, model: grpc.SnowballParameters
-    ) -> rest.SnowballParameters:
-        return rest.SnowballParameters(
+    def convert_snowball_parameters(cls, model: grpc.SnowballParams) -> rest.SnowballParams:
+        return rest.SnowballParams(
             type=rest.Snowball.SNOWBALL, language=rest.SnowballLanguage(model.language)
         )
 
@@ -3968,10 +3966,8 @@ class RestToGrpc:
 
     @classmethod
     def convert_stemmer(cls, model: rest.StemmingAlgorithm) -> grpc.StemmingAlgorithm:
-        if isinstance(model, rest.SnowballParameters):
-            return grpc.StemmingAlgorithm(
-                snowball=grpc.SnowballParameters(language=model.language)
-            )
+        if isinstance(model, rest.SnowballParams):
+            return grpc.StemmingAlgorithm(snowball=grpc.SnowballParams(language=model.language))
 
         raise ValueError(f"invalid StemmingAlgorithm model: {model}")  # pragma: no cover
 
