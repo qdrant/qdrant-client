@@ -158,8 +158,8 @@ def calculate_sparse_discovery_ranks(
     overall_ranks: types.NumpyArray = np.zeros(len(vectors), dtype=np.int32)
     for pair in context:
         # Get distances to positive and negative vectors
-        pos = calculate_distance_sparse(pair.positive, vectors)
-        neg = calculate_distance_sparse(pair.negative, vectors)
+        pos = calculate_distance_sparse(pair.positive, vectors, empty_is_zero=True)
+        neg = calculate_distance_sparse(pair.negative, vectors, empty_is_zero=True)
 
         pair_ranks = np.array(
             [
@@ -179,7 +179,7 @@ def calculate_sparse_discovery_scores(
     ranks = calculate_sparse_discovery_ranks(query.context, vectors)
 
     # Get distances to target
-    distances_to_target = calculate_distance_sparse(query.target, vectors)
+    distances_to_target = calculate_distance_sparse(query.target, vectors, empty_is_zero=True)
 
     sigmoided_distances = np.fromiter(
         (scaled_fast_sigmoid(xi) for xi in distances_to_target), np.float32
@@ -194,8 +194,8 @@ def calculate_sparse_context_scores(
     overall_scores: types.NumpyArray = np.zeros(len(vectors), dtype=np.float32)
     for pair in query.context_pairs:
         # Get distances to positive and negative vectors
-        pos = calculate_distance_sparse(pair.positive, vectors)
-        neg = calculate_distance_sparse(pair.negative, vectors)
+        pos = calculate_distance_sparse(pair.positive, vectors, empty_is_zero=True)
+        neg = calculate_distance_sparse(pair.negative, vectors, empty_is_zero=True)
 
         difference = pos - neg - EPSILON
         pair_scores = np.fromiter(
@@ -215,7 +215,7 @@ def calculate_sparse_recommend_best_scores(
         # Get scores to all examples
         scores: list[types.NumpyArray] = []
         for example in examples:
-            score = calculate_distance_sparse(example, vectors)
+            score = calculate_distance_sparse(example, vectors, empty_is_zero=True)
             scores.append(score)
 
         # Keep only max for each vector
@@ -245,7 +245,7 @@ def calculate_sparse_recommend_sum_scores(
 
         scores: list[types.NumpyArray] = []
         for example in examples:
-            score = calculate_distance_sparse(example, vectors)
+            score = calculate_distance_sparse(example, vectors, empty_is_zero=True)
             scores.append(score)
 
         if len(scores) == 0:
