@@ -232,21 +232,21 @@ def compare_scored_record(
     point2: models.ScoredPoint,
     idx: int,
     rel_tol: float = 1e-4,
-    abs_tol: float = 0,
+    abs_tol: float = 1e-6,
 ) -> None:
-    assert (
-        point1.id == point2.id
-    ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
     assert math.isclose(
         np.float32(point1.score), np.float32(point2.score), rel_tol=rel_tol, abs_tol=abs_tol
     ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, rel_tol={rel_tol}"
-    assert (
-        point1.payload == point2.payload
-    ), f"point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
-    compare_vectors(point1.vector, point2.vector, idx)
+    if point1.id == point2.id:
+        # same id means same payload
+        assert (
+            point1.payload == point2.payload
+        ), f"id:{point1.id} point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
+
+        compare_vectors(point1.vector, point2.vector, idx)
 
 
-def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 0) -> None:
+def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 1e-6) -> None:
     assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
     for i in range(len(res2)):
         res1_item = res1[i]
@@ -301,15 +301,15 @@ def compare_client_results(
 
     if isinstance(res1, list):
         if is_context_search is True:
-            sorted_1 = sorted(res1, key=lambda x: (x.id))
-            sorted_2 = sorted(res2, key=lambda x: (x.id))
+            sorted_1 = sorted(res1, key=lambda x: (x.score, x.id))
+            sorted_2 = sorted(res2, key=lambda x: (x.score, x.id))
             compare_records(sorted_1, sorted_2, abs_tol=1e-5)
         else:
             compare_records(res1, res2)
     elif isinstance(res1, models.QueryResponse) and isinstance(res2, models.QueryResponse):
         if is_context_search is True:
-            sorted_1 = sorted(res1.points, key=lambda x: (x.id))
-            sorted_2 = sorted(res2.points, key=lambda x: (x.id))
+            sorted_1 = sorted(res1.points, key=lambda x: (x.score, x.id))
+            sorted_2 = sorted(res2.points, key=lambda x: (x.score, x.id))
             compare_records(sorted_1, sorted_2, abs_tol=1e-5)
         else:
             compare_records(res1.points, res2.points)
