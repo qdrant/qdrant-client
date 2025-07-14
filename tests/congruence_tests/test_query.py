@@ -697,7 +697,7 @@ class TestSimpleSearcher:
         )
 
     @classmethod
-    def dense_context_image(cls, client: QdrantBase, limit: int) -> models.QueryResponse:
+    def dense_context_image(cls, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=models.ContextPair(positive=11, negative=19)),
