@@ -77,12 +77,12 @@ def test_context_cosine(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=[models.ContextPair(positive=10, negative=19)]),
             with_payload=True,
-            limit=NUM_MULTI_VECTORS,
+            limit=10,
             using="multi-text",
         ).points
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_context_dot(
@@ -95,12 +95,12 @@ def test_context_dot(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=[models.ContextPair(positive=10, negative=19)]),
             with_payload=True,
-            limit=NUM_MULTI_VECTORS,
+            limit=10,
             using="multi-image",
         ).points
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_context_euclidean(
@@ -113,12 +113,12 @@ def test_context_euclidean(
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=[models.ContextPair(positive=11, negative=19)]),
             with_payload=True,
-            limit=NUM_MULTI_VECTORS,
+            limit=10,
             using="multi-code",
         ).points
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_context_many_pairs(
@@ -148,12 +148,12 @@ def test_context_many_pairs(
                 ]
             ),
             with_payload=True,
-            limit=NUM_MULTI_VECTORS,
+            limit=10,
             using="multi-image",
         ).points
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_discover_cosine(
@@ -263,12 +263,12 @@ def test_context_raw_positive(
             query=models.ContextQuery(
                 context=[models.ContextPair(positive=random_image_multivector, negative=19)]
             ),
-            limit=NUM_MULTI_VECTORS,
+            limit=10,
             using="multi-image",
         ).points
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_only_target(

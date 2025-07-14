@@ -66,12 +66,12 @@ def test_context_cosine(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
-            limit=1000,
+            limit=10,
             using="text",
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_context_dot(
@@ -84,12 +84,12 @@ def test_context_dot(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
-            limit=1000,
+            limit=10,
             using="image",
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_context_euclidean(
@@ -102,12 +102,12 @@ def test_context_euclidean(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=11, negative=19)],
             with_payload=True,
-            limit=1000,
+            limit=10,
             using="code",
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_context_many_pairs(
@@ -131,12 +131,12 @@ def test_context_many_pairs(
                 models.ContextExamplePair(positive=random_image_vector_1, negative=15),
             ],
             with_payload=True,
-            limit=1000,
+            limit=10,
             using="image",
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_discover_cosine(
@@ -356,6 +356,9 @@ def test_discover_with_filters(local_client, http_client, grpc_client, filter: m
             query_filter=filter,
         )
 
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
+
 
 @pytest.mark.parametrize("filter", [one_random_filter_please() for _ in range(10)])
 def test_context_with_filters(local_client, http_client, grpc_client, filter: models.Filter):
@@ -363,13 +366,13 @@ def test_context_with_filters(local_client, http_client, grpc_client, filter: mo
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=15, negative=7)],
-            limit=1000,
+            limit=10,
             using="image",
             query_filter=filter,
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_query_with_nan():

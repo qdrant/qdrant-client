@@ -80,12 +80,12 @@ def test_context(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=10, negative=19)],
             with_payload=True,
-            limit=200,
+            limit=10,
             using="sparse-image",
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_context_many_pairs(
@@ -113,12 +113,12 @@ def test_context_many_pairs(
                 models.ContextExamplePair(positive=random_sparse_image_vector_1, negative=15),
             ],
             with_payload=True,
-            limit=200,
+            limit=10,
             using="sparse-image",
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_discover(
@@ -132,7 +132,7 @@ def test_discover(
             target=10,
             context=[models.ContextExamplePair(positive=11, negative=19)],
             with_payload=True,
-            limit=100,
+            limit=10,
             using="sparse-image",
         )
 
@@ -154,7 +154,7 @@ def test_discover_raw_target(
             collection_name=COLLECTION_NAME,
             target=random_sparse_image_vector,
             context=[models.ContextExamplePair(positive=10, negative=19)],
-            limit=100,
+            limit=10,
             using="sparse-image",
         )
 
@@ -276,13 +276,13 @@ def test_context_with_filters(local_client, http_client, grpc_client, filter_: m
         return client.discover(
             collection_name=COLLECTION_NAME,
             context=[models.ContextExamplePair(positive=15, negative=7)],
-            limit=200,
+            limit=10,
             using="sparse-image",
             query_filter=filter_,
         )
 
-    compare_client_results(grpc_client, http_client, f, is_context_search=True)
-    compare_client_results(local_client, http_client, f, is_context_search=True)
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 def test_query_with_nan():

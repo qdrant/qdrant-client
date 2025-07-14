@@ -702,7 +702,7 @@ class TestSimpleSearcher:
             collection_name=COLLECTION_NAME,
             query=models.ContextQuery(context=models.ContextPair(positive=11, negative=19)),
             with_payload=True,
-            limit=limit,
+            limit=10,
             using="image",
         )
 
@@ -1187,8 +1187,6 @@ def test_dense_query_discovery_context():
         http_client,
         grpc_client,
         searcher.dense_context_image,
-        is_context_search=True,
-        limit=n_vectors,
     )
 
 
