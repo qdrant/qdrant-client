@@ -97,17 +97,29 @@ SparseQueryVector = Union[
 
 
 def calculate_distance_sparse(
-    query: SparseVector, vectors: list[SparseVector]
+    query: SparseVector, vectors: list[SparseVector], empty_is_zero: bool = False
 ) -> types.NumpyArray:
+    """Calculate distances between a query sparse vector and a list of sparse vectors.
+
+    Args:
+        query (SparseVector): The query sparse vector.
+        vectors (list[SparseVector]): A list of sparse vectors to compare against.
+        empty_is_zero (bool): If True, distance between vectors with no overlap is treated as zero.
+            Otherwise, it is treated as negative infinity.
+            Simple nearest search requires `empty_is_zero` to be False, while methods like
+            recommend, discovery, and context search require True.
+    """
     scores = []
 
     for vector in vectors:
         score = sparse_dot_product(query, vector)
         if score is not None:
             scores.append(score)
-        else:
+        elif not empty_is_zero:
             # means no overlap
             scores.append(np.float32("-inf"))
+        else:
+            scores.append(np.float32(0.0))
 
     return np.array(scores, dtype=np.float32)
 
