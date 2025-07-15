@@ -674,6 +674,8 @@ class GrpcToRest:
             return rest.MatchExcept(**{"except": list(val.strings)})
         if name == "except_integers":
             return rest.MatchExcept(**{"except": list(val.integers)})
+        if name == "phrase":
+            return rest.MatchPhrase(phrase=val)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1553,6 +1555,9 @@ class GrpcToRest:
 
     @classmethod
     def convert_tokenizer_type(cls, model: grpc.TokenizerType) -> rest.TokenizerType:
+        if model == grpc.Unknown:
+            return None
+
         if model == grpc.Prefix:
             return rest.TokenizerType.PREFIX
         if model == grpc.Whitespace:
@@ -1571,6 +1576,38 @@ class GrpcToRest:
             min_token_len=model.min_token_len if model.HasField("min_token_len") else None,
             max_token_len=model.max_token_len if model.HasField("max_token_len") else None,
             lowercase=model.lowercase if model.HasField("lowercase") else None,
+            phrase_matching=model.phrase_matching if model.HasField("phrase_matching") else None,
+            stopwords=cls.convert_stopwords(model.stopwords)
+            if model.HasField("stopwords")
+            else None,
+            on_disk=model.on_disk if model.HasField("on_disk") else None,
+            stemmer=cls.convert_stemmer(model.stemmer) if model.HasField("stemmer") else None,
+        )
+
+    @classmethod
+    def convert_stopwords(cls, model: grpc.StopwordsSet) -> rest.StopwordsInterface:
+        languages = model.languages[:]
+        custom = model.custom[:]
+
+        if len(languages) == 1 and not custom:
+            return rest.Language(languages[0])
+        return rest.StopwordsSet(languages=languages, custom=custom)
+
+    @classmethod
+    def convert_stemmer(cls, model: grpc.StemmingAlgorithm) -> rest.StemmingAlgorithm:
+        name = model.WhichOneof("stemming_params")
+        if name is None:
+            raise ValueError(f"invalid StemmingAlgorithm model: {model}")  # pragma: no cover
+        val = getattr(model, name)
+
+        if name == "snowball":
+            return cls.convert_snowball_parameters(val)
+        raise ValueError(f"invalid StemmingAlgorithm model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_snowball_parameters(cls, model: grpc.SnowballParams) -> rest.SnowballParams:
+        return rest.SnowballParams(
+            type=rest.Snowball.SNOWBALL, language=rest.SnowballLanguage(model.language)
         )
 
     @classmethod
@@ -1720,7 +1757,53 @@ class GrpcToRest:
     ) -> rest.BinaryQuantizationConfig:
         return rest.BinaryQuantizationConfig(
             always_ram=model.always_ram if model.HasField("always_ram") else None,
+            encoding=cls.convert_binary_quantization_encoding(model.encoding)
+            if model.HasField("encoding")
+            else None,
+            query_encoding=cls.convert_binary_quantization_query_encoding(model.query_encoding)
+            if model.HasField("query_encoding")
+            else None,
         )
+
+    @classmethod
+    def convert_binary_quantization_encoding(
+        cls, model: grpc.BinaryQuantizationEncoding
+    ) -> rest.BinaryQuantizationEncoding:
+        if model == grpc.BinaryQuantizationEncoding.OneBit:
+            return rest.BinaryQuantizationEncoding.ONE_BIT
+
+        if model == grpc.BinaryQuantizationEncoding.TwoBits:
+            return rest.BinaryQuantizationEncoding.TWO_BITS
+
+        if model == grpc.BinaryQuantizationEncoding.OneAndHalfBits:
+            return rest.BinaryQuantizationEncoding.ONE_AND_HALF_BITS
+
+        raise ValueError(f"invalid BinaryQuantizationEncoding model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_binary_quantization_query_encoding(
+        cls, model: grpc.BinaryQuantizationQueryEncoding
+    ) -> rest.BinaryQuantizationQueryEncoding:
+        name = model.WhichOneof("variant")
+        if name is None:
+            raise ValueError(f"invalid BinaryQuantizationQueryEncoding model: {model}")
+
+        val = getattr(model, name)
+        if name == "setting":
+            if val == grpc.BinaryQuantizationQueryEncoding.Setting.Default:
+                return rest.BinaryQuantizationQueryEncoding.DEFAULT
+            if val == grpc.BinaryQuantizationQueryEncoding.Setting.Binary:
+                return rest.BinaryQuantizationQueryEncoding.BINARY
+            if val == grpc.BinaryQuantizationQueryEncoding.Setting.Scalar4Bits:
+                return rest.BinaryQuantizationQueryEncoding.SCALAR4BITS
+            if val == grpc.BinaryQuantizationQueryEncoding.Setting.Scalar8Bits:
+                return rest.BinaryQuantizationQueryEncoding.SCALAR8BITS
+            raise ValueError(
+                f"invalid BinaryQuantizationQueryEncoding setting: {val}"
+            )  # pragma: no cover
+        raise ValueError(
+            f"invalid BinaryQuantizationQueryEncoding model: {model}"
+        )  # pragma: no cover
 
     @classmethod
     def convert_compression_ratio(cls, model: grpc.CompressionRatio) -> rest.CompressionRatio:
@@ -2927,7 +3010,8 @@ class RestToGrpc:
             if isinstance(model.except_[0], int):
                 return grpc.Match(except_integers=grpc.RepeatedIntegers(integers=model.except_))
             raise ValueError(f"invalid MatchExcept model: {model}")  # pragma: no cover
-
+        if isinstance(model, rest.MatchPhrase):
+            return grpc.Match(phrase=model.phrase)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -3859,7 +3943,33 @@ class RestToGrpc:
             lowercase=model.lowercase,
             min_token_len=model.min_token_len,
             max_token_len=model.max_token_len,
+            on_disk=model.on_disk,
+            stopwords=cls.convert_stopwords(model.stopwords)
+            if model.stopwords is not None
+            else None,
+            phrase_matching=model.phrase_matching,
+            stemmer=cls.convert_stemmer(model.stemmer) if model.stemmer is not None else None,
         )
+
+    @classmethod
+    def convert_stopwords(cls, model: rest.StopwordsInterface) -> grpc.StopwordsSet:
+        if isinstance(model, rest.Language):
+            return grpc.StopwordsSet(languages=[model.value])
+
+        if isinstance(model, rest.StopwordsSet):
+            return grpc.StopwordsSet(
+                languages=[lang for lang in model.languages] if model.languages else None,
+                custom=model.custom,
+            )
+
+        raise ValueError(f"invalid StopwordsInterface model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_stemmer(cls, model: rest.StemmingAlgorithm) -> grpc.StemmingAlgorithm:
+        if isinstance(model, rest.SnowballParams):
+            return grpc.StemmingAlgorithm(snowball=grpc.SnowballParams(language=model.language))
+
+        raise ValueError(f"invalid StemmingAlgorithm model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_integer_index_params(
@@ -3980,7 +4090,56 @@ class RestToGrpc:
     ) -> grpc.BinaryQuantization:
         return grpc.BinaryQuantization(
             always_ram=model.always_ram,
+            encoding=cls.convert_binary_quantization_encoding(model.encoding)
+            if model.encoding is not None
+            else None,
+            query_encoding=cls.convert_binary_quantization_query_encoding(model.query_encoding)
+            if model.query_encoding is not None
+            else None,
         )
+
+    @classmethod
+    def convert_binary_quantization_encoding(
+        cls, model: rest.BinaryQuantizationEncoding
+    ) -> grpc.BinaryQuantizationEncoding:
+        if model == rest.BinaryQuantizationEncoding.ONE_BIT:
+            return grpc.BinaryQuantizationEncoding.OneBit
+
+        if model == rest.BinaryQuantizationEncoding.TWO_BITS:
+            return grpc.BinaryQuantizationEncoding.TwoBits
+
+        if model == rest.BinaryQuantizationEncoding.ONE_AND_HALF_BITS:
+            return grpc.BinaryQuantizationEncoding.OneAndHalfBits
+
+        raise ValueError(f"invalid BinaryQuantizationEncoding model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_binary_quantization_query_encoding(
+        cls, model: rest.BinaryQuantizationQueryEncoding
+    ) -> grpc.BinaryQuantizationQueryEncoding:
+        if model == rest.BinaryQuantizationQueryEncoding.DEFAULT:
+            return grpc.BinaryQuantizationQueryEncoding(
+                setting=grpc.BinaryQuantizationQueryEncoding.Setting.Default
+            )
+
+        if model == rest.BinaryQuantizationQueryEncoding.BINARY:
+            return grpc.BinaryQuantizationQueryEncoding(
+                setting=grpc.BinaryQuantizationQueryEncoding.Setting.Binary
+            )
+
+        if model == rest.BinaryQuantizationQueryEncoding.SCALAR4BITS:
+            return grpc.BinaryQuantizationQueryEncoding(
+                setting=grpc.BinaryQuantizationQueryEncoding.Setting.Scalar4Bits
+            )
+
+        if model == rest.BinaryQuantizationQueryEncoding.SCALAR8BITS:
+            return grpc.BinaryQuantizationQueryEncoding(
+                setting=grpc.BinaryQuantizationQueryEncoding.Setting.Scalar8Bits
+            )
+
+        raise ValueError(
+            f"invalid BinaryQuantizationQueryEncoding model: {model}"
+        )  # pragma: no cover
 
     @classmethod
     def convert_compression_ratio(cls, model: rest.CompressionRatio) -> grpc.CompressionRatio:

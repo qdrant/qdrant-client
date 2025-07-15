@@ -3624,13 +3624,13 @@ class PointsOperationResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: global___UpdateResult | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -3825,13 +3825,13 @@ class SearchResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___ScoredPoint] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -3850,13 +3850,13 @@ class QueryResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___ScoredPoint] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -3875,13 +3875,13 @@ class QueryBatchResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___BatchResult] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -3900,13 +3900,13 @@ class QueryGroupsResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: global___GroupsResult | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -3940,13 +3940,13 @@ class SearchBatchResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___BatchResult] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -3965,13 +3965,13 @@ class SearchGroupsResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: global___GroupsResult | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -3990,13 +3990,13 @@ class CountResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: global___CountResult | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4019,14 +4019,14 @@ class ScrollResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         next_page_offset: global___PointId | None = ...,
         result: collections.abc.Iterable[global___RetrievedPoint] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_next_page_offset", b"_next_page_offset", "_usage", b"_usage", "next_page_offset", b"next_page_offset", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_next_page_offset", b"_next_page_offset", "_usage", b"_usage", "next_page_offset", b"next_page_offset", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4119,13 +4119,13 @@ class GetResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___RetrievedPoint] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4144,13 +4144,13 @@ class RecommendResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___ScoredPoint] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4169,13 +4169,13 @@ class RecommendBatchResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___BatchResult] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4194,13 +4194,13 @@ class DiscoverResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___ScoredPoint] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4219,13 +4219,13 @@ class DiscoverBatchResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___BatchResult] | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4244,13 +4244,13 @@ class RecommendGroupsResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: global___GroupsResult | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4263,17 +4263,23 @@ class UpdateBatchResponse(google.protobuf.message.Message):
 
     RESULT_FIELD_NUMBER: builtins.int
     TIME_FIELD_NUMBER: builtins.int
+    USAGE_FIELD_NUMBER: builtins.int
     @property
     def result(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___UpdateResult]: ...
     time: builtins.float
     """Time spent to process"""
+    @property
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: collections.abc.Iterable[global___UpdateResult] | None = ...,
         time: builtins.float = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["result", b"result", "time", b"time"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "usage", b"usage"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_usage", b"_usage"]) -> typing_extensions.Literal["usage"] | None: ...
 
 global___UpdateBatchResponse = UpdateBatchResponse
 
@@ -4307,13 +4313,13 @@ class SearchMatrixPairsResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: global___SearchMatrixPairs | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4332,13 +4338,13 @@ class SearchMatrixOffsetsResponse(google.protobuf.message.Message):
     time: builtins.float
     """Time spent to process"""
     @property
-    def usage(self) -> global___HardwareUsage: ...
+    def usage(self) -> global___Usage: ...
     def __init__(
         self,
         *,
         result: global___SearchMatrixOffsets | None = ...,
         time: builtins.float = ...,
-        usage: global___HardwareUsage | None = ...,
+        usage: global___Usage | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "usage", b"usage"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_usage", b"_usage", "result", b"result", "time", b"time", "usage", b"usage"]) -> None: ...
@@ -4594,6 +4600,7 @@ class Match(google.protobuf.message.Message):
     INTEGERS_FIELD_NUMBER: builtins.int
     EXCEPT_INTEGERS_FIELD_NUMBER: builtins.int
     EXCEPT_KEYWORDS_FIELD_NUMBER: builtins.int
+    PHRASE_FIELD_NUMBER: builtins.int
     keyword: builtins.str
     """Match string keyword"""
     integer: builtins.int
@@ -4614,6 +4621,8 @@ class Match(google.protobuf.message.Message):
     @property
     def except_keywords(self) -> global___RepeatedStrings:
         """Match any other value except those keywords"""
+    phrase: builtins.str
+    """Match phrase text"""
     def __init__(
         self,
         *,
@@ -4625,10 +4634,11 @@ class Match(google.protobuf.message.Message):
         integers: global___RepeatedIntegers | None = ...,
         except_integers: global___RepeatedIntegers | None = ...,
         except_keywords: global___RepeatedStrings | None = ...,
+        phrase: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "text", b"text"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "text", b"text"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["match_value", b"match_value"]) -> typing_extensions.Literal["keyword", "integer", "boolean", "text", "keywords", "integers", "except_integers", "except_keywords"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "text", b"text"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["boolean", b"boolean", "except_integers", b"except_integers", "except_keywords", b"except_keywords", "integer", b"integer", "integers", b"integers", "keyword", b"keyword", "keywords", b"keywords", "match_value", b"match_value", "phrase", b"phrase", "text", b"text"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["match_value", b"match_value"]) -> typing_extensions.Literal["keyword", "integer", "boolean", "text", "keywords", "integers", "except_integers", "except_keywords", "phrase"] | None: ...
 
 global___Match = Match
 
@@ -4951,6 +4961,86 @@ class GeoPoint(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["lat", b"lat", "lon", b"lon"]) -> None: ...
 
 global___GeoPoint = GeoPoint
+
+class Usage(google.protobuf.message.Message):
+    """---------------------------------------------
+    ----------- Measurements collector ----------
+    ---------------------------------------------
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    HARDWARE_FIELD_NUMBER: builtins.int
+    INFERENCE_FIELD_NUMBER: builtins.int
+    @property
+    def hardware(self) -> global___HardwareUsage: ...
+    @property
+    def inference(self) -> global___InferenceUsage: ...
+    def __init__(
+        self,
+        *,
+        hardware: global___HardwareUsage | None = ...,
+        inference: global___InferenceUsage | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_hardware", b"_hardware", "_inference", b"_inference", "hardware", b"hardware", "inference", b"inference"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hardware", b"_hardware", "_inference", b"_inference", "hardware", b"hardware", "inference", b"inference"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_hardware", b"_hardware"]) -> typing_extensions.Literal["hardware"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_inference", b"_inference"]) -> typing_extensions.Literal["inference"] | None: ...
+
+global___Usage = Usage
+
+class InferenceUsage(google.protobuf.message.Message):
+    """---------------------------------------------
+    ------------ Inference measurements ----------
+    ---------------------------------------------
+    """
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    class ModelsEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> global___ModelUsage: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: global___ModelUsage | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
+    MODELS_FIELD_NUMBER: builtins.int
+    @property
+    def models(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___ModelUsage]: ...
+    def __init__(
+        self,
+        *,
+        models: collections.abc.Mapping[builtins.str, global___ModelUsage] | None = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["models", b"models"]) -> None: ...
+
+global___InferenceUsage = InferenceUsage
+
+class ModelUsage(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    TOKENS_FIELD_NUMBER: builtins.int
+    tokens: builtins.int
+    def __init__(
+        self,
+        *,
+        tokens: builtins.int = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["tokens", b"tokens"]) -> None: ...
+
+global___ModelUsage = ModelUsage
 
 class HardwareUsage(google.protobuf.message.Message):
     """---------------------------------------------
