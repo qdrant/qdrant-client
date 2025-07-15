@@ -9,6 +9,7 @@ from typing import (
     Sequence,
     Union,
     get_args,
+    Tuple,
 )
 from copy import deepcopy
 import warnings
@@ -26,6 +27,7 @@ from qdrant_client.http.models import ScoredPoint
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
 from qdrant_client.hybrid.formula import evaluate_expression, raise_non_finite_error
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
+from qdrant_client.local.mmr import mmr_rerank
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
@@ -727,6 +729,9 @@ class LocalCollection:
             # It is a hybrid/re-scoring query
             sources = [self._prefetch(prefetch) for prefetch in prefetches]
 
+            if query is None:
+                raise ValueError("Query is required for merging prefetches")
+
             # Merge sources
             scored_points = self._merge_sources(
                 sources=sources,
@@ -764,11 +769,14 @@ class LocalCollection:
         if len(inner_prefetches) > 0:
             sources = [self._prefetch(inner_prefetch) for inner_prefetch in inner_prefetches]
 
+            if prefetch.query is None:
+                raise ValueError("Query is required for merging prefetches")
+
             # Merge sources
             return self._merge_sources(
                 sources=sources,
                 query=prefetch.query,
-                limit=prefetch.limit,
+                limit=prefetch.limit if prefetch.limit is not None else 10,
                 offset=0,
                 using=prefetch.using,
                 query_filter=prefetch.filter,
@@ -885,6 +893,19 @@ class LocalCollection:
             )
             return [record_to_scored_point(record) for record in records[offset:]]
         elif isinstance(query, models.NearestQuery):
+            if query.mmr is not None:
+                return self._search_with_mmr(
+                    query_vector=(using, query.nearest),
+                    mmr=query.mmr,
+                    using=using,
+                    query_filter=query_filter,
+                    limit=limit,
+                    offset=offset,
+                    with_payload=with_payload,
+                    with_vectors=with_vectors,
+                    score_threshold=score_threshold,
+                )
+
             return self.search(
                 query_vector=(using, query.nearest),
                 query_filter=query_filter,
@@ -2051,6 +2072,103 @@ class LocalCollection:
 
         return result
 
+    def _search_with_mmr(
+        self,
+        query_vector: Union[
+            list[float],
+            tuple[str, list[float]],
+            list[list[float]],
+            tuple[str, list[list[float]]],
+            types.NamedVector,
+            types.NamedSparseVector,
+            DenseQueryVector,
+            tuple[str, DenseQueryVector],
+            SparseQueryVector,
+            tuple[str, SparseQueryVector],
+            MultiQueryVector,
+            tuple[str, MultiQueryVector],
+            types.NumpyArray,
+        ],
+        mmr: types.Mmr,
+        using: Optional[str],
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+    ) -> list[models.ScoredPoint]:
+        search_limit = mmr.candidates_limit if mmr.candidates_limit is not None else limit
+        search_results = self.search(
+            query_vector=query_vector,
+            query_filter=query_filter,
+            limit=search_limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=None,
+        )
+
+        diversity = mmr.diversity if mmr.diversity is not None else 0.5
+        lambda_ = 1.0 - diversity
+
+        return self._mmr(search_results, query_vector, using, lambda_, limit, score_threshold)
+
+    def _mmr(
+        self,
+        search_results: list[models.ScoredPoint],
+        query_vector: types.Vector,
+        using: Optional[str],
+        lambda_: float,
+        limit: int,
+        score_threshold: Optional[float],
+    ) -> list[models.ScoredPoint]:
+        if lambda_ < 0.0 or lambda_ > 1.0:
+            raise ValueError("MMR lambda must be between 0.0 and 1.0")
+
+        vector_name = using if using is not None else ""
+
+        matrix: dict[Tuple[models.ExtendedPointId, models.ExtendedPointId], float] = {}
+
+        vectors = []
+        candidates: list[models.ScoredPoint] = []
+
+        for point in search_results:
+            idx = self.ids[point.id]
+            vector = self._get_vectors(idx, vector_name)
+            if isinstance(vector, dict):
+                vector = vector.get(vector_name)
+            if vector is None:
+                # skip points without vector
+                continue
+
+            vectors.append(vector)
+            candidates.append(point)
+
+        candidates_ids = [candidate.id for candidate in candidates]
+        candidates_filter = models.Filter(must=[models.HasIdCondition(has_id=candidates_ids)])
+        candidates_limit = len(candidates_ids)
+
+        for candidate, vector in zip(candidates, vectors):
+            nearest_candidates = self.search(
+                query_vector=(vector_name, vector),
+                query_filter=candidates_filter,
+                limit=candidates_limit,
+                with_payload=False,
+                with_vectors=False,
+                score_threshold=None,
+            )
+            for scored in nearest_candidates:
+                matrix[(candidate.id, scored.id)] = scored.score
+                matrix[(scored.id, candidate.id)] = scored.score
+
+        selected = [candidates[0].id]
+        pending = [candidate.id for candidate in candidates[1:]]
+
+        while len(selected) < limit and len(pending) > 0:
+            # todo: perform reranking
+            pass
+
     def _rescore_with_formula(
         self,
         query: models.FormulaQuery,
@@ -2181,7 +2299,6 @@ class LocalCollection:
         # dense vectors
         for vector_name, named_vectors in self.vectors.items():
             vector = vectors.get(vector_name)
-
             if named_vectors.shape[0] <= idx:
                 named_vectors = np.resize(named_vectors, (idx * 2 + 1, named_vectors.shape[1]))
 
@@ -2200,11 +2317,10 @@ class LocalCollection:
                     norm = np.linalg.norm(vector_np)
                     vector_np = vector_np / norm if norm > EPSILON else vector_np
                 named_vectors[idx] = vector_np
+                self.vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
-
-            self.vectors[vector_name] = named_vectors
 
         # sparse vectors
         for vector_name, named_vectors in self.sparse_vectors.items():
@@ -2224,11 +2340,10 @@ class LocalCollection:
             else:
                 named_vectors[idx] = vector
                 self._update_idf_append(vector, vector_name)
+                self.sparse_vectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
-
-            self.sparse_vectors[vector_name] = named_vectors
 
         # multi vectors
         for vector_name, named_vectors in self.multivectors.items():
@@ -2252,11 +2367,10 @@ class LocalCollection:
                     vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
                     vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
                 named_vectors[idx] = vector_np
+                self.multivectors[vector_name] = named_vectors
                 self.deleted_per_vector[vector_name] = np.append(
                     self.deleted_per_vector[vector_name], 0
                 )
-
-            self.multivectors[vector_name] = named_vectors
 
     def _upsert_point(self, point: models.PointStruct) -> None:
         if isinstance(point.id, str):
@@ -2338,13 +2452,11 @@ class LocalCollection:
             )
 
     def _update_named_vectors(
-        self, idx: int, vectors: dict[str, Union[list[float], SparseVector, list[list[float]]]]
+        self, idx: int, vectors: dict[str, Union[list[float], SparseVector]]
     ) -> None:
         for vector_name, vector in vectors.items():
             if vector_name not in self._all_vectors_keys:
                 raise ValueError(f"Wrong input: Not existing vector name error: {vector_name}")
-
-            self.deleted_per_vector[vector_name][idx] = 0
 
             if isinstance(vector, SparseVector):
                 validate_sparse_vector(vector)
@@ -2353,21 +2465,21 @@ class LocalCollection:
                 new_vector = sort_sparse_vector(vector)
                 self.sparse_vectors[vector_name][idx] = new_vector
                 self._update_idf_append(new_vector, vector_name)
-                continue
-
-            vector_np = np.array(vector, dtype=np.float32)
-            assert not np.isnan(vector_np).any(), "Vector contains NaN values"
-            params = self.get_vector_params(vector_name)
-            if vector_name in self.vectors:
-                if params.distance == models.Distance.COSINE:
-                    norm = np.linalg.norm(vector_np)
-                    vector_np = vector_np / norm if norm > EPSILON else vector_np
-                self.vectors[vector_name][idx] = vector_np
-            else:
-                if params.distance == models.Distance.COSINE:
-                    vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
-                    vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
-                self.multivectors[vector_name][idx] = vector_np
+            elif vector_name in self.vectors:
+                vector_np = np.array(vector, dtype=np.float32)
+                assert not np.isnan(vector_np).any(), "Vector contains NaN values"
+                params = self.get_vector_params(vector_name)
+                if vector_name in self.vectors:
+                    if params.distance == models.Distance.COSINE:
+                        norm = np.linalg.norm(vector_np)
+                        vector_np = vector_np / norm if norm > EPSILON else vector_np
+                    self.vectors[vector_name][idx] = vector_np
+                else:
+                    if params.distance == models.Distance.COSINE:
+                        vector_norm = np.linalg.norm(vector_np, axis=-1)[:, np.newaxis]
+                        vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
+                    self.multivectors[vector_name][idx] = vector_np
+            self.deleted_per_vector[vector_name][idx] = 0
 
     def update_vectors(self, points: Sequence[types.PointVectors]) -> None:
         for point in points:
