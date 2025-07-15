@@ -81,6 +81,7 @@ CACHE_STR_PATH = {
     "MatchText": [],
     "MatchValue": [],
     "MinShould": [],
+    "Mmr": [],
     "MoveShard": [],
     "MoveShardOperation": [],
     "MultExpression": [],
@@ -2984,6 +2985,26 @@ DEFS = {
         "title": "MoveShard",
         "type": "object",
     },
+    "Mmr": {
+        "additionalProperties": False,
+        "description": "Maximal Marginal Relevance (MMR) algorithm for re-ranking the points.",
+        "properties": {
+            "diversity": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "Tunable parameter for the MMR algorithm. Determines the balance between diversity and relevance.  A higher value favors diversity (dissimilarity to selected results), while a lower value favors relevance (similarity to the query vector).  Must be in the range [0, 1]. Default value is 0.5.",
+                "title": "Diversity",
+            },
+            "candidates_limit": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "The maximum number of candidates to consider for re-ranking.  If not specified, the `limit` value is used.",
+                "title": "Candidates Limit",
+            },
+        },
+        "title": "Mmr",
+        "type": "object",
+    },
     "Direction": {"enum": ["asc", "desc"], "title": "Direction", "type": "string"},
     "OrderBy": {
         "additionalProperties": False,
@@ -3259,7 +3280,12 @@ DEFS = {
                 ],
                 "description": "",
                 "title": "Nearest",
-            }
+            },
+            "mmr": {
+                "anyOf": [{"$ref": "#/$defs/Mmr"}, {"type": "null"}],
+                "default": None,
+                "description": "Perform MMR (Maximal Marginal Relevance) reranking after search, using the same vector in this query to calculate relevance.",
+            },
         },
         "required": ["nearest"],
         "title": "NearestQuery",
