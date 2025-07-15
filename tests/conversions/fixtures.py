@@ -1471,6 +1471,9 @@ expression = grpc.Expression(
 
 formula = grpc.Formula(defaults=formula_defaults, expression=expression)
 
+mmr = grpc.Mmr(diversity=0.6, candidates_limit=100)
+mmr_default = grpc.Mmr()
+
 query_nearest = grpc.Query(nearest=vector_input_sparse)
 query_recommend = grpc.Query(recommend=recommend_input)
 query_recommend_id = grpc.Query(recommend=recommend_input_strategy)
@@ -1482,6 +1485,12 @@ query_fusion = grpc.Query(fusion=grpc.Fusion.RRF)
 query_fusion_dbsf = grpc.Query(fusion=grpc.Fusion.DBSF)
 query_sample = grpc.Query(sample=grpc.Sample.Random)
 query_formula = grpc.Query(formula=formula)
+query_nearest_with_mmr = grpc.Query(
+    nearest_with_mmr=grpc.NearestInputWithMmr(nearest=vector_input_dense, mmr=mmr)
+)
+query_nearest_with_mmr_default = grpc.Query(
+    nearest_with_mmr=grpc.NearestInputWithMmr(nearest=vector_input_dense, mmr=mmr_default)
+)
 
 deep_prefetch_query = grpc.PrefetchQuery(query=query_recommend)
 prefetch_query = grpc.PrefetchQuery(
@@ -1706,6 +1715,8 @@ fixtures = {
         query_fusion,
         query_recommend_id,
         query_formula,
+        query_nearest_with_mmr,
+        query_nearest_with_mmr_default,
     ],
     "FacetValueHit": [facet_string_hit, facet_integer_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],
