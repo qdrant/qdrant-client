@@ -4,6 +4,10 @@ from qdrant_client.http import models
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
 
 
+def test_absolutely_failing_test_to_debug_snapshots_in_ci():
+    raise Exception("Did it work???")
+
+
 def test_reciprocal_rank_fusion() -> None:
     responses = [
         [

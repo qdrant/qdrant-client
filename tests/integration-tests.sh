@@ -53,6 +53,7 @@ set -e
 if [[ $PYTEST_EXIT_CODE -ne 0 ]]; then
   echo "Pytest failed, saving Qdrant snapshot..."
   SNAPSHOT_NAME=$(curl -s -X POST "http://$QDRANT_HOST/snapshots" -H "accept: application/json" -H "Content-Type: application/json" | jq -r .result.name)
+  echo "Snapshot name: $SNAPSHOT_NAME"
   if [[ -n "$SNAPSHOT_NAME" ]]; then
     echo "Snapshot created: $SNAPSHOT_NAME"
     docker cp qdrant_test:/qdrant/snapshots/$SNAPSHOT_NAME ./failed_snapshot.snapshot
