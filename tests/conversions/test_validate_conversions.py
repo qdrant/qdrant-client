@@ -437,3 +437,69 @@ def test_extended_vectors():
     )
     assert np.allclose(rest_multi_dense_vector, np.array([[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]))
     # endregion
+
+
+def test_convert_text_index_params_stopwords():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    text_index_params = models.TextIndexParams(
+        type=models.TextIndexType.TEXT,
+        stopwords=models.Language.ENGLISH,
+    )
+
+    grpc_text_index_params = RestToGrpc.convert_text_index_params(text_index_params)
+    recovered = GrpcToRest.convert_text_index_params(grpc_text_index_params)
+
+    assert recovered == text_index_params
+
+    text_index_params_1 = models.TextIndexParams(
+        type=models.TextIndexType.TEXT,
+        stopwords=models.StopwordsSet(custom=["custom1", "custom2", "custom3"]),
+    )
+
+    grpc_text_index_params_1 = RestToGrpc.convert_text_index_params(text_index_params_1)
+    recovered_1 = GrpcToRest.convert_text_index_params(grpc_text_index_params_1)
+
+    assert recovered_1.stopwords.custom == text_index_params_1.stopwords.custom
+    assert recovered_1.stopwords.languages == []
+
+    text_index_params_2 = models.TextIndexParams(
+        type=models.TextIndexType.TEXT,
+        stopwords=models.StopwordsSet(
+            custom=["custom1", "custom2", "custom3"],
+            languages=[models.Language.ENGLISH, models.Language.GERMAN],
+        ),
+    )
+    grpc_text_index_params_2 = RestToGrpc.convert_text_index_params(text_index_params_2)
+
+    recovered_2 = GrpcToRest.convert_text_index_params(grpc_text_index_params_2)
+    assert recovered_2 == text_index_params_2
+
+    text_index_params_3 = models.TextIndexParams(
+        type=models.TextIndexType.TEXT,
+        stopwords=models.StopwordsSet(
+            languages=[
+                "english",
+                "german",
+            ],  # though it's not directly supported by the interface, strings might
+            # be convenient to use
+        ),
+    )
+    grpc_text_index_params_3 = RestToGrpc.convert_text_index_params(text_index_params_3)
+    recovered_3 = GrpcToRest.convert_text_index_params(grpc_text_index_params_3)
+
+    assert recovered_3.stopwords.languages == text_index_params_3.stopwords.languages
+    assert recovered_3.stopwords.custom == []
+
+    text_index_params_4 = models.TextIndexParams(
+        type=models.TextIndexType.TEXT,
+        stopwords=models.StopwordsSet(
+            languages=[models.Language.ENGLISH],
+        ),
+    )
+    grpc_text_index_params_4 = RestToGrpc.convert_text_index_params(text_index_params_4)
+
+    recovered_4 = GrpcToRest.convert_text_index_params(grpc_text_index_params_4)
+
+    assert recovered_4.stopwords == models.Language.ENGLISH
