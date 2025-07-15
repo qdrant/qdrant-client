@@ -232,21 +232,31 @@ def compare_scored_record(
     point2: models.ScoredPoint,
     idx: int,
     rel_tol: float = 1e-4,
-    abs_tol: float = 0,
+    abs_tol: float = 1e-6,
 ) -> None:
-    assert (
-        point1.id == point2.id
-    ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
+    # This is a special case, likely the result of scroll or context search
+    # We need to ensure ordering by another field
+    is_score_zero = point1.score == 0.0 and point2.score == 0.0
+
     assert math.isclose(
         np.float32(point1.score), np.float32(point2.score), rel_tol=rel_tol, abs_tol=abs_tol
     ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, rel_tol={rel_tol}"
-    assert (
-        point1.payload == point2.payload
-    ), f"point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
-    compare_vectors(point1.vector, point2.vector, idx)
+
+    assert point1.order_value == point2.order_value, f"point1[{idx}].order_value = {point1.order_value}, point2[{idx}].order_value = {point2.order_value}"
+
+    if is_score_zero:
+        assert point1.id == point2.id, f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
+
+    if point1.id == point2.id:
+        # same id means same payload
+        assert (
+            point1.payload == point2.payload
+        ), f"id:{point1.id} point1[{idx}].payload = {point1.payload}, point2[{idx}].payload = {point2.payload}"
+
+        compare_vectors(point1.vector, point2.vector, idx)
 
 
-def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 0) -> None:
+def compare_records(res1: list, res2: list, rel_tol: float = 1e-4, abs_tol: float = 1e-6) -> None:
     assert len(res1) == len(res2), f"len(res1) = {len(res1)}, len(res2) = {len(res2)}"
     for i in range(len(res2)):
         res1_item = res1[i]

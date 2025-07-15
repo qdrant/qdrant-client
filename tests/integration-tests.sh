@@ -35,13 +35,34 @@ until $(curl --output /dev/null --silent --get --fail http://$QDRANT_HOST/collec
   sleep 5
 done
 
+set +e
+
 # If running backwards compatibility tests, skip local compatibility tests
 # Backwards compatibility tests are enabled by setting QDRANT_VERSION to a version that is not the latest
 # OR by setting IGNORE_CONGRUENCE_TESTS to true
 if [[ "$QDRANT_VERSION" != "$QDRANT_LATEST" ]] || [[ "$IGNORE_CONGRUENCE_TESTS" == "true" ]]; then
   QDRANT_VERSION=$QDRANT_VERSION pytest -x --ignore=tests/congruence_tests
+  PYTEST_EXIT_CODE=$?
 else
   QDRANT_VERSION=$QDRANT_VERSION pytest -x
+  PYTEST_EXIT_CODE=$?
+fi
+
+set -e
+
+if [[ $PYTEST_EXIT_CODE -ne 0 ]]; then
+  echo "Pytest failed, saving Qdrant snapshot..."
+  SNAPSHOT_NAME=$(curl -s -X POST "http://$QDRANT_HOST/snapshots" -H "accept: application/json" -H "Content-Type: application/json" | jq -r .result.name)
+  if [[ -n "$SNAPSHOT_NAME" ]]; then
+    echo "Snapshot created: $SNAPSHOT_NAME"
+    docker cp qdrant_test:/qdrant/snapshots/$SNAPSHOT_NAME ./failed_snapshot.snapshot
+    echo "Snapshot copied to host: $SNAPSHOT_NAME"
+  else
+    echo "Failed to create or parse snapshot name."
+  fi
+
+  stop_docker
+  exit 1
 fi
 
 
