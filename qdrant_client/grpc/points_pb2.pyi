@@ -2675,6 +2675,67 @@ class DecayParamsExpression(google.protobuf.message.Message):
 
 global___DecayParamsExpression = DecayParamsExpression
 
+class NearestInputWithMmr(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NEAREST_FIELD_NUMBER: builtins.int
+    MMR_FIELD_NUMBER: builtins.int
+    @property
+    def nearest(self) -> global___VectorInput:
+        """The vector to search for nearest neighbors."""
+    @property
+    def mmr(self) -> global___Mmr:
+        """Perform MMR (Maximal Marginal Relevance) reranking after search,
+        using the same vector in this query to calculate relevance.
+        """
+    def __init__(
+        self,
+        *,
+        nearest: global___VectorInput | None = ...,
+        mmr: global___Mmr | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["mmr", b"mmr", "nearest", b"nearest"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["mmr", b"mmr", "nearest", b"nearest"]) -> None: ...
+
+global___NearestInputWithMmr = NearestInputWithMmr
+
+class Mmr(google.protobuf.message.Message):
+    """Maximal Marginal Relevance (MMR) algorithm for re-ranking the points."""
+
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DIVERSITY_FIELD_NUMBER: builtins.int
+    CANDIDATES_LIMIT_FIELD_NUMBER: builtins.int
+    diversity: builtins.float
+    """Tunable parameter for the MMR algorithm.
+    Determines the balance between diversity and relevance.
+
+    A higher value favors diversity (dissimilarity to selected results),
+    while a lower value favors relevance (similarity to the query vector).
+
+    Must be in the range [0, 1].
+    Default value is 0.5.
+    """
+    candidates_limit: builtins.int
+    """The maximum number of candidates to consider for re-ranking.
+
+    If not specified, the `limit` value is used.
+    """
+    def __init__(
+        self,
+        *,
+        diversity: builtins.float | None = ...,
+        candidates_limit: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_candidates_limit", b"_candidates_limit", "_diversity", b"_diversity", "candidates_limit", b"candidates_limit", "diversity", b"diversity"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_candidates_limit", b"_candidates_limit", "_diversity", b"_diversity", "candidates_limit", b"candidates_limit", "diversity", b"diversity"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_candidates_limit", b"_candidates_limit"]) -> typing_extensions.Literal["candidates_limit"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_diversity", b"_diversity"]) -> typing_extensions.Literal["diversity"] | None: ...
+
+global___Mmr = Mmr
+
 class Query(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -2686,6 +2747,7 @@ class Query(google.protobuf.message.Message):
     FUSION_FIELD_NUMBER: builtins.int
     SAMPLE_FIELD_NUMBER: builtins.int
     FORMULA_FIELD_NUMBER: builtins.int
+    NEAREST_WITH_MMR_FIELD_NUMBER: builtins.int
     @property
     def nearest(self) -> global___VectorInput:
         """Find the nearest neighbors to this vector."""
@@ -2708,6 +2770,9 @@ class Query(google.protobuf.message.Message):
     @property
     def formula(self) -> global___Formula:
         """Score boosting via an arbitrary formula"""
+    @property
+    def nearest_with_mmr(self) -> global___NearestInputWithMmr:
+        """Search nearest neighbors, but re-rank based on the Maximal Marginal Relevance algorithm."""
     def __init__(
         self,
         *,
@@ -2719,10 +2784,11 @@ class Query(google.protobuf.message.Message):
         fusion: global___Fusion.ValueType = ...,
         sample: global___Sample.ValueType = ...,
         formula: global___Formula | None = ...,
+        nearest_with_mmr: global___NearestInputWithMmr | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "order_by", b"order_by", "recommend", b"recommend", "sample", b"sample", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "order_by", b"order_by", "recommend", b"recommend", "sample", b"sample", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["nearest", "recommend", "discover", "context", "order_by", "fusion", "sample", "formula"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "sample", b"sample", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["context", b"context", "discover", b"discover", "formula", b"formula", "fusion", b"fusion", "nearest", b"nearest", "nearest_with_mmr", b"nearest_with_mmr", "order_by", b"order_by", "recommend", b"recommend", "sample", b"sample", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["nearest", "recommend", "discover", "context", "order_by", "fusion", "sample", "formula", "nearest_with_mmr"] | None: ...
 
 global___Query = Query
 
