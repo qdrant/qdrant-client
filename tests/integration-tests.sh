@@ -35,6 +35,7 @@ until $(curl --output /dev/null --silent --get --fail http://$QDRANT_HOST/collec
   sleep 5
 done
 
+trap - ERR
 set +e
 
 # If running backwards compatibility tests, skip local compatibility tests
@@ -48,7 +49,9 @@ else
   PYTEST_EXIT_CODE=$?
 fi
 
+
 set -e
+trap stop_docker ERR
 
 if [[ $PYTEST_EXIT_CODE -ne 0 ]]; then
   echo "Pytest failed, saving Qdrant snapshot..."
