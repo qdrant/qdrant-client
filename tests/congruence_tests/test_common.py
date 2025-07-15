@@ -242,10 +242,14 @@ def compare_scored_record(
         np.float32(point1.score), np.float32(point2.score), rel_tol=rel_tol, abs_tol=abs_tol
     ), f"point1[{idx}].score = {point1.score}, point2[{idx}].score = {point2.score}, rel_tol={rel_tol}"
 
-    assert point1.order_value == point2.order_value, f"point1[{idx}].order_value = {point1.order_value}, point2[{idx}].order_value = {point2.order_value}"
+    assert (
+        point1.order_value == point2.order_value
+    ), f"point1[{idx}].order_value = {point1.order_value}, point2[{idx}].order_value = {point2.order_value}"
 
     if is_score_zero:
-        assert point1.id == point2.id, f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
+        assert (
+            point1.id == point2.id
+        ), f"point1[{idx}].id = {point1.id}, point2[{idx}].id = {point2.id}"
 
     if point1.id == point2.id:
         # same id means same payload
@@ -329,19 +333,19 @@ def compare_client_results(
         assert np.allclose(
             res1.scores, res2.scores, atol=1e-4
         ), f"res1.scores = {res1.scores}, res2.scores = {res2.scores}"
+        # we don't compare offsets_col, because due to slight differences in score computation in
+        # local and remote modes, ordering can be different
         assert (
             res1.offsets_row == res2.offsets_row
         ), f"res1.offsets_row = {res1.offsets_row}, res2.offsets_row = {res2.offsets_row}"
-        assert (
-            res1.offsets_col == res2.offsets_col
-        ), f"res1.offsets_col = {res1.offsets_col}, res2.offsets_col = {res2.offsets_col}"
     elif isinstance(res1, models.SearchMatrixPairsResponse):
         assert len(res1.pairs) == len(
             res2.pairs
         ), f"len(res1.pairs) = {len(res1.pairs)}, len(res2.pairs) = {len(res2.pairs)}"
         for pair_1, pair_2 in zip(res1.pairs, res2.pairs):
+            # we don't compare pair_1.b to pair_2.b, because due to slight differences in score computation in
+            # local and remote modes, ordering can be different
             assert pair_1.a == pair_2.a, f"pair_1.a = {pair_1.a}, pair_2.a = {pair_2.a}"
-            assert pair_1.b == pair_2.b, f"pair_1.b = {pair_1.b}, pair_2.b = {pair_2.b}"
             # compare scores with margin
             assert math.isclose(
                 pair_1.score, pair_2.score, rel_tol=1e-4
