@@ -92,3 +92,7 @@ def test_alias_changes():
 
     compare_client_results(local_client, remote_client, retriever.list_aliases)
     compare_client_results(local_client, remote_client, retriever.list_collection_aliases)
+
+
+def test_absolutely_failing_test_to_debug_snapshots_in_ci() -> None:
+    raise Exception("Did it work???")
