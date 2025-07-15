@@ -765,26 +765,31 @@ class FeatureFlags(BaseModel):
     )
     payload_index_skip_rocksdb: Optional[bool] = Field(
         default=True,
-        description="Whether to skip usage of RocksDB in immutable payload indices.  First implemented in Qdrant 1.13.5. Enabled by default in Qdrant 1.14.1",
+        description="Skip usage of RocksDB in new immutable payload indices.  First implemented in Qdrant 1.13.5. Enabled by default in Qdrant 1.14.1",
     )
     payload_index_skip_mutable_rocksdb: Optional[bool] = Field(
-        default=False, description="Whether to skip usage of RocksDB in mutable payload indices."
+        default=False, description="Skip usage of RocksDB in new mutable payload indices."
     )
     payload_storage_skip_rocksdb: Optional[bool] = Field(
         default=False,
-        description="Whether to skip usage of RocksDB for new payload storages.  New on-disk payload storages were already using Gridstore. In-memory payload storages still choose RocksDB when this flag is not set.  First implemented in Qdrant 1.15.0.",
+        description="Skip usage of RocksDB in new payload storages.  On-disk payload storages never use Gridstore.  First implemented in Qdrant 1.15.0.",
     )
     incremental_hnsw_building: Optional[bool] = Field(
-        default=True, description="Whether to use incremental HNSW building.  Enabled by default in Qdrant 1.14.1."
+        default=True, description="Use incremental HNSW building.  Enabled by default in Qdrant 1.14.1."
     )
     migrate_rocksdb_id_tracker: Optional[bool] = Field(
-        default=False, description="Whether to actively migrate RocksDB based ID trackers into a new format."
+        default=True,
+        description="Migrate RocksDB based ID trackers into file based ID tracker on start.  Enabled by default in Qdrant 1.15.0.",
     )
     migrate_rocksdb_vector_storage: Optional[bool] = Field(
-        default=False, description="Whether to actively migrate RocksDB based vector storages into a new format."
+        default=False, description="Migrate RocksDB based vector storages into new format on start."
     )
     migrate_rocksdb_payload_storage: Optional[bool] = Field(
-        default=False, description="Whether to actively migrate RocksDB based payload storages into a new format."
+        default=False, description="Migrate RocksDB based payload storages into new format on start."
+    )
+    migrate_rocksdb_payload_indices: Optional[bool] = Field(
+        default=False,
+        description="Migrate RocksDB based payload indices into new format on start.  Rebuilds a new payload index from scratch.",
     )
 
 
@@ -1532,6 +1537,21 @@ class MinShould(BaseModel, extra="forbid"):
     min_count: int = Field(..., description="")
 
 
+class Mmr(BaseModel, extra="forbid"):
+    """
+    Maximal Marginal Relevance (MMR) algorithm for re-ranking the points.
+    """
+
+    diversity: Optional[float] = Field(
+        default=None,
+        description="Tunable parameter for the MMR algorithm. Determines the balance between diversity and relevance.  A higher value favors diversity (dissimilarity to selected results), while a lower value favors relevance (similarity to the query vector).  Must be in the range [0, 1]. Default value is 0.5.",
+    )
+    candidates_limit: Optional[int] = Field(
+        default=None,
+        description="The maximum number of candidates to consider for re-ranking.  If not specified, the `limit` value is used.",
+    )
+
+
 class ModelUsage(BaseModel):
     tokens: int = Field(..., description="")
 
@@ -1593,6 +1613,10 @@ class NamedVector(BaseModel, extra="forbid"):
 
 class NearestQuery(BaseModel, extra="forbid"):
     nearest: "VectorInput" = Field(..., description="")
+    mmr: Optional["Mmr"] = Field(
+        default=None,
+        description="Perform MMR (Maximal Marginal Relevance) reranking after search, using the same vector in this query to calculate relevance.",
+    )
 
 
 class NegExpression(BaseModel, extra="forbid"):
@@ -1658,7 +1682,7 @@ class OptimizersConfig(BaseModel):
     )
     indexing_threshold: Optional[int] = Field(
         default=None,
-        description="Maximum size (in kilobytes) of vectors allowed for plain index, exceeding this threshold will enable vector indexing  Default value is 20,000, based on &lt;https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md&gt;.  To disable vector indexing, set to `0`.  Note: 1kB = 1 vector of size 256.",
+        description="Maximum size (in kilobytes) of vectors allowed for plain index, exceeding this threshold will enable vector indexing  Default value is 10,000, based on experiments and observations.  To disable vector indexing, set to `0`.  Note: 1kB = 1 vector of size 256.",
     )
     flush_interval_sec: int = Field(..., description="Minimum interval between forced flushes.")
     max_optimization_threads: Optional[int] = Field(
