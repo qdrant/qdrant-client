@@ -1,4 +1,6 @@
-from typing import Optional
+import base64
+from pathlib import Path
+from typing import Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -64,3 +66,14 @@ def convert_paths(paths: list[str]) -> list[FieldPath]:
                 current.tail.append(new_tail)
                 current = new_tail
     return converted_paths
+
+
+def read_base64(file_path: Union[str, Path]) -> str:
+    """Convert a file path to a base64 encoded string."""
+    path = Path(file_path)
+    if not path.exists():
+        raise FileNotFoundError(f"The file {path} does not exist.")
+
+    with open(path, "rb") as file:
+        file_content = file.read()
+        return base64.b64encode(file_content).decode("utf-8")
