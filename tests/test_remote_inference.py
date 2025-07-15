@@ -14,8 +14,7 @@ QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY", "")
 # This test requires configured remote inference server, so it is disabled by default and
 # expected to be used manually.
 @pytest.mark.skip(reason="Requires configured remote inference server")
-def test_remove_inference_image():
-
+def test_remote_inference_image():
     client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, cloud_inference=True)
     collection_name = "image_embeddings"
     model_name = "Qdrant/clip-ViT-B-32-vision"
@@ -39,8 +38,7 @@ def test_remove_inference_image():
     client.create_collection(
         collection_name=collection_name,
         vectors_config=models.VectorParams(
-            size=client.get_embedding_size(model_name),
-            distance=models.Distance.COSINE
+            size=client.get_embedding_size(model_name), distance=models.Distance.COSINE
         ),
     )
 
@@ -61,6 +59,5 @@ def test_remove_inference_image():
                     model=model_name,
                 ),
             ),
-        ]
+        ],
     )
-
