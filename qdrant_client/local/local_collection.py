@@ -9,7 +9,6 @@ from typing import (
     Sequence,
     Union,
     get_args,
-    Tuple,
 )
 from copy import deepcopy
 import warnings
@@ -2128,7 +2127,7 @@ class LocalCollection:
 
         vector_name = using if using is not None else ""
 
-        matrix: dict[Tuple[models.ExtendedPointId, models.ExtendedPointId], float] = {}
+        matrix: dict[tuple[models.ExtendedPointId, models.ExtendedPointId], float] = {}
 
         vectors = []
         candidates: list[models.ScoredPoint] = []

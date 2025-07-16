@@ -62,6 +62,69 @@ class TestSimpleSearcher:
             limit=10,
         ).points
 
+    def default_mmr_query(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_text,
+                mmr=models.Mmr(),
+            ),
+            using="multi-text",
+            limit=10,
+        )
+
+    def mmr_query_parametrized(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_text, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
+            ),
+            using="multi-text",
+            limit=10,
+        )
+
+    def default_mmr_query_dot(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_image,
+                mmr=models.Mmr(),
+            ),
+            using="multi-image",
+            limit=10,
+        )
+
+    def mmr_query_parametrized_dot(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_image, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
+            ),
+            using="multi-image",
+            limit=10,
+        )
+
+    def default_mmr_query_euclid(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_code,
+                mmr=models.Mmr(),
+            ),
+            using="multi-code",
+            limit=10,
+        )
+
+    def mmr_query_parametrized_euclid(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_code, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
+            ),
+            using="multi-code",
+            limit=10,
+        )
+
 
 def test_simple():
     fixture_points = generate_multivector_fixtures(100)
@@ -77,6 +140,25 @@ def test_simple():
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
     compare_client_results(local_client, remote_client, searcher.simple_search_code)
+
+
+def test_mmr():
+    fixture_points = generate_multivector_fixtures(100)
+
+    searcher = TestSimpleSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, vectors_config=multi_vector_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points, vectors_config=multi_vector_config)
+
+    compare_client_results(local_client, remote_client, searcher.default_mmr_query)
+    compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized)
+    compare_client_results(local_client, remote_client, searcher.default_mmr_query_dot)
+    compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized_dot)
+    compare_client_results(local_client, remote_client, searcher.default_mmr_query_euclid)
+    compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized_euclid)
 
 
 def test_single_vector():

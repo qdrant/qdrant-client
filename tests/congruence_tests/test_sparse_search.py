@@ -140,6 +140,27 @@ class TestSimpleSparseSearcher:
             limit=10,
         )
 
+    def default_mmr_query(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_text,
+                mmr=models.Mmr(),
+            ),
+            using="sparse-text",
+            limit=10,
+        )
+
+    def mmr_query_parametrized(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_text, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
+            ),
+            using="sparse-text",
+            limit=10,
+        )
+
 
 def test_simple_search():
     fixture_points = generate_sparse_fixtures()
@@ -170,6 +191,21 @@ def test_simple_search():
         except AssertionError as e:
             print(f"\nFailed with filter {query_filter}")
             raise e
+
+
+def test_mmr():
+    fixture_points = generate_sparse_fixtures(num=100)
+
+    searcher = TestSimpleSparseSearcher()
+
+    local_client = init_local()
+    init_client(local_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+
+    remote_client = init_remote()
+    init_client(remote_client, fixture_points, sparse_vectors_config=sparse_vectors_config)
+
+    compare_client_results(local_client, remote_client, searcher.default_mmr_query)
+    compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized)
 
 
 def test_simple_opt_vectors_search():
