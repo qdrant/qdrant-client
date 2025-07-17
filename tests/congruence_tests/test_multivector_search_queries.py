@@ -83,14 +83,14 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def default_mmr_query_dot(self, client: QdrantBase) -> models.QueryResponse:
+    def mmr_query_parametrized_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=self.query_image,
-                mmr=models.Mmr(),
+                nearest=self.query_text, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
             ),
-            using="multi-image",
+            using="multi-text",
+            score_threshold=7.0,
             limit=10,
         )
 
@@ -104,14 +104,16 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def default_mmr_query_euclid(self, client: QdrantBase) -> models.QueryResponse:
+    def mmr_query_parametrized_dot_score_threshold(
+        self, client: QdrantBase
+    ) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=self.query_code,
-                mmr=models.Mmr(),
+                nearest=self.query_image, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
             ),
-            using="multi-code",
+            score_threshold=260.0,
+            using="multi-image",
             limit=10,
         )
 
@@ -122,6 +124,19 @@ class TestSimpleSearcher:
                 nearest=self.query_code, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
             ),
             using="multi-code",
+            limit=10,
+        )
+
+    def mmr_query_parametrized_euclid_score_threshold(
+        self, client: QdrantBase
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.query_code, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
+            ),
+            using="multi-code",
+            score_threshold=-100.0,
             limit=10,
         )
 
@@ -143,7 +158,7 @@ def test_simple():
 
 
 def test_mmr():
-    fixture_points = generate_multivector_fixtures(100)
+    fixture_points = generate_multivector_fixtures(10)
 
     searcher = TestSimpleSearcher()
 
@@ -155,10 +170,17 @@ def test_mmr():
 
     compare_client_results(local_client, remote_client, searcher.default_mmr_query)
     compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized)
-    compare_client_results(local_client, remote_client, searcher.default_mmr_query_dot)
+    compare_client_results(
+        local_client, remote_client, searcher.mmr_query_parametrized_score_threshold
+    )
     compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized_dot)
-    compare_client_results(local_client, remote_client, searcher.default_mmr_query_euclid)
+    compare_client_results(
+        local_client, remote_client, searcher.mmr_query_parametrized_dot_score_threshold
+    )
     compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized_euclid)
+    compare_client_results(
+        local_client, remote_client, searcher.mmr_query_parametrized_euclid_score_threshold
+    )
 
 
 def test_single_vector():

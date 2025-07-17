@@ -26,7 +26,6 @@ from qdrant_client.http.models import ScoredPoint
 from qdrant_client.http.models.models import Distance, ExtendedPointId, SparseVector, OrderValue
 from qdrant_client.hybrid.formula import evaluate_expression, raise_non_finite_error
 from qdrant_client.hybrid.fusion import reciprocal_rank_fusion, distribution_based_score_fusion
-from qdrant_client.local.mmr import mmr_rerank
 from qdrant_client.local.distances import (
     ContextPair,
     ContextQuery,
@@ -40,6 +39,7 @@ from qdrant_client.local.distances import (
     calculate_recommend_best_scores,
     distance_to_order,
     calculate_recommend_sum_scores,
+    calculate_distance_core,
 )
 from qdrant_client.local.multi_distances import (
     MultiQueryVector,
@@ -52,6 +52,7 @@ from qdrant_client.local.multi_distances import (
     calculate_multi_discovery_scores,
     calculate_multi_context_scores,
     calculate_multi_recommend_sum_scores,
+    calculate_multi_distance_core,
 )
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
@@ -894,12 +895,12 @@ class LocalCollection:
         elif isinstance(query, models.NearestQuery):
             if query.mmr is not None:
                 return self._search_with_mmr(
-                    query_vector=(using, query.nearest),
+                    query_vector=query.nearest,
                     mmr=query.mmr,
-                    using=using,
                     query_filter=query_filter,
                     limit=limit,
                     offset=offset,
+                    using=using,
                     with_payload=with_payload,
                     with_vectors=with_vectors,
                     score_threshold=score_threshold,
@@ -2075,18 +2076,8 @@ class LocalCollection:
         self,
         query_vector: Union[
             list[float],
-            tuple[str, list[float]],
+            SparseVector,
             list[list[float]],
-            tuple[str, list[list[float]]],
-            types.NamedVector,
-            types.NamedSparseVector,
-            DenseQueryVector,
-            tuple[str, DenseQueryVector],
-            SparseQueryVector,
-            tuple[str, SparseQueryVector],
-            MultiQueryVector,
-            tuple[str, MultiQueryVector],
-            types.NumpyArray,
         ],
         mmr: types.Mmr,
         using: Optional[str],
@@ -2098,8 +2089,9 @@ class LocalCollection:
         score_threshold: Optional[float] = None,
     ) -> list[models.ScoredPoint]:
         search_limit = mmr.candidates_limit if mmr.candidates_limit is not None else limit
+        using = using or DEFAULT_VECTOR_NAME
         search_results = self.search(
-            query_vector=query_vector,
+            query_vector=(using, query_vector),
             query_filter=query_filter,
             limit=search_limit,
             offset=offset,
@@ -2116,7 +2108,7 @@ class LocalCollection:
     def _mmr(
         self,
         search_results: list[models.ScoredPoint],
-        query_vector: types.Vector,
+        query_vector: Union[list[float], SparseVector, list[list[float]]],
         using: Optional[str],
         lambda_: float,
         limit: int,
@@ -2125,48 +2117,122 @@ class LocalCollection:
         if lambda_ < 0.0 or lambda_ > 1.0:
             raise ValueError("MMR lambda must be between 0.0 and 1.0")
 
-        vector_name = using if using is not None else ""
+        if not search_results:
+            return []
 
-        matrix: dict[tuple[models.ExtendedPointId, models.ExtendedPointId], float] = {}
+        # distance matrix between candidates
+        candidate_distance_matrix: dict[
+            tuple[models.ExtendedPointId, models.ExtendedPointId], float
+        ] = {}
 
-        vectors = []
+        candidate_vectors = []
+        candidate_ids = []
         candidates: list[models.ScoredPoint] = []
 
+        # `with_vectors` might be different from `using`, thus we need to retrieve vectors explicitly
         for point in search_results:
             idx = self.ids[point.id]
-            vector = self._get_vectors(idx, vector_name)
-            if isinstance(vector, dict):
-                vector = vector.get(vector_name)
-            if vector is None:
-                # skip points without vector
-                continue
+            candidate_vector = self._get_vectors(idx, [using])
+            if isinstance(candidate_vector, dict):
+                candidate_vector = candidate_vector.get(using)
 
-            vectors.append(vector)
+            candidate_vectors.append(candidate_vector)
+            candidate_ids.append(point.id)
             candidates.append(point)
 
-        candidates_ids = [candidate.id for candidate in candidates]
-        candidates_filter = models.Filter(must=[models.HasIdCondition(has_id=candidates_ids)])
-        candidates_limit = len(candidates_ids)
+        query_raw_similarities: dict[models.ExtendedPointId, float] = {}
+        id_to_point = {point.id: point for point in search_results}
 
-        for candidate, vector in zip(candidates, vectors):
-            nearest_candidates = self.search(
-                query_vector=(vector_name, vector),
-                query_filter=candidates_filter,
-                limit=candidates_limit,
-                with_payload=False,
-                with_vectors=False,
-                score_threshold=None,
-            )
-            for scored in nearest_candidates:
-                matrix[(candidate.id, scored.id)] = scored.score
-                matrix[(scored.id, candidate.id)] = scored.score
+        distance = (
+            self.get_vector_params(using).distance if using not in self.sparse_vectors else None
+        )
+        query_vector = (
+            np.array(query_vector)
+            if not isinstance(query_vector, SparseVector)
+            else sort_sparse_vector(query_vector)
+        )
+        for candidate_id, candidate_vector in zip(candidate_ids, candidate_vectors):
+            if isinstance(candidate_vector, list) and isinstance(candidate_vector[0], float):
+                candidate_vector_np = np.array(candidate_vector)
+                if not isinstance(candidate_vectors, np.ndarray):
+                    candidate_vectors = np.array(candidate_vectors)
+                nearest_candidates = calculate_distance_core(
+                    candidate_vector_np, candidate_vectors, distance
+                ).tolist()
+                query_raw_similarities[candidate_id] = calculate_distance_core(
+                    query_vector, candidate_vector_np[np.newaxis, :], distance
+                ).tolist()[0]
+            elif isinstance(candidate_vector, SparseVector):
+                nearest_candidates = calculate_distance_sparse(
+                    candidate_vector, candidate_vectors
+                ).tolist()
+                query_raw_similarities[candidate_id] = calculate_distance_sparse(
+                    query_vector, [candidate_vector]
+                ).tolist()[0]
+            else:
+                candidate_vector_np = np.array(candidate_vector)
+                if not isinstance(candidate_vectors[0], np.ndarray):
+                    candidate_vectors = [np.array(multivec) for multivec in candidate_vectors]
+                nearest_candidates = calculate_multi_distance_core(
+                    candidate_vector_np,
+                    candidate_vectors,
+                    distance,
+                ).tolist()
+                query_raw_similarities[candidate_id] = calculate_multi_distance_core(
+                    query_vector, [candidate_vector_np], distance
+                ).tolist()[0]
 
-        selected = [candidates[0].id]
-        pending = [candidate.id for candidate in candidates[1:]]
+            for i in range(len(candidate_ids)):
+                candidate_distance_matrix[(candidate_id, candidate_ids[i])] = (
+                    nearest_candidates[i] if candidate_id != candidate_ids[i] else 0.0
+                )
+                candidate_distance_matrix[(candidate_ids[i], candidate_id)] = (
+                    nearest_candidates[i] if candidate_id != candidate_ids[i] else 0.0
+                )
 
+        first_candidate_id = candidate_ids[0]
+        if (
+            score_threshold is not None
+            and query_raw_similarities[first_candidate_id] < score_threshold
+        ):
+            return []
+
+        selected = [first_candidate_id]
+        pending = candidate_ids[1:]
         while len(selected) < limit and len(pending) > 0:
-            # todo: perform reranking
-            pass
+            mmr_scores = []
+
+            for pending_id in pending:
+                relevance_score = query_raw_similarities[pending_id]
+
+                if score_threshold is not None and relevance_score < score_threshold:
+                    mmr_scores.append(-np.inf)
+                    continue
+
+                similarities_to_selected = []
+                for selected_id in selected:
+                    similarities_to_selected.append(
+                        candidate_distance_matrix[(pending_id, selected_id)]
+                    )
+                max_similarity_to_selected = max(similarities_to_selected)
+                mmr_score = (
+                    lambda_ * relevance_score - (1.0 - lambda_) * max_similarity_to_selected
+                )
+                mmr_scores.append(mmr_score)
+
+            if all(
+                [np.isneginf(sim) for sim in mmr_scores]
+            ):  # no points left passing score threshold
+                break
+            best_candidate_index = np.argmax(mmr_scores).item()
+            selected.append(pending.pop(best_candidate_index))
+
+        rescored: list[models.ScoredPoint] = []
+        for candidate_id in selected:
+            point = id_to_point[candidate_id]
+            point.score = query_raw_similarities[candidate_id]
+            rescored.append(point)
+        return rescored
 
     def _rescore_with_formula(
         self,

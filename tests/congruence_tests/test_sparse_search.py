@@ -5,6 +5,7 @@ from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions.common_types import NamedSparseVector
 from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
+from qdrant_client.local.sparse import sort_sparse_vector
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,
@@ -144,7 +145,7 @@ class TestSimpleSparseSearcher:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=self.query_text,
+                nearest=sort_sparse_vector(self.query_text),
                 mmr=models.Mmr(),
             ),
             using="sparse-text",
@@ -155,8 +156,21 @@ class TestSimpleSparseSearcher:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=self.query_text, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
+                nearest=sort_sparse_vector(self.query_text),
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             ),
+            using="sparse-text",
+            limit=10,
+        )
+
+    def mmr_query_parametrized_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=sort_sparse_vector(self.query_text),
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            score_threshold=3.3,
             using="sparse-text",
             limit=10,
         )
@@ -206,6 +220,9 @@ def test_mmr():
 
     compare_client_results(local_client, remote_client, searcher.default_mmr_query)
     compare_client_results(local_client, remote_client, searcher.mmr_query_parametrized)
+    compare_client_results(
+        local_client, remote_client, searcher.mmr_query_parametrized_score_threshold
+    )
 
 
 def test_simple_opt_vectors_search():

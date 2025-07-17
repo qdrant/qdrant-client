@@ -818,14 +818,15 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def default_mmr_query_dot(self, client: QdrantBase) -> models.QueryResponse:
+    def mmr_query_parametrized_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=self.dense_vector_query_image,
-                mmr=models.Mmr(),
+                nearest=self.dense_vector_query_text,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             ),
-            using="image",
+            using="text",
+            score_threshold=0.9,
             limit=10,
         )
 
@@ -840,16 +841,20 @@ class TestSimpleSearcher:
             limit=10,
         )
 
-    def default_mmr_query_euclid(self, client: QdrantBase) -> models.QueryResponse:
-        return client.query_points(
+    def mmr_query_parametrized_dot_score_threshold(
+        self, client: QdrantBase
+    ) -> models.QueryResponse:
+        result = client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=self.dense_vector_query_code,
-                mmr=models.Mmr(),
+                nearest=self.dense_vector_query_image,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             ),
-            using="code",
+            using="image",
+            score_threshold=30.0,
             limit=10,
         )
+        return result
 
     def mmr_query_parametrized_euclid(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
@@ -858,6 +863,20 @@ class TestSimpleSearcher:
                 nearest=self.dense_vector_query_code,
                 mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             ),
+            using="code",
+            limit=10,
+        )
+
+    def mmr_query_parametrized_euclid_score_threshold(
+        self, client: QdrantBase
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_code,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            score_threshold=-8.0,
             using="code",
             limit=10,
         )
@@ -1720,13 +1739,22 @@ def test_mmr_queries():
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.mmr_query_parametrized
     )
-    compare_clients_results(local_client, http_client, grpc_client, searcher.default_mmr_query_dot)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.mmr_query_parametrized_score_threshold
+    )
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.mmr_query_parametrized_dot
     )
     compare_clients_results(
-        local_client, http_client, grpc_client, searcher.default_mmr_query_euclid
+        local_client, http_client, grpc_client, searcher.mmr_query_parametrized_dot_score_threshold
     )
+
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.mmr_query_parametrized_euclid
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.mmr_query_parametrized_euclid_score_threshold,
     )
