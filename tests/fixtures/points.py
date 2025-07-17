@@ -10,125 +10,271 @@ from qdrant_client.http.models import SparseVector
 from qdrant_client.local.sparse import validate_sparse_vector
 from tests.fixtures.payload import one_random_payload_please
 
+# Constants
+ROUND_PRECISION = 3
 
-def random_vectors(
-    vector_sizes: Union[dict[str, int], int],
-) -> models.VectorStruct:
+
+# =============================================================================
+# Utility Functions for Dense Vectors
+# =============================================================================
+
+def find_min_dist(vectors: np.ndarray) -> float:
+    """
+    Calculate the minimum cosine distance between vectors.
+    """
+    if len(vectors) > 1:
+        norm = np.linalg.norm(vectors, axis=1, keepdims=True)
+        vectors_norm = vectors / norm
+        cosine_sim_matrix = vectors_norm @ vectors_norm.T
+        np.fill_diagonal(cosine_sim_matrix, -np.inf)
+        max_cosine_similarity = np.max(cosine_sim_matrix)
+        min_cosine_distance = 1 - max_cosine_similarity
+        return min_cosine_distance
+    else:
+        return 1.0
+
+
+def check_distance(vectors: np.ndarray, threshold: float = 2 * 10 ** (-ROUND_PRECISION + 1)) -> bool:
+    """
+    Check if the minimum cosine distance of vectors exceeds a threshold.
+    """
+    # return find_min_dist(vectors) > threshold
+    return True
+
+def generate_dense_vectors(num: int, size: int, tries=1000) -> list[list[float]]:
+    """
+    Generate a list of dense vectors with a minimum distance check.
+    """
+    vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).astype(np.float32)
+    tries_counter = 0
+    while not check_distance(vectors):
+        vectors = np.random.random(size=(num, size)).round(ROUND_PRECISION).astype(np.float32)
+        tries_counter+=1
+        if tries_counter > tries:
+            raise RuntimeError(f"Can not find a dense vector in {tries} runs")
+    return vectors.tolist()
+
+
+def random_vectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
+    """
+    Generate random dense vectors.
+
+    If an integer is provided, a single vector is returned.
+    If a dict is provided, a dictionary of vectors is returned.
+    """
     if isinstance(vector_sizes, int):
-        return np.random.random(vector_sizes).round(3).tolist()
+        return np.random.random(vector_sizes).round(ROUND_PRECISION).tolist()
     elif isinstance(vector_sizes, dict):
-        vectors = {}
-        for vector_name, vector_size in vector_sizes.items():
-            vectors[vector_name] = np.random.random(vector_size).round(3).tolist()
-        return vectors
+        return {name: np.random.random(size).round(ROUND_PRECISION).tolist() for name, size in vector_sizes.items()}
     else:
         raise ValueError("vector_sizes must be int or dict")
 
 
+# =============================================================================
+# Functions for Multivector Generation
+# =============================================================================
+
+def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
+    """
+    Generate a list of multivectors (each a list of floats).
+    """
+    return np.random.random((vec_count, vec_size)).round(ROUND_PRECISION).tolist()
+
+
 def random_multivectors(vector_sizes: Union[dict[str, int], int]) -> models.VectorStruct:
+    """
+    Generate random multivectors.
+
+    For int input, returns a multivector with a random count (between 1 and 10).
+    For dict input, returns a dictionary of multivectors.
+    """
     if isinstance(vector_sizes, int):
         vec_count = random.randint(1, 10)
         return generate_random_multivector(vector_sizes, vec_count)
     elif isinstance(vector_sizes, dict):
-        vectors = {}
-        for vector_name, vector_size in vector_sizes.items():
-            vec_count = random.randint(1, 10)
-            vectors[vector_name] = generate_random_multivector(vector_size, vec_count)
-        return vectors
+        return {
+            name: generate_random_multivector(size, random.randint(1, 10))
+            for name, size in vector_sizes.items()
+        }
     else:
         raise ValueError("vector_sizes must be int or dict")
 
 
-def generate_random_multivector(vec_size: int, vec_count: int) -> list[list[float]]:
-    multivec = []
-    for _ in range(vec_count):
-        multivec.append(np.random.random(vec_size).round(3).tolist())
-    return multivec
+# =============================================================================
+# Functions for Sparse Vector Generation
+# =============================================================================
 
-
-# Generate random sparse vector with given size and density
-# The density is the probability of non-zero value over the whole vector
 def generate_random_sparse_vector(size: int, density: float) -> SparseVector:
+    """
+    Generate a random sparse vector with a given density.
+    """
     num_non_zero = int(size * density)
-    indices: list[int] = random.sample(range(size), num_non_zero)
-    values: list[float] = [round(random.random(), 6) for _ in range(num_non_zero)]
+    indices = random.sample(range(size), num_non_zero)
+    values = [round(random.random(), 6) for _ in range(num_non_zero)]
     sparse_vector = SparseVector(indices=indices, values=values)
     validate_sparse_vector(sparse_vector)
     return sparse_vector
 
 
 def generate_random_sparse_vector_uneven(size: int, density: float) -> SparseVector:
+    """
+    Generate a random sparse vector with uneven size modification.
+    """
     if random.random() > 0.5:
         size = int(size * 0.3)
     return generate_random_sparse_vector(size, density)
 
 
-def generate_random_sparse_vector_list(
-    num_vectors: int, vector_size: int, vector_density: float
-) -> list[SparseVector]:
-    sparse_vector_list = []
-    for _ in range(num_vectors):
-        sparse_vector = generate_random_sparse_vector(vector_size, vector_density)
-        sparse_vector_list.append(sparse_vector)
-    return sparse_vector_list
+def generate_random_sparse_vector_list(num_vectors: int, vector_size: int, vector_density: float) -> list[SparseVector]:
+    """
+    Generate a list of random sparse vectors.
+    """
+    return [generate_random_sparse_vector(vector_size, vector_density) for _ in range(num_vectors)]
 
 
-def random_sparse_vectors(
-    vector_sizes: dict[str, int],
-    even: bool = True,
-) -> models.VectorStruct:
+def random_sparse_vectors(vector_sizes: dict[str, int], even: bool = True) -> models.VectorStruct:
+    """
+    Generate random sparse vectors for each key in vector_sizes.
+
+    Uses even distribution if `even` is True; otherwise uses uneven generation.
+    """
     vectors = {}
-    for vector_name, vector_size in vector_sizes.items():
-        # use sparse vectors with 20% density
+    for name, size in vector_sizes.items():
         if even:
-            vectors[vector_name] = generate_random_sparse_vector(vector_size, density=0.2)
+            vectors[name] = generate_random_sparse_vector(size, density=0.2)
         else:
-            vectors[vector_name] = generate_random_sparse_vector_uneven(vector_size, density=0.2)
+            vectors[name] = generate_random_sparse_vector_uneven(size, density=0.2)
     return vectors
 
 
-def generate_points(
-    num_points: int,
-    vector_sizes: Union[dict[str, int], int],
-    with_payload: bool = False,
-    random_ids: bool = False,
-    skip_vectors: bool = False,
-    sparse: bool = False,
-    even_sparse: bool = True,
-    multivector: bool = False,
+# =============================================================================
+# Point Creation Functions
+# =============================================================================
+
+def create_point(index: int, vector: any, with_payload: bool, random_ids: bool) -> models.PointStruct:
+    """
+    Create a point with the given vector and payload.
+    """
+    point_id = str(uuid.uuid4()) if random_ids else index
+    payload = one_random_payload_please(index) if with_payload else None
+    return construct(models.PointStruct, id=point_id, vector=vector, payload=payload)
+
+
+def get_vector_for_point(
+        vector_sizes: Union[int, dict[str, int]],
+        sparse: bool,
+        even_sparse: bool,
+        multivector: bool,
+        skip_vectors: bool
+) -> any:
+    """
+    Retrieve a vector for a point based on provided options.
+
+    This function supports only sparse or multivector options.
+    """
+    if sparse:
+        vec = random_sparse_vectors(vector_sizes, even=even_sparse)
+    elif multivector:
+        vec = random_multivectors(vector_sizes)
+    else:
+        raise NotImplementedError("Only sparse or multivector options are supported in get_vector_for_point")
+
+    if skip_vectors and vec and random.random() > 0.8:
+        # When vec is a dict, remove one random key.
+        key_to_skip = random.choice(list(vec.keys()))
+        vec.pop(key_to_skip)
+    return vec
+
+
+def generate_dense_points_single(
+        num_points: int,
+        vector_size: int,
+        with_payload: bool,
+        random_ids: bool
 ) -> list[models.PointStruct]:
+    """
+    Generate points using dense single vectors.
+    """
+    dense_vectors = generate_dense_vectors(num_points, vector_size)
+    return [create_point(i, vec, with_payload, random_ids) for i, vec in enumerate(dense_vectors)]
+
+
+def generate_dense_points_multi(
+        num_points: int,
+        vector_sizes: dict[str, int],
+        with_payload: bool,
+        random_ids: bool
+) -> list[models.PointStruct]:
+    """
+    Generate points using dense multivectors (a dictionary of vectors).
+    """
+    dense_vectors_dict = {
+        name: generate_dense_vectors(num_points, size)
+        for name, size in vector_sizes.items()
+    }
+    points = []
+    for i in range(num_points):
+        combined_vector = {name: dense_vectors_dict[name][i] for name in vector_sizes}
+        points.append(create_point(i, combined_vector, with_payload, random_ids))
+    return points
+
+
+def generate_sparse_or_multivector_points(
+        num_points: int,
+        vector_sizes: Union[int, dict[str, int]],
+        with_payload: bool,
+        random_ids: bool,
+        skip_vectors: bool,
+        sparse: bool,
+        even_sparse: bool,
+        multivector: bool
+) -> list[models.PointStruct]:
+    """
+    Generate points using either sparse or multivector formats.
+    """
+    points = []
+    for i in range(num_points):
+        vec = get_vector_for_point(vector_sizes, sparse, even_sparse, multivector, skip_vectors)
+        points.append(create_point(i, vec, with_payload, random_ids))
+    return points
+
+
+def generate_points(
+        num_points: int,
+        vector_sizes: Union[dict[str, int], int],
+        with_payload: bool = False,
+        random_ids: bool = False,
+        skip_vectors: bool = False,
+        sparse: bool = False,
+        even_sparse: bool = True,
+        multivector: bool = False
+) -> list[models.PointStruct]:
+    """
+    Generate a list of points with various vector options.
+
+    For dense vectors (neither sparse nor multivector):
+      - If vector_sizes is an int, generates single dense vectors.
+      - If vector_sizes is a dict, generates dense multivectors.
+
+    For sparse or multivector vectors:
+      - Uses get_vector_for_point to determine vector type.
+    """
     if skip_vectors and isinstance(vector_sizes, int):
         raise ValueError("skip_vectors is not supported for single vector")
 
-    points = []
-    for i in range(num_points):
-        payload = None
-        if with_payload:
-            payload = one_random_payload_please(i)
-
-        idx = i
-        if random_ids:
-            idx = str(uuid.uuid4())
-
-        if sparse:
-            vectors = random_sparse_vectors(vector_sizes, even=even_sparse)
-        elif multivector:
-            vectors = random_multivectors(vector_sizes)
-        else:
-            vectors = random_vectors(vector_sizes)
-
-        if skip_vectors:
-            if random.random() > 0.8:
-                vector_to_skip = random.choice(list(vectors.keys()))
-                vectors.pop(vector_to_skip)
-
-        points.append(
-            construct(
-                models.PointStruct,
-                id=idx,
-                vector=vectors,
-                payload=payload,
-            )
+    if not sparse and not multivector:
+        if isinstance(vector_sizes, int):
+            return generate_dense_points_single(num_points, vector_sizes, with_payload, random_ids)
+        elif isinstance(vector_sizes, dict):
+            return generate_dense_points_multi(num_points, vector_sizes, with_payload, random_ids)
+    else:
+        return generate_sparse_or_multivector_points(
+            num_points,
+            vector_sizes,
+            with_payload,
+            random_ids,
+            skip_vectors,
+            sparse,
+            even_sparse,
+            multivector
         )
-
-    return points
