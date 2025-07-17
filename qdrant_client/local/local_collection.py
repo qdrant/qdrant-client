@@ -2097,13 +2097,13 @@ class LocalCollection:
             offset=offset,
             with_payload=with_payload,
             with_vectors=with_vectors,
-            score_threshold=None,
+            score_threshold=score_threshold,
         )
 
         diversity = mmr.diversity if mmr.diversity is not None else 0.5
         lambda_ = 1.0 - diversity
 
-        return self._mmr(search_results, query_vector, using, lambda_, limit, score_threshold)
+        return self._mmr(search_results, query_vector, using, lambda_, limit)
 
     def _mmr(
         self,
@@ -2112,7 +2112,6 @@ class LocalCollection:
         using: Optional[str],
         lambda_: float,
         limit: int,
-        score_threshold: Optional[float],
     ) -> list[models.ScoredPoint]:
         if lambda_ < 0.0 or lambda_ > 1.0:
             raise ValueError("MMR lambda must be between 0.0 and 1.0")
@@ -2151,6 +2150,7 @@ class LocalCollection:
             if not isinstance(query_vector, SparseVector)
             else sort_sparse_vector(query_vector)
         )
+
         for candidate_id, candidate_vector in zip(candidate_ids, candidate_vectors):
             if isinstance(candidate_vector, list) and isinstance(candidate_vector[0], float):
                 candidate_vector_np = np.array(candidate_vector)
@@ -2190,25 +2190,13 @@ class LocalCollection:
                     nearest_candidates[i] if candidate_id != candidate_ids[i] else 0.0
                 )
 
-        first_candidate_id = candidate_ids[0]
-        if (
-            score_threshold is not None
-            and query_raw_similarities[first_candidate_id] < score_threshold
-        ):
-            return []
-
-        selected = [first_candidate_id]
+        selected = [candidate_ids[0]]
         pending = candidate_ids[1:]
         while len(selected) < limit and len(pending) > 0:
             mmr_scores = []
 
             for pending_id in pending:
                 relevance_score = query_raw_similarities[pending_id]
-
-                if score_threshold is not None and relevance_score < score_threshold:
-                    mmr_scores.append(-np.inf)
-                    continue
-
                 similarities_to_selected = []
                 for selected_id in selected:
                     similarities_to_selected.append(
@@ -2227,12 +2215,7 @@ class LocalCollection:
             best_candidate_index = np.argmax(mmr_scores).item()
             selected.append(pending.pop(best_candidate_index))
 
-        rescored: list[models.ScoredPoint] = []
-        for candidate_id in selected:
-            point = id_to_point[candidate_id]
-            point.score = query_raw_similarities[candidate_id]
-            rescored.append(point)
-        return rescored
+        return [id_to_point[candidate_id] for candidate_id in selected]
 
     def _rescore_with_formula(
         self,

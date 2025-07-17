@@ -876,7 +876,7 @@ class TestSimpleSearcher:
                 nearest=self.dense_vector_query_code,
                 mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             ),
-            score_threshold=-8.0,
+            score_threshold=3.0,
             using="code",
             limit=10,
         )

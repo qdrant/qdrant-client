@@ -136,7 +136,7 @@ class TestSimpleSearcher:
                 nearest=self.query_code, mmr=models.Mmr(diversity=0.3, candidates_limit=30)
             ),
             using="multi-code",
-            score_threshold=-100.0,
+            score_threshold=10.0,
             limit=10,
         )
 
