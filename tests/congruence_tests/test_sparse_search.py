@@ -145,7 +145,7 @@ class TestSimpleSparseSearcher:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=sort_sparse_vector(self.query_text),
+                nearest=self.query_text,
                 mmr=models.Mmr(),
             ),
             using="sparse-text",
@@ -156,7 +156,7 @@ class TestSimpleSparseSearcher:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=sort_sparse_vector(self.query_text),
+                nearest=self.query_text,
                 mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             ),
             using="sparse-text",
@@ -167,7 +167,7 @@ class TestSimpleSparseSearcher:
         return client.query_points(
             collection_name=COLLECTION_NAME,
             query=models.NearestQuery(
-                nearest=sort_sparse_vector(self.query_text),
+                nearest=self.query_text,
                 mmr=models.Mmr(diversity=0.3, candidates_limit=30),
             ),
             score_threshold=3.3,

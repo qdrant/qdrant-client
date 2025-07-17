@@ -2164,10 +2164,14 @@ class LocalCollection:
                 ).tolist()[0]
             elif isinstance(candidate_vector, SparseVector):
                 nearest_candidates = calculate_distance_sparse(
-                    candidate_vector, candidate_vectors
+                    candidate_vector,
+                    candidate_vectors,
+                    empty_is_zero=True,
                 ).tolist()
                 query_raw_similarities[candidate_id] = calculate_distance_sparse(
-                    query_vector, [candidate_vector]
+                    query_vector,
+                    [candidate_vector],
+                    empty_is_zero=True,
                 ).tolist()[0]
             else:
                 candidate_vector_np = np.array(candidate_vector)
@@ -2183,12 +2187,7 @@ class LocalCollection:
                 ).tolist()[0]
 
             for i in range(len(candidate_ids)):
-                candidate_distance_matrix[(candidate_id, candidate_ids[i])] = (
-                    nearest_candidates[i] if candidate_id != candidate_ids[i] else 0.0
-                )
-                candidate_distance_matrix[(candidate_ids[i], candidate_id)] = (
-                    nearest_candidates[i] if candidate_id != candidate_ids[i] else 0.0
-                )
+                candidate_distance_matrix[(candidate_id, candidate_ids[i])] = nearest_candidates[i]
 
         selected = [candidate_ids[0]]
         pending = candidate_ids[1:]
