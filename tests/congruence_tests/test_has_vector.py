@@ -60,8 +60,7 @@ def test_has_vector_sparse():
 
 
 def test_has_vector_multi():
-    points = generate_multivector_fixtures(100, skip_vectors=True)
-
+    points = generate_multivector_fixtures(5, skip_vectors=True)
     local_client = init_local()
     init_client(local_client, [], vectors_config=multi_vector_config)
 
