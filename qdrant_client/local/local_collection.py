@@ -39,6 +39,7 @@ from qdrant_client.local.distances import (
     calculate_recommend_best_scores,
     distance_to_order,
     calculate_recommend_sum_scores,
+    calculate_distance_core,
 )
 from qdrant_client.local.multi_distances import (
     MultiQueryVector,
@@ -51,6 +52,7 @@ from qdrant_client.local.multi_distances import (
     calculate_multi_discovery_scores,
     calculate_multi_context_scores,
     calculate_multi_recommend_sum_scores,
+    calculate_multi_distance_core,
 )
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
@@ -727,6 +729,9 @@ class LocalCollection:
             # It is a hybrid/re-scoring query
             sources = [self._prefetch(prefetch) for prefetch in prefetches]
 
+            if query is None:
+                raise ValueError("Query is required for merging prefetches")
+
             # Merge sources
             scored_points = self._merge_sources(
                 sources=sources,
@@ -764,11 +769,14 @@ class LocalCollection:
         if len(inner_prefetches) > 0:
             sources = [self._prefetch(inner_prefetch) for inner_prefetch in inner_prefetches]
 
+            if prefetch.query is None:
+                raise ValueError("Query is required for merging prefetches")
+
             # Merge sources
             return self._merge_sources(
                 sources=sources,
                 query=prefetch.query,
-                limit=prefetch.limit,
+                limit=prefetch.limit if prefetch.limit is not None else 10,
                 offset=0,
                 using=prefetch.using,
                 query_filter=prefetch.filter,
@@ -885,6 +893,19 @@ class LocalCollection:
             )
             return [record_to_scored_point(record) for record in records[offset:]]
         elif isinstance(query, models.NearestQuery):
+            if query.mmr is not None:
+                return self._search_with_mmr(
+                    query_vector=query.nearest,
+                    mmr=query.mmr,
+                    query_filter=query_filter,
+                    limit=limit,
+                    offset=offset,
+                    using=using,
+                    with_payload=with_payload,
+                    with_vectors=with_vectors,
+                    score_threshold=score_threshold,
+                )
+
             return self.search(
                 query_vector=(using, query.nearest),
                 query_filter=query_filter,
@@ -2050,6 +2071,150 @@ class LocalCollection:
             result.append(scored_point)
 
         return result
+
+    def _search_with_mmr(
+        self,
+        query_vector: Union[
+            list[float],
+            SparseVector,
+            list[list[float]],
+        ],
+        mmr: types.Mmr,
+        using: Optional[str],
+        query_filter: Optional[types.Filter] = None,
+        limit: int = 10,
+        offset: Optional[int] = None,
+        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
+        with_vectors: Union[bool, Sequence[str]] = False,
+        score_threshold: Optional[float] = None,
+    ) -> list[models.ScoredPoint]:
+        search_limit = mmr.candidates_limit if mmr.candidates_limit is not None else limit
+        using = using or DEFAULT_VECTOR_NAME
+        search_results = self.search(
+            query_vector=(using, query_vector),
+            query_filter=query_filter,
+            limit=search_limit,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+            score_threshold=score_threshold,
+        )
+
+        diversity = mmr.diversity if mmr.diversity is not None else 0.5
+        lambda_ = 1.0 - diversity
+
+        return self._mmr(search_results, query_vector, using, lambda_, limit)
+
+    def _mmr(
+        self,
+        search_results: list[models.ScoredPoint],
+        query_vector: Union[list[float], SparseVector, list[list[float]]],
+        using: str,
+        lambda_: float,
+        limit: int,
+    ) -> list[models.ScoredPoint]:
+        if lambda_ < 0.0 or lambda_ > 1.0:
+            raise ValueError("MMR lambda must be between 0.0 and 1.0")
+
+        if not search_results:
+            return []
+
+        # distance matrix between candidates
+        candidate_distance_matrix: dict[
+            tuple[models.ExtendedPointId, models.ExtendedPointId], float
+        ] = {}
+
+        candidate_vectors = []
+        candidate_ids = []
+        candidates: list[models.ScoredPoint] = []
+
+        # `with_vectors` might be different from `using`, thus we need to retrieve vectors explicitly
+        for point in search_results:
+            idx = self.ids[point.id]
+            candidate_vector = self._get_vectors(idx, [using])
+            if isinstance(candidate_vector, dict):
+                candidate_vector = candidate_vector.get(using)
+
+            candidate_vectors.append(candidate_vector)
+            candidate_ids.append(point.id)
+            candidates.append(point)
+
+        query_raw_similarities: dict[models.ExtendedPointId, float] = {}
+        id_to_point = {point.id: point for point in search_results}
+
+        distance = (
+            self.get_vector_params(using).distance if using not in self.sparse_vectors else None
+        )
+        query_vector = (
+            np.array(query_vector)
+            if not isinstance(query_vector, SparseVector)
+            else sort_sparse_vector(query_vector)
+        )
+
+        for candidate_id, candidate_vector in zip(candidate_ids, candidate_vectors):
+            if isinstance(candidate_vector, list) and isinstance(candidate_vector[0], float):
+                candidate_vector_np = np.array(candidate_vector)
+                if not isinstance(candidate_vectors, np.ndarray):
+                    candidate_vectors = np.array(candidate_vectors)
+                nearest_candidates = calculate_distance_core(
+                    candidate_vector_np, candidate_vectors, distance
+                ).tolist()
+                query_raw_similarities[candidate_id] = calculate_distance_core(
+                    query_vector, candidate_vector_np[np.newaxis, :], distance
+                ).tolist()[0]
+            elif isinstance(candidate_vector, SparseVector):
+                nearest_candidates = calculate_distance_sparse(
+                    candidate_vector,
+                    candidate_vectors,
+                    empty_is_zero=True,
+                ).tolist()
+                query_raw_similarities[candidate_id] = calculate_distance_sparse(
+                    query_vector,
+                    [candidate_vector],
+                    empty_is_zero=True,
+                ).tolist()[0]
+            else:
+                candidate_vector_np = np.array(candidate_vector)
+                if not isinstance(candidate_vectors[0], np.ndarray):
+                    candidate_vectors = [np.array(multivec) for multivec in candidate_vectors]
+                nearest_candidates = calculate_multi_distance_core(
+                    candidate_vector_np,
+                    candidate_vectors,
+                    distance,
+                ).tolist()
+                query_raw_similarities[candidate_id] = calculate_multi_distance_core(
+                    query_vector, [candidate_vector_np], distance
+                ).tolist()[0]
+
+            for i in range(len(candidate_ids)):
+                candidate_distance_matrix[(candidate_id, candidate_ids[i])] = nearest_candidates[i]
+
+        selected = [candidate_ids[0]]
+        pending = candidate_ids[1:]
+        while len(selected) < limit and len(pending) > 0:
+            mmr_scores = []
+
+            for pending_id in pending:
+                relevance_score = query_raw_similarities[pending_id]
+                similarities_to_selected = []
+                for selected_id in selected:
+                    similarities_to_selected.append(
+                        candidate_distance_matrix[(pending_id, selected_id)]
+                    )
+                max_similarity_to_selected = max(similarities_to_selected)
+                mmr_score = (
+                    lambda_ * relevance_score - (1.0 - lambda_) * max_similarity_to_selected
+                )
+                mmr_scores.append(mmr_score)
+
+            if all(
+                [np.isneginf(sim) for sim in mmr_scores]
+            ):  # no points left passing score threshold
+                break
+            best_candidate_index = np.argmax(mmr_scores).item()
+            selected.append(pending.pop(best_candidate_index))
+
+        return [id_to_point[candidate_id] for candidate_id in selected]
 
     def _rescore_with_formula(
         self,
