@@ -796,6 +796,91 @@ class TestSimpleSearcher:
 
         return result
 
+    def default_mmr_query(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_text,
+                mmr=models.Mmr(),
+            ),
+            using="text",
+            limit=10,
+        )
+
+    def mmr_query_parametrized(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_text,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            using="text",
+            limit=10,
+        )
+
+    def mmr_query_parametrized_score_threshold(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_text,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            using="text",
+            score_threshold=0.9,
+            limit=10,
+        )
+
+    def mmr_query_parametrized_dot(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_image,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            using="image",
+            limit=10,
+        )
+
+    def mmr_query_parametrized_dot_score_threshold(
+        self, client: QdrantBase
+    ) -> models.QueryResponse:
+        result = client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_image,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            using="image",
+            score_threshold=30.0,
+            limit=10,
+        )
+        return result
+
+    def mmr_query_parametrized_euclid(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_code,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            using="code",
+            limit=10,
+        )
+
+    def mmr_query_parametrized_euclid_score_threshold(
+        self, client: QdrantBase
+    ) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            query=models.NearestQuery(
+                nearest=self.dense_vector_query_code,
+                mmr=models.Mmr(diversity=0.3, candidates_limit=30),
+            ),
+            score_threshold=3.0,
+            using="code",
+            limit=10,
+        )
+
 
 def group_by_keys():
     return ["maybe", "rand_digit", "two_words", "city.name", "maybe_null", "id"]
@@ -1641,3 +1726,35 @@ def test_empty_collection_bm25_search():
         )
 
     compare_clients_results(local_client, http_client, grpc_client, search_please)
+
+
+def test_mmr_queries():
+    fixture_points = generate_fixtures()
+
+    searcher = TestSimpleSearcher()
+
+    local_client, http_client, grpc_client = init_clients(fixture_points)
+
+    compare_clients_results(local_client, http_client, grpc_client, searcher.default_mmr_query)
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.mmr_query_parametrized
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.mmr_query_parametrized_score_threshold
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.mmr_query_parametrized_dot
+    )
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.mmr_query_parametrized_dot_score_threshold
+    )
+
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.mmr_query_parametrized_euclid
+    )
+    compare_clients_results(
+        local_client,
+        http_client,
+        grpc_client,
+        searcher.mmr_query_parametrized_euclid_score_threshold,
+    )

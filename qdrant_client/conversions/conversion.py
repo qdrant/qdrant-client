@@ -1305,6 +1305,15 @@ class GrpcToRest:
         )
 
     @classmethod
+    def convert_mmr(cls, model: grpc.Mmr) -> rest.Mmr:
+        return rest.Mmr(
+            diversity=model.diversity if model.HasField("diversity") else None,
+            candidates_limit=model.candidates_limit
+            if model.HasField("candidates_limit")
+            else None,
+        )
+
+    @classmethod
     def convert_query(cls, model: grpc.Query) -> rest.Query:
         name = model.WhichOneof("variant")
         if name is None:
@@ -1334,6 +1343,12 @@ class GrpcToRest:
 
         if name == "formula":
             return cls.convert_formula_query(val)
+
+        if name == "nearest_with_mmr":
+            val = model.nearest_with_mmr
+            return rest.NearestQuery(
+                nearest=cls.convert_vector_input(val.nearest), mmr=cls.convert_mmr(val.mmr)
+            )
 
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
 
@@ -3573,8 +3588,18 @@ class RestToGrpc:
         raise ValueError(f"invalid Sample model: {model}")  # pragma: no cover
 
     @classmethod
+    def convert_mmr(cls, model: rest.Mmr) -> grpc.Mmr:
+        return grpc.Mmr(diversity=model.diversity, candidates_limit=model.candidates_limit)
+
+    @classmethod
     def convert_query(cls, model: rest.Query) -> grpc.Query:
         if isinstance(model, rest.NearestQuery):
+            if model.mmr is not None:
+                nearest_with_mmr = grpc.NearestInputWithMmr(
+                    nearest=cls.convert_vector_input(model.nearest), mmr=cls.convert_mmr(model.mmr)
+                )
+                return grpc.Query(nearest_with_mmr=nearest_with_mmr)
+
             return grpc.Query(nearest=cls.convert_vector_input(model.nearest))
 
         if isinstance(model, rest.RecommendQuery):

@@ -124,6 +124,8 @@ RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
 DiscoverRequest = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
 QueryRequest = Union[rest.QueryRequest, grpc.QueryPoints]
 
+Mmr: TypeAlias = rest.Mmr
+
 ReadConsistency: TypeAlias = rest.ReadConsistency
 WriteOrdering: TypeAlias = rest.WriteOrdering
 WithLookupInterface: TypeAlias = rest.WithLookupInterface
