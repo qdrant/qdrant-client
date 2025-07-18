@@ -2109,7 +2109,7 @@ class LocalCollection:
         self,
         search_results: list[models.ScoredPoint],
         query_vector: Union[list[float], SparseVector, list[list[float]]],
-        using: Optional[str],
+        using: str,
         lambda_: float,
         limit: int,
     ) -> list[models.ScoredPoint]:
