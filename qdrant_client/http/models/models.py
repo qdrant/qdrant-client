@@ -460,7 +460,9 @@ class CreateCollection(BaseModel, extra="forbid"):
         default=None,
         description="Custom params for Optimizers.  If none - values from service configuration file are used.",
     )
-    init_from: Optional["InitFrom"] = Field(default=None, description="Specify other collection to copy data from.")
+    init_from: Optional["InitFrom"] = Field(
+        default=None, description="Specify other collection to copy data from.  Deprecated since Qdrant 1.15.0."
+    )
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Quantization parameters. If none - quantization is disabled."
     )
@@ -1139,14 +1141,14 @@ class InitFrom(BaseModel, extra="forbid"):
 
 
 class InlineResponse200(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[bool] = Field(default=None, description="")
 
 
 class InlineResponse2001(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["TelemetryData"] = Field(default=None, description="")
@@ -1159,7 +1161,7 @@ class InlineResponse20010(BaseModel):
 
 
 class InlineResponse20011(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
@@ -1172,147 +1174,147 @@ class InlineResponse20012(BaseModel):
 
 
 class InlineResponse20013(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["Record"] = Field(default=None, description="")
 
 
 class InlineResponse20014(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["Record"]] = Field(default=None, description="")
 
 
 class InlineResponse20015(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["UpdateResult"]] = Field(default=None, description="")
 
 
 class InlineResponse20016(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
 class InlineResponse20017(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
 
 
 class InlineResponse20018(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
 
 
 class InlineResponse20019(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["GroupsResult"] = Field(default=None, description="")
 
 
 class InlineResponse2002(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["LocksOption"] = Field(default=None, description="")
 
 
 class InlineResponse20020(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CountResult"] = Field(default=None, description="")
 
 
 class InlineResponse20021(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["FacetResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20022(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["QueryResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20023(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["QueryResponse"]] = Field(default=None, description="")
 
 
 class InlineResponse20024(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse20025(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["SearchMatrixOffsetsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2003(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["ClusterStatus"] = Field(default=None, description="")
 
 
 class InlineResponse2004(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2005(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2006(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["UpdateResult"] = Field(default=None, description="")
 
 
 class InlineResponse2007(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionExistence"] = Field(default=None, description="")
 
 
 class InlineResponse2008(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2009(BaseModel):
-    usage: Optional["HardwareUsage"] = Field(default=None, description="")
+    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
@@ -1709,7 +1711,7 @@ class OptimizersConfigDiff(BaseModel, extra="forbid"):
     )
     memmap_threshold: Optional[int] = Field(
         default=None,
-        description="Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmapped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`.  Note: 1Kb = 1 vector of size 256",
+        description="Maximum size (in kilobytes) of vectors to store in-memory per segment. Segments larger than this threshold will be stored as read-only memmapped file.  Memmap storage is disabled by default, to enable it, set this threshold to a reasonable value.  To disable memmap storage, set this to `0`.  Note: 1Kb = 1 vector of size 256  Deprecated since Qdrant 1.15.0",
     )
     indexing_threshold: Optional[int] = Field(
         default=None,
