@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qdrant-client"
-version = "1.15.0"
+version = "1.15.1"
 description = "Client library for the Qdrant vector search engine"
 authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
