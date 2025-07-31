@@ -18,7 +18,9 @@ def test_remote_inference_image():
     client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, cloud_inference=True)
     collection_name = "image_embeddings"
     model_name = "Qdrant/clip-ViT-B-32-vision"
-
+    dim = 512  # Dimension of the CLIP ViT-B/32 model,
+    # we can't use get_embedding_size since it requires fastembed to be installed,
+    # and it is not required for cloud_inference
     image_url = "https://qdrant.tech/example.png"
 
     # Compare inference of image exposed via url and local file
@@ -37,9 +39,7 @@ def test_remote_inference_image():
 
     client.create_collection(
         collection_name=collection_name,
-        vectors_config=models.VectorParams(
-            size=client.get_embedding_size(model_name), distance=models.Distance.COSINE
-        ),
+        vectors_config=models.VectorParams(size=dim, distance=models.Distance.COSINE),
     )
 
     client.upsert(
@@ -58,6 +58,22 @@ def test_remote_inference_image():
                     image=read_base64(image_path),
                     model=model_name,
                 ),
+            ),
+        ],
+    )
+
+    client.query_points(
+        collection_name,
+        query=models.FusionQuery(fusion=models.Fusion.RRF),
+        prefetch=[
+            models.Prefetch(
+                query=models.Image(
+                    image=image_url,
+                    model=model_name,
+                ),
+            ),
+            models.Prefetch(
+                query=models.Image(image=read_base64(image_path), model=model_name),
             ),
         ],
     )
