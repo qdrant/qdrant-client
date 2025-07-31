@@ -503,3 +503,24 @@ def test_convert_text_index_params_stopwords():
     recovered_4 = GrpcToRest.convert_text_index_params(grpc_text_index_params_4)
 
     assert recovered_4.stopwords == models.Language.ENGLISH
+
+
+def test_inference_without_options():
+    from qdrant_client import models
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    doc_wo_options = models.Document(text="qwerty-text", model="qwerty-text-model")
+    image_wo_options = models.Image(image="qwerty-image", model="qwerty-image-model")
+    inference_wo_options = models.InferenceObject(object="qwerty-any", model="qwerty-any-model")
+
+    grpc_doc_wo_options = RestToGrpc.convert_document(doc_wo_options)
+    grpc_image_wo_options = RestToGrpc.convert_image(image_wo_options)
+    grpc_inference_wo_options = RestToGrpc.convert_inference_object(inference_wo_options)
+
+    recovered_doc_wo_options = GrpcToRest.convert_document(grpc_doc_wo_options)
+    recovered_image_wo_options = GrpcToRest.convert_image(grpc_image_wo_options)
+    recovered_inference_wo_options = GrpcToRest.convert_inference_object(grpc_inference_wo_options)
+
+    assert recovered_doc_wo_options.options == {}
+    assert recovered_image_wo_options.options == {}
+    assert recovered_inference_wo_options.options == {}

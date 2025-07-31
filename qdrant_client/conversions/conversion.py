@@ -3485,7 +3485,9 @@ class RestToGrpc:
     @classmethod
     def convert_document(cls, model: rest.Document) -> grpc.Document:
         return grpc.Document(
-            text=model.text, model=model.model, options=payload_to_grpc(model.options)
+            text=model.text,
+            model=model.model,
+            options=payload_to_grpc(model.options) if model.options is not None else None,
         )
 
     @classmethod
@@ -3493,7 +3495,7 @@ class RestToGrpc:
         return grpc.Image(
             image=json_to_value(model.image),
             model=model.model,
-            options=payload_to_grpc(model.options),
+            options=payload_to_grpc(model.options) if model.options is not None else None,
         )
 
     @classmethod
@@ -3501,7 +3503,7 @@ class RestToGrpc:
         return grpc.InferenceObject(
             object=json_to_value(model.object),
             model=model.model,
-            options=payload_to_grpc(model.options),
+            options=payload_to_grpc(model.options) if model.options is not None else None,
         )
 
     @classmethod
