@@ -57,7 +57,6 @@ class ModelEmbedder:
         self.embedder = (
             Embedder(**kwargs) if FastEmbedMisc.is_installed() else BuiltinEmbedder(**kwargs)
         )
-        print(self.embedder)
 
     def embed_models(
         self,
