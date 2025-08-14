@@ -109,20 +109,13 @@ class QdrantClient(QdrantFastembedMixin):
         }
         self._init_options.update({k: v for k, v in kwargs.items()})
 
-        self._inference_inspector = Inspector()
-        super().__init__(
-            parser=self._inference_inspector.parser, **kwargs
-        )  # If we want to pass any kwargs to the parent class or ignore unexpected kwargs,
-        # we will need to pop them from **kwargs. Otherwise, they might be passed to QdrantRemote as httpx kwargs.
-        # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
-
-        self._client: QdrantBase
-
         if sum([param is not None for param in (location, url, host, path)]) > 1:
             raise ValueError(
                 "Only one of <location>, <url>, <host> or <path> should be specified."
             )
+        self._client: QdrantBase
 
+        _is_local_mode = True
         if location == ":memory:":
             self._client = QdrantLocal(
                 location=location,
@@ -134,6 +127,16 @@ class QdrantClient(QdrantFastembedMixin):
                 force_disable_check_same_thread=force_disable_check_same_thread,
             )
         else:
+            _is_local_mode = False
+
+        self._inference_inspector = Inspector()
+        super().__init__(
+            parser=self._inference_inspector.parser, is_local_mode=_is_local_mode, **kwargs
+        )  # If we want to pass any kwargs to the parent class or ignore unexpected kwargs,
+        # we will need to pop them from **kwargs. Otherwise, they might be passed to QdrantRemote as httpx kwargs.
+        # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
+
+        if not _is_local_mode:
             if location is not None and url is None:
                 url = location
             self._client = QdrantRemote(

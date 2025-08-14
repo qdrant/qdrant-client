@@ -385,3 +385,63 @@ class Embedder:
             for embedding in embedding_model_inst.embed(images=images, batch_size=batch_size)
         ]
         return embeddings
+
+    @classmethod
+    def is_supported_text_model(cls, model_name: str) -> bool:
+        """Check if model is supported by fastembed
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        return FastEmbedMisc.is_supported_text_model(model_name)
+
+    @classmethod
+    def is_supported_image_model(cls, model_name: str) -> bool:
+        """Check if model is supported by fastembed
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        return FastEmbedMisc.is_supported_image_model(model_name)
+
+    @classmethod
+    def is_supported_late_interaction_text_model(cls, model_name: str) -> bool:
+        """Check if model is supported by fastembed
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        return FastEmbedMisc.is_supported_late_interaction_text_model(model_name)
+
+    @classmethod
+    def is_supported_late_interaction_multimodal_model(cls, model_name: str) -> bool:
+        """Check if model is supported by fastembed
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        return FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name)
+
+    @classmethod
+    def is_supported_sparse_model(cls, model_name: str) -> bool:
+        """Check if model is supported by fastembed
+
+        Args:
+            model_name (str): The name of the model to check.
+
+        Returns:
+            bool: True if the model is supported, False otherwise.
+        """
+        return FastEmbedMisc.is_supported_sparse_model(model_name)

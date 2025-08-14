@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from qdrant_client import grpc
 from qdrant_client.common.client_warnings import show_warning
 from qdrant_client.client_base import QdrantBase
+from qdrant_client.embed.embedder import Embedder
 from qdrant_client.embed.model_embedder import ModelEmbedder
 from qdrant_client.http import models
 from qdrant_client.conversions import common_types as types
@@ -33,10 +34,10 @@ class QdrantFastembedMixin(QdrantBase):
     DEFAULT_BATCH_SIZE = 8
     _FASTEMBED_INSTALLED: bool
 
-    def __init__(self, parser: ModelSchemaParser, **kwargs: Any):
+    def __init__(self, parser: ModelSchemaParser, is_local_mode: bool, **kwargs: Any):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
-        self._model_embedder = ModelEmbedder(parser=parser, **kwargs)
+        self._model_embedder = ModelEmbedder(parser=parser, is_local_mode=is_local_mode, **kwargs)
 
         self.__class__._FASTEMBED_INSTALLED = FastEmbedMisc.is_installed()
         super().__init__(**kwargs)
@@ -238,6 +239,7 @@ class QdrantFastembedMixin(QdrantBase):
     ) -> "TextEmbedding":
         FastEmbedMisc.import_fastembed()
 
+        assert isinstance(self._model_embedder.embedder, Embedder)
         return self._model_embedder.embedder.get_or_init_model(
             model_name=model_name,
             cache_dir=cache_dir,
@@ -257,7 +259,7 @@ class QdrantFastembedMixin(QdrantBase):
         **kwargs: Any,
     ) -> "SparseTextEmbedding":
         FastEmbedMisc.import_fastembed()
-
+        assert isinstance(self._model_embedder.embedder, Embedder)
         return self._model_embedder.embedder.get_or_init_sparse_model(
             model_name=model_name,
             cache_dir=cache_dir,
@@ -870,8 +872,6 @@ class QdrantFastembedMixin(QdrantBase):
         is_query: bool = False,
         batch_size: Optional[int] = None,
     ) -> Iterable[BaseModel]:
-        FastEmbedMisc.import_fastembed()
-
         yield from self._model_embedder.embed_models(
             raw_models=raw_models,
             is_query=is_query,
@@ -884,7 +884,6 @@ class QdrantFastembedMixin(QdrantBase):
         batch_size: Optional[int] = None,
         parallel: Optional[int] = None,
     ) -> Iterable[BaseModel]:
-        FastEmbedMisc.import_fastembed()
         yield from self._model_embedder.embed_models_strict(
             raw_models=raw_models,
             batch_size=batch_size or self.DEFAULT_BATCH_SIZE,
