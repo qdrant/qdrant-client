@@ -2,9 +2,9 @@ name: Ruff Linting
 
 on:
   push:
-    branches: [main, dev, master]
+    branches: [dev, master]
   pull_request:
-    branches: [main, dev, master]
+    branches: [dev, master]
 
 jobs:
   ruff:
