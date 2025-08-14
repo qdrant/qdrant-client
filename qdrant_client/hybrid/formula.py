@@ -1,4 +1,4 @@
-import math, pytest
+import math
 
 
 from qdrant_client.conversions.common_types import get_args_subscribed

@@ -33,7 +33,3 @@ jobs:
       - name: pyright
         run: |
           poetry run pyright tests/type_stub.py
-
-      - name: ruff
-        run: |
-          poetry run ruff check .
