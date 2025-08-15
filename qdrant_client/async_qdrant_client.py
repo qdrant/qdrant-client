@@ -110,6 +110,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 "Only one of <location>, <url>, <host> or <path> should be specified."
             )
         self._client: AsyncQdrantBase
+        server_version = None
         if location == ":memory:":
             self._client = AsyncQdrantLocal(
                 location=location, force_disable_check_same_thread=force_disable_check_same_thread
@@ -136,6 +137,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 check_compatibility=check_compatibility,
                 **kwargs,
             )
+            server_version = self._client.server_version
         if isinstance(self._client, AsyncQdrantLocal) and cloud_inference:
             raise ValueError(
                 "Cloud inference is not supported for local Qdrant, consider using FastEmbed or switch to Qdrant Cloud"
@@ -146,6 +148,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         super().__init__(
             parser=self._inference_inspector.parser,
             is_local_mode=isinstance(self._client, AsyncQdrantLocal),
+            server_version=server_version,
         )
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
