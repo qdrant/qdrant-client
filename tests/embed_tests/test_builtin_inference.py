@@ -148,7 +148,7 @@ def test_bm25_inference_server_version(monkeypatch):
     assert remote_client.count(collection_name=COLLECTION_NAME, exact=True).count == 1
 
 
-def test_not_supported_models():
+def test_not_supported_builtin_inference_models():
     if FastEmbedMisc.is_installed():
         pytest.skip(reason="testing builtin inference")
 

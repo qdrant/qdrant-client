@@ -48,18 +48,25 @@ class ModelEmbedder:
         parser: Optional[ModelSchemaParser] = None,
         is_local_mode: bool = False,
         server_version: Optional[str] = None,
+        **kwargs: Any,
     ):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
         self._embed_storage: dict[str, list[NumericVector]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
-        if is_local_mode or not self._builtin_embedder_supported(server_version):
-            FastEmbedMisc().is_installed()
-            FastEmbedMisc.import_fastembed()
-
-        self.embedder = Embedder() if FastEmbedMisc.is_installed() else BuiltinEmbedder()
+        self._is_builtin_embedder_available = self._check_builtin_embedder_availability(
+            is_local_mode, server_version
+        )
+        self.embedder = (
+            Embedder(**kwargs) if FastEmbedMisc.is_installed() else BuiltinEmbedder(**kwargs)
+        )
 
     @staticmethod
-    def _builtin_embedder_supported(server_version: Optional[str]) -> bool:
+    def _check_builtin_embedder_availability(
+        is_local_mode: bool, server_version: Optional[str]
+    ) -> bool:
+        if is_local_mode:
+            return False
+
         if (
             server_version is None
         ):  # failed to detect server version, it might happen due to security or network
@@ -94,6 +101,9 @@ class ModelEmbedder:
         Returns:
             list[BaseModel]: models with embedded fields
         """
+        if not self._is_builtin_embedder_available:
+            FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
+
         if isinstance(raw_models, BaseModel):
             raw_models = [raw_models]
         for raw_models_batch in iter_batch(raw_models, batch_size):
@@ -120,6 +130,9 @@ class ModelEmbedder:
         Returns:
             Iterable[Union[dict[str, BaseModel], BaseModel]]: models with embedded fields
         """
+        if not self._is_builtin_embedder_available:
+            FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
+
         is_small = False
 
         if isinstance(raw_models, list):
@@ -172,6 +185,9 @@ class ModelEmbedder:
         Returns:
             Iterable[BaseModel]: models with embedded fields
         """
+        if not self._is_builtin_embedder_available:
+            FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
+
         for raw_model in raw_models:
             self._process_model(raw_model, is_query=is_query, accumulating=True)
 
@@ -420,7 +436,13 @@ class ModelEmbedder:
                     self.embedder.is_supported_late_interaction_multimodal_model(model),
                 )
             ):
-                raise ValueError(f"{model} is not among supported models")
+                if isinstance(self.embedder, BuiltinEmbedder):
+                    raise ValueError(
+                        f"{model} is not among supported models. "
+                        f"Have you forgotten to set `cloud_inference` or install `fastembed` for local inference?"
+                    )
+                else:
+                    raise ValueError(f"{model} is not among supported models")
 
         for model, data in self._batch_accumulator.items():
             self._embed_storage[model] = embed(
