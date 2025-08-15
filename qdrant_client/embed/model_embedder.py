@@ -47,16 +47,35 @@ class ModelEmbedder:
         self,
         parser: Optional[ModelSchemaParser] = None,
         is_local_mode: bool = False,
-        **kwargs: Any,
+        server_version: Optional[str] = None,
     ):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
         self._embed_storage: dict[str, list[NumericVector]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
-        if is_local_mode:
+        if is_local_mode or not self._builtin_embedder_supported(server_version):
             FastEmbedMisc.import_fastembed()
-        self.embedder = (
-            Embedder(**kwargs) if FastEmbedMisc.is_installed() else BuiltinEmbedder(**kwargs)
-        )
+
+        self.embedder = Embedder() if FastEmbedMisc.is_installed() else BuiltinEmbedder()
+
+    @staticmethod
+    def _builtin_embedder_supported(server_version: Optional[str]) -> bool:
+        if (
+            server_version is None
+        ):  # failed to detect server version, it might happen due to security or network
+            # problems even on supported server versions, so we are not blocking usage of BuiltinEmbedder.
+            # If server is not too old, the error message would be "Inference is not implemented / not configured"
+            return True
+
+        try:
+            major, minor, patch = server_version.split(".")
+            patch = patch.split("-")[0]
+
+            if (int(major), int(minor), int(patch)) >= (1, 15, 3):
+                return True
+
+            return False
+        except Exception:
+            return True
 
     def embed_models(
         self,

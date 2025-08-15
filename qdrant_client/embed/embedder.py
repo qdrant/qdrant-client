@@ -27,7 +27,7 @@ class ModelInstance(BaseModel, Generic[T], arbitrary_types_allowed=True):  # typ
 
 
 class Embedder:
-    def __init__(self, threads: Optional[int] = None, **kwargs: Any) -> None:
+    def __init__(self, threads: Optional[int] = None) -> None:
         self.embedding_models: dict[str, list[ModelInstance[TextEmbedding]]] = defaultdict(list)
         self.sparse_embedding_models: dict[str, list[ModelInstance[SparseTextEmbedding]]] = (
             defaultdict(list)

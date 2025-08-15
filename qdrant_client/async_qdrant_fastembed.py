@@ -40,12 +40,12 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     DEFAULT_BATCH_SIZE = 8
     _FASTEMBED_INSTALLED: bool
 
-    def __init__(self, parser: ModelSchemaParser, is_local_mode: bool, **kwargs: Any):
+    def __init__(self, parser: ModelSchemaParser, is_local_mode: bool):
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
-        self._model_embedder = ModelEmbedder(parser=parser, is_local_mode=is_local_mode, **kwargs)
+        self._model_embedder = ModelEmbedder(parser=parser, is_local_mode=is_local_mode)
         self.__class__._FASTEMBED_INSTALLED = FastEmbedMisc.is_installed()
-        super().__init__(**kwargs)
+        super().__init__()
 
     @classmethod
     async def list_text_models(cls) -> dict[str, tuple[int, models.Distance]]:
