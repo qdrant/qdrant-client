@@ -53,6 +53,7 @@ class ModelEmbedder:
         self._embed_storage: dict[str, list[NumericVector]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
         if is_local_mode or not self._builtin_embedder_supported(server_version):
+            FastEmbedMisc().is_installed()
             FastEmbedMisc.import_fastembed()
 
         self.embedder = Embedder() if FastEmbedMisc.is_installed() else BuiltinEmbedder()
@@ -63,7 +64,6 @@ class ModelEmbedder:
             server_version is None
         ):  # failed to detect server version, it might happen due to security or network
             # problems even on supported server versions, so we are not blocking usage of BuiltinEmbedder.
-            # If server is not too old, the error message would be "Inference is not implemented / not configured"
             return True
 
         try:

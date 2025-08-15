@@ -37,13 +37,13 @@ class QdrantFastembedMixin(QdrantBase):
     def __init__(
         self, parser: ModelSchemaParser, is_local_mode: bool, server_version: Optional[str]
     ):
+        self.__class__._FASTEMBED_INSTALLED = FastEmbedMisc.is_installed()
         self._embedding_model_name: Optional[str] = None
         self._sparse_embedding_model_name: Optional[str] = None
+
         self._model_embedder = ModelEmbedder(
             parser=parser, is_local_mode=is_local_mode, server_version=server_version
         )
-
-        self.__class__._FASTEMBED_INSTALLED = FastEmbedMisc.is_installed()
         super().__init__()
 
     @classmethod
