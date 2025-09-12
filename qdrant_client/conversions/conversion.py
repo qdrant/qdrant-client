@@ -236,7 +236,6 @@ class GrpcToRest:
             payload_schema=cls.convert_payload_schema(model.payload_schema),
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
-            vectors_count=model.vectors_count if model.HasField("vectors_count") else None,
             points_count=model.points_count,
             indexed_vectors_count=model.indexed_vectors_count or 0,
         )
@@ -2559,7 +2558,6 @@ class RestToGrpc:
             ),
             segments_count=model.segments_count,
             status=cls.convert_collection_status(model.status),
-            vectors_count=model.vectors_count if model.vectors_count is not None else None,
             points_count=model.points_count,
         )
 

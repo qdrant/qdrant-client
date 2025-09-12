@@ -8,6 +8,7 @@ import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
+import json_with_int_pb2
 import sys
 import typing
 
@@ -788,10 +789,12 @@ class HnswConfigDiff(google.protobuf.message.Message):
     """
     full_scan_threshold: builtins.int
     """
-    Minimal size (in KiloBytes) of vectors for additional payload-based indexing.
-    If the payload chunk is smaller than `full_scan_threshold` additional indexing won't be used -
-    in this case full-scan search should be preferred by query planner and additional indexing is not required.
-    Note: 1 Kb = 1 vector of size 256
+    Minimal size threshold (in KiloBytes) below which full-scan is preferred over HNSW search.
+    This measures the total size of vectors being queried against.
+    When the maximum estimated amount of points that a condition satisfies is smaller than
+    `full_scan_threshold`, the query planner will use full-scan search instead of HNSW index
+    traversal for better performance.
+    Note: 1Kb = 1 vector of size 256
     """
     max_indexing_threads: builtins.int
     """
@@ -877,20 +880,26 @@ class WalConfigDiff(google.protobuf.message.Message):
 
     WAL_CAPACITY_MB_FIELD_NUMBER: builtins.int
     WAL_SEGMENTS_AHEAD_FIELD_NUMBER: builtins.int
+    WAL_RETAIN_CLOSED_FIELD_NUMBER: builtins.int
     wal_capacity_mb: builtins.int
     """Size of a single WAL block file"""
     wal_segments_ahead: builtins.int
     """Number of segments to create in advance"""
+    wal_retain_closed: builtins.int
+    """Number of closed segments to retain"""
     def __init__(
         self,
         *,
         wal_capacity_mb: builtins.int | None = ...,
         wal_segments_ahead: builtins.int | None = ...,
+        wal_retain_closed: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_wal_capacity_mb", b"_wal_capacity_mb", "_wal_segments_ahead", b"_wal_segments_ahead", "wal_capacity_mb", b"wal_capacity_mb", "wal_segments_ahead", b"wal_segments_ahead"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_wal_capacity_mb", b"_wal_capacity_mb", "_wal_segments_ahead", b"_wal_segments_ahead", "wal_capacity_mb", b"wal_capacity_mb", "wal_segments_ahead", b"wal_segments_ahead"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_wal_capacity_mb", b"_wal_capacity_mb", "_wal_retain_closed", b"_wal_retain_closed", "_wal_segments_ahead", b"_wal_segments_ahead", "wal_capacity_mb", b"wal_capacity_mb", "wal_retain_closed", b"wal_retain_closed", "wal_segments_ahead", b"wal_segments_ahead"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_wal_capacity_mb", b"_wal_capacity_mb", "_wal_retain_closed", b"_wal_retain_closed", "_wal_segments_ahead", b"_wal_segments_ahead", "wal_capacity_mb", b"wal_capacity_mb", "wal_retain_closed", b"wal_retain_closed", "wal_segments_ahead", b"wal_segments_ahead"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_capacity_mb", b"_wal_capacity_mb"]) -> typing_extensions.Literal["wal_capacity_mb"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_retain_closed", b"_wal_retain_closed"]) -> typing_extensions.Literal["wal_retain_closed"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_wal_segments_ahead", b"_wal_segments_ahead"]) -> typing_extensions.Literal["wal_segments_ahead"] | None: ...
 
@@ -929,6 +938,8 @@ class OptimizersConfigDiff(google.protobuf.message.Message):
     """
     max_segment_size: builtins.int
     """
+    Deprecated:
+
     Do not create segments larger this size (in kilobytes).
     Large segments might require disproportionately long indexation times,
     therefore it makes sense to limit the size of segments.
@@ -1393,6 +1404,23 @@ global___StrictModeMultivector = StrictModeMultivector
 class CreateCollection(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    class MetadataEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> json_with_int_pb2.Value: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: json_with_int_pb2.Value | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     HNSW_CONFIG_FIELD_NUMBER: builtins.int
     WAL_CONFIG_FIELD_NUMBER: builtins.int
@@ -1408,6 +1436,7 @@ class CreateCollection(google.protobuf.message.Message):
     SHARDING_METHOD_FIELD_NUMBER: builtins.int
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     STRICT_MODE_CONFIG_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Name of the collection"""
     @property
@@ -1433,7 +1462,7 @@ class CreateCollection(google.protobuf.message.Message):
     write_consistency_factor: builtins.int
     """How many replicas should apply the operation for us to consider it successful, default = 1"""
     init_from_collection: builtins.str
-    """Specify name of the other collection to copy data from"""
+    """Deprecated: specify name of the other collection to copy data from"""
     @property
     def quantization_config(self) -> global___QuantizationConfig:
         """Quantization configuration of vector"""
@@ -1445,6 +1474,9 @@ class CreateCollection(google.protobuf.message.Message):
     @property
     def strict_mode_config(self) -> global___StrictModeConfig:
         """Configuration for strict mode"""
+    @property
+    def metadata(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, json_with_int_pb2.Value]:
+        """Arbitrary JSON metadata for the collection"""
     def __init__(
         self,
         *,
@@ -1463,9 +1495,10 @@ class CreateCollection(google.protobuf.message.Message):
         sharding_method: global___ShardingMethod.ValueType | None = ...,
         sparse_vectors_config: global___SparseVectorConfig | None = ...,
         strict_mode_config: global___StrictModeConfig | None = ...,
+        metadata: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_init_from_collection", b"_init_from_collection", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "hnsw_config", b"hnsw_config", "init_from_collection", b"init_from_collection", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_init_from_collection", b"_init_from_collection", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "init_from_collection", b"init_from_collection", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_init_from_collection", b"_init_from_collection", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "init_from_collection", b"init_from_collection", "metadata", b"metadata", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
     @typing.overload
@@ -1500,6 +1533,23 @@ global___CreateCollection = CreateCollection
 class UpdateCollection(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    class MetadataEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> json_with_int_pb2.Value: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: json_with_int_pb2.Value | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
     COLLECTION_NAME_FIELD_NUMBER: builtins.int
     OPTIMIZERS_CONFIG_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
@@ -1509,6 +1559,7 @@ class UpdateCollection(google.protobuf.message.Message):
     QUANTIZATION_CONFIG_FIELD_NUMBER: builtins.int
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     STRICT_MODE_CONFIG_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Name of the collection"""
     @property
@@ -1534,6 +1585,9 @@ class UpdateCollection(google.protobuf.message.Message):
     @property
     def strict_mode_config(self) -> global___StrictModeConfig:
         """New strict mode configuration"""
+    @property
+    def metadata(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, json_with_int_pb2.Value]:
+        """Arbitrary JSON-like metadata for the collection, will be merged with already stored metadata"""
     def __init__(
         self,
         *,
@@ -1546,9 +1600,10 @@ class UpdateCollection(google.protobuf.message.Message):
         quantization_config: global___QuantizationConfigDiff | None = ...,
         sparse_vectors_config: global___SparseVectorConfig | None = ...,
         strict_mode_config: global___StrictModeConfig | None = ...,
+        metadata: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_optimizers_config", b"_optimizers_config", "_params", b"_params", "_quantization_config", b"_quantization_config", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "hnsw_config", b"hnsw_config", "optimizers_config", b"optimizers_config", "params", b"params", "quantization_config", b"quantization_config", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_optimizers_config", b"_optimizers_config", "_params", b"_params", "_quantization_config", b"_quantization_config", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "optimizers_config", b"optimizers_config", "params", b"params", "quantization_config", b"quantization_config", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_optimizers_config", b"_optimizers_config", "_params", b"_params", "_quantization_config", b"_quantization_config", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "metadata", b"metadata", "optimizers_config", b"optimizers_config", "params", b"params", "quantization_config", b"quantization_config", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
     @typing.overload
@@ -1705,12 +1760,30 @@ global___CollectionParamsDiff = CollectionParamsDiff
 class CollectionConfig(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    class MetadataEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> json_with_int_pb2.Value: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: json_with_int_pb2.Value | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
     PARAMS_FIELD_NUMBER: builtins.int
     HNSW_CONFIG_FIELD_NUMBER: builtins.int
     OPTIMIZER_CONFIG_FIELD_NUMBER: builtins.int
     WAL_CONFIG_FIELD_NUMBER: builtins.int
     QUANTIZATION_CONFIG_FIELD_NUMBER: builtins.int
     STRICT_MODE_CONFIG_FIELD_NUMBER: builtins.int
+    METADATA_FIELD_NUMBER: builtins.int
     @property
     def params(self) -> global___CollectionParams:
         """Collection parameters"""
@@ -1729,6 +1802,9 @@ class CollectionConfig(google.protobuf.message.Message):
     @property
     def strict_mode_config(self) -> global___StrictModeConfig:
         """Configuration of strict mode."""
+    @property
+    def metadata(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, json_with_int_pb2.Value]:
+        """Arbitrary JSON metadata for the collection"""
     def __init__(
         self,
         *,
@@ -1738,9 +1814,10 @@ class CollectionConfig(google.protobuf.message.Message):
         wal_config: global___WalConfigDiff | None = ...,
         quantization_config: global___QuantizationConfig | None = ...,
         strict_mode_config: global___StrictModeConfig | None = ...,
+        metadata: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_quantization_config", b"_quantization_config", "_strict_mode_config", b"_strict_mode_config", "hnsw_config", b"hnsw_config", "optimizer_config", b"optimizer_config", "params", b"params", "quantization_config", b"quantization_config", "strict_mode_config", b"strict_mode_config", "wal_config", b"wal_config"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_quantization_config", b"_quantization_config", "_strict_mode_config", b"_strict_mode_config", "hnsw_config", b"hnsw_config", "optimizer_config", b"optimizer_config", "params", b"params", "quantization_config", b"quantization_config", "strict_mode_config", b"strict_mode_config", "wal_config", b"wal_config"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_quantization_config", b"_quantization_config", "_strict_mode_config", b"_strict_mode_config", "hnsw_config", b"hnsw_config", "metadata", b"metadata", "optimizer_config", b"optimizer_config", "params", b"params", "quantization_config", b"quantization_config", "strict_mode_config", b"strict_mode_config", "wal_config", b"wal_config"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_quantization_config", b"_quantization_config"]) -> typing_extensions.Literal["quantization_config"] | None: ...
     @typing.overload

@@ -90,6 +90,48 @@ class BinaryQuantizationQueryEncoding(str, Enum):
     SCALAR8BITS = "scalar8bits"
 
 
+class Bm25Config(BaseModel, extra="forbid"):
+    """
+    Configuration of the local bm25 models.
+    """
+
+    k: Optional[float] = Field(
+        default=1.2,
+        description="Controls term frequency saturation. Higher values mean term frequency has more impact. Default is 1.2",
+    )
+    b: Optional[float] = Field(
+        default=0.75,
+        description="Controls document length normalization. Ranges from 0 (no normalization) to 1 (full normalization). Higher values mean longer documents have less impact. Default is 0.75.",
+    )
+    avg_len: Optional[float] = Field(
+        default=256, description="Expected average document length in the collection. Default is 256."
+    )
+    tokenizer: Optional["TokenizerType"] = Field(default=None, description="Configuration of the local bm25 models.")
+    language: Optional[str] = Field(
+        default=None,
+        description="Defines which language to use for text preprocessing. This parameter is used to construct default stopwords filter and stemmer. To disable language-specific processing, set this to `'language': 'none'`. If not specified, English is assumed.",
+    )
+    lowercase: Optional[bool] = Field(
+        default=None, description="Lowercase the text before tokenization. Default is `true`."
+    )
+    stopwords: Optional["StopwordsInterface"] = Field(
+        default=None,
+        description="Configuration of the stopwords filter. Supports list of pre-defined languages and custom stopwords. Default: initialized for specified `language` or English if not specified.",
+    )
+    stemmer: Optional["StemmingAlgorithm"] = Field(
+        default=None,
+        description="Configuration of the stemmer. Processes tokens to their root form. Default: initialized Snowball stemmer for specified `language` or English if not specified.",
+    )
+    min_token_len: Optional[int] = Field(
+        default=None,
+        description="Minimum token length to keep. If token is shorter than this, it will be discarded. Default is `None`, which means no minimum length.",
+    )
+    max_token_len: Optional[int] = Field(
+        default=None,
+        description="Maximum token length to keep. If token is longer than this, it will be discarded. Default is `None`, which means no maximum length.",
+    )
+
+
 class BoolIndexParams(BaseModel, extra="forbid"):
     type: "BoolIndexType" = Field(..., description="")
     on_disk: Optional[bool] = Field(default=None, description="If true, store the index on disk. Default: false.")
@@ -160,6 +202,7 @@ class ClusterTelemetry(BaseModel):
     status: Optional["ClusterStatusTelemetry"] = Field(default=None, description="")
     config: Optional["ClusterConfigTelemetry"] = Field(default=None, description="")
     peers: Optional[Dict[str, "PeerInfo"]] = Field(default=None, description="")
+    peer_metadata: Optional[Dict[str, "PeerMetadata"]] = Field(default=None, description="")
     metadata: Optional[Dict[str, Any]] = Field(default=None, description="")
 
 
@@ -193,6 +236,10 @@ class CollectionConfig(BaseModel):
     strict_mode_config: Optional["StrictModeConfigOutput"] = Field(
         default=None, description="Information about the collection configuration"
     )
+    metadata: Optional["Payload"] = Field(
+        default=None,
+        description="Arbitrary JSON metadata for the collection This can be used to store application-specific information such as creation time, migration data, inference model info, etc.",
+    )
 
 
 class CollectionConfigTelemetry(BaseModel):
@@ -203,6 +250,7 @@ class CollectionConfigTelemetry(BaseModel):
     quantization_config: Optional["QuantizationConfig"] = Field(default=None, description="")
     strict_mode_config: Optional["StrictModeConfigOutput"] = Field(default=None, description="")
     uuid: Optional[UUID] = Field(default=None, description="")
+    metadata: Optional["Payload"] = Field(default=None, description="Arbitrary JSON metadata for the collection")
 
 
 class CollectionDescription(BaseModel):
@@ -225,10 +273,6 @@ class CollectionInfo(BaseModel):
     status: "CollectionStatus" = Field(..., description="Current statistics and configuration of the collection")
     optimizer_status: "OptimizersStatus" = Field(
         ..., description="Current statistics and configuration of the collection"
-    )
-    vectors_count: Optional[int] = Field(
-        default=None,
-        description="DEPRECATED: Approximate number of vectors in collection. All vectors in collection are available for querying. Calculated as `points_count x vectors_per_point`. Where `vectors_per_point` is a number of named vectors in schema.",
     )
     indexed_vectors_count: Optional[int] = Field(
         default=None,
@@ -470,6 +514,10 @@ class CreateCollection(BaseModel, extra="forbid"):
         default=None, description="Sparse vector data config."
     )
     strict_mode_config: Optional["StrictModeConfig"] = Field(default=None, description="Strict-mode config.")
+    metadata: Optional["Payload"] = Field(
+        default=None,
+        description="Arbitrary JSON metadata for the collection This can be used to store application-specific information such as creation time, migration data, inference model info, etc.",
+    )
 
 
 class CreateFieldIndex(BaseModel, extra="forbid"):
@@ -546,7 +594,7 @@ class DecayParamsExpression(BaseModel, extra="forbid"):
     )
     midpoint: Optional[float] = Field(
         default=None,
-        description="The midpoint of the decay. Defaults to 0.5. Output will be this value when `|x - target| == scale`.",
+        description="The midpoint of the decay. Should be between 0 and 1.Defaults to 0.5. Output will be this value when `|x - target| == scale`.",
     )
 
 
@@ -699,12 +747,16 @@ class Document(BaseModel, extra="forbid"):
     WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.
     """
 
-    text: str = Field(..., description="Text of the document This field will be used as input for the embedding model")
-    model: str = Field(
-        ..., description="Name of the model used to generate the vector List of available models depends on a provider"
+    text: str = Field(
+        ..., description="Text of the document. This field will be used as input for the embedding model."
     )
-    options: Optional[Dict[str, Any]] = Field(
-        default=None, description="Parameters for the model Values of the parameters are model-specific"
+    model: str = Field(
+        ...,
+        description="Name of the model used to generate the vector. List of available models depends on a provider.",
+    )
+    options: Optional["DocumentOptions"] = Field(
+        default=None,
+        description="Additional options for the model, will be passed to the inference service as-is. See model cards for available options.",
     )
 
 
@@ -793,6 +845,9 @@ class FeatureFlags(BaseModel):
         default=False,
         description="Migrate RocksDB based payload indices into new format on start.  Rebuilds a new payload index from scratch.",
     )
+    appendable_quantization: Optional[bool] = Field(
+        default=False, description="Use appendable quantization in appendable plain segments."
+    )
 
 
 class FieldCondition(BaseModel, extra="forbid"):
@@ -857,7 +912,7 @@ class FormulaQuery(BaseModel, extra="forbid"):
 
 class Fusion(str, Enum):
     """
-    Fusion algorithm allows to combine results of multiple prefetches.  Available fusion algorithms:  * `rrf` - Reciprocal Rank Fusion * `dbsf` - Distribution-Based Score Fusion
+    Fusion algorithm allows to combine results of multiple prefetches.  Available fusion algorithms:  * `rrf` - Reciprocal Rank Fusion (with default parameters) * `dbsf` - Distribution-Based Score Fusion
     """
 
     def __str__(self) -> str:
@@ -1015,7 +1070,7 @@ class HnswConfig(BaseModel):
     )
     full_scan_threshold: int = Field(
         ...,
-        description="Minimal size (in KiloBytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
+        description="Minimal size threshold (in KiloBytes) below which full-scan is preferred over HNSW search. This measures the total size of vectors being queried against. When the maximum estimated amount of points that a condition satisfies is smaller than `full_scan_threshold_kb`, the query planner will use full-scan search instead of HNSW index traversal for better performance. Note: 1Kb = 1 vector of size 256",
     )
     max_indexing_threads: Optional[int] = Field(
         default=0,
@@ -1042,7 +1097,7 @@ class HnswConfigDiff(BaseModel, extra="forbid"):
     )
     full_scan_threshold: Optional[int] = Field(
         default=None,
-        description="Minimal size (in kilobytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
+        description="Minimal size threshold (in KiloBytes) below which full-scan is preferred over HNSW search. This measures the total size of vectors being queried against. When the maximum estimated amount of points that a condition satisfies is smaller than `full_scan_threshold_kb`, the query planner will use full-scan search instead of HNSW index traversal for better performance. Note: 1Kb = 1 vector of size 256",
     )
     max_indexing_threads: Optional[int] = Field(
         default=None,
@@ -1072,7 +1127,8 @@ class Image(BaseModel, extra="forbid"):
 
     image: Any = Field(..., description="Image data: base64 encoded image or an URL")
     model: str = Field(
-        ..., description="Name of the model used to generate the vector List of available models depends on a provider"
+        ...,
+        description="Name of the model used to generate the vector. List of available models depends on a provider.",
     )
     options: Optional[Dict[str, Any]] = Field(
         default=None, description="Parameters for the model Values of the parameters are model-specific"
@@ -1116,10 +1172,11 @@ class InferenceObject(BaseModel, extra="forbid"):
 
     object: Any = Field(
         ...,
-        description="Arbitrary data, used as input for the embedding model Used if the model requires more than one input or a custom input",
+        description="Arbitrary data, used as input for the embedding model. Used if the model requires more than one input or a custom input.",
     )
     model: str = Field(
-        ..., description="Name of the model used to generate the vector List of available models depends on a provider"
+        ...,
+        description="Name of the model used to generate the vector. List of available models depends on a provider.",
     )
     options: Optional[Dict[str, Any]] = Field(
         default=None, description="Parameters for the model Values of the parameters are model-specific"
@@ -1502,6 +1559,14 @@ class MatchText(BaseModel, extra="forbid"):
     text: str = Field(..., description="Full-text match of the strings.")
 
 
+class MatchTextAny(BaseModel, extra="forbid"):
+    """
+    Full-text match of at least one token of the string.
+    """
+
+    text_any: str = Field(..., description="Full-text match of at least one token of the string.")
+
+
 class MatchValue(BaseModel, extra="forbid"):
     """
     Exact match of the given value
@@ -1858,6 +1923,14 @@ class PeerInfo(BaseModel):
     uri: str = Field(..., description="Information of a peer in the cluster")
 
 
+class PeerMetadata(BaseModel):
+    """
+    Metadata describing extra properties for each peer
+    """
+
+    version: str = Field(..., description="Peer Qdrant version")
+
+
 class PointGroup(BaseModel):
     hits: List["ScoredPoint"] = Field(..., description="Scored points that have the same value of the group_by key")
     id: "GroupId" = Field(..., description="")
@@ -1895,11 +1968,19 @@ class PointVectors(BaseModel, extra="forbid"):
 class PointsBatch(BaseModel, extra="forbid"):
     batch: "Batch" = Field(..., description="")
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+    update_filter: Optional["Filter"] = Field(
+        default=None,
+        description="If specified, only points that match this filter will be updated, others will be inserted",
+    )
 
 
 class PointsList(BaseModel, extra="forbid"):
     points: List["PointStruct"] = Field(..., description="")
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+    update_filter: Optional["Filter"] = Field(
+        default=None,
+        description="If specified, only points that match this filter will be updated, others will be inserted",
+    )
 
 
 class PowExpression(BaseModel, extra="forbid"):
@@ -2343,6 +2424,18 @@ class RestartTransfer(BaseModel, extra="forbid"):
 
 class RestartTransferOperation(BaseModel, extra="forbid"):
     restart_transfer: "RestartTransfer" = Field(..., description="")
+
+
+class Rrf(BaseModel, extra="forbid"):
+    """
+    Parameters for Reciprocal Rank Fusion
+    """
+
+    k: Optional[int] = Field(default=None, description="K parameter for reciprocal rank fusion")
+
+
+class RrfQuery(BaseModel, extra="forbid"):
+    rrf: "Rrf" = Field(..., description="")
 
 
 class RunningEnvironmentTelemetry(BaseModel):
@@ -2971,8 +3064,13 @@ class StateRole(str, Enum):
 
 
 class StopwordsSet(BaseModel, extra="forbid"):
-    languages: Optional[List["Language"]] = Field(default=None, description="")
-    custom: Optional[List[str]] = Field(default=None, description="")
+    languages: Optional[List["Language"]] = Field(
+        default=None,
+        description="Set of languages to use for stopwords. Multiple pre-defined lists of stopwords can be combined.",
+    )
+    custom: Optional[List[str]] = Field(
+        default=None, description="Custom stopwords set. Will be merged with the languages set."
+    )
 
 
 class StrictModeConfig(BaseModel, extra="forbid"):
@@ -3172,6 +3270,10 @@ class UpdateCollection(BaseModel, extra="forbid"):
     strict_mode_config: Optional["StrictModeConfig"] = Field(
         default=None, description="Operation for updating parameters of the existing collection"
     )
+    metadata: Optional["Payload"] = Field(
+        default=None,
+        description="Metadata to update for the collection. If provided, this will merge with existing metadata. To remove metadata, set it to an empty object.",
+    )
 
 
 class UpdateOperations(BaseModel, extra="forbid"):
@@ -3198,6 +3300,7 @@ class UpdateStatus(str, Enum):
 class UpdateVectors(BaseModel, extra="forbid"):
     points: List["PointVectors"] = Field(..., description="Points with named vectors")
     shard_key: Optional["ShardKeySelector"] = Field(default=None, description="")
+    update_filter: Optional["Filter"] = Field(default=None, description="")
 
 
 class UpdateVectorsOperation(BaseModel, extra="forbid"):
@@ -3387,6 +3490,7 @@ class VersionInfo(BaseModel):
 class WalConfig(BaseModel):
     wal_capacity_mb: int = Field(..., description="Size of a single WAL segment in MB")
     wal_segments_ahead: int = Field(..., description="Number of WAL segments to create ahead of actually used ones")
+    wal_retain_closed: Optional[int] = Field(default=1, description="Number of closed WAL segments to keep")
 
 
 class WalConfigDiff(BaseModel, extra="forbid"):
@@ -3394,6 +3498,7 @@ class WalConfigDiff(BaseModel, extra="forbid"):
     wal_segments_ahead: Optional[int] = Field(
         default=None, description="Number of WAL segments to create ahead of actually used ones"
     )
+    wal_retain_closed: Optional[int] = Field(default=None, description="Number of closed WAL segments to retain")
 
 
 class WebApiTelemetry(BaseModel):
@@ -3469,6 +3574,10 @@ ContextInput = Union[
     ContextPair,
     List[ContextPair],
 ]
+DocumentOptions = Union[
+    Dict[StrictStr, Any],
+    Bm25Config,
+]
 ExtendedPointId = Union[
     StrictInt,
     StrictStr,
@@ -3489,6 +3598,7 @@ Indexes = Union[
 Match = Union[
     MatchValue,
     MatchText,
+    MatchTextAny,
     MatchPhrase,
     MatchAny,
     MatchExcept,
@@ -3560,6 +3670,7 @@ Query = Union[
     ContextQuery,
     OrderByQuery,
     FusionQuery,
+    RrfQuery,
     FormulaQuery,
     SampleQuery,
 ]

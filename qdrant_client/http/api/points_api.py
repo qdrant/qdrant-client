@@ -123,6 +123,7 @@ class _PointsApi:
     def _build_for_count_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         timeout: int = None,
         count_request: m.CountRequest = None,
     ):
@@ -134,6 +135,8 @@ class _PointsApi:
         }
 
         query_params = {}
+        if consistency is not None:
+            query_params["consistency"] = str(consistency)
         if timeout is not None:
             query_params["timeout"] = str(timeout)
 
@@ -256,8 +259,8 @@ class _PointsApi:
     def _build_for_facet(
         self,
         collection_name: str,
-        timeout: int = None,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         facet_request: m.FacetRequest = None,
     ):
         """
@@ -268,10 +271,10 @@ class _PointsApi:
         }
 
         query_params = {}
-        if timeout is not None:
-            query_params["timeout"] = str(timeout)
         if consistency is not None:
             query_params["consistency"] = str(consistency)
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
 
         headers = {}
         body = jsonable_encoder(facet_request)
@@ -558,6 +561,7 @@ class AsyncPointsApi(_PointsApi):
     async def count_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         timeout: int = None,
         count_request: m.CountRequest = None,
     ) -> m.InlineResponse20020:
@@ -566,6 +570,7 @@ class AsyncPointsApi(_PointsApi):
         """
         return await self._build_for_count_points(
             collection_name=collection_name,
+            consistency=consistency,
             timeout=timeout,
             count_request=count_request,
         )
@@ -624,8 +629,8 @@ class AsyncPointsApi(_PointsApi):
     async def facet(
         self,
         collection_name: str,
-        timeout: int = None,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         facet_request: m.FacetRequest = None,
     ) -> m.InlineResponse20021:
         """
@@ -633,8 +638,8 @@ class AsyncPointsApi(_PointsApi):
         """
         return await self._build_for_facet(
             collection_name=collection_name,
-            timeout=timeout,
             consistency=consistency,
+            timeout=timeout,
             facet_request=facet_request,
         )
 
@@ -794,6 +799,7 @@ class SyncPointsApi(_PointsApi):
     def count_points(
         self,
         collection_name: str,
+        consistency: m.ReadConsistency = None,
         timeout: int = None,
         count_request: m.CountRequest = None,
     ) -> m.InlineResponse20020:
@@ -802,6 +808,7 @@ class SyncPointsApi(_PointsApi):
         """
         return self._build_for_count_points(
             collection_name=collection_name,
+            consistency=consistency,
             timeout=timeout,
             count_request=count_request,
         )
@@ -860,8 +867,8 @@ class SyncPointsApi(_PointsApi):
     def facet(
         self,
         collection_name: str,
-        timeout: int = None,
         consistency: m.ReadConsistency = None,
+        timeout: int = None,
         facet_request: m.FacetRequest = None,
     ) -> m.InlineResponse20021:
         """
@@ -869,8 +876,8 @@ class SyncPointsApi(_PointsApi):
         """
         return self._build_for_facet(
             collection_name=collection_name,
-            timeout=timeout,
             consistency=consistency,
+            timeout=timeout,
             facet_request=facet_request,
         )
 

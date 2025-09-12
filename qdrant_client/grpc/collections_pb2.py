@@ -13,9 +13,10 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
+from . import json_with_int_pb2 as json__with__int__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x63ollections.proto\x12\x06qdrant\"\x83\x03\n\x0cVectorParams\x12\x0c\n\x04size\x18\x01 \x01(\x04\x12\"\n\x08\x64istance\x18\x02 \x01(\x0e\x32\x10.qdrant.Distance\x12\x30\n\x0bhnsw_config\x18\x03 \x01(\x0b\x32\x16.qdrant.HnswConfigDiffH\x00\x88\x01\x01\x12<\n\x13quantization_config\x18\x04 \x01(\x0b\x32\x1a.qdrant.QuantizationConfigH\x01\x88\x01\x01\x12\x14\n\x07on_disk\x18\x05 \x01(\x08H\x02\x88\x01\x01\x12\'\n\x08\x64\x61tatype\x18\x06 \x01(\x0e\x32\x10.qdrant.DatatypeH\x03\x88\x01\x01\x12:\n\x12multivector_config\x18\x07 \x01(\x0b\x32\x19.qdrant.MultiVectorConfigH\x04\x88\x01\x01\x42\x0e\n\x0c_hnsw_configB\x16\n\x14_quantization_configB\n\n\x08_on_diskB\x0b\n\t_datatypeB\x15\n\x13_multivector_config\"\xd0\x01\n\x10VectorParamsDiff\x12\x30\n\x0bhnsw_config\x18\x01 \x01(\x0b\x32\x16.qdrant.HnswConfigDiffH\x00\x88\x01\x01\x12@\n\x13quantization_config\x18\x02 \x01(\x0b\x32\x1e.qdrant.QuantizationConfigDiffH\x01\x88\x01\x01\x12\x14\n\x07on_disk\x18\x03 \x01(\x08H\x02\x88\x01\x01\x42\x0e\n\x0c_hnsw_configB\x16\n\x14_quantization_configB\n\n\x08_on_disk\"\x82\x01\n\x0fVectorParamsMap\x12-\n\x03map\x18\x01 \x03(\x0b\x32 .qdrant.VectorParamsMap.MapEntry\x1a@\n\x08MapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.qdrant.VectorParams:\x02\x38\x01\"\x8e\x01\n\x13VectorParamsDiffMap\x12\x31\n\x03map\x18\x01 \x03(\x0b\x32$.qdrant.VectorParamsDiffMap.MapEntry\x1a\x44\n\x08MapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\'\n\x05value\x18\x02 \x01(\x0b\x32\x18.qdrant.VectorParamsDiff:\x02\x38\x01\"p\n\rVectorsConfig\x12&\n\x06params\x18\x01 \x01(\x0b\x32\x14.qdrant.VectorParamsH\x00\x12-\n\nparams_map\x18\x02 \x01(\x0b\x32\x17.qdrant.VectorParamsMapH\x00\x42\x08\n\x06\x63onfig\"|\n\x11VectorsConfigDiff\x12*\n\x06params\x18\x01 \x01(\x0b\x32\x18.qdrant.VectorParamsDiffH\x00\x12\x31\n\nparams_map\x18\x02 \x01(\x0b\x32\x1b.qdrant.VectorParamsDiffMapH\x00\x42\x08\n\x06\x63onfig\"\x83\x01\n\x12SparseVectorParams\x12-\n\x05index\x18\x01 \x01(\x0b\x32\x19.qdrant.SparseIndexConfigH\x00\x88\x01\x01\x12\'\n\x08modifier\x18\x02 \x01(\x0e\x32\x10.qdrant.ModifierH\x01\x88\x01\x01\x42\x08\n\x06_indexB\x0b\n\t_modifier\"\x8e\x01\n\x12SparseVectorConfig\x12\x30\n\x03map\x18\x01 \x03(\x0b\x32#.qdrant.SparseVectorConfig.MapEntry\x1a\x46\n\x08MapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.qdrant.SparseVectorParams:\x02\x38\x01\"F\n\x11MultiVectorConfig\x12\x31\n\ncomparator\x18\x01 \x01(\x0e\x32\x1d.qdrant.MultiVectorComparator\"3\n\x18GetCollectionInfoRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\"2\n\x17\x43ollectionExistsRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\"\"\n\x10\x43ollectionExists\x12\x0e\n\x06\x65xists\x18\x01 \x01(\x08\"R\n\x18\x43ollectionExistsResponse\x12(\n\x06result\x18\x01 \x01(\x0b\x32\x18.qdrant.CollectionExists\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\x18\n\x16ListCollectionsRequest\"%\n\x15\x43ollectionDescription\x12\x0c\n\x04name\x18\x01 \x01(\t\"Q\n\x19GetCollectionInfoResponse\x12&\n\x06result\x18\x01 \x01(\x0b\x32\x16.qdrant.CollectionInfo\x12\x0c\n\x04time\x18\x02 \x01(\x01\"[\n\x17ListCollectionsResponse\x12\x32\n\x0b\x63ollections\x18\x01 \x03(\x0b\x32\x1d.qdrant.CollectionDescription\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\x84\x01\n\x16MaxOptimizationThreads\x12\x0f\n\x05value\x18\x01 \x01(\x04H\x00\x12\x39\n\x07setting\x18\x02 \x01(\x0e\x32&.qdrant.MaxOptimizationThreads.SettingH\x00\"\x13\n\x07Setting\x12\x08\n\x04\x41uto\x10\x00\x42\t\n\x07variant\",\n\x0fOptimizerStatus\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"\x90\x02\n\x0eHnswConfigDiff\x12\x0e\n\x01m\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x19\n\x0c\x65\x66_construct\x18\x02 \x01(\x04H\x01\x88\x01\x01\x12 \n\x13\x66ull_scan_threshold\x18\x03 \x01(\x04H\x02\x88\x01\x01\x12!\n\x14max_indexing_threads\x18\x04 \x01(\x04H\x03\x88\x01\x01\x12\x14\n\x07on_disk\x18\x05 \x01(\x08H\x04\x88\x01\x01\x12\x16\n\tpayload_m\x18\x06 \x01(\x04H\x05\x88\x01\x01\x42\x04\n\x02_mB\x0f\n\r_ef_constructB\x16\n\x14_full_scan_thresholdB\x17\n\x15_max_indexing_threadsB\n\n\x08_on_diskB\x0c\n\n_payload_m\"\xa5\x01\n\x11SparseIndexConfig\x12 \n\x13\x66ull_scan_threshold\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x14\n\x07on_disk\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12\'\n\x08\x64\x61tatype\x18\x03 \x01(\x0e\x32\x10.qdrant.DatatypeH\x02\x88\x01\x01\x42\x16\n\x14_full_scan_thresholdB\n\n\x08_on_diskB\x0b\n\t_datatype\"y\n\rWalConfigDiff\x12\x1c\n\x0fwal_capacity_mb\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x1f\n\x12wal_segments_ahead\x18\x02 \x01(\x04H\x01\x88\x01\x01\x42\x12\n\x10_wal_capacity_mbB\x15\n\x13_wal_segments_ahead\"\xe6\x04\n\x14OptimizersConfigDiff\x12\x1e\n\x11\x64\x65leted_threshold\x18\x01 \x01(\x01H\x00\x88\x01\x01\x12%\n\x18vacuum_min_vector_number\x18\x02 \x01(\x04H\x01\x88\x01\x01\x12#\n\x16\x64\x65\x66\x61ult_segment_number\x18\x03 \x01(\x04H\x02\x88\x01\x01\x12\x1d\n\x10max_segment_size\x18\x04 \x01(\x04H\x03\x88\x01\x01\x12\x1d\n\x10memmap_threshold\x18\x05 \x01(\x04H\x04\x88\x01\x01\x12\x1f\n\x12indexing_threshold\x18\x06 \x01(\x04H\x05\x88\x01\x01\x12\x1f\n\x12\x66lush_interval_sec\x18\x07 \x01(\x04H\x06\x88\x01\x01\x12\x30\n#deprecated_max_optimization_threads\x18\x08 \x01(\x04H\x07\x88\x01\x01\x12\x45\n\x18max_optimization_threads\x18\t \x01(\x0b\x32\x1e.qdrant.MaxOptimizationThreadsH\x08\x88\x01\x01\x42\x14\n\x12_deleted_thresholdB\x1b\n\x19_vacuum_min_vector_numberB\x19\n\x17_default_segment_numberB\x13\n\x11_max_segment_sizeB\x13\n\x11_memmap_thresholdB\x15\n\x13_indexing_thresholdB\x15\n\x13_flush_interval_secB&\n$_deprecated_max_optimization_threadsB\x1b\n\x19_max_optimization_threads\"\x88\x01\n\x12ScalarQuantization\x12&\n\x04type\x18\x01 \x01(\x0e\x32\x18.qdrant.QuantizationType\x12\x15\n\x08quantile\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x17\n\nalways_ram\x18\x03 \x01(\x08H\x01\x88\x01\x01\x42\x0b\n\t_quantileB\r\n\x0b_always_ram\"l\n\x13ProductQuantization\x12-\n\x0b\x63ompression\x18\x01 \x01(\x0e\x32\x18.qdrant.CompressionRatio\x12\x17\n\nalways_ram\x18\x02 \x01(\x08H\x00\x88\x01\x01\x42\r\n\x0b_always_ram\"\xb6\x01\n\x1f\x42inaryQuantizationQueryEncoding\x12\x42\n\x07setting\x18\x04 \x01(\x0e\x32/.qdrant.BinaryQuantizationQueryEncoding.SettingH\x00\"D\n\x07Setting\x12\x0b\n\x07\x44\x65\x66\x61ult\x10\x00\x12\n\n\x06\x42inary\x10\x01\x12\x0f\n\x0bScalar4Bits\x10\x02\x12\x0f\n\x0bScalar8Bits\x10\x03\x42\t\n\x07variant\"\xdd\x01\n\x12\x42inaryQuantization\x12\x17\n\nalways_ram\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x39\n\x08\x65ncoding\x18\x02 \x01(\x0e\x32\".qdrant.BinaryQuantizationEncodingH\x01\x88\x01\x01\x12\x44\n\x0equery_encoding\x18\x03 \x01(\x0b\x32\'.qdrant.BinaryQuantizationQueryEncodingH\x02\x88\x01\x01\x42\r\n\x0b_always_ramB\x0b\n\t_encodingB\x11\n\x0f_query_encoding\"\xb0\x01\n\x12QuantizationConfig\x12,\n\x06scalar\x18\x01 \x01(\x0b\x32\x1a.qdrant.ScalarQuantizationH\x00\x12.\n\x07product\x18\x02 \x01(\x0b\x32\x1b.qdrant.ProductQuantizationH\x00\x12,\n\x06\x62inary\x18\x03 \x01(\x0b\x32\x1a.qdrant.BinaryQuantizationH\x00\x42\x0e\n\x0cquantization\"\n\n\x08\x44isabled\"\xda\x01\n\x16QuantizationConfigDiff\x12,\n\x06scalar\x18\x01 \x01(\x0b\x32\x1a.qdrant.ScalarQuantizationH\x00\x12.\n\x07product\x18\x02 \x01(\x0b\x32\x1b.qdrant.ProductQuantizationH\x00\x12$\n\x08\x64isabled\x18\x03 \x01(\x0b\x32\x10.qdrant.DisabledH\x00\x12,\n\x06\x62inary\x18\x04 \x01(\x0b\x32\x1a.qdrant.BinaryQuantizationH\x00\x42\x0e\n\x0cquantization\"\xf7\x08\n\x10StrictModeConfig\x12\x14\n\x07\x65nabled\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x1c\n\x0fmax_query_limit\x18\x02 \x01(\rH\x01\x88\x01\x01\x12\x18\n\x0bmax_timeout\x18\x03 \x01(\rH\x02\x88\x01\x01\x12)\n\x1cunindexed_filtering_retrieve\x18\x04 \x01(\x08H\x03\x88\x01\x01\x12\'\n\x1aunindexed_filtering_update\x18\x05 \x01(\x08H\x04\x88\x01\x01\x12\x1f\n\x12search_max_hnsw_ef\x18\x06 \x01(\rH\x05\x88\x01\x01\x12\x1f\n\x12search_allow_exact\x18\x07 \x01(\x08H\x06\x88\x01\x01\x12$\n\x17search_max_oversampling\x18\x08 \x01(\x02H\x07\x88\x01\x01\x12!\n\x14upsert_max_batchsize\x18\t \x01(\x04H\x08\x88\x01\x01\x12-\n max_collection_vector_size_bytes\x18\n \x01(\x04H\t\x88\x01\x01\x12\x1c\n\x0fread_rate_limit\x18\x0b \x01(\rH\n\x88\x01\x01\x12\x1d\n\x10write_rate_limit\x18\x0c \x01(\rH\x0b\x88\x01\x01\x12.\n!max_collection_payload_size_bytes\x18\r \x01(\x04H\x0c\x88\x01\x01\x12\"\n\x15\x66ilter_max_conditions\x18\x0e \x01(\x04H\r\x88\x01\x01\x12\x1f\n\x12\x63ondition_max_size\x18\x0f \x01(\x04H\x0e\x88\x01\x01\x12\x44\n\x12multivector_config\x18\x10 \x01(\x0b\x32#.qdrant.StrictModeMultivectorConfigH\x0f\x88\x01\x01\x12:\n\rsparse_config\x18\x11 \x01(\x0b\x32\x1e.qdrant.StrictModeSparseConfigH\x10\x88\x01\x01\x12\x1d\n\x10max_points_count\x18\x12 \x01(\x04H\x11\x88\x01\x01\x42\n\n\x08_enabledB\x12\n\x10_max_query_limitB\x0e\n\x0c_max_timeoutB\x1f\n\x1d_unindexed_filtering_retrieveB\x1d\n\x1b_unindexed_filtering_updateB\x15\n\x13_search_max_hnsw_efB\x15\n\x13_search_allow_exactB\x1a\n\x18_search_max_oversamplingB\x17\n\x15_upsert_max_batchsizeB#\n!_max_collection_vector_size_bytesB\x12\n\x10_read_rate_limitB\x13\n\x11_write_rate_limitB$\n\"_max_collection_payload_size_bytesB\x18\n\x16_filter_max_conditionsB\x15\n\x13_condition_max_sizeB\x15\n\x13_multivector_configB\x10\n\x0e_sparse_configB\x13\n\x11_max_points_count\"\xb0\x01\n\x16StrictModeSparseConfig\x12G\n\rsparse_config\x18\x01 \x03(\x0b\x32\x30.qdrant.StrictModeSparseConfig.SparseConfigEntry\x1aM\n\x11SparseConfigEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\'\n\x05value\x18\x02 \x01(\x0b\x32\x18.qdrant.StrictModeSparse:\x02\x38\x01\":\n\x10StrictModeSparse\x12\x17\n\nmax_length\x18\n \x01(\x04H\x00\x88\x01\x01\x42\r\n\x0b_max_length\"\xce\x01\n\x1bStrictModeMultivectorConfig\x12V\n\x12multivector_config\x18\x01 \x03(\x0b\x32:.qdrant.StrictModeMultivectorConfig.MultivectorConfigEntry\x1aW\n\x16MultivectorConfigEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.qdrant.StrictModeMultivector:\x02\x38\x01\"A\n\x15StrictModeMultivector\x12\x18\n\x0bmax_vectors\x18\x01 \x01(\x04H\x00\x88\x01\x01\x42\x0e\n\x0c_max_vectors\"\xd7\x07\n\x10\x43reateCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x30\n\x0bhnsw_config\x18\x04 \x01(\x0b\x32\x16.qdrant.HnswConfigDiffH\x00\x88\x01\x01\x12.\n\nwal_config\x18\x05 \x01(\x0b\x32\x15.qdrant.WalConfigDiffH\x01\x88\x01\x01\x12<\n\x11optimizers_config\x18\x06 \x01(\x0b\x32\x1c.qdrant.OptimizersConfigDiffH\x02\x88\x01\x01\x12\x19\n\x0cshard_number\x18\x07 \x01(\rH\x03\x88\x01\x01\x12\x1c\n\x0fon_disk_payload\x18\x08 \x01(\x08H\x04\x88\x01\x01\x12\x14\n\x07timeout\x18\t \x01(\x04H\x05\x88\x01\x01\x12\x32\n\x0evectors_config\x18\n \x01(\x0b\x32\x15.qdrant.VectorsConfigH\x06\x88\x01\x01\x12\x1f\n\x12replication_factor\x18\x0b \x01(\rH\x07\x88\x01\x01\x12%\n\x18write_consistency_factor\x18\x0c \x01(\rH\x08\x88\x01\x01\x12!\n\x14init_from_collection\x18\r \x01(\tH\t\x88\x01\x01\x12<\n\x13quantization_config\x18\x0e \x01(\x0b\x32\x1a.qdrant.QuantizationConfigH\n\x88\x01\x01\x12\x34\n\x0fsharding_method\x18\x0f \x01(\x0e\x32\x16.qdrant.ShardingMethodH\x0b\x88\x01\x01\x12>\n\x15sparse_vectors_config\x18\x10 \x01(\x0b\x32\x1a.qdrant.SparseVectorConfigH\x0c\x88\x01\x01\x12\x39\n\x12strict_mode_config\x18\x11 \x01(\x0b\x32\x18.qdrant.StrictModeConfigH\r\x88\x01\x01\x42\x0e\n\x0c_hnsw_configB\r\n\x0b_wal_configB\x14\n\x12_optimizers_configB\x0f\n\r_shard_numberB\x12\n\x10_on_disk_payloadB\n\n\x08_timeoutB\x11\n\x0f_vectors_configB\x15\n\x13_replication_factorB\x1b\n\x19_write_consistency_factorB\x17\n\x15_init_from_collectionB\x16\n\x14_quantization_configB\x12\n\x10_sharding_methodB\x18\n\x16_sparse_vectors_configB\x15\n\x13_strict_mode_configJ\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04\"\xf2\x04\n\x10UpdateCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12<\n\x11optimizers_config\x18\x02 \x01(\x0b\x32\x1c.qdrant.OptimizersConfigDiffH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x03 \x01(\x04H\x01\x88\x01\x01\x12\x31\n\x06params\x18\x04 \x01(\x0b\x32\x1c.qdrant.CollectionParamsDiffH\x02\x88\x01\x01\x12\x30\n\x0bhnsw_config\x18\x05 \x01(\x0b\x32\x16.qdrant.HnswConfigDiffH\x03\x88\x01\x01\x12\x36\n\x0evectors_config\x18\x06 \x01(\x0b\x32\x19.qdrant.VectorsConfigDiffH\x04\x88\x01\x01\x12@\n\x13quantization_config\x18\x07 \x01(\x0b\x32\x1e.qdrant.QuantizationConfigDiffH\x05\x88\x01\x01\x12>\n\x15sparse_vectors_config\x18\x08 \x01(\x0b\x32\x1a.qdrant.SparseVectorConfigH\x06\x88\x01\x01\x12\x39\n\x12strict_mode_config\x18\t \x01(\x0b\x32\x18.qdrant.StrictModeConfigH\x07\x88\x01\x01\x42\x14\n\x12_optimizers_configB\n\n\x08_timeoutB\t\n\x07_paramsB\x0e\n\x0c_hnsw_configB\x11\n\x0f_vectors_configB\x16\n\x14_quantization_configB\x18\n\x16_sparse_vectors_configB\x15\n\x13_strict_mode_config\"M\n\x10\x44\x65leteCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x14\n\x07timeout\x18\x02 \x01(\x04H\x00\x88\x01\x01\x42\n\n\x08_timeout\";\n\x1b\x43ollectionOperationResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\xee\x03\n\x10\x43ollectionParams\x12\x14\n\x0cshard_number\x18\x03 \x01(\r\x12\x17\n\x0fon_disk_payload\x18\x04 \x01(\x08\x12\x32\n\x0evectors_config\x18\x05 \x01(\x0b\x32\x15.qdrant.VectorsConfigH\x00\x88\x01\x01\x12\x1f\n\x12replication_factor\x18\x06 \x01(\rH\x01\x88\x01\x01\x12%\n\x18write_consistency_factor\x18\x07 \x01(\rH\x02\x88\x01\x01\x12 \n\x13read_fan_out_factor\x18\x08 \x01(\rH\x03\x88\x01\x01\x12\x34\n\x0fsharding_method\x18\t \x01(\x0e\x32\x16.qdrant.ShardingMethodH\x04\x88\x01\x01\x12>\n\x15sparse_vectors_config\x18\n \x01(\x0b\x32\x1a.qdrant.SparseVectorConfigH\x05\x88\x01\x01\x42\x11\n\x0f_vectors_configB\x15\n\x13_replication_factorB\x1b\n\x19_write_consistency_factorB\x16\n\x14_read_fan_out_factorB\x12\n\x10_sharding_methodB\x18\n\x16_sparse_vectors_configJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03\"\xfe\x01\n\x14\x43ollectionParamsDiff\x12\x1f\n\x12replication_factor\x18\x01 \x01(\rH\x00\x88\x01\x01\x12%\n\x18write_consistency_factor\x18\x02 \x01(\rH\x01\x88\x01\x01\x12\x1c\n\x0fon_disk_payload\x18\x03 \x01(\x08H\x02\x88\x01\x01\x12 \n\x13read_fan_out_factor\x18\x04 \x01(\rH\x03\x88\x01\x01\x42\x15\n\x13_replication_factorB\x1b\n\x19_write_consistency_factorB\x12\n\x10_on_disk_payloadB\x16\n\x14_read_fan_out_factor\"\xf4\x02\n\x10\x43ollectionConfig\x12(\n\x06params\x18\x01 \x01(\x0b\x32\x18.qdrant.CollectionParams\x12+\n\x0bhnsw_config\x18\x02 \x01(\x0b\x32\x16.qdrant.HnswConfigDiff\x12\x36\n\x10optimizer_config\x18\x03 \x01(\x0b\x32\x1c.qdrant.OptimizersConfigDiff\x12)\n\nwal_config\x18\x04 \x01(\x0b\x32\x15.qdrant.WalConfigDiff\x12<\n\x13quantization_config\x18\x05 \x01(\x0b\x32\x1a.qdrant.QuantizationConfigH\x00\x88\x01\x01\x12\x39\n\x12strict_mode_config\x18\x06 \x01(\x0b\x32\x18.qdrant.StrictModeConfigH\x01\x88\x01\x01\x42\x16\n\x14_quantization_configB\x15\n\x13_strict_mode_config\"\\\n\x12KeywordIndexParams\x12\x16\n\tis_tenant\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x14\n\x07on_disk\x18\x02 \x01(\x08H\x01\x88\x01\x01\x42\x0c\n\n_is_tenantB\n\n\x08_on_disk\"\xa0\x01\n\x12IntegerIndexParams\x12\x13\n\x06lookup\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x12\n\x05range\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12\x19\n\x0cis_principal\x18\x03 \x01(\x08H\x02\x88\x01\x01\x12\x14\n\x07on_disk\x18\x04 \x01(\x08H\x03\x88\x01\x01\x42\t\n\x07_lookupB\x08\n\x06_rangeB\x0f\n\r_is_principalB\n\n\x08_on_disk\"`\n\x10\x46loatIndexParams\x12\x14\n\x07on_disk\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x19\n\x0cis_principal\x18\x02 \x01(\x08H\x01\x88\x01\x01\x42\n\n\x08_on_diskB\x0f\n\r_is_principal\"2\n\x0eGeoIndexParams\x12\x14\n\x07on_disk\x18\x01 \x01(\x08H\x00\x88\x01\x01\x42\n\n\x08_on_disk\"1\n\x0cStopwordsSet\x12\x11\n\tlanguages\x18\x01 \x03(\t\x12\x0e\n\x06\x63ustom\x18\x02 \x03(\t\"\x8a\x03\n\x0fTextIndexParams\x12(\n\ttokenizer\x18\x01 \x01(\x0e\x32\x15.qdrant.TokenizerType\x12\x16\n\tlowercase\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x1a\n\rmin_token_len\x18\x03 \x01(\x04H\x01\x88\x01\x01\x12\x1a\n\rmax_token_len\x18\x04 \x01(\x04H\x02\x88\x01\x01\x12\x14\n\x07on_disk\x18\x05 \x01(\x08H\x03\x88\x01\x01\x12,\n\tstopwords\x18\x06 \x01(\x0b\x32\x14.qdrant.StopwordsSetH\x04\x88\x01\x01\x12\x1c\n\x0fphrase_matching\x18\x07 \x01(\x08H\x05\x88\x01\x01\x12/\n\x07stemmer\x18\x08 \x01(\x0b\x32\x19.qdrant.StemmingAlgorithmH\x06\x88\x01\x01\x42\x0c\n\n_lowercaseB\x10\n\x0e_min_token_lenB\x10\n\x0e_max_token_lenB\n\n\x08_on_diskB\x0c\n\n_stopwordsB\x12\n\x10_phrase_matchingB\n\n\x08_stemmer\"R\n\x11StemmingAlgorithm\x12*\n\x08snowball\x18\x01 \x01(\x0b\x32\x16.qdrant.SnowballParamsH\x00\x42\x11\n\x0fstemming_params\"\"\n\x0eSnowballParams\x12\x10\n\x08language\x18\x01 \x01(\t\"3\n\x0f\x42oolIndexParams\x12\x14\n\x07on_disk\x18\x01 \x01(\x08H\x00\x88\x01\x01\x42\n\n\x08_on_disk\"c\n\x13\x44\x61tetimeIndexParams\x12\x14\n\x07on_disk\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x19\n\x0cis_principal\x18\x02 \x01(\x08H\x01\x88\x01\x01\x42\n\n\x08_on_diskB\x0f\n\r_is_principal\"Y\n\x0fUuidIndexParams\x12\x16\n\tis_tenant\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x14\n\x07on_disk\x18\x02 \x01(\x08H\x01\x88\x01\x01\x42\x0c\n\n_is_tenantB\n\n\x08_on_disk\"\xe8\x03\n\x12PayloadIndexParams\x12:\n\x14keyword_index_params\x18\x03 \x01(\x0b\x32\x1a.qdrant.KeywordIndexParamsH\x00\x12:\n\x14integer_index_params\x18\x02 \x01(\x0b\x32\x1a.qdrant.IntegerIndexParamsH\x00\x12\x36\n\x12\x66loat_index_params\x18\x04 \x01(\x0b\x32\x18.qdrant.FloatIndexParamsH\x00\x12\x32\n\x10geo_index_params\x18\x05 \x01(\x0b\x32\x16.qdrant.GeoIndexParamsH\x00\x12\x34\n\x11text_index_params\x18\x01 \x01(\x0b\x32\x17.qdrant.TextIndexParamsH\x00\x12\x34\n\x11\x62ool_index_params\x18\x06 \x01(\x0b\x32\x17.qdrant.BoolIndexParamsH\x00\x12<\n\x15\x64\x61tetime_index_params\x18\x07 \x01(\x0b\x32\x1b.qdrant.DatetimeIndexParamsH\x00\x12\x34\n\x11uuid_index_params\x18\x08 \x01(\x0b\x32\x17.qdrant.UuidIndexParamsH\x00\x42\x0e\n\x0cindex_params\"\x9d\x01\n\x11PayloadSchemaInfo\x12,\n\tdata_type\x18\x01 \x01(\x0e\x32\x19.qdrant.PayloadSchemaType\x12/\n\x06params\x18\x02 \x01(\x0b\x32\x1a.qdrant.PayloadIndexParamsH\x00\x88\x01\x01\x12\x13\n\x06points\x18\x03 \x01(\x04H\x01\x88\x01\x01\x42\t\n\x07_paramsB\t\n\x07_points\"\xe7\x03\n\x0e\x43ollectionInfo\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.qdrant.CollectionStatus\x12\x31\n\x10optimizer_status\x18\x02 \x01(\x0b\x32\x17.qdrant.OptimizerStatus\x12\x1a\n\rvectors_count\x18\x03 \x01(\x04H\x00\x88\x01\x01\x12\x16\n\x0esegments_count\x18\x04 \x01(\x04\x12(\n\x06\x63onfig\x18\x07 \x01(\x0b\x32\x18.qdrant.CollectionConfig\x12\x41\n\x0epayload_schema\x18\x08 \x03(\x0b\x32).qdrant.CollectionInfo.PayloadSchemaEntry\x12\x19\n\x0cpoints_count\x18\t \x01(\x04H\x01\x88\x01\x01\x12\"\n\x15indexed_vectors_count\x18\n \x01(\x04H\x02\x88\x01\x01\x1aO\n\x12PayloadSchemaEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12(\n\x05value\x18\x02 \x01(\x0b\x32\x19.qdrant.PayloadSchemaInfo:\x02\x38\x01\x42\x10\n\x0e_vectors_countB\x0f\n\r_points_countB\x18\n\x16_indexed_vectors_countJ\x04\x08\x05\x10\x06J\x04\x08\x06\x10\x07\"[\n\rChangeAliases\x12(\n\x07\x61\x63tions\x18\x01 \x03(\x0b\x32\x17.qdrant.AliasOperations\x12\x14\n\x07timeout\x18\x02 \x01(\x04H\x00\x88\x01\x01\x42\n\n\x08_timeout\"\xa2\x01\n\x0f\x41liasOperations\x12+\n\x0c\x63reate_alias\x18\x01 \x01(\x0b\x32\x13.qdrant.CreateAliasH\x00\x12+\n\x0crename_alias\x18\x02 \x01(\x0b\x32\x13.qdrant.RenameAliasH\x00\x12+\n\x0c\x64\x65lete_alias\x18\x03 \x01(\x0b\x32\x13.qdrant.DeleteAliasH\x00\x42\x08\n\x06\x61\x63tion\":\n\x0b\x43reateAlias\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x12\n\nalias_name\x18\x02 \x01(\t\"=\n\x0bRenameAlias\x12\x16\n\x0eold_alias_name\x18\x01 \x01(\t\x12\x16\n\x0enew_alias_name\x18\x02 \x01(\t\"!\n\x0b\x44\x65leteAlias\x12\x12\n\nalias_name\x18\x01 \x01(\t\"\x14\n\x12ListAliasesRequest\"7\n\x1cListCollectionAliasesRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\"?\n\x10\x41liasDescription\x12\x12\n\nalias_name\x18\x01 \x01(\t\x12\x17\n\x0f\x63ollection_name\x18\x02 \x01(\t\"N\n\x13ListAliasesResponse\x12)\n\x07\x61liases\x18\x01 \x03(\x0b\x32\x18.qdrant.AliasDescription\x12\x0c\n\x04time\x18\x02 \x01(\x01\"7\n\x1c\x43ollectionClusterInfoRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\"6\n\x08ShardKey\x12\x11\n\x07keyword\x18\x01 \x01(\tH\x00\x12\x10\n\x06number\x18\x02 \x01(\x04H\x00\x42\x05\n\x03key\"\x95\x01\n\x0eLocalShardInfo\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x14\n\x0cpoints_count\x18\x02 \x01(\x04\x12#\n\x05state\x18\x03 \x01(\x0e\x32\x14.qdrant.ReplicaState\x12(\n\tshard_key\x18\x04 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x00\x88\x01\x01\x42\x0c\n\n_shard_key\"\x91\x01\n\x0fRemoteShardInfo\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x0f\n\x07peer_id\x18\x02 \x01(\x04\x12#\n\x05state\x18\x03 \x01(\x0e\x32\x14.qdrant.ReplicaState\x12(\n\tshard_key\x18\x04 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x00\x88\x01\x01\x42\x0c\n\n_shard_key\"w\n\x11ShardTransferInfo\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x05 \x01(\rH\x00\x88\x01\x01\x12\x0c\n\x04\x66rom\x18\x02 \x01(\x04\x12\n\n\x02to\x18\x03 \x01(\x04\x12\x0c\n\x04sync\x18\x04 \x01(\x08\x42\x0e\n\x0c_to_shard_id\"\x9b\x01\n\x0eReshardingInfo\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x0f\n\x07peer_id\x18\x02 \x01(\x04\x12(\n\tshard_key\x18\x03 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x00\x88\x01\x01\x12.\n\tdirection\x18\x04 \x01(\x0e\x32\x1b.qdrant.ReshardingDirectionB\x0c\n\n_shard_key\"\x8e\x02\n\x1d\x43ollectionClusterInfoResponse\x12\x0f\n\x07peer_id\x18\x01 \x01(\x04\x12\x13\n\x0bshard_count\x18\x02 \x01(\x04\x12,\n\x0clocal_shards\x18\x03 \x03(\x0b\x32\x16.qdrant.LocalShardInfo\x12.\n\rremote_shards\x18\x04 \x03(\x0b\x32\x17.qdrant.RemoteShardInfo\x12\x32\n\x0fshard_transfers\x18\x05 \x03(\x0b\x32\x19.qdrant.ShardTransferInfo\x12\x35\n\x15resharding_operations\x18\x06 \x03(\x0b\x32\x16.qdrant.ReshardingInfo\"\xae\x01\n\tMoveShard\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x05 \x01(\rH\x00\x88\x01\x01\x12\x14\n\x0c\x66rom_peer_id\x18\x02 \x01(\x04\x12\x12\n\nto_peer_id\x18\x03 \x01(\x04\x12\x30\n\x06method\x18\x04 \x01(\x0e\x32\x1b.qdrant.ShardTransferMethodH\x01\x88\x01\x01\x42\x0e\n\x0c_to_shard_idB\t\n\x07_method\"\xb3\x01\n\x0eReplicateShard\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x05 \x01(\rH\x00\x88\x01\x01\x12\x14\n\x0c\x66rom_peer_id\x18\x02 \x01(\x04\x12\x12\n\nto_peer_id\x18\x03 \x01(\x04\x12\x30\n\x06method\x18\x04 \x01(\x0e\x32\x1b.qdrant.ShardTransferMethodH\x01\x88\x01\x01\x42\x0e\n\x0c_to_shard_idB\t\n\x07_method\"z\n\x12\x41\x62ortShardTransfer\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x04 \x01(\rH\x00\x88\x01\x01\x12\x14\n\x0c\x66rom_peer_id\x18\x02 \x01(\x04\x12\x12\n\nto_peer_id\x18\x03 \x01(\x04\x42\x0e\n\x0c_to_shard_id\"\xa4\x01\n\x0fRestartTransfer\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x05 \x01(\rH\x00\x88\x01\x01\x12\x14\n\x0c\x66rom_peer_id\x18\x02 \x01(\x04\x12\x12\n\nto_peer_id\x18\x03 \x01(\x04\x12+\n\x06method\x18\x04 \x01(\x0e\x32\x1b.qdrant.ShardTransferMethodB\x0e\n\x0c_to_shard_id\",\n\x07Replica\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x0f\n\x07peer_id\x18\x02 \x01(\x04\"\xae\x01\n\x0e\x43reateShardKey\x12#\n\tshard_key\x18\x01 \x01(\x0b\x32\x10.qdrant.ShardKey\x12\x1a\n\rshards_number\x18\x02 \x01(\rH\x00\x88\x01\x01\x12\x1f\n\x12replication_factor\x18\x03 \x01(\rH\x01\x88\x01\x01\x12\x11\n\tplacement\x18\x04 \x03(\x04\x42\x10\n\x0e_shards_numberB\x15\n\x13_replication_factor\"5\n\x0e\x44\x65leteShardKey\x12#\n\tshard_key\x18\x01 \x01(\x0b\x32\x10.qdrant.ShardKey\"\xc5\x03\n#UpdateCollectionClusterSetupRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\nmove_shard\x18\x02 \x01(\x0b\x32\x11.qdrant.MoveShardH\x00\x12\x31\n\x0freplicate_shard\x18\x03 \x01(\x0b\x32\x16.qdrant.ReplicateShardH\x00\x12\x34\n\x0e\x61\x62ort_transfer\x18\x04 \x01(\x0b\x32\x1a.qdrant.AbortShardTransferH\x00\x12\'\n\x0c\x64rop_replica\x18\x05 \x01(\x0b\x32\x0f.qdrant.ReplicaH\x00\x12\x32\n\x10\x63reate_shard_key\x18\x07 \x01(\x0b\x32\x16.qdrant.CreateShardKeyH\x00\x12\x32\n\x10\x64\x65lete_shard_key\x18\x08 \x01(\x0b\x32\x16.qdrant.DeleteShardKeyH\x00\x12\x33\n\x10restart_transfer\x18\t \x01(\x0b\x32\x17.qdrant.RestartTransferH\x00\x12\x14\n\x07timeout\x18\x06 \x01(\x04H\x01\x88\x01\x01\x42\x0b\n\toperationB\n\n\x08_timeout\"6\n$UpdateCollectionClusterSetupResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08\"{\n\x15\x43reateShardKeyRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\x07request\x18\x02 \x01(\x0b\x32\x16.qdrant.CreateShardKey\x12\x14\n\x07timeout\x18\x03 \x01(\x04H\x00\x88\x01\x01\x42\n\n\x08_timeout\"{\n\x15\x44\x65leteShardKeyRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\x07request\x18\x02 \x01(\x0b\x32\x16.qdrant.DeleteShardKey\x12\x14\n\x07timeout\x18\x03 \x01(\x04H\x00\x88\x01\x01\x42\n\n\x08_timeout\"(\n\x16\x43reateShardKeyResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08\"(\n\x16\x44\x65leteShardKeyResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08*<\n\x08\x44\x61tatype\x12\x0b\n\x07\x44\x65\x66\x61ult\x10\x00\x12\x0b\n\x07\x46loat32\x10\x01\x12\t\n\x05Uint8\x10\x02\x12\x0b\n\x07\x46loat16\x10\x03*\x1d\n\x08Modifier\x12\x08\n\x04None\x10\x00\x12\x07\n\x03Idf\x10\x01*#\n\x15MultiVectorComparator\x12\n\n\x06MaxSim\x10\x00*O\n\x08\x44istance\x12\x13\n\x0fUnknownDistance\x10\x00\x12\n\n\x06\x43osine\x10\x01\x12\n\n\x06\x45uclid\x10\x02\x12\x07\n\x03\x44ot\x10\x03\x12\r\n\tManhattan\x10\x04*Y\n\x10\x43ollectionStatus\x12\x1b\n\x17UnknownCollectionStatus\x10\x00\x12\t\n\x05Green\x10\x01\x12\n\n\x06Yellow\x10\x02\x12\x07\n\x03Red\x10\x03\x12\x08\n\x04Grey\x10\x04*~\n\x11PayloadSchemaType\x12\x0f\n\x0bUnknownType\x10\x00\x12\x0b\n\x07Keyword\x10\x01\x12\x0b\n\x07Integer\x10\x02\x12\t\n\x05\x46loat\x10\x03\x12\x07\n\x03Geo\x10\x04\x12\x08\n\x04Text\x10\x05\x12\x08\n\x04\x42ool\x10\x06\x12\x0c\n\x08\x44\x61tetime\x10\x07\x12\x08\n\x04Uuid\x10\x08*5\n\x10QuantizationType\x12\x17\n\x13UnknownQuantization\x10\x00\x12\x08\n\x04Int8\x10\x01*=\n\x10\x43ompressionRatio\x12\x06\n\x02x4\x10\x00\x12\x06\n\x02x8\x10\x01\x12\x07\n\x03x16\x10\x02\x12\x07\n\x03x32\x10\x03\x12\x07\n\x03x64\x10\x04*I\n\x1a\x42inaryQuantizationEncoding\x12\n\n\x06OneBit\x10\x00\x12\x0b\n\x07TwoBits\x10\x01\x12\x12\n\x0eOneAndHalfBits\x10\x02*&\n\x0eShardingMethod\x12\x08\n\x04\x41uto\x10\x00\x12\n\n\x06\x43ustom\x10\x01*T\n\rTokenizerType\x12\x0b\n\x07Unknown\x10\x00\x12\n\n\x06Prefix\x10\x01\x12\x0e\n\nWhitespace\x10\x02\x12\x08\n\x04Word\x10\x03\x12\x10\n\x0cMultilingual\x10\x04*\x9d\x01\n\x0cReplicaState\x12\n\n\x06\x41\x63tive\x10\x00\x12\x08\n\x04\x44\x65\x61\x64\x10\x01\x12\x0b\n\x07Partial\x10\x02\x12\x10\n\x0cInitializing\x10\x03\x12\x0c\n\x08Listener\x10\x04\x12\x13\n\x0fPartialSnapshot\x10\x05\x12\x0c\n\x08Recovery\x10\x06\x12\x0e\n\nResharding\x10\x07\x12\x17\n\x13ReshardingScaleDown\x10\x08*\'\n\x13ReshardingDirection\x12\x06\n\x02Up\x10\x00\x12\x08\n\x04\x44own\x10\x01*a\n\x13ShardTransferMethod\x12\x11\n\rStreamRecords\x10\x00\x12\x0c\n\x08Snapshot\x10\x01\x12\x0c\n\x08WalDelta\x10\x02\x12\x1b\n\x17ReshardingStreamRecords\x10\x03\x42\x15\xaa\x02\x12Qdrant.Client.Grpcb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11\x63ollections.proto\x12\x06qdrant\x1a\x13json_with_int.proto\"\x83\x03\n\x0cVectorParams\x12\x0c\n\x04size\x18\x01 \x01(\x04\x12\"\n\x08\x64istance\x18\x02 \x01(\x0e\x32\x10.qdrant.Distance\x12\x30\n\x0bhnsw_config\x18\x03 \x01(\x0b\x32\x16.qdrant.HnswConfigDiffH\x00\x88\x01\x01\x12<\n\x13quantization_config\x18\x04 \x01(\x0b\x32\x1a.qdrant.QuantizationConfigH\x01\x88\x01\x01\x12\x14\n\x07on_disk\x18\x05 \x01(\x08H\x02\x88\x01\x01\x12\'\n\x08\x64\x61tatype\x18\x06 \x01(\x0e\x32\x10.qdrant.DatatypeH\x03\x88\x01\x01\x12:\n\x12multivector_config\x18\x07 \x01(\x0b\x32\x19.qdrant.MultiVectorConfigH\x04\x88\x01\x01\x42\x0e\n\x0c_hnsw_configB\x16\n\x14_quantization_configB\n\n\x08_on_diskB\x0b\n\t_datatypeB\x15\n\x13_multivector_config\"\xd0\x01\n\x10VectorParamsDiff\x12\x30\n\x0bhnsw_config\x18\x01 \x01(\x0b\x32\x16.qdrant.HnswConfigDiffH\x00\x88\x01\x01\x12@\n\x13quantization_config\x18\x02 \x01(\x0b\x32\x1e.qdrant.QuantizationConfigDiffH\x01\x88\x01\x01\x12\x14\n\x07on_disk\x18\x03 \x01(\x08H\x02\x88\x01\x01\x42\x0e\n\x0c_hnsw_configB\x16\n\x14_quantization_configB\n\n\x08_on_disk\"\x82\x01\n\x0fVectorParamsMap\x12-\n\x03map\x18\x01 \x03(\x0b\x32 .qdrant.VectorParamsMap.MapEntry\x1a@\n\x08MapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12#\n\x05value\x18\x02 \x01(\x0b\x32\x14.qdrant.VectorParams:\x02\x38\x01\"\x8e\x01\n\x13VectorParamsDiffMap\x12\x31\n\x03map\x18\x01 \x03(\x0b\x32$.qdrant.VectorParamsDiffMap.MapEntry\x1a\x44\n\x08MapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\'\n\x05value\x18\x02 \x01(\x0b\x32\x18.qdrant.VectorParamsDiff:\x02\x38\x01\"p\n\rVectorsConfig\x12&\n\x06params\x18\x01 \x01(\x0b\x32\x14.qdrant.VectorParamsH\x00\x12-\n\nparams_map\x18\x02 \x01(\x0b\x32\x17.qdrant.VectorParamsMapH\x00\x42\x08\n\x06\x63onfig\"|\n\x11VectorsConfigDiff\x12*\n\x06params\x18\x01 \x01(\x0b\x32\x18.qdrant.VectorParamsDiffH\x00\x12\x31\n\nparams_map\x18\x02 \x01(\x0b\x32\x1b.qdrant.VectorParamsDiffMapH\x00\x42\x08\n\x06\x63onfig\"\x83\x01\n\x12SparseVectorParams\x12-\n\x05index\x18\x01 \x01(\x0b\x32\x19.qdrant.SparseIndexConfigH\x00\x88\x01\x01\x12\'\n\x08modifier\x18\x02 \x01(\x0e\x32\x10.qdrant.ModifierH\x01\x88\x01\x01\x42\x08\n\x06_indexB\x0b\n\t_modifier\"\x8e\x01\n\x12SparseVectorConfig\x12\x30\n\x03map\x18\x01 \x03(\x0b\x32#.qdrant.SparseVectorConfig.MapEntry\x1a\x46\n\x08MapEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12)\n\x05value\x18\x02 \x01(\x0b\x32\x1a.qdrant.SparseVectorParams:\x02\x38\x01\"F\n\x11MultiVectorConfig\x12\x31\n\ncomparator\x18\x01 \x01(\x0e\x32\x1d.qdrant.MultiVectorComparator\"3\n\x18GetCollectionInfoRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\"2\n\x17\x43ollectionExistsRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\"\"\n\x10\x43ollectionExists\x12\x0e\n\x06\x65xists\x18\x01 \x01(\x08\"R\n\x18\x43ollectionExistsResponse\x12(\n\x06result\x18\x01 \x01(\x0b\x32\x18.qdrant.CollectionExists\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\x18\n\x16ListCollectionsRequest\"%\n\x15\x43ollectionDescription\x12\x0c\n\x04name\x18\x01 \x01(\t\"Q\n\x19GetCollectionInfoResponse\x12&\n\x06result\x18\x01 \x01(\x0b\x32\x16.qdrant.CollectionInfo\x12\x0c\n\x04time\x18\x02 \x01(\x01\"[\n\x17ListCollectionsResponse\x12\x32\n\x0b\x63ollections\x18\x01 \x03(\x0b\x32\x1d.qdrant.CollectionDescription\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\x84\x01\n\x16MaxOptimizationThreads\x12\x0f\n\x05value\x18\x01 \x01(\x04H\x00\x12\x39\n\x07setting\x18\x02 \x01(\x0e\x32&.qdrant.MaxOptimizationThreads.SettingH\x00\"\x13\n\x07Setting\x12\x08\n\x04\x41uto\x10\x00\x42\t\n\x07variant\",\n\x0fOptimizerStatus\x12\n\n\x02ok\x18\x01 \x01(\x08\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"\x90\x02\n\x0eHnswConfigDiff\x12\x0e\n\x01m\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x19\n\x0c\x65\x66_construct\x18\x02 \x01(\x04H\x01\x88\x01\x01\x12 \n\x13\x66ull_scan_threshold\x18\x03 \x01(\x04H\x02\x88\x01\x01\x12!\n\x14max_indexing_threads\x18\x04 \x01(\x04H\x03\x88\x01\x01\x12\x14\n\x07on_disk\x18\x05 \x01(\x08H\x04\x88\x01\x01\x12\x16\n\tpayload_m\x18\x06 \x01(\x04H\x05\x88\x01\x01\x42\x04\n\x02_mB\x0f\n\r_ef_constructB\x16\n\x14_full_scan_thresholdB\x17\n\x15_max_indexing_threadsB\n\n\x08_on_diskB\x0c\n\n_payload_m\"\xa5\x01\n\x11SparseIndexConfig\x12 \n\x13\x66ull_scan_threshold\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x14\n\x07on_disk\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12\'\n\x08\x64\x61tatype\x18\x03 \x01(\x0e\x32\x10.qdrant.DatatypeH\x02\x88\x01\x01\x42\x16\n\x14_full_scan_thresholdB\n\n\x08_on_diskB\x0b\n\t_datatype\"\xaf\x01\n\rWalConfigDiff\x12\x1c\n\x0fwal_capacity_mb\x18\x01 \x01(\x04H\x00\x88\x01\x01\x12\x1f\n\x12wal_segments_ahead\x18\x02 \x01(\x04H\x01\x88\x01\x01\x12\x1e\n\x11wal_retain_closed\x18\x03 \x01(\x04H\x02\x88\x01\x01\x42\x12\n\x10_wal_capacity_mbB\x15\n\x13_wal_segments_aheadB\x14\n\x12_wal_retain_closed\"\xe6\x04\n\x14OptimizersConfigDiff\x12\x1e\n\x11\x64\x65leted_threshold\x18\x01 \x01(\x01H\x00\x88\x01\x01\x12%\n\x18vacuum_min_vector_number\x18\x02 \x01(\x04H\x01\x88\x01\x01\x12#\n\x16\x64\x65\x66\x61ult_segment_number\x18\x03 \x01(\x04H\x02\x88\x01\x01\x12\x1d\n\x10max_segment_size\x18\x04 \x01(\x04H\x03\x88\x01\x01\x12\x1d\n\x10memmap_threshold\x18\x05 \x01(\x04H\x04\x88\x01\x01\x12\x1f\n\x12indexing_threshold\x18\x06 \x01(\x04H\x05\x88\x01\x01\x12\x1f\n\x12\x66lush_interval_sec\x18\x07 \x01(\x04H\x06\x88\x01\x01\x12\x30\n#deprecated_max_optimization_threads\x18\x08 \x01(\x04H\x07\x88\x01\x01\x12\x45\n\x18max_optimization_threads\x18\t \x01(\x0b\x32\x1e.qdrant.MaxOptimizationThreadsH\x08\x88\x01\x01\x42\x14\n\x12_deleted_thresholdB\x1b\n\x19_vacuum_min_vector_numberB\x19\n\x17_default_segment_numberB\x13\n\x11_max_segment_sizeB\x13\n\x11_memmap_thresholdB\x15\n\x13_indexing_thresholdB\x15\n\x13_flush_interval_secB&\n$_deprecated_max_optimization_threadsB\x1b\n\x19_max_optimization_threads\"\x88\x01\n\x12ScalarQuantization\x12&\n\x04type\x18\x01 \x01(\x0e\x32\x18.qdrant.QuantizationType\x12\x15\n\x08quantile\x18\x02 \x01(\x02H\x00\x88\x01\x01\x12\x17\n\nalways_ram\x18\x03 \x01(\x08H\x01\x88\x01\x01\x42\x0b\n\t_quantileB\r\n\x0b_always_ram\"l\n\x13ProductQuantization\x12-\n\x0b\x63ompression\x18\x01 \x01(\x0e\x32\x18.qdrant.CompressionRatio\x12\x17\n\nalways_ram\x18\x02 \x01(\x08H\x00\x88\x01\x01\x42\r\n\x0b_always_ram\"\xb6\x01\n\x1f\x42inaryQuantizationQueryEncoding\x12\x42\n\x07setting\x18\x04 \x01(\x0e\x32/.qdrant.BinaryQuantizationQueryEncoding.SettingH\x00\"D\n\x07Setting\x12\x0b\n\x07\x44\x65\x66\x61ult\x10\x00\x12\n\n\x06\x42inary\x10\x01\x12\x0f\n\x0bScalar4Bits\x10\x02\x12\x0f\n\x0bScalar8Bits\x10\x03\x42\t\n\x07variant\"\xdd\x01\n\x12\x42inaryQuantization\x12\x17\n\nalways_ram\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x39\n\x08\x65ncoding\x18\x02 \x01(\x0e\x32\".qdrant.BinaryQuantizationEncodingH\x01\x88\x01\x01\x12\x44\n\x0equery_encoding\x18\x03 \x01(\x0b\x32\'.qdrant.BinaryQuantizationQueryEncodingH\x02\x88\x01\x01\x42\r\n\x0b_always_ramB\x0b\n\t_encodingB\x11\n\x0f_query_encoding\"\xb0\x01\n\x12QuantizationConfig\x12,\n\x06scalar\x18\x01 \x01(\x0b\x32\x1a.qdrant.ScalarQuantizationH\x00\x12.\n\x07product\x18\x02 \x01(\x0b\x32\x1b.qdrant.ProductQuantizationH\x00\x12,\n\x06\x62inary\x18\x03 \x01(\x0b\x32\x1a.qdrant.BinaryQuantizationH\x00\x42\x0e\n\x0cquantization\"\n\n\x08\x44isabled\"\xda\x01\n\x16QuantizationConfigDiff\x12,\n\x06scalar\x18\x01 \x01(\x0b\x32\x1a.qdrant.ScalarQuantizationH\x00\x12.\n\x07product\x18\x02 \x01(\x0b\x32\x1b.qdrant.ProductQuantizationH\x00\x12$\n\x08\x64isabled\x18\x03 \x01(\x0b\x32\x10.qdrant.DisabledH\x00\x12,\n\x06\x62inary\x18\x04 \x01(\x0b\x32\x1a.qdrant.BinaryQuantizationH\x00\x42\x0e\n\x0cquantization\"\xf7\x08\n\x10StrictModeConfig\x12\x14\n\x07\x65nabled\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x1c\n\x0fmax_query_limit\x18\x02 \x01(\rH\x01\x88\x01\x01\x12\x18\n\x0bmax_timeout\x18\x03 \x01(\rH\x02\x88\x01\x01\x12)\n\x1cunindexed_filtering_retrieve\x18\x04 \x01(\x08H\x03\x88\x01\x01\x12\'\n\x1aunindexed_filtering_update\x18\x05 \x01(\x08H\x04\x88\x01\x01\x12\x1f\n\x12search_max_hnsw_ef\x18\x06 \x01(\rH\x05\x88\x01\x01\x12\x1f\n\x12search_allow_exact\x18\x07 \x01(\x08H\x06\x88\x01\x01\x12$\n\x17search_max_oversampling\x18\x08 \x01(\x02H\x07\x88\x01\x01\x12!\n\x14upsert_max_batchsize\x18\t \x01(\x04H\x08\x88\x01\x01\x12-\n max_collection_vector_size_bytes\x18\n \x01(\x04H\t\x88\x01\x01\x12\x1c\n\x0fread_rate_limit\x18\x0b \x01(\rH\n\x88\x01\x01\x12\x1d\n\x10write_rate_limit\x18\x0c \x01(\rH\x0b\x88\x01\x01\x12.\n!max_collection_payload_size_bytes\x18\r \x01(\x04H\x0c\x88\x01\x01\x12\"\n\x15\x66ilter_max_conditions\x18\x0e \x01(\x04H\r\x88\x01\x01\x12\x1f\n\x12\x63ondition_max_size\x18\x0f \x01(\x04H\x0e\x88\x01\x01\x12\x44\n\x12multivector_config\x18\x10 \x01(\x0b\x32#.qdrant.StrictModeMultivectorConfigH\x0f\x88\x01\x01\x12:\n\rsparse_config\x18\x11 \x01(\x0b\x32\x1e.qdrant.StrictModeSparseConfigH\x10\x88\x01\x01\x12\x1d\n\x10max_points_count\x18\x12 \x01(\x04H\x11\x88\x01\x01\x42\n\n\x08_enabledB\x12\n\x10_max_query_limitB\x0e\n\x0c_max_timeoutB\x1f\n\x1d_unindexed_filtering_retrieveB\x1d\n\x1b_unindexed_filtering_updateB\x15\n\x13_search_max_hnsw_efB\x15\n\x13_search_allow_exactB\x1a\n\x18_search_max_oversamplingB\x17\n\x15_upsert_max_batchsizeB#\n!_max_collection_vector_size_bytesB\x12\n\x10_read_rate_limitB\x13\n\x11_write_rate_limitB$\n\"_max_collection_payload_size_bytesB\x18\n\x16_filter_max_conditionsB\x15\n\x13_condition_max_sizeB\x15\n\x13_multivector_configB\x10\n\x0e_sparse_configB\x13\n\x11_max_points_count\"\xb0\x01\n\x16StrictModeSparseConfig\x12G\n\rsparse_config\x18\x01 \x03(\x0b\x32\x30.qdrant.StrictModeSparseConfig.SparseConfigEntry\x1aM\n\x11SparseConfigEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\'\n\x05value\x18\x02 \x01(\x0b\x32\x18.qdrant.StrictModeSparse:\x02\x38\x01\":\n\x10StrictModeSparse\x12\x17\n\nmax_length\x18\n \x01(\x04H\x00\x88\x01\x01\x42\r\n\x0b_max_length\"\xce\x01\n\x1bStrictModeMultivectorConfig\x12V\n\x12multivector_config\x18\x01 \x03(\x0b\x32:.qdrant.StrictModeMultivectorConfig.MultivectorConfigEntry\x1aW\n\x16MultivectorConfigEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12,\n\x05value\x18\x02 \x01(\x0b\x32\x1d.qdrant.StrictModeMultivector:\x02\x38\x01\"A\n\x15StrictModeMultivector\x12\x18\n\x0bmax_vectors\x18\x01 \x01(\x04H\x00\x88\x01\x01\x42\x0e\n\x0c_max_vectors\"\xd1\x08\n\x10\x43reateCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x30\n\x0bhnsw_config\x18\x04 \x01(\x0b\x32\x16.qdrant.HnswConfigDiffH\x00\x88\x01\x01\x12.\n\nwal_config\x18\x05 \x01(\x0b\x32\x15.qdrant.WalConfigDiffH\x01\x88\x01\x01\x12<\n\x11optimizers_config\x18\x06 \x01(\x0b\x32\x1c.qdrant.OptimizersConfigDiffH\x02\x88\x01\x01\x12\x19\n\x0cshard_number\x18\x07 \x01(\rH\x03\x88\x01\x01\x12\x1c\n\x0fon_disk_payload\x18\x08 \x01(\x08H\x04\x88\x01\x01\x12\x14\n\x07timeout\x18\t \x01(\x04H\x05\x88\x01\x01\x12\x32\n\x0evectors_config\x18\n \x01(\x0b\x32\x15.qdrant.VectorsConfigH\x06\x88\x01\x01\x12\x1f\n\x12replication_factor\x18\x0b \x01(\rH\x07\x88\x01\x01\x12%\n\x18write_consistency_factor\x18\x0c \x01(\rH\x08\x88\x01\x01\x12!\n\x14init_from_collection\x18\r \x01(\tH\t\x88\x01\x01\x12<\n\x13quantization_config\x18\x0e \x01(\x0b\x32\x1a.qdrant.QuantizationConfigH\n\x88\x01\x01\x12\x34\n\x0fsharding_method\x18\x0f \x01(\x0e\x32\x16.qdrant.ShardingMethodH\x0b\x88\x01\x01\x12>\n\x15sparse_vectors_config\x18\x10 \x01(\x0b\x32\x1a.qdrant.SparseVectorConfigH\x0c\x88\x01\x01\x12\x39\n\x12strict_mode_config\x18\x11 \x01(\x0b\x32\x18.qdrant.StrictModeConfigH\r\x88\x01\x01\x12\x38\n\x08metadata\x18\x12 \x03(\x0b\x32&.qdrant.CreateCollection.MetadataEntry\x1a>\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x0e\n\x0c_hnsw_configB\r\n\x0b_wal_configB\x14\n\x12_optimizers_configB\x0f\n\r_shard_numberB\x12\n\x10_on_disk_payloadB\n\n\x08_timeoutB\x11\n\x0f_vectors_configB\x15\n\x13_replication_factorB\x1b\n\x19_write_consistency_factorB\x17\n\x15_init_from_collectionB\x16\n\x14_quantization_configB\x12\n\x10_sharding_methodB\x18\n\x16_sparse_vectors_configB\x15\n\x13_strict_mode_configJ\x04\x08\x02\x10\x03J\x04\x08\x03\x10\x04\"\xec\x05\n\x10UpdateCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12<\n\x11optimizers_config\x18\x02 \x01(\x0b\x32\x1c.qdrant.OptimizersConfigDiffH\x00\x88\x01\x01\x12\x14\n\x07timeout\x18\x03 \x01(\x04H\x01\x88\x01\x01\x12\x31\n\x06params\x18\x04 \x01(\x0b\x32\x1c.qdrant.CollectionParamsDiffH\x02\x88\x01\x01\x12\x30\n\x0bhnsw_config\x18\x05 \x01(\x0b\x32\x16.qdrant.HnswConfigDiffH\x03\x88\x01\x01\x12\x36\n\x0evectors_config\x18\x06 \x01(\x0b\x32\x19.qdrant.VectorsConfigDiffH\x04\x88\x01\x01\x12@\n\x13quantization_config\x18\x07 \x01(\x0b\x32\x1e.qdrant.QuantizationConfigDiffH\x05\x88\x01\x01\x12>\n\x15sparse_vectors_config\x18\x08 \x01(\x0b\x32\x1a.qdrant.SparseVectorConfigH\x06\x88\x01\x01\x12\x39\n\x12strict_mode_config\x18\t \x01(\x0b\x32\x18.qdrant.StrictModeConfigH\x07\x88\x01\x01\x12\x38\n\x08metadata\x18\n \x03(\x0b\x32&.qdrant.UpdateCollection.MetadataEntry\x1a>\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x14\n\x12_optimizers_configB\n\n\x08_timeoutB\t\n\x07_paramsB\x0e\n\x0c_hnsw_configB\x11\n\x0f_vectors_configB\x16\n\x14_quantization_configB\x18\n\x16_sparse_vectors_configB\x15\n\x13_strict_mode_config\"M\n\x10\x44\x65leteCollection\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x14\n\x07timeout\x18\x02 \x01(\x04H\x00\x88\x01\x01\x42\n\n\x08_timeout\";\n\x1b\x43ollectionOperationResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08\x12\x0c\n\x04time\x18\x02 \x01(\x01\"\xee\x03\n\x10\x43ollectionParams\x12\x14\n\x0cshard_number\x18\x03 \x01(\r\x12\x17\n\x0fon_disk_payload\x18\x04 \x01(\x08\x12\x32\n\x0evectors_config\x18\x05 \x01(\x0b\x32\x15.qdrant.VectorsConfigH\x00\x88\x01\x01\x12\x1f\n\x12replication_factor\x18\x06 \x01(\rH\x01\x88\x01\x01\x12%\n\x18write_consistency_factor\x18\x07 \x01(\rH\x02\x88\x01\x01\x12 \n\x13read_fan_out_factor\x18\x08 \x01(\rH\x03\x88\x01\x01\x12\x34\n\x0fsharding_method\x18\t \x01(\x0e\x32\x16.qdrant.ShardingMethodH\x04\x88\x01\x01\x12>\n\x15sparse_vectors_config\x18\n \x01(\x0b\x32\x1a.qdrant.SparseVectorConfigH\x05\x88\x01\x01\x42\x11\n\x0f_vectors_configB\x15\n\x13_replication_factorB\x1b\n\x19_write_consistency_factorB\x16\n\x14_read_fan_out_factorB\x12\n\x10_sharding_methodB\x18\n\x16_sparse_vectors_configJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03\"\xfe\x01\n\x14\x43ollectionParamsDiff\x12\x1f\n\x12replication_factor\x18\x01 \x01(\rH\x00\x88\x01\x01\x12%\n\x18write_consistency_factor\x18\x02 \x01(\rH\x01\x88\x01\x01\x12\x1c\n\x0fon_disk_payload\x18\x03 \x01(\x08H\x02\x88\x01\x01\x12 \n\x13read_fan_out_factor\x18\x04 \x01(\rH\x03\x88\x01\x01\x42\x15\n\x13_replication_factorB\x1b\n\x19_write_consistency_factorB\x12\n\x10_on_disk_payloadB\x16\n\x14_read_fan_out_factor\"\xee\x03\n\x10\x43ollectionConfig\x12(\n\x06params\x18\x01 \x01(\x0b\x32\x18.qdrant.CollectionParams\x12+\n\x0bhnsw_config\x18\x02 \x01(\x0b\x32\x16.qdrant.HnswConfigDiff\x12\x36\n\x10optimizer_config\x18\x03 \x01(\x0b\x32\x1c.qdrant.OptimizersConfigDiff\x12)\n\nwal_config\x18\x04 \x01(\x0b\x32\x15.qdrant.WalConfigDiff\x12<\n\x13quantization_config\x18\x05 \x01(\x0b\x32\x1a.qdrant.QuantizationConfigH\x00\x88\x01\x01\x12\x39\n\x12strict_mode_config\x18\x06 \x01(\x0b\x32\x18.qdrant.StrictModeConfigH\x01\x88\x01\x01\x12\x38\n\x08metadata\x18\x07 \x03(\x0b\x32&.qdrant.CollectionConfig.MetadataEntry\x1a>\n\rMetadataEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\x1c\n\x05value\x18\x02 \x01(\x0b\x32\r.qdrant.Value:\x02\x38\x01\x42\x16\n\x14_quantization_configB\x15\n\x13_strict_mode_config\"\\\n\x12KeywordIndexParams\x12\x16\n\tis_tenant\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x14\n\x07on_disk\x18\x02 \x01(\x08H\x01\x88\x01\x01\x42\x0c\n\n_is_tenantB\n\n\x08_on_disk\"\xa0\x01\n\x12IntegerIndexParams\x12\x13\n\x06lookup\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x12\n\x05range\x18\x02 \x01(\x08H\x01\x88\x01\x01\x12\x19\n\x0cis_principal\x18\x03 \x01(\x08H\x02\x88\x01\x01\x12\x14\n\x07on_disk\x18\x04 \x01(\x08H\x03\x88\x01\x01\x42\t\n\x07_lookupB\x08\n\x06_rangeB\x0f\n\r_is_principalB\n\n\x08_on_disk\"`\n\x10\x46loatIndexParams\x12\x14\n\x07on_disk\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x19\n\x0cis_principal\x18\x02 \x01(\x08H\x01\x88\x01\x01\x42\n\n\x08_on_diskB\x0f\n\r_is_principal\"2\n\x0eGeoIndexParams\x12\x14\n\x07on_disk\x18\x01 \x01(\x08H\x00\x88\x01\x01\x42\n\n\x08_on_disk\"1\n\x0cStopwordsSet\x12\x11\n\tlanguages\x18\x01 \x03(\t\x12\x0e\n\x06\x63ustom\x18\x02 \x03(\t\"\x8a\x03\n\x0fTextIndexParams\x12(\n\ttokenizer\x18\x01 \x01(\x0e\x32\x15.qdrant.TokenizerType\x12\x16\n\tlowercase\x18\x02 \x01(\x08H\x00\x88\x01\x01\x12\x1a\n\rmin_token_len\x18\x03 \x01(\x04H\x01\x88\x01\x01\x12\x1a\n\rmax_token_len\x18\x04 \x01(\x04H\x02\x88\x01\x01\x12\x14\n\x07on_disk\x18\x05 \x01(\x08H\x03\x88\x01\x01\x12,\n\tstopwords\x18\x06 \x01(\x0b\x32\x14.qdrant.StopwordsSetH\x04\x88\x01\x01\x12\x1c\n\x0fphrase_matching\x18\x07 \x01(\x08H\x05\x88\x01\x01\x12/\n\x07stemmer\x18\x08 \x01(\x0b\x32\x19.qdrant.StemmingAlgorithmH\x06\x88\x01\x01\x42\x0c\n\n_lowercaseB\x10\n\x0e_min_token_lenB\x10\n\x0e_max_token_lenB\n\n\x08_on_diskB\x0c\n\n_stopwordsB\x12\n\x10_phrase_matchingB\n\n\x08_stemmer\"R\n\x11StemmingAlgorithm\x12*\n\x08snowball\x18\x01 \x01(\x0b\x32\x16.qdrant.SnowballParamsH\x00\x42\x11\n\x0fstemming_params\"\"\n\x0eSnowballParams\x12\x10\n\x08language\x18\x01 \x01(\t\"3\n\x0f\x42oolIndexParams\x12\x14\n\x07on_disk\x18\x01 \x01(\x08H\x00\x88\x01\x01\x42\n\n\x08_on_disk\"c\n\x13\x44\x61tetimeIndexParams\x12\x14\n\x07on_disk\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x19\n\x0cis_principal\x18\x02 \x01(\x08H\x01\x88\x01\x01\x42\n\n\x08_on_diskB\x0f\n\r_is_principal\"Y\n\x0fUuidIndexParams\x12\x16\n\tis_tenant\x18\x01 \x01(\x08H\x00\x88\x01\x01\x12\x14\n\x07on_disk\x18\x02 \x01(\x08H\x01\x88\x01\x01\x42\x0c\n\n_is_tenantB\n\n\x08_on_disk\"\xe8\x03\n\x12PayloadIndexParams\x12:\n\x14keyword_index_params\x18\x03 \x01(\x0b\x32\x1a.qdrant.KeywordIndexParamsH\x00\x12:\n\x14integer_index_params\x18\x02 \x01(\x0b\x32\x1a.qdrant.IntegerIndexParamsH\x00\x12\x36\n\x12\x66loat_index_params\x18\x04 \x01(\x0b\x32\x18.qdrant.FloatIndexParamsH\x00\x12\x32\n\x10geo_index_params\x18\x05 \x01(\x0b\x32\x16.qdrant.GeoIndexParamsH\x00\x12\x34\n\x11text_index_params\x18\x01 \x01(\x0b\x32\x17.qdrant.TextIndexParamsH\x00\x12\x34\n\x11\x62ool_index_params\x18\x06 \x01(\x0b\x32\x17.qdrant.BoolIndexParamsH\x00\x12<\n\x15\x64\x61tetime_index_params\x18\x07 \x01(\x0b\x32\x1b.qdrant.DatetimeIndexParamsH\x00\x12\x34\n\x11uuid_index_params\x18\x08 \x01(\x0b\x32\x17.qdrant.UuidIndexParamsH\x00\x42\x0e\n\x0cindex_params\"\x9d\x01\n\x11PayloadSchemaInfo\x12,\n\tdata_type\x18\x01 \x01(\x0e\x32\x19.qdrant.PayloadSchemaType\x12/\n\x06params\x18\x02 \x01(\x0b\x32\x1a.qdrant.PayloadIndexParamsH\x00\x88\x01\x01\x12\x13\n\x06points\x18\x03 \x01(\x04H\x01\x88\x01\x01\x42\t\n\x07_paramsB\t\n\x07_points\"\xe7\x03\n\x0e\x43ollectionInfo\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.qdrant.CollectionStatus\x12\x31\n\x10optimizer_status\x18\x02 \x01(\x0b\x32\x17.qdrant.OptimizerStatus\x12\x1a\n\rvectors_count\x18\x03 \x01(\x04H\x00\x88\x01\x01\x12\x16\n\x0esegments_count\x18\x04 \x01(\x04\x12(\n\x06\x63onfig\x18\x07 \x01(\x0b\x32\x18.qdrant.CollectionConfig\x12\x41\n\x0epayload_schema\x18\x08 \x03(\x0b\x32).qdrant.CollectionInfo.PayloadSchemaEntry\x12\x19\n\x0cpoints_count\x18\t \x01(\x04H\x01\x88\x01\x01\x12\"\n\x15indexed_vectors_count\x18\n \x01(\x04H\x02\x88\x01\x01\x1aO\n\x12PayloadSchemaEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12(\n\x05value\x18\x02 \x01(\x0b\x32\x19.qdrant.PayloadSchemaInfo:\x02\x38\x01\x42\x10\n\x0e_vectors_countB\x0f\n\r_points_countB\x18\n\x16_indexed_vectors_countJ\x04\x08\x05\x10\x06J\x04\x08\x06\x10\x07\"[\n\rChangeAliases\x12(\n\x07\x61\x63tions\x18\x01 \x03(\x0b\x32\x17.qdrant.AliasOperations\x12\x14\n\x07timeout\x18\x02 \x01(\x04H\x00\x88\x01\x01\x42\n\n\x08_timeout\"\xa2\x01\n\x0f\x41liasOperations\x12+\n\x0c\x63reate_alias\x18\x01 \x01(\x0b\x32\x13.qdrant.CreateAliasH\x00\x12+\n\x0crename_alias\x18\x02 \x01(\x0b\x32\x13.qdrant.RenameAliasH\x00\x12+\n\x0c\x64\x65lete_alias\x18\x03 \x01(\x0b\x32\x13.qdrant.DeleteAliasH\x00\x42\x08\n\x06\x61\x63tion\":\n\x0b\x43reateAlias\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\x12\n\nalias_name\x18\x02 \x01(\t\"=\n\x0bRenameAlias\x12\x16\n\x0eold_alias_name\x18\x01 \x01(\t\x12\x16\n\x0enew_alias_name\x18\x02 \x01(\t\"!\n\x0b\x44\x65leteAlias\x12\x12\n\nalias_name\x18\x01 \x01(\t\"\x14\n\x12ListAliasesRequest\"7\n\x1cListCollectionAliasesRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\"?\n\x10\x41liasDescription\x12\x12\n\nalias_name\x18\x01 \x01(\t\x12\x17\n\x0f\x63ollection_name\x18\x02 \x01(\t\"N\n\x13ListAliasesResponse\x12)\n\x07\x61liases\x18\x01 \x03(\x0b\x32\x18.qdrant.AliasDescription\x12\x0c\n\x04time\x18\x02 \x01(\x01\"7\n\x1c\x43ollectionClusterInfoRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\"6\n\x08ShardKey\x12\x11\n\x07keyword\x18\x01 \x01(\tH\x00\x12\x10\n\x06number\x18\x02 \x01(\x04H\x00\x42\x05\n\x03key\"\x95\x01\n\x0eLocalShardInfo\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x14\n\x0cpoints_count\x18\x02 \x01(\x04\x12#\n\x05state\x18\x03 \x01(\x0e\x32\x14.qdrant.ReplicaState\x12(\n\tshard_key\x18\x04 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x00\x88\x01\x01\x42\x0c\n\n_shard_key\"\x91\x01\n\x0fRemoteShardInfo\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x0f\n\x07peer_id\x18\x02 \x01(\x04\x12#\n\x05state\x18\x03 \x01(\x0e\x32\x14.qdrant.ReplicaState\x12(\n\tshard_key\x18\x04 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x00\x88\x01\x01\x42\x0c\n\n_shard_key\"w\n\x11ShardTransferInfo\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x05 \x01(\rH\x00\x88\x01\x01\x12\x0c\n\x04\x66rom\x18\x02 \x01(\x04\x12\n\n\x02to\x18\x03 \x01(\x04\x12\x0c\n\x04sync\x18\x04 \x01(\x08\x42\x0e\n\x0c_to_shard_id\"\x9b\x01\n\x0eReshardingInfo\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x0f\n\x07peer_id\x18\x02 \x01(\x04\x12(\n\tshard_key\x18\x03 \x01(\x0b\x32\x10.qdrant.ShardKeyH\x00\x88\x01\x01\x12.\n\tdirection\x18\x04 \x01(\x0e\x32\x1b.qdrant.ReshardingDirectionB\x0c\n\n_shard_key\"\x8e\x02\n\x1d\x43ollectionClusterInfoResponse\x12\x0f\n\x07peer_id\x18\x01 \x01(\x04\x12\x13\n\x0bshard_count\x18\x02 \x01(\x04\x12,\n\x0clocal_shards\x18\x03 \x03(\x0b\x32\x16.qdrant.LocalShardInfo\x12.\n\rremote_shards\x18\x04 \x03(\x0b\x32\x17.qdrant.RemoteShardInfo\x12\x32\n\x0fshard_transfers\x18\x05 \x03(\x0b\x32\x19.qdrant.ShardTransferInfo\x12\x35\n\x15resharding_operations\x18\x06 \x03(\x0b\x32\x16.qdrant.ReshardingInfo\"\xae\x01\n\tMoveShard\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x05 \x01(\rH\x00\x88\x01\x01\x12\x14\n\x0c\x66rom_peer_id\x18\x02 \x01(\x04\x12\x12\n\nto_peer_id\x18\x03 \x01(\x04\x12\x30\n\x06method\x18\x04 \x01(\x0e\x32\x1b.qdrant.ShardTransferMethodH\x01\x88\x01\x01\x42\x0e\n\x0c_to_shard_idB\t\n\x07_method\"\xb3\x01\n\x0eReplicateShard\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x05 \x01(\rH\x00\x88\x01\x01\x12\x14\n\x0c\x66rom_peer_id\x18\x02 \x01(\x04\x12\x12\n\nto_peer_id\x18\x03 \x01(\x04\x12\x30\n\x06method\x18\x04 \x01(\x0e\x32\x1b.qdrant.ShardTransferMethodH\x01\x88\x01\x01\x42\x0e\n\x0c_to_shard_idB\t\n\x07_method\"z\n\x12\x41\x62ortShardTransfer\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x04 \x01(\rH\x00\x88\x01\x01\x12\x14\n\x0c\x66rom_peer_id\x18\x02 \x01(\x04\x12\x12\n\nto_peer_id\x18\x03 \x01(\x04\x42\x0e\n\x0c_to_shard_id\"\xa4\x01\n\x0fRestartTransfer\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x18\n\x0bto_shard_id\x18\x05 \x01(\rH\x00\x88\x01\x01\x12\x14\n\x0c\x66rom_peer_id\x18\x02 \x01(\x04\x12\x12\n\nto_peer_id\x18\x03 \x01(\x04\x12+\n\x06method\x18\x04 \x01(\x0e\x32\x1b.qdrant.ShardTransferMethodB\x0e\n\x0c_to_shard_id\",\n\x07Replica\x12\x10\n\x08shard_id\x18\x01 \x01(\r\x12\x0f\n\x07peer_id\x18\x02 \x01(\x04\"\xae\x01\n\x0e\x43reateShardKey\x12#\n\tshard_key\x18\x01 \x01(\x0b\x32\x10.qdrant.ShardKey\x12\x1a\n\rshards_number\x18\x02 \x01(\rH\x00\x88\x01\x01\x12\x1f\n\x12replication_factor\x18\x03 \x01(\rH\x01\x88\x01\x01\x12\x11\n\tplacement\x18\x04 \x03(\x04\x42\x10\n\x0e_shards_numberB\x15\n\x13_replication_factor\"5\n\x0e\x44\x65leteShardKey\x12#\n\tshard_key\x18\x01 \x01(\x0b\x32\x10.qdrant.ShardKey\"\xc5\x03\n#UpdateCollectionClusterSetupRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\nmove_shard\x18\x02 \x01(\x0b\x32\x11.qdrant.MoveShardH\x00\x12\x31\n\x0freplicate_shard\x18\x03 \x01(\x0b\x32\x16.qdrant.ReplicateShardH\x00\x12\x34\n\x0e\x61\x62ort_transfer\x18\x04 \x01(\x0b\x32\x1a.qdrant.AbortShardTransferH\x00\x12\'\n\x0c\x64rop_replica\x18\x05 \x01(\x0b\x32\x0f.qdrant.ReplicaH\x00\x12\x32\n\x10\x63reate_shard_key\x18\x07 \x01(\x0b\x32\x16.qdrant.CreateShardKeyH\x00\x12\x32\n\x10\x64\x65lete_shard_key\x18\x08 \x01(\x0b\x32\x16.qdrant.DeleteShardKeyH\x00\x12\x33\n\x10restart_transfer\x18\t \x01(\x0b\x32\x17.qdrant.RestartTransferH\x00\x12\x14\n\x07timeout\x18\x06 \x01(\x04H\x01\x88\x01\x01\x42\x0b\n\toperationB\n\n\x08_timeout\"6\n$UpdateCollectionClusterSetupResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08\"{\n\x15\x43reateShardKeyRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\x07request\x18\x02 \x01(\x0b\x32\x16.qdrant.CreateShardKey\x12\x14\n\x07timeout\x18\x03 \x01(\x04H\x00\x88\x01\x01\x42\n\n\x08_timeout\"{\n\x15\x44\x65leteShardKeyRequest\x12\x17\n\x0f\x63ollection_name\x18\x01 \x01(\t\x12\'\n\x07request\x18\x02 \x01(\x0b\x32\x16.qdrant.DeleteShardKey\x12\x14\n\x07timeout\x18\x03 \x01(\x04H\x00\x88\x01\x01\x42\n\n\x08_timeout\"(\n\x16\x43reateShardKeyResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08\"(\n\x16\x44\x65leteShardKeyResponse\x12\x0e\n\x06result\x18\x01 \x01(\x08*<\n\x08\x44\x61tatype\x12\x0b\n\x07\x44\x65\x66\x61ult\x10\x00\x12\x0b\n\x07\x46loat32\x10\x01\x12\t\n\x05Uint8\x10\x02\x12\x0b\n\x07\x46loat16\x10\x03*\x1d\n\x08Modifier\x12\x08\n\x04None\x10\x00\x12\x07\n\x03Idf\x10\x01*#\n\x15MultiVectorComparator\x12\n\n\x06MaxSim\x10\x00*O\n\x08\x44istance\x12\x13\n\x0fUnknownDistance\x10\x00\x12\n\n\x06\x43osine\x10\x01\x12\n\n\x06\x45uclid\x10\x02\x12\x07\n\x03\x44ot\x10\x03\x12\r\n\tManhattan\x10\x04*Y\n\x10\x43ollectionStatus\x12\x1b\n\x17UnknownCollectionStatus\x10\x00\x12\t\n\x05Green\x10\x01\x12\n\n\x06Yellow\x10\x02\x12\x07\n\x03Red\x10\x03\x12\x08\n\x04Grey\x10\x04*~\n\x11PayloadSchemaType\x12\x0f\n\x0bUnknownType\x10\x00\x12\x0b\n\x07Keyword\x10\x01\x12\x0b\n\x07Integer\x10\x02\x12\t\n\x05\x46loat\x10\x03\x12\x07\n\x03Geo\x10\x04\x12\x08\n\x04Text\x10\x05\x12\x08\n\x04\x42ool\x10\x06\x12\x0c\n\x08\x44\x61tetime\x10\x07\x12\x08\n\x04Uuid\x10\x08*5\n\x10QuantizationType\x12\x17\n\x13UnknownQuantization\x10\x00\x12\x08\n\x04Int8\x10\x01*=\n\x10\x43ompressionRatio\x12\x06\n\x02x4\x10\x00\x12\x06\n\x02x8\x10\x01\x12\x07\n\x03x16\x10\x02\x12\x07\n\x03x32\x10\x03\x12\x07\n\x03x64\x10\x04*I\n\x1a\x42inaryQuantizationEncoding\x12\n\n\x06OneBit\x10\x00\x12\x0b\n\x07TwoBits\x10\x01\x12\x12\n\x0eOneAndHalfBits\x10\x02*&\n\x0eShardingMethod\x12\x08\n\x04\x41uto\x10\x00\x12\n\n\x06\x43ustom\x10\x01*T\n\rTokenizerType\x12\x0b\n\x07Unknown\x10\x00\x12\n\n\x06Prefix\x10\x01\x12\x0e\n\nWhitespace\x10\x02\x12\x08\n\x04Word\x10\x03\x12\x10\n\x0cMultilingual\x10\x04*\x9d\x01\n\x0cReplicaState\x12\n\n\x06\x41\x63tive\x10\x00\x12\x08\n\x04\x44\x65\x61\x64\x10\x01\x12\x0b\n\x07Partial\x10\x02\x12\x10\n\x0cInitializing\x10\x03\x12\x0c\n\x08Listener\x10\x04\x12\x13\n\x0fPartialSnapshot\x10\x05\x12\x0c\n\x08Recovery\x10\x06\x12\x0e\n\nResharding\x10\x07\x12\x17\n\x13ReshardingScaleDown\x10\x08*\'\n\x13ReshardingDirection\x12\x06\n\x02Up\x10\x00\x12\x08\n\x04\x44own\x10\x01*a\n\x13ShardTransferMethod\x12\x11\n\rStreamRecords\x10\x00\x12\x0c\n\x08Snapshot\x10\x01\x12\x0c\n\x08WalDelta\x10\x02\x12\x1b\n\x17ReshardingStreamRecords\x10\x03\x42\x15\xaa\x02\x12Qdrant.Client.Grpcb\x06proto3')
 
 _DATATYPE = DESCRIPTOR.enum_types_by_name['Datatype']
 Datatype = enum_type_wrapper.EnumTypeWrapper(_DATATYPE)
@@ -146,12 +147,15 @@ _STRICTMODEMULTIVECTORCONFIG = DESCRIPTOR.message_types_by_name['StrictModeMulti
 _STRICTMODEMULTIVECTORCONFIG_MULTIVECTORCONFIGENTRY = _STRICTMODEMULTIVECTORCONFIG.nested_types_by_name['MultivectorConfigEntry']
 _STRICTMODEMULTIVECTOR = DESCRIPTOR.message_types_by_name['StrictModeMultivector']
 _CREATECOLLECTION = DESCRIPTOR.message_types_by_name['CreateCollection']
+_CREATECOLLECTION_METADATAENTRY = _CREATECOLLECTION.nested_types_by_name['MetadataEntry']
 _UPDATECOLLECTION = DESCRIPTOR.message_types_by_name['UpdateCollection']
+_UPDATECOLLECTION_METADATAENTRY = _UPDATECOLLECTION.nested_types_by_name['MetadataEntry']
 _DELETECOLLECTION = DESCRIPTOR.message_types_by_name['DeleteCollection']
 _COLLECTIONOPERATIONRESPONSE = DESCRIPTOR.message_types_by_name['CollectionOperationResponse']
 _COLLECTIONPARAMS = DESCRIPTOR.message_types_by_name['CollectionParams']
 _COLLECTIONPARAMSDIFF = DESCRIPTOR.message_types_by_name['CollectionParamsDiff']
 _COLLECTIONCONFIG = DESCRIPTOR.message_types_by_name['CollectionConfig']
+_COLLECTIONCONFIG_METADATAENTRY = _COLLECTIONCONFIG.nested_types_by_name['MetadataEntry']
 _KEYWORDINDEXPARAMS = DESCRIPTOR.message_types_by_name['KeywordIndexParams']
 _INTEGERINDEXPARAMS = DESCRIPTOR.message_types_by_name['IntegerIndexParams']
 _FLOATINDEXPARAMS = DESCRIPTOR.message_types_by_name['FloatIndexParams']
@@ -484,18 +488,34 @@ StrictModeMultivector = _reflection.GeneratedProtocolMessageType('StrictModeMult
 _sym_db.RegisterMessage(StrictModeMultivector)
 
 CreateCollection = _reflection.GeneratedProtocolMessageType('CreateCollection', (_message.Message,), {
+
+  'MetadataEntry' : _reflection.GeneratedProtocolMessageType('MetadataEntry', (_message.Message,), {
+    'DESCRIPTOR' : _CREATECOLLECTION_METADATAENTRY,
+    '__module__' : 'collections_pb2'
+    # @@protoc_insertion_point(class_scope:qdrant.CreateCollection.MetadataEntry)
+    })
+  ,
   'DESCRIPTOR' : _CREATECOLLECTION,
   '__module__' : 'collections_pb2'
   # @@protoc_insertion_point(class_scope:qdrant.CreateCollection)
   })
 _sym_db.RegisterMessage(CreateCollection)
+_sym_db.RegisterMessage(CreateCollection.MetadataEntry)
 
 UpdateCollection = _reflection.GeneratedProtocolMessageType('UpdateCollection', (_message.Message,), {
+
+  'MetadataEntry' : _reflection.GeneratedProtocolMessageType('MetadataEntry', (_message.Message,), {
+    'DESCRIPTOR' : _UPDATECOLLECTION_METADATAENTRY,
+    '__module__' : 'collections_pb2'
+    # @@protoc_insertion_point(class_scope:qdrant.UpdateCollection.MetadataEntry)
+    })
+  ,
   'DESCRIPTOR' : _UPDATECOLLECTION,
   '__module__' : 'collections_pb2'
   # @@protoc_insertion_point(class_scope:qdrant.UpdateCollection)
   })
 _sym_db.RegisterMessage(UpdateCollection)
+_sym_db.RegisterMessage(UpdateCollection.MetadataEntry)
 
 DeleteCollection = _reflection.GeneratedProtocolMessageType('DeleteCollection', (_message.Message,), {
   'DESCRIPTOR' : _DELETECOLLECTION,
@@ -526,11 +546,19 @@ CollectionParamsDiff = _reflection.GeneratedProtocolMessageType('CollectionParam
 _sym_db.RegisterMessage(CollectionParamsDiff)
 
 CollectionConfig = _reflection.GeneratedProtocolMessageType('CollectionConfig', (_message.Message,), {
+
+  'MetadataEntry' : _reflection.GeneratedProtocolMessageType('MetadataEntry', (_message.Message,), {
+    'DESCRIPTOR' : _COLLECTIONCONFIG_METADATAENTRY,
+    '__module__' : 'collections_pb2'
+    # @@protoc_insertion_point(class_scope:qdrant.CollectionConfig.MetadataEntry)
+    })
+  ,
   'DESCRIPTOR' : _COLLECTIONCONFIG,
   '__module__' : 'collections_pb2'
   # @@protoc_insertion_point(class_scope:qdrant.CollectionConfig)
   })
 _sym_db.RegisterMessage(CollectionConfig)
+_sym_db.RegisterMessage(CollectionConfig.MetadataEntry)
 
 KeywordIndexParams = _reflection.GeneratedProtocolMessageType('KeywordIndexParams', (_message.Message,), {
   'DESCRIPTOR' : _KEYWORDINDEXPARAMS,
@@ -855,220 +883,232 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _STRICTMODESPARSECONFIG_SPARSECONFIGENTRY._serialized_options = b'8\001'
   _STRICTMODEMULTIVECTORCONFIG_MULTIVECTORCONFIGENTRY._options = None
   _STRICTMODEMULTIVECTORCONFIG_MULTIVECTORCONFIGENTRY._serialized_options = b'8\001'
+  _CREATECOLLECTION_METADATAENTRY._options = None
+  _CREATECOLLECTION_METADATAENTRY._serialized_options = b'8\001'
+  _UPDATECOLLECTION_METADATAENTRY._options = None
+  _UPDATECOLLECTION_METADATAENTRY._serialized_options = b'8\001'
+  _COLLECTIONCONFIG_METADATAENTRY._options = None
+  _COLLECTIONCONFIG_METADATAENTRY._serialized_options = b'8\001'
   _COLLECTIONINFO_PAYLOADSCHEMAENTRY._options = None
   _COLLECTIONINFO_PAYLOADSCHEMAENTRY._serialized_options = b'8\001'
-  _DATATYPE._serialized_start=14684
-  _DATATYPE._serialized_end=14744
-  _MODIFIER._serialized_start=14746
-  _MODIFIER._serialized_end=14775
-  _MULTIVECTORCOMPARATOR._serialized_start=14777
-  _MULTIVECTORCOMPARATOR._serialized_end=14812
-  _DISTANCE._serialized_start=14814
-  _DISTANCE._serialized_end=14893
-  _COLLECTIONSTATUS._serialized_start=14895
-  _COLLECTIONSTATUS._serialized_end=14984
-  _PAYLOADSCHEMATYPE._serialized_start=14986
-  _PAYLOADSCHEMATYPE._serialized_end=15112
-  _QUANTIZATIONTYPE._serialized_start=15114
-  _QUANTIZATIONTYPE._serialized_end=15167
-  _COMPRESSIONRATIO._serialized_start=15169
-  _COMPRESSIONRATIO._serialized_end=15230
-  _BINARYQUANTIZATIONENCODING._serialized_start=15232
-  _BINARYQUANTIZATIONENCODING._serialized_end=15305
-  _SHARDINGMETHOD._serialized_start=15307
-  _SHARDINGMETHOD._serialized_end=15345
-  _TOKENIZERTYPE._serialized_start=15347
-  _TOKENIZERTYPE._serialized_end=15431
-  _REPLICASTATE._serialized_start=15434
-  _REPLICASTATE._serialized_end=15591
-  _RESHARDINGDIRECTION._serialized_start=15593
-  _RESHARDINGDIRECTION._serialized_end=15632
-  _SHARDTRANSFERMETHOD._serialized_start=15634
-  _SHARDTRANSFERMETHOD._serialized_end=15731
-  _VECTORPARAMS._serialized_start=30
-  _VECTORPARAMS._serialized_end=417
-  _VECTORPARAMSDIFF._serialized_start=420
-  _VECTORPARAMSDIFF._serialized_end=628
-  _VECTORPARAMSMAP._serialized_start=631
-  _VECTORPARAMSMAP._serialized_end=761
-  _VECTORPARAMSMAP_MAPENTRY._serialized_start=697
-  _VECTORPARAMSMAP_MAPENTRY._serialized_end=761
-  _VECTORPARAMSDIFFMAP._serialized_start=764
-  _VECTORPARAMSDIFFMAP._serialized_end=906
-  _VECTORPARAMSDIFFMAP_MAPENTRY._serialized_start=838
-  _VECTORPARAMSDIFFMAP_MAPENTRY._serialized_end=906
-  _VECTORSCONFIG._serialized_start=908
-  _VECTORSCONFIG._serialized_end=1020
-  _VECTORSCONFIGDIFF._serialized_start=1022
-  _VECTORSCONFIGDIFF._serialized_end=1146
-  _SPARSEVECTORPARAMS._serialized_start=1149
-  _SPARSEVECTORPARAMS._serialized_end=1280
-  _SPARSEVECTORCONFIG._serialized_start=1283
-  _SPARSEVECTORCONFIG._serialized_end=1425
-  _SPARSEVECTORCONFIG_MAPENTRY._serialized_start=1355
-  _SPARSEVECTORCONFIG_MAPENTRY._serialized_end=1425
-  _MULTIVECTORCONFIG._serialized_start=1427
-  _MULTIVECTORCONFIG._serialized_end=1497
-  _GETCOLLECTIONINFOREQUEST._serialized_start=1499
-  _GETCOLLECTIONINFOREQUEST._serialized_end=1550
-  _COLLECTIONEXISTSREQUEST._serialized_start=1552
-  _COLLECTIONEXISTSREQUEST._serialized_end=1602
-  _COLLECTIONEXISTS._serialized_start=1604
-  _COLLECTIONEXISTS._serialized_end=1638
-  _COLLECTIONEXISTSRESPONSE._serialized_start=1640
-  _COLLECTIONEXISTSRESPONSE._serialized_end=1722
-  _LISTCOLLECTIONSREQUEST._serialized_start=1724
-  _LISTCOLLECTIONSREQUEST._serialized_end=1748
-  _COLLECTIONDESCRIPTION._serialized_start=1750
-  _COLLECTIONDESCRIPTION._serialized_end=1787
-  _GETCOLLECTIONINFORESPONSE._serialized_start=1789
-  _GETCOLLECTIONINFORESPONSE._serialized_end=1870
-  _LISTCOLLECTIONSRESPONSE._serialized_start=1872
-  _LISTCOLLECTIONSRESPONSE._serialized_end=1963
-  _MAXOPTIMIZATIONTHREADS._serialized_start=1966
-  _MAXOPTIMIZATIONTHREADS._serialized_end=2098
-  _MAXOPTIMIZATIONTHREADS_SETTING._serialized_start=2068
-  _MAXOPTIMIZATIONTHREADS_SETTING._serialized_end=2087
-  _OPTIMIZERSTATUS._serialized_start=2100
-  _OPTIMIZERSTATUS._serialized_end=2144
-  _HNSWCONFIGDIFF._serialized_start=2147
-  _HNSWCONFIGDIFF._serialized_end=2419
-  _SPARSEINDEXCONFIG._serialized_start=2422
-  _SPARSEINDEXCONFIG._serialized_end=2587
-  _WALCONFIGDIFF._serialized_start=2589
-  _WALCONFIGDIFF._serialized_end=2710
-  _OPTIMIZERSCONFIGDIFF._serialized_start=2713
-  _OPTIMIZERSCONFIGDIFF._serialized_end=3327
-  _SCALARQUANTIZATION._serialized_start=3330
-  _SCALARQUANTIZATION._serialized_end=3466
-  _PRODUCTQUANTIZATION._serialized_start=3468
-  _PRODUCTQUANTIZATION._serialized_end=3576
-  _BINARYQUANTIZATIONQUERYENCODING._serialized_start=3579
-  _BINARYQUANTIZATIONQUERYENCODING._serialized_end=3761
-  _BINARYQUANTIZATIONQUERYENCODING_SETTING._serialized_start=3682
-  _BINARYQUANTIZATIONQUERYENCODING_SETTING._serialized_end=3750
-  _BINARYQUANTIZATION._serialized_start=3764
-  _BINARYQUANTIZATION._serialized_end=3985
-  _QUANTIZATIONCONFIG._serialized_start=3988
-  _QUANTIZATIONCONFIG._serialized_end=4164
-  _DISABLED._serialized_start=4166
-  _DISABLED._serialized_end=4176
-  _QUANTIZATIONCONFIGDIFF._serialized_start=4179
-  _QUANTIZATIONCONFIGDIFF._serialized_end=4397
-  _STRICTMODECONFIG._serialized_start=4400
-  _STRICTMODECONFIG._serialized_end=5543
-  _STRICTMODESPARSECONFIG._serialized_start=5546
-  _STRICTMODESPARSECONFIG._serialized_end=5722
-  _STRICTMODESPARSECONFIG_SPARSECONFIGENTRY._serialized_start=5645
-  _STRICTMODESPARSECONFIG_SPARSECONFIGENTRY._serialized_end=5722
-  _STRICTMODESPARSE._serialized_start=5724
-  _STRICTMODESPARSE._serialized_end=5782
-  _STRICTMODEMULTIVECTORCONFIG._serialized_start=5785
-  _STRICTMODEMULTIVECTORCONFIG._serialized_end=5991
-  _STRICTMODEMULTIVECTORCONFIG_MULTIVECTORCONFIGENTRY._serialized_start=5904
-  _STRICTMODEMULTIVECTORCONFIG_MULTIVECTORCONFIGENTRY._serialized_end=5991
-  _STRICTMODEMULTIVECTOR._serialized_start=5993
-  _STRICTMODEMULTIVECTOR._serialized_end=6058
-  _CREATECOLLECTION._serialized_start=6061
-  _CREATECOLLECTION._serialized_end=7044
-  _UPDATECOLLECTION._serialized_start=7047
-  _UPDATECOLLECTION._serialized_end=7673
-  _DELETECOLLECTION._serialized_start=7675
-  _DELETECOLLECTION._serialized_end=7752
-  _COLLECTIONOPERATIONRESPONSE._serialized_start=7754
-  _COLLECTIONOPERATIONRESPONSE._serialized_end=7813
-  _COLLECTIONPARAMS._serialized_start=7816
-  _COLLECTIONPARAMS._serialized_end=8310
-  _COLLECTIONPARAMSDIFF._serialized_start=8313
-  _COLLECTIONPARAMSDIFF._serialized_end=8567
-  _COLLECTIONCONFIG._serialized_start=8570
-  _COLLECTIONCONFIG._serialized_end=8942
-  _KEYWORDINDEXPARAMS._serialized_start=8944
-  _KEYWORDINDEXPARAMS._serialized_end=9036
-  _INTEGERINDEXPARAMS._serialized_start=9039
-  _INTEGERINDEXPARAMS._serialized_end=9199
-  _FLOATINDEXPARAMS._serialized_start=9201
-  _FLOATINDEXPARAMS._serialized_end=9297
-  _GEOINDEXPARAMS._serialized_start=9299
-  _GEOINDEXPARAMS._serialized_end=9349
-  _STOPWORDSSET._serialized_start=9351
-  _STOPWORDSSET._serialized_end=9400
-  _TEXTINDEXPARAMS._serialized_start=9403
-  _TEXTINDEXPARAMS._serialized_end=9797
-  _STEMMINGALGORITHM._serialized_start=9799
-  _STEMMINGALGORITHM._serialized_end=9881
-  _SNOWBALLPARAMS._serialized_start=9883
-  _SNOWBALLPARAMS._serialized_end=9917
-  _BOOLINDEXPARAMS._serialized_start=9919
-  _BOOLINDEXPARAMS._serialized_end=9970
-  _DATETIMEINDEXPARAMS._serialized_start=9972
-  _DATETIMEINDEXPARAMS._serialized_end=10071
-  _UUIDINDEXPARAMS._serialized_start=10073
-  _UUIDINDEXPARAMS._serialized_end=10162
-  _PAYLOADINDEXPARAMS._serialized_start=10165
-  _PAYLOADINDEXPARAMS._serialized_end=10653
-  _PAYLOADSCHEMAINFO._serialized_start=10656
-  _PAYLOADSCHEMAINFO._serialized_end=10813
-  _COLLECTIONINFO._serialized_start=10816
-  _COLLECTIONINFO._serialized_end=11303
-  _COLLECTIONINFO_PAYLOADSCHEMAENTRY._serialized_start=11151
-  _COLLECTIONINFO_PAYLOADSCHEMAENTRY._serialized_end=11230
-  _CHANGEALIASES._serialized_start=11305
-  _CHANGEALIASES._serialized_end=11396
-  _ALIASOPERATIONS._serialized_start=11399
-  _ALIASOPERATIONS._serialized_end=11561
-  _CREATEALIAS._serialized_start=11563
-  _CREATEALIAS._serialized_end=11621
-  _RENAMEALIAS._serialized_start=11623
-  _RENAMEALIAS._serialized_end=11684
-  _DELETEALIAS._serialized_start=11686
-  _DELETEALIAS._serialized_end=11719
-  _LISTALIASESREQUEST._serialized_start=11721
-  _LISTALIASESREQUEST._serialized_end=11741
-  _LISTCOLLECTIONALIASESREQUEST._serialized_start=11743
-  _LISTCOLLECTIONALIASESREQUEST._serialized_end=11798
-  _ALIASDESCRIPTION._serialized_start=11800
-  _ALIASDESCRIPTION._serialized_end=11863
-  _LISTALIASESRESPONSE._serialized_start=11865
-  _LISTALIASESRESPONSE._serialized_end=11943
-  _COLLECTIONCLUSTERINFOREQUEST._serialized_start=11945
-  _COLLECTIONCLUSTERINFOREQUEST._serialized_end=12000
-  _SHARDKEY._serialized_start=12002
-  _SHARDKEY._serialized_end=12056
-  _LOCALSHARDINFO._serialized_start=12059
-  _LOCALSHARDINFO._serialized_end=12208
-  _REMOTESHARDINFO._serialized_start=12211
-  _REMOTESHARDINFO._serialized_end=12356
-  _SHARDTRANSFERINFO._serialized_start=12358
-  _SHARDTRANSFERINFO._serialized_end=12477
-  _RESHARDINGINFO._serialized_start=12480
-  _RESHARDINGINFO._serialized_end=12635
-  _COLLECTIONCLUSTERINFORESPONSE._serialized_start=12638
-  _COLLECTIONCLUSTERINFORESPONSE._serialized_end=12908
-  _MOVESHARD._serialized_start=12911
-  _MOVESHARD._serialized_end=13085
-  _REPLICATESHARD._serialized_start=13088
-  _REPLICATESHARD._serialized_end=13267
-  _ABORTSHARDTRANSFER._serialized_start=13269
-  _ABORTSHARDTRANSFER._serialized_end=13391
-  _RESTARTTRANSFER._serialized_start=13394
-  _RESTARTTRANSFER._serialized_end=13558
-  _REPLICA._serialized_start=13560
-  _REPLICA._serialized_end=13604
-  _CREATESHARDKEY._serialized_start=13607
-  _CREATESHARDKEY._serialized_end=13781
-  _DELETESHARDKEY._serialized_start=13783
-  _DELETESHARDKEY._serialized_end=13836
-  _UPDATECOLLECTIONCLUSTERSETUPREQUEST._serialized_start=13839
-  _UPDATECOLLECTIONCLUSTERSETUPREQUEST._serialized_end=14292
-  _UPDATECOLLECTIONCLUSTERSETUPRESPONSE._serialized_start=14294
-  _UPDATECOLLECTIONCLUSTERSETUPRESPONSE._serialized_end=14348
-  _CREATESHARDKEYREQUEST._serialized_start=14350
-  _CREATESHARDKEYREQUEST._serialized_end=14473
-  _DELETESHARDKEYREQUEST._serialized_start=14475
-  _DELETESHARDKEYREQUEST._serialized_end=14598
-  _CREATESHARDKEYRESPONSE._serialized_start=14600
-  _CREATESHARDKEYRESPONSE._serialized_end=14640
-  _DELETESHARDKEYRESPONSE._serialized_start=14642
-  _DELETESHARDKEYRESPONSE._serialized_end=14682
+  _DATATYPE._serialized_start=15126
+  _DATATYPE._serialized_end=15186
+  _MODIFIER._serialized_start=15188
+  _MODIFIER._serialized_end=15217
+  _MULTIVECTORCOMPARATOR._serialized_start=15219
+  _MULTIVECTORCOMPARATOR._serialized_end=15254
+  _DISTANCE._serialized_start=15256
+  _DISTANCE._serialized_end=15335
+  _COLLECTIONSTATUS._serialized_start=15337
+  _COLLECTIONSTATUS._serialized_end=15426
+  _PAYLOADSCHEMATYPE._serialized_start=15428
+  _PAYLOADSCHEMATYPE._serialized_end=15554
+  _QUANTIZATIONTYPE._serialized_start=15556
+  _QUANTIZATIONTYPE._serialized_end=15609
+  _COMPRESSIONRATIO._serialized_start=15611
+  _COMPRESSIONRATIO._serialized_end=15672
+  _BINARYQUANTIZATIONENCODING._serialized_start=15674
+  _BINARYQUANTIZATIONENCODING._serialized_end=15747
+  _SHARDINGMETHOD._serialized_start=15749
+  _SHARDINGMETHOD._serialized_end=15787
+  _TOKENIZERTYPE._serialized_start=15789
+  _TOKENIZERTYPE._serialized_end=15873
+  _REPLICASTATE._serialized_start=15876
+  _REPLICASTATE._serialized_end=16033
+  _RESHARDINGDIRECTION._serialized_start=16035
+  _RESHARDINGDIRECTION._serialized_end=16074
+  _SHARDTRANSFERMETHOD._serialized_start=16076
+  _SHARDTRANSFERMETHOD._serialized_end=16173
+  _VECTORPARAMS._serialized_start=51
+  _VECTORPARAMS._serialized_end=438
+  _VECTORPARAMSDIFF._serialized_start=441
+  _VECTORPARAMSDIFF._serialized_end=649
+  _VECTORPARAMSMAP._serialized_start=652
+  _VECTORPARAMSMAP._serialized_end=782
+  _VECTORPARAMSMAP_MAPENTRY._serialized_start=718
+  _VECTORPARAMSMAP_MAPENTRY._serialized_end=782
+  _VECTORPARAMSDIFFMAP._serialized_start=785
+  _VECTORPARAMSDIFFMAP._serialized_end=927
+  _VECTORPARAMSDIFFMAP_MAPENTRY._serialized_start=859
+  _VECTORPARAMSDIFFMAP_MAPENTRY._serialized_end=927
+  _VECTORSCONFIG._serialized_start=929
+  _VECTORSCONFIG._serialized_end=1041
+  _VECTORSCONFIGDIFF._serialized_start=1043
+  _VECTORSCONFIGDIFF._serialized_end=1167
+  _SPARSEVECTORPARAMS._serialized_start=1170
+  _SPARSEVECTORPARAMS._serialized_end=1301
+  _SPARSEVECTORCONFIG._serialized_start=1304
+  _SPARSEVECTORCONFIG._serialized_end=1446
+  _SPARSEVECTORCONFIG_MAPENTRY._serialized_start=1376
+  _SPARSEVECTORCONFIG_MAPENTRY._serialized_end=1446
+  _MULTIVECTORCONFIG._serialized_start=1448
+  _MULTIVECTORCONFIG._serialized_end=1518
+  _GETCOLLECTIONINFOREQUEST._serialized_start=1520
+  _GETCOLLECTIONINFOREQUEST._serialized_end=1571
+  _COLLECTIONEXISTSREQUEST._serialized_start=1573
+  _COLLECTIONEXISTSREQUEST._serialized_end=1623
+  _COLLECTIONEXISTS._serialized_start=1625
+  _COLLECTIONEXISTS._serialized_end=1659
+  _COLLECTIONEXISTSRESPONSE._serialized_start=1661
+  _COLLECTIONEXISTSRESPONSE._serialized_end=1743
+  _LISTCOLLECTIONSREQUEST._serialized_start=1745
+  _LISTCOLLECTIONSREQUEST._serialized_end=1769
+  _COLLECTIONDESCRIPTION._serialized_start=1771
+  _COLLECTIONDESCRIPTION._serialized_end=1808
+  _GETCOLLECTIONINFORESPONSE._serialized_start=1810
+  _GETCOLLECTIONINFORESPONSE._serialized_end=1891
+  _LISTCOLLECTIONSRESPONSE._serialized_start=1893
+  _LISTCOLLECTIONSRESPONSE._serialized_end=1984
+  _MAXOPTIMIZATIONTHREADS._serialized_start=1987
+  _MAXOPTIMIZATIONTHREADS._serialized_end=2119
+  _MAXOPTIMIZATIONTHREADS_SETTING._serialized_start=2089
+  _MAXOPTIMIZATIONTHREADS_SETTING._serialized_end=2108
+  _OPTIMIZERSTATUS._serialized_start=2121
+  _OPTIMIZERSTATUS._serialized_end=2165
+  _HNSWCONFIGDIFF._serialized_start=2168
+  _HNSWCONFIGDIFF._serialized_end=2440
+  _SPARSEINDEXCONFIG._serialized_start=2443
+  _SPARSEINDEXCONFIG._serialized_end=2608
+  _WALCONFIGDIFF._serialized_start=2611
+  _WALCONFIGDIFF._serialized_end=2786
+  _OPTIMIZERSCONFIGDIFF._serialized_start=2789
+  _OPTIMIZERSCONFIGDIFF._serialized_end=3403
+  _SCALARQUANTIZATION._serialized_start=3406
+  _SCALARQUANTIZATION._serialized_end=3542
+  _PRODUCTQUANTIZATION._serialized_start=3544
+  _PRODUCTQUANTIZATION._serialized_end=3652
+  _BINARYQUANTIZATIONQUERYENCODING._serialized_start=3655
+  _BINARYQUANTIZATIONQUERYENCODING._serialized_end=3837
+  _BINARYQUANTIZATIONQUERYENCODING_SETTING._serialized_start=3758
+  _BINARYQUANTIZATIONQUERYENCODING_SETTING._serialized_end=3826
+  _BINARYQUANTIZATION._serialized_start=3840
+  _BINARYQUANTIZATION._serialized_end=4061
+  _QUANTIZATIONCONFIG._serialized_start=4064
+  _QUANTIZATIONCONFIG._serialized_end=4240
+  _DISABLED._serialized_start=4242
+  _DISABLED._serialized_end=4252
+  _QUANTIZATIONCONFIGDIFF._serialized_start=4255
+  _QUANTIZATIONCONFIGDIFF._serialized_end=4473
+  _STRICTMODECONFIG._serialized_start=4476
+  _STRICTMODECONFIG._serialized_end=5619
+  _STRICTMODESPARSECONFIG._serialized_start=5622
+  _STRICTMODESPARSECONFIG._serialized_end=5798
+  _STRICTMODESPARSECONFIG_SPARSECONFIGENTRY._serialized_start=5721
+  _STRICTMODESPARSECONFIG_SPARSECONFIGENTRY._serialized_end=5798
+  _STRICTMODESPARSE._serialized_start=5800
+  _STRICTMODESPARSE._serialized_end=5858
+  _STRICTMODEMULTIVECTORCONFIG._serialized_start=5861
+  _STRICTMODEMULTIVECTORCONFIG._serialized_end=6067
+  _STRICTMODEMULTIVECTORCONFIG_MULTIVECTORCONFIGENTRY._serialized_start=5980
+  _STRICTMODEMULTIVECTORCONFIG_MULTIVECTORCONFIGENTRY._serialized_end=6067
+  _STRICTMODEMULTIVECTOR._serialized_start=6069
+  _STRICTMODEMULTIVECTOR._serialized_end=6134
+  _CREATECOLLECTION._serialized_start=6137
+  _CREATECOLLECTION._serialized_end=7242
+  _CREATECOLLECTION_METADATAENTRY._serialized_start=6877
+  _CREATECOLLECTION_METADATAENTRY._serialized_end=6939
+  _UPDATECOLLECTION._serialized_start=7245
+  _UPDATECOLLECTION._serialized_end=7993
+  _UPDATECOLLECTION_METADATAENTRY._serialized_start=6877
+  _UPDATECOLLECTION_METADATAENTRY._serialized_end=6939
+  _DELETECOLLECTION._serialized_start=7995
+  _DELETECOLLECTION._serialized_end=8072
+  _COLLECTIONOPERATIONRESPONSE._serialized_start=8074
+  _COLLECTIONOPERATIONRESPONSE._serialized_end=8133
+  _COLLECTIONPARAMS._serialized_start=8136
+  _COLLECTIONPARAMS._serialized_end=8630
+  _COLLECTIONPARAMSDIFF._serialized_start=8633
+  _COLLECTIONPARAMSDIFF._serialized_end=8887
+  _COLLECTIONCONFIG._serialized_start=8890
+  _COLLECTIONCONFIG._serialized_end=9384
+  _COLLECTIONCONFIG_METADATAENTRY._serialized_start=6877
+  _COLLECTIONCONFIG_METADATAENTRY._serialized_end=6939
+  _KEYWORDINDEXPARAMS._serialized_start=9386
+  _KEYWORDINDEXPARAMS._serialized_end=9478
+  _INTEGERINDEXPARAMS._serialized_start=9481
+  _INTEGERINDEXPARAMS._serialized_end=9641
+  _FLOATINDEXPARAMS._serialized_start=9643
+  _FLOATINDEXPARAMS._serialized_end=9739
+  _GEOINDEXPARAMS._serialized_start=9741
+  _GEOINDEXPARAMS._serialized_end=9791
+  _STOPWORDSSET._serialized_start=9793
+  _STOPWORDSSET._serialized_end=9842
+  _TEXTINDEXPARAMS._serialized_start=9845
+  _TEXTINDEXPARAMS._serialized_end=10239
+  _STEMMINGALGORITHM._serialized_start=10241
+  _STEMMINGALGORITHM._serialized_end=10323
+  _SNOWBALLPARAMS._serialized_start=10325
+  _SNOWBALLPARAMS._serialized_end=10359
+  _BOOLINDEXPARAMS._serialized_start=10361
+  _BOOLINDEXPARAMS._serialized_end=10412
+  _DATETIMEINDEXPARAMS._serialized_start=10414
+  _DATETIMEINDEXPARAMS._serialized_end=10513
+  _UUIDINDEXPARAMS._serialized_start=10515
+  _UUIDINDEXPARAMS._serialized_end=10604
+  _PAYLOADINDEXPARAMS._serialized_start=10607
+  _PAYLOADINDEXPARAMS._serialized_end=11095
+  _PAYLOADSCHEMAINFO._serialized_start=11098
+  _PAYLOADSCHEMAINFO._serialized_end=11255
+  _COLLECTIONINFO._serialized_start=11258
+  _COLLECTIONINFO._serialized_end=11745
+  _COLLECTIONINFO_PAYLOADSCHEMAENTRY._serialized_start=11593
+  _COLLECTIONINFO_PAYLOADSCHEMAENTRY._serialized_end=11672
+  _CHANGEALIASES._serialized_start=11747
+  _CHANGEALIASES._serialized_end=11838
+  _ALIASOPERATIONS._serialized_start=11841
+  _ALIASOPERATIONS._serialized_end=12003
+  _CREATEALIAS._serialized_start=12005
+  _CREATEALIAS._serialized_end=12063
+  _RENAMEALIAS._serialized_start=12065
+  _RENAMEALIAS._serialized_end=12126
+  _DELETEALIAS._serialized_start=12128
+  _DELETEALIAS._serialized_end=12161
+  _LISTALIASESREQUEST._serialized_start=12163
+  _LISTALIASESREQUEST._serialized_end=12183
+  _LISTCOLLECTIONALIASESREQUEST._serialized_start=12185
+  _LISTCOLLECTIONALIASESREQUEST._serialized_end=12240
+  _ALIASDESCRIPTION._serialized_start=12242
+  _ALIASDESCRIPTION._serialized_end=12305
+  _LISTALIASESRESPONSE._serialized_start=12307
+  _LISTALIASESRESPONSE._serialized_end=12385
+  _COLLECTIONCLUSTERINFOREQUEST._serialized_start=12387
+  _COLLECTIONCLUSTERINFOREQUEST._serialized_end=12442
+  _SHARDKEY._serialized_start=12444
+  _SHARDKEY._serialized_end=12498
+  _LOCALSHARDINFO._serialized_start=12501
+  _LOCALSHARDINFO._serialized_end=12650
+  _REMOTESHARDINFO._serialized_start=12653
+  _REMOTESHARDINFO._serialized_end=12798
+  _SHARDTRANSFERINFO._serialized_start=12800
+  _SHARDTRANSFERINFO._serialized_end=12919
+  _RESHARDINGINFO._serialized_start=12922
+  _RESHARDINGINFO._serialized_end=13077
+  _COLLECTIONCLUSTERINFORESPONSE._serialized_start=13080
+  _COLLECTIONCLUSTERINFORESPONSE._serialized_end=13350
+  _MOVESHARD._serialized_start=13353
+  _MOVESHARD._serialized_end=13527
+  _REPLICATESHARD._serialized_start=13530
+  _REPLICATESHARD._serialized_end=13709
+  _ABORTSHARDTRANSFER._serialized_start=13711
+  _ABORTSHARDTRANSFER._serialized_end=13833
+  _RESTARTTRANSFER._serialized_start=13836
+  _RESTARTTRANSFER._serialized_end=14000
+  _REPLICA._serialized_start=14002
+  _REPLICA._serialized_end=14046
+  _CREATESHARDKEY._serialized_start=14049
+  _CREATESHARDKEY._serialized_end=14223
+  _DELETESHARDKEY._serialized_start=14225
+  _DELETESHARDKEY._serialized_end=14278
+  _UPDATECOLLECTIONCLUSTERSETUPREQUEST._serialized_start=14281
+  _UPDATECOLLECTIONCLUSTERSETUPREQUEST._serialized_end=14734
+  _UPDATECOLLECTIONCLUSTERSETUPRESPONSE._serialized_start=14736
+  _UPDATECOLLECTIONCLUSTERSETUPRESPONSE._serialized_end=14790
+  _CREATESHARDKEYREQUEST._serialized_start=14792
+  _CREATESHARDKEYREQUEST._serialized_end=14915
+  _DELETESHARDKEYREQUEST._serialized_start=14917
+  _DELETESHARDKEYREQUEST._serialized_end=15040
+  _CREATESHARDKEYRESPONSE._serialized_start=15042
+  _CREATESHARDKEYRESPONSE._serialized_end=15082
+  _DELETESHARDKEYRESPONSE._serialized_start=15084
+  _DELETESHARDKEYRESPONSE._serialized_end=15124
 # @@protoc_insertion_point(module_scope)

@@ -156,6 +156,7 @@ class _DistributedApi:
     def _build_for_remove_peer(
         self,
         peer_id: int,
+        timeout: int = None,
         force: bool = None,
     ):
         """
@@ -166,6 +167,8 @@ class _DistributedApi:
         }
 
         query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
         if force is not None:
             query_params["force"] = str(force).lower()
 
@@ -260,6 +263,7 @@ class AsyncDistributedApi(_DistributedApi):
     async def remove_peer(
         self,
         peer_id: int,
+        timeout: int = None,
         force: bool = None,
     ) -> m.InlineResponse200:
         """
@@ -267,6 +271,7 @@ class AsyncDistributedApi(_DistributedApi):
         """
         return await self._build_for_remove_peer(
             peer_id=peer_id,
+            timeout=timeout,
             force=force,
         )
 
@@ -335,6 +340,7 @@ class SyncDistributedApi(_DistributedApi):
     def remove_peer(
         self,
         peer_id: int,
+        timeout: int = None,
         force: bool = None,
     ) -> m.InlineResponse200:
         """
@@ -342,6 +348,7 @@ class SyncDistributedApi(_DistributedApi):
         """
         return self._build_for_remove_peer(
             peer_id=peer_id,
+            timeout=timeout,
             force=force,
         )
 

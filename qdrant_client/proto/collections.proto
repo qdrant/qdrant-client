@@ -3,6 +3,8 @@ package qdrant;
 
 option csharp_namespace = "Qdrant.Client.Grpc";
 
+import "json_with_int.proto";
+
 enum Datatype {
   Default = 0;
   Float32 = 1;
@@ -170,10 +172,12 @@ message HnswConfigDiff {
   */
   optional uint64 ef_construct = 2;
   /*
-     Minimal size (in KiloBytes) of vectors for additional payload-based indexing.
-     If the payload chunk is smaller than `full_scan_threshold` additional indexing won't be used -
-     in this case full-scan search should be preferred by query planner and additional indexing is not required.
-     Note: 1 Kb = 1 vector of size 256
+    Minimal size threshold (in KiloBytes) below which full-scan is preferred over HNSW search.
+    This measures the total size of vectors being queried against.
+    When the maximum estimated amount of points that a condition satisfies is smaller than
+    `full_scan_threshold`, the query planner will use full-scan search instead of HNSW index
+    traversal for better performance.
+    Note: 1Kb = 1 vector of size 256
   */
   optional uint64 full_scan_threshold = 3;
   /*
@@ -212,6 +216,7 @@ message SparseIndexConfig {
 message WalConfigDiff {
   optional uint64 wal_capacity_mb = 1; // Size of a single WAL block file
   optional uint64 wal_segments_ahead = 2; // Number of segments to create in advance
+  optional uint64 wal_retain_closed = 3; // Number of closed segments to retain
 }
 
 message OptimizersConfigDiff {
@@ -235,6 +240,8 @@ message OptimizersConfigDiff {
   */
   optional uint64 default_segment_number = 3;
   /*
+     Deprecated:
+
      Do not create segments larger this size (in kilobytes).
      Large segments might require disproportionately long indexation times,
      therefore it makes sense to limit the size of segments.
@@ -398,11 +405,12 @@ message CreateCollection {
   optional VectorsConfig vectors_config = 10; // Configuration for vectors
   optional uint32 replication_factor = 11; // Number of replicas of each shard that network tries to maintain, default = 1
   optional uint32 write_consistency_factor = 12; // How many replicas should apply the operation for us to consider it successful, default = 1
-  optional string init_from_collection = 13; // Specify name of the other collection to copy data from
+  optional string init_from_collection = 13; // Deprecated: specify name of the other collection to copy data from
   optional QuantizationConfig quantization_config = 14; // Quantization configuration of vector
   optional ShardingMethod sharding_method = 15; // Sharding method
   optional SparseVectorConfig sparse_vectors_config = 16; // Configuration for sparse vectors
   optional StrictModeConfig strict_mode_config = 17; // Configuration for strict mode
+  map<string, Value> metadata = 18; // Arbitrary JSON metadata for the collection
 }
 
 message UpdateCollection {
@@ -415,6 +423,7 @@ message UpdateCollection {
   optional QuantizationConfigDiff quantization_config = 7; // Quantization configuration of vector
   optional SparseVectorConfig sparse_vectors_config = 8; // New sparse vector parameters
   optional StrictModeConfig strict_mode_config = 9; // New strict mode configuration
+  map<string, Value> metadata = 10; // Arbitrary JSON-like metadata for the collection, will be merged with already stored metadata
 }
 
 message DeleteCollection {
@@ -454,6 +463,7 @@ message CollectionConfig {
   WalConfigDiff wal_config = 4; // Configuration of the Write-Ahead-Log
   optional QuantizationConfig quantization_config = 5; // Configuration of the vector quantization
   optional StrictModeConfig strict_mode_config = 6; // Configuration of strict mode.
+  map<string, Value> metadata = 7; // Arbitrary JSON metadata for the collection
 }
 
 enum TokenizerType {
