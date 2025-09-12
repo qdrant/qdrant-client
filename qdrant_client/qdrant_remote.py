@@ -317,7 +317,7 @@ class QdrantRemote(QdrantBase):
             grpc.QdrantStub(channel) for channel in self._grpc_channel_pool
         ]
 
-    def next_grpc_client(self) -> int:
+    def _next_grpc_client(self) -> int:
         current_index = self._grpc_client_next_index
         self._grpc_client_next_index = (self._grpc_client_next_index + 1) % self._pool_size
         return current_index
@@ -332,7 +332,7 @@ class QdrantRemote(QdrantBase):
         if self._grpc_collections_client_pool is None:
             self._init_grpc_collections_client()
         assert self._grpc_collections_client_pool is not None
-        return self._grpc_collections_client_pool[self.next_grpc_client()]
+        return self._grpc_collections_client_pool[self._next_grpc_client()]
 
     @property
     def grpc_points(self) -> grpc.PointsStub:
@@ -344,7 +344,7 @@ class QdrantRemote(QdrantBase):
         if self._grpc_points_client_pool is None:
             self._init_grpc_points_client()
         assert self._grpc_points_client_pool is not None
-        return self._grpc_points_client_pool[self.next_grpc_client()]
+        return self._grpc_points_client_pool[self._next_grpc_client()]
 
     @property
     def grpc_snapshots(self) -> grpc.SnapshotsStub:
@@ -356,7 +356,7 @@ class QdrantRemote(QdrantBase):
         if self._grpc_snapshots_client_pool is None:
             self._init_grpc_snapshots_client()
         assert self._grpc_snapshots_client_pool is not None
-        return self._grpc_snapshots_client_pool[self.next_grpc_client()]
+        return self._grpc_snapshots_client_pool[self._next_grpc_client()]
 
     @property
     def grpc_root(self) -> grpc.QdrantStub:
@@ -368,7 +368,7 @@ class QdrantRemote(QdrantBase):
         if self._grpc_root_client_pool is None:
             self._init_grpc_root_client()
         assert self._grpc_root_client_pool is not None
-        return self._grpc_root_client_pool[self.next_grpc_client()]
+        return self._grpc_root_client_pool[self._next_grpc_client()]
 
     @property
     def rest(self) -> SyncApis[ApiClient]:
