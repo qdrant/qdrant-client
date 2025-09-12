@@ -1905,6 +1905,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1940,6 +1941,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
+            if isinstance(update_filter, models.Filter):
+                update_filter = RestToGrpc.convert_filter(model=update_filter)
+
             grpc_result = self.grpc_points.Upsert(
                 grpc.UpsertPoints(
                     collection_name=collection_name,
@@ -1947,6 +1951,7 @@ class QdrantRemote(QdrantBase):
                     points=points,
                     ordering=ordering,
                     shard_key_selector=shard_key_selector,
+                    update_filter=update_filter,
                 ),
                 timeout=self._timeout,
             ).result
@@ -1969,11 +1974,15 @@ class QdrantRemote(QdrantBase):
             if isinstance(points, models.Batch):
                 points = models.PointsBatch(batch=points, shard_key=shard_key_selector)
 
+            if isinstance(update_filter, grpc.Filter):
+                update_filter = GrpcToRest.convert_filter(model=update_filter)
+
             http_result = self.openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
                 wait=wait,
                 point_insert_operations=points,
                 ordering=ordering,
+                update_filter=update_filter,
             ).result
             assert http_result is not None, "Upsert returned None result"
             return http_result
@@ -1985,6 +1994,7 @@ class QdrantRemote(QdrantBase):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
@@ -1996,6 +2006,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
 
+            if isinstance(update_filter, models.Filter):
+                update_filter = RestToGrpc.convert_filter(model=update_filter)
+
             grpc_result = self.grpc_points.UpdateVectors(
                 grpc.UpdatePointVectors(
                     collection_name=collection_name,
@@ -2003,18 +2016,23 @@ class QdrantRemote(QdrantBase):
                     points=points,
                     ordering=ordering,
                     shard_key_selector=shard_key_selector,
+                    update_filter=update_filter,
                 ),
                 timeout=self._timeout,
             ).result
             assert grpc_result is not None, "Upsert returned None result"
             return GrpcToRest.convert_update_result(grpc_result)
         else:
+            if isinstance(update_filter, grpc.Filter):
+                update_filter = GrpcToRest.convert_filter(model=update_filter)
+
             return self.openapi_client.points_api.update_vectors(
                 collection_name=collection_name,
                 wait=wait,
                 update_vectors=models.UpdateVectors(
                     points=points,
                     shard_key=shard_key_selector,
+                    update_filter=update_filter,
                 ),
                 ordering=ordering,
             ).result
@@ -2672,6 +2690,7 @@ class QdrantRemote(QdrantBase):
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         strict_mode_config: Optional[types.StrictModeConfig] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
@@ -2700,6 +2719,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(strict_mode_config, models.StrictModeConfig):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
 
+            if isinstance(metadata, models.Payload):
+                metadata = RestToGrpc.convert_payload(metadata)
+
             return self.grpc_collections.Update(
                 grpc.UpdateCollection(
                     collection_name=collection_name,
@@ -2711,6 +2733,7 @@ class QdrantRemote(QdrantBase):
                     sparse_vectors_config=sparse_vectors_config,
                     strict_mode_config=strict_mode_config,
                     timeout=timeout,
+                    metadata=metadata,
                 ),
                 timeout=timeout if timeout is not None else self._timeout,
             ).result
@@ -2740,6 +2763,7 @@ class QdrantRemote(QdrantBase):
                 quantization_config=quantization_config,
                 sparse_vectors=sparse_vectors_config,
                 strict_mode_config=strict_mode_config,
+                metadata=metadata,
             ),
             timeout=timeout,
         ).result
@@ -2780,6 +2804,7 @@ class QdrantRemote(QdrantBase):
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
         strict_mode_config: Optional[types.StrictModeConfig] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         if init_from is not None:
@@ -2823,6 +2848,9 @@ class QdrantRemote(QdrantBase):
             if isinstance(strict_mode_config, models.StrictModeConfig):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
 
+            if isinstance(metadata, models.Payload):
+                metadata = RestToGrpc.convert_payload(metadata)
+
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
                 hnsw_config=hnsw_config,
@@ -2839,6 +2867,7 @@ class QdrantRemote(QdrantBase):
                 sparse_vectors_config=sparse_vectors_config,
                 sharding_method=sharding_method,
                 strict_mode_config=strict_mode_config,
+                metadata=metadata,
             )
             return self.grpc_collections.Create(create_collection, timeout=self._timeout).result
 
@@ -2871,6 +2900,7 @@ class QdrantRemote(QdrantBase):
             sparse_vectors=sparse_vectors_config,
             sharding_method=sharding_method,
             strict_mode_config=strict_mode_config,
+            metadata=metadata,
         )
 
         result: Optional[bool] = self.http.collections_api.create_collection(
@@ -2899,6 +2929,7 @@ class QdrantRemote(QdrantBase):
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
         strict_mode_config: Optional[types.StrictModeConfig] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name, timeout=timeout)
@@ -2919,6 +2950,7 @@ class QdrantRemote(QdrantBase):
             sparse_vectors_config=sparse_vectors_config,
             sharding_method=sharding_method,
             strict_mode_config=strict_mode_config,
+            metadata=metadata,
         )
 
     @property

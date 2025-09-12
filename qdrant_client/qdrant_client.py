@@ -1579,6 +1579,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -1603,6 +1604,8 @@ class QdrantClient(QdrantFastembedMixin):
                 Defines the shard groups that should be used to write updates into.
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
+
+            update_filter: If specified, only points that match this filter will be updated, others will be inserted
 
         Returns:
             Operation Result(UpdateResult)
@@ -1646,6 +1649,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            update_filter=update_filter,
             **kwargs,
         )
 
@@ -1656,6 +1660,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.
@@ -1684,6 +1689,9 @@ class QdrantClient(QdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
 
+            update_filter:
+                If specified, only points that match this filter will be updated
+
         Returns:
             Operation Result(UpdateResult)
         """
@@ -1702,6 +1710,7 @@ class QdrantClient(QdrantFastembedMixin):
             wait=wait,
             ordering=ordering,
             shard_key_selector=shard_key_selector,
+            update_filter=update_filter,
         )
 
     def delete_vectors(
@@ -2256,6 +2265,7 @@ class QdrantClient(QdrantFastembedMixin):
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         strict_mode_config: Optional[types.StrictModeConfig] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         """Update parameters of the collection
@@ -2272,6 +2282,7 @@ class QdrantClient(QdrantFastembedMixin):
                 If timeout is reached - request will return with service error.
             sparse_vectors_config: Override for sparse vector-specific configuration
             strict_mode_config: Override for strict mode configuration
+            metadata: Arbitrary JSON-like metadata for the collection, will be merged with already stored metadata
         Returns:
             Operation result
         """
@@ -2295,6 +2306,7 @@ class QdrantClient(QdrantFastembedMixin):
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             strict_mode_config=strict_mode_config,
+            metadata=metadata,
             **kwargs,
         )
 
@@ -2337,6 +2349,7 @@ class QdrantClient(QdrantFastembedMixin):
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
         strict_mode_config: Optional[types.StrictModeConfig] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         """Create empty collection with given parameters
@@ -2383,6 +2396,7 @@ class QdrantClient(QdrantFastembedMixin):
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
             strict_mode_config: Configure limitations for the collection, such as max size, rate limits, etc.
+            metadata: Arbitrary JSON-like metadata for the collection
 
         Returns:
             Operation result
@@ -2405,6 +2419,7 @@ class QdrantClient(QdrantFastembedMixin):
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             strict_mode_config=strict_mode_config,
+            metadata=metadata,
             **kwargs,
         )
 
@@ -2427,6 +2442,7 @@ class QdrantClient(QdrantFastembedMixin):
         init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
         strict_mode_config: Optional[types.StrictModeConfig] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         """Delete and create empty collection with given parameters
@@ -2473,6 +2489,7 @@ class QdrantClient(QdrantFastembedMixin):
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
             strict_mode_config: Configure limitations for the collection, such as max size, rate limits, etc.
+            metadata: Arbitrary JSON metadata for the collection
 
         Returns:
             Operation result
@@ -2502,6 +2519,7 @@ class QdrantClient(QdrantFastembedMixin):
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             strict_mode_config=strict_mode_config,
+            metadata=metadata,
             **kwargs,
         )
 

@@ -35,6 +35,7 @@ match_except_keywords = grpc.Match(
 )
 match_except_integers = grpc.Match(except_integers=grpc.RepeatedIntegers(integers=[1, 2, 3]))
 match_phrase = grpc.Match(phrase="hello")
+match_text_any = grpc.Match(text_any="hello what's up")
 
 field_condition_match = grpc.FieldCondition(key="match_field", match=match_keyword)
 
@@ -48,6 +49,7 @@ field_condition_match_except_integers = grpc.FieldCondition(
     key="match_field", match=match_except_integers
 )
 field_condition_match_phrase = grpc.FieldCondition(key="match_field", match=match_phrase)
+field_condition_match_text_any = grpc.FieldCondition(key="match_field", match=match_text_any)
 
 range_ = grpc.Range(
     lt=1.0,
@@ -124,6 +126,7 @@ condition_except_keywords = grpc.Condition(field=field_condition_match_except_ke
 condition_except_integers = grpc.Condition(field=field_condition_match_except_integers)
 
 condition_phrase = grpc.Condition(field=field_condition_match_phrase)
+condition_text_any = grpc.Condition(field=field_condition_match_text_any)
 
 nested = grpc.NestedCondition(
     key="a.b.c", filter=grpc.Filter(must=[grpc.Condition(field=field_condition_range)])
@@ -144,6 +147,7 @@ filter_ = grpc.Filter(
         condition_except_keywords,
         condition_except_integers,
         condition_phrase,
+        condition_text_any,
     ],
     should=[
         condition_field_match,
@@ -362,12 +366,23 @@ strict_mode_config_empty = grpc.StrictModeConfig(
     max_query_limit=100,
 )
 
+metadata = {"collection-setting": grpc.Value(integer_value=3)}
+
 collection_config = grpc.CollectionConfig(
     params=collection_params,
     hnsw_config=hnsw_config,
     optimizer_config=optimizer_config,
     wal_config=wal_config,
     strict_mode_config=strict_mode_config,
+)
+
+collection_config_w_metadata = grpc.CollectionConfig(
+    params=collection_params,
+    hnsw_config=hnsw_config,
+    optimizer_config=optimizer_config,
+    wal_config=wal_config,
+    strict_mode_config=strict_mode_config,
+    metadata=metadata,
 )
 
 payload_value = {
@@ -1491,6 +1506,9 @@ query_nearest_with_mmr = grpc.Query(
 query_nearest_with_mmr_default = grpc.Query(
     nearest_with_mmr=grpc.NearestInputWithMmr(nearest=vector_input_dense, mmr=mmr_default)
 )
+query_rrf = grpc.Query(rrf=grpc.Rrf(k=3))
+query_rrf_default = grpc.Query(rrf=grpc.Rrf())
+query_rrf_explicit_none = grpc.Query(rrf=grpc.Rrf(k=None))
 
 deep_prefetch_query = grpc.PrefetchQuery(query=query_recommend)
 prefetch_query = grpc.PrefetchQuery(
@@ -1550,7 +1568,7 @@ search_matrix_offsets = grpc.SearchMatrixOffsets(
 
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
-    "CollectionConfig": [collection_config],
+    "CollectionConfig": [collection_config, collection_config_w_metadata],
     "ScoredPoint": [
         scored_point,
         scored_point_order_value_int,
@@ -1717,6 +1735,9 @@ fixtures = {
         query_formula,
         query_nearest_with_mmr,
         query_nearest_with_mmr_default,
+        query_rrf,
+        query_rrf_default,
+        query_rrf_explicit_none,
     ],
     "FacetValueHit": [facet_string_hit, facet_integer_hit],
     "PrefetchQuery": [deep_prefetch_query, prefetch_query, prefetch_full_query, prefetch_many],

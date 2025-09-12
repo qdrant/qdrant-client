@@ -264,6 +264,7 @@ class GrpcToRest:
                 if model.HasField("strict_mode_config")
                 else None
             ),
+            metadata=cls.convert_payload(model.metadata) if model.HasField("metadata") else None,
         )
 
     @classmethod
@@ -675,6 +676,8 @@ class GrpcToRest:
             return rest.MatchExcept(**{"except": list(val.integers)})
         if name == "phrase":
             return rest.MatchPhrase(phrase=val)
+        if name == "text_any":
+            return rest.MatchTextAny(text_any=val)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1349,6 +1352,10 @@ class GrpcToRest:
                 nearest=cls.convert_vector_input(val.nearest), mmr=cls.convert_mmr(val.mmr)
             )
 
+        if name == "rrf":
+            val = model.rrf
+            return rest.RrfQuery(rrf=rest.Rrf(k=model.k))
+
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
 
     @classmethod
@@ -1969,10 +1976,14 @@ class GrpcToRest:
                 if val.HasField("shard_key_selector")
                 else None
             )
+            update_filter = (
+                cls.convert_filter(val.update_filter) if val.HasField("update_filter") else None
+            )
             return rest.UpsertOperation(
                 upsert=rest.PointsList(
                     points=[cls.convert_point_struct(point) for point in val.points],
                     shard_key=shard_key_selector,
+                    update_filter=update_filter,
                 )
             )
         elif name == "delete_points":
@@ -2074,10 +2085,14 @@ class GrpcToRest:
                 if val.HasField("shard_key_selector")
                 else None
             )
+            update_filter = (
+                cls.convert_filter(val.update_filter) if val.HasField("update_filter") else None
+            )
             return rest.UpdateVectorsOperation(
                 update_vectors=rest.UpdateVectors(
                     points=[cls.convert_point_vectors(point) for point in val.points],
                     shard_key=shard_key_selector,
+                    update_filter=update_filter,
                 )
             )
         elif name == "delete_vectors":
@@ -2851,6 +2866,7 @@ class RestToGrpc:
                 if model.strict_mode_config is not None
                 else None
             ),
+            metadata=cls.convert_payload(model.metadata) if model.metadata is not None else None,
         )
 
     @classmethod
@@ -3025,6 +3041,8 @@ class RestToGrpc:
             raise ValueError(f"invalid MatchExcept model: {model}")  # pragma: no cover
         if isinstance(model, rest.MatchPhrase):
             return grpc.Match(phrase=model.phrase)
+        if isinstance(model, rest.MatchTextAny):
+            return grpc.Match(text_any=model.text_any)
         raise ValueError(f"invalid Match model: {model}")  # pragma: no cover
 
     @classmethod
@@ -3622,6 +3640,9 @@ class RestToGrpc:
 
         if isinstance(model, rest.FormulaQuery):
             return grpc.Query(formula=cls.convert_formula_query(model))
+
+        if isinstance(model, rest.RrfQuery):
+            return grpc.Query(rrf=grpc.Rrf(k=model.rrf.k))
 
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
 
@@ -4358,10 +4379,16 @@ class RestToGrpc:
                 if model.upsert.shard_key
                 else None
             )
+            update_filter = (
+                cls.convert_filter(model.upsert.update_filter)
+                if model.upsert.update_filter
+                else None
+            )
             return grpc.PointsUpdateOperation(
                 upsert=grpc.PointsUpdateOperation.PointStructList(
                     points=cls.convert_point_insert_operation(model.upsert),
                     shard_key_selector=shard_key_selector,
+                    update_filter=update_filter,
                 )
             )
         elif isinstance(model, rest.DeleteOperation):
@@ -4467,13 +4494,18 @@ class RestToGrpc:
                 if model.update_vectors.shard_key
                 else None
             )
-
+            update_filter = (
+                cls.convert_filter(model.update_vectors.update_filter)
+                if model.update_vectors.update_filter
+                else None
+            )
             return grpc.PointsUpdateOperation(
                 update_vectors=grpc.PointsUpdateOperation.UpdateVectors(
                     points=[
                         cls.convert_point_vectors(point) for point in model.update_vectors.points
                     ],
                     shard_key_selector=shard_key_selector,
+                    update_filter=update_filter,
                 )
             )
         elif isinstance(model, rest.DeleteVectorsOperation):
