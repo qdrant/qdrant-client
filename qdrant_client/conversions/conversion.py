@@ -264,7 +264,7 @@ class GrpcToRest:
                 if model.HasField("strict_mode_config")
                 else None
             ),
-            metadata=cls.convert_payload(model.metadata) if model.HasField("metadata") else None,
+            metadata=cls.convert_payload(model.metadata) if model.metadata is not None else None,
         )
 
     @classmethod
@@ -788,6 +788,9 @@ class GrpcToRest:
                 cls.convert_quantization_config_diff(model.quantization_config)
                 if model.HasField("quantization_config")
                 else None
+            ),
+            metadata=(
+                cls.convert_payload(model.metadata) if model.metadata is not None else None,
             ),
         )
 
@@ -1353,8 +1356,8 @@ class GrpcToRest:
             )
 
         if name == "rrf":
-            val = model.rrf
-            return rest.RrfQuery(rrf=rest.Rrf(k=model.k))
+            rrf = model.rrf
+            return rest.RrfQuery(rrf=rest.Rrf(k=rrf.k if rrf.HasField("k") else None))
 
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
 
@@ -3006,6 +3009,7 @@ class RestToGrpc:
                 if model.quantization_config is not None
                 else None
             ),
+            metadata=(cls.convert_payload(model.metadata) if model.metadata is not None else None),
         )
 
     @classmethod
@@ -4344,6 +4348,7 @@ class RestToGrpc:
     def convert_point_insert_operation(
         cls, model: rest.PointInsertOperations
     ) -> list[grpc.PointStruct]:
+        # shard key and update_filter are converted in the parent function
         if isinstance(model, rest.PointsBatch):
             vectors_batch: list[grpc.Vectors] = cls.convert_batch_vector_struct(
                 model.batch.vectors, len(model.batch.ids)
