@@ -38,17 +38,18 @@ class RemoteFunctionDefTransformer(FunctionDefTransformer):
     def override_close() -> ast.stmt:
         code = """
 async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
-    if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
-        try:
-            await self._grpc_channel.close(grace=grpc_grace)
-        except AttributeError:
-            show_warning(
-                message="Unable to close grpc_channel. Connection was interrupted on the server side",
-                category=UserWarning,
-                stacklevel=4,
-            )
-        except RuntimeError:
-            pass
+    if len(self._grpc_channel_pool) > 0:
+        for channel in self._grpc_channel_pool:
+            try:
+                await channel.close(grace=grpc_grace)
+            except AttributeError:
+                show_warning(
+                    message="Unable to close grpc_channel. Connection was interrupted on the server side",
+                    category=UserWarning,
+                    stacklevel=4,
+                )
+            except RuntimeError:
+                pass
 
     try:
         await self.http.aclose()

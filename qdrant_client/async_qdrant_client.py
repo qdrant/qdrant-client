@@ -101,10 +101,10 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     ):
         self._init_options = {
             key: value
-            for (key, value) in locals().items()
+            for key, value in locals().items()
             if key not in ("self", "__class__", "kwargs")
         }
-        self._init_options.update({k: v for (k, v) in kwargs.items()})
+        self._init_options.update({k: v for k, v in kwargs.items()})
         self._inference_inspector = Inspector()
         super().__init__(parser=self._inference_inspector.parser, **kwargs)
         self._client: AsyncQdrantBase

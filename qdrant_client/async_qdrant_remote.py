@@ -71,6 +71,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
         check_compatibility: bool = True,
+        pool_size: int = 3,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -79,6 +80,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
+        self._pool_size = max(1, pool_size)
         self._prefix = prefix or ""
         if len(self._prefix) > 0 and self._prefix[0] != "/":
             self._prefix = f"/{self._prefix}"
@@ -92,7 +94,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if url.startswith("localhost"):
                 url = f"//{url}"
             parsed_url: Url = parse_url(url)
-            (self._host, self._port) = (parsed_url.host, parsed_url.port)
+            self._host, self._port = (parsed_url.host, parsed_url.port)
             if parsed_url.scheme:
                 self._https = parsed_url.scheme == "https"
                 self._scheme = parsed_url.scheme
@@ -117,7 +119,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
-        self._rest_headers = {k: v for (k, v) in kwargs.pop("metadata", {}).items()}
+        self._rest_headers = {k: v for k, v in kwargs.pop("metadata", {}).items()}
         if api_key is not None:
             if self._scheme == "http":
                 show_warning(
@@ -165,11 +167,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
             host=self.rest_uri, **self._rest_args
         )
-        self._grpc_channel = None
-        self._grpc_points_client: Optional[grpc.PointsStub] = None
-        self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
-        self._grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
-        self._grpc_root_client: Optional[grpc.QdrantStub] = None
+        self._grpc_channel_pool: list[grpc.Channel] = []
+        self._grpc_points_client_pool: Optional[list[grpc.PointsStub]] = None
+        self._grpc_collections_client_pool: Optional[list[grpc.CollectionsStub]] = None
+        self._grpc_snapshots_client_pool: Optional[list[grpc.SnapshotsStub]] = None
+        self._grpc_root_client_pool: Optional[list[grpc.QdrantStub]] = None
+        self._grpc_client_next_index: int = 0
         self._closed: bool = False
         if check_compatibility:
             try:
@@ -199,17 +202,18 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         return self._closed
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
-        if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
-            try:
-                await self._grpc_channel.close(grace=grpc_grace)
-            except AttributeError:
-                show_warning(
-                    message="Unable to close grpc_channel. Connection was interrupted on the server side",
-                    category=UserWarning,
-                    stacklevel=4,
-                )
-            except RuntimeError:
-                pass
+        if len(self._grpc_channel_pool) > 0:
+            for channel in self._grpc_channel_pool:
+                try:
+                    await channel.close(grace=grpc_grace)
+                except AttributeError:
+                    show_warning(
+                        message="Unable to close grpc_channel. Connection was interrupted on the server side",
+                        category=UserWarning,
+                        stacklevel=4,
+                    )
+                except RuntimeError:
+                    pass
         try:
             await self.http.aclose()
         except Exception:
@@ -223,7 +227,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     @staticmethod
     def _parse_url(url: str) -> tuple[Optional[str], str, Optional[int], Optional[str]]:
         parse_result: Url = parse_url(url)
-        (scheme, host, port, prefix) = (
+        scheme, host, port, prefix = (
             parse_result.scheme,
             parse_result.host,
             parse_result.port,
@@ -234,32 +238,47 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     def _init_grpc_channel(self) -> None:
         if self._closed:
             raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
-        if self._grpc_channel is None:
-            self._grpc_channel = get_channel(
-                host=self._host,
-                port=self._grpc_port,
-                ssl=self._https,
-                metadata=self._grpc_headers,
-                options=self._grpc_options,
-                compression=self._grpc_compression,
-                auth_token_provider=self._auth_token_provider,
-            )
+        if len(self._grpc_channel_pool) == 0:
+            for _ in range(self._pool_size):
+                channel = get_channel(
+                    host=self._host,
+                    port=self._grpc_port,
+                    ssl=self._https,
+                    metadata=self._grpc_headers,
+                    options=self._grpc_options,
+                    compression=self._grpc_compression,
+                    auth_token_provider=self._auth_token_provider,
+                )
+                self._grpc_channel_pool.append(channel)
 
     def _init_grpc_points_client(self) -> None:
         self._init_grpc_channel()
-        self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
+        self._grpc_points_client_pool = [
+            grpc.PointsStub(channel) for channel in self._grpc_channel_pool
+        ]
 
     def _init_grpc_collections_client(self) -> None:
         self._init_grpc_channel()
-        self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
+        self._grpc_collections_client_pool = [
+            grpc.CollectionsStub(channel) for channel in self._grpc_channel_pool
+        ]
 
     def _init_grpc_snapshots_client(self) -> None:
         self._init_grpc_channel()
-        self._grpc_snapshots_client = grpc.SnapshotsStub(self._grpc_channel)
+        self._grpc_snapshots_client_pool = [
+            grpc.SnapshotsStub(channel) for channel in self._grpc_channel_pool
+        ]
 
     def _init_grpc_root_client(self) -> None:
         self._init_grpc_channel()
-        self._grpc_root_client = grpc.QdrantStub(self._grpc_channel)
+        self._grpc_root_client_pool = [
+            grpc.QdrantStub(channel) for channel in self._grpc_channel_pool
+        ]
+
+    def next_grpc_client(self) -> int:
+        current_index = self._grpc_client_next_index
+        self._grpc_client_next_index = (self._grpc_client_next_index + 1) % self._pool_size
+        return current_index
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
@@ -268,9 +287,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if self._grpc_collections_client is None:
+        if self._grpc_collections_client_pool is None:
             self._init_grpc_collections_client()
-        return self._grpc_collections_client
+        assert self._grpc_collections_client_pool is not None
+        return self._grpc_collections_client_pool[self.next_grpc_client()]
 
     @property
     def grpc_points(self) -> grpc.PointsStub:
@@ -279,9 +299,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if self._grpc_points_client is None:
+        if self._grpc_points_client_pool is None:
             self._init_grpc_points_client()
-        return self._grpc_points_client
+        assert self._grpc_points_client_pool is not None
+        return self._grpc_points_client_pool[self.next_grpc_client()]
 
     @property
     def grpc_snapshots(self) -> grpc.SnapshotsStub:
@@ -290,9 +311,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if self._grpc_snapshots_client is None:
+        if self._grpc_snapshots_client_pool is None:
             self._init_grpc_snapshots_client()
-        return self._grpc_snapshots_client
+        assert self._grpc_snapshots_client_pool is not None
+        return self._grpc_snapshots_client_pool[self.next_grpc_client()]
 
     @property
     def grpc_root(self) -> grpc.QdrantStub:
@@ -301,9 +323,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if self._grpc_root_client is None:
+        if self._grpc_root_client_pool is None:
             self._init_grpc_root_client()
-        return self._grpc_root_client
+        assert self._grpc_root_client_pool is not None
+        return self._grpc_root_client_pool[self.next_grpc_client()]
 
     @property
     def rest(self) -> AsyncApis[AsyncApiClient]:
@@ -1736,7 +1759,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -1758,7 +1781,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             assert grpc_result is not None, "Delete vectors returned None result"
             return GrpcToRest.convert_update_result(grpc_result)
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             return (
                 await self.openapi_client.points_api.delete_vectors(
                     collection_name=collection_name,
@@ -1953,7 +1976,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
             shard_key_selector = shard_key_selector or opt_shard_key_selector
@@ -2002,7 +2025,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -2025,7 +2048,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.set_payload(
                     collection_name=collection_name,
@@ -2054,7 +2077,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -2076,7 +2099,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.overwrite_payload(
                     collection_name=collection_name,
@@ -2104,7 +2127,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(points)
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(points)
             shard_key_selector = shard_key_selector or opt_shard_key_selector
             if isinstance(ordering, models.WriteOrdering):
                 ordering = RestToGrpc.convert_write_ordering(ordering)
@@ -2126,7 +2149,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ).result
             )
         else:
-            (_points, _filter) = self._try_argument_to_rest_points_and_filter(points)
+            _points, _filter = self._try_argument_to_rest_points_and_filter(points)
             result: Optional[types.UpdateResult] = (
                 await self.openapi_client.points_api.delete_payload(
                     collection_name=collection_name,
@@ -2150,7 +2173,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         **kwargs: Any,
     ) -> types.UpdateResult:
         if self._prefer_grpc:
-            (points_selector, opt_shard_key_selector) = self._try_argument_to_grpc_selector(
+            points_selector, opt_shard_key_selector = self._try_argument_to_grpc_selector(
                 points_selector
             )
             shard_key_selector = shard_key_selector or opt_shard_key_selector
