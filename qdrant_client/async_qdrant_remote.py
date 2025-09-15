@@ -1719,6 +1719,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             assert grpc_result is not None, "Upsert returned None result"
             return GrpcToRest.convert_update_result(grpc_result)
         else:
+            if isinstance(update_filter, grpc.Filter):
+                update_filter = GrpcToRest.convert_filter(model=update_filter)
             if isinstance(points, list):
                 points = [
                     GrpcToRest.convert_point_struct(point)
@@ -1726,18 +1728,19 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                     else point
                     for point in points
                 ]
-                points = models.PointsList(points=points, shard_key=shard_key_selector)
+                points = models.PointsList(
+                    points=points, shard_key=shard_key_selector, update_filter=update_filter
+                )
             if isinstance(points, models.Batch):
-                points = models.PointsBatch(batch=points, shard_key=shard_key_selector)
-            if isinstance(update_filter, grpc.Filter):
-                update_filter = GrpcToRest.convert_filter(model=update_filter)
+                points = models.PointsBatch(
+                    batch=points, shard_key=shard_key_selector, update_filter=update_filter
+                )
             http_result = (
                 await self.openapi_client.points_api.upsert_points(
                     collection_name=collection_name,
                     wait=wait,
                     point_insert_operations=points,
                     ordering=ordering,
-                    update_filter=update_filter,
                 )
             ).result
             assert http_result is not None, "Upsert returned None result"
@@ -2449,7 +2452,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             if isinstance(strict_mode_config, models.StrictModeConfig):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
-            if isinstance(metadata, get_args(models.Payload)):
+            if isinstance(metadata, dict):
                 metadata = RestToGrpc.convert_payload(metadata)
             return (
                 await self.grpc_collections.Update(
@@ -2563,7 +2566,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 sharding_method = RestToGrpc.convert_sharding_method(sharding_method)
             if isinstance(strict_mode_config, models.StrictModeConfig):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
-            if isinstance(metadata, get_args(models.Payload)):
+            if isinstance(metadata, dict):
                 metadata = RestToGrpc.convert_payload(metadata)
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
