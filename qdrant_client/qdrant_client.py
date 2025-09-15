@@ -109,20 +109,13 @@ class QdrantClient(QdrantFastembedMixin):
         }
         self._init_options.update({k: v for k, v in kwargs.items()})
 
-        self._inference_inspector = Inspector()
-        super().__init__(
-            parser=self._inference_inspector.parser, **kwargs
-        )  # If we want to pass any kwargs to the parent class or ignore unexpected kwargs,
-        # we will need to pop them from **kwargs. Otherwise, they might be passed to QdrantRemote as httpx kwargs.
-        # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
-
-        self._client: QdrantBase
-
         if sum([param is not None for param in (location, url, host, path)]) > 1:
             raise ValueError(
                 "Only one of <location>, <url>, <host> or <path> should be specified."
             )
+        self._client: QdrantBase
 
+        server_version = None
         if location == ":memory:":
             self._client = QdrantLocal(
                 location=location,
@@ -151,6 +144,7 @@ class QdrantClient(QdrantFastembedMixin):
                 check_compatibility=check_compatibility,
                 **kwargs,
             )
+            server_version = self._client.server_version
 
         if isinstance(self._client, QdrantLocal) and cloud_inference:
             raise ValueError(
@@ -158,6 +152,16 @@ class QdrantClient(QdrantFastembedMixin):
             )
         self.cloud_inference = cloud_inference
         self.local_inference_batch_size = local_inference_batch_size
+
+        self._inference_inspector = Inspector()
+        super().__init__(
+            parser=self._inference_inspector.parser,
+            is_local_mode=isinstance(self._client, QdrantLocal),
+            server_version=server_version,
+        )  # If we'd like to pass any kwargs to the parent class or ignore unexpected kwargs,
+        # we will need to pop them from **kwargs and call super().__init__ before creating QdrantRemote instance.
+        # Otherwise, they might be passed to QdrantRemote as httpx kwargs.
+        # Httpx has specific set of params, which it accepts and will raise an error if it receives any other params.
 
     def __del__(self) -> None:
         self.close()
