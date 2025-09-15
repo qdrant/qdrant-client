@@ -789,9 +789,7 @@ class GrpcToRest:
                 if model.HasField("quantization_config")
                 else None
             ),
-            metadata=(
-                cls.convert_payload(model.metadata) if model.metadata is not None else None,
-            ),
+            metadata=(cls.convert_payload(model.metadata) if model.metadata is not None else None),
         )
 
     @classmethod

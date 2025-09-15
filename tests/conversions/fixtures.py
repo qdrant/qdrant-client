@@ -959,6 +959,7 @@ update_collection_3 = grpc.UpdateCollection(
     quantization_config=quantization_config_diff_product,
     params=collections_params_diff,
     vectors_config=vector_config_diff_map,
+    metadata={"new_metadata": grpc.Value(integer_value=2)},
 )
 
 points_ids_list = grpc.PointsIdsList(ids=[point_id, point_id_2, point_id_2])
