@@ -1167,11 +1167,15 @@ def test_points_crud(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
+    collection_metadata = {"ownership": "Bart Simpson's property"}
     client.create_collection(
         collection_name=COLLECTION_NAME,
         vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
         timeout=TIMEOUT,
+        metadata=collection_metadata,
     )
+    collection_info = client.get_collection(COLLECTION_NAME)
+    assert collection_info.config.metadata == collection_metadata
 
     # Create a single point
     client.upsert(
