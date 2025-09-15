@@ -6,6 +6,7 @@ from typing import Optional, Union, Iterable, Any, Type, get_args
 
 from pydantic import BaseModel
 
+from qdrant_client.embed.builtin_embedder import BuiltinEmbedder
 from qdrant_client.http import models
 from qdrant_client.embed.common import INFERENCE_OBJECT_TYPES
 from qdrant_client.embed.embed_inspector import InspectorEmbed
@@ -42,11 +43,46 @@ class ModelEmbedderWorker(Worker):
 class ModelEmbedder:
     MAX_INTERNAL_BATCH_SIZE = 64
 
-    def __init__(self, parser: Optional[ModelSchemaParser] = None, **kwargs: Any):
+    def __init__(
+        self,
+        parser: Optional[ModelSchemaParser] = None,
+        is_local_mode: bool = False,
+        server_version: Optional[str] = None,
+        **kwargs: Any,
+    ):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
         self._embed_storage: dict[str, list[NumericVector]] = {}
         self._embed_inspector = InspectorEmbed(parser=parser)
-        self.embedder = Embedder(**kwargs)
+        self._is_builtin_embedder_available = self._check_builtin_embedder_availability(
+            is_local_mode, server_version
+        )
+        self.embedder = (
+            Embedder(**kwargs) if FastEmbedMisc.is_installed() else BuiltinEmbedder(**kwargs)
+        )
+
+    @staticmethod
+    def _check_builtin_embedder_availability(
+        is_local_mode: bool, server_version: Optional[str]
+    ) -> bool:
+        if is_local_mode:
+            return False
+
+        if (
+            server_version is None
+        ):  # failed to detect server version, it might happen due to security or network
+            # problems even on supported server versions, so we are not blocking usage of BuiltinEmbedder.
+            return True
+
+        try:
+            major, minor, patch = server_version.split(".")
+            patch = patch.split("-")[0]
+
+            if (int(major), int(minor), int(patch)) >= (1, 15, 3):
+                return True
+
+            return False
+        except Exception:
+            return True
 
     def embed_models(
         self,
@@ -65,6 +101,9 @@ class ModelEmbedder:
         Returns:
             list[BaseModel]: models with embedded fields
         """
+        if not self._is_builtin_embedder_available:
+            FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
+
         if isinstance(raw_models, BaseModel):
             raw_models = [raw_models]
         for raw_models_batch in iter_batch(raw_models, batch_size):
@@ -91,13 +130,21 @@ class ModelEmbedder:
         Returns:
             Iterable[Union[dict[str, BaseModel], BaseModel]]: models with embedded fields
         """
+        if not self._is_builtin_embedder_available:
+            FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
+
         is_small = False
 
         if isinstance(raw_models, list):
             if len(raw_models) < batch_size:
                 is_small = True
 
-        if parallel is None or parallel == 1 or is_small:
+        if (
+            isinstance(self.embedder, BuiltinEmbedder)
+            or parallel is None
+            or parallel == 1
+            or is_small
+        ):
             for batch in iter_batch(raw_models, batch_size):
                 yield from self.embed_models_batch(batch, inference_batch_size=batch_size)
         else:
@@ -138,6 +185,9 @@ class ModelEmbedder:
         Returns:
             Iterable[BaseModel]: models with embedded fields
         """
+        if not self._is_builtin_embedder_available:
+            FastEmbedMisc.import_fastembed()  # fail fast if fastembed is required
+
         for raw_model in raw_models:
             self._process_model(raw_model, is_query=is_query, accumulating=True)
 
@@ -379,14 +429,20 @@ class ModelEmbedder:
         for model in self._batch_accumulator:
             if not any(
                 (
-                    FastEmbedMisc.is_supported_text_model(model),
-                    FastEmbedMisc.is_supported_sparse_model(model),
-                    FastEmbedMisc.is_supported_late_interaction_text_model(model),
-                    FastEmbedMisc.is_supported_image_model(model),
-                    FastEmbedMisc.is_supported_late_interaction_multimodal_model(model),
+                    self.embedder.is_supported_text_model(model),
+                    self.embedder.is_supported_sparse_model(model),
+                    self.embedder.is_supported_late_interaction_text_model(model),
+                    self.embedder.is_supported_image_model(model),
+                    self.embedder.is_supported_late_interaction_multimodal_model(model),
                 )
             ):
-                raise ValueError(f"{model} is not among supported models")
+                if isinstance(self.embedder, BuiltinEmbedder):
+                    raise ValueError(
+                        f"{model} is not among supported models. "
+                        f"Have you forgotten to set `cloud_inference` or install `fastembed` for local inference?"
+                    )
+                else:
+                    raise ValueError(f"{model} is not among supported models")
 
         for model, data in self._batch_accumulator.items():
             self._embed_storage[model] = embed(
@@ -405,8 +461,7 @@ class ModelEmbedder:
         """
         return self._embed_storage[model_name].pop(0)
 
-    @staticmethod
-    def _resolve_inference_object(data: models.VectorStruct) -> models.VectorStruct:
+    def _resolve_inference_object(self, data: models.VectorStruct) -> models.VectorStruct:
         """Resolve inference object into a model
 
         Args:
@@ -425,15 +480,15 @@ class ModelEmbedder:
         options = data.options
         if any(
             (
-                FastEmbedMisc.is_supported_text_model(model_name),
-                FastEmbedMisc.is_supported_sparse_model(model_name),
-                FastEmbedMisc.is_supported_late_interaction_text_model(model_name),
+                self.embedder.is_supported_text_model(model_name),
+                self.embedder.is_supported_sparse_model(model_name),
+                self.embedder.is_supported_late_interaction_text_model(model_name),
             )
         ):
             return models.Document(model=model_name, text=value, options=options)
-        if FastEmbedMisc.is_supported_image_model(model_name):
+        if self.embedder.is_supported_image_model(model_name):
             return models.Image(model=model_name, image=value, options=options)
-        if FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
+        if self.embedder.is_supported_late_interaction_multimodal_model(model_name):
             raise ValueError(f"{model_name} does not support `InferenceObject` interface")
 
         raise ValueError(f"{model_name} is not among supported models")

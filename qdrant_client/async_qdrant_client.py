@@ -105,13 +105,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             if key not in ("self", "__class__", "kwargs")
         }
         self._init_options.update({k: v for (k, v) in kwargs.items()})
-        self._inference_inspector = Inspector()
-        super().__init__(parser=self._inference_inspector.parser, **kwargs)
-        self._client: AsyncQdrantBase
         if sum([param is not None for param in (location, url, host, path)]) > 1:
             raise ValueError(
                 "Only one of <location>, <url>, <host> or <path> should be specified."
             )
+        self._client: AsyncQdrantBase
+        server_version = None
         if location == ":memory:":
             self._client = AsyncQdrantLocal(
                 location=location, force_disable_check_same_thread=force_disable_check_same_thread
@@ -138,12 +137,19 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 check_compatibility=check_compatibility,
                 **kwargs,
             )
+            server_version = self._client.server_version
         if isinstance(self._client, AsyncQdrantLocal) and cloud_inference:
             raise ValueError(
                 "Cloud inference is not supported for local Qdrant, consider using FastEmbed or switch to Qdrant Cloud"
             )
         self.cloud_inference = cloud_inference
         self.local_inference_batch_size = local_inference_batch_size
+        self._inference_inspector = Inspector()
+        super().__init__(
+            parser=self._inference_inspector.parser,
+            is_local_mode=isinstance(self._client, AsyncQdrantLocal),
+            server_version=server_version,
+        )
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
         """Closes the connection to Qdrant
