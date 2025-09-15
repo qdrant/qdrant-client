@@ -2719,7 +2719,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(strict_mode_config, models.StrictModeConfig):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
 
-            if isinstance(metadata, models.Payload):
+            if isinstance(metadata, get_args(models.Payload)):
                 metadata = RestToGrpc.convert_payload(metadata)
 
             return self.grpc_collections.Update(
@@ -2848,7 +2848,7 @@ class QdrantRemote(QdrantBase):
             if isinstance(strict_mode_config, models.StrictModeConfig):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
 
-            if isinstance(metadata, models.Payload):
+            if isinstance(metadata, get_args(models.Payload)):
                 metadata = RestToGrpc.convert_payload(metadata)
 
             create_collection = grpc.CreateCollection(
