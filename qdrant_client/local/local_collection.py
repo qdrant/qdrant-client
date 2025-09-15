@@ -2747,7 +2747,6 @@ class LocalCollection:
         return models.CollectionInfo(
             status=models.CollectionStatus.GREEN,
             optimizer_status=models.OptimizersStatusOneOf.OK,
-            vectors_count=None,
             indexed_vectors_count=0,  # LocalCollection does not do indexing
             points_count=self.count().count,
             segments_count=1,

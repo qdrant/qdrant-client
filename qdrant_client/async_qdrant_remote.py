@@ -2449,7 +2449,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 )
             if isinstance(strict_mode_config, models.StrictModeConfig):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
-            if isinstance(metadata, models.Payload):
+            if isinstance(metadata, get_args(models.Payload)):
                 metadata = RestToGrpc.convert_payload(metadata)
             return (
                 await self.grpc_collections.Update(
@@ -2563,7 +2563,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 sharding_method = RestToGrpc.convert_sharding_method(sharding_method)
             if isinstance(strict_mode_config, models.StrictModeConfig):
                 strict_mode_config = RestToGrpc.convert_strict_mode_config(strict_mode_config)
-            if isinstance(metadata, models.Payload):
+            if isinstance(metadata, get_args(models.Payload)):
                 metadata = RestToGrpc.convert_payload(metadata)
             create_collection = grpc.CreateCollection(
                 collection_name=collection_name,
