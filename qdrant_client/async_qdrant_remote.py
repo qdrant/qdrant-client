@@ -80,7 +80,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
-        self._pool_size = max(1, pool_size)
+        pool_size = max(1, pool_size)
+        self._pool_size = pool_size
         self._prefix = prefix or ""
         if len(self._prefix) > 0 and self._prefix[0] != "/":
             self._prefix = f"/{self._prefix}"
@@ -118,7 +119,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             if self._host in ["localhost", "127.0.0.1"]:
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
             else:
-                limits = httpx.Limits(max_connections=pool_size)
+                limits = httpx.Limits(max_connections=self._pool_size)
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
         self._rest_headers = {k: v for (k, v) in kwargs.pop("metadata", {}).items()}

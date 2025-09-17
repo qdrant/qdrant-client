@@ -71,7 +71,9 @@ class QdrantRemote(QdrantBase):
         self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
-        self._pool_size = max(1, pool_size)  # Ensure pool_size is always > 0
+
+        pool_size = max(1, pool_size)  # Ensure pool_size is always > 0
+        self._pool_size = pool_size
 
         self._prefix = prefix or ""
         if len(self._prefix) > 0 and self._prefix[0] != "/":
@@ -129,8 +131,8 @@ class QdrantRemote(QdrantBase):
                 # Cause in some cases, it may cause extra delays
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
             else:
-                # Set http connection pooling to `pool_size`, if no limits are specified.
-                limits = httpx.Limits(max_connections=pool_size)
+                # Set http connection pooling to `self._pool_size`, if no limits are specified.
+                limits = httpx.Limits(max_connections=self._pool_size)
 
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
