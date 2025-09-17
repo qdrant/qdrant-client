@@ -238,18 +238,23 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     def _init_grpc_channel(self) -> None:
         if self._closed:
             raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
-        if len(self._grpc_channel_pool) == 0:
-            for _ in range(self._pool_size):
-                channel = get_channel(
-                    host=self._host,
-                    port=self._grpc_port,
-                    ssl=self._https,
-                    metadata=self._grpc_headers,
-                    options=self._grpc_options,
-                    compression=self._grpc_compression,
-                    auth_token_provider=self._auth_token_provider,
-                )
-                self._grpc_channel_pool.append(channel)
+        try:
+            channel_pool = []
+            if len(self._grpc_channel_pool) == 0:
+                for _ in range(self._pool_size):
+                    channel = get_channel(
+                        host=self._host,
+                        port=self._grpc_port,
+                        ssl=self._https,
+                        metadata=self._grpc_headers,
+                        options=self._grpc_options,
+                        compression=self._grpc_compression,
+                        auth_token_provider=self._auth_token_provider,
+                    )
+                    channel_pool.append(channel)
+                self._grpc_channel_pool = channel_pool
+        except Exception as e:
+            raise RuntimeError(f"Error initializing the grpc connection(s): {e}")
 
     def _init_grpc_points_client(self) -> None:
         self._init_grpc_channel()
