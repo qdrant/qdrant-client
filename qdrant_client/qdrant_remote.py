@@ -128,6 +128,9 @@ class QdrantRemote(QdrantBase):
                 # Disable keep-alive for local connections
                 # Cause in some cases, it may cause extra delays
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
+            else:
+                # Set http connection pooling to `pool_size`, if no limits are specified.
+                limits = httpx.Limits(max_connections=pool_size)
 
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []

@@ -117,6 +117,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if limits is None:
             if self._host in ["localhost", "127.0.0.1"]:
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
+            else:
+                limits = httpx.Limits(max_connections=pool_size)
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
         self._rest_headers = {k: v for (k, v) in kwargs.pop("metadata", {}).items()}
