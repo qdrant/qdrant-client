@@ -72,8 +72,12 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             Only use this if you can guarantee that you can resolve the thread safety outside QdrantClient.
         auth_token_provider: Callback function to get Bearer access token. If given, the function will be called before each request to get the token.
         check_compatibility: If `true` - check compatibility with the server version. Default: `true`
+        grpc_options: a mapping of gRPC channel options
+        cloud_inference: If `true` - do inference of `models.Document` and other models in Qdrant Cloud. Default: `False`.
+        local_inference_batch_size: inference batch size used by fastembed when using local inference with `models.Document` and other models.
+        pool_size: connection pool size, Default: None. Default value for gRPC connection pool is 3, rest default is
+            inherited from `httpx` (default: 100)
         **kwargs: Additional arguments passed directly into REST client initialization
-
     """
 
     def __init__(
@@ -97,6 +101,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         cloud_inference: bool = False,
         local_inference_batch_size: Optional[int] = None,
         check_compatibility: bool = True,
+        pool_size: Optional[int] = None,
         **kwargs: Any,
     ):
         self._init_options = {
@@ -135,6 +140,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 grpc_options=grpc_options,
                 auth_token_provider=auth_token_provider,
                 check_compatibility=check_compatibility,
+                pool_size=pool_size,
                 **kwargs,
             )
             server_version = self._client.server_version
