@@ -97,6 +97,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         cloud_inference: bool = False,
         local_inference_batch_size: Optional[int] = None,
         check_compatibility: bool = True,
+        pool_size: Optional[int] = None,
         **kwargs: Any,
     ):
         self._init_options = {
@@ -136,6 +137,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 grpc_options=grpc_options,
                 auth_token_provider=auth_token_provider,
                 check_compatibility=check_compatibility,
+                pool_size=pool_size,
                 **kwargs,
             )
         if isinstance(self._client, AsyncQdrantLocal) and cloud_inference:

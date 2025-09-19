@@ -45,6 +45,7 @@ from qdrant_client.uploader.uploader import BaseUploader
 
 class QdrantRemote(QdrantBase):
     DEFAULT_GRPC_TIMEOUT = 5  # seconds
+    DEFAULT_GRPC_POOL_SIZE = 3
 
     def __init__(
         self,
@@ -62,7 +63,7 @@ class QdrantRemote(QdrantBase):
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
         check_compatibility: bool = True,
-        pool_size: int = 3,
+        pool_size: Optional[int] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -72,8 +73,12 @@ class QdrantRemote(QdrantBase):
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
 
-        pool_size = max(1, pool_size)  # Ensure pool_size is always > 0
-        self._pool_size = pool_size
+        # Pool size to use. This value should not be accessed directly; use _get_grpc_pool_size() instead.
+        self._pool_size = None
+
+        if pool_size is not None:
+            pool_size = max(1, pool_size)  # Ensure pool_size is always > 0
+            self._pool_size = pool_size
 
         self._prefix = prefix or ""
         if len(self._prefix) > 0 and self._prefix[0] != "/":
@@ -131,8 +136,9 @@ class QdrantRemote(QdrantBase):
                 # Cause in some cases, it may cause extra delays
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
             else:
-                # Set http connection pooling to `self._pool_size`, if no limits are specified.
-                limits = httpx.Limits(max_connections=self._pool_size)
+                if self._pool_size is not None:
+                    # Set http connection pooling to `self._pool_size`, if no limits are specified.
+                    limits = httpx.Limits(max_connections=self._pool_size)
 
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
@@ -279,6 +285,18 @@ class QdrantRemote(QdrantBase):
         )
         return scheme, host, port, prefix
 
+    def _get_grpc_pool_size(self) -> int:
+        """
+        Returns the pool size to use for GRPC connection pool.
+        This method should be preferred over accessing `self._pool_size` directly as it applies the
+        default value if no pool_size was provided.
+        """
+
+        if self._pool_size is not None:
+            return self._pool_size
+        else:
+            return self.DEFAULT_GRPC_POOL_SIZE
+
     def _init_grpc_channel(self) -> None:
         if self._closed:
             raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
@@ -287,7 +305,7 @@ class QdrantRemote(QdrantBase):
             channel_pool = []
 
             if len(self._grpc_channel_pool) == 0:
-                for _ in range(self._pool_size):
+                for _ in range(self._get_grpc_pool_size()):
                     channel = get_channel(
                         host=self._host,
                         port=self._grpc_port,
@@ -332,7 +350,9 @@ class QdrantRemote(QdrantBase):
 
     def _next_grpc_client(self) -> int:
         current_index = self._grpc_client_next_index
-        self._grpc_client_next_index = (self._grpc_client_next_index + 1) % self._pool_size
+        self._grpc_client_next_index = (
+            self._grpc_client_next_index + 1
+        ) % self._get_grpc_pool_size()
         return current_index
 
     @property
