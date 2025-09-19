@@ -74,7 +74,7 @@ class QdrantRemote(QdrantBase):
         self._scheme = "https" if self._https else "http"
 
         # Pool size to use. This value should not be accessed directly; use _get_grpc_pool_size() instead.
-        self._pool_size = None
+        self._pool_size: Optional[int] = None
 
         if pool_size is not None:
             pool_size = max(1, pool_size)  # Ensure pool_size is always > 0
@@ -135,10 +135,14 @@ class QdrantRemote(QdrantBase):
                 # Disable keep-alive for local connections
                 # Cause in some cases, it may cause extra delays
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
-            else:
-                if self._pool_size is not None:
-                    # Set http connection pooling to `self._pool_size`, if no limits are specified.
-                    limits = httpx.Limits(max_connections=self._pool_size)
+            elif self._pool_size is not None:
+                # Set http connection pooling to `self._pool_size`, if no limits are specified.
+                limits = httpx.Limits(max_connections=self._pool_size)
+        elif self._pool_size is not None:
+            raise ValueError(
+                "`pool_size` and `limits` are mutually exclusive. "
+                f"`pool_size`: {pool_size}, `limit`: {limits}"
+            )
 
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
@@ -252,7 +256,7 @@ class QdrantRemote(QdrantBase):
         return self._closed
 
     def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
-        if len(self._grpc_channel_pool) > 0:
+        if hasattr(self, "_grpc_channel_pool") and len(self._grpc_channel_pool) > 0:
             for channel in self._grpc_channel_pool:
                 try:
                     channel.close()
