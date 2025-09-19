@@ -54,6 +54,7 @@ from qdrant_client.uploader.uploader import BaseUploader
 
 class AsyncQdrantRemote(AsyncQdrantBase):
     DEFAULT_GRPC_TIMEOUT = 5
+    DEFAULT_GRPC_POOL_SIZE = 3
 
     def __init__(
         self,
@@ -71,6 +72,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             Union[Callable[[], str], Callable[[], Awaitable[str]]]
         ] = None,
         check_compatibility: bool = True,
+        pool_size: Optional[int] = None,
         **kwargs: Any,
     ):
         super().__init__(**kwargs)
@@ -79,6 +81,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
+        self._pool_size: Optional[int] = None
+        if pool_size is not None:
+            pool_size = max(1, pool_size)
+            self._pool_size = pool_size
         self._prefix = prefix or ""
         if len(self._prefix) > 0 and self._prefix[0] != "/":
             self._prefix = f"/{self._prefix}"
@@ -115,6 +121,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         if limits is None:
             if self._host in ["localhost", "127.0.0.1"]:
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
+            elif self._pool_size is not None:
+                limits = httpx.Limits(max_connections=self._pool_size)
+        elif self._pool_size is not None:
+            raise ValueError(
+                f"`pool_size` and `limits` are mutually exclusive. `pool_size`: {pool_size}, `limit`: {limits}"
+            )
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
         self._rest_headers = {k: v for (k, v) in kwargs.pop("metadata", {}).items()}
@@ -165,11 +177,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self.openapi_client: AsyncApis[AsyncApiClient] = AsyncApis(
             host=self.rest_uri, **self._rest_args
         )
-        self._grpc_channel = None
-        self._grpc_points_client: Optional[grpc.PointsStub] = None
-        self._grpc_collections_client: Optional[grpc.CollectionsStub] = None
-        self._grpc_snapshots_client: Optional[grpc.SnapshotsStub] = None
-        self._grpc_root_client: Optional[grpc.QdrantStub] = None
+        self._grpc_channel_pool: list[grpc.Channel] = []
+        self._grpc_points_client_pool: Optional[list[grpc.PointsStub]] = None
+        self._grpc_collections_client_pool: Optional[list[grpc.CollectionsStub]] = None
+        self._grpc_snapshots_client_pool: Optional[list[grpc.SnapshotsStub]] = None
+        self._grpc_root_client_pool: Optional[list[grpc.QdrantStub]] = None
+        self._grpc_client_next_index: int = 0
         self._closed: bool = False
         self.server_version = None
         if check_compatibility:
@@ -200,17 +213,18 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         return self._closed
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
-        if hasattr(self, "_grpc_channel") and self._grpc_channel is not None:
-            try:
-                await self._grpc_channel.close(grace=grpc_grace)
-            except AttributeError:
-                show_warning(
-                    message="Unable to close grpc_channel. Connection was interrupted on the server side",
-                    category=UserWarning,
-                    stacklevel=4,
-                )
-            except RuntimeError:
-                pass
+        if hasattr(self, "_grpc_channel_pool") and len(self._grpc_channel_pool) > 0:
+            for channel in self._grpc_channel_pool:
+                try:
+                    await channel.close(grace=grpc_grace)
+                except AttributeError:
+                    show_warning(
+                        message="Unable to close grpc_channel. Connection was interrupted on the server side",
+                        category=UserWarning,
+                        stacklevel=4,
+                    )
+                except RuntimeError:
+                    pass
         try:
             await self.http.aclose()
         except Exception:
@@ -232,35 +246,68 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         )
         return (scheme, host, port, prefix)
 
+    def _get_grpc_pool_size(self) -> int:
+        """
+        Returns the pool size to use for GRPC connection pool.
+        This method should be preferred over accessing `self._pool_size` directly as it applies the
+        default value if no pool_size was provided.
+        """
+        if self._pool_size is not None:
+            return self._pool_size
+        else:
+            return self.DEFAULT_GRPC_POOL_SIZE
+
     def _init_grpc_channel(self) -> None:
         if self._closed:
             raise RuntimeError("Client was closed. Please create a new QdrantClient instance.")
-        if self._grpc_channel is None:
-            self._grpc_channel = get_channel(
-                host=self._host,
-                port=self._grpc_port,
-                ssl=self._https,
-                metadata=self._grpc_headers,
-                options=self._grpc_options,
-                compression=self._grpc_compression,
-                auth_token_provider=self._auth_token_provider,
-            )
+        try:
+            channel_pool = []
+            if len(self._grpc_channel_pool) == 0:
+                for _ in range(self._get_grpc_pool_size()):
+                    channel = get_channel(
+                        host=self._host,
+                        port=self._grpc_port,
+                        ssl=self._https,
+                        metadata=self._grpc_headers,
+                        options=self._grpc_options,
+                        compression=self._grpc_compression,
+                        auth_token_provider=self._auth_token_provider,
+                    )
+                    channel_pool.append(channel)
+                self._grpc_channel_pool = channel_pool
+        except Exception as e:
+            raise RuntimeError(f"Error initializing the grpc connection(s): {e}")
 
     def _init_grpc_points_client(self) -> None:
         self._init_grpc_channel()
-        self._grpc_points_client = grpc.PointsStub(self._grpc_channel)
+        self._grpc_points_client_pool = [
+            grpc.PointsStub(channel) for channel in self._grpc_channel_pool
+        ]
 
     def _init_grpc_collections_client(self) -> None:
         self._init_grpc_channel()
-        self._grpc_collections_client = grpc.CollectionsStub(self._grpc_channel)
+        self._grpc_collections_client_pool = [
+            grpc.CollectionsStub(channel) for channel in self._grpc_channel_pool
+        ]
 
     def _init_grpc_snapshots_client(self) -> None:
         self._init_grpc_channel()
-        self._grpc_snapshots_client = grpc.SnapshotsStub(self._grpc_channel)
+        self._grpc_snapshots_client_pool = [
+            grpc.SnapshotsStub(channel) for channel in self._grpc_channel_pool
+        ]
 
     def _init_grpc_root_client(self) -> None:
         self._init_grpc_channel()
-        self._grpc_root_client = grpc.QdrantStub(self._grpc_channel)
+        self._grpc_root_client_pool = [
+            grpc.QdrantStub(channel) for channel in self._grpc_channel_pool
+        ]
+
+    def _next_grpc_client(self) -> int:
+        current_index = self._grpc_client_next_index
+        self._grpc_client_next_index = (
+            self._grpc_client_next_index + 1
+        ) % self._get_grpc_pool_size()
+        return current_index
 
     @property
     def grpc_collections(self) -> grpc.CollectionsStub:
@@ -269,9 +316,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if self._grpc_collections_client is None:
+        if self._grpc_collections_client_pool is None:
             self._init_grpc_collections_client()
-        return self._grpc_collections_client
+        assert self._grpc_collections_client_pool is not None
+        return self._grpc_collections_client_pool[self._next_grpc_client()]
 
     @property
     def grpc_points(self) -> grpc.PointsStub:
@@ -280,9 +328,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if self._grpc_points_client is None:
+        if self._grpc_points_client_pool is None:
             self._init_grpc_points_client()
-        return self._grpc_points_client
+        assert self._grpc_points_client_pool is not None
+        return self._grpc_points_client_pool[self._next_grpc_client()]
 
     @property
     def grpc_snapshots(self) -> grpc.SnapshotsStub:
@@ -291,9 +340,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if self._grpc_snapshots_client is None:
+        if self._grpc_snapshots_client_pool is None:
             self._init_grpc_snapshots_client()
-        return self._grpc_snapshots_client
+        assert self._grpc_snapshots_client_pool is not None
+        return self._grpc_snapshots_client_pool[self._next_grpc_client()]
 
     @property
     def grpc_root(self) -> grpc.QdrantStub:
@@ -302,9 +352,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         Returns:
             An instance of raw gRPC client, generated from Protobuf
         """
-        if self._grpc_root_client is None:
+        if self._grpc_root_client_pool is None:
             self._init_grpc_root_client()
-        return self._grpc_root_client
+        assert self._grpc_root_client_pool is not None
+        return self._grpc_root_client_pool[self._next_grpc_client()]
 
     @property
     def rest(self) -> AsyncApis[AsyncApiClient]:
