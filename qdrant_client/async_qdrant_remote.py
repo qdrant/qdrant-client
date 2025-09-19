@@ -81,7 +81,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self._grpc_options = grpc_options or {}
         self._https = https if https is not None else api_key is not None
         self._scheme = "https" if self._https else "http"
-        self._pool_size = None
+        self._pool_size: Optional[int] = None
         if pool_size is not None:
             pool_size = max(1, pool_size)
             self._pool_size = pool_size
@@ -123,6 +123,10 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 limits = httpx.Limits(max_connections=None, max_keepalive_connections=0)
             elif self._pool_size is not None:
                 limits = httpx.Limits(max_connections=self._pool_size)
+        elif self._pool_size is not None:
+            raise ValueError(
+                f"`pool_size` and `limits` are mutually exclusive. `pool_size`: {pool_size}, `limit`: {limits}"
+            )
         http2 = kwargs.pop("http2", False)
         self._grpc_headers = []
         self._rest_headers = {k: v for (k, v) in kwargs.pop("metadata", {}).items()}
@@ -208,7 +212,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         return self._closed
 
     async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
-        if len(self._grpc_channel_pool) > 0:
+        if hasattr(self, "_grpc_channel_pool") and len(self._grpc_channel_pool) > 0:
             for channel in self._grpc_channel_pool:
                 try:
                     await channel.close(grace=grpc_grace)

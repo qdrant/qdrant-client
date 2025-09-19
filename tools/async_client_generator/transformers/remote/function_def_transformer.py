@@ -38,7 +38,7 @@ class RemoteFunctionDefTransformer(FunctionDefTransformer):
     def override_close() -> ast.stmt:
         code = """
 async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
-    if len(self._grpc_channel_pool) > 0:
+    if hasattr(self, "_grpc_channel_pool") and len(self._grpc_channel_pool) > 0:
         for channel in self._grpc_channel_pool:
             try:
                 await channel.close(grace=grpc_grace)
