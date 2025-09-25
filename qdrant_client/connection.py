@@ -267,7 +267,14 @@ def get_channel(
     )
 
     if ssl:
-        ssl_creds = grpc.ssl_channel_credentials()
+        ssl_creds_params = {}
+        if isinstance(options, dict):
+            ssl_creds_params = {
+                "root_certificates": options.pop("grpc.root_certificates", None),
+                "private_key": options.pop("grpc.private_key", None),
+                "certificate_chain": options.pop("grpc.certificate_chain", None),
+            }
+        ssl_creds = grpc.ssl_channel_credentials(**ssl_creds_params)
         channel = grpc.secure_channel(f"{host}:{port}", ssl_creds, _options, compression)
         return grpc.intercept_channel(channel, metadata_interceptor)
     else:
@@ -293,7 +300,14 @@ def get_async_channel(
     )
 
     if ssl:
-        ssl_creds = grpc.ssl_channel_credentials()
+        ssl_creds_params = {}
+        if isinstance(options, dict):
+            ssl_creds_params = {
+                "root_certificates": options.pop("grpc.root_certificates", None),
+                "private_key": options.pop("grpc.private_key", None),
+                "certificate_chain": options.pop("grpc.certificate_chain", None),
+            }
+        ssl_creds = grpc.ssl_channel_credentials(**ssl_creds_params)
         return grpc.aio.secure_channel(
             f"{host}:{port}",
             ssl_creds,
