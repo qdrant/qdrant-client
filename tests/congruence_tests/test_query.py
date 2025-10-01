@@ -277,6 +277,26 @@ class TestSimpleSearcher:
             limit=self.limit,
         )
 
+    def dense_queries_rescore_group_single_prefetch(self, client: QdrantBase) -> GroupsResult:
+        return client.query_points_groups(
+            collection_name=COLLECTION_NAME,
+            prefetch=models.Prefetch(
+                query=self.dense_vector_query_text,
+                prefetch=[
+                    models.Prefetch(query=self.dense_vector_query_text, using="text", limit=30)
+                ],
+                using="text",
+                limit=20,
+            ),
+            # slightly different vector for rescoring because group_by is not super accurate with rescoring
+            query=self.dense_vector_query_text_bis,
+            using="text",
+            with_payload=models.PayloadSelectorInclude(include=[self.group_by]),
+            group_by=self.group_by,
+            group_size=self.group_size,
+            limit=self.limit,
+        )
+
     def dense_query_lookup_from_group(
         self, client: QdrantBase, lookup_from: models.LookupLocation
     ) -> GroupsResult:
@@ -1633,6 +1653,12 @@ def test_query_group():
         )
         compare_clients_results(
             local_client, http_client, grpc_client, searcher.dense_queries_rescore_group
+        )
+        compare_clients_results(
+            local_client,
+            http_client,
+            grpc_client,
+            searcher.dense_queries_rescore_group_single_prefetch,
         )
         compare_clients_results(
             local_client,
