@@ -280,6 +280,7 @@ class GrpcToRest:
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             payload_m=model.payload_m if model.HasField("payload_m") else None,
+            copy_vectors=model.copy_vectors if model.HasField("copy_vectors") else None,
         )
 
     @classmethod
@@ -295,6 +296,7 @@ class GrpcToRest:
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             payload_m=model.payload_m if model.HasField("payload_m") else None,
+            copy_vectors=model.copy_vectors if model.HasField("copy_vectors") else None,
         )
 
     @classmethod
@@ -2378,6 +2380,9 @@ class GrpcToRest:
                 if model.HasField("sparse_config")
                 else None
             ),
+            max_payload_index_count=model.max_payload_index_count
+            if model.HasField("max_payload_index_count")
+            else None,
         )
 
     @classmethod
@@ -2445,6 +2450,9 @@ class GrpcToRest:
                 if model.HasField("sparse_config")
                 else None
             ),
+            max_payload_index_count=model.max_payload_index_count
+            if model.HasField("max_payload_index_count")
+            else None,
         )
 
     @classmethod
@@ -2805,6 +2813,7 @@ class RestToGrpc:
             max_indexing_threads=model.max_indexing_threads,
             on_disk=model.on_disk,
             payload_m=model.payload_m,
+            copy_vectors=model.copy_vectors,
         )
 
     @classmethod
@@ -2879,6 +2888,7 @@ class RestToGrpc:
             max_indexing_threads=model.max_indexing_threads,
             on_disk=model.on_disk,
             payload_m=model.payload_m,
+            copy_vectors=model.copy_vectors,
         )
 
     @classmethod
@@ -4721,6 +4731,7 @@ class RestToGrpc:
                 if model.sparse_config
                 else None
             ),
+            max_payload_index_count=model.max_payload_index_count,
         )
 
     @classmethod
@@ -4754,6 +4765,7 @@ class RestToGrpc:
                 if model.sparse_config
                 else None
             ),
+            max_payload_index_count=model.max_payload_index_count,
         )
 
     @classmethod

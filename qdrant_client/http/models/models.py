@@ -274,6 +274,9 @@ class CollectionInfo(BaseModel):
     optimizer_status: "OptimizersStatus" = Field(
         ..., description="Current statistics and configuration of the collection"
     )
+    warnings: Optional[List["CollectionWarning"]] = Field(
+        default=None, description="Warnings related to the collection"
+    )
     indexed_vectors_count: Optional[int] = Field(
         default=None,
         description="Approximate number of indexed vectors in the collection. Indexed vectors in large segments are faster to query, as it is stored in a specialized vector index.",
@@ -351,6 +354,10 @@ class CollectionTelemetry(BaseModel):
     transfers: Optional[List["ShardTransferInfo"]] = Field(default=None, description="")
     resharding: Optional[List["ReshardingInfo"]] = Field(default=None, description="")
     shard_clean_tasks: Optional[Dict[str, "ShardCleanStatusTelemetry"]] = Field(default=None, description="")
+
+
+class CollectionWarning(BaseModel):
+    message: str = Field(..., description="Warning message")
 
 
 class CollectionsAggregatedTelemetry(BaseModel):
@@ -1084,6 +1091,10 @@ class HnswConfig(BaseModel):
         default=None,
         description="Custom M param for hnsw graph built for payload index. If not set, default M will be used.",
     )
+    copy_vectors: Optional[bool] = Field(
+        default=None,
+        description="Store copies of original and quantized vectors within the HNSW index file. Default: false. Enabling this option will trade the search speed for disk usage by reducing amount of random seeks during the search. Requires quantized vectors to be enabled. Multi-vectors are not supported.",
+    )
 
 
 class HnswConfigDiff(BaseModel, extra="forbid"):
@@ -1110,6 +1121,10 @@ class HnswConfigDiff(BaseModel, extra="forbid"):
     payload_m: Optional[int] = Field(
         default=None,
         description="Custom M param for additional payload-aware HNSW links. If not set, default M will be used.",
+    )
+    copy_vectors: Optional[bool] = Field(
+        default=None,
+        description="Store copies of original and quantized vectors within the HNSW index file. Default: false. Enabling this option will trade the search speed for disk usage by reducing amount of random seeks during the search. Requires quantized vectors to be enabled. Multi-vectors are not supported.",
     )
 
 
@@ -3085,8 +3100,10 @@ class StrictModeConfig(BaseModel, extra="forbid"):
     unindexed_filtering_update: Optional[bool] = Field(
         default=None, description="Allow usage of unindexed fields in filtered updates (e.g. delete by payload)."
     )
-    search_max_hnsw_ef: Optional[int] = Field(default=None, description="Max HNSW value allowed in search parameters.")
-    search_allow_exact: Optional[bool] = Field(default=None, description="Whether exact search is allowed or not.")
+    search_max_hnsw_ef: Optional[int] = Field(
+        default=None, description="Max HNSW ef value allowed in search parameters."
+    )
+    search_allow_exact: Optional[bool] = Field(default=None, description="Whether exact search is allowed.")
     search_max_oversampling: Optional[float] = Field(
         default=None, description="Max oversampling value allowed in search."
     )
@@ -3109,9 +3126,14 @@ class StrictModeConfig(BaseModel, extra="forbid"):
         default=None, description="Max size of a condition, eg. items in `MatchAny`."
     )
     multivector_config: Optional["StrictModeMultivectorConfig"] = Field(
-        default=None, description="Multivector configuration"
+        default=None, description="Multivector strict mode configuration"
     )
-    sparse_config: Optional["StrictModeSparseConfig"] = Field(default=None, description="Sparse vector configuration")
+    sparse_config: Optional["StrictModeSparseConfig"] = Field(
+        default=None, description="Sparse vector strict mode configuration"
+    )
+    max_payload_index_count: Optional[int] = Field(
+        default=None, description="Max number of payload indexes in a collection"
+    )
 
 
 class StrictModeConfigOutput(BaseModel):
@@ -3154,6 +3176,9 @@ class StrictModeConfigOutput(BaseModel):
     )
     sparse_config: Optional["StrictModeSparseConfigOutput"] = Field(
         default=None, description="Sparse vector configuration"
+    )
+    max_payload_index_count: Optional[int] = Field(
+        default=None, description="Max number of payload indexes in a collection"
     )
 
 

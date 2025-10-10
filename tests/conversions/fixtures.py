@@ -294,6 +294,7 @@ hnsw_config = grpc.HnswConfigDiff(
     full_scan_threshold=10000,
     max_indexing_threads=0,
     on_disk=False,
+    copy_vectors=True,
 )
 
 hnsw_config_2 = grpc.HnswConfigDiff(
@@ -359,6 +360,7 @@ strict_mode_config = grpc.StrictModeConfig(
             )
         }
     ),
+    max_payload_index_count=32,
 )
 
 strict_mode_config_empty = grpc.StrictModeConfig(
