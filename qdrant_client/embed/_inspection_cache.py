@@ -1971,6 +1971,12 @@ DEFS = {
                 "description": "Custom M param for additional payload-aware HNSW links. If not set, default M will be used.",
                 "title": "Payload M",
             },
+            "copy_vectors": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Store copies of original and quantized vectors within the HNSW index file. Default: false. Enabling this option will trade the search speed for disk usage by reducing amount of random seeks during the search. Requires quantized vectors to be enabled. Multi-vectors are not supported.",
+                "title": "Copy Vectors",
+            },
         },
         "title": "HnswConfigDiff",
         "type": "object",
@@ -2204,13 +2210,13 @@ DEFS = {
             "search_max_hnsw_ef": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
-                "description": "Max HNSW value allowed in search parameters.",
+                "description": "Max HNSW ef value allowed in search parameters.",
                 "title": "Search Max Hnsw Ef",
             },
             "search_allow_exact": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "Whether exact search is allowed or not.",
+                "description": "Whether exact search is allowed.",
                 "title": "Search Allow Exact",
             },
             "search_max_oversampling": {
@@ -2276,7 +2282,7 @@ DEFS = {
                     {"type": "null"},
                 ],
                 "default": None,
-                "description": "Multivector configuration",
+                "description": "Multivector strict mode configuration",
                 "title": "Multivector Config",
             },
             "sparse_config": {
@@ -2288,8 +2294,14 @@ DEFS = {
                     {"type": "null"},
                 ],
                 "default": None,
-                "description": "Sparse vector configuration",
+                "description": "Sparse vector strict mode configuration",
                 "title": "Sparse Config",
+            },
+            "max_payload_index_count": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max number of payload indexes in a collection",
+                "title": "Max Payload Index Count",
             },
         },
         "title": "StrictModeConfig",
