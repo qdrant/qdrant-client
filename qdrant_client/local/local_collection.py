@@ -1217,7 +1217,7 @@ class LocalCollection:
         with_vectors: Union[bool, Sequence[str]] = False,
     ) -> list[models.Record]:
         result = []
-
+        ids = [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in ids]
         for point_id in ids:
             if point_id not in self.ids:
                 continue
@@ -2269,6 +2269,8 @@ class LocalCollection:
         return rescored[:limit]
 
     def _update_point(self, point: models.PointStruct) -> None:
+        if isinstance(point.id, uuid.UUID):
+            point.id = str(point.id)
         idx = self.ids[point.id]
         self.payload[idx] = deepcopy(
             to_jsonable_python(point.payload) if point.payload is not None else {}
@@ -2327,6 +2329,9 @@ class LocalCollection:
 
     def _add_point(self, point: models.PointStruct) -> None:
         idx = len(self.ids)
+        if isinstance(point.id, uuid.UUID):
+            point.id = str(point.id)
+
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
 
@@ -2454,6 +2459,9 @@ class LocalCollection:
             if not self.vectors and not self.multivectors:
                 raise ValueError("Wrong input: Not existing vector name error")
 
+        if isinstance(point.id, uuid.UUID):
+            point.id = str(point.id)
+
         if point.id in self.ids:
             self._update_point(point)
         else:
@@ -2534,7 +2542,7 @@ class LocalCollection:
 
     def update_vectors(self, points: Sequence[types.PointVectors]) -> None:
         for point in points:
-            point_id = point.id
+            point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
             idx = self.ids[point_id]
             vector_struct = point.vector
             if isinstance(vector_struct, list):
@@ -2587,11 +2595,11 @@ class LocalCollection:
         ],
     ) -> list[models.ExtendedPointId]:
         if isinstance(selector, list):
-            return selector
+            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector]
         elif isinstance(selector, models.Filter):
             return self._filter_to_ids(selector)
         elif isinstance(selector, models.PointIdsList):
-            return selector.points
+            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector.points]
         elif isinstance(selector, models.FilterSelector):
             return self._filter_to_ids(selector.filter)
         else:

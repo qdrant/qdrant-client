@@ -1660,7 +1660,7 @@ class QdrantClient(QdrantFastembedMixin):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Payload] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """Update specified vectors in the collection. Keeps payload and unspecified vectors unchanged.

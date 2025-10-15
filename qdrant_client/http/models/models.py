@@ -3605,7 +3605,7 @@ DocumentOptions = Union[
 ]
 ExtendedPointId = Union[
     StrictInt,
-    StrictStr,
+    Union[StrictStr, UUID],
 ]
 FacetValue = Union[
     StrictBool,
