@@ -809,16 +809,23 @@ class LocalCollection:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
     ) -> list[types.ScoredPoint]:
-        if isinstance(query, models.FusionQuery):
+        if isinstance(query, (models.FusionQuery, models.RrfQuery)):
             # Fuse results
-            if query.fusion == models.Fusion.RRF:
-                # RRF: Reciprocal Rank Fusion
-                fused = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
-            elif query.fusion == models.Fusion.DBSF:
-                # DBSF: Distribution-Based Score Fusion
-                fused = distribution_based_score_fusion(responses=sources, limit=limit + offset)
+            if isinstance(query, models.RrfQuery):
+                fused = reciprocal_rank_fusion(
+                    responses=sources, limit=limit + offset, ranking_constant_k=query.rrf.k
+                )
             else:
-                raise ValueError(f"Fusion method {query.fusion} does not exist")
+                if query.fusion == models.Fusion.RRF:
+                    # RRF: Reciprocal Rank Fusion
+                    fused = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
+                elif query.fusion == models.Fusion.DBSF:
+                    # DBSF: Distribution-Based Score Fusion
+                    fused = distribution_based_score_fusion(
+                        responses=sources, limit=limit + offset
+                    )
+                else:
+                    raise ValueError(f"Fusion method {query.fusion} does not exist")
 
             # Fetch payload and vectors
             ids = [point.id for point in fused]
@@ -971,9 +978,11 @@ class LocalCollection:
             else:
                 raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):
-            raise AssertionError("Cannot perform fusion without prefetches")
+            raise ValueError("Cannot perform fusion without prefetches")
         elif isinstance(query, models.FormulaQuery):
-            raise AssertionError("Cannot perform formula without prefetches")
+            raise ValueError("Cannot perform formula without prefetches")
+        elif isinstance(query, models.RrfQuery):
+            raise ValueError("Cannot perform RRF query without prefetches")
         else:
             # most likely a VectorInput, delegate to search
             return self.search(

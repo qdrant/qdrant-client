@@ -1,13 +1,18 @@
+from typing import Optional
+
 from qdrant_client.http import models
 
 
 def reciprocal_rank_fusion(
-    responses: list[list[models.ScoredPoint]], limit: int = 10
+    responses: list[list[models.ScoredPoint]],
+    limit: int = 10,
+    ranking_constant_k: Optional[int] = None,
 ) -> list[models.ScoredPoint]:
     def compute_score(pos: int) -> float:
         ranking_constant = (
-            2  # the constant mitigates the impact of high rankings by outlier systems
-        )
+            ranking_constant_k if ranking_constant_k is not None else 2
+        )  # mitigates the impact of high
+        # rankings by outlier systems
         return 1 / (ranking_constant + pos)
 
     scores: dict[models.ExtendedPointId, float] = {}
