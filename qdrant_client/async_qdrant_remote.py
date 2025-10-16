@@ -1577,6 +1577,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         exact: bool = True,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
         timeout: Optional[int] = None,
+        consistency: Optional[types.ReadConsistency] = None,
         **kwargs: Any,
     ) -> types.CountResult:
         if self._prefer_grpc:
@@ -1584,6 +1585,8 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 count_filter = RestToGrpc.convert_filter(model=count_filter)
             if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
                 shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
+                consistency = RestToGrpc.convert_read_consistency(consistency)
             response = (
                 await self.grpc_points.Count(
                     grpc.CountPoints(
@@ -1592,6 +1595,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         exact=exact,
                         shard_key_selector=shard_key_selector,
                         timeout=timeout,
+                        read_consistency=consistency,
                     ),
                     timeout=timeout if timeout is not None else self._timeout,
                 )
@@ -1605,6 +1609,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 count_request=models.CountRequest(
                     filter=count_filter, exact=exact, shard_key=shard_key_selector
                 ),
+                consistency=consistency,
                 timeout=timeout,
             )
         ).result
