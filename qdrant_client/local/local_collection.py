@@ -2778,6 +2778,7 @@ class LocalCollection:
                     max_optimization_threads=1,
                 ),
                 quantization_config=None,
+                metadata=self.config.metadata,
             ),
         )
 

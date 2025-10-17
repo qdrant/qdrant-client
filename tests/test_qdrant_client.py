@@ -1183,6 +1183,11 @@ def test_points_crud(prefer_grpc):
         collection_info = client.get_collection(COLLECTION_NAME)
         assert collection_info.config.metadata == collection_metadata
 
+        new_metadata = {"due_date": "12.12.2222"}
+        client.update_collection(COLLECTION_NAME, metadata=new_metadata)
+        updated_collection_info = client.get_collection(COLLECTION_NAME)
+        assert updated_collection_info.config.metadata == {**collection_metadata, **new_metadata}
+
     # Create a single point
     client.upsert(
         collection_name=COLLECTION_NAME,
