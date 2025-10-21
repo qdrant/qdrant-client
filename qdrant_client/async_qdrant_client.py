@@ -1533,7 +1533,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         wait: bool = True,
         ordering: Optional[types.WriteOrdering] = None,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Payload] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         """
@@ -2503,6 +2503,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         max_retries: int = 3,
         wait: bool = False,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> None:
         """Upload points to the collection
@@ -2526,7 +2527,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
                 This parameter overwrites shard keys written in the records.
-
+            update_filter: If specified, only points that match this filter will be updated, others will be inserted
         """
 
         def chain(*iterables: Iterable) -> Iterable:
@@ -2556,6 +2557,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             max_retries=max_retries,
             wait=wait,
             shard_key_selector=shard_key_selector,
+            update_filter=update_filter,
         )
 
     def upload_collection(
@@ -2572,6 +2574,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         max_retries: int = 3,
         wait: bool = False,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> None:
         """Upload vectors and payload to the collection.
@@ -2597,6 +2600,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             shard_key_selector: Defines the shard groups that should be used to write updates into.
                 If multiple shard_keys are provided, the update will be written to each of them.
                 Only works for collections with `custom` sharding method.
+            update_filter: If specified, only points that match this filter will be updated, others will be inserted
         """
 
         def chain(*iterables: Iterable) -> Iterable:
@@ -2629,6 +2633,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             max_retries=max_retries,
             wait=wait,
             shard_key_selector=shard_key_selector,
+            update_filter=update_filter,
         )
 
     async def create_payload_index(

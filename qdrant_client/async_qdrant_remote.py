@@ -2686,6 +2686,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         method: Optional[str] = None,
         wait: bool = False,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
     ) -> None:
         if method is not None:
             if method in get_all_start_methods():
@@ -2708,6 +2709,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "shard_key_selector": shard_key_selector,
                 "options": self._grpc_options,
                 "timeout": self._timeout,
+                "update_filter": update_filter,
             }
         else:
             updater_kwargs = {
@@ -2716,6 +2718,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 "max_retries": max_retries,
                 "wait": wait,
                 "shard_key_selector": shard_key_selector,
+                "update_filter": update_filter,
                 **self._rest_args,
             }
         if parallel == 1:
@@ -2762,6 +2765,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         max_retries: int = 3,
         wait: bool = False,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_records_batches(
@@ -2775,6 +2779,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             method=method,
             wait=wait,
             shard_key_selector=shard_key_selector,
+            update_filter=update_filter,
         )
 
     def upload_collection(
@@ -2791,6 +2796,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         max_retries: int = 3,
         wait: bool = False,
         shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> None:
         batches_iterator = self._updater_class.iterate_batches(
@@ -2804,6 +2810,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             method=method,
             wait=wait,
             shard_key_selector=shard_key_selector,
+            update_filter=update_filter,
         )
 
     async def create_payload_index(

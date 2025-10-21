@@ -5,19 +5,22 @@ from uuid import uuid4
 
 import numpy as np
 
+from qdrant_client import grpc as grpc
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.http import SyncApis
-from qdrant_client.http.models import Batch, PointsList, PointStruct, ShardKeySelector
+from qdrant_client import models as rest
 from qdrant_client.uploader.uploader import BaseUploader
 from qdrant_client.common.client_warnings import show_warning
+from qdrant_client.conversions import common_types as types
 
 
 def upload_batch(
     openapi_client: SyncApis,
     collection_name: str,
-    batch: Union[tuple, Batch],
+    batch: Union[tuple, rest.Batch],
     max_retries: int,
-    shard_key_selector: Optional[ShardKeySelector],
+    shard_key_selector: Optional[rest.ShardKeySelector],
+    update_filter: Optional[rest.Filter],
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
@@ -39,7 +42,9 @@ def upload_batch(
         try:
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
-                point_insert_operations=PointsList(points=points, shard_key=shard_key_selector),
+                point_insert_operations=PointsList(
+                    points=points, shard_key=shard_key_selector, update_filter=update_filter
+                ),
                 wait=wait,
             )
             break
@@ -72,7 +77,8 @@ class RestBatchUploader(BaseUploader):
         collection_name: str,
         max_retries: int,
         wait: bool = False,
-        shard_key_selector: Optional[ShardKeySelector] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
@@ -80,6 +86,11 @@ class RestBatchUploader(BaseUploader):
         self.max_retries = max_retries
         self._wait = wait
         self._shard_key_selector = shard_key_selector
+        self._update_filter = (
+            GrpcToRest.convert_filter(model=update_filter)
+            if isinstance(update_filter, grpc.Filter)
+            else update_filter
+        )
 
     @classmethod
     def start(
@@ -101,5 +112,6 @@ class RestBatchUploader(BaseUploader):
                 batch,
                 shard_key_selector=self._shard_key_selector,
                 max_retries=self.max_retries,
+                update_filter=self._update_filter,
                 wait=self._wait,
             )

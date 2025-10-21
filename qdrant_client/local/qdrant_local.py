@@ -771,20 +771,25 @@ class QdrantLocal(QdrantBase):
         return collection.facet(key=key, facet_filter=facet_filter, limit=limit)
 
     def upsert(
-        self, collection_name: str, points: types.Points, **kwargs: Any
+        self,
+        collection_name: str,
+        points: types.Points,
+        update_filter: Optional[types.Filter] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.upsert(points)
+        collection.upsert(points, update_filter=update_filter)
         return self._default_update_result()
 
     def update_vectors(
         self,
         collection_name: str,
         points: Sequence[types.PointVectors],
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.update_vectors(points)
+        collection.update_vectors(points, update_filter=update_filter)
         return self._default_update_result()
 
     def delete_vectors(
@@ -1052,9 +1057,13 @@ class QdrantLocal(QdrantBase):
         )
 
     def upload_points(
-        self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
+        self,
+        collection_name: str,
+        points: Iterable[types.PointStruct],
+        update_filter: Optional[types.Filter] = None,
+        **kwargs: Any,
     ) -> None:
-        self._upload_points(collection_name, points)
+        self._upload_points(collection_name, points, update_filter=update_filter)
 
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
@@ -1066,6 +1075,7 @@ class QdrantLocal(QdrantBase):
         self,
         collection_name: str,
         points: Iterable[Union[types.PointStruct, types.Record]],
+        update_filter: Optional[types.Filter] = None,
     ) -> None:
         collection = self._get_collection(collection_name)
         collection.upsert(
@@ -1076,7 +1086,8 @@ class QdrantLocal(QdrantBase):
                     payload=point.payload or {},
                 )
                 for point in points
-            ]
+            ],
+            update_filter=update_filter,
         )
 
     def upload_collection(
@@ -1087,6 +1098,7 @@ class QdrantLocal(QdrantBase):
         ],
         payload: Optional[Iterable[dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> None:
         # upload_collection in local mode behaves like upload_collection with wait=True in server mode
@@ -1119,7 +1131,8 @@ class QdrantLocal(QdrantBase):
                     iter(vectors),
                     payload or itertools.cycle([{}]),
                 )
-            ]
+            ],
+            update_filter=update_filter,
         )
 
     def create_payload_index(
