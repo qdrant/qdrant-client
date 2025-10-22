@@ -3,7 +3,12 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Union
 
 from qdrant_client.http import models
-from tests.fixtures.payload import geo_points, random_real_word, random_signed_int
+from tests.fixtures.payload import (
+    geo_points,
+    random_real_word,
+    random_signed_int,
+    random_real_words,
+)
 
 """
 data structure:
@@ -56,6 +61,7 @@ Possible filters:
         - text
         - number
         - any(in)
+        - text any
     - range
     - geo_bounding_box
     - geo_radius
@@ -154,6 +160,12 @@ def match_text_field_condition() -> models.FieldCondition:
         key=field,
         match=models.MatchText(text=text),
     )
+
+
+def match_text_any_field_condition() -> models.FieldCondition:
+    field = "words"
+    text_any = random_real_words()
+    return models.FieldCondition(key=field, match=models.MatchTextAny(text_any=text_any))
 
 
 def match_any_field_condition() -> models.FieldCondition:
@@ -294,6 +306,7 @@ def one_random_condition_please() -> models.Condition:
             match_value_field_condition,
             match_text_field_condition,
             match_any_field_condition,
+            match_text_any_field_condition,
             match_except_field_condition,
             range_field_condition,
             datetime_range_field_condition,
