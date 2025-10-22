@@ -1,6 +1,7 @@
 import itertools
 import uuid
 from collections import defaultdict
+import random
 
 import numpy as np
 import pytest
@@ -502,3 +503,207 @@ def test_update_vectors():
     local_client.delete_collection(collection_name=COLLECTION_NAME)
     remote_client.delete_collection(collection_name=COLLECTION_NAME)
     # endregion
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_update_filter(prefer_grpc):
+    local_client = init_local()
+    remote_client = init_remote(prefer_grpc=prefer_grpc)
+
+    vectors_config = models.VectorParams(size=2, distance=models.Distance.DOT)
+    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+    if remote_client.collection_exists(collection_name=COLLECTION_NAME):
+        remote_client.delete_collection(collection_name=COLLECTION_NAME)
+    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vectors_config)
+
+    original_vector = [random.random(), random.random()]
+    original_points = [
+        models.PointStruct(id=1, vector=original_vector[:], payload={"digit": 1}),
+        models.PointStruct(id=2, vector=original_vector[:], payload={"digit": 2}),
+    ]
+
+    local_client.upsert(COLLECTION_NAME, points=original_points)
+    remote_client.upsert(COLLECTION_NAME, points=original_points)
+    # collection points:
+    # id=1, vector=original_vector, payload={digit: 1}
+    # id=2, vector=original_vector, payload={digit: 2}
+
+    new_points = [
+        models.PointStruct(id=1, vector=original_vector[:], payload={"digit": 3}),
+        models.PointStruct(id=2, vector=original_vector[:], payload={"digit": 4}),
+        models.PointStruct(id=3, vector=original_vector[:], payload={"digit": 5}),
+    ]
+
+    update_filter = models.Filter(
+        must=models.FieldCondition(key="digit", match=models.MatchValue(value=1))
+    )
+    local_client.upsert(COLLECTION_NAME, points=new_points, update_filter=update_filter)
+    remote_client.upsert(COLLECTION_NAME, points=new_points, update_filter=update_filter)
+    # collection points:
+    # id=1, vector=original_vector, payload={digit: 3}
+    # id=2, vector=original_vector, payload={digit: 2}
+    # id=3, vector=original_vector, payload={digit: 5}
+    compare_collections(local_client, remote_client, 10, collection_name=COLLECTION_NAME)
+
+    retrieved_points = local_client.retrieve(collection_name=COLLECTION_NAME, ids=[1, 2, 3])
+    assert retrieved_points[0].payload["digit"] == 3
+    assert retrieved_points[1].payload["digit"] == 2
+    assert len(retrieved_points) == 3
+
+    update_filter = models.Filter(
+        must=models.FieldCondition(key="digit", match=models.MatchValue(value=3))
+    )
+    new_vector = (-np.array(original_vector[:])).tolist()
+    new_point_vectors = [
+        models.PointVectors(id=1, vector=new_vector[:]),
+        models.PointVectors(id=2, vector=new_vector[:]),
+    ]
+    local_client.update_vectors(
+        COLLECTION_NAME, points=new_point_vectors, update_filter=update_filter
+    )
+    remote_client.update_vectors(
+        COLLECTION_NAME, points=new_point_vectors, update_filter=update_filter
+    )
+    # collection points:
+    # id=1, vector=-original_vector, payload={digit: 3}
+    # id=2, vector=original_vector, payload={digit: 2}
+    # id=3, vector=original_vector, payload={digit: 5}
+    compare_collections(local_client, remote_client, 10, collection_name=COLLECTION_NAME)
+
+    retrieved_points = local_client.retrieve(
+        collection_name=COLLECTION_NAME, ids=[1, 2], with_vectors=True
+    )
+    assert np.allclose(retrieved_points[0].vector, new_vector)
+    assert np.allclose(retrieved_points[1].vector, original_vector)
+
+    new_points_2 = [
+        models.PointStruct(id=1, vector=original_vector[:], payload={"digit": 1}),
+        models.PointStruct(id=2, vector=new_vector, payload={"digit": 99}),
+    ]
+
+    update_filter = models.Filter(
+        must=models.FieldCondition(key="digit", match=models.MatchValue(value=3))
+    )
+
+    local_client.upload_points(COLLECTION_NAME, points=new_points_2, update_filter=update_filter)
+    remote_client.upload_points(COLLECTION_NAME, points=new_points_2, update_filter=update_filter)
+    # collection points:
+    # id=1, vector=original_vector, payload={digit: 1}
+    # id=2, vector=original_vector, payload={digit: 2}
+    # id=3, vector=original_vector, payload={digit: 5}
+    compare_collections(local_client, remote_client, 10, collection_name=COLLECTION_NAME)
+
+    retrieved_points = local_client.retrieve(collection_name=COLLECTION_NAME, ids=[1, 2])
+    assert retrieved_points[0].payload["digit"] == 1
+    assert retrieved_points[1].payload["digit"] == 2
+
+    new_points_3 = [
+        models.PointStruct(id=1, vector=original_vector[:], payload={"digit": 3}),
+        models.PointStruct(id=2, vector=original_vector[:], payload={"digit": 99}),
+    ]
+    update_filter = models.Filter(
+        must=models.FieldCondition(key="digit", match=models.MatchValue(value=1))
+    )
+
+    local_client.upload_points(
+        COLLECTION_NAME, points=new_points_3, update_filter=update_filter, batch_size=1, parallel=2
+    )
+    remote_client.upload_points(
+        COLLECTION_NAME, points=new_points_3, update_filter=update_filter, batch_size=1, parallel=2
+    )
+    # collection points:
+    # id=1, vector=original_vector, payload={digit: 3}
+    # id=2, vector=original_vector, payload={digit: 2}
+    # id=3, vector=original_vector, payload={digit: 5}
+    compare_collections(local_client, remote_client, 10, collection_name=COLLECTION_NAME)
+
+    retrieved_points = local_client.retrieve(collection_name=COLLECTION_NAME, ids=[1, 2])
+    assert retrieved_points[0].payload["digit"] == 3
+    assert retrieved_points[1].payload["digit"] == 2
+
+    vectors = [original_vector[:], original_vector[:]]
+    ids = [1, 2]
+    payload = [
+        {"digit": 1},
+        {"digit": 99},
+    ]
+    update_filter = models.Filter(
+        must=models.FieldCondition(key="digit", match=models.MatchValue(value=3))
+    )
+
+    # not testing MP upload_collection, since upload_points uses _upload_collection under the hood
+    local_client.upload_collection(
+        COLLECTION_NAME, vectors=vectors, ids=ids, payload=payload, update_filter=update_filter
+    )
+    remote_client.upload_collection(
+        COLLECTION_NAME, vectors=vectors, ids=ids, payload=payload, update_filter=update_filter
+    )
+    # collection points:
+    # id=1, vector=original_vector, payload={digit: 1}
+    # id=2, vector=original_vector, payload={digit: 2}
+    # id=3, vector=original_vector, payload={digit: 5}
+    compare_collections(local_client, remote_client, 10, collection_name=COLLECTION_NAME)
+
+    retrieved_points = local_client.retrieve(collection_name=COLLECTION_NAME, ids=[1, 2])
+    assert retrieved_points[0].payload["digit"] == 1
+    assert retrieved_points[1].payload["digit"] == 2
+
+    ids = [1, 2, 4]
+    vectors = [original_vector[:], original_vector[:], original_vector[:]]
+    payload = [{"digit": 3}, {"digit": 0}, {"digit": 4}]
+    points_batch = models.PointsBatch(
+        batch=models.Batch(ids=ids, vectors=vectors, payloads=payload),
+        update_filter=models.Filter(must=models.HasIdCondition(has_id=[1])),
+    )
+
+    point_vectors = [
+        models.PointVectors(
+            id=3,
+            vector=new_vector[:],
+        ),
+        models.PointVectors(id=1, vector=new_vector[:]),
+    ]
+
+    upsert_batch = models.UpsertOperation(upsert=points_batch)
+    update_vectors = models.UpdateVectorsOperation(
+        update_vectors=models.UpdateVectors(
+            points=point_vectors,
+            update_filter=models.Filter(must=models.HasIdCondition(has_id=[3])),
+        )
+    )
+
+    local_client.batch_update_points(
+        COLLECTION_NAME, update_operations=[upsert_batch, update_vectors]
+    )
+    remote_client.batch_update_points(
+        COLLECTION_NAME, update_operations=[upsert_batch, update_vectors]
+    )
+
+    compare_collections(local_client, remote_client, 10, collection_name=COLLECTION_NAME)
+    retrieved_points = local_client.retrieve(
+        collection_name=COLLECTION_NAME, ids=[1, 2, 3, 4], with_vectors=True
+    )
+    assert retrieved_points[0].payload["digit"] == 3  # payload updated
+    assert retrieved_points[1].payload["digit"] == 2  # payload stays unchanged
+    assert np.allclose(retrieved_points[0].vector, original_vector)  # vector stays unchanged
+    assert np.allclose(retrieved_points[2].vector, new_vector)  # vector updated
+    assert len(retrieved_points) == 4  # not existing point inserted
+
+    points_list = models.PointsList(
+        points=[
+            models.PointStruct(id=1, vector=original_vector[:], payload={"digit": 1}),
+            models.PointStruct(id=2, vector=original_vector[:], payload={"digit": 99}),
+            models.PointStruct(id=5, vector=original_vector[:], payload={"digit": 5}),
+        ],
+        update_filter=models.Filter(must=models.HasIdCondition(has_id=[2])),
+    )
+    upsert_points_list = models.UpsertOperation(upsert=points_list)
+
+    local_client.batch_update_points(COLLECTION_NAME, update_operations=[upsert_points_list])
+    remote_client.batch_update_points(COLLECTION_NAME, update_operations=[upsert_points_list])
+    compare_collections(local_client, remote_client, 10, collection_name=COLLECTION_NAME)
+
+    retrieved_points = local_client.retrieve(collection_name=COLLECTION_NAME, ids=[1, 2, 5])
+    assert retrieved_points[0].payload["digit"] == 3
+    assert retrieved_points[1].payload["digit"] == 99
+    assert len(retrieved_points) == 3

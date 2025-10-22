@@ -29,7 +29,7 @@ def upload_batch(
     payload_batch = (None for _ in count()) if payload_batch is None else payload_batch
 
     points = [
-        PointStruct(
+        rest.PointStruct(
             id=idx,
             vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
             payload=payload,
@@ -42,7 +42,7 @@ def upload_batch(
         try:
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
-                point_insert_operations=PointsList(
+                point_insert_operations=rest.PointsList(
                     points=points, shard_key=shard_key_selector, update_filter=update_filter
                 ),
                 wait=wait,

@@ -2732,8 +2732,7 @@ class LocalCollection:
             if isinstance(update_op, models.UpsertOperation):
                 upsert_struct = update_op.upsert
                 if isinstance(upsert_struct, models.PointsBatch):
-                    batch = upsert_struct.batch
-                    self.upsert(batch, update_filter=batch.update_filter)
+                    self.upsert(upsert_struct.batch, update_filter=upsert_struct.update_filter)
                 elif isinstance(upsert_struct, models.PointsList):
                     self.upsert(upsert_struct.points, update_filter=upsert_struct.update_filter)
                 else:
