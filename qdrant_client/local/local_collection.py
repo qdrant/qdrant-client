@@ -2460,7 +2460,7 @@ class LocalCollection:
 
         if point.id in self.ids:
             idx = self.ids[point.id]
-            if not self.deleted[idx]:
+            if not self.deleted[idx] and update_filter is not None:
                 has_vector = {}
                 for vector_name, deleted in self.deleted_per_vector.items():
                     if not deleted[idx]:
@@ -2562,7 +2562,8 @@ class LocalCollection:
                 fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
             else:
                 fixed_vectors = vector_struct
-            if not self.deleted[idx]:
+
+            if not self.deleted[idx] and update_filter is not None:
                 has_vector = {}
                 for vector_name, deleted in self.deleted_per_vector.items():
                     if not deleted[idx]:
