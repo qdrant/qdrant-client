@@ -48,29 +48,33 @@ def cleanup():
 
 @lru_cache
 def _cached_text_embedding(model_name, *args, **kwargs):
-    kwargs["cache_dir"] = kwargs["cache_dir"] or _get_cache_dir_name(model_name)
-    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(kwargs["cache_dir"]).exists())
+    cache_dir = kwargs.get("cache_dir") or _get_cache_dir_name(model_name)
+    kwargs["cache_dir"] = cache_dir
+    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(cache_dir).exists())
     return TextEmbedding(model_name=model_name, *args, **kwargs)
 
 
 @lru_cache
 def _cached_sparse_text_embedding(model_name, *args, **kwargs):
-    kwargs["cache_dir"] = kwargs["cache_dir"] or _get_cache_dir_name(model_name)
-    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(kwargs["cache_dir"]).exists())
+    cache_dir = kwargs.get("cache_dir") or _get_cache_dir_name(model_name)
+    kwargs["cache_dir"] = cache_dir
+    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(cache_dir).exists())
     return SparseTextEmbedding(model_name=model_name, *args, **kwargs)
 
 
 @lru_cache
 def _cached_late_interaction_text_embedding(model_name, *args, **kwargs):
-    kwargs["cache_dir"] = kwargs["cache_dir"] or _get_cache_dir_name(model_name)
-    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(kwargs["cache_dir"]).exists())
+    cache_dir = kwargs.get("cache_dir") or _get_cache_dir_name(model_name)
+    kwargs["cache_dir"] = cache_dir
+    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(cache_dir).exists())
     return LateInteractionTextEmbedding(model_name=model_name, *args, **kwargs)
 
 
 @lru_cache
 def _cached_image_embedding(model_name, *args, **kwargs):
-    kwargs["cache_dir"] = kwargs["cache_dir"] or _get_cache_dir_name(model_name)
-    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(kwargs["cache_dir"]).exists())
+    cache_dir = kwargs.get("cache_dir") or _get_cache_dir_name(model_name)
+    kwargs["cache_dir"] = cache_dir
+    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(cache_dir).exists())
     return ImageEmbedding(model_name=model_name, *args, **kwargs)
 
 
