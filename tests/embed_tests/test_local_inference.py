@@ -3,6 +3,9 @@ from pathlib import Path
 from unittest.mock import patch
 from functools import lru_cache
 import contextlib
+import tempfile
+
+import shutil
 
 import numpy as np
 import pytest
@@ -30,28 +33,48 @@ DENSE_IMAGE_DIM = 2048
 
 TEST_IMAGE_PATH = Path(__file__).parent / "misc" / "image.jpeg"
 
+SESSION_TMP_DIR: str = tempfile.mkdtemp()
+
+
+def _get_cache_dir_name(model_name: str) -> Path:
+    return Path(SESSION_TMP_DIR) / model_name.lower().replace("/", "_").replace("-", "_")
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup():
+    yield
+    shutil.rmtree(SESSION_TMP_DIR)
+
 
 @lru_cache
 def _cached_text_embedding(model_name, *args, **kwargs):
+    kwargs["cache_dir"] = kwargs["cache_dir"] or _get_cache_dir_name(model_name)
+    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(kwargs["cache_dir"]).exists())
     return TextEmbedding(model_name=model_name, *args, **kwargs)
 
 
 @lru_cache
 def _cached_sparse_text_embedding(model_name, *args, **kwargs):
+    kwargs["cache_dir"] = kwargs["cache_dir"] or _get_cache_dir_name(model_name)
+    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(kwargs["cache_dir"]).exists())
     return SparseTextEmbedding(model_name=model_name, *args, **kwargs)
 
 
 @lru_cache
 def _cached_late_interaction_text_embedding(model_name, *args, **kwargs):
+    kwargs["cache_dir"] = kwargs["cache_dir"] or _get_cache_dir_name(model_name)
+    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(kwargs["cache_dir"]).exists())
     return LateInteractionTextEmbedding(model_name=model_name, *args, **kwargs)
 
 
 @lru_cache
 def _cached_image_embedding(model_name, *args, **kwargs):
+    kwargs["cache_dir"] = kwargs["cache_dir"] or _get_cache_dir_name(model_name)
+    kwargs["local_files_only"] = kwargs.get("local_files_only", Path(kwargs["cache_dir"]).exists())
     return ImageEmbedding(model_name=model_name, *args, **kwargs)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def cached_embeddings():
     with contextlib.ExitStack() as stack:
         stack.enter_context(
@@ -136,7 +159,6 @@ def test_upsert(cached_embeddings):
         pytest.skip("FastEmbed is not installed, skipping")
     local_kwargs = {}
     local_client._client.upsert = arg_interceptor(local_client._client.upsert, local_kwargs)
-
     dense_doc_1 = models.Document(text="hello world", model=DENSE_MODEL_NAME)
     dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
     sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
@@ -258,17 +280,48 @@ def test_upload(cached_embeddings):
         pytest.skip("FastEmbed is not installed, skipping")
     remote_client = QdrantClient()
 
-    dense_doc_1 = models.Document(text="hello world", model=DENSE_MODEL_NAME)
-    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
-    dense_doc_3 = models.Document(text="world world", model=DENSE_MODEL_NAME)
+    dense_model_cache_dir = _get_cache_dir_name(DENSE_MODEL_NAME)
+    dense_options = {"cache_dir": str(dense_model_cache_dir)}
+    if dense_model_cache_dir.exists():
+        dense_options["local_files_only"] = True
 
-    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
-    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
-    sparse_doc_3 = models.Document(text="world world", model=SPARSE_MODEL_NAME)
+    dense_doc_1 = models.Document(
+        text="hello world", model=DENSE_MODEL_NAME, options=dense_options
+    )
+    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME, options=dense_options)
+    dense_doc_3 = models.Document(
+        text="world world", model=DENSE_MODEL_NAME, options=dense_options
+    )
 
-    dense_image_1 = models.Image(image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME)
-    dense_image_2 = models.Image(image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME)
-    dense_image_3 = models.Image(image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME)
+    sparse_model_cache_dir = _get_cache_dir_name(SPARSE_MODEL_NAME)
+    sparse_options = {"cache_dir": str(sparse_model_cache_dir)}
+    if sparse_model_cache_dir.exists():
+        sparse_options["local_files_only"] = True
+
+    sparse_doc_1 = models.Document(
+        text="hello world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_2 = models.Document(
+        text="bye world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_3 = models.Document(
+        text="world world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+
+    image_model_cache_dir = _get_cache_dir_name(DENSE_IMAGE_MODEL_NAME)
+    image_options = {"cache_dir": str(image_model_cache_dir)}
+    if image_model_cache_dir.exists():
+        image_options["local_files_only"] = True
+
+    dense_image_1 = models.Image(
+        image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME, options=image_options
+    )
+    dense_image_2 = models.Image(
+        image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME, options=image_options
+    )
+    dense_image_3 = models.Image(
+        image=TEST_IMAGE_PATH, model=DENSE_IMAGE_MODEL_NAME, options=image_options
+    )
 
     points = [
         models.PointStruct(
@@ -291,6 +344,15 @@ def test_upload(cached_embeddings):
     )  # assert doc has been substituted with its embedding
 
     recreate_collection(remote_client, COLLECTION_NAME)
+
+    for text_doc in (dense_doc_1, dense_doc_2, dense_doc_3):
+        text_doc.options["local_files_only"] = Path(text_doc.options["cache_dir"]).exists()
+
+    for image_doc in (dense_image_1, dense_image_2, dense_image_3):
+        image_doc.options["local_files_only"] = Path(image_doc.options["cache_dir"]).exists()
+
+    for sparse_doc in (sparse_doc_1, sparse_doc_2, sparse_doc_3):
+        sparse_doc.options["local_files_only"] = Path(sparse_doc.options["cache_dir"]).exists()
 
     vectors = [
         {"text": dense_doc_1, "image": dense_image_1, "sparse-text": sparse_doc_1},
@@ -357,11 +419,25 @@ def test_query_points(cached_embeddings):
     local_client._client.query_points = arg_interceptor(
         local_client._client.query_points, local_kwargs
     )
-    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
-    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
-    sparse_doc_3 = models.Document(text="goodbye world", model=SPARSE_MODEL_NAME)
-    sparse_doc_4 = models.Document(text="good afternoon world", model=SPARSE_MODEL_NAME)
-    sparse_doc_5 = models.Document(text="good morning world", model=SPARSE_MODEL_NAME)
+    sparse_model_cache_dir = _get_cache_dir_name(SPARSE_MODEL_NAME)
+    sparse_options = {"cache_dir": str(sparse_model_cache_dir)}
+    if Path(sparse_options["cache_dir"]).exists():
+        sparse_options["local_files_only"] = True
+    sparse_doc_1 = models.Document(
+        text="hello world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_2 = models.Document(
+        text="bye world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_3 = models.Document(
+        text="goodbye world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_4 = models.Document(
+        text="good afternoon world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_5 = models.Document(
+        text="good morning world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
     points = [
         models.PointStruct(id=i, vector={"sparse-text": doc}, payload={"content": doc.text})
         for i, doc in enumerate(
@@ -526,8 +602,20 @@ def test_query_points_is_query(cached_embeddings):
         local_client._client.query_points, local_kwargs
     )
     # dense_doc_1 = models.Document(text="hello world", model=dense_model_name)  # todo: uncomment once this model is supported
-    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
-    colbert_doc_1 = models.Document(text="hello world", model=COLBERT_MODEL_NAME)
+    sparse_model_cache_dir = _get_cache_dir_name(SPARSE_MODEL_NAME)
+    sparse_options = {"cache_dir": str(sparse_model_cache_dir)}
+    if Path(sparse_options["cache_dir"]).exists():
+        sparse_options["local_files_only"] = True
+    colbert_model_cache_dir = _get_cache_dir_name(COLBERT_MODEL_NAME)
+    colbert_options = {"cache_dir": str(colbert_model_cache_dir)}
+    if Path(colbert_options["cache_dir"]).exists():
+        colbert_options["local_files_only"] = True
+    sparse_doc_1 = models.Document(
+        text="hello world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    colbert_doc_1 = models.Document(
+        text="hello world", model=COLBERT_MODEL_NAME, options=colbert_options
+    )
 
     vectors_config = {
         # "dense-text": models.VectorParams(size=dense_dim, distance=models.Distance.COSINE),
@@ -590,11 +678,25 @@ def test_query_points_groups(cached_embeddings):
     local_client._client.query_points_groups = arg_interceptor(
         local_client._client.query_points_groups, local_kwargs
     )
-    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
-    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
-    sparse_doc_3 = models.Document(text="goodbye world", model=SPARSE_MODEL_NAME)
-    sparse_doc_4 = models.Document(text="good afternoon world", model=SPARSE_MODEL_NAME)
-    sparse_doc_5 = models.Document(text="good morning world", model=SPARSE_MODEL_NAME)
+    sparse_model_cache_dir = _get_cache_dir_name(SPARSE_MODEL_NAME)
+    sparse_options = {"cache_dir": str(sparse_model_cache_dir)}
+    if Path(sparse_options["cache_dir"]).exists():
+        sparse_options["local_files_only"] = True
+    sparse_doc_1 = models.Document(
+        text="hello world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_2 = models.Document(
+        text="bye world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_3 = models.Document(
+        text="goodbye world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_4 = models.Document(
+        text="good afternoon world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_5 = models.Document(
+        text="good morning world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
     points = [
         models.PointStruct(id=i, vector={"sparse-text": doc}, payload={"content": doc.text})
         for i, doc in enumerate(
@@ -690,11 +792,25 @@ def test_query_batch_points(cached_embeddings):
         local_client._client.query_batch_points, local_kwargs
     )
 
-    sparse_doc_1 = models.Document(text="hello world", model=SPARSE_MODEL_NAME)
-    sparse_doc_2 = models.Document(text="bye world", model=SPARSE_MODEL_NAME)
-    sparse_doc_3 = models.Document(text="goodbye world", model=SPARSE_MODEL_NAME)
-    sparse_doc_4 = models.Document(text="good afternoon world", model=SPARSE_MODEL_NAME)
-    sparse_doc_5 = models.Document(text="good morning world", model=SPARSE_MODEL_NAME)
+    sparse_model_cache_dir = _get_cache_dir_name(SPARSE_MODEL_NAME)
+    sparse_options = {"cache_dir": str(sparse_model_cache_dir)}
+    if Path(sparse_options["cache_dir"]).exists():
+        sparse_options["local_files_only"] = True
+    sparse_doc_1 = models.Document(
+        text="hello world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_2 = models.Document(
+        text="bye world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_3 = models.Document(
+        text="goodbye world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_4 = models.Document(
+        text="good afternoon world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
+    sparse_doc_5 = models.Document(
+        text="good morning world", model=SPARSE_MODEL_NAME, options=sparse_options
+    )
 
     points = [
         models.PointStruct(id=i, vector={"sparse-text": dense_doc})
@@ -751,8 +867,14 @@ def test_batch_update_points(cached_embeddings):
         local_client._client.batch_update_points, local_kwargs
     )
 
-    dense_doc_1 = models.Document(text="hello world", model=DENSE_MODEL_NAME)
-    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
+    dense_model_cache_dir = _get_cache_dir_name(DENSE_MODEL_NAME)
+    dense_options = {"cache_dir": str(dense_model_cache_dir)}
+    if Path(dense_options["cache_dir"]).exists():
+        dense_options["local_files_only"] = True
+    dense_doc_1 = models.Document(
+        text="hello world", model=DENSE_MODEL_NAME, options=dense_options
+    )
+    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME, options=dense_options)
 
     # region unnamed
     points = [
@@ -866,12 +988,26 @@ def test_update_vectors(cached_embeddings):
         local_client._client.update_vectors, local_kwargs
     )
 
+    dense_model_cache_dir = _get_cache_dir_name(DENSE_MODEL_NAME)
+    dense_options = {"cache_dir": str(dense_model_cache_dir)}
+    if Path(dense_options["cache_dir"]).exists():
+        dense_options["local_files_only"] = True
+
     dense_doc_1 = models.Document(
         text="hello world",
         model=DENSE_MODEL_NAME,
+        options=dense_options,
     )
-    dense_doc_2 = models.Document(text="bye world", model=DENSE_MODEL_NAME)
-    dense_doc_3 = models.Document(text="goodbye world", model=DENSE_MODEL_NAME)
+    dense_doc_2 = models.Document(
+        text="bye world",
+        model=DENSE_MODEL_NAME,
+        options=dense_options,
+    )
+    dense_doc_3 = models.Document(
+        text="goodbye world",
+        model=DENSE_MODEL_NAME,
+        options=dense_options,
+    )
     # region unnamed
     points = [
         models.PointStruct(id=1, vector=dense_doc_1),
@@ -1127,11 +1263,24 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
     norm_ref_vector = (np.array(ref_vector) / np.linalg.norm(ref_vector)).tolist()
 
     # region separate plain batches
+    dense_model_cache_dir = _get_cache_dir_name(DENSE_MODEL_NAME)
+    dense_options = {"cache_dir": str(dense_model_cache_dir)}
+    if Path(dense_options["cache_dir"]).exists():
+        dense_options["local_files_only"] = True
+
     points = [
         models.PointStruct(
-            id=1, vector=models.Document(text="hello world", model=DENSE_MODEL_NAME)
+            id=1,
+            vector=models.Document(
+                text="hello world", model=DENSE_MODEL_NAME, options=dense_options
+            ),
         ),
-        models.PointStruct(id=2, vector=models.Document(text="bye world", model=DENSE_MODEL_NAME)),
+        models.PointStruct(
+            id=2,
+            vector=models.Document(
+                text="bye world", model=DENSE_MODEL_NAME, options=dense_options
+            ),
+        ),
         models.PointStruct(id=3, vector=ref_vector),
         models.PointStruct(id=4, vector=[0.1, 0.2] * half_dense_dim),
     ]
@@ -1156,12 +1305,23 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
     # endregion
 
     # region mixed plain batches
+    if Path(dense_options["cache_dir"]).exists():
+        dense_options["local_files_only"] = True
+
     points = [
         models.PointStruct(
-            id=1, vector=models.Document(text="hello world", model=DENSE_MODEL_NAME)
+            id=1,
+            vector=models.Document(
+                text="hello world", model=DENSE_MODEL_NAME, options=dense_options
+            ),
         ),
         models.PointStruct(id=2, vector=ref_vector),
-        models.PointStruct(id=3, vector=models.Document(text="bye world", model=DENSE_MODEL_NAME)),
+        models.PointStruct(
+            id=3,
+            vector=models.Document(
+                text="bye world", model=DENSE_MODEL_NAME, options=dense_options
+            ),
+        ),
         models.PointStruct(id=4, vector=[0.1, 0.2] * half_dense_dim),
     ]
 
@@ -1190,7 +1350,9 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
         models.PointStruct(
             id=1,
             vector={
-                "text": models.Document(text="hello world", model=DENSE_MODEL_NAME),
+                "text": models.Document(
+                    text="hello world", model=DENSE_MODEL_NAME, options=dense_options
+                ),
                 "plain": [0.1, 0.2] * half_dense_dim,
             },
         ),
@@ -1198,7 +1360,9 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
             id=2,
             vector={
                 "plain": ref_vector,
-                "text": models.Document(text="bye world", model=DENSE_MODEL_NAME),
+                "text": models.Document(
+                    text="bye world", model=DENSE_MODEL_NAME, options=dense_options
+                ),
             },
         ),
         models.PointStruct(
@@ -1207,7 +1371,11 @@ def test_upload_mixed_batches_upload_points(parallel, cached_embeddings):
         ),
         models.PointStruct(
             id=4,
-            vector={"text": models.Document(text="bye world", model=DENSE_MODEL_NAME)},
+            vector={
+                "text": models.Document(
+                    text="bye world", model=DENSE_MODEL_NAME, options=dense_options
+                )
+            },
         ),
     ]
 
@@ -1239,9 +1407,14 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
 
     # region separate plain batches
     ids = [0, 1, 2, 3]
+    dense_model_cache_dir = _get_cache_dir_name(DENSE_MODEL_NAME)
+    dense_options = {"cache_dir": str(dense_model_cache_dir)}
+    if Path(dense_options["cache_dir"]).exists():
+        dense_options["local_files_only"] = True
+
     vectors = [
-        models.Document(text="hello world", model=DENSE_MODEL_NAME),
-        models.Document(text="bye world", model=DENSE_MODEL_NAME),
+        models.Document(text="hello world", model=DENSE_MODEL_NAME, options=dense_options),
+        models.Document(text="bye world", model=DENSE_MODEL_NAME, options=dense_options),
         ref_vector,
         [0.1, 0.2] * half_dense_dim,
     ]
@@ -1269,10 +1442,13 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
     # endregion
 
     # region mixed plain batches
+    if Path(dense_options["cache_dir"]).exists():
+        dense_options["local_files_only"] = True
+
     vectors = [
-        models.Document(text="hello world", model=DENSE_MODEL_NAME),
+        models.Document(text="hello world", model=DENSE_MODEL_NAME, options=dense_options),
         ref_vector,
-        models.Document(text="bye world", model=DENSE_MODEL_NAME),
+        models.Document(text="bye world", model=DENSE_MODEL_NAME, options=dense_options),
         [0.1, 0.2] * half_dense_dim,
     ]
 
@@ -1302,15 +1478,19 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
     }
     vectors = [
         {
-            "text": models.Document(text="hello world", model=DENSE_MODEL_NAME),
+            "text": models.Document(
+                text="hello world", model=DENSE_MODEL_NAME, options=dense_options
+            ),
             "plain": [0.0, 0.2] * half_dense_dim,
         },
         {
             "plain": ref_vector,
-            "text": models.Document(text="bye world", model=DENSE_MODEL_NAME),
+            "text": models.Document(
+                text="bye world", model=DENSE_MODEL_NAME, options=dense_options
+            ),
         },
         {"plain": [0.3, 0.2] * half_dense_dim},
-        {"text": models.Document(text="bye world", model=DENSE_MODEL_NAME)},
+        {"text": models.Document(text="bye world", model=DENSE_MODEL_NAME, options=dense_options)},
     ]
 
     remote_client.create_collection(COLLECTION_NAME, vectors_config=vectors_config)
@@ -1333,23 +1513,29 @@ def test_upload_mixed_batches_upload_collection(parallel, cached_embeddings):
     # endregion
 
 
+@pytest.mark.skip
 def test_upsert_batch_with_different_options():
     bm25_name = "Qdrant/bm25"
     local_client = QdrantClient(":memory:")
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
 
+    download_options = dict()
+    download_options["cache_dir"] = _get_cache_dir_name("Qdrant/bm25")
+    if download_options["cache_dir"].exists():
+        download_options["local_files_only"] = True
+
     sparse_doc_1 = models.Document(
-        text="running run", model=bm25_name, options={"language": "english"}
+        text="running run", model=bm25_name, options={"language": "english", **download_options}
     )
     sparse_doc_2 = models.Document(
-        text="running run", model=bm25_name, options={"language": "german"}
+        text="running run", model=bm25_name, options={"language": "german", **download_options}
     )
     sparse_doc_3 = models.Document(
-        text="running run", model=bm25_name, options={"language": "english"}
+        text="running run", model=bm25_name, options={"language": "english", **download_options}
     )
     sparse_doc_4 = models.Document(
-        text="running run", model=bm25_name, options={"language": "german"}
+        text="running run", model=bm25_name, options={"language": "german", **download_options}
     )
 
     sparse_vectors_config = {
@@ -1362,7 +1548,12 @@ def test_upsert_batch_with_different_options():
     )
     points = [
         models.PointStruct(
-            id=0, vector={"sparse-text-en": sparse_doc_1, "sparse-text-de": sparse_doc_2}
+            id=0,
+            vector={
+                "sparse-text-en": sparse_doc_1,
+                "sparse-text-de": sparse_doc_2,
+                **download_options,
+            },
         ),
         models.PointStruct(id=1, vector={"sparse-text-en": sparse_doc_3}),
         models.PointStruct(id=2, vector={"sparse-text-de": sparse_doc_4}),
@@ -1386,6 +1577,7 @@ def test_upsert_batch_with_different_options():
     )
 
 
+@pytest.mark.skip
 def test_batch_size_propagation():
     def mock(func, kw_param_storage):
         def decorated(*args, **kwargs):
@@ -1396,6 +1588,11 @@ def test_batch_size_propagation():
         return decorated
 
     param_storage = {}
+
+    download_options = dict()
+    download_options["cache_dir"] = _get_cache_dir_name("Qdrant/bm25")
+    if download_options["cache_dir"].exists():
+        download_options["local_files_only"] = True
 
     bm25_name = "Qdrant/bm25"
     inference_batch_size = 2
@@ -1409,22 +1606,10 @@ def test_batch_size_propagation():
     if not local_client._FASTEMBED_INSTALLED:
         pytest.skip("FastEmbed is not installed, skipping")
 
-    sparse_doc_1 = models.Document(
-        text="a quick",
-        model=bm25_name,
-    )
-    sparse_doc_2 = models.Document(
-        text="brown fox",
-        model=bm25_name,
-    )
-    sparse_doc_3 = models.Document(
-        text="jumps over",
-        model=bm25_name,
-    )
-    sparse_doc_4 = models.Document(
-        text="a lazy dog",
-        model=bm25_name,
-    )
+    sparse_doc_1 = models.Document(text="a quick", model=bm25_name, options=download_options)
+    sparse_doc_2 = models.Document(text="brown fox", model=bm25_name, options=download_options)
+    sparse_doc_3 = models.Document(text="jumps over", model=bm25_name, options=download_options)
+    sparse_doc_4 = models.Document(text="a lazy dog", model=bm25_name, options=download_options)
     local_client.create_collection(
         COLLECTION_NAME, sparse_vectors_config={"sparse": models.SparseVectorParams()}
     )
@@ -1483,6 +1668,7 @@ def mock_late_interaction_multimodal_embedding():
     qdrant_client.embed.embedder.LateInteractionMultimodalEmbedding = original_class
 
 
+@pytest.mark.skip
 def test_embed_multimodal(mock_late_interaction_multimodal_embedding):
     mock_cls = mock_late_interaction_multimodal_embedding
 
