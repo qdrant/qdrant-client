@@ -1019,7 +1019,7 @@ class LocalCollection:
                 prefetch
             )  # we're modifying Prefetch inplace, but we don't want to modify
             # the original object, if users want to reuse it somehow
-            set_prefetch_limit_recursively(prefetch, max_limit)
+            set_prefetch_limit_iteratively(prefetch, max_limit)
 
         points = self.query_points(
             query=query,
@@ -2842,17 +2842,29 @@ def record_to_scored_point(record: types.Record) -> types.ScoredPoint:
     )
 
 
-def set_prefetch_limit_recursively(
+def set_prefetch_limit_iteratively(
     prefetch: Union[types.Prefetch, list[types.Prefetch]], limit: int
 ) -> None:
-    if isinstance(prefetch, list):
-        for p in prefetch:
-            set_prefetch_limit_recursively(p, limit)
-    elif isinstance(prefetch, types.Prefetch):
-        prefetch.limit = limit
+    """Set .limit on all nested Prefetch objects without recursion."""
+    stack: list[Union[types.Prefetch, list[types.Prefetch]]] = [prefetch]
 
-        if isinstance(prefetch.prefetch, list):
-            for p in prefetch.prefetch:
-                set_prefetch_limit_recursively(p, limit)
-        elif isinstance(prefetch.prefetch, types.Prefetch):
-            set_prefetch_limit_recursively(prefetch.prefetch, limit)
+    while stack:
+        current = stack.pop()
+
+        if isinstance(current, list):
+            # add all Prefetch items in the list to the stack
+            stack.extend(current)
+            continue
+
+        # must be a Prefetch instance
+        current.limit = limit
+
+        # process its nested prefetch field
+        nested = current.prefetch
+        if nested is None:
+            continue
+
+        if isinstance(nested, list):
+            stack.extend(nested)
+        elif isinstance(nested, types.Prefetch):
+            stack.append(nested)
