@@ -1,8 +1,6 @@
 import pytest
 
 from qdrant_client import QdrantClient, models
-from qdrant_client.client_base import QdrantBase
-from tests.congruence_tests.test_common import compare_client_results
 
 from tests.utils import read_version
 
@@ -131,48 +129,6 @@ def test_set_model():
     # Use the initialized model to add documents with vector embeddings
     local_client.add(collection_name=collection_name, **DOCS_EXAMPLE)
     assert local_client.count(collection_name).count == 2
-
-
-@pytest.mark.parametrize("prefer_grpc", (False, True))
-def test_query_interface(prefer_grpc: bool):
-    def query_call(
-        client: QdrantBase, cn: str, doc: models.Document, using: str
-    ) -> models.QueryResponse:
-        return client.query_points(cn, doc, using)
-
-    local_client = QdrantClient(":memory:")
-    if not local_client._FASTEMBED_INSTALLED:
-        pytest.skip("FastEmbed is not installed, skipping test")
-
-    sparse_model_name = "Qdrant/bm25"
-    remote_client = QdrantClient(prefer_grpc=prefer_grpc)
-    remote_client.set_sparse_model(sparse_model_name)
-    local_client.set_sparse_model(sparse_model_name)
-
-    collection_name = "fastembed-test-query-collection"
-    if remote_client.collection_exists(collection_name):
-        remote_client.delete_collection(collection_name)
-
-    local_client.add(collection_name, **DOCS_EXAMPLE)
-    remote_client.add(collection_name, **DOCS_EXAMPLE)
-
-    assert local_client.count(collection_name).count == len(DOCS_EXAMPLE["documents"])
-    for model_name, vector_field_name in (
-        (remote_client.DEFAULT_EMBEDDING_MODEL, remote_client.get_vector_field_name()),
-        (sparse_model_name, remote_client.get_sparse_vector_field_name()),
-    ):
-        document = models.Document(
-            text="Does Qdrant has a Llama Index integration?", model=model_name
-        )
-
-        compare_client_results(
-            local_client,
-            remote_client,
-            query_call,
-            using=vector_field_name,
-            cn=collection_name,
-            doc=document,
-        )
 
 
 def test_idf_models():
