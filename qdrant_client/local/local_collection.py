@@ -2062,7 +2062,7 @@ class LocalCollection:
             scored_point = construct(
                 models.ScoredPoint,
                 id=point_id,
-                score=float(0),
+                score=float(1.0),
                 version=0,
                 payload=self._get_payload(idx, with_payload),
                 vector=self._get_vectors(idx, with_vectors),
@@ -2837,7 +2837,7 @@ def record_to_scored_point(record: types.Record) -> types.ScoredPoint:
     return types.ScoredPoint(
         id=record.id,
         version=0,
-        score=0,
+        score=1.0,
         payload=record.payload,
         vector=record.vector,
         order_value=record.order_value,
