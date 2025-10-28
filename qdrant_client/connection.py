@@ -250,7 +250,7 @@ def parse_channel_options(options: Optional[dict[str, Any]] = None) -> Tuple[lis
     if options is None:
         return default_options, ssl_creds_options
 
-    _options: list[tuple[str, Any]] = [(option_name, option_value) for option_name, option_value in options.items()]
+    _options: list[tuple[str, Any]] = []
     for option_name, option_value in options.items():
         if option_name.removeprefix("grpc.") in ssl_creds_options and option_value:
             if not isinstance(option_value, bytes):
