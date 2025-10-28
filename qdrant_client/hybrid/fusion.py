@@ -3,6 +3,9 @@ from typing import Optional
 from qdrant_client.http import models
 
 
+DEFAULT_RANKING_CONSTANT_K = 2
+
+
 def reciprocal_rank_fusion(
     responses: list[list[models.ScoredPoint]],
     limit: int = 10,
@@ -10,9 +13,8 @@ def reciprocal_rank_fusion(
 ) -> list[models.ScoredPoint]:
     def compute_score(pos: int) -> float:
         ranking_constant = (
-            ranking_constant_k if ranking_constant_k is not None else 2
-        )  # mitigates the impact of high
-        # rankings by outlier systems
+            ranking_constant_k if ranking_constant_k is not None else DEFAULT_RANKING_CONSTANT_K
+        )  # mitigates the impact of high rankings by outlier systems
         return 1 / (ranking_constant + pos)
 
     scores: dict[models.ExtendedPointId, float] = {}
