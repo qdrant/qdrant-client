@@ -266,6 +266,9 @@ def parse_ssl_credentials(options: Optional[dict[str, Any]] = None) -> dict[str,
         root_certificates=None, private_key=None, certificate_chain=None
     )
 
+    if options is None:
+        return ssl_options
+
     for ssl_option_name in ssl_options:
         option_value: Any = options.pop(ssl_option_name, None)
         if f"grpc.{ssl_option_name}" in options:
