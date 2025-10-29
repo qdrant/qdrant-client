@@ -1,10 +1,11 @@
 import asyncio
 import collections
-from typing import Any, Awaitable, Callable, Optional, Union, Tuple
+from typing import Any, Awaitable, Callable, Optional, Union
 
 import grpc
 
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
+from qdrant_client.common.client_warnings import show_warning_once
 
 
 # type: ignore # noqa: F401
@@ -236,34 +237,53 @@ def header_adder_async_interceptor(
     return create_generic_async_client_interceptor(intercept_call)
 
 
-def parse_channel_options(options: Optional[dict[str, Any]] = None) -> Tuple[list[tuple[str, Any]], dict[str, Optional[bytes]]]:
+def parse_channel_options(options: Optional[dict[str, Any]] = None) -> list[tuple[str, Any]]:
     default_options: list[tuple[str, Any]] = [
         ("grpc.max_send_message_length", -1),
         ("grpc.max_receive_message_length", -1),
     ]
-    ssl_creds_options: dict[str, Optional[bytes]] = {
-        "root_certificates": None,
-        "private_key": None,
-        "certificate_chain": None,
-    }
 
     if options is None:
-        return default_options, ssl_creds_options
+        return default_options
 
-    _options: list[tuple[str, Any]] = []
-    for option_name, option_value in options.items():
-        if option_name.removeprefix("grpc.") in ssl_creds_options:
-            if option_value is not None and not isinstance(option_value, bytes):
-                raise TypeError(f"{option_name} must be bytes, got {type(option_value).__name__}")
-            ssl_creds_options[option_name.removeprefix("grpc.")] = option_value
-        else:
-            _options.append((option_name, option_value))
-
+    _options = [(option_name, option_value) for option_name, option_value in options.items()]
     for option_name, option_value in default_options:
         if option_name not in options:
             _options.append((option_name, option_value))
 
-    return _options, ssl_creds_options
+    return _options
+
+
+def parse_ssl_credentials(options: Optional[dict[str, Any]] = None) -> dict[str, Optional[bytes]]:
+    """Parse ssl credentials to create `grpc.ssl_channel_credentials` for `grpc.secure_channel`
+
+    WARN: Directly modifies input `options`
+
+    Return:
+        dict[str, Optional[bytes]]: dict(root_certificates=..., private_key=..., certificate_chain=...)
+    """
+    ssl_options: dict[str, Optional[bytes]] = dict(
+        root_certificates=None, private_key=None, certificate_chain=None
+    )
+
+    for ssl_option_name in ssl_options:
+        option_value: Any = options.pop(ssl_option_name, None)
+        if f"grpc.{ssl_option_name}" in options:
+            show_warning_once(
+                f"`{ssl_option_name}` is supposed to be used without `grpc.` prefix",
+                idx="grpc.{ssl_option_name}",
+                stacklevel=10,
+            )
+
+        if option_value is None:
+            continue
+
+        if not isinstance(option_value, bytes):
+            raise TypeError(f"{ssl_option_name} must be a byte string")
+
+        ssl_options[ssl_option_name] = option_value
+
+    return ssl_options
 
 
 def get_channel(
@@ -276,13 +296,17 @@ def get_channel(
     auth_token_provider: Optional[Callable[[], str]] = None,
 ) -> grpc.Channel:
     # Parse gRPC client options
-    _options, _ssl_creds_options = parse_channel_options(options)
+    _copied_options = (
+        options.copy() if options is not None else None
+    )  # we're changing options inplace
+    _ssl_cred_options = parse_ssl_credentials(_copied_options)
+    _options = parse_channel_options(_copied_options)
     metadata_interceptor = header_adder_interceptor(
         new_metadata=metadata or [], auth_token_provider=auth_token_provider
     )
 
     if ssl:
-        ssl_creds = grpc.ssl_channel_credentials(**_ssl_creds_options)
+        ssl_creds = grpc.ssl_channel_credentials(**_ssl_cred_options)
         channel = grpc.secure_channel(f"{host}:{port}", ssl_creds, _options, compression)
         return grpc.intercept_channel(channel, metadata_interceptor)
     else:
@@ -300,7 +324,11 @@ def get_async_channel(
     auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
 ) -> grpc.aio.Channel:
     # Parse gRPC client options
-    _options, _ssl_creds_options = parse_channel_options(options)
+    _copied_options = (
+        options.copy() if options is not None else None
+    )  # we're changing options inplace
+    _ssl_cred_options = parse_ssl_credentials(_copied_options)
+    _options = parse_channel_options(_copied_options)
 
     # Create metadata interceptor
     metadata_interceptor = header_adder_async_interceptor(
@@ -308,7 +336,7 @@ def get_async_channel(
     )
 
     if ssl:
-        ssl_creds = grpc.ssl_channel_credentials(**_ssl_creds_options)
+        ssl_creds = grpc.ssl_channel_credentials(**_ssl_cred_options)
         return grpc.aio.secure_channel(
             f"{host}:{port}",
             ssl_creds,
