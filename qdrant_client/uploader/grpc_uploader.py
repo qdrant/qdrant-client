@@ -17,9 +17,9 @@ from qdrant_client.conversions import common_types as types
 def upload_batch_grpc(
     points_client: grpc.PointsStub,
     collection_name: str,
-    batch: Union[rest.Batch, tuple],
+    batch: Union[rest.Batch, tuple],  # type: ignore[name-defined]
     max_retries: int,
-    shard_key_selector: Optional[rest.ShardKeySelector],
+    shard_key_selector: Optional[rest.ShardKeySelector],  # type: ignore[name-defined]
     update_filter: Optional[grpc.Filter],
     wait: bool = False,
     timeout: Optional[int] = None,
@@ -102,7 +102,7 @@ class GrpcBatchUploader(BaseUploader):
         self._timeout = kwargs.pop("timeout", None)
         self._update_filter = (
             RestToGrpc.convert_filter(update_filter)
-            if isinstance(update_filter, rest.Filter)
+            if isinstance(update_filter, rest.Filter)  # type: ignore[attr-defined]
             else update_filter
         )
 

@@ -12,15 +12,16 @@ from qdrant_client import models as rest
 from qdrant_client.uploader.uploader import BaseUploader
 from qdrant_client.common.client_warnings import show_warning
 from qdrant_client.conversions import common_types as types
+from qdrant_client.conversions.conversion import GrpcToRest
 
 
 def upload_batch(
     openapi_client: SyncApis,
     collection_name: str,
-    batch: Union[tuple, rest.Batch],
+    batch: Union[tuple, rest.Batch],  # type: ignore[name-defined]
     max_retries: int,
-    shard_key_selector: Optional[rest.ShardKeySelector],
-    update_filter: Optional[rest.Filter],
+    shard_key_selector: Optional[rest.ShardKeySelector],  # type: ignore[name-defined]
+    update_filter: Optional[rest.Filter],  # type: ignore[name-defined]
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
@@ -29,7 +30,7 @@ def upload_batch(
     payload_batch = (None for _ in count()) if payload_batch is None else payload_batch
 
     points = [
-        rest.PointStruct(
+        rest.PointStruct(  # type: ignore[attr-defined]
             id=idx,
             vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
             payload=payload,
@@ -42,7 +43,7 @@ def upload_batch(
         try:
             openapi_client.points_api.upsert_points(
                 collection_name=collection_name,
-                point_insert_operations=rest.PointsList(
+                point_insert_operations=rest.PointsList(  # type: ignore[attr-defined]
                     points=points, shard_key=shard_key_selector, update_filter=update_filter
                 ),
                 wait=wait,
