@@ -274,7 +274,7 @@ def parse_ssl_credentials(options: Optional[dict[str, Any]] = None) -> dict[str,
         if f"grpc.{ssl_option_name}" in options:
             show_warning_once(
                 f"`{ssl_option_name}` is supposed to be used without `grpc.` prefix",
-                idx="grpc.{ssl_option_name}",
+                idx=f"grpc.{ssl_option_name}",
                 stacklevel=10,
             )
 
