@@ -3654,7 +3654,10 @@ class RestToGrpc:
             return grpc.Query(formula=cls.convert_formula_query(model))
 
         if isinstance(model, rest.RrfQuery):
-            return grpc.Query(rrf=grpc.Rrf(k=model.rrf.k))
+            rrf = grpc.Rrf()
+            if model.rrf.k is not None:
+                rrf.k = model.rrf.k
+            return grpc.Query(rrf=rrf)
 
         raise ValueError(f"invalid Query model: {model}")  # pragma: no cover
 
