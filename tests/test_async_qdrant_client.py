@@ -579,3 +579,14 @@ async def test_custom_sharding(prefer_grpc):
 
     assert collection_info.config.params.shard_number == 1
     # assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM  # todo: fix in grpc
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+async def test_context_amanger(prefer_grpc):
+    client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
+    async with client:
+        collections = await client.get_collections()
+        assert collections is not None
+        assert not client._client.closed
+    assert client._client.closed

@@ -1987,6 +1987,28 @@ def test_client_close():
     # endregion local
 
 
+def test_client_close_ctxmanager():
+    # region http
+    with QdrantClient(timeout=TIMEOUT) as client_http:
+        if client_http.collection_exists("test"):
+            client_http.delete_collection("test")
+        client_http.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+    assert client_http._client.closed is True
+    # endregion
+
+    # region local
+    with QdrantClient(":memory:") as local_client_in_mem:
+        if local_client_in_mem.collection_exists("test"):
+            local_client_in_mem.delete_collection("test")
+        local_client_in_mem.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+    assert local_client_in_mem._client.closed is True
+    # endregion local
+
+
 def test_timeout_propagation():
     client = QdrantClient()
     vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)

@@ -5,6 +5,9 @@ from tools.async_client_generator.transformers import (
     ClassDefTransformer,
     ConstantTransformer,
     FunctionDefTransformer,
+    ImportFromTransformer,
+    ImportTransformer,
+    CallTransformer,
 )
 
 
@@ -14,12 +17,24 @@ class BaseClientGenerator(BaseGenerator):
         keep_sync: Optional[list[str]] = None,
         class_replace_map: Optional[dict[str, str]] = None,
         constant_replace_map: Optional[dict[str, str]] = None,
+        import_replace_map: Optional[dict[str, str]] = None,
+        rename_map: Optional[dict[str, str]] = None,
     ):
         super().__init__()
 
-        self.transformers.append(FunctionDefTransformer(keep_sync=keep_sync))
+        self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))
+        self.transformers.append(ImportFromTransformer(import_replace_map=import_replace_map))
+        self.transformers.append(
+            FunctionDefTransformer(keep_sync=keep_sync, rename_map=rename_map)
+        )
         self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
         self.transformers.append(ConstantTransformer(constant_replace_map=constant_replace_map))
+        self.transformers.append(CallTransformer(async_methods=self.async_methods))
+
+    @property
+    def async_methods(self) -> list[str]:
+        # as we do not have a class (yet) to extract async methods from, we return a hardcoded list
+        return ["close"]
 
 
 if __name__ == "__main__":
@@ -31,8 +46,13 @@ if __name__ == "__main__":
     # Parse the code into an AST
     base_client_generator = BaseClientGenerator(
         keep_sync=["__init__", "upload_records", "upload_collection", "upload_points", "migrate"],
-        class_replace_map={"QdrantBase": "AsyncQdrantBase"},
+        class_replace_map={
+            "QdrantBase": "AsyncQdrantBase",
+            "AbstractContextManager": "AbstractAsyncContextManager",
+        },
         constant_replace_map={"QdrantBase": "AsyncQdrantBase"},
+        import_replace_map={"AbstractContextManager": "AbstractAsyncContextManager"},
+        rename_map={"__enter__": "__aenter__", "__exit__": "__aexit__"},
     )
     modified_code = base_client_generator.generate(code)
 
