@@ -954,16 +954,22 @@ class QdrantLocal(QdrantBase):
         self,
         collection_name: str,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         _collection = self._get_collection(collection_name)
-
+        updated = False
         if sparse_vectors_config is not None:
             for vector_name, vector_params in sparse_vectors_config.items():
                 _collection.update_sparse_vectors_config(vector_name, vector_params)
+            updated = True
 
-            return True
-        return False
+        if metadata is not None:
+            _collection.config.metadata.update(metadata)
+            updated = True
+
+        self._save()
+        return updated
 
     def _collection_path(self, collection_name: str) -> Optional[str]:
         if self.persistent:
@@ -996,6 +1002,7 @@ class QdrantLocal(QdrantBase):
         ] = None,
         init_from: Optional[types.InitFrom] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
@@ -1019,6 +1026,7 @@ class QdrantLocal(QdrantBase):
             rest_models.CreateCollection(
                 vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
+                metadata=metadata,
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,
