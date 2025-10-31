@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import shutil
+import uuid
 from copy import deepcopy
 from io import TextIOWrapper
 from typing import (
@@ -329,6 +330,8 @@ class QdrantLocal(QdrantBase):
             vector_input: types.VectorInput,
         ) -> types.VectorInput:
             if isinstance(vector_input, get_args(types.PointId)):
+                if isinstance(vector_input, uuid.UUID):
+                    vector_input = str(vector_input)
                 point_id = vector_input  # rename for clarity
                 if point_id not in collection.ids:
                     raise ValueError(f"Point {point_id} is not found in the collection")
@@ -1110,7 +1113,7 @@ class QdrantLocal(QdrantBase):
         collection.upsert(
             [
                 rest_models.PointStruct(
-                    id=point_id,
+                    id=str(point_id) if isinstance(point_id, uuid.UUID) else point_id,
                     vector=(vector.tolist() if isinstance(vector, np.ndarray) else vector) or {},
                     payload=payload or {},
                 )

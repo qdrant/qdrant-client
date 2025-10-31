@@ -1,3 +1,4 @@
+import uuid
 from datetime import date, datetime, timezone
 from typing import Any, Mapping, Optional, Sequence, Union, get_args
 
@@ -3158,6 +3159,8 @@ class RestToGrpc:
     def convert_extended_point_id(cls, model: rest.ExtendedPointId) -> grpc.PointId:
         if isinstance(model, int):
             return grpc.PointId(num=model)
+        if isinstance(model, uuid.UUID):
+            model = str(model)
         if isinstance(model, str):
             return grpc.PointId(uuid=model)
         raise ValueError(f"invalid ExtendedPointId model: {model}")  # pragma: no cover

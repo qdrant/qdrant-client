@@ -9,6 +9,7 @@ else:
     from typing_extensions import TypeAlias
 
 from typing import Union, get_args, Sequence
+from uuid import UUID
 
 from qdrant_client import grpc
 from qdrant_client.http import models as rest
@@ -56,7 +57,7 @@ OptimizersConfigDiff = Union[rest.OptimizersConfigDiff, grpc.OptimizersConfigDif
 CollectionParamsDiff = Union[rest.CollectionParamsDiff, grpc.CollectionParamsDiff]
 WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
 QuantizationConfig = Union[rest.QuantizationConfig, grpc.QuantizationConfig]
-PointId = Union[int, str, grpc.PointId]
+PointId = Union[int, str, UUID, grpc.PointId]
 PayloadSchemaType = Union[
     rest.PayloadSchemaType,
     rest.PayloadSchemaParams,

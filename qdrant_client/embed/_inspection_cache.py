@@ -862,7 +862,13 @@ DEFS = {
         "properties": {
             "has_id": {
                 "description": "ID-based filtering condition",
-                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                "items": {
+                    "anyOf": [
+                        {"type": "integer"},
+                        {"type": "string"},
+                        {"format": "uuid", "type": "string"},
+                    ]
+                },
                 "title": "Has Id",
                 "type": "array",
             }
@@ -1854,7 +1860,13 @@ DEFS = {
         "properties": {
             "points": {
                 "description": "",
-                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                "items": {
+                    "anyOf": [
+                        {"type": "integer"},
+                        {"type": "string"},
+                        {"format": "uuid", "type": "string"},
+                    ]
+                },
                 "title": "Points",
                 "type": "array",
             },
@@ -1887,6 +1899,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -1901,6 +1914,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -2667,7 +2681,13 @@ DEFS = {
             "points": {
                 "anyOf": [
                     {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "items": {
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string"},
+                                {"format": "uuid", "type": "string"},
+                            ]
+                        },
                         "type": "array",
                     },
                     {"type": "null"},
@@ -2706,7 +2726,13 @@ DEFS = {
             "points": {
                 "anyOf": [
                     {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "items": {
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string"},
+                                {"format": "uuid", "type": "string"},
+                            ]
+                        },
                         "type": "array",
                     },
                     {"type": "null"},
@@ -2755,6 +2781,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -2782,6 +2809,7 @@ DEFS = {
                 "anyOf": [
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"items": {"type": "number"}, "type": "array"},
                     {"$ref": "#/$defs/SparseVector"},
                 ],
@@ -2792,6 +2820,7 @@ DEFS = {
                 "anyOf": [
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"items": {"type": "number"}, "type": "array"},
                     {"$ref": "#/$defs/SparseVector"},
                 ],
@@ -2944,6 +2973,7 @@ DEFS = {
                 "anyOf": [
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"items": {"type": "number"}, "type": "array"},
                     {"$ref": "#/$defs/SparseVector"},
                     {"type": "null"},
@@ -3156,7 +3186,13 @@ DEFS = {
             "points": {
                 "anyOf": [
                     {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "items": {
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string"},
+                                {"format": "uuid", "type": "string"},
+                            ]
+                        },
                         "type": "array",
                     },
                     {"type": "null"},
@@ -3200,7 +3236,13 @@ DEFS = {
         "properties": {
             "ids": {
                 "description": "",
-                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                "items": {
+                    "anyOf": [
+                        {"type": "integer"},
+                        {"type": "string"},
+                        {"format": "uuid", "type": "string"},
+                    ]
+                },
                 "title": "Ids",
                 "type": "array",
             },
@@ -3258,7 +3300,11 @@ DEFS = {
         "additionalProperties": False,
         "properties": {
             "id": {
-                "anyOf": [{"type": "integer"}, {"type": "string"}],
+                "anyOf": [
+                    {"type": "integer"},
+                    {"type": "string"},
+                    {"format": "uuid", "type": "string"},
+                ],
                 "description": "",
                 "title": "Id",
             },
@@ -3385,6 +3431,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -3435,6 +3482,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -3506,6 +3554,7 @@ DEFS = {
                                 },
                                 {"type": "integer"},
                                 {"type": "string"},
+                                {"format": "uuid", "type": "string"},
                                 {"$ref": "#/$defs/Document"},
                                 {"$ref": "#/$defs/Image"},
                                 {"$ref": "#/$defs/InferenceObject"},
@@ -3532,6 +3581,7 @@ DEFS = {
                                 },
                                 {"type": "integer"},
                                 {"type": "string"},
+                                {"format": "uuid", "type": "string"},
                                 {"$ref": "#/$defs/Document"},
                                 {"$ref": "#/$defs/Image"},
                                 {"$ref": "#/$defs/InferenceObject"},
@@ -3665,6 +3715,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -3773,6 +3824,7 @@ DEFS = {
                             "anyOf": [
                                 {"type": "integer"},
                                 {"type": "string"},
+                                {"format": "uuid", "type": "string"},
                                 {"items": {"type": "number"}, "type": "array"},
                                 {"$ref": "#/$defs/SparseVector"},
                             ]
@@ -3792,6 +3844,7 @@ DEFS = {
                             "anyOf": [
                                 {"type": "integer"},
                                 {"type": "string"},
+                                {"format": "uuid", "type": "string"},
                                 {"items": {"type": "number"}, "type": "array"},
                                 {"$ref": "#/$defs/SparseVector"},
                             ]
@@ -4188,7 +4241,11 @@ DEFS = {
         "additionalProperties": False,
         "properties": {
             "id": {
-                "anyOf": [{"type": "integer"}, {"type": "string"}],
+                "anyOf": [
+                    {"type": "integer"},
+                    {"type": "string"},
+                    {"format": "uuid", "type": "string"},
+                ],
                 "description": "",
                 "title": "Id",
             },

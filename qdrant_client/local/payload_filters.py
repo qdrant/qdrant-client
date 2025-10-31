@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 from typing import Any, Optional, Union, Dict
+from uuid import UUID
 
 import numpy as np
 
@@ -184,7 +185,8 @@ def check_condition(
         ):
             return True
     elif isinstance(condition, models.HasIdCondition):
-        if point_id in condition.has_id:
+        ids = [str(id_) if isinstance(id_, UUID) else id_ for id_ in condition.has_id]
+        if point_id in ids:
             return True
     elif isinstance(condition, models.HasVectorCondition):
         if condition.has_vector in has_vector and has_vector[condition.has_vector]:
