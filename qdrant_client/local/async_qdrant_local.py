@@ -720,17 +720,25 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return collection.facet(key=key, facet_filter=facet_filter, limit=limit)
 
     async def upsert(
-        self, collection_name: str, points: types.Points, **kwargs: Any
+        self,
+        collection_name: str,
+        points: types.Points,
+        update_filter: Optional[types.Filter] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.upsert(points)
+        collection.upsert(points, update_filter=update_filter)
         return self._default_update_result()
 
     async def update_vectors(
-        self, collection_name: str, points: Sequence[types.PointVectors], **kwargs: Any
+        self,
+        collection_name: str,
+        points: Sequence[types.PointVectors],
+        update_filter: Optional[types.Filter] = None,
+        **kwargs: Any,
     ) -> types.UpdateResult:
         collection = self._get_collection(collection_name)
-        collection.update_vectors(points)
+        collection.update_vectors(points, update_filter=update_filter)
         return self._default_update_result()
 
     async def delete_vectors(
@@ -987,9 +995,13 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         )
 
     def upload_points(
-        self, collection_name: str, points: Iterable[types.PointStruct], **kwargs: Any
+        self,
+        collection_name: str,
+        points: Iterable[types.PointStruct],
+        update_filter: Optional[types.Filter] = None,
+        **kwargs: Any,
     ) -> None:
-        self._upload_points(collection_name, points)
+        self._upload_points(collection_name, points, update_filter=update_filter)
 
     def upload_records(
         self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
@@ -997,7 +1009,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self._upload_points(collection_name, records)
 
     def _upload_points(
-        self, collection_name: str, points: Iterable[Union[types.PointStruct, types.Record]]
+        self,
+        collection_name: str,
+        points: Iterable[Union[types.PointStruct, types.Record]],
+        update_filter: Optional[types.Filter] = None,
     ) -> None:
         collection = self._get_collection(collection_name)
         collection.upsert(
@@ -1006,7 +1021,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                     id=point.id, vector=point.vector or {}, payload=point.payload or {}
                 )
                 for point in points
-            ]
+            ],
+            update_filter=update_filter,
         )
 
     def upload_collection(
@@ -1017,6 +1033,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         ],
         payload: Optional[Iterable[dict[Any, Any]]] = None,
         ids: Optional[Iterable[types.PointId]] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> None:
         def uuid_generator() -> Generator[str, None, None]:
@@ -1045,7 +1062,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 for (point_id, vector, payload) in zip(
                     ids or uuid_generator(), iter(vectors), payload or itertools.cycle([{}])
                 )
-            ]
+            ],
+            update_filter=update_filter,
         )
 
     async def create_payload_index(

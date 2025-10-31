@@ -56,7 +56,7 @@ from qdrant_client.local.multi_distances import (
 )
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
-from qdrant_client.local.payload_filters import calculate_payload_mask
+from qdrant_client.local.payload_filters import calculate_payload_mask, check_filter
 from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
@@ -2435,7 +2435,11 @@ class LocalCollection:
 
             self.multivectors[vector_name] = named_vectors
 
-    def _upsert_point(self, point: models.PointStruct) -> None:
+    def _upsert_point(
+        self,
+        point: models.PointStruct,
+        update_filter: Optional[types.Filter] = None,
+    ) -> None:
         if isinstance(point.id, str):
             # try to parse as UUID
             try:
@@ -2472,6 +2476,16 @@ class LocalCollection:
             point.id = str(point.id)
 
         if point.id in self.ids:
+            idx = self.ids[point.id]
+            if not self.deleted[idx] and update_filter is not None:
+                has_vector = {}
+                for vector_name, deleted in self.deleted_per_vector.items():
+                    if not deleted[idx]:
+                        has_vector[vector_name] = True
+                if not check_filter(
+                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                ):
+                    return None
             self._update_point(point)
         else:
             self._add_point(point)
@@ -2479,10 +2493,14 @@ class LocalCollection:
         if self.storage is not None:
             self.storage.persist(point)
 
-    def upsert(self, points: Union[Sequence[models.PointStruct], models.Batch]) -> None:
+    def upsert(
+        self,
+        points: Union[Sequence[models.PointStruct], models.Batch],
+        update_filter: Optional[types.Filter] = None,
+    ) -> None:
         if isinstance(points, list):
             for point in points:
-                self._upsert_point(point)
+                self._upsert_point(point, update_filter=update_filter)
         elif isinstance(points, models.Batch):
             batch = points
             if isinstance(batch.vectors, list):
@@ -2502,7 +2520,8 @@ class LocalCollection:
                         id=point_id,
                         payload=payload,
                         vector=vector,
-                    )
+                    ),
+                    update_filter=update_filter,
                 )
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
@@ -2549,7 +2568,9 @@ class LocalCollection:
                     vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
                 self.multivectors[vector_name][idx] = vector_np
 
-    def update_vectors(self, points: Sequence[types.PointVectors]) -> None:
+    def update_vectors(
+        self, points: Sequence[types.PointVectors], update_filter: Optional[types.Filter] = None
+    ) -> None:
         for point in points:
             point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
             idx = self.ids[point_id]
@@ -2558,6 +2579,16 @@ class LocalCollection:
                 fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
             else:
                 fixed_vectors = vector_struct
+
+            if not self.deleted[idx] and update_filter is not None:
+                has_vector = {}
+                for vector_name, deleted in self.deleted_per_vector.items():
+                    if not deleted[idx]:
+                        has_vector[vector_name] = True
+                if not check_filter(
+                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                ):
+                    return None
             self._update_named_vectors(idx, fixed_vectors)
             self._persist_by_id(point_id)
 
@@ -2717,10 +2748,11 @@ class LocalCollection:
     ) -> None:
         for update_op in update_operations:
             if isinstance(update_op, models.UpsertOperation):
-                if isinstance(update_op.upsert, models.PointsBatch):
-                    self.upsert(update_op.upsert.batch)
-                elif isinstance(update_op.upsert, models.PointsList):
-                    self.upsert(update_op.upsert.points)
+                upsert_struct = update_op.upsert
+                if isinstance(upsert_struct, models.PointsBatch):
+                    self.upsert(upsert_struct.batch, update_filter=upsert_struct.update_filter)
+                elif isinstance(upsert_struct, models.PointsList):
+                    self.upsert(upsert_struct.points, update_filter=upsert_struct.update_filter)
                 else:
                     raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
             elif isinstance(update_op, models.DeleteOperation):
@@ -2743,7 +2775,10 @@ class LocalCollection:
             elif isinstance(update_op, models.ClearPayloadOperation):
                 self.clear_payload(update_op.clear_payload)
             elif isinstance(update_op, models.UpdateVectorsOperation):
-                self.update_vectors(update_op.update_vectors.points)
+                update_vectors = update_op.update_vectors
+                self.update_vectors(
+                    update_vectors.points, update_filter=update_vectors.update_filter
+                )
             elif isinstance(update_op, models.DeleteVectorsOperation):
                 points_selector = (
                     update_op.delete_vectors.points or update_op.delete_vectors.filter
