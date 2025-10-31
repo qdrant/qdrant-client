@@ -390,6 +390,9 @@ class QdrantLocal(QdrantBase):
             pass
         elif isinstance(query, rest_models.FusionQuery):
             pass
+        elif isinstance(query, rest_models.RrfQuery):
+            pass
+
         return query, mentioned_ids
 
     def _resolve_prefetches_input(
