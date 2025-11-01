@@ -51,6 +51,8 @@ class RemoteGenerator(BaseGenerator):
                 keep_sync=keep_sync,
                 exclude_methods=exclude_methods,
                 async_methods=self.async_methods,
+                rename_methods=rename_methods,
+                class_replace_map=class_replace_map,
             )
         )
         self.transformers.append(
@@ -138,6 +140,7 @@ if __name__ == "__main__":
             "__del__",
             "migrate",
         ],
+        rename_methods={"__enter__": "__aenter__"},
     )
 
     modified_code = generator.generate(code)

@@ -20,6 +20,7 @@ class FastembedGenerator(BaseGenerator):
         keep_sync: Optional[list[str]] = None,
         class_replace_map: Optional[dict[str, str]] = None,
         import_replace_map: Optional[dict[str, str]] = None,
+        rename_methods: Optional[dict[str, str]] = None,
     ):
         super().__init__()
         self._async_methods: Optional[list[str]] = None
@@ -27,7 +28,13 @@ class FastembedGenerator(BaseGenerator):
         self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
         self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))
         self.transformers.append(ImportFromTransformer(import_replace_map=import_replace_map))
-        self.transformers.append(FastembedFunctionDefTransformer(keep_sync=keep_sync))
+        self.transformers.append(
+            FastembedFunctionDefTransformer(
+                keep_sync=keep_sync,
+                class_replace_map=class_replace_map,
+                rename_methods=rename_methods,
+            )
+        )
 
     @property
     def async_methods(self) -> list[str]:
@@ -71,6 +78,7 @@ if __name__ == "__main__":
             "qdrant_client.client_base": "qdrant_client.async_client_base",
             "QdrantBase": "AsyncQdrantBase",
         },
+        rename_methods={"__enter__": "__aenter__"},
     )
     modified_code = generator.generate(code)
 

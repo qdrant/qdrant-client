@@ -11,14 +11,17 @@ class ClientFunctionDefTransformer(FunctionDefTransformer):
         class_replace_map: Optional[dict[str, str]] = None,
         exclude_methods: Optional[list[str]] = None,
         async_methods: Optional[list[str]] = None,
+        rename_methods: Optional[dict[str, str]] = None,
     ):
-        super().__init__(keep_sync)
-        self.class_replace_map = class_replace_map if class_replace_map is not None else {}
+        super().__init__(keep_sync, rename_methods, class_replace_map)
         self.exclude_methods = exclude_methods if exclude_methods is not None else []
         self.async_methods = async_methods if async_methods is not None else []
 
     def _keep_sync(self, name: str) -> bool:
-        return name in self.keep_sync or name not in self.async_methods
+        return name in self.keep_sync or (
+            name not in self.async_methods
+            and self.rename_methods.get(name, name) not in self.async_methods
+        )
 
     def visit_FunctionDef(self, sync_node: ast.FunctionDef) -> Optional[ast.AST]:
         if sync_node.name in self.exclude_methods:

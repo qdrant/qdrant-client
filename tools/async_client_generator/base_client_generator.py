@@ -18,14 +18,18 @@ class BaseClientGenerator(BaseGenerator):
         class_replace_map: Optional[dict[str, str]] = None,
         constant_replace_map: Optional[dict[str, str]] = None,
         import_replace_map: Optional[dict[str, str]] = None,
-        rename_map: Optional[dict[str, str]] = None,
+        rename_methods: Optional[dict[str, str]] = None,
     ):
         super().__init__()
 
         self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))
         self.transformers.append(ImportFromTransformer(import_replace_map=import_replace_map))
         self.transformers.append(
-            FunctionDefTransformer(keep_sync=keep_sync, rename_map=rename_map)
+            FunctionDefTransformer(
+                keep_sync=keep_sync,
+                rename_methods=rename_methods,
+                class_replace_map=class_replace_map,
+            )
         )
         self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
         self.transformers.append(ConstantTransformer(constant_replace_map=constant_replace_map))
@@ -52,7 +56,7 @@ if __name__ == "__main__":
         },
         constant_replace_map={"QdrantBase": "AsyncQdrantBase"},
         import_replace_map={"AbstractContextManager": "AbstractAsyncContextManager"},
-        rename_map={"__enter__": "__aenter__", "__exit__": "__aexit__"},
+        rename_methods={"__enter__": "__aenter__", "__exit__": "__aexit__"},
     )
     modified_code = base_client_generator.generate(code)
 

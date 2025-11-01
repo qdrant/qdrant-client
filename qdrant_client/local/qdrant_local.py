@@ -1258,3 +1258,6 @@ class QdrantLocal(QdrantBase):
         return rest_models.VersionInfo(
             title="qdrant - vector search engine", version=version, commit=None
         )
+
+    def __enter__(self) -> "QdrantLocal":
+        return self

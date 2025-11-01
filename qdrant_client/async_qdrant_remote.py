@@ -3155,3 +3155,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         version_info = await self.rest.service_api.root()
         assert version_info is not None, "Healthcheck returned None"
         return version_info
+
+    async def __aenter__(self) -> "AsyncQdrantRemote":
+        return self
