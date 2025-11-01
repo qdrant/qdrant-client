@@ -10,6 +10,6 @@ class ConstantTransformer(ast.NodeTransformer):
 
     def visit_Constant(self, node: ast.Constant) -> ast.AST:
         for old_value, new_value in self.constant_replace_map.items():
-            if isinstance(node.value, str):
+            if isinstance(node.value, str) and new_value not in node.value:
                 node.value = node.value.replace(old_value, new_value)
         return self.generic_visit(node)

@@ -3028,3 +3028,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         """
         return await self._client.info()
+
+    async def __aenter__(self) -> "AsyncQdrantClient":
+        return self

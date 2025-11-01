@@ -1,10 +1,12 @@
-from typing import Any, Iterable, Mapping, Optional, Sequence, Union
+from contextlib import AbstractContextManager
+from types import TracebackType
+from typing import Any, Iterable, Mapping, Optional, Sequence, Type, Union
 
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models
 
 
-class QdrantBase:
+class QdrantBase(AbstractContextManager):
     def __init__(self, **kwargs: Any):
         pass
 
@@ -507,6 +509,17 @@ class QdrantBase:
 
     def close(self, **kwargs: Any) -> None:
         pass
+
+    def __enter__(self) -> "QdrantBase":
+        return self
+
+    def __exit__(
+        self,
+        exctype: Optional[Type[BaseException]],
+        excinst: Optional[BaseException],
+        exctb: Optional[TracebackType],
+    ) -> None:
+        self.close()
 
     def migrate(
         self,

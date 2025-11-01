@@ -10,13 +10,20 @@ class RemoteFunctionDefTransformer(FunctionDefTransformer):
         keep_sync: Optional[list[str]] = None,
         exclude_methods: Optional[list[str]] = None,
         async_methods: Optional[list[str]] = None,
+        class_replace_map: Optional[dict[str, str]] = None,
+        rename_methods: Optional[dict[str, str]] = None,
     ):
-        super().__init__(keep_sync=keep_sync)
+        super().__init__(
+            keep_sync=keep_sync, class_replace_map=class_replace_map, rename_methods=rename_methods
+        )
         self.exclude_methods = exclude_methods if exclude_methods is not None else []
         self.async_methods = async_methods if async_methods is not None else []
 
     def _keep_sync(self, name: str) -> bool:
-        return name in self.keep_sync or name not in self.async_methods
+        return name in self.keep_sync or (
+            name not in self.async_methods
+            and self.rename_methods.get(name, name) not in self.async_methods
+        )
 
     @staticmethod
     def override_init(sync_node: ast.FunctionDef) -> ast.FunctionDef:

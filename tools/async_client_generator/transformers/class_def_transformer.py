@@ -9,7 +9,8 @@ class ClassDefTransformer(ast.NodeTransformer):
     def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST:
         # update class name
         for old_value, new_value in self.class_replace_map.items():
-            node.name = node.name.replace(old_value, new_value)
+            if new_value not in node.name:
+                node.name = node.name.replace(old_value, new_value)
 
         # update parent classes names
         for base in node.bases:

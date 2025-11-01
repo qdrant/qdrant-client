@@ -1162,3 +1162,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         return rest_models.VersionInfo(
             title="qdrant - vector search engine", version=version, commit=None
         )
+
+    async def __aenter__(self) -> "AsyncQdrantLocal":
+        return self

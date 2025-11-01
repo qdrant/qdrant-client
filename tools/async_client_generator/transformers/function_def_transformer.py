@@ -4,8 +4,15 @@ from typing import Optional
 
 
 class FunctionDefTransformer(ast.NodeTransformer):
-    def __init__(self, keep_sync: Optional[list[str]] = None):
+    def __init__(
+        self,
+        keep_sync: Optional[list[str]] = None,
+        rename_methods: Optional[dict[str, str]] = None,
+        class_replace_map: Optional[dict[str, str]] = None,
+    ):
         self.keep_sync = keep_sync if keep_sync is not None else []
+        self.rename_methods = rename_methods if rename_methods is not None else {}
+        self.class_replace_map = class_replace_map if class_replace_map is not None else {}
 
     def _keep_sync(self, name: str) -> bool:
         return name in self.keep_sync
@@ -14,8 +21,13 @@ class FunctionDefTransformer(ast.NodeTransformer):
         if self._keep_sync(sync_node.name):
             return self.generic_visit(sync_node)
 
+        returns = sync_node.returns
+        if isinstance(returns, ast.Constant) and returns.value in self.class_replace_map:
+            returns.value = self.class_replace_map[returns.value]
+            pass
+
         params: list = [
-            sync_node.name,
+            self.rename_methods.get(sync_node.name, sync_node.name),
             sync_node.args,
             sync_node.body,
             sync_node.decorator_list,

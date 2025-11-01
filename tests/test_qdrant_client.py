@@ -1987,6 +1987,38 @@ def test_client_close():
     # endregion local
 
 
+def test_client_close_ctxmanager():
+    # region http
+    from qdrant_client.http import exceptions as qdrant_exceptions
+
+    with QdrantClient(timeout=TIMEOUT) as client_http:
+        if client_http.collection_exists("test"):
+            client_http.delete_collection("test")
+        client_http.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+    assert client_http._client.closed is True
+
+    with pytest.raises(qdrant_exceptions.UnexpectedResponse):
+        with QdrantClient(timeout=TIMEOUT) as client_http:
+            client_http.get_collection("invalid")
+    assert client_http._client.closed is True
+    # endregion
+
+    # region local
+    with QdrantClient(":memory:") as local_client_in_mem:
+        if local_client_in_mem.collection_exists("test"):
+            local_client_in_mem.delete_collection("test")
+        local_client_in_mem.create_collection(
+            "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
+        )
+    assert local_client_in_mem._client.closed is True
+    # endregion local
+
+    # in order to reduce test time, we refrain from testing as extensively as in test_client_close()
+    # the relevant code unter test is inherited from a common baseclass anyway
+
+
 def test_timeout_propagation():
     client = QdrantClient()
     vectors_config = models.VectorParams(size=2, distance=models.Distance.COSINE)

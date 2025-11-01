@@ -22,6 +22,7 @@ class LocalGenerator(BaseGenerator):
         class_replace_map: Optional[dict] = None,
         import_replace_map: Optional[dict] = None,
         exclude_methods: Optional[list[str]] = None,
+        rename_methods: Optional[dict[str, str]] = None,
     ):
         super().__init__()
         self._async_methods: Optional[list[str]] = None
@@ -39,6 +40,8 @@ class LocalGenerator(BaseGenerator):
                 keep_sync=keep_sync,
                 exclude_methods=exclude_methods,
                 async_methods=self.async_methods,
+                rename_methods=rename_methods,
+                class_replace_map=class_replace_map,
             )
         )
         self.transformers.append(
@@ -82,6 +85,7 @@ if __name__ == "__main__":
         exclude_methods=[
             "migrate",
         ],
+        rename_methods={"__enter__": "__aenter__"},
     )
 
     modified_code = generator.generate(code)

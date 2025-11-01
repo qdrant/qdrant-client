@@ -3171,3 +3171,6 @@ class QdrantClient(QdrantFastembedMixin):
 
         """
         return self._client.info()
+
+    def __enter__(self) -> "QdrantClient":
+        return self

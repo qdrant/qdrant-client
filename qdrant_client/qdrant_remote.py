@@ -3448,3 +3448,6 @@ class QdrantRemote(QdrantBase):
         version_info = self.rest.service_api.root()
         assert version_info is not None, "Healthcheck returned None"
         return version_info
+
+    def __enter__(self) -> "QdrantRemote":
+        return self
