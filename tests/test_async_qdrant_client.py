@@ -583,7 +583,7 @@ async def test_custom_sharding(prefer_grpc):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("prefer_grpc", [False, True])
-async def test_context_amanger(prefer_grpc):
+async def test_context_manager(prefer_grpc):
     client = AsyncQdrantClient(prefer_grpc=prefer_grpc)
     async with client:
         collections = await client.get_collections()
