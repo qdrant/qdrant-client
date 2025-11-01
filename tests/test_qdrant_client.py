@@ -1989,12 +1989,19 @@ def test_client_close():
 
 def test_client_close_ctxmanager():
     # region http
+    from qdrant_client.http import exceptions as qdrant_exceptions
+
     with QdrantClient(timeout=TIMEOUT) as client_http:
         if client_http.collection_exists("test"):
             client_http.delete_collection("test")
         client_http.create_collection(
             "test", vectors_config=VectorParams(size=100, distance=Distance.COSINE)
         )
+    assert client_http._client.closed is True
+
+    with pytest.raises(qdrant_exceptions.UnexpectedResponse):
+        with QdrantClient(timeout=TIMEOUT) as client_http:
+            client_http.get_collection("invalid")
     assert client_http._client.closed is True
     # endregion
 
