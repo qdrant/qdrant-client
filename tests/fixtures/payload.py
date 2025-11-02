@@ -177,6 +177,10 @@ def random_real_word():
     return random.choice(random_words)
 
 
+def random_real_words() -> str:
+    return " ".join([random_real_word() for _ in range(random.randint(1, 3))])
+
+
 def random_city():
     name = random.choice(list(geo_points.keys()))
     return {"name": name, "geo": geo_points[name]}
