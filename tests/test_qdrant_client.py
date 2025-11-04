@@ -1807,52 +1807,6 @@ def test_insert_float():
     assert isinstance(point.payload["value"], float)
 
 
-def test_locks():
-    client = QdrantClient(timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
-
-    client.lock_storage(reason="testing reason")
-
-    try:
-        # Create a single point
-        client.upsert(
-            collection_name=COLLECTION_NAME,
-            points=[
-                PointStruct(
-                    id=123,
-                    payload={"test": "value"},
-                    vector=np.random.rand(DIM).tolist(),
-                )
-            ],
-            wait=True,
-        )
-        assert False, "Should not be able to insert a point when storage is locked"
-    except Exception as e:
-        assert "testing reason" in str(e)
-        pass
-
-    lock_options = client.get_locks()
-    assert lock_options.write is True
-    assert lock_options.error_message == "testing reason"
-
-    client.unlock_storage()
-
-    # should be fine now
-    client.upsert(
-        collection_name=COLLECTION_NAME,
-        points=[
-            PointStruct(id=123, payload={"test": "value"}, vector=np.random.rand(DIM).tolist())
-        ],
-        wait=True,
-    )
-
-
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_empty_vector(prefer_grpc):
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
@@ -2100,7 +2054,7 @@ def test_auth_token_provider():
     client.get_collections()
     assert token == "token_2"
 
-    client.unlock_storage()
+    client.get_collections()
     assert token == "token_3"
 
     token = ""
@@ -2114,7 +2068,7 @@ def test_auth_token_provider():
     client.get_collections()
     assert token == "token_1"
 
-    client.unlock_storage()
+    client.get_collections()
     assert token == "token_2"
 
 

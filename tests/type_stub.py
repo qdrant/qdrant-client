@@ -27,10 +27,8 @@ qdrant_client.get_aliases()
 qdrant_client.get_collection("collection")
 qdrant_client.collection_exists("collection")
 qdrant_client.get_collections()
-qdrant_client.get_locks()
 qdrant_client.list_full_snapshots()
 qdrant_client.list_snapshots("collection")
-qdrant_client.lock_storage("reason")
 qdrant_client.overwrite_payload("collection", {}, [])
 qdrant_client.recommend(
     "collection",
@@ -181,7 +179,6 @@ qdrant_client.search_batch(
     ],
 )
 qdrant_client.set_payload("collection", {}, [], key=None, wait=True)
-qdrant_client.unlock_storage()
 qdrant_client.update_collection(
     "collection",
     rest_models.OptimizersConfigDiff(
