@@ -281,7 +281,7 @@ class GrpcToRest:
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             payload_m=model.payload_m if model.HasField("payload_m") else None,
-            copy_vectors=model.copy_vectors if model.HasField("copy_vectors") else None,
+            inline_storage=model.inline_storage if model.HasField("inline_storage") else None,
         )
 
     @classmethod
@@ -297,7 +297,7 @@ class GrpcToRest:
             ),
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             payload_m=model.payload_m if model.HasField("payload_m") else None,
-            copy_vectors=model.copy_vectors if model.HasField("copy_vectors") else None,
+            inline_storage=model.inline_storage if model.HasField("inline_storage") else None,
         )
 
     @classmethod
@@ -2128,12 +2128,6 @@ class GrpcToRest:
             raise ValueError(f"invalid UpdateOperation model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_init_from(cls, model: str) -> rest.InitFrom:
-        if isinstance(model, str):
-            return rest.InitFrom(collection=model)
-        raise ValueError(f"Invalid InitFrom model: {model}")  # pragma: no cover
-
-    @classmethod
     def convert_recommend_strategy(cls, model: grpc.RecommendStrategy) -> rest.RecommendStrategy:
         if model == grpc.RecommendStrategy.AverageVector:
             return rest.RecommendStrategy.AVERAGE_VECTOR
@@ -2814,7 +2808,7 @@ class RestToGrpc:
             max_indexing_threads=model.max_indexing_threads,
             on_disk=model.on_disk,
             payload_m=model.payload_m,
-            copy_vectors=model.copy_vectors,
+            inline_storage=model.inline_storage,
         )
 
     @classmethod
@@ -2889,7 +2883,7 @@ class RestToGrpc:
             max_indexing_threads=model.max_indexing_threads,
             on_disk=model.on_disk,
             payload_m=model.payload_m,
-            copy_vectors=model.copy_vectors,
+            inline_storage=model.inline_storage,
         )
 
     @classmethod
@@ -4552,13 +4546,6 @@ class RestToGrpc:
             )
         else:
             raise ValueError(f"invalid UpdateOperation model: {model}")  # pragma: no cover
-
-    @classmethod
-    def convert_init_from(cls, model: rest.InitFrom) -> str:
-        if isinstance(model, rest.InitFrom):
-            return model.collection
-        else:
-            raise ValueError(f"invalid InitFrom model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_recommend_strategy(cls, model: rest.RecommendStrategy) -> grpc.RecommendStrategy:

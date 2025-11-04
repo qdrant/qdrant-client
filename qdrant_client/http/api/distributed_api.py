@@ -60,7 +60,7 @@ class _DistributedApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse2002,
             method="GET",
             url="/cluster",
             headers=headers if headers else None,
@@ -79,7 +79,7 @@ class _DistributedApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
@@ -214,7 +214,7 @@ class _DistributedApi:
 class AsyncDistributedApi(_DistributedApi):
     async def cluster_status(
         self,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2002:
         """
         Get information about the current state and composition of the cluster
         """
@@ -223,7 +223,7 @@ class AsyncDistributedApi(_DistributedApi):
     async def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """
@@ -291,7 +291,7 @@ class AsyncDistributedApi(_DistributedApi):
 class SyncDistributedApi(_DistributedApi):
     def cluster_status(
         self,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2002:
         """
         Get information about the current state and composition of the cluster
         """
@@ -300,7 +300,7 @@ class SyncDistributedApi(_DistributedApi):
     def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """

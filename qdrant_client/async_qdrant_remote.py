@@ -2535,7 +2535,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
         quantization_config: Optional[types.QuantizationConfig] = None,
-        init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
@@ -2543,13 +2542,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
-        if init_from is not None:
-            show_warning_once(
-                message="init_from is deprecated",
-                category=DeprecationWarning,
-                stacklevel=5,
-                idx="create-collection-init-from",
-            )
         if self._prefer_grpc:
             if isinstance(vectors_config, (models.VectorParams, dict)):
                 vectors_config = RestToGrpc.convert_vectors_config(vectors_config)
@@ -2561,8 +2553,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 wal_config = RestToGrpc.convert_wal_config_diff(wal_config)
             if isinstance(quantization_config, get_args(models.QuantizationConfig)):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
-            if isinstance(init_from, models.InitFrom):
-                init_from = RestToGrpc.convert_init_from(init_from)
             if isinstance(sparse_vectors_config, dict):
                 sparse_vectors_config = RestToGrpc.convert_sparse_vector_config(
                     sparse_vectors_config
@@ -2584,7 +2574,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 vectors_config=vectors_config,
                 replication_factor=replication_factor,
                 write_consistency_factor=write_consistency_factor,
-                init_from_collection=init_from,
                 quantization_config=quantization_config,
                 sparse_vectors_config=sparse_vectors_config,
                 sharding_method=sharding_method,
@@ -2602,8 +2591,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             wal_config = GrpcToRest.convert_wal_config_diff(wal_config)
         if isinstance(quantization_config, grpc.QuantizationConfig):
             quantization_config = GrpcToRest.convert_quantization_config(quantization_config)
-        if isinstance(init_from, str):
-            init_from = GrpcToRest.convert_init_from(init_from)
         create_collection_request = models.CreateCollection(
             vectors=vectors_config,
             shard_number=shard_number,
@@ -2614,7 +2601,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
-            init_from=init_from,
             sparse_vectors=sparse_vectors_config,
             sharding_method=sharding_method,
             strict_mode_config=strict_mode_config,
@@ -2642,7 +2628,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
         quantization_config: Optional[types.QuantizationConfig] = None,
-        init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
@@ -2662,7 +2647,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
-            init_from=init_from,
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             sharding_method=sharding_method,
@@ -3087,29 +3071,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 ),
             )
         ).result
-
-    async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = (
-            await self.openapi_client.service_api.post_locks(
-                models.LocksOption(error_message=reason, write=True)
-            )
-        ).result
-        assert result is not None, "Lock storage returned None"
-        return result
-
-    async def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = (
-            await self.openapi_client.service_api.post_locks(models.LocksOption(write=False))
-        ).result
-        assert result is not None, "Post locks returned None"
-        return result
-
-    async def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = (
-            await self.openapi_client.service_api.get_locks()
-        ).result
-        assert result is not None, "Get locks returned None"
-        return result
 
     async def create_shard_key(
         self,

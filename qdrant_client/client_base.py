@@ -496,15 +496,6 @@ class QdrantBase:
     ) -> Optional[bool]:
         raise NotImplementedError()
 
-    def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError()
-
-    def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError()
-
-    def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError()
-
     def close(self, **kwargs: Any) -> None:
         pass
 

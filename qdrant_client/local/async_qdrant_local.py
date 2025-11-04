@@ -938,20 +938,12 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         vectors_config: Optional[
             Union[types.VectorParams, Mapping[str, types.VectorParams]]
         ] = None,
-        init_from: Optional[types.InitFrom] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
-        src_collection = None
-        from_collection_name = None
-        if init_from is not None:
-            from_collection_name = (
-                init_from if isinstance(init_from, str) else init_from.collection
-            )
-            src_collection = self._get_collection(from_collection_name)
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
         collection_path = self._collection_path(collection_name)
@@ -967,17 +959,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             force_disable_check_same_thread=self.force_disable_check_same_thread,
         )
         self.collections[collection_name] = collection
-        if src_collection and from_collection_name:
-            batch_size = 100
-            (records, next_offset) = await self.scroll(
-                from_collection_name, limit=2, with_vectors=True
-            )
-            self.upload_records(collection_name, records)
-            while next_offset is not None:
-                (records, next_offset) = await self.scroll(
-                    from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True
-                )
-                self.upload_records(collection_name, records)
         self._save()
         return True
 
@@ -985,14 +966,11 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
-        init_from: Optional[types.InitFrom] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         await self.delete_collection(collection_name)
-        return await self.create_collection(
-            collection_name, vectors_config, init_from, sparse_vectors_config
-        )
+        return await self.create_collection(collection_name, vectors_config, sparse_vectors_config)
 
     def upload_points(
         self,
@@ -1155,19 +1133,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need snapshots."
         )
-
-    async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError(
-            "Locks are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
-        )
-
-    async def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError(
-            "Locks are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
-        )
-
-    async def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        return types.LocksOption(error_message=None, write=False)
 
     async def create_shard_key(
         self,

@@ -65,7 +65,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2007,
+            type_=m.InlineResponse2006,
             method="GET",
             url="/collections/{collection_name}/exists",
             headers=headers if headers else None,
@@ -142,7 +142,7 @@ class _CollectionsApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2005,
+            type_=m.InlineResponse2004,
             method="GET",
             url="/collections/{collection_name}",
             headers=headers if headers else None,
@@ -157,7 +157,7 @@ class _CollectionsApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2004,
+            type_=m.InlineResponse2003,
             method="GET",
             url="/collections",
             headers=headers if headers else None,
@@ -199,7 +199,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def collection_exists(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Returns \"true\" if the given collection name exists, and \"false\" otherwise
         """
@@ -238,7 +238,7 @@ class AsyncCollectionsApi(_CollectionsApi):
     async def get_collection(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2004:
         """
         Get detailed information about specified existing collection
         """
@@ -248,7 +248,7 @@ class AsyncCollectionsApi(_CollectionsApi):
 
     async def get_collections(
         self,
-    ) -> m.InlineResponse2004:
+    ) -> m.InlineResponse2003:
         """
         Get list name of all existing collections
         """
@@ -274,7 +274,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def collection_exists(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2007:
+    ) -> m.InlineResponse2006:
         """
         Returns \"true\" if the given collection name exists, and \"false\" otherwise
         """
@@ -313,7 +313,7 @@ class SyncCollectionsApi(_CollectionsApi):
     def get_collection(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2005:
+    ) -> m.InlineResponse2004:
         """
         Get detailed information about specified existing collection
         """
@@ -323,7 +323,7 @@ class SyncCollectionsApi(_CollectionsApi):
 
     def get_collections(
         self,
-    ) -> m.InlineResponse2004:
+    ) -> m.InlineResponse2003:
         """
         Get list name of all existing collections
         """

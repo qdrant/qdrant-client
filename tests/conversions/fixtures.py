@@ -294,7 +294,7 @@ hnsw_config = grpc.HnswConfigDiff(
     full_scan_threshold=10000,
     max_indexing_threads=0,
     on_disk=False,
-    copy_vectors=True,
+    inline_storage=True,
 )
 
 hnsw_config_2 = grpc.HnswConfigDiff(

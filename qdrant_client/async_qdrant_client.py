@@ -2270,7 +2270,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
         quantization_config: Optional[types.QuantizationConfig] = None,
-        init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
         strict_mode_config: Optional[types.StrictModeConfig] = None,
         metadata: Optional[types.Payload] = None,
@@ -2315,7 +2314,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
             quantization_config: Params for quantization, if None - quantization will be disabled
-            init_from: Use data stored in another collection to initialize this collection
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
@@ -2338,7 +2336,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
-            init_from=init_from,
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             strict_mode_config=strict_mode_config,
@@ -2360,7 +2357,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
         quantization_config: Optional[types.QuantizationConfig] = None,
-        init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
         strict_mode_config: Optional[types.StrictModeConfig] = None,
         metadata: Optional[types.Payload] = None,
@@ -2405,7 +2401,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             optimizers_config: Params for optimizer
             wal_config: Params for Write-Ahead-Log
             quantization_config: Params for quantization, if None - quantization will be disabled
-            init_from: Use data stored in another collection to initialize this collection
             timeout:
                 Wait for operation commit timeout in seconds.
                 If timeout is reached - request will return with service error.
@@ -2433,7 +2428,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
-            init_from=init_from,
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             strict_mode_config=strict_mode_config,
@@ -2977,21 +2971,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             wait=wait,
             **kwargs,
         )
-
-    async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        """Lock storage for writing."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.lock_storage(reason=reason, **kwargs)
-
-    async def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        """Unlock storage for writing."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.unlock_storage(**kwargs)
-
-    async def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        """Get current locks state."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.get_locks(**kwargs)
 
     async def create_shard_key(
         self,

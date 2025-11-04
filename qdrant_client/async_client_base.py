@@ -460,15 +460,6 @@ class AsyncQdrantBase:
     ) -> Optional[bool]:
         raise NotImplementedError()
 
-    async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError()
-
-    async def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError()
-
-    async def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError()
-
     async def close(self, **kwargs: Any) -> None:
         pass
 

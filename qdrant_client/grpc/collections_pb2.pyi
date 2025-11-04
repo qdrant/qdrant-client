@@ -793,7 +793,7 @@ class HnswConfigDiff(google.protobuf.message.Message):
     MAX_INDEXING_THREADS_FIELD_NUMBER: builtins.int
     ON_DISK_FIELD_NUMBER: builtins.int
     PAYLOAD_M_FIELD_NUMBER: builtins.int
-    COPY_VECTORS_FIELD_NUMBER: builtins.int
+    INLINE_STORAGE_FIELD_NUMBER: builtins.int
     m: builtins.int
     """
     Number of edges per node in the index graph. Larger the value - more accurate the search, more space required.
@@ -826,7 +826,7 @@ class HnswConfigDiff(google.protobuf.message.Message):
     """
     Number of additional payload-aware links per node in the index graph. If not set - regular M parameter will be used.
     """
-    copy_vectors: builtins.bool
+    inline_storage: builtins.bool
     """
     Store copies of original and quantized vectors within the HNSW index file. Default: false.
     Enabling this option will trade the search speed for disk usage by reducing amount of
@@ -842,16 +842,16 @@ class HnswConfigDiff(google.protobuf.message.Message):
         max_indexing_threads: builtins.int | None = ...,
         on_disk: builtins.bool | None = ...,
         payload_m: builtins.int | None = ...,
-        copy_vectors: builtins.bool | None = ...,
+        inline_storage: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_copy_vectors", b"_copy_vectors", "_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "copy_vectors", b"copy_vectors", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_copy_vectors", b"_copy_vectors", "_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "copy_vectors", b"copy_vectors", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_copy_vectors", b"_copy_vectors"]) -> typing_extensions.Literal["copy_vectors"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_inline_storage", b"_inline_storage", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "inline_storage", b"inline_storage", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ef_construct", b"_ef_construct", "_full_scan_threshold", b"_full_scan_threshold", "_inline_storage", b"_inline_storage", "_m", b"_m", "_max_indexing_threads", b"_max_indexing_threads", "_on_disk", b"_on_disk", "_payload_m", b"_payload_m", "ef_construct", b"ef_construct", "full_scan_threshold", b"full_scan_threshold", "inline_storage", b"inline_storage", "m", b"m", "max_indexing_threads", b"max_indexing_threads", "on_disk", b"on_disk", "payload_m", b"payload_m"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_ef_construct", b"_ef_construct"]) -> typing_extensions.Literal["ef_construct"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_full_scan_threshold", b"_full_scan_threshold"]) -> typing_extensions.Literal["full_scan_threshold"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_inline_storage", b"_inline_storage"]) -> typing_extensions.Literal["inline_storage"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_m", b"_m"]) -> typing_extensions.Literal["m"] | None: ...
     @typing.overload
@@ -1480,7 +1480,6 @@ class CreateCollection(google.protobuf.message.Message):
     VECTORS_CONFIG_FIELD_NUMBER: builtins.int
     REPLICATION_FACTOR_FIELD_NUMBER: builtins.int
     WRITE_CONSISTENCY_FACTOR_FIELD_NUMBER: builtins.int
-    INIT_FROM_COLLECTION_FIELD_NUMBER: builtins.int
     QUANTIZATION_CONFIG_FIELD_NUMBER: builtins.int
     SHARDING_METHOD_FIELD_NUMBER: builtins.int
     SPARSE_VECTORS_CONFIG_FIELD_NUMBER: builtins.int
@@ -1510,8 +1509,6 @@ class CreateCollection(google.protobuf.message.Message):
     """Number of replicas of each shard that network tries to maintain, default = 1"""
     write_consistency_factor: builtins.int
     """How many replicas should apply the operation for us to consider it successful, default = 1"""
-    init_from_collection: builtins.str
-    """Deprecated: specify name of the other collection to copy data from"""
     @property
     def quantization_config(self) -> global___QuantizationConfig:
         """Quantization configuration of vector"""
@@ -1539,19 +1536,16 @@ class CreateCollection(google.protobuf.message.Message):
         vectors_config: global___VectorsConfig | None = ...,
         replication_factor: builtins.int | None = ...,
         write_consistency_factor: builtins.int | None = ...,
-        init_from_collection: builtins.str | None = ...,
         quantization_config: global___QuantizationConfig | None = ...,
         sharding_method: global___ShardingMethod.ValueType | None = ...,
         sparse_vectors_config: global___SparseVectorConfig | None = ...,
         strict_mode_config: global___StrictModeConfig | None = ...,
         metadata: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_init_from_collection", b"_init_from_collection", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "hnsw_config", b"hnsw_config", "init_from_collection", b"init_from_collection", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_init_from_collection", b"_init_from_collection", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "init_from_collection", b"init_from_collection", "metadata", b"metadata", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "hnsw_config", b"hnsw_config", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_hnsw_config", b"_hnsw_config", "_on_disk_payload", b"_on_disk_payload", "_optimizers_config", b"_optimizers_config", "_quantization_config", b"_quantization_config", "_replication_factor", b"_replication_factor", "_shard_number", b"_shard_number", "_sharding_method", b"_sharding_method", "_sparse_vectors_config", b"_sparse_vectors_config", "_strict_mode_config", b"_strict_mode_config", "_timeout", b"_timeout", "_vectors_config", b"_vectors_config", "_wal_config", b"_wal_config", "_write_consistency_factor", b"_write_consistency_factor", "collection_name", b"collection_name", "hnsw_config", b"hnsw_config", "metadata", b"metadata", "on_disk_payload", b"on_disk_payload", "optimizers_config", b"optimizers_config", "quantization_config", b"quantization_config", "replication_factor", b"replication_factor", "shard_number", b"shard_number", "sharding_method", b"sharding_method", "sparse_vectors_config", b"sparse_vectors_config", "strict_mode_config", b"strict_mode_config", "timeout", b"timeout", "vectors_config", b"vectors_config", "wal_config", b"wal_config", "write_consistency_factor", b"write_consistency_factor"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_hnsw_config", b"_hnsw_config"]) -> typing_extensions.Literal["hnsw_config"] | None: ...
-    @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_init_from_collection", b"_init_from_collection"]) -> typing_extensions.Literal["init_from_collection"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_on_disk_payload", b"_on_disk_payload"]) -> typing_extensions.Literal["on_disk_payload"] | None: ...
     @typing.overload
@@ -2007,6 +2001,7 @@ class TextIndexParams(google.protobuf.message.Message):
     STOPWORDS_FIELD_NUMBER: builtins.int
     PHRASE_MATCHING_FIELD_NUMBER: builtins.int
     STEMMER_FIELD_NUMBER: builtins.int
+    ASCII_FOLDING_FIELD_NUMBER: builtins.int
     tokenizer: global___TokenizerType.ValueType
     """Tokenizer type"""
     lowercase: builtins.bool
@@ -2025,6 +2020,8 @@ class TextIndexParams(google.protobuf.message.Message):
     @property
     def stemmer(self) -> global___StemmingAlgorithm:
         """Set an algorithm for stemming."""
+    ascii_folding: builtins.bool
+    """If true, normalize tokens by folding accented characters to ASCII (e.g., "ação" -> "acao"). Default: false."""
     def __init__(
         self,
         *,
@@ -2036,9 +2033,12 @@ class TextIndexParams(google.protobuf.message.Message):
         stopwords: global___StopwordsSet | None = ...,
         phrase_matching: builtins.bool | None = ...,
         stemmer: global___StemmingAlgorithm | None = ...,
+        ascii_folding: builtins.bool | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ascii_folding", b"_ascii_folding", "_lowercase", b"_lowercase", "_max_token_len", b"_max_token_len", "_min_token_len", b"_min_token_len", "_on_disk", b"_on_disk", "_phrase_matching", b"_phrase_matching", "_stemmer", b"_stemmer", "_stopwords", b"_stopwords", "ascii_folding", b"ascii_folding", "lowercase", b"lowercase", "max_token_len", b"max_token_len", "min_token_len", b"min_token_len", "on_disk", b"on_disk", "phrase_matching", b"phrase_matching", "stemmer", b"stemmer", "stopwords", b"stopwords", "tokenizer", b"tokenizer"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_ascii_folding", b"_ascii_folding"]) -> typing_extensions.Literal["ascii_folding"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_lowercase", b"_lowercase"]) -> typing_extensions.Literal["lowercase"] | None: ...
     @typing.overload
