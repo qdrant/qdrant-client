@@ -612,7 +612,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         query_vector = embeddings[0].tolist()
         if self.sparse_embedding_model_name is None:
             return self._scored_points_to_query_responses(
-                await self.search(
+                self.search(
                     collection_name=collection_name,
                     query_vector=models.NamedVector(
                         name=self.get_vector_field_name(), vector=query_vector
@@ -646,7 +646,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             with_payload=True,
             **kwargs,
         )
-        (dense_request_response, sparse_request_response) = await self.search_batch(
+        (dense_request_response, sparse_request_response) = self.search_batch(
             collection_name=collection_name, requests=[dense_request, sparse_request]
         )
         return self._scored_points_to_query_responses(
@@ -698,7 +698,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
             requests.append(request)
         if self.sparse_embedding_model_name is None:
-            responses = await self.search_batch(collection_name=collection_name, requests=requests)
+            responses = self.search_batch(collection_name=collection_name, requests=requests)
             return [self._scored_points_to_query_responses(response) for response in responses]
         sparse_embedding_model_inst = self._get_or_init_sparse_model(
             model_name=self.sparse_embedding_model_name, deprecated=True
@@ -720,7 +720,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 **kwargs,
             )
             requests.append(request)
-        responses = await self.search_batch(collection_name=collection_name, requests=requests)
+        responses = self.search_batch(collection_name=collection_name, requests=requests)
         dense_responses = responses[: len(query_texts)]
         sparse_responses = responses[len(query_texts) :]
         responses = [

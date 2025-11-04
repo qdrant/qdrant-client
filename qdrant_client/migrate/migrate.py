@@ -170,9 +170,6 @@ def _migrate_collection(
     """
     records, next_offset = source_client.scroll(collection_name, limit=2, with_vectors=True)
     upload_with_retry(client=dest_client, collection_name=collection_name, points=records)  # type: ignore
-    # upload_records has been deprecated due to the usage of models.Record; models.Record has been deprecated as a
-    # structure for uploading due to a `shard_key` field, and now is used only as a result structure.
-    # since shard_keys are not supported in migration, we can safely type ignore here and use Records for uploading
     while next_offset is not None:
         records, next_offset = source_client.scroll(
             collection_name, offset=next_offset, limit=batch_size, with_vectors=True
