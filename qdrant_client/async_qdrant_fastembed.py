@@ -16,7 +16,7 @@ from copy import deepcopy
 import numpy as np
 from pydantic import BaseModel
 from qdrant_client import grpc
-from qdrant_client.common.client_warnings import show_warning
+from qdrant_client.common.client_warnings import show_warning, show_warning_once
 from qdrant_client.async_client_base import AsyncQdrantBase
 from qdrant_client.embed.embedder import Embedder
 from qdrant_client.embed.model_embedder import ModelEmbedder
@@ -534,6 +534,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             List of IDs of added documents. If no ids provided, UUIDs will be randomly generated on client side.
 
         """
+        show_warning_once(
+            "`add` method has been deprecated and will be removed in 1.16. Instead, inference can be done internally within regular methods like `upsert` by wrapping data into `models.Document` or `models.Image`."
+        )
         encoded_docs = self._embed_documents(
             documents=documents,
             embedding_model_name=self.embedding_model_name,
@@ -605,6 +608,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             list[types.ScoredPoint]: List of scored points.
 
         """
+        show_warning_once(
+            "`query` method has been deprecated and will be removed in 1.16. Instead, inference can be done internally within regular methods like `query_points` by wrapping data into `models.Document` or `models.Image`."
+        )
         embedding_model_inst = self._get_or_init_model(
             model_name=self.embedding_model_name, deprecated=True
         )
@@ -681,6 +687,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             list[list[QueryResponse]]: List of lists of responses for each query text.
 
         """
+        show_warning_once(
+            "`query_batch` method has been deprecated and will be removed in 1.16. Instead, inference can be done internally within regular methods like `query_batch_points` by wrapping data into `models.Document` or `models.Image`."
+        )
         embedding_model_inst = self._get_or_init_model(
             model_name=self.embedding_model_name, deprecated=True
         )
