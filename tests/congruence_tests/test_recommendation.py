@@ -28,44 +28,50 @@ class TestSimpleRecommendation:
 
     @classmethod
     def simple_recommend_image(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[10],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[10], negative=[])
+            ),
             with_payload=True,
             limit=10,
             using="image",
-        )
+        ).points
 
     @classmethod
     def many_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[10, 19],
+            query=models.RecommendQuery(recommend=models.RecommendInput(positive=[10, 19])),
             with_payload=True,
             limit=10,
             using="image",
-        )
+        ).points
 
     @classmethod
     def simple_recommend_negative(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[10],
-            negative=[15, 7],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[10], negative=[15, 7])
+            ),
             with_payload=True,
             limit=10,
             using="image",
-        )
+        ).points
 
     @classmethod
     def recommend_from_another_collection(
         cls, client: QdrantBase, positive_point_id: Optional[int] = None
     ) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[10] if positive_point_id is None else [positive_point_id],
-            negative=[15, 7] if positive_point_id is None else [],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10] if positive_point_id is None else [positive_point_id],
+                    negative=[15, 7] if positive_point_id is None else [],
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
@@ -73,194 +79,224 @@ class TestSimpleRecommendation:
                 collection=secondary_collection_name,
                 vector="image",
             ),
-        )
+        ).points
 
     @classmethod
     def filter_recommend_text(
         cls, client: QdrantBase, query_filter: models.Filter
     ) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[10],
+            query=models.RecommendQuery(recommend=models.RecommendInput(positive=[10])),
             query_filter=query_filter,
             with_payload=True,
             limit=10,
             using="text",
-        )
+        ).points
 
     @classmethod
     def best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[
-                10,
-                20,
-            ],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 20],
+                    negative=[],
+                    strategy=models.RecommendStrategy.BEST_SCORE,
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
-            strategy=models.RecommendStrategy.BEST_SCORE,
-        )
+        ).points
 
     @classmethod
     def best_score_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[
-                10,
-                20,
-            ],
-            negative=[11, 21],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 20],
+                    negative=[11, 21],
+                    strategy=models.RecommendStrategy.BEST_SCORE,
+                )
+            ),
             with_payload=True,
             limit=10,
             using="code",
-            strategy=models.RecommendStrategy.BEST_SCORE,
-        )
+        ).points
 
     @classmethod
     def only_negatives_best_score_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=None,
-            negative=[10, 12],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=None, negative=[10, 12], strategy=models.RecommendStrategy.BEST_SCORE
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
-            strategy=models.RecommendStrategy.BEST_SCORE,
-        )
+        ).points
 
     @classmethod
     def only_negatives_best_score_recommend_euclid(
         cls, client: QdrantBase
     ) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=None,
-            negative=[10, 12],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=None,
+                    negative=[10, 12],
+                    strategy="best_score",  # type: ignore  # check it works with a literal
+                )
+            ),
             with_payload=True,
             limit=10,
             using="code",
-            strategy="best_score",  # type: ignore  # check it works with a literal
-        )
+        ).points
 
     @classmethod
     def sum_scores_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[
-                10,
-                20,
-            ],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 20], negative=[], strategy=models.RecommendStrategy.SUM_SCORES
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
-            strategy=models.RecommendStrategy.SUM_SCORES,
-        )
+        ).points
 
     @classmethod
     def sum_scores_recommend_euclid(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[
-                10,
-                20,
-            ],
-            negative=[11, 21],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 20],
+                    negative=[11, 21],
+                    strategy=models.RecommendStrategy.SUM_SCORES,
+                )
+            ),
             with_payload=True,
             limit=10,
             using="code",
-            strategy=models.RecommendStrategy.SUM_SCORES,
-        )
+        ).points
 
     @classmethod
     def only_negatives_sum_scores_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=None,
-            negative=[10, 12],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=None, negative=[10, 12], strategy=models.RecommendStrategy.SUM_SCORES
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
-            strategy=models.RecommendStrategy.SUM_SCORES,
-        )
+        ).points
 
     @classmethod
     def only_negatives_sum_scores_recommend_euclid(
         cls, client: QdrantBase
     ) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=None,
-            negative=[10, 12],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=None, negative=[10, 12], strategy="sum_scores"
+                )  # type: ignore  # check it works with a literal
+            ),
             with_payload=True,
             limit=10,
             using="code",
-            strategy="sum_scores",  # type: ignore  # check it works with a literal
-        )
+        ).points
 
     @classmethod
     def avg_vector_recommend(cls, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[10, 13],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 13],
+                    negative=[],
+                    strategy=models.RecommendStrategy.AVERAGE_VECTOR,
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
-            strategy=models.RecommendStrategy.AVERAGE_VECTOR,
-        )
+        ).points
 
     def recommend_from_raw_vectors(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[self.query_image],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[self.query_image], negative=[])
+            ),
             with_payload=True,
             limit=10,
             using="image",
-        )
+        ).points
 
     def recommend_from_raw_vectors_and_ids(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.recommend(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[self.query_image, 10],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[self.query_image, 10], negative=[]),
+            ),
             with_payload=True,
             limit=10,
             using="image",
-        )
+        ).points
 
     @staticmethod
-    def recommend_batch(client: QdrantBase) -> list[list[models.ScoredPoint]]:
-        return client.recommend_batch(
+    def recommend_batch(client: QdrantBase) -> list[models.QueryResponse]:
+        return client.query_batch_points(
             collection_name=COLLECTION_NAME,
             requests=[
-                models.RecommendRequest(
-                    positive=[3],
-                    negative=[],
+                models.QueryRequest(
+                    query=models.RecommendQuery(
+                        recommend=models.RecommendInput(
+                            positive=[3],
+                            negative=None,
+                            strategy=models.RecommendStrategy.AVERAGE_VECTOR,
+                        )
+                    ),
                     limit=1,
                     using="image",
-                    strategy=models.RecommendStrategy.AVERAGE_VECTOR,
                 ),
-                models.RecommendRequest(
-                    positive=[10],
-                    negative=[],
+                models.QueryRequest(
+                    query=models.RecommendQuery(
+                        recommend=models.RecommendInput(
+                            positive=[10],
+                            negative=[],
+                            strategy=models.RecommendStrategy.BEST_SCORE,
+                        )
+                    ),
                     limit=2,
                     using="image",
-                    strategy=models.RecommendStrategy.BEST_SCORE,
                     lookup_from=models.LookupLocation(
                         collection=secondary_collection_name,
                         vector="image",
                     ),
                 ),
-                models.RecommendRequest(
-                    positive=[4],
-                    negative=[],
+                models.QueryRequest(
+                    query=models.RecommendQuery(
+                        recommend=models.RecommendInput(
+                            positive=[4],
+                            negative=[],
+                            strategy=models.RecommendStrategy.SUM_SCORES,
+                        )
+                    ),
                     limit=2,
                     using="image",
-                    strategy=models.RecommendStrategy.SUM_SCORES,
                 ),
             ],
         )
@@ -359,33 +395,37 @@ def test_query_with_nan():
     init_client(remote_client, fixture_points)
 
     with pytest.raises(AssertionError):
-        local_client.recommend(
+        local_client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[vector],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[vector], negative=[])
+            ),
             using=using,
         )
 
     with pytest.raises(UnexpectedResponse):
-        remote_client.recommend(
+        remote_client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[vector],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[vector], negative=[])
+            ),
             using=using,
         )
 
     with pytest.raises(AssertionError):
-        local_client.recommend(
+        local_client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[1],
-            negative=[vector],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[1], negative=[vector]),
+            ),
             using=using,
         )
 
     with pytest.raises(UnexpectedResponse):
-        remote_client.recommend(
+        remote_client.query_points(
             collection_name=COLLECTION_NAME,
-            positive=[1],
-            negative=[vector],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[1], negative=[vector]),
+            ),
             using=using,
         )
