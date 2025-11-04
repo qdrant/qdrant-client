@@ -652,16 +652,15 @@ class QdrantFastembedMixin(QdrantBase):
 
         if self.sparse_embedding_model_name is None:
             return self._scored_points_to_query_responses(
-                self.search(
+                self.query_points(
                     collection_name=collection_name,
-                    query_vector=models.NamedVector(
-                        name=self.get_vector_field_name(), vector=query_vector
-                    ),
+                    query=query_vector,
+                    using=self.get_vector_field_name(),
                     query_filter=query_filter,
                     limit=limit,
                     with_payload=True,
                     **kwargs,
-                )
+                ).points
             )
 
         sparse_embedding_model_inst = self._get_or_init_sparse_model(
@@ -683,22 +682,22 @@ class QdrantFastembedMixin(QdrantBase):
             with_payload=True,
             **kwargs,
         )
-        sparse_request = models.SearchRequest(
-            vector=models.NamedSparseVector(
-                name=self.get_sparse_vector_field_name(),
-                vector=sparse_query_vector,
-            ),
+        sparse_request = models.QueryRequest(
+            query=sparse_query_vector,
+            using=self.get_sparse_vector_field_name(),
             filter=query_filter,
             limit=limit,
             with_payload=True,
             **kwargs,
         )
 
-        dense_request_response, sparse_request_response = self.search_batch(
+        dense_request_response, sparse_request_response = self.query_batch_points(
             collection_name=collection_name, requests=[dense_request, sparse_request]
         )
         return self._scored_points_to_query_responses(
-            reciprocal_rank_fusion([dense_request_response, sparse_request_response], limit=limit)
+            reciprocal_rank_fusion(
+                [dense_request_response.points, sparse_request_response.points], limit=limit
+            )
         )
 
     def query_batch(
@@ -735,10 +734,9 @@ class QdrantFastembedMixin(QdrantBase):
         query_vectors = list(embedding_model_inst.query_embed(query=query_texts))
         requests = []
         for vector in query_vectors:
-            request = models.SearchRequest(
-                vector=models.NamedVector(
-                    name=self.get_vector_field_name(), vector=vector.tolist()
-                ),
+            request = models.QueryRequest(
+                query=vector.tolist(),
+                using=self.get_vector_field_name(),
                 filter=query_filter,
                 limit=limit,
                 with_payload=True,
@@ -748,11 +746,13 @@ class QdrantFastembedMixin(QdrantBase):
             requests.append(request)
 
         if self.sparse_embedding_model_name is None:
-            responses = self.search_batch(
+            responses = self.query_batch_points(
                 collection_name=collection_name,
                 requests=requests,
             )
-            return [self._scored_points_to_query_responses(response) for response in responses]
+            return [
+                self._scored_points_to_query_responses(response.points) for response in responses
+            ]
 
         sparse_embedding_model_inst = self._get_or_init_sparse_model(
             model_name=self.sparse_embedding_model_name, deprecated=True
@@ -765,11 +765,9 @@ class QdrantFastembedMixin(QdrantBase):
             for sparse_vector in sparse_embedding_model_inst.embed(documents=query_texts)
         ]
         for sparse_vector in sparse_query_vectors:
-            request = models.SearchRequest(
-                vector=models.NamedSparseVector(
-                    name=self.get_sparse_vector_field_name(),
-                    vector=sparse_vector,
-                ),
+            request = models.QueryRequest(
+                using=self.get_sparse_vector_field_name(),
+                query=sparse_vector,
                 filter=query_filter,
                 limit=limit,
                 with_payload=True,
@@ -778,7 +776,7 @@ class QdrantFastembedMixin(QdrantBase):
 
             requests.append(request)
 
-        responses = self.search_batch(
+        responses = self.query_batch_points(
             collection_name=collection_name,
             requests=requests,
         )
@@ -786,7 +784,7 @@ class QdrantFastembedMixin(QdrantBase):
         dense_responses = responses[: len(query_texts)]
         sparse_responses = responses[len(query_texts) :]
         responses = [
-            reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
+            reciprocal_rank_fusion([dense_response.points, sparse_response.points], limit=limit)
             for dense_response, sparse_response in zip(dense_responses, sparse_responses)
         ]
 

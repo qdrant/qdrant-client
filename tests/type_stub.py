@@ -1,5 +1,3 @@
-import numpy as np
-
 from qdrant_client import QdrantClient
 from qdrant_client import models as rest_models
 from qdrant_client.conversions import common_types as types
