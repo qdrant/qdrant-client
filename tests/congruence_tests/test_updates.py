@@ -316,15 +316,15 @@ def test_upload_wrong_vectors():
 
         # does not raise without wait=True
         with pytest.raises(qdrant_client.http.exceptions.UnexpectedResponse):
-            remote_client.upload_records(
+            remote_client.upload_points(
                 wrong_vectors_collection,
-                records=[models.Record(id=3, vector=dense_vector)],
+                points=[models.PointStruct(id=3, vector=dense_vector)],
                 wait=True,
             )
 
         with pytest.raises(ValueError):
-            local_client.upload_records(
-                wrong_vectors_collection, records=[models.Record(id=3, vector=dense_vector)]
+            local_client.upload_points(
+                wrong_vectors_collection, points=[models.PointStruct(id=3, vector=dense_vector)]
             )
 
     unnamed_vector = [0.1, 0.3]

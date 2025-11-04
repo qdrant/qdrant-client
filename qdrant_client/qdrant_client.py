@@ -1908,7 +1908,7 @@ class QdrantClient(QdrantFastembedMixin):
         """Upload vectors and payload to the collection.
         This method will perform automatic batching of the data.
         If you need to perform a single update, use `upsert` method.
-        Note: use `upload_records` method if you want to upload multiple vectors with single payload.
+        Note: use `upload_points` method if you want to upload multiple vectors with single payload.
 
         Args:
             collection_name:  Name of the collection to upload to
