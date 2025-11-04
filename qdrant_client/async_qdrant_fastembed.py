@@ -599,7 +599,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
             limit: How many results return
-            **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
+            **kwargs: Additional search parameters. See `qdrant_client.models.QueryRequest` for details.
 
         Returns:
             list[types.ScoredPoint]: List of scored points.
@@ -631,8 +631,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         sparse_query_vector = models.SparseVector(
             indices=sparse_vector.indices.tolist(), values=sparse_vector.values.tolist()
         )
-        dense_request = models.SearchRequest(
-            vector=models.NamedVector(name=self.get_vector_field_name(), vector=query_vector),
+        dense_request = models.QueryRequest(
+            query=query_vector,
+            using=self.get_vector_field_name(),
             filter=query_filter,
             limit=limit,
             with_payload=True,
@@ -677,7 +678,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 - If `None` - search among all vectors
                 This filter will be applied to all search requests.
             limit: How many results return
-            **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
+            **kwargs: Additional search parameters. See `qdrant_client.models.QueryRequest` for details.
 
         Returns:
             list[list[QueryResponse]]: List of lists of responses for each query text.
