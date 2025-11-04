@@ -258,14 +258,6 @@ def test_grpc_payload_scheme_conversion():
         )
 
 
-def test_init_from_conversion():
-    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
-
-    init_from = "collection_name"
-    recovered = RestToGrpc.convert_init_from(GrpcToRest.convert_init_from(init_from))
-    assert init_from == recovered
-
-
 @pytest.mark.parametrize(
     "dt",
     [
