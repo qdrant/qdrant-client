@@ -538,6 +538,16 @@ class GrpcToRest:
                 else None
             ),
             indexed_only=model.indexed_only if model.HasField("indexed_only") else None,
+            acorn=cls.convert_acorn_search_params(model.acorn)
+            if model.HasField("acorn")
+            else None,
+        )
+
+    @classmethod
+    def convert_acorn_search_params(cls, model: grpc.AcornSearchParams) -> rest.AcornSearchParams:
+        return rest.AcornSearchParams(
+            enable=model.enable if model.HasField("enable") else None,
+            max_selectivity=model.max_selectivity if model.HasField("max_selectivity") else None,
         )
 
     @classmethod
@@ -2742,6 +2752,16 @@ class RestToGrpc:
                 else None
             ),
             indexed_only=model.indexed_only,
+            acorn=(
+                cls.convert_acorn_search_params(model.acorn) if model.acorn is not None else None
+            ),
+        )
+
+    @classmethod
+    def convert_acorn_search_params(cls, model: rest.AcornSearchParams) -> grpc.AcornSearchParams:
+        return grpc.AcornSearchParams(
+            enable=model.enable if model.enable is not None else None,
+            max_selectivity=model.max_selectivity if model.max_selectivity is not None else None,
         )
 
     @classmethod

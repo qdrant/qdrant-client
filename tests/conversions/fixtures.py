@@ -496,13 +496,11 @@ search_params = grpc.SearchParams(
 )
 
 search_params_2 = grpc.SearchParams(
-    exact=True,
-    indexed_only=True,
+    exact=True, indexed_only=True, acorn=grpc.AcornSearchParams(enable=True, max_selectivity=2.0)
 )
 
 search_params_3 = grpc.SearchParams(
-    exact=True,
-    quantization=quantization_search_params,
+    exact=True, quantization=quantization_search_params, acorn=grpc.AcornSearchParams(enable=True)
 )
 
 rename_alias = grpc.RenameAlias(old_alias_name="col2", new_alias_name="col3")
