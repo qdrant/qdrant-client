@@ -242,75 +242,6 @@ def test_client_init():
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 @pytest.mark.parametrize("parallel", [1, 2])
-def test_records_upload(prefer_grpc, parallel):
-    import warnings
-
-    warnings.simplefilter("ignore", category=DeprecationWarning)
-
-    records = (
-        Record(
-            id=idx,
-            vector=np.random.rand(DIM).tolist(),
-            payload=one_random_payload_please(idx),
-        )
-        for idx in range(NUM_VECTORS)
-    )
-
-    client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
-    if client.collection_exists(COLLECTION_NAME):
-        client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
-
-    client.upload_records(collection_name=COLLECTION_NAME, records=records, parallel=parallel)
-
-    # By default, Qdrant indexes data updates asynchronously, so client don't need to wait before sending next batch
-    # Let's give it a second to actually add all points to a collection.
-    # If you need to change this behaviour - simply enable synchronous processing by enabling `wait=true`
-    sleep(1)
-
-    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
-
-    assert collection_info.points_count == NUM_VECTORS
-
-    result_count = client.count(
-        COLLECTION_NAME,
-        count_filter=Filter(
-            must=[
-                FieldCondition(
-                    key="rand_number",  # Condition based on values of `rand_number` field.
-                    range=Range(gte=0.5),  # Select only those results where `rand_number` >= 0.5
-                )
-            ]
-        ),
-    )
-
-    assert result_count.count < 900
-    assert result_count.count > 100
-
-    records = (Record(id=idx, vector=np.random.rand(DIM).tolist()) for idx in range(NUM_VECTORS))
-
-    client.delete_collection(collection_name=COLLECTION_NAME, timeout=TIMEOUT)
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=DIM, distance=Distance.DOT),
-        timeout=TIMEOUT,
-    )
-
-    client.upload_records(
-        collection_name=COLLECTION_NAME, records=records, parallel=parallel, wait=True
-    )
-
-    collection_info = client.get_collection(collection_name=COLLECTION_NAME)
-
-    assert collection_info.points_count == NUM_VECTORS
-
-
-@pytest.mark.parametrize("prefer_grpc", [False, True])
-@pytest.mark.parametrize("parallel", [1, 2])
 def test_point_upload(prefer_grpc, parallel):
     points = (
         PointStruct(
@@ -462,23 +393,25 @@ def test_multiple_vectors(prefer_grpc):
 
     query_vector = list(np.random.rand(DIM))
 
-    hits = client.search(
+    hits = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=("image", query_vector),
+        query=query_vector,
+        using="image",
         with_vectors=True,
         limit=5,  # Return 5 closest points
-    )
+    ).points
 
     assert len(hits) == 5
     assert "image" in hits[0].vector
     assert "text" in hits[0].vector
 
-    hits = client.search(
+    hits = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=("text", query_vector * 2),
+        using="text",
+        query=query_vector * 2,
         with_vectors=True,
         limit=5,  # Return 5 closest points
-    )
+    ).points
 
     assert len(hits) == 5
     assert "image" in hits[0].vector
@@ -489,8 +422,6 @@ def test_multiple_vectors(prefer_grpc):
 @pytest.mark.parametrize("numpy_upload", [False, True])
 @pytest.mark.parametrize("local_mode", [False, True])
 def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
-    major, minor, patch, dev = read_version()
-
     vectors_path = create_random_vectors()
 
     if numpy_upload:
@@ -514,9 +445,8 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         timeout=TIMEOUT,
     )
 
-    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
-        assert client.collection_exists(collection_name=COLLECTION_NAME)
-        assert not client.collection_exists(collection_name="non_existing_collection")
+    assert client.collection_exists(collection_name=COLLECTION_NAME)
+    assert not client.collection_exists(collection_name="non_existing_collection")
 
     # Call Qdrant API to retrieve list of existing collections
     collections = client.get_collections().collections
@@ -602,13 +532,13 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     query_vector_3: list[float] = list(np.random.rand(DIM))
 
     #  and use it as a query
-    hits = client.search(
+    hits = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=None,  # Don't use any filters for now, search across all indexed points
         with_payload=True,  # Also return a stored payload for found points
         limit=5,  # Return 5 closest points
-    )
+    ).points
 
     assert len(hits) == 5
 
@@ -619,19 +549,19 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
 
     client.create_payload_index(COLLECTION_NAME, "id_str", field_schema=PayloadSchemaType.KEYWORD)
     #  and use it as a query
-    hits = client.search(
+    hits = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=Filter(must=[FieldCondition(key="id_str", match=MatchValue(value="11"))]),
         with_payload=True,
         limit=5,
-    )
+    ).points
 
     assert "11" in hits[0].payload["id_str"]
 
-    hits_should = client.search(
+    hits_should = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=Filter(
             should=[
                 FieldCondition(key="id_str", match=MatchValue(value="10")),
@@ -640,11 +570,11 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         ),
         with_payload=True,
         limit=5,
-    )
+    ).points
 
-    hits_match_any = client.search(
+    hits_match_any = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=Filter(
             must=[
                 FieldCondition(
@@ -655,48 +585,47 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         ),
         with_payload=True,
         limit=5,
-    )
+    ).points
     assert hits_should == hits_match_any
 
-    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
-        hits_min_should = client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
-            query_filter=Filter(
-                min_should=models.MinShould(
-                    conditions=[
-                        FieldCondition(key="id_str", match=MatchValue(value="11")),
-                        FieldCondition(key="rand_digit", match=MatchAny(any=list(range(10)))),
-                        FieldCondition(key="id", match=MatchAny(any=list(range(100, 150)))),
-                    ],
-                    min_count=2,
-                )
-            ),
-            with_payload=True,
-            limit=5,
-        )
-        assert len(hits_min_should) > 0
+    hits_min_should = client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=query_vector,
+        query_filter=Filter(
+            min_should=models.MinShould(
+                conditions=[
+                    FieldCondition(key="id_str", match=MatchValue(value="11")),
+                    FieldCondition(key="rand_digit", match=MatchAny(any=list(range(10)))),
+                    FieldCondition(key="id", match=MatchAny(any=list(range(100, 150)))),
+                ],
+                min_count=2,
+            )
+        ),
+        with_payload=True,
+        limit=5,
+    ).points
+    assert len(hits_min_should) > 0
 
-        hits_min_should_empty = client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
-            query_filter=Filter(
-                min_should=models.MinShould(
-                    conditions=[
-                        FieldCondition(key="id_str", match=MatchValue(value="11")),
-                    ],
-                    min_count=2,
-                )
-            ),
-            with_payload=True,
-            limit=5,
-        )
-        assert len(hits_min_should_empty) == 0
+    hits_min_should_empty = client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=query_vector,
+        query_filter=Filter(
+            min_should=models.MinShould(
+                conditions=[
+                    FieldCondition(key="id_str", match=MatchValue(value="11")),
+                ],
+                min_count=2,
+            )
+        ),
+        with_payload=True,
+        limit=5,
+    ).points
+    assert len(hits_min_should_empty) == 0
 
     # Let's now query same vector with filter condition
-    hits = client.search(
+    hits = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         query_filter=Filter(
             must=[  # These conditions are required for search results
                 FieldCondition(
@@ -705,22 +634,13 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
                 )
             ]
         ),
-        append_payload=True,  # Also return a stored payload for found points
+        with_payload=True,
         limit=5,  # Return 5 closest points
-    )
+    ).points
 
     print("Filtered search result (`rand_number` >= 0.5):")
     for hit in hits:
         print(hit)
-
-    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
-        query_response = client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=query_vector,
-            limit=5,
-        )
-
-        assert len(query_response.points) == 5
 
     got_points = client.retrieve(
         collection_name=COLLECTION_NAME,
@@ -765,144 +685,53 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     filter_2 = Filter(must=[FieldCondition(key="rand_number", range=Range(gte=0.5))])
     filter_3 = Filter(must=[FieldCondition(key="rand_number", range=Range(gte=0.7))])
 
-    search_queries = [
-        SearchRequest(
-            vector=query_vector_1,
+    query_points_requests = [
+        models.QueryRequest(
+            query=query_vector_1,
             filter=filter_1,
             limit=5,
             with_payload=True,
         ),
-        SearchRequest(
-            vector=query_vector_2,
+        models.QueryRequest(
+            query=query_vector_2,
             filter=filter_2,
             limit=5,
             with_payload=True,
         ),
-        SearchRequest(
-            vector=query_vector_3,
+        models.QueryRequest(
+            query=query_vector_3,
             filter=filter_3,
             limit=5,
             with_payload=True,
         ),
     ]
-    single_search_result_1 = client.search(
+    single_query_result_1 = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector_1,
+        query=query_vector_1,
         query_filter=filter_1,
         limit=5,
     )
-    single_search_result_2 = client.search(
+    single_query_result_2 = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector_2,
+        query=query_vector_2,
         query_filter=filter_2,
         limit=5,
     )
-    single_search_result_3 = client.search(
+    single_query_result_3 = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector_3,
+        query=query_vector_3,
         query_filter=filter_3,
         limit=5,
     )
 
-    batch_search_result = client.search_batch(
-        collection_name=COLLECTION_NAME, requests=search_queries
+    batch_query_result = client.query_batch_points(
+        collection_name=COLLECTION_NAME, requests=query_points_requests
     )
 
-    assert len(batch_search_result) == 3
-    assert batch_search_result[0] == single_search_result_1
-    assert batch_search_result[1] == single_search_result_2
-    assert batch_search_result[2] == single_search_result_3
-
-    recommend_queries = [
-        RecommendRequest(
-            positive=[1],
-            negative=[],
-            filter=filter_1,
-            limit=5,
-            with_payload=True,
-        ),
-        RecommendRequest(
-            positive=[2],
-            negative=[],
-            filter=filter_2,
-            limit=5,
-            with_payload=True,
-        ),
-        RecommendRequest(
-            positive=[3],
-            negative=[],
-            filter=filter_3,
-            limit=5,
-            with_payload=True,
-        ),
-    ]
-    reco_result_1 = client.recommend(
-        collection_name=COLLECTION_NAME, positive=[1], query_filter=filter_1, limit=5
-    )
-    reco_result_2 = client.recommend(
-        collection_name=COLLECTION_NAME, positive=[2], query_filter=filter_2, limit=5
-    )
-    reco_result_3 = client.recommend(
-        collection_name=COLLECTION_NAME, positive=[3], query_filter=filter_3, limit=5
-    )
-
-    batch_reco_result = client.recommend_batch(
-        collection_name=COLLECTION_NAME, requests=recommend_queries
-    )
-
-    assert len(batch_reco_result) == 3
-    assert batch_reco_result[0] == reco_result_1
-    assert batch_reco_result[1] == reco_result_2
-    assert batch_reco_result[2] == reco_result_3
-
-    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
-        query_points_requests = [
-            models.QueryRequest(
-                query=query_vector_1,
-                filter=filter_1,
-                limit=5,
-                with_payload=True,
-            ),
-            models.QueryRequest(
-                query=query_vector_2,
-                filter=filter_2,
-                limit=5,
-                with_payload=True,
-            ),
-            models.QueryRequest(
-                query=query_vector_3,
-                filter=filter_3,
-                limit=5,
-                with_payload=True,
-            ),
-        ]
-        single_query_result_1 = client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=query_vector_1,
-            query_filter=filter_1,
-            limit=5,
-        )
-        single_query_result_2 = client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=query_vector_2,
-            query_filter=filter_2,
-            limit=5,
-        )
-        single_query_result_3 = client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=query_vector_3,
-            query_filter=filter_3,
-            limit=5,
-        )
-
-        batch_query_result = client.query_batch_points(
-            collection_name=COLLECTION_NAME, requests=query_points_requests
-        )
-
-        assert len(batch_query_result) == 3
-        assert batch_query_result[0] == single_query_result_1
-        assert batch_query_result[1] == single_query_result_2
-        assert batch_query_result[2] == single_query_result_3
+    assert len(batch_query_result) == 3
+    assert batch_query_result[0] == single_query_result_1
+    assert batch_query_result[1] == single_query_result_2
+    assert batch_query_result[2] == single_query_result_3
 
     # ------------------  End of batch queries test ----------------
 
@@ -986,14 +815,14 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
     positive = [1, 2, query_vector.tolist()]
     negative = []
 
-    if None not in (major, minor, patch) and (major, minor, patch) < (1, 6, 0):
-        positive = [1, 2]
-        negative = []
-
-    recommended_points = client.recommend(
+    recommended_points = client.query_points(
         collection_name=COLLECTION_NAME,
-        positive=positive,
-        negative=negative,
+        query=models.RecommendQuery(
+            recommend=models.RecommendInput(
+                positive=positive,
+                negative=negative,
+            ),
+        ),
         query_filter=Filter(
             must=[  # These conditions are required for recommend results
                 FieldCondition(
@@ -1005,7 +834,7 @@ def test_qdrant_client_integration(prefer_grpc, numpy_upload, local_mode):
         limit=5,
         with_payload=True,
         with_vectors=False,
-    )
+    ).points
 
     assert len(recommended_points) == 5
 
@@ -1265,9 +1094,9 @@ def test_quantization_config(prefer_grpc):
     assert quantization_config.scalar.quantile == 1.0
     assert quantization_config.scalar.always_ram is True
 
-    _res = client.search(
+    _res = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=np.random.rand(DIM),
+        query=np.random.rand(DIM),
         search_params=SearchParams(
             quantization=QuantizationSearchParams(
                 rescore=True,
@@ -1278,14 +1107,6 @@ def test_quantization_config(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_custom_sharding(prefer_grpc):
-    major, minor, patch, dev = read_version()
-    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
-        pytest.skip("Custom sharding is supported since v1.7.0")
-
-    query_api_available = (
-        dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0)
-    )
-
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
 
     def init_collection():
@@ -1335,49 +1156,27 @@ def test_custom_sharding(prefer_grpc):
     )
 
     query_vector = np.random.rand(DIM)
-    res = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        shard_key_selector=cats_shard_key,
-    )
+    res = client.query_points(
+        collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
+    ).points
     assert len(res) == 3
     for record in res:
         assert record.shard_key == cats_shard_key
 
-    if query_api_available:
-        query_res = client.query_points(
-            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
-        )
-        assert query_res.points == res
-
     query_vector = np.random.rand(DIM)
-    res = client.search(
+    res = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         shard_key_selector=[cats_shard_key, dogs_shard_key],
-    )
+    ).points
     assert len(res) == 6
-    if query_api_available:
-        query_res = client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=query_vector,
-            shard_key_selector=[cats_shard_key, dogs_shard_key],
-        )
-        assert query_res.points == res
 
     query_vector = np.random.rand(DIM)
-    res = client.search(
+    res = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-    )
+        query=query_vector,
+    ).points
     assert len(res) == 6
-
-    if query_api_available:
-        query_res = client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=query_vector,
-        )
-        assert res == query_res.points
     # endregion
 
     # region upload_collection
@@ -1392,23 +1191,15 @@ def test_custom_sharding(prefer_grpc):
     )
 
     query_vector = np.random.rand(DIM)
-    res = client.search(
+    res = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         shard_key_selector=cats_shard_key,
-    )
+    ).points
     assert len(res) == 3
 
     for record in res:
         assert record.shard_key == cats_shard_key
-
-    if query_api_available:
-        query_res = client.query_points(
-            collection_name=COLLECTION_NAME,
-            query=query_vector,
-            shard_key_selector=cats_shard_key,
-        )
-        assert query_res.points == res
 
     # endregion
 
@@ -1427,31 +1218,17 @@ def test_custom_sharding(prefer_grpc):
     )
 
     query_vector = np.random.rand(DIM)
-    res = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        shard_key_selector=cats_shard_key,
-    )
+
+    res = client.query_points(
+        collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
+    ).points
     assert len(res) == 3
 
-    if query_api_available:
-        query_res = client.query_points(
-            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=cats_shard_key
-        )
-        assert res == query_res.points
-
     query_vector = np.random.rand(DIM)
-    res = client.search(
-        collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
-        shard_key_selector=dogs_shard_key,
-    )
+    res = client.query_points(
+        collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=dogs_shard_key
+    ).points
     assert len(res) == 0
-    if query_api_available:
-        query_res = client.query_points(
-            collection_name=COLLECTION_NAME, query=query_vector, shard_key_selector=dogs_shard_key
-        )
-        assert res == query_res.points
 
     # endregion
 
@@ -1460,10 +1237,6 @@ def test_custom_sharding(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors(prefer_grpc):
-    major, minor, patch, dev = read_version()
-    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
-        pytest.skip("Sparse vectors are supported since v1.7.0")
-
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME)
@@ -1513,17 +1286,12 @@ def test_sparse_vectors(prefer_grpc):
         ],
     )
 
-    result = client.search(
+    result = client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=models.NamedSparseVector(
-            name="text",
-            vector=models.SparseVector(
-                indices=[1, 7],
-                values=[2.0, 1.0],
-            ),
-        ),
+        using="text",
+        query=models.SparseVector(indices=[1, 7], values=[2.0, 1.0]),
         with_vectors=["text"],
-    )
+    ).points
 
     assert len(result) == 2
     assert result[0].id == 3
@@ -1540,10 +1308,6 @@ def test_sparse_vectors(prefer_grpc):
 
 @pytest.mark.parametrize("prefer_grpc", [False, True])
 def test_sparse_vectors_batch(prefer_grpc):
-    major, minor, patch, dev = read_version()
-    if not dev and None not in (major, minor, patch) and (major, minor, patch) < (1, 7, 0):
-        pytest.skip("Sparse vectors are supported since v1.7.0")
-
     client = QdrantClient(prefer_grpc=prefer_grpc, timeout=TIMEOUT)
     if client.collection_exists(COLLECTION_NAME):
         client.delete_collection(collection_name=COLLECTION_NAME)
@@ -1593,24 +1357,22 @@ def test_sparse_vectors_batch(prefer_grpc):
         ],
     )
 
-    request = models.SearchRequest(
-        vector=models.NamedSparseVector(
-            name="text",
-            vector=models.SparseVector(
-                indices=[1, 7],
-                values=[2.0, 1.0],
-            ),
+    request = models.QueryRequest(
+        query=models.SparseVector(
+            indices=[1, 7],
+            values=[2.0, 1.0],
         ),
+        using="text",
         limit=3,
         with_vector=["text"],
     )
 
-    results = client.search_batch(
+    results = client.query_batch_points(
         collection_name=COLLECTION_NAME,
         requests=[request],
     )
 
-    result = results[0]
+    result = results[0].points
 
     assert len(result) == 2
     assert result[0].id == 3
@@ -2114,61 +1876,63 @@ def test_read_consistency(prefer_grpc):
 
     query_vector = fixture_points[0].vector
 
-    client.search(
+    client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         limit=5,  # Return 5 closest points
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
-    client.search(
+    client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         limit=5,  # Return 5 closest points
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
-    client.search(
+    client.query_points(
         collection_name=COLLECTION_NAME,
-        query_vector=query_vector,
+        query=query_vector,
         limit=5,  # Return 5 closest points
         consistency=2,
     )
 
-    search_requests = [models.SearchRequest(vector=query_vector, limit=5)]
-    client.search_batch(
+    query_requests = [models.QueryRequest(query=query_vector, limit=5)]
+    client.query_batch_points(
         collection_name=COLLECTION_NAME,
-        requests=search_requests,
+        requests=query_requests,
     )
 
-    client.search_batch(
+    client.query_batch_points(
         collection_name=COLLECTION_NAME,
-        requests=search_requests,
+        requests=query_requests,
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
-    client.search_batch(collection_name=COLLECTION_NAME, requests=search_requests, consistency=2)
+    client.query_batch_points(
+        collection_name=COLLECTION_NAME, requests=query_requests, consistency=2
+    )
 
-    client.search_groups(
+    client.query_points_groups(
         collection_name=COLLECTION_NAME,
         group_by="word",
-        query_vector=query_vector,
+        query=query_vector,
         limit=5,  # Return 5 closest points
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
-    client.search_groups(
+    client.query_points_groups(
         collection_name=COLLECTION_NAME,
         group_by="word",
-        query_vector=query_vector,
+        query=query_vector,
         limit=5,  # Return 5 closest points
         consistency=models.ReadConsistencyType.MAJORITY,
     )
 
-    client.search_groups(
+    client.query_points_groups(
         collection_name=COLLECTION_NAME,
         group_by="word",
-        query_vector=query_vector,
+        query=query_vector,
         limit=5,  # Return 5 closest points
         consistency=models.ReadConsistencyType.MAJORITY,
     )
@@ -2208,82 +1972,77 @@ def test_create_payload_index(prefer_grpc):
         wait=True,
     )
 
-    major, minor, patch, dev = read_version()
-    if major is None or dev or (major, minor, patch) >= (1, 11, 0):
-        client.create_payload_index(
-            COLLECTION_NAME, "uuid", models.PayloadSchemaType.UUID, wait=True
-        )
+    client.create_payload_index(COLLECTION_NAME, "uuid", models.PayloadSchemaType.UUID, wait=True)
 
-        client.create_payload_index(
-            COLLECTION_NAME,
-            "keyword_parametrized",
-            models.KeywordIndexParams(
-                type=models.KeywordIndexType.KEYWORD, is_tenant=False, on_disk=True
-            ),
-            wait=True,
-        )
-        payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
-        assert payload_schema["keyword_parametrized"].params.is_tenant is False
-        assert payload_schema["keyword_parametrized"].params.on_disk is True
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "keyword_parametrized",
+        models.KeywordIndexParams(
+            type=models.KeywordIndexType.KEYWORD, is_tenant=False, on_disk=True
+        ),
+        wait=True,
+    )
+    payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
+    assert payload_schema["keyword_parametrized"].params.is_tenant is False
+    assert payload_schema["keyword_parametrized"].params.on_disk is True
 
-        client.create_payload_index(
-            COLLECTION_NAME,
-            "integer_parametrized",
-            models.IntegerIndexParams(
-                type=models.IntegerIndexType.INTEGER,
-                lookup=True,
-                range=False,
-                is_principal=False,
-                on_disk=True,
-            ),
-            wait=True,
-        )
-        if prefer_grpc:
-            rest_client = QdrantClient()
-            _ = rest_client.get_collection(COLLECTION_NAME).payload_schema
-        payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
-        assert payload_schema["integer_parametrized"].params.lookup is True
-        assert payload_schema["integer_parametrized"].params.range is False
-        assert payload_schema["integer_parametrized"].params.is_principal is False
-        assert payload_schema["integer_parametrized"].params.on_disk is True
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "integer_parametrized",
+        models.IntegerIndexParams(
+            type=models.IntegerIndexType.INTEGER,
+            lookup=True,
+            range=False,
+            is_principal=False,
+            on_disk=True,
+        ),
+        wait=True,
+    )
+    if prefer_grpc:
+        rest_client = QdrantClient()
+        _ = rest_client.get_collection(COLLECTION_NAME).payload_schema
+    payload_schema = client.get_collection(COLLECTION_NAME).payload_schema
+    assert payload_schema["integer_parametrized"].params.lookup is True
+    assert payload_schema["integer_parametrized"].params.range is False
+    assert payload_schema["integer_parametrized"].params.is_principal is False
+    assert payload_schema["integer_parametrized"].params.on_disk is True
 
-        client.create_payload_index(
-            COLLECTION_NAME,
-            "float_parametrized",
-            models.FloatIndexParams(
-                type=models.FloatIndexType.FLOAT, is_principal=False, on_disk=True
-            ),
-            wait=True,
-        )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "float_parametrized",
+        models.FloatIndexParams(
+            type=models.FloatIndexType.FLOAT, is_principal=False, on_disk=True
+        ),
+        wait=True,
+    )
 
-        client.create_payload_index(
-            COLLECTION_NAME,
-            "datetime_parametrized",
-            models.DatetimeIndexParams(
-                type=models.DatetimeIndexType.DATETIME, is_principal=False, on_disk=True
-            ),
-            wait=True,
-        )
-        client.create_payload_index(
-            COLLECTION_NAME,
-            "uuid_parametrized",
-            models.UuidIndexParams(type=models.UuidIndexType.UUID, is_tenant=False, on_disk=True),
-            wait=True,
-        )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "datetime_parametrized",
+        models.DatetimeIndexParams(
+            type=models.DatetimeIndexType.DATETIME, is_principal=False, on_disk=True
+        ),
+        wait=True,
+    )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "uuid_parametrized",
+        models.UuidIndexParams(type=models.UuidIndexType.UUID, is_tenant=False, on_disk=True),
+        wait=True,
+    )
 
-    if major is None or dev or (major, minor, patch) >= (1, 11, 1):
-        client.create_payload_index(
-            COLLECTION_NAME,
-            "geo_parametrized",
-            models.GeoIndexParams(type=models.GeoIndexType.GEO),
-            wait=True,
-        )
-        client.create_payload_index(
-            COLLECTION_NAME,
-            "bool_parametrized",
-            models.BoolIndexParams(type=models.BoolIndexType.BOOL),
-            wait=True,
-        )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "geo_parametrized",
+        models.GeoIndexParams(type=models.GeoIndexType.GEO),
+        wait=True,
+    )
+    client.create_payload_index(
+        COLLECTION_NAME,
+        "bool_parametrized",
+        models.BoolIndexParams(type=models.BoolIndexType.BOOL),
+        wait=True,
+    )
 
 
 @pytest.mark.parametrize("prefer_grpc", (False, True))
@@ -2494,12 +2253,3 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc, mocker):
 
         with pytest.raises(exception_class):
             client.upload_points(COLLECTION_NAME, points=points, wait=True, max_retries=1)
-
-
-if __name__ == "__main__":
-    test_qdrant_client_integration()
-    test_points_crud()
-    test_has_id_condition()
-    test_insert_float()
-    test_create_payload_index()
-    test_strict_mode()
