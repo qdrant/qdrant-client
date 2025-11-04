@@ -2978,21 +2978,6 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             **kwargs,
         )
 
-    async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        """Lock storage for writing."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.lock_storage(reason=reason, **kwargs)
-
-    async def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        """Unlock storage for writing."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.unlock_storage(**kwargs)
-
-    async def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        """Get current locks state."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-        return await self._client.get_locks(**kwargs)
-
     async def create_shard_key(
         self,
         collection_name: str,

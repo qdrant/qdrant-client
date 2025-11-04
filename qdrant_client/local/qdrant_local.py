@@ -1241,22 +1241,6 @@ class QdrantLocal(QdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need snapshots."
         )
 
-    def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError(
-            "Locks are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
-        )
-
-    def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError(
-            "Locks are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
-        )
-
-    def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        return types.LocksOption(
-            error_message=None,
-            write=False,
-        )
-
     def create_shard_key(
         self,
         collection_name: str,

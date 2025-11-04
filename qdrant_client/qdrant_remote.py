@@ -3395,25 +3395,6 @@ class QdrantRemote(QdrantBase):
             ),
         ).result
 
-    def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
-            models.LocksOption(error_message=reason, write=True)
-        ).result
-        assert result is not None, "Lock storage returned None"
-        return result
-
-    def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
-            models.LocksOption(write=False)
-        ).result
-        assert result is not None, "Post locks returned None"
-        return result
-
-    def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = self.openapi_client.service_api.get_locks().result
-        assert result is not None, "Get locks returned None"
-        return result
-
     def create_shard_key(
         self,
         collection_name: str,

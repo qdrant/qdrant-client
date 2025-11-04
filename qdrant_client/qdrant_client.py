@@ -3089,24 +3089,6 @@ class QdrantClient(QdrantFastembedMixin):
             **kwargs,
         )
 
-    def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        """Lock storage for writing."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
-        return self._client.lock_storage(reason=reason, **kwargs)
-
-    def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        """Unlock storage for writing."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
-        return self._client.unlock_storage(**kwargs)
-
-    def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        """Get current locks state."""
-        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
-
-        return self._client.get_locks(**kwargs)
-
     def migrate(
         self,
         dest_client: QdrantBase,

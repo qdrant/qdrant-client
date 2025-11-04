@@ -1156,19 +1156,6 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need snapshots."
         )
 
-    async def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError(
-            "Locks are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
-        )
-
-    async def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError(
-            "Locks are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
-        )
-
-    async def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        return types.LocksOption(error_message=None, write=False)
-
     async def create_shard_key(
         self,
         collection_name: str,

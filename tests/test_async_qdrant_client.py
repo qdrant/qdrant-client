@@ -166,11 +166,6 @@ async def test_async_qdrant_client(prefer_grpc):
     await client.delete_payload_index(COLLECTION_NAME, field_name="random_dig")
     assert "random_dig" not in (await client.get_collection(COLLECTION_NAME)).payload_schema
 
-    assert not (await client.lock_storage(reason="test")).write
-    assert (await client.get_locks()).write
-    assert (await client.unlock_storage()).write
-    assert not (await client.get_locks()).write
-
     assert isinstance(await client.create_snapshot(COLLECTION_NAME), models.SnapshotDescription)
     snapshots = await client.list_snapshots(COLLECTION_NAME)
     assert len(snapshots) == 1
@@ -406,8 +401,6 @@ async def test_async_qdrant_client_local():
 
     await client.delete_payload_index(COLLECTION_NAME, field_name="random_dig")
 
-    assert await client.get_locks()
-
     assert len(await client.list_snapshots(COLLECTION_NAME)) == 0
     assert len(await client.list_full_snapshots()) == 0
 
@@ -499,7 +492,7 @@ async def test_async_auth():
     await client.get_collections()
     assert token == "token_1"
 
-    await client.unlock_storage()
+    await client.get_collections()
     assert token == "token_2"
 
     sync_token = ""
@@ -555,7 +548,7 @@ async def test_async_auth():
     await client.get_collections()
     assert sync_token == "token_1"
 
-    await client.unlock_storage()
+    await client.get_collections()
     assert sync_token == "token_2"
 
 
