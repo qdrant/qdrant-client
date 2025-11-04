@@ -31,115 +31,114 @@ class TestSimpleSparseSearcher:
         self.query_code = generate_random_sparse_vector(sparse_code_vector_size, density=0.1)
 
     def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            using="sparse-text",
+            query=self.query_text,
             with_payload=True,
             with_vectors=["sparse-text"],
             limit=10,
-        )
+        ).points
 
     def simple_search_image(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-image", vector=self.query_image),
+            query=self.query_image,
+            using="sparse-image",
             with_payload=True,
             with_vectors=["sparse-image"],
             limit=10,
-        )
+        ).points
 
     def simple_search_code(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-code", vector=self.query_code),
+            using="sparse-code",
+            query=self.query_code,
             with_payload=True,
             with_vectors=True,
             limit=10,
-        )
+        ).points
 
     def simple_search_text_offset(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            query=self.query_text,
+            using="sparse-text",
             with_payload=True,
             limit=10,
             offset=10,
-        )
+        ).points
 
     def search_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        res1 = client.search(
+        res1 = client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            using="sparse-text",
+            query=self.query_text,
             with_payload=True,
             limit=10,
             score_threshold=0.9,
-        )
+        ).points
 
-        res2 = client.search(
+        res2 = client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            using="sparse-text",
+            query=self.query_text,
             with_payload=True,
             limit=10,
             score_threshold=0.95,
-        )
+        ).points
 
-        res3 = client.search(
+        res3 = client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            using="sparse-text",
+            query=self.query_text,
             with_payload=True,
             limit=10,
             score_threshold=0.1,
-        )
+        ).points
 
         return res1 + res2 + res3
 
     def simple_search_text_select_payload(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            using="sparse-text",
+            query=self.query_text,
             with_payload=["text_array", "nested.id"],
             limit=10,
-        )
+        ).points
 
     def search_payload_exclude(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            using="sparse-text",
+            query=self.query_text,
             with_payload=models.PayloadSelectorExclude(exclude=["text_array", "nested.id"]),
             limit=10,
-        )
+        ).points
 
     def simple_search_image_select_vector(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-image", vector=self.query_image),
+            using="sparse-image",
+            query=self.query_image,
             with_payload=False,
             with_vectors=["sparse-image", "sparse-code"],
             limit=10,
-        )
+        ).points
 
     def filter_search_text(
         self, client: QdrantBase, query_filter: models.Filter
     ) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            using="sparse-text",
+            query=self.query_text,
             query_filter=query_filter,
             with_payload=True,
             limit=10,
-        )
-
-    def filter_search_text_single(
-        self, client: QdrantBase, query_filter: models.Filter
-    ) -> list[models.ScoredPoint]:
-        return client.search(
-            collection_name=COLLECTION_NAME,
-            query_vector=self.query_text,  # why it is not a NamedSparseVector?
-            query_filter=query_filter,
-            with_payload=True,
-            with_vectors=True,
-            limit=10,
-        )
+        ).points
 
     def default_mmr_query(self, client: QdrantBase) -> models.QueryResponse:
         return client.query_points(
@@ -343,10 +342,8 @@ def test_query_with_nan():
 
     fixture_points = generate_sparse_fixtures()
     sparse_vector = random_sparse_vectors({"sparse-text": sparse_text_vector_size})
-    named_sparse_vector = models.NamedSparseVector(
-        name="sparse-text", vector=sparse_vector["sparse-text"]
-    )
-    named_sparse_vector.vector.values[0] = np.nan
+
+    sparse_vector["sparse-text"].values[0] = np.nan
 
     local_client.create_collection(
         COLLECTION_NAME, vectors_config={}, sparse_vectors_config=sparse_vectors_config
@@ -370,6 +367,10 @@ def test_query_with_nan():
     )
 
     with pytest.raises(AssertionError):
-        local_client.search(COLLECTION_NAME, named_sparse_vector)
+        local_client.query_points(
+            COLLECTION_NAME, sparse_vector["sparse-text"], using="sparse-text"
+        )
     with pytest.raises(UnexpectedResponse):
-        remote_client.search(COLLECTION_NAME, named_sparse_vector)
+        remote_client.query_points(
+            COLLECTION_NAME, sparse_vector["sparse-text"], using="sparse-text"
+        )
