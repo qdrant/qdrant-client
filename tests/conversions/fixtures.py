@@ -531,12 +531,14 @@ text_index_params_1 = grpc.TextIndexParams(
     lowercase=True,
     min_token_len=2,
     max_token_len=10,
+    ascii_folding=False,
 )
 
 text_index_params_2 = grpc.TextIndexParams(
     tokenizer=grpc.TokenizerType.Whitespace,
     lowercase=False,
     max_token_len=10,
+    ascii_folding=True,
 )
 
 text_index_params_3 = grpc.TextIndexParams(

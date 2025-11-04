@@ -1607,6 +1607,7 @@ class GrpcToRest:
             else None,
             on_disk=model.on_disk if model.HasField("on_disk") else None,
             stemmer=cls.convert_stemmer(model.stemmer) if model.HasField("stemmer") else None,
+            ascii_folding=model.ascii_folding if model.HasField("ascii_folding") else None,
         )
 
     @classmethod
@@ -4007,6 +4008,7 @@ class RestToGrpc:
             else None,
             phrase_matching=model.phrase_matching,
             stemmer=cls.convert_stemmer(model.stemmer) if model.stemmer is not None else None,
+            ascii_folding=model.ascii_folding if model.ascii_folding is not None else None,
         )
 
     @classmethod
