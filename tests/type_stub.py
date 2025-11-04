@@ -116,8 +116,9 @@ qdrant_client.create_collection(
     rest_models.OptimizersConfigDiff(),
     rest_models.WalConfigDiff(),
     rest_models.ScalarQuantization(scalar=ScalarQuantizationConfig(type=ScalarType.INT8)),
-    None,
     5,
+    rest_models.StrictModeConfig(),
+    {},
 )
 qdrant_client.recreate_collection(
     "collection",
@@ -140,7 +141,7 @@ qdrant_client.recreate_collection(
     rest_models.WalConfigDiff(),
     rest_models.ScalarQuantization(scalar=ScalarQuantizationConfig(type=ScalarType.INT8)),
     None,
-    5,
+    rest_models.StrictModeConfig(),
 )
 qdrant_client.recreate_collection(
     "collection",
@@ -165,7 +166,7 @@ qdrant_client.recreate_collection(
         product=ProductQuantizationConfig(compression=CompressionRatio.X32)
     ),
     None,
-    5,
+    rest_models.StrictModeConfig(),
 )
 qdrant_client.retrieve("collection", [])
 qdrant_client.scroll("collection")
