@@ -1411,44 +1411,6 @@ class GrpcToRest:
         raise ValueError(f"invalid WithVectorsSelector model: {model}")  # pragma: no cover
 
     @classmethod
-    def convert_search_points(cls, model: grpc.SearchPoints) -> rest.SearchRequest:
-        vector = (
-            rest.NamedVector(name=model.vector_name, vector=model.vector[:])
-            if not model.HasField("sparse_indices")
-            else (
-                rest.NamedSparseVector(
-                    name=model.vector_name,
-                    vector=rest.SparseVector(
-                        indices=model.sparse_indices.data[:], values=model.vector[:]
-                    ),
-                )
-            )
-        )
-        return rest.SearchRequest(
-            vector=vector,
-            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
-            limit=model.limit,
-            with_payload=(
-                cls.convert_with_payload_interface(model.with_payload)
-                if model.HasField("with_payload")
-                else None
-            ),
-            params=cls.convert_search_params(model.params) if model.HasField("params") else None,
-            score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
-            offset=model.offset if model.HasField("offset") else None,
-            with_vector=(
-                cls.convert_with_vectors_selector(model.with_vectors)
-                if model.HasField("with_vectors")
-                else None
-            ),
-            shard_key=(
-                cls.convert_shard_key_selector(model.shard_key_selector)
-                if model.HasField("shard_key_selector")
-                else None
-            ),
-        )
-
-    @classmethod
     def convert_query_points(cls, model: grpc.QueryPoints) -> rest.QueryRequest:
         return rest.QueryRequest(
             shard_key=(
@@ -1483,109 +1445,6 @@ class GrpcToRest:
                 if model.HasField("lookup_from")
                 else None
             ),
-        )
-
-    @classmethod
-    def convert_recommend_points(cls, model: grpc.RecommendPoints) -> rest.RecommendRequest:
-        positive_ids = [cls.convert_point_id(point_id) for point_id in model.positive]
-        negative_ids = [cls.convert_point_id(point_id) for point_id in model.negative]
-
-        positive_vectors = [cls.convert_vector(vector) for vector in model.positive_vectors]
-        negative_vectors = [cls.convert_vector(vector) for vector in model.negative_vectors]
-
-        return rest.RecommendRequest(
-            positive=positive_ids + positive_vectors,
-            negative=negative_ids + negative_vectors,
-            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
-            limit=model.limit,
-            with_payload=(
-                cls.convert_with_payload_interface(model.with_payload)
-                if model.HasField("with_payload")
-                else None
-            ),
-            params=cls.convert_search_params(model.params) if model.HasField("params") else None,
-            score_threshold=model.score_threshold if model.HasField("score_threshold") else None,
-            offset=model.offset if model.HasField("offset") else None,
-            with_vector=(
-                cls.convert_with_vectors_selector(model.with_vectors)
-                if model.HasField("with_vectors")
-                else None
-            ),
-            using=model.using,
-            lookup_from=(
-                cls.convert_lookup_location(model.lookup_from)
-                if model.HasField("lookup_from")
-                else None
-            ),
-            strategy=(
-                cls.convert_recommend_strategy(model.strategy)
-                if model.HasField("strategy")
-                else None
-            ),
-            shard_key=(
-                cls.convert_shard_key_selector(model.shard_key_selector)
-                if model.HasField("shard_key_selector")
-                else None
-            ),
-        )
-
-    @classmethod
-    def convert_discover_points(cls, model: grpc.DiscoverPoints) -> rest.DiscoverRequest:
-        target = cls.convert_target_vector(model.target) if model.HasField("target") else None
-        context = [cls.convert_context_example_pair(pair) for pair in model.context]
-        return rest.DiscoverRequest(
-            target=target,
-            context=context,
-            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
-            limit=model.limit,
-            with_payload=(
-                cls.convert_with_payload_interface(model.with_payload)
-                if model.HasField("with_payload")
-                else None
-            ),
-            params=cls.convert_search_params(model.params) if model.HasField("params") else None,
-            offset=model.offset if model.HasField("offset") else None,
-            with_vector=(
-                cls.convert_with_vectors_selector(model.with_vectors)
-                if model.HasField("with_vectors")
-                else None
-            ),
-            using=model.using,
-            lookup_from=(
-                cls.convert_lookup_location(model.lookup_from)
-                if model.HasField("lookup_from")
-                else None
-            ),
-            shard_key=(
-                cls.convert_shard_key_selector(model.shard_key_selector)
-                if model.HasField("shard_key_selector")
-                else None
-            ),
-        )
-
-    @classmethod
-    def convert_vector_example(cls, model: grpc.VectorExample) -> rest.RecommendExample:
-        if model.HasField("vector"):
-            return cls.convert_vector(model.vector)
-        if model.HasField("id"):
-            return cls.convert_point_id(model.id)
-
-        raise ValueError(f"invalid VectorExample model: {model}")  # pragma: no cover
-
-    @classmethod
-    def convert_target_vector(cls, model: grpc.TargetVector) -> rest.RecommendExample:
-        if model.HasField("single"):
-            return cls.convert_vector_example(model.single)
-
-        raise ValueError(f"invalid TargetVector model: {model}")  # pragma: no cover
-
-    @classmethod
-    def convert_context_example_pair(
-        cls, model: grpc.ContextExamplePair
-    ) -> rest.ContextExamplePair:
-        return rest.ContextExamplePair(
-            positive=cls.convert_vector_example(model.positive),
-            negative=cls.convert_vector_example(model.negative),
         )
 
     @classmethod
@@ -3108,57 +2967,6 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_recommend_examples_to_ids(
-        cls, examples: Sequence[rest.RecommendExample]
-    ) -> list[grpc.PointId]:
-        ids: list[grpc.PointId] = []
-        for example in examples:
-            if isinstance(example, get_args_subscribed(rest.ExtendedPointId)):
-                id_ = cls.convert_extended_point_id(example)
-            elif isinstance(example, grpc.PointId):
-                id_ = example
-            else:
-                continue
-
-            ids.append(id_)
-
-        return ids
-
-    @classmethod
-    def convert_recommend_examples_to_vectors(
-        cls, examples: Sequence[rest.RecommendExample]
-    ) -> list[grpc.Vector]:
-        vectors: list[grpc.Vector] = []
-        for example in examples:
-            if isinstance(example, grpc.Vector):
-                vector = example
-            elif isinstance(example, list):
-                vector = grpc.Vector(data=example)
-            elif isinstance(example, rest.SparseVector):
-                vector = cls.convert_sparse_vector_to_vector(example)
-            else:
-                continue
-
-            vectors.append(vector)
-
-        return vectors
-
-    @classmethod
-    def convert_vector_example(cls, model: rest.RecommendExample) -> grpc.VectorExample:
-        return cls.convert_recommend_example(model)
-
-    @classmethod
-    def convert_recommend_example(cls, model: rest.RecommendExample) -> grpc.VectorExample:
-        if isinstance(model, get_args_subscribed(rest.ExtendedPointId)):
-            return grpc.VectorExample(id=cls.convert_extended_point_id(model))
-        if isinstance(model, rest.SparseVector):
-            return grpc.VectorExample(vector=cls.convert_sparse_vector_to_vector(model))
-        if isinstance(model, list):
-            return grpc.VectorExample(vector=grpc.Vector(data=model))
-
-        raise ValueError(f"Invalid RecommendExample model: {model}")  # pragma: no cover
-
-    @classmethod
     def convert_sparse_vector_to_vector(cls, model: rest.SparseVector) -> grpc.Vector:
         return grpc.Vector(
             data=model.values,
@@ -3170,20 +2978,6 @@ class RestToGrpc:
         return grpc.VectorOutput(
             data=model.values,
             indices=grpc.SparseIndices(data=model.indices),
-        )
-
-    @classmethod
-    def convert_target_vector(cls, model: rest.RecommendExample) -> grpc.TargetVector:
-        return grpc.TargetVector(single=cls.convert_recommend_example(model))
-
-    @classmethod
-    def convert_context_example_pair(
-        cls,
-        model: rest.ContextExamplePair,
-    ) -> grpc.ContextExamplePair:
-        return grpc.ContextExamplePair(
-            positive=cls.convert_recommend_example(model.positive),
-            negative=cls.convert_recommend_example(model.negative),
         )
 
     @classmethod
@@ -3821,43 +3615,6 @@ class RestToGrpc:
         )
 
     @classmethod
-    def convert_search_request(
-        cls, model: rest.SearchRequest, collection_name: str
-    ) -> grpc.SearchPoints:
-        vector, sparse_indices, name = cls.convert_named_vector_struct(model.vector)
-
-        return grpc.SearchPoints(
-            collection_name=collection_name,
-            vector=vector,
-            sparse_indices=sparse_indices,
-            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
-            limit=model.limit,
-            with_payload=(
-                cls.convert_with_payload_interface(model.with_payload)
-                if model.with_payload is not None
-                else None
-            ),
-            params=cls.convert_search_params(model.params) if model.params is not None else None,
-            score_threshold=model.score_threshold,
-            offset=model.offset,
-            vector_name=name,
-            with_vectors=(
-                cls.convert_with_vectors(model.with_vector)
-                if model.with_vector is not None
-                else None
-            ),
-            shard_key_selector=(
-                cls.convert_shard_key_selector(model.shard_key) if model.shard_key else None
-            ),
-        )
-
-    @classmethod
-    def convert_search_points(
-        cls, model: rest.SearchRequest, collection_name: str
-    ) -> grpc.SearchPoints:
-        return cls.convert_search_request(model, collection_name)
-
-    @classmethod
     def convert_query_request(
         cls, model: rest.QueryRequest, collection_name: str
     ) -> grpc.QueryPoints:
@@ -3905,114 +3662,6 @@ class RestToGrpc:
         cls, model: rest.QueryRequest, collection_name: str
     ) -> grpc.QueryPoints:
         return cls.convert_query_request(model, collection_name)
-
-    @classmethod
-    def convert_recommend_request(
-        cls, model: rest.RecommendRequest, collection_name: str
-    ) -> grpc.RecommendPoints:
-        positive_ids = cls.convert_recommend_examples_to_ids(model.positive)
-        negative_ids = cls.convert_recommend_examples_to_ids(model.negative)
-
-        positive_vectors = cls.convert_recommend_examples_to_vectors(model.positive)
-        negative_vectors = cls.convert_recommend_examples_to_vectors(model.negative)
-
-        return grpc.RecommendPoints(
-            collection_name=collection_name,
-            positive=positive_ids,
-            negative=negative_ids,
-            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
-            limit=model.limit,
-            with_payload=(
-                cls.convert_with_payload_interface(model.with_payload)
-                if model.with_payload is not None
-                else None
-            ),
-            params=cls.convert_search_params(model.params) if model.params is not None else None,
-            score_threshold=model.score_threshold,
-            offset=model.offset,
-            with_vectors=(
-                cls.convert_with_vectors(model.with_vector)
-                if model.with_vector is not None
-                else None
-            ),
-            using=model.using,
-            lookup_from=(
-                cls.convert_lookup_location(model.lookup_from)
-                if model.lookup_from is not None
-                else None
-            ),
-            strategy=(
-                cls.convert_recommend_strategy(model.strategy)
-                if model.strategy is not None
-                else None
-            ),
-            positive_vectors=positive_vectors,
-            negative_vectors=negative_vectors,
-            shard_key_selector=(
-                cls.convert_shard_key_selector(model.shard_key) if model.shard_key else None
-            ),
-        )
-
-    @classmethod
-    def convert_discover_points(
-        cls, model: rest.DiscoverRequest, collection_name: str
-    ) -> grpc.DiscoverPoints:
-        return cls.convert_discover_request(model, collection_name)
-
-    @classmethod
-    def convert_discover_request(
-        cls, model: rest.DiscoverRequest, collection_name: str
-    ) -> grpc.DiscoverPoints:
-        target = cls.convert_target_vector(model.target) if model.target is not None else None
-
-        context = (
-            [cls.convert_context_example_pair(pair) for pair in model.context]
-            if model.context is not None
-            else None
-        )
-
-        query_filter = None if model.filter is None else cls.convert_filter(model=model.filter)
-
-        search_params = None if model.params is None else cls.convert_search_params(model.params)
-
-        with_payload = (
-            None
-            if model.with_payload is None
-            else cls.convert_with_payload_interface(model.with_payload)
-        )
-
-        with_vectors = (
-            None if model.with_vector is None else cls.convert_with_vectors(model.with_vector)
-        )
-
-        lookup_from = (
-            None if model.lookup_from is None else cls.convert_lookup_location(model.lookup_from)
-        )
-
-        shard_key_selector = (
-            None if model.shard_key is None else cls.convert_shard_key_selector(model.shard_key)
-        )
-
-        return grpc.DiscoverPoints(
-            collection_name=collection_name,
-            target=target,
-            context=context,
-            filter=query_filter,
-            limit=model.limit,
-            offset=model.offset,
-            with_vectors=with_vectors,
-            with_payload=with_payload,
-            params=search_params,
-            using=model.using,
-            lookup_from=lookup_from,
-            shard_key_selector=shard_key_selector,
-        )
-
-    @classmethod
-    def convert_recommend_points(
-        cls, model: rest.RecommendRequest, collection_name: str
-    ) -> grpc.RecommendPoints:
-        return cls.convert_recommend_request(model, collection_name)
 
     @classmethod
     def convert_tokenizer_type(cls, model: rest.TokenizerType) -> grpc.TokenizerType:

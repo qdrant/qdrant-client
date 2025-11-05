@@ -17,7 +17,6 @@ from typing import (
 )
 
 import httpx
-import numpy as np
 from grpc import Compression
 from urllib3.util import Url, parse_url
 from urllib.parse import urljoin

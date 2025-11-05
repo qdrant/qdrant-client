@@ -553,3 +553,18 @@ def test_convert_shard_key_with_fallback():
 
     with pytest.raises(ValueError):
         GrpcToRest.convert_shard_key_selector(invalid_grpc_fallback_shard_key)
+
+
+def test_legacy_vector():
+    from qdrant_client import grpc as q_grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    legacy_sparse_vector = q_grpc.Vector(
+        data=[0.2, 0.3, 0.4],
+        indices=q_grpc.SparseIndices(data=[1, 2, 3]),
+    )
+
+    rest_vector = GrpcToRest.convert_vector(legacy_sparse_vector)
+    restored_vector = RestToGrpc.convert_sparse_vector_to_vector(rest_vector)
+
+    assert restored_vector == legacy_sparse_vector

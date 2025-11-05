@@ -76,9 +76,6 @@ PointsSelector = Union[
 ]
 LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
 RecommendStrategy: TypeAlias = rest.RecommendStrategy
-RecommendExample: TypeAlias = rest.RecommendExample
-TargetVector = Union[rest.RecommendExample, grpc.TargetVector]
-ContextExamplePair = Union[rest.ContextExamplePair, grpc.ContextExamplePair]
 OrderBy = Union[rest.OrderByInterface, grpc.OrderBy]
 ShardingMethod: TypeAlias = rest.ShardingMethod
 ShardKey: TypeAlias = rest.ShardKey
@@ -118,9 +115,6 @@ Image: TypeAlias = rest.Image
 InferenceObject: TypeAlias = rest.InferenceObject
 StrictModeConfig: TypeAlias = rest.StrictModeConfig
 
-SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
-RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
-DiscoverRequest = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
 QueryRequest = Union[rest.QueryRequest, grpc.QueryPoints]
 
 Mmr: TypeAlias = rest.Mmr

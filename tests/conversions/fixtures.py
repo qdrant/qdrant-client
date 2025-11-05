@@ -1037,34 +1037,6 @@ shard_key_selector_3 = grpc.ShardKeySelector(
     ],
     fallback=grpc.ShardKey(keyword="abc"),
 )
-search_points = grpc.SearchPoints(
-    collection_name="collection-123",
-    vector=[1.0, 2.0, 3.0, 5.0],
-    filter=filter_,
-    limit=100,
-    with_payload=with_payload_bool,
-    params=search_params,
-    score_threshold=0.123,
-    offset=10,
-    vector_name="abc",
-    with_vectors=grpc.WithVectorsSelector(include=grpc.VectorsSelector(names=["abc", "def"])),
-    shard_key_selector=shard_key_selector,
-    sparse_indices=grpc.SparseIndices(data=[1, 2, 3]),
-)
-
-search_points_all_vectors = grpc.SearchPoints(
-    collection_name="collection-123",
-    vector=[1.0, 2.0, 3.0, 5.0],
-    filter=filter_,
-    limit=100,
-    with_payload=with_payload_bool,
-    params=search_params,
-    score_threshold=0.123,
-    offset=10,
-    vector_name="abc",
-    with_vectors=grpc.WithVectorsSelector(enable=True),
-    shard_key_selector=shard_key_selector_2,
-)
 
 lookup_location_1 = grpc.LookupLocation(
     collection_name="collection-123",
@@ -1094,52 +1066,6 @@ query_points = grpc.QueryPoints(
 recommend_strategy = grpc.RecommendStrategy.BestScore
 recommend_strategy2 = grpc.RecommendStrategy.AverageVector
 recommend_strategy3 = grpc.RecommendStrategy.SumScores
-
-recommend_points = grpc.RecommendPoints(
-    collection_name="collection-123",
-    positive=[point_id_1, point_id_2],
-    negative=[point_id],
-    filter=filter_,
-    limit=100,
-    with_payload=with_payload_bool,
-    params=search_params,
-    score_threshold=0.123,
-    offset=10,
-    using="abc",
-    with_vectors=grpc.WithVectorsSelector(enable=True),
-    strategy=recommend_strategy,
-    positive_vectors=[
-        grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
-        grpc.Vector(data=[2.0, 2.0, -1.0, -0.2]),
-    ],
-    negative_vectors=[
-        grpc.Vector(data=[3.0, 2.0, -1.0, -0.2]),
-    ],
-    shard_key_selector=shard_key_selector_2,
-    lookup_from=lookup_location_1,
-)
-legacy_sparse_vector = grpc.Vector(
-    data=[0.2, 0.3, 0.4],
-    indices=SparseIndices(data=[1, 2, 3]),
-)
-recommend_points_sparse = grpc.RecommendPoints(
-    collection_name="collection-123",
-    positive=[point_id_1, point_id_2],
-    negative=[point_id],
-    filter=filter_,
-    limit=100,
-    with_payload=with_payload_bool,
-    params=search_params,
-    score_threshold=0.123,
-    offset=10,
-    using="abc",
-    with_vectors=grpc.WithVectorsSelector(enable=True),
-    strategy=recommend_strategy,
-    positive_vectors=[legacy_sparse_vector],
-    negative_vectors=[legacy_sparse_vector],
-    shard_key_selector=shard_key_selector_2,
-)
-
 read_consistency = grpc.ReadConsistency(
     factor=1,
 )
@@ -1207,71 +1133,6 @@ with_lookup = grpc.WithLookup(
     collection="lalala",
     with_vectors=grpc.WithVectorsSelector(enable=True),
     with_payload=with_payload_include,
-)
-
-vector_example_1 = grpc.VectorExample(
-    vector=grpc.Vector(data=[1.0, 2.0, 3.0, 5.0]),
-)
-
-vector_example_2 = grpc.VectorExample(
-    id=point_id_1,
-)
-
-vector_example_3 = grpc.VectorExample(
-    vector=grpc.Vector(
-        data=[1.0, 2.0, 3.0, 5.0],
-        indices=SparseIndices(data=[1, 2, 3, 4]),
-    ),
-    id=point_id_1,
-)
-
-target_vector_1 = grpc.TargetVector(
-    single=vector_example_1,
-)
-
-context_example_pair_1 = grpc.ContextExamplePair(
-    positive=vector_example_1,
-    negative=vector_example_2,
-)
-
-discover_points = grpc.DiscoverPoints(
-    collection_name="collection-123",
-    target=target_vector_1,
-    context=[context_example_pair_1, context_example_pair_1],
-    filter=filter_,
-    limit=100,
-    with_payload=with_payload_bool,
-    params=search_params,
-    offset=10,
-    using="abc",
-    with_vectors=grpc.WithVectorsSelector(enable=True),
-    shard_key_selector=shard_key_selector_2,
-)
-
-sparse_vector_example = grpc.VectorExample(
-    vector=legacy_sparse_vector,
-)
-target_vector_sparse = grpc.TargetVector(
-    single=sparse_vector_example,
-)
-
-context_example_pair_sparse = grpc.ContextExamplePair(
-    positive=sparse_vector_example,
-    negative=sparse_vector_example,
-)
-discover_points_sparse = grpc.DiscoverPoints(
-    collection_name="collection-123",
-    target=target_vector_sparse,
-    context=[context_example_pair_sparse, context_example_pair_sparse],
-    filter=filter_,
-    limit=100,
-    with_payload=with_payload_bool,
-    params=search_params,
-    offset=10,
-    using="abc",
-    with_vectors=grpc.WithVectorsSelector(enable=True),
-    shard_key_selector=shard_key_selector_2,
-    lookup_from=lookup_location_1,
 )
 
 upsert_operation = grpc.PointsUpdateOperation(
@@ -1659,9 +1520,7 @@ fixtures = {
         vector_param_with_multivector,
     ],
     "VectorsConfig": [single_vector_config, vector_config],
-    "SearchPoints": [search_points, search_points_all_vectors],
     "QueryPoints": [query_points],
-    "RecommendPoints": [recommend_points, recommend_points_sparse],
     "RecommendStrategy": [recommend_strategy, recommend_strategy2, recommend_strategy3],
     "TextIndexParams": [
         text_index_params_1,
@@ -1720,10 +1579,6 @@ fixtures = {
         delete_vectors_operation,
         delete_vectors_operation_2,
     ],
-    "DiscoverPoints": [discover_points, discover_points_sparse],
-    "ContextExamplePair": [context_example_pair_1],
-    "VectorExample": [vector_example_1, vector_example_2, vector_example_3],
-    "TargetVector": [target_vector_1],
     "SparseVectorParams": [sparse_vector_params, sparse_vector_params_datatype],
     "SparseVectorConfig": [sparse_vector_config],
     "ShardKeySelector": [shard_key_selector, shard_key_selector_2],
