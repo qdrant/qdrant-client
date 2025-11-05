@@ -19,7 +19,7 @@ def upload_batch_grpc(
     collection_name: str,
     batch: Union[rest.Batch, tuple],  # type: ignore[name-defined]
     max_retries: int,
-    shard_key_selector: Optional[rest.ShardKeySelector],  # type: ignore[name-defined]
+    shard_key_selector: Optional[grpc.ShardKeySelector],  # type: ignore[name-defined]
     update_filter: Optional[grpc.Filter],
     wait: bool = False,
     timeout: Optional[int] = None,
@@ -50,9 +50,7 @@ def upload_batch_grpc(
                     collection_name=collection_name,
                     points=points,
                     wait=wait,
-                    shard_key_selector=RestToGrpc.convert_shard_key_selector(shard_key_selector)
-                    if shard_key_selector is not None
-                    else None,
+                    shard_key_selector=shard_key_selector,
                     update_filter=update_filter,
                 ),
                 timeout=timeout,
@@ -98,7 +96,11 @@ class GrpcBatchUploader(BaseUploader):
         self.max_retries = max_retries
         self._kwargs = kwargs
         self._wait = wait
-        self._shard_key_selector = shard_key_selector
+        self._shard_key_selector = (
+            RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if shard_key_selector is not None
+            else None
+        )
         self._timeout = kwargs.pop("timeout", None)
         self._update_filter = (
             RestToGrpc.convert_filter(update_filter)

@@ -516,3 +516,40 @@ def test_inference_without_options():
     assert recovered_doc_wo_options.options == {}
     assert recovered_image_wo_options.options == {}
     assert recovered_inference_wo_options.options == {}
+
+
+def test_convert_shard_key_with_fallback():
+    from qdrant_client import models, grpc as q_grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    single_int_shard_key = 2
+    single_str_shard_key = "abc"
+    shard_keys = [2, "qwerty"]
+    shard_key_with_int_fallback = models.ShardKeyWithFallback(target="123", fallback=3)
+    shard_key_with_str_fallback = models.ShardKeyWithFallback(target=123, fallback="zxc")
+
+    for key in (
+        single_int_shard_key,
+        single_str_shard_key,
+        shard_keys,
+        shard_key_with_int_fallback,
+        shard_key_with_str_fallback,
+    ):
+        grpc_key = RestToGrpc.convert_shard_key_selector(key)
+        restored_key = GrpcToRest.convert_shard_key_selector(grpc_key)
+        assert restored_key == key
+
+    single_int_shard_key_list = [3]
+    single_str_shard_key_list = ["abc"]
+    for keys in single_int_shard_key_list, single_str_shard_key_list:
+        grpc_keys = RestToGrpc.convert_shard_key_selector(keys)
+        restored_key = GrpcToRest.convert_shard_key_selector(grpc_keys)
+        assert keys[0] == restored_key
+
+    invalid_grpc_fallback_shard_key = q_grpc.ShardKeySelector(
+        shard_keys=[q_grpc.ShardKey(number=3), q_grpc.ShardKey(number=2)],
+        fallback=q_grpc.ShardKey(number=2),
+    )
+
+    with pytest.raises(ValueError):
+        GrpcToRest.convert_shard_key_selector(invalid_grpc_fallback_shard_key)

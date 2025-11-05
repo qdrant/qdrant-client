@@ -1031,6 +1031,12 @@ shard_key_selector_2 = grpc.ShardKeySelector(
     ]
 )
 
+shard_key_selector_3 = grpc.ShardKeySelector(
+    shard_keys=[
+        grpc.ShardKey(number=123),
+    ],
+    fallback=grpc.ShardKey(keyword="abc"),
+)
 search_points = grpc.SearchPoints(
     collection_name="collection-123",
     vector=[1.0, 2.0, 3.0, 5.0],
@@ -1082,7 +1088,7 @@ query_points = grpc.QueryPoints(
     offset=10,
     using="abc",
     with_vectors=grpc.WithVectorsSelector(include=grpc.VectorsSelector(names=["abc", "def"])),
-    shard_key_selector=shard_key_selector,
+    shard_key_selector=shard_key_selector_3,
 )
 
 recommend_strategy = grpc.RecommendStrategy.BestScore

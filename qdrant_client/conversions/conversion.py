@@ -2197,8 +2197,24 @@ class GrpcToRest:
 
     @classmethod
     def convert_shard_key_selector(cls, model: grpc.ShardKeySelector) -> rest.ShardKeySelector:
+        fallback = None
+        if model.HasField("fallback"):
+            fallback = model.fallback
+
         if len(model.shard_keys) == 1:
-            return cls.convert_shard_key(model.shard_keys[0])
+            return (
+                cls.convert_shard_key(model.shard_keys[0])
+                if fallback is None
+                else rest.ShardKeyWithFallback(
+                    target=cls.convert_shard_key(model.shard_keys[0]),
+                    fallback=cls.convert_shard_key(model.fallback),
+                )
+            )
+        elif fallback:
+            raise ValueError(
+                f"Fallback shard key {fallback} can only be set when a single shard key is provided"
+            )
+
         return [cls.convert_shard_key(shard_key) for shard_key in model.shard_keys]
 
     @classmethod
@@ -4631,6 +4647,15 @@ class RestToGrpc:
 
     @classmethod
     def convert_shard_key_selector(cls, model: rest.ShardKeySelector) -> grpc.ShardKeySelector:
+        if isinstance(
+            model, rest.ShardKeyWithFallback
+        ):  # have to be the first, since it's a part of the union
+            # of rest.ShardKeySelector type
+            return grpc.ShardKeySelector(
+                shard_keys=[cls.convert_shard_key(model.target)],
+                fallback=cls.convert_shard_key(model.fallback),
+            )
+
         if isinstance(model, get_args_subscribed(rest.ShardKey)):
             return grpc.ShardKeySelector(shard_keys=[cls.convert_shard_key(model)])
 
