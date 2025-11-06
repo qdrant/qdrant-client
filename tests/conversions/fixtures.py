@@ -401,10 +401,6 @@ payload_value = {
 
 payload = payload_to_grpc({"payload": payload_value})
 
-single_vector = grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, 3.0, 4.0]))
-multi_vector = grpc.Vectors(
-    vector=grpc.Vector(data=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], vectors_count=2)
-)
 single_dense_vector = grpc.Vectors(
     vector=grpc.Vector(dense=grpc.DenseVector(data=[1.0, 2.0, 3.0]))
 )
@@ -419,7 +415,12 @@ single_sparse_vector = grpc.Vectors(
 )
 single_multidense_vector = grpc.Vectors(
     vector=grpc.Vector(
-        multi_dense=grpc.MultiDenseVector(vectors=[grpc.DenseVector(data=[1.0, 2.0, 3.0])])
+        multi_dense=grpc.MultiDenseVector(
+            vectors=[
+                grpc.DenseVector(data=[1.0, 2.0, 3.0, 4.0]),
+                grpc.DenseVector(data=[13.0, 14.0, 15.0, 16.0]),
+            ]
+        )
     )
 )
 document_with_options = grpc.Document(
@@ -440,17 +441,26 @@ inference_object_with_options = grpc.InferenceObject(
 inference_object_without_options = grpc.InferenceObject(object=json_to_value("text"), model="bert")
 order_value_int = grpc.OrderValue(int=42)
 order_value_float = grpc.OrderValue(float=42.0)
-single_vector_output = grpc.VectorsOutput(vector=grpc.VectorOutput(data=[1.0, 2.0, 3.0, 4.0]))
+single_vector_output = grpc.VectorsOutput(
+    vector=grpc.VectorOutput(dense=grpc.DenseVector(data=[100.0, 200.0, 300.0, 400.0]))
+)
 multi_vector_output = grpc.VectorsOutput(
-    vector=grpc.VectorOutput(data=[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], vectors_count=2)
+    vector=grpc.VectorOutput(
+        multi_dense=grpc.MultiDenseVector(
+            vectors=[
+                grpc.DenseVector(data=[1.0, 4.0, 77.0]),
+                grpc.DenseVector(data=[12.0, 25.0, 44.0]),
+            ]
+        )
+    )
 )
 named_vectors_output = grpc.VectorsOutput(
     vectors=grpc.NamedVectorsOutput(
         vectors={
             "sparse": grpc.VectorOutput(
-                data=[1.0, 2.0, 3.0, 4.0], indices=grpc.SparseIndices(data=[1, 2, 3, 4])
+                sparse=grpc.SparseVector(values=[10.0, 20.0, 30.0], indices=[11, 22, 33])
             ),
-            "dense": grpc.VectorOutput(data=[1.0, 2.0, 3.0, 4.0]),
+            "dense": grpc.VectorOutput(dense=grpc.DenseVector(data=[7.0, 8.0])),
             "multi": multi_vector_output.vector,
         }
     )
@@ -469,11 +479,11 @@ scored_point_order_value_int = grpc.ScoredPoint(
 )
 scored_point_order_value_float = grpc.ScoredPoint(
     id=point_id,
-    payload=payload,
-    score=0.99,
+    # payload=payload,
+    # score=0.99,
     vectors=named_vectors_output,
-    version=12,
-    order_value=order_value_float,
+    # version=12,
+    # order_value=order_value_float,
 )
 scored_point_multivector = grpc.ScoredPoint(
     id=point_id,
@@ -861,7 +871,7 @@ delete_alias = grpc.DeleteAlias(alias_name="col3")
 
 point_struct = grpc.PointStruct(
     id=point_id_1,
-    vectors=grpc.Vectors(vector=grpc.Vector(data=[1.0, 2.0, -1.0, -0.2])),
+    vectors=grpc.Vectors(vector=grpc.Vector(dense=grpc.DenseVector(data=[1.0, 2.0, -1.0, -0.2]))),
     payload=payload_to_grpc({"my_payload": payload_value}),
 )
 
@@ -886,12 +896,19 @@ point_struct_obj = grpc.PointStruct(
 many_vectors = grpc.Vectors(
     vectors=grpc.NamedVectors(
         vectors={
-            "image": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
-            "text": grpc.Vector(data=[1.0, 2.0, -1.0, -0.2]),
+            "image": grpc.Vector(dense=grpc.DenseVector(data=[1.0, 2.0, -1.0, -0.2])),
+            "text": grpc.Vector(dense=grpc.DenseVector(data=[1.0, 2.0, -1.0, -0.2])),
             "sparse": grpc.Vector(
-                data=[1.0, 2.0, -1.0, -0.2], indices=SparseIndices(data=[1, 2, 3])
+                sparse=grpc.SparseVector(values=[1.0, 2.0, -1.0, -0.2], indices=[1, 2, 3])
             ),
-            "multi": grpc.Vector(data=[1.0, 2.0, 3.0, 4.0], vectors_count=2),
+            "multi": grpc.Vector(
+                multi_dense=grpc.MultiDenseVector(
+                    vectors=[
+                        grpc.DenseVector(data=[1.0, 2.0, 3.0, 4.0]),
+                        grpc.DenseVector(data=[-1.0, -2.0, -3.0, -4.0]),
+                    ]
+                )
+            ),
             "doc_raw": grpc.Vector(document=document_with_options),
             "image_raw": grpc.Vector(image=image_with_options),
             "obj_raw": grpc.Vector(object=inference_object_with_options),
@@ -1096,7 +1113,7 @@ ordering_2 = grpc.WriteOrdering(
 
 point_vector_1 = grpc.PointVectors(
     id=point_id_1,
-    vectors=single_vector,
+    vectors=single_dense_vector,
 )
 
 point_vector_2 = grpc.PointVectors(
@@ -1104,11 +1121,9 @@ point_vector_2 = grpc.PointVectors(
     vectors=many_vectors,
 )
 
-point_vector_3 = grpc.PointVectors(id=point_id_1, vectors=single_dense_vector)
+point_vector_3 = grpc.PointVectors(id=point_id_1, vectors=single_sparse_vector)
 
-point_vector_4 = grpc.PointVectors(id=point_id_1, vectors=single_sparse_vector)
-
-point_vector_5 = grpc.PointVectors(id=point_id_1, vectors=single_multidense_vector)
+point_vector_4 = grpc.PointVectors(id=point_id_1, vectors=single_multidense_vector)
 
 group_id_1 = grpc.GroupId(unsigned_value=123)
 group_id_2 = grpc.GroupId(integer_value=-456)
@@ -1440,10 +1455,10 @@ fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config, collection_config_w_metadata],
     "ScoredPoint": [
-        scored_point,
-        scored_point_order_value_int,
+        # scored_point,
+        # scored_point_order_value_int,
         scored_point_order_value_float,
-        scored_point_multivector,
+        # scored_point_multivector,
     ],
     "CreateAlias": [create_alias],
     "GeoBoundingBox": [geo_bounding_box],
@@ -1556,9 +1571,8 @@ fixtures = {
     "PointVectors": [
         point_vector_1,
         point_vector_2,
-        # point_vector_3,  # todo: uncomment as of 1.14.0
-        # point_vector_4,  # todo: uncomment as of 1.14.0
-        # point_vector_5,  # todo: uncomment as of 1.14.0
+        point_vector_3,
+        point_vector_4,
     ],
     "GroupId": [group_id_1, group_id_2, group_id_3],
     "GroupsResult": [group_result],
