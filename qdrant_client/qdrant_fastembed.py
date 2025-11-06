@@ -815,7 +815,7 @@ class QdrantFastembedMixin(QdrantBase):
         Raises:
             ValueError: if query is not of supported type
         """
-        if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
+        if isinstance(query, get_args(types.Query)):
             return query
 
         if isinstance(query, types.SparseVector):

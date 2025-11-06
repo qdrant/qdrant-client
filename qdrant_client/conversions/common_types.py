@@ -115,7 +115,7 @@ Image: TypeAlias = rest.Image
 InferenceObject: TypeAlias = rest.InferenceObject
 StrictModeConfig: TypeAlias = rest.StrictModeConfig
 
-QueryRequest = Union[rest.QueryRequest, grpc.QueryPoints]
+QueryRequest: TypeAlias = rest.QueryRequest
 
 Mmr: TypeAlias = rest.Mmr
 
