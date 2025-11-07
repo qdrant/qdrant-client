@@ -26,8 +26,8 @@ fi
 source "$VENV_DIR/bin/activate"
 
 pip install --upgrade pip
-pip install "grpcio>=1.76.0"
-pip install "grpcio-tools>=1.76.0"
+pip install "grpcio==1.62.0"  # as of 1.63.0 grpc complaining that our minimal supported version 1.48 is too old
+pip install "grpcio-tools==1.62.0"  # as of 1.63.0 grpc complaining that our minimal supported version 1.48 is too old
 pip install "mypy-protobuf==3.3.0"  # ^3.3.0
 
 cd "$QDRANT_PATH"
