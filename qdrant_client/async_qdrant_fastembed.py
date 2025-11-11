@@ -599,7 +599,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 - Exclude vectors which doesn't fit given conditions.
                 - If `None` - search among all vectors
             limit: How many results return
-            **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
+            **kwargs: Additional search parameters. See `qdrant_client.models.QueryRequest` for details.
 
         Returns:
             list[types.ScoredPoint]: List of scored points.
@@ -612,16 +612,17 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         query_vector = embeddings[0].tolist()
         if self.sparse_embedding_model_name is None:
             return self._scored_points_to_query_responses(
-                await self.search(
-                    collection_name=collection_name,
-                    query_vector=models.NamedVector(
-                        name=self.get_vector_field_name(), vector=query_vector
-                    ),
-                    query_filter=query_filter,
-                    limit=limit,
-                    with_payload=True,
-                    **kwargs,
-                )
+                (
+                    await self.query_points(
+                        collection_name=collection_name,
+                        query=query_vector,
+                        using=self.get_vector_field_name(),
+                        query_filter=query_filter,
+                        limit=limit,
+                        with_payload=True,
+                        **kwargs,
+                    )
+                ).points
             )
         sparse_embedding_model_inst = self._get_or_init_sparse_model(
             model_name=self.sparse_embedding_model_name, deprecated=True
@@ -630,27 +631,29 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         sparse_query_vector = models.SparseVector(
             indices=sparse_vector.indices.tolist(), values=sparse_vector.values.tolist()
         )
-        dense_request = models.SearchRequest(
-            vector=models.NamedVector(name=self.get_vector_field_name(), vector=query_vector),
+        dense_request = models.QueryRequest(
+            query=query_vector,
+            using=self.get_vector_field_name(),
             filter=query_filter,
             limit=limit,
             with_payload=True,
             **kwargs,
         )
-        sparse_request = models.SearchRequest(
-            vector=models.NamedSparseVector(
-                name=self.get_sparse_vector_field_name(), vector=sparse_query_vector
-            ),
+        sparse_request = models.QueryRequest(
+            query=sparse_query_vector,
+            using=self.get_sparse_vector_field_name(),
             filter=query_filter,
             limit=limit,
             with_payload=True,
             **kwargs,
         )
-        (dense_request_response, sparse_request_response) = await self.search_batch(
+        (dense_request_response, sparse_request_response) = await self.query_batch_points(
             collection_name=collection_name, requests=[dense_request, sparse_request]
         )
         return self._scored_points_to_query_responses(
-            reciprocal_rank_fusion([dense_request_response, sparse_request_response], limit=limit)
+            reciprocal_rank_fusion(
+                [dense_request_response.points, sparse_request_response.points], limit=limit
+            )
         )
 
     async def query_batch(
@@ -675,7 +678,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
                 - If `None` - search among all vectors
                 This filter will be applied to all search requests.
             limit: How many results return
-            **kwargs: Additional search parameters. See `qdrant_client.models.SearchRequest` for details.
+            **kwargs: Additional search parameters. See `qdrant_client.models.QueryRequest` for details.
 
         Returns:
             list[list[QueryResponse]]: List of lists of responses for each query text.
@@ -687,10 +690,9 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         query_vectors = list(embedding_model_inst.query_embed(query=query_texts))
         requests = []
         for vector in query_vectors:
-            request = models.SearchRequest(
-                vector=models.NamedVector(
-                    name=self.get_vector_field_name(), vector=vector.tolist()
-                ),
+            request = models.QueryRequest(
+                query=vector.tolist(),
+                using=self.get_vector_field_name(),
                 filter=query_filter,
                 limit=limit,
                 with_payload=True,
@@ -698,8 +700,12 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             )
             requests.append(request)
         if self.sparse_embedding_model_name is None:
-            responses = await self.search_batch(collection_name=collection_name, requests=requests)
-            return [self._scored_points_to_query_responses(response) for response in responses]
+            responses = await self.query_batch_points(
+                collection_name=collection_name, requests=requests
+            )
+            return [
+                self._scored_points_to_query_responses(response.points) for response in responses
+            ]
         sparse_embedding_model_inst = self._get_or_init_sparse_model(
             model_name=self.sparse_embedding_model_name, deprecated=True
         )
@@ -710,21 +716,22 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
             for sparse_vector in sparse_embedding_model_inst.embed(documents=query_texts)
         ]
         for sparse_vector in sparse_query_vectors:
-            request = models.SearchRequest(
-                vector=models.NamedSparseVector(
-                    name=self.get_sparse_vector_field_name(), vector=sparse_vector
-                ),
+            request = models.QueryRequest(
+                using=self.get_sparse_vector_field_name(),
+                query=sparse_vector,
                 filter=query_filter,
                 limit=limit,
                 with_payload=True,
                 **kwargs,
             )
             requests.append(request)
-        responses = await self.search_batch(collection_name=collection_name, requests=requests)
+        responses = await self.query_batch_points(
+            collection_name=collection_name, requests=requests
+        )
         dense_responses = responses[: len(query_texts)]
         sparse_responses = responses[len(query_texts) :]
         responses = [
-            reciprocal_rank_fusion([dense_response, sparse_response], limit=limit)
+            reciprocal_rank_fusion([dense_response.points, sparse_response.points], limit=limit)
             for (dense_response, sparse_response) in zip(dense_responses, sparse_responses)
         ]
         return [self._scored_points_to_query_responses(response) for response in responses]
@@ -756,7 +763,7 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
         Raises:
             ValueError: if query is not of supported type
         """
-        if isinstance(query, get_args(types.Query)) or isinstance(query, grpc.Query):
+        if isinstance(query, get_args(types.Query)):
             return query
         if isinstance(query, types.SparseVector):
             return models.NearestQuery(nearest=query)

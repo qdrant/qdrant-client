@@ -21,10 +21,11 @@ class TestGroupRecommendation:
         self.group_size = 1
 
     def simple_recommend_groups_image(self, client: QdrantBase) -> models.GroupsResult:
-        return client.recommend_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            positive=[10],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[10], negative=[])
+            ),
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=10,
             using="image",
@@ -34,23 +35,31 @@ class TestGroupRecommendation:
         )
 
     def simple_recommend_groups_best_scores(self, client: QdrantBase) -> models.GroupsResult:
-        return client.recommend_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            positive=[10],
-            negative=[],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10],
+                    negative=[],
+                    strategy=models.RecommendStrategy.BEST_SCORE,
+                ),
+            ),
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=10,
             using="image",
-            strategy=models.RecommendStrategy.BEST_SCORE,
             group_by=self.group_by,
             group_size=self.group_size,
             search_params=models.SearchParams(exact=True),
         )
 
     def many_recommend_groups(self, client: QdrantBase) -> models.GroupsResult:
-        return client.recommend_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            positive=[10, 19],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(
+                    positive=[10, 19], strategy=models.RecommendStrategy.SUM_SCORES
+                )
+            ),
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=10,
             using="image",
@@ -60,10 +69,11 @@ class TestGroupRecommendation:
         )
 
     def simple_recommend_groups_negative(self, client: QdrantBase) -> models.GroupsResult:
-        return client.recommend_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            positive=[10],
-            negative=[15, 7],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[10], negative=[15, 7])
+            ),
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=10,
             using="image",
@@ -73,10 +83,11 @@ class TestGroupRecommendation:
         )
 
     def recommend_groups_from_another_collection(self, client: QdrantBase) -> models.GroupsResult:
-        return client.recommend_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            positive=[10],
-            negative=[15, 7],
+            query=models.RecommendQuery(
+                recommend=models.RecommendInput(positive=[10], negative=[15, 7])
+            ),
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=10,
             using="image",
@@ -92,9 +103,9 @@ class TestGroupRecommendation:
     def filter_recommend_groups_text(
         self, client: QdrantBase, query_filter: models.Filter
     ) -> models.GroupsResult:
-        return client.recommend_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            positive=[10],
+            query=models.RecommendQuery(recommend=models.RecommendInput(positive=[10])),
             query_filter=query_filter,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=10,

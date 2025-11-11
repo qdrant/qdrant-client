@@ -26,13 +26,14 @@ class TestSimpleSparseSearcher:
         self.query_text = generate_random_sparse_vector(sparse_text_vector_size, density=0.1)
 
     def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=NamedSparseVector(name="sparse-text", vector=self.query_text),
+            using="sparse-text",
+            query=self.query_text,
             with_payload=True,
             with_vectors=["sparse-text"],
             limit=10,
-        )
+        ).points
 
 
 def test_simple_search():

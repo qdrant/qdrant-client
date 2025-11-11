@@ -11,61 +11,11 @@
 
 from typing import Any, Iterable, Mapping, Optional, Sequence, Union
 from qdrant_client.conversions import common_types as types
-from qdrant_client.http import models
 
 
 class AsyncQdrantBase:
     def __init__(self, **kwargs: Any):
         pass
-
-    async def search_batch(
-        self, collection_name: str, requests: Sequence[types.SearchRequest], **kwargs: Any
-    ) -> list[list[types.ScoredPoint]]:
-        raise NotImplementedError()
-
-    async def search(
-        self,
-        collection_name: str,
-        query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            tuple[str, list[float]],
-            types.NamedVector,
-            types.NamedSparseVector,
-        ],
-        query_filter: Optional[models.Filter] = None,
-        search_params: Optional[models.SearchParams] = None,
-        limit: int = 10,
-        offset: Optional[int] = None,
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        **kwargs: Any,
-    ) -> list[types.ScoredPoint]:
-        raise NotImplementedError()
-
-    async def search_groups(
-        self,
-        collection_name: str,
-        query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            tuple[str, list[float]],
-            types.NamedVector,
-            types.NamedSparseVector,
-        ],
-        group_by: str,
-        query_filter: Optional[models.Filter] = None,
-        search_params: Optional[models.SearchParams] = None,
-        limit: int = 10,
-        group_size: int = 1,
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        **kwargs: Any,
-    ) -> types.GroupsResult:
-        raise NotImplementedError()
 
     async def search_matrix_offsets(
         self,
@@ -152,74 +102,6 @@ class AsyncQdrantBase:
         lookup_from: Optional[types.LookupLocation] = None,
         **kwargs: Any,
     ) -> types.GroupsResult:
-        raise NotImplementedError()
-
-    async def recommend_batch(
-        self, collection_name: str, requests: Sequence[types.RecommendRequest], **kwargs: Any
-    ) -> list[list[types.ScoredPoint]]:
-        raise NotImplementedError()
-
-    async def recommend(
-        self,
-        collection_name: str,
-        positive: Optional[Sequence[types.RecommendExample]] = None,
-        negative: Optional[Sequence[types.RecommendExample]] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
-        limit: int = 10,
-        offset: int = 0,
-        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, list[str]] = False,
-        score_threshold: Optional[float] = None,
-        using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
-        **kwargs: Any,
-    ) -> list[types.ScoredPoint]:
-        raise NotImplementedError()
-
-    async def recommend_groups(
-        self,
-        collection_name: str,
-        group_by: str,
-        positive: Optional[Sequence[types.RecommendExample]] = None,
-        negative: Optional[Sequence[types.RecommendExample]] = None,
-        query_filter: Optional[models.Filter] = None,
-        search_params: Optional[models.SearchParams] = None,
-        limit: int = 10,
-        group_size: int = 1,
-        score_threshold: Optional[float] = None,
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        using: Optional[str] = None,
-        lookup_from: Optional[models.LookupLocation] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
-        **kwargs: Any,
-    ) -> types.GroupsResult:
-        raise NotImplementedError()
-
-    async def discover(
-        self,
-        collection_name: str,
-        target: Optional[types.TargetVector] = None,
-        context: Optional[Sequence[types.ContextExamplePair]] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
-        limit: int = 10,
-        offset: int = 0,
-        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, list[str]] = False,
-        using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        **kwargs: Any,
-    ) -> list[types.ScoredPoint]:
-        raise NotImplementedError()
-
-    async def discover_batch(
-        self, collection_name: str, requests: Sequence[types.DiscoverRequest], **kwargs: Any
-    ) -> list[list[types.ScoredPoint]]:
         raise NotImplementedError()
 
     async def scroll(
@@ -372,11 +254,6 @@ class AsyncQdrantBase:
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
         **kwargs: Any,
     ) -> bool:
-        raise NotImplementedError()
-
-    def upload_records(
-        self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
-    ) -> None:
         raise NotImplementedError()
 
     def upload_points(
