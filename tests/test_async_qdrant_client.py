@@ -38,8 +38,8 @@ async def test_async_qdrant_client(prefer_grpc):
 
     await client.get_collection(COLLECTION_NAME)
     await client.get_collections()
-    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 8, 0):
-        await client.collection_exists(COLLECTION_NAME)
+
+    await client.collection_exists(COLLECTION_NAME)
 
     await client.update_collection(
         COLLECTION_NAME, hnsw_config=models.HnswConfigDiff(m=32, ef_construct=120)
@@ -81,21 +81,23 @@ async def test_async_qdrant_client(prefer_grpc):
 
     assert (
         len(
-            await client.search(
-                COLLECTION_NAME,
-                query_vector=np.random.rand(10).tolist(),  # type: ignore
-                limit=10,
-            )
+            (
+                await client.query_points(
+                    COLLECTION_NAME,
+                    query=np.random.rand(10).tolist(),  # type: ignore
+                    limit=10,
+                )
+            ).points
         )
         == 10
     )
 
     assert (
         len(
-            await client.search_batch(
+            await client.query_batch_points(
                 COLLECTION_NAME,
                 requests=[
-                    models.SearchRequest(vector=np.random.rand(10).tolist(), limit=10)
+                    models.QueryRequest(query=np.random.rand(10).tolist(), limit=10)
                     for _ in range(3)
                 ],
             )
@@ -106,9 +108,9 @@ async def test_async_qdrant_client(prefer_grpc):
     assert (
         len(
             (
-                await client.search_groups(
+                await client.query_points_groups(
                     COLLECTION_NAME,
-                    query_vector=np.random.rand(10).tolist(),  # type: ignore
+                    query=np.random.rand(10).tolist(),  # type: ignore
                     limit=4,
                     group_by="random_dig",
                 )
@@ -117,12 +119,26 @@ async def test_async_qdrant_client(prefer_grpc):
         == 4
     )
 
-    assert len(await client.recommend(COLLECTION_NAME, positive=[0], limit=5)) == 5
     assert (
         len(
             (
-                await client.recommend_groups(
-                    COLLECTION_NAME, positive=[1], group_by="random_dig", limit=6
+                await client.query_points(
+                    COLLECTION_NAME,
+                    query=models.RecommendQuery(recommend=models.RecommendInput(positive=[0])),
+                    limit=5,
+                )
+            ).points
+        )
+        == 5
+    )
+    assert (
+        len(
+            (
+                await client.query_points_groups(
+                    COLLECTION_NAME,
+                    query=models.RecommendQuery(recommend=models.RecommendInput(positive=[1])),
+                    group_by="random_dig",
+                    limit=6,
                 )
             ).groups
         )
@@ -131,28 +147,21 @@ async def test_async_qdrant_client(prefer_grpc):
     assert (
         len(
             (
-                await client.recommend_batch(
+                await client.query_batch_points(
                     COLLECTION_NAME,
-                    requests=[models.RecommendRequest(positive=[2], limit=7)],
+                    requests=[
+                        models.QueryRequest(
+                            query=models.RecommendQuery(
+                                recommend=models.RecommendInput(positive=[2])
+                            ),
+                            limit=7,
+                        )
+                    ],
                 )
-            )[0]
+            )[0].points
         )
         == 7
     )
-
-    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
-        assert (
-            len(
-                (
-                    await client.query_points(COLLECTION_NAME, query=np.random.rand(10).tolist())
-                ).points
-            )
-            == 10
-        )
-        query_responses = await client.query_batch_points(
-            COLLECTION_NAME, requests=[models.QueryRequest(query=np.random.rand(10).tolist())]
-        )
-        assert len(query_responses) == 1 and len(query_responses[0].points) == 10
 
     assert len(await client.retrieve(COLLECTION_NAME, ids=[3, 5])) == 2
 
@@ -165,11 +174,6 @@ async def test_async_qdrant_client(prefer_grpc):
 
     await client.delete_payload_index(COLLECTION_NAME, field_name="random_dig")
     assert "random_dig" not in (await client.get_collection(COLLECTION_NAME)).payload_schema
-
-    assert not (await client.lock_storage(reason="test")).write
-    assert (await client.get_locks()).write
-    assert (await client.unlock_storage()).write
-    assert not (await client.get_locks()).write
 
     assert isinstance(await client.create_snapshot(COLLECTION_NAME), models.SnapshotDescription)
     snapshots = await client.list_snapshots(COLLECTION_NAME)
@@ -323,21 +327,23 @@ async def test_async_qdrant_client_local():
 
     assert (
         len(
-            await client.search(
-                COLLECTION_NAME,
-                query_vector=np.random.rand(10).tolist(),  # type: ignore
-                limit=10,
-            )
+            (
+                await client.query_points(
+                    COLLECTION_NAME,
+                    query=np.random.rand(10).tolist(),  # type: ignore
+                    limit=10,
+                )
+            ).points
         )
         == 10
     )
 
     assert (
         len(
-            await client.search_batch(
+            await client.query_batch_points(
                 COLLECTION_NAME,
                 requests=[
-                    models.SearchRequest(vector=np.random.rand(10).tolist(), limit=10)
+                    models.QueryRequest(query=np.random.rand(10).tolist(), limit=10)
                     for _ in range(3)
                 ],
             )
@@ -348,9 +354,9 @@ async def test_async_qdrant_client_local():
     assert (
         len(
             (
-                await client.search_groups(
+                await client.query_points_groups(
                     COLLECTION_NAME,
-                    query_vector=np.random.rand(10).tolist(),  # type: ignore
+                    query=np.random.rand(10).tolist(),  # type: ignore
                     limit=4,
                     group_by="random_dig",
                 )
@@ -359,26 +365,26 @@ async def test_async_qdrant_client_local():
         == 4
     )
 
-    if dev or None in (major, minor, patch) or (major, minor, patch) >= (1, 10, 0):
-        assert (
-            len(
-                (
-                    await client.query_points(COLLECTION_NAME, query=np.random.rand(10).tolist())
-                ).points
-            )
-            == 10
-        )
-        query_responses = await client.query_batch_points(
-            COLLECTION_NAME, requests=[models.QueryRequest(query=np.random.rand(10).tolist())]
-        )
-        assert len(query_responses) == 1 and len(query_responses[0].points) == 10
-
-    assert len(await client.recommend(COLLECTION_NAME, positive=[0], limit=5)) == 5
     assert (
         len(
             (
-                await client.recommend_groups(
-                    COLLECTION_NAME, positive=[1], group_by="random_dig", limit=6
+                await client.query_points(
+                    COLLECTION_NAME,
+                    query=models.RecommendQuery(recommend=models.RecommendInput(positive=[0])),
+                    limit=5,
+                )
+            ).points
+        )
+        == 5
+    )
+    assert (
+        len(
+            (
+                await client.query_points_groups(
+                    COLLECTION_NAME,
+                    query=models.RecommendQuery(recommend=models.RecommendInput(positive=[1])),
+                    group_by="random_dig",
+                    limit=6,
                 )
             ).groups
         )
@@ -387,11 +393,18 @@ async def test_async_qdrant_client_local():
     assert (
         len(
             (
-                await client.recommend_batch(
+                await client.query_batch_points(
                     COLLECTION_NAME,
-                    requests=[models.RecommendRequest(positive=[2], limit=7)],
+                    requests=[
+                        models.QueryRequest(
+                            query=models.RecommendQuery(
+                                recommend=models.RecommendInput(positive=[2])
+                            ),
+                            limit=7,
+                        )
+                    ],
                 )
-            )[0]
+            )[0].points
         )
         == 7
     )
@@ -405,8 +418,6 @@ async def test_async_qdrant_client_local():
     )
 
     await client.delete_payload_index(COLLECTION_NAME, field_name="random_dig")
-
-    assert await client.get_locks()
 
     assert len(await client.list_snapshots(COLLECTION_NAME)) == 0
     assert len(await client.list_full_snapshots()) == 0
@@ -499,7 +510,7 @@ async def test_async_auth():
     await client.get_collections()
     assert token == "token_1"
 
-    await client.unlock_storage()
+    await client.get_collections()
     assert token == "token_2"
 
     sync_token = ""
@@ -555,7 +566,7 @@ async def test_async_auth():
     await client.get_collections()
     assert sync_token == "token_1"
 
-    await client.unlock_storage()
+    await client.get_collections()
     assert sync_token == "token_2"
 
 
@@ -578,4 +589,4 @@ async def test_custom_sharding(prefer_grpc):
     collection_info = await client.get_collection(COLLECTION_NAME)
 
     assert collection_info.config.params.shard_number == 1
-    # assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM  # todo: fix in grpc
+    assert collection_info.config.params.sharding_method == models.ShardingMethod.CUSTOM

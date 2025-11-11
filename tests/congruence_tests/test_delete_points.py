@@ -21,14 +21,14 @@ def test_delete_points(local_client, remote_client):
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.search(COLLECTION_NAME, query_vector=NamedVector(name="image", vector=vector)),
+        lambda c: c.query_points(COLLECTION_NAME, query=vector, using="image").points,
     )
 
     found_ids = [
         scored_point.id
-        for scored_point in local_client.search(
-            COLLECTION_NAME, query_vector=NamedVector(name="image", vector=vector)
-        )
+        for scored_point in local_client.query_points(
+            COLLECTION_NAME, query=vector, using="image"
+        ).points
     ]
 
     local_client.delete(COLLECTION_NAME, found_ids)
@@ -39,10 +39,10 @@ def test_delete_points(local_client, remote_client):
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.search(COLLECTION_NAME, query_vector=NamedVector(name="image", vector=vector)),
+        lambda c: c.query_points(COLLECTION_NAME, query=vector, using="image").points,
     )
 
-    #delete non-existent points
+    # delete non-existent points
     local_client.delete(COLLECTION_NAME, found_ids)
     remote_client.delete(COLLECTION_NAME, found_ids)
 
@@ -51,7 +51,7 @@ def test_delete_points(local_client, remote_client):
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.search(COLLECTION_NAME, query_vector=NamedVector(name="image", vector=vector)),
+        lambda c: c.query_points(COLLECTION_NAME, query=vector, using="image").points,
     )
 
 
@@ -71,16 +71,18 @@ def test_delete_sparse_points():
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.search(
-            COLLECTION_NAME, query_vector=NamedSparseVector(name="sparse-image", vector=vector)
-        ),
+        lambda c: c.query_points(
+            COLLECTION_NAME,
+            query=vector,
+            using="sparse-image",
+        ).points,
     )
 
     found_ids = [
         scored_point.id
-        for scored_point in local_client.search(
-            COLLECTION_NAME, query_vector=NamedSparseVector(name="sparse-image", vector=vector)
-        )
+        for scored_point in local_client.query_points(
+            COLLECTION_NAME, query=vector, using="sparse-image"
+        ).points
     ]
 
     local_client.delete(COLLECTION_NAME, found_ids)
@@ -91,7 +93,5 @@ def test_delete_sparse_points():
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.search(
-            COLLECTION_NAME, query_vector=NamedSparseVector(name="sparse-image", vector=vector)
-        ),
+        lambda c: c.query_points(COLLECTION_NAME, query=vector, using="sparse-image").points,
     )

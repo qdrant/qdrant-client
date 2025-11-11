@@ -236,10 +236,14 @@ def test_search_invalid_vector_type():
 
     vector_invalid_type = {"multi-text": [1, 2, 3, 4]}
     with pytest.raises(ValueError):
-        local_client.search(collection_name=COLLECTION_NAME, query_vector=vector_invalid_type)
+        local_client.query_points(
+            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="multi-text"
+        )
 
     with pytest.raises(ValueError):
-        remote_client.search(collection_name=COLLECTION_NAME, query_vector=vector_invalid_type)
+        remote_client.query_points(
+            collection_name=COLLECTION_NAME, query=vector_invalid_type, using="multi-text"
+        )
 
 
 def test_query_with_nan():

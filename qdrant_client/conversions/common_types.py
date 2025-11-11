@@ -76,9 +76,6 @@ PointsSelector = Union[
 ]
 LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
 RecommendStrategy: TypeAlias = rest.RecommendStrategy
-RecommendExample: TypeAlias = rest.RecommendExample
-TargetVector = Union[rest.RecommendExample, grpc.TargetVector]
-ContextExamplePair = Union[rest.ContextExamplePair, grpc.ContextExamplePair]
 OrderBy = Union[rest.OrderByInterface, grpc.OrderBy]
 ShardingMethod: TypeAlias = rest.ShardingMethod
 ShardKey: TypeAlias = rest.ShardKey
@@ -108,10 +105,8 @@ VectorInput: TypeAlias = rest.VectorInput
 VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
 SparseVectorParams: TypeAlias = rest.SparseVectorParams
-LocksOption: TypeAlias = rest.LocksOption
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
-InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
 Query: TypeAlias = rest.Query
 Prefetch: TypeAlias = rest.Prefetch
@@ -120,10 +115,7 @@ Image: TypeAlias = rest.Image
 InferenceObject: TypeAlias = rest.InferenceObject
 StrictModeConfig: TypeAlias = rest.StrictModeConfig
 
-SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
-RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
-DiscoverRequest = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
-QueryRequest = Union[rest.QueryRequest, grpc.QueryPoints]
+QueryRequest: TypeAlias = rest.QueryRequest
 
 Mmr: TypeAlias = rest.Mmr
 

@@ -17,7 +17,6 @@ from typing import (
 )
 
 import httpx
-import numpy as np
 from grpc import Compression
 from urllib3.util import Url, parse_url
 from urllib.parse import urljoin
@@ -426,181 +425,6 @@ class QdrantRemote(QdrantBase):
         """
         return self.openapi_client
 
-    def search_batch(
-        self,
-        collection_name: str,
-        requests: Sequence[types.SearchRequest],
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> list[list[types.ScoredPoint]]:
-        if self._prefer_grpc:
-            requests = [
-                (
-                    RestToGrpc.convert_search_request(r, collection_name)
-                    if isinstance(r, models.SearchRequest)
-                    else r
-                )
-                for r in requests
-            ]
-
-            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
-                consistency = RestToGrpc.convert_read_consistency(consistency)
-
-            grpc_res: grpc.SearchBatchResponse = self.grpc_points.SearchBatch(
-                grpc.SearchBatchPoints(
-                    collection_name=collection_name,
-                    search_points=requests,
-                    read_consistency=consistency,
-                    timeout=timeout,
-                ),
-                timeout=timeout if timeout is not None else self._timeout,
-            )
-
-            return [
-                [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
-            ]
-        else:
-            requests = [
-                (GrpcToRest.convert_search_points(r) if isinstance(r, grpc.SearchPoints) else r)
-                for r in requests
-            ]
-            http_res: Optional[list[list[models.ScoredPoint]]] = (
-                self.http.search_api.search_batch_points(
-                    collection_name=collection_name,
-                    consistency=consistency,
-                    timeout=timeout,
-                    search_request_batch=models.SearchRequestBatch(searches=requests),
-                ).result
-            )
-            assert http_res is not None, "Search batch returned None"
-            return http_res
-
-    def search(
-        self,
-        collection_name: str,
-        query_vector: Union[
-            Sequence[float],
-            tuple[str, list[float]],
-            types.NamedVector,
-            types.NamedSparseVector,
-            types.NumpyArray,
-        ],
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
-        limit: int = 10,
-        offset: Optional[int] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        append_payload: bool = True,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> list[types.ScoredPoint]:
-        if not append_payload:
-            show_warning_once(
-                message="Usage of `append_payload` is deprecated. Please consider using `with_payload` instead",
-                category=DeprecationWarning,
-                stacklevel=5,
-                idx="search-append-payload",
-            )
-            with_payload = append_payload
-
-        if isinstance(query_vector, np.ndarray):
-            query_vector = query_vector.tolist()
-
-        if self._prefer_grpc:
-            vector_name = None
-            sparse_indices = None
-
-            if isinstance(query_vector, types.NamedVector):
-                vector = query_vector.vector
-                vector_name = query_vector.name
-            elif isinstance(query_vector, types.NamedSparseVector):
-                vector_name = query_vector.name
-                sparse_indices = grpc.SparseIndices(data=query_vector.vector.indices)
-                vector = query_vector.vector.values
-            elif isinstance(query_vector, tuple):
-                vector_name = query_vector[0]
-                vector = query_vector[1]
-            else:
-                vector = list(query_vector)
-
-            if isinstance(query_filter, models.Filter):
-                query_filter = RestToGrpc.convert_filter(model=query_filter)
-
-            if isinstance(search_params, models.SearchParams):
-                search_params = RestToGrpc.convert_search_params(search_params)
-
-            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
-                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
-            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
-                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
-            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
-                consistency = RestToGrpc.convert_read_consistency(consistency)
-
-            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
-                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
-
-            res: grpc.SearchResponse = self.grpc_points.Search(
-                grpc.SearchPoints(
-                    collection_name=collection_name,
-                    vector=vector,
-                    vector_name=vector_name,
-                    filter=query_filter,
-                    limit=limit,
-                    offset=offset,
-                    with_vectors=with_vectors,
-                    with_payload=with_payload,
-                    params=search_params,
-                    score_threshold=score_threshold,
-                    read_consistency=consistency,
-                    timeout=timeout,
-                    sparse_indices=sparse_indices,
-                    shard_key_selector=shard_key_selector,
-                ),
-                timeout=timeout if timeout is not None else self._timeout,
-            )
-
-            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
-
-        else:
-            if isinstance(query_vector, tuple):
-                query_vector = types.NamedVector(name=query_vector[0], vector=query_vector[1])
-
-            if isinstance(query_filter, grpc.Filter):
-                query_filter = GrpcToRest.convert_filter(model=query_filter)
-
-            if isinstance(search_params, grpc.SearchParams):
-                search_params = GrpcToRest.convert_search_params(search_params)
-
-            if isinstance(with_payload, grpc.WithPayloadSelector):
-                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
-            search_result = self.http.search_api.search_points(
-                collection_name=collection_name,
-                consistency=consistency,
-                timeout=timeout,
-                search_request=models.SearchRequest(
-                    vector=query_vector,
-                    filter=query_filter,
-                    limit=limit,
-                    offset=offset,
-                    params=search_params,
-                    with_vector=with_vectors,
-                    with_payload=with_payload,
-                    score_threshold=score_threshold,
-                    shard_key=shard_key_selector,
-                ),
-            )
-            result: Optional[list[types.ScoredPoint]] = search_result.result
-            assert result is not None, "Search returned None"
-            return result
-
     def query_points(
         self,
         collection_name: str,
@@ -690,20 +514,6 @@ class QdrantRemote(QdrantBase):
             return models.QueryResponse(points=scored_points)
 
         else:
-            if isinstance(query, grpc.Query):
-                query = GrpcToRest.convert_query(query)
-
-            if isinstance(prefetch, grpc.PrefetchQuery):
-                prefetch = GrpcToRest.convert_prefetch_query(prefetch)
-
-            if isinstance(prefetch, list):
-                prefetch = [
-                    GrpcToRest.convert_prefetch_query(p)
-                    if isinstance(p, grpc.PrefetchQuery)
-                    else p
-                    for p in prefetch
-                ]
-
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
 
@@ -780,10 +590,6 @@ class QdrantRemote(QdrantBase):
                 for r in grpc_res.result
             ]
         else:
-            requests = [
-                (GrpcToRest.convert_query_points(r) if isinstance(r, grpc.QueryPoints) else r)
-                for r in requests
-            ]
             http_res: Optional[list[models.QueryResponse]] = (
                 self.http.search_api.query_batch_points(
                     collection_name=collection_name,
@@ -891,20 +697,6 @@ class QdrantRemote(QdrantBase):
             ).result
             return GrpcToRest.convert_groups_result(result)
         else:
-            if isinstance(query, grpc.Query):
-                query = GrpcToRest.convert_query(query)
-
-            if isinstance(prefetch, grpc.PrefetchQuery):
-                prefetch = GrpcToRest.convert_prefetch_query(prefetch)
-
-            if isinstance(prefetch, list):
-                prefetch = [
-                    GrpcToRest.convert_prefetch_query(p)
-                    if isinstance(p, grpc.PrefetchQuery)
-                    else p
-                    for p in prefetch
-                ]
-
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
 
@@ -913,9 +705,6 @@ class QdrantRemote(QdrantBase):
 
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
-            if isinstance(with_lookup, grpc.WithLookup):
-                with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
 
             if isinstance(lookup_from, grpc.LookupLocation):
                 lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
@@ -945,139 +734,6 @@ class QdrantRemote(QdrantBase):
             )
             assert query_result is not None, "Query points groups API returned None"
             return query_result.result
-
-    def search_groups(
-        self,
-        collection_name: str,
-        query_vector: Union[
-            Sequence[float],
-            tuple[str, list[float]],
-            types.NamedVector,
-            types.NamedSparseVector,
-            types.NumpyArray,
-        ],
-        group_by: str,
-        query_filter: Optional[models.Filter] = None,
-        search_params: Optional[models.SearchParams] = None,
-        limit: int = 10,
-        group_size: int = 1,
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> types.GroupsResult:
-        if self._prefer_grpc:
-            vector_name = None
-            sparse_indices = None
-
-            if isinstance(with_lookup, models.WithLookup):
-                with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
-
-            if isinstance(with_lookup, str):
-                with_lookup = grpc.WithLookup(collection=with_lookup)
-
-            if isinstance(query_vector, types.NamedVector):
-                vector = query_vector.vector
-                vector_name = query_vector.name
-            elif isinstance(query_vector, types.NamedSparseVector):
-                vector_name = query_vector.name
-                sparse_indices = grpc.SparseIndices(data=query_vector.vector.indices)
-                vector = query_vector.vector.values
-            elif isinstance(query_vector, tuple):
-                vector_name = query_vector[0]
-                vector = query_vector[1]
-            else:
-                vector = list(query_vector)
-
-            if isinstance(query_filter, models.Filter):
-                query_filter = RestToGrpc.convert_filter(model=query_filter)
-
-            if isinstance(search_params, models.SearchParams):
-                search_params = RestToGrpc.convert_search_params(search_params)
-
-            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
-                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
-            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
-                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
-            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
-                consistency = RestToGrpc.convert_read_consistency(consistency)
-
-            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
-                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
-
-            result: grpc.GroupsResult = self.grpc_points.SearchGroups(
-                grpc.SearchPointGroups(
-                    collection_name=collection_name,
-                    vector=vector,
-                    vector_name=vector_name,
-                    filter=query_filter,
-                    limit=limit,
-                    group_size=group_size,
-                    with_vectors=with_vectors,
-                    with_payload=with_payload,
-                    params=search_params,
-                    score_threshold=score_threshold,
-                    group_by=group_by,
-                    read_consistency=consistency,
-                    with_lookup=with_lookup,
-                    timeout=timeout,
-                    sparse_indices=sparse_indices,
-                    shard_key_selector=shard_key_selector,
-                ),
-                timeout=timeout if timeout is not None else self._timeout,
-            ).result
-
-            return GrpcToRest.convert_groups_result(result)
-        else:
-            if isinstance(with_lookup, grpc.WithLookup):
-                with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
-
-            if isinstance(query_vector, tuple):
-                query_vector = construct(
-                    models.NamedVector,
-                    name=query_vector[0],
-                    vector=query_vector[1],
-                )
-
-            if isinstance(query_vector, np.ndarray):
-                query_vector = query_vector.tolist()
-
-            if isinstance(query_filter, grpc.Filter):
-                query_filter = GrpcToRest.convert_filter(model=query_filter)
-
-            if isinstance(search_params, grpc.SearchParams):
-                search_params = GrpcToRest.convert_search_params(search_params)
-
-            if isinstance(with_payload, grpc.WithPayloadSelector):
-                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
-            search_groups_request = construct(
-                models.SearchGroupsRequest,
-                vector=query_vector,
-                filter=query_filter,
-                params=search_params,
-                with_payload=with_payload,
-                with_vector=with_vectors,
-                score_threshold=score_threshold,
-                group_by=group_by,
-                group_size=group_size,
-                limit=limit,
-                with_lookup=with_lookup,
-                shard_key=shard_key_selector,
-            )
-
-            return self.openapi_client.search_api.search_point_groups(
-                search_groups_request=search_groups_request,
-                collection_name=collection_name,
-                consistency=consistency,
-                timeout=timeout,
-            ).result
 
     def search_matrix_pairs(
         self,
@@ -1190,521 +846,6 @@ class QdrantRemote(QdrantBase):
         assert search_matrix_result is not None, "Search matrix offsets returned None result"
 
         return search_matrix_result
-
-    def recommend_batch(
-        self,
-        collection_name: str,
-        requests: Sequence[types.RecommendRequest],
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> list[list[types.ScoredPoint]]:
-        if self._prefer_grpc:
-            requests = [
-                (
-                    RestToGrpc.convert_recommend_request(r, collection_name)
-                    if isinstance(r, models.RecommendRequest)
-                    else r
-                )
-                for r in requests
-            ]
-
-            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
-                consistency = RestToGrpc.convert_read_consistency(consistency)
-
-            grpc_res: grpc.SearchBatchResponse = self.grpc_points.RecommendBatch(
-                grpc.RecommendBatchPoints(
-                    collection_name=collection_name,
-                    recommend_points=requests,
-                    read_consistency=consistency,
-                    timeout=timeout,
-                ),
-                timeout=timeout if timeout is not None else self._timeout,
-            )
-
-            return [
-                [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
-            ]
-        else:
-            requests = [
-                (
-                    GrpcToRest.convert_recommend_points(r)
-                    if isinstance(r, grpc.RecommendPoints)
-                    else r
-                )
-                for r in requests
-            ]
-            http_res: list[list[models.ScoredPoint]] = self.http.search_api.recommend_batch_points(
-                collection_name=collection_name,
-                consistency=consistency,
-                timeout=timeout,
-                recommend_request_batch=models.RecommendRequestBatch(searches=requests),
-            ).result
-            return http_res
-
-    def recommend(
-        self,
-        collection_name: str,
-        positive: Optional[Sequence[types.RecommendExample]] = None,
-        negative: Optional[Sequence[types.RecommendExample]] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
-        limit: int = 10,
-        offset: int = 0,
-        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, list[str]] = False,
-        score_threshold: Optional[float] = None,
-        using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> list[types.ScoredPoint]:
-        if positive is None:
-            positive = []
-
-        if negative is None:
-            negative = []
-
-        if self._prefer_grpc:
-            positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
-            positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
-
-            negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
-            negative_vectors = RestToGrpc.convert_recommend_examples_to_vectors(negative)
-
-            if isinstance(query_filter, models.Filter):
-                query_filter = RestToGrpc.convert_filter(model=query_filter)
-
-            if isinstance(search_params, models.SearchParams):
-                search_params = RestToGrpc.convert_search_params(search_params)
-
-            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
-                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
-            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
-                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
-            if isinstance(lookup_from, models.LookupLocation):
-                lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
-
-            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
-                consistency = RestToGrpc.convert_read_consistency(consistency)
-
-            if isinstance(strategy, (str, models.RecommendStrategy)):
-                strategy = RestToGrpc.convert_recommend_strategy(strategy)
-
-            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
-                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
-
-            res: grpc.SearchResponse = self.grpc_points.Recommend(
-                grpc.RecommendPoints(
-                    collection_name=collection_name,
-                    positive=positive_ids,
-                    negative=negative_ids,
-                    filter=query_filter,
-                    limit=limit,
-                    offset=offset,
-                    with_vectors=with_vectors,
-                    with_payload=with_payload,
-                    params=search_params,
-                    score_threshold=score_threshold,
-                    using=using,
-                    lookup_from=lookup_from,
-                    read_consistency=consistency,
-                    strategy=strategy,
-                    positive_vectors=positive_vectors,
-                    negative_vectors=negative_vectors,
-                    shard_key_selector=shard_key_selector,
-                    timeout=timeout,
-                ),
-                timeout=timeout if timeout is not None else self._timeout,
-            )
-
-            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
-        else:
-            positive = [
-                (
-                    GrpcToRest.convert_point_id(example)
-                    if isinstance(example, grpc.PointId)
-                    else example
-                )
-                for example in positive
-            ]
-
-            negative = [
-                (
-                    GrpcToRest.convert_point_id(example)
-                    if isinstance(example, grpc.PointId)
-                    else example
-                )
-                for example in negative
-            ]
-
-            if isinstance(query_filter, grpc.Filter):
-                query_filter = GrpcToRest.convert_filter(model=query_filter)
-
-            if isinstance(search_params, grpc.SearchParams):
-                search_params = GrpcToRest.convert_search_params(search_params)
-
-            if isinstance(with_payload, grpc.WithPayloadSelector):
-                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
-            if isinstance(lookup_from, grpc.LookupLocation):
-                lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
-
-            result = self.openapi_client.search_api.recommend_points(
-                collection_name=collection_name,
-                consistency=consistency,
-                timeout=timeout,
-                recommend_request=models.RecommendRequest(
-                    filter=query_filter,
-                    positive=positive,
-                    negative=negative,
-                    params=search_params,
-                    limit=limit,
-                    offset=offset,
-                    with_payload=with_payload,
-                    with_vector=with_vectors,
-                    score_threshold=score_threshold,
-                    lookup_from=lookup_from,
-                    using=using,
-                    strategy=strategy,
-                    shard_key=shard_key_selector,
-                ),
-            ).result
-            assert result is not None, "Recommend points API returned None"
-            return result
-
-    def recommend_groups(
-        self,
-        collection_name: str,
-        group_by: str,
-        positive: Optional[Sequence[Union[types.PointId, list[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, list[float]]]] = None,
-        query_filter: Optional[models.Filter] = None,
-        search_params: Optional[models.SearchParams] = None,
-        limit: int = 10,
-        group_size: int = 1,
-        score_threshold: Optional[float] = None,
-        with_payload: Union[bool, Sequence[str], models.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        using: Optional[str] = None,
-        lookup_from: Optional[models.LookupLocation] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> types.GroupsResult:
-        positive = positive if positive is not None else []
-        negative = negative if negative is not None else []
-
-        if self._prefer_grpc:
-            if isinstance(with_lookup, models.WithLookup):
-                with_lookup = RestToGrpc.convert_with_lookup(with_lookup)
-
-            if isinstance(with_lookup, str):
-                with_lookup = grpc.WithLookup(collection=with_lookup)
-
-            positive_ids = RestToGrpc.convert_recommend_examples_to_ids(positive)
-            positive_vectors = RestToGrpc.convert_recommend_examples_to_vectors(positive)
-
-            negative_ids = RestToGrpc.convert_recommend_examples_to_ids(negative)
-            negative_vectors = RestToGrpc.convert_recommend_examples_to_vectors(negative)
-
-            if isinstance(query_filter, models.Filter):
-                query_filter = RestToGrpc.convert_filter(model=query_filter)
-
-            if isinstance(search_params, models.SearchParams):
-                search_params = RestToGrpc.convert_search_params(search_params)
-
-            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
-                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
-            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
-                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
-            if isinstance(lookup_from, models.LookupLocation):
-                lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
-
-            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
-                consistency = RestToGrpc.convert_read_consistency(consistency)
-
-            if isinstance(strategy, (str, models.RecommendStrategy)):
-                strategy = RestToGrpc.convert_recommend_strategy(strategy)
-
-            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
-                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
-
-            res: grpc.GroupsResult = self.grpc_points.RecommendGroups(
-                grpc.RecommendPointGroups(
-                    collection_name=collection_name,
-                    positive=positive_ids,
-                    negative=negative_ids,
-                    filter=query_filter,
-                    group_by=group_by,
-                    limit=limit,
-                    group_size=group_size,
-                    with_vectors=with_vectors,
-                    with_payload=with_payload,
-                    params=search_params,
-                    score_threshold=score_threshold,
-                    using=using,
-                    lookup_from=lookup_from,
-                    read_consistency=consistency,
-                    with_lookup=with_lookup,
-                    strategy=strategy,
-                    positive_vectors=positive_vectors,
-                    negative_vectors=negative_vectors,
-                    shard_key_selector=shard_key_selector,
-                    timeout=timeout,
-                ),
-                timeout=timeout if timeout is not None else self._timeout,
-            ).result
-
-            assert res is not None, "Recommend groups API returned None"
-            return GrpcToRest.convert_groups_result(res)
-        else:
-            if isinstance(with_lookup, grpc.WithLookup):
-                with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
-
-            positive = [
-                (
-                    GrpcToRest.convert_point_id(point_id)
-                    if isinstance(point_id, grpc.PointId)
-                    else point_id
-                )
-                for point_id in positive
-            ]
-
-            negative = [
-                (
-                    GrpcToRest.convert_point_id(point_id)
-                    if isinstance(point_id, grpc.PointId)
-                    else point_id
-                )
-                for point_id in negative
-            ]
-
-            if isinstance(query_filter, grpc.Filter):
-                query_filter = GrpcToRest.convert_filter(model=query_filter)
-
-            if isinstance(search_params, grpc.SearchParams):
-                search_params = GrpcToRest.convert_search_params(search_params)
-
-            if isinstance(with_payload, grpc.WithPayloadSelector):
-                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
-            if isinstance(lookup_from, grpc.LookupLocation):
-                lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
-
-            result = self.openapi_client.search_api.recommend_point_groups(
-                collection_name=collection_name,
-                consistency=consistency,
-                timeout=timeout,
-                recommend_groups_request=construct(
-                    models.RecommendGroupsRequest,
-                    positive=positive,
-                    negative=negative,
-                    filter=query_filter,
-                    group_by=group_by,
-                    limit=limit,
-                    group_size=group_size,
-                    params=search_params,
-                    with_payload=with_payload,
-                    with_vector=with_vectors,
-                    score_threshold=score_threshold,
-                    lookup_from=lookup_from,
-                    using=using,
-                    with_lookup=with_lookup,
-                    strategy=strategy,
-                    shard_key=shard_key_selector,
-                ),
-            ).result
-
-            assert result is not None, "Recommend points API returned None"
-            return result
-
-    def discover(
-        self,
-        collection_name: str,
-        target: Optional[types.TargetVector] = None,
-        context: Optional[Sequence[types.ContextExamplePair]] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
-        limit: int = 10,
-        offset: int = 0,
-        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, list[str]] = False,
-        using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> list[types.ScoredPoint]:
-        if context is None:
-            context = []
-
-        if self._prefer_grpc:
-            target = (
-                RestToGrpc.convert_target_vector(target)
-                if target is not None
-                and isinstance(target, get_args_subscribed(models.RecommendExample))
-                else target
-            )
-
-            context = [
-                (
-                    RestToGrpc.convert_context_example_pair(pair)
-                    if isinstance(pair, models.ContextExamplePair)
-                    else pair
-                )
-                for pair in context
-            ]
-
-            if isinstance(query_filter, models.Filter):
-                query_filter = RestToGrpc.convert_filter(model=query_filter)
-
-            if isinstance(search_params, models.SearchParams):
-                search_params = RestToGrpc.convert_search_params(search_params)
-
-            if isinstance(with_payload, get_args_subscribed(models.WithPayloadInterface)):
-                with_payload = RestToGrpc.convert_with_payload_interface(with_payload)
-
-            if isinstance(with_vectors, get_args_subscribed(models.WithVector)):
-                with_vectors = RestToGrpc.convert_with_vectors(with_vectors)
-
-            if isinstance(lookup_from, models.LookupLocation):
-                lookup_from = RestToGrpc.convert_lookup_location(lookup_from)
-
-            if isinstance(consistency, get_args_subscribed(models.ReadConsistency)):
-                consistency = RestToGrpc.convert_read_consistency(consistency)
-
-            if isinstance(shard_key_selector, get_args_subscribed(models.ShardKeySelector)):
-                shard_key_selector = RestToGrpc.convert_shard_key_selector(shard_key_selector)
-
-            res: grpc.SearchResponse = self.grpc_points.Discover(
-                grpc.DiscoverPoints(
-                    collection_name=collection_name,
-                    target=target,
-                    context=context,
-                    filter=query_filter,
-                    limit=limit,
-                    offset=offset,
-                    with_vectors=with_vectors,
-                    with_payload=with_payload,
-                    params=search_params,
-                    using=using,
-                    lookup_from=lookup_from,
-                    read_consistency=consistency,
-                    shard_key_selector=shard_key_selector,
-                    timeout=timeout,
-                ),
-                timeout=timeout if timeout is not None else self._timeout,
-            )
-
-            return [GrpcToRest.convert_scored_point(hit) for hit in res.result]
-        else:
-            target = (
-                GrpcToRest.convert_target_vector(target)
-                if target is not None and isinstance(target, grpc.TargetVector)
-                else target
-            )
-
-            context = [
-                (
-                    GrpcToRest.convert_context_example_pair(pair)
-                    if isinstance(pair, grpc.ContextExamplePair)
-                    else pair
-                )
-                for pair in context
-            ]
-
-            if isinstance(query_filter, grpc.Filter):
-                query_filter = GrpcToRest.convert_filter(model=query_filter)
-
-            if isinstance(search_params, grpc.SearchParams):
-                search_params = GrpcToRest.convert_search_params(search_params)
-
-            if isinstance(with_payload, grpc.WithPayloadSelector):
-                with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-
-            if isinstance(lookup_from, grpc.LookupLocation):
-                lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
-
-            result = self.openapi_client.search_api.discover_points(
-                collection_name=collection_name,
-                consistency=consistency,
-                timeout=timeout,
-                discover_request=models.DiscoverRequest(
-                    target=target,
-                    context=context,
-                    filter=query_filter,
-                    params=search_params,
-                    limit=limit,
-                    offset=offset,
-                    with_payload=with_payload,
-                    with_vector=with_vectors,
-                    lookup_from=lookup_from,
-                    using=using,
-                    shard_key=shard_key_selector,
-                ),
-            ).result
-            assert result is not None, "Discover points API returned None"
-            return result
-
-    def discover_batch(
-        self,
-        collection_name: str,
-        requests: Sequence[types.DiscoverRequest],
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> list[list[types.ScoredPoint]]:
-        if self._prefer_grpc:
-            requests = [
-                (
-                    RestToGrpc.convert_discover_request(r, collection_name)
-                    if isinstance(r, models.DiscoverRequest)
-                    else r
-                )
-                for r in requests
-            ]
-
-            grpc_res: grpc.SearchBatchResponse = self.grpc_points.DiscoverBatch(
-                grpc.DiscoverBatchPoints(
-                    collection_name=collection_name,
-                    discover_points=requests,
-                    read_consistency=consistency,
-                    timeout=timeout,
-                ),
-                timeout=timeout if timeout is not None else self._timeout,
-            )
-
-            return [
-                [GrpcToRest.convert_scored_point(hit) for hit in r.result] for r in grpc_res.result
-            ]
-        else:
-            requests = [
-                (
-                    GrpcToRest.convert_discover_points(r)
-                    if isinstance(r, grpc.DiscoverPoints)
-                    else r
-                )
-                for r in requests
-            ]
-            http_res: list[list[models.ScoredPoint]] = self.http.search_api.discover_batch_points(
-                collection_name=collection_name,
-                discover_request_batch=models.DiscoverRequestBatch(searches=requests),
-                consistency=consistency,
-                timeout=timeout,
-            ).result
-            return http_res
 
     def scroll(
         self,
@@ -2808,7 +1949,6 @@ class QdrantRemote(QdrantBase):
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
         quantization_config: Optional[types.QuantizationConfig] = None,
-        init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
@@ -2816,14 +1956,6 @@ class QdrantRemote(QdrantBase):
         metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
-        if init_from is not None:
-            show_warning_once(
-                message="init_from is deprecated",
-                category=DeprecationWarning,
-                stacklevel=5,
-                idx="create-collection-init-from",
-            )
-
         if self._prefer_grpc:
             if isinstance(vectors_config, (models.VectorParams, dict)):
                 vectors_config = RestToGrpc.convert_vectors_config(vectors_config)
@@ -2842,9 +1974,6 @@ class QdrantRemote(QdrantBase):
                 get_args(models.QuantizationConfig),
             ):
                 quantization_config = RestToGrpc.convert_quantization_config(quantization_config)
-
-            if isinstance(init_from, models.InitFrom):
-                init_from = RestToGrpc.convert_init_from(init_from)
 
             if isinstance(sparse_vectors_config, dict):
                 sparse_vectors_config = RestToGrpc.convert_sparse_vector_config(
@@ -2871,7 +2000,6 @@ class QdrantRemote(QdrantBase):
                 vectors_config=vectors_config,
                 replication_factor=replication_factor,
                 write_consistency_factor=write_consistency_factor,
-                init_from_collection=init_from,
                 quantization_config=quantization_config,
                 sparse_vectors_config=sparse_vectors_config,
                 sharding_method=sharding_method,
@@ -2892,9 +2020,6 @@ class QdrantRemote(QdrantBase):
         if isinstance(quantization_config, grpc.QuantizationConfig):
             quantization_config = GrpcToRest.convert_quantization_config(quantization_config)
 
-        if isinstance(init_from, str):
-            init_from = GrpcToRest.convert_init_from(init_from)
-
         create_collection_request = models.CreateCollection(
             vectors=vectors_config,
             shard_number=shard_number,
@@ -2905,7 +2030,6 @@ class QdrantRemote(QdrantBase):
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
-            init_from=init_from,
             sparse_vectors=sparse_vectors_config,
             sharding_method=sharding_method,
             strict_mode_config=strict_mode_config,
@@ -2933,7 +2057,6 @@ class QdrantRemote(QdrantBase):
         optimizers_config: Optional[types.OptimizersConfigDiff] = None,
         wal_config: Optional[types.WalConfigDiff] = None,
         quantization_config: Optional[types.QuantizationConfig] = None,
-        init_from: Optional[types.InitFrom] = None,
         timeout: Optional[int] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         sharding_method: Optional[types.ShardingMethod] = None,
@@ -2954,7 +2077,6 @@ class QdrantRemote(QdrantBase):
             optimizers_config=optimizers_config,
             wal_config=wal_config,
             quantization_config=quantization_config,
-            init_from=init_from,
             timeout=timeout,
             sparse_vectors_config=sparse_vectors_config,
             sharding_method=sharding_method,
@@ -3023,31 +2145,6 @@ class QdrantRemote(QdrantBase):
             pool = ParallelWorkerPool(parallel, self._updater_class, start_method=start_method)
             for _ in pool.unordered_map(batches_iterator, **updater_kwargs):
                 pass
-
-    def upload_records(
-        self,
-        collection_name: str,
-        records: Iterable[types.Record],
-        batch_size: int = 64,
-        parallel: int = 1,
-        method: Optional[str] = None,
-        max_retries: int = 3,
-        wait: bool = False,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        **kwargs: Any,
-    ) -> None:
-        batches_iterator = self._updater_class.iterate_records_batches(
-            records=records, batch_size=batch_size
-        )
-        self._upload_collection(
-            batches_iterator=batches_iterator,
-            collection_name=collection_name,
-            max_retries=max_retries,
-            parallel=parallel,
-            method=method,
-            shard_key_selector=shard_key_selector,
-            wait=wait,
-        )
 
     def upload_points(
         self,
@@ -3394,25 +2491,6 @@ class QdrantRemote(QdrantBase):
                 api_key=api_key,
             ),
         ).result
-
-    def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
-            models.LocksOption(error_message=reason, write=True)
-        ).result
-        assert result is not None, "Lock storage returned None"
-        return result
-
-    def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = self.openapi_client.service_api.post_locks(
-            models.LocksOption(write=False)
-        ).result
-        assert result is not None, "Post locks returned None"
-        return result
-
-    def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        result: Optional[types.LocksOption] = self.openapi_client.service_api.get_locks().result
-        assert result is not None, "Get locks returned None"
-        return result
 
     def create_shard_key(
         self,

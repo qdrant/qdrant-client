@@ -1672,12 +1672,6 @@ class LocalCollection:
     def _preprocess_target(
         target: Optional[models.VectorInput], collection: "LocalCollection", vector_name: str
     ) -> tuple[models.Vector, Optional[types.PointId]]:
-        # todo: context can no longer be grpc.TargetVector, but models.VectorInput, currently, grpc types are not supported
-        target = (
-            GrpcToRest.convert_target_vector(target)
-            if target is not None and isinstance(target, grpc.TargetVector)
-            else target
-        )
         if isinstance(target, get_args(types.PointId)):
             if target not in collection.ids:
                 raise ValueError(f"Point {target} is not found in the collection")
@@ -1699,15 +1693,6 @@ class LocalCollection:
     ) -> tuple[
         list[ContextPair], list[SparseContextPair], list[MultiContextPair], list[types.PointId]
     ]:
-        # todo: context can no longer be ContextExamplePair, currently grpc types are not supported
-        context = [
-            (
-                GrpcToRest.convert_context_example_pair(pair)
-                if isinstance(pair, grpc.ContextExamplePair)
-                else pair
-            )
-            for pair in context
-        ]
         mentioned_ids = []
         dense_context_vectors = []
         sparse_context_vectors = []

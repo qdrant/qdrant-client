@@ -205,7 +205,7 @@ message HnswConfigDiff {
      random seeks during the search.
      Requires quantized vectors to be enabled. Multi-vectors are not supported.
   */
-  optional bool copy_vectors = 7;
+  optional bool inline_storage = 7;
 }
 
 message SparseIndexConfig {
@@ -416,7 +416,7 @@ message CreateCollection {
   optional VectorsConfig vectors_config = 10; // Configuration for vectors
   optional uint32 replication_factor = 11; // Number of replicas of each shard that network tries to maintain, default = 1
   optional uint32 write_consistency_factor = 12; // How many replicas should apply the operation for us to consider it successful, default = 1
-  optional string init_from_collection = 13; // Deprecated: specify name of the other collection to copy data from
+  reserved 13; // Deprecated: init_from
   optional QuantizationConfig quantization_config = 14; // Quantization configuration of vector
   optional ShardingMethod sharding_method = 15; // Sharding method
   optional SparseVectorConfig sparse_vectors_config = 16; // Configuration for sparse vectors
@@ -520,6 +520,7 @@ message TextIndexParams {
   optional StopwordsSet stopwords = 6; // Stopwords for the text index
   optional bool phrase_matching = 7; // If true - support phrase matching.
   optional StemmingAlgorithm stemmer = 8; // Set an algorithm for stemming.
+  optional bool ascii_folding = 9; // If true, normalize tokens by folding accented characters to ASCII (e.g., "ação" -> "acao"). Default: false.
 }
 
 message StemmingAlgorithm {

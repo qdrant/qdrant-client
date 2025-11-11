@@ -65,7 +65,7 @@ class _AliasesApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2009,
+            type_=m.InlineResponse2008,
             method="GET",
             url="/collections/{collection_name}/aliases",
             headers=headers if headers else None,
@@ -80,7 +80,7 @@ class _AliasesApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2009,
+            type_=m.InlineResponse2008,
             method="GET",
             url="/aliases",
             headers=headers if headers else None,
@@ -113,7 +113,7 @@ class AsyncAliasesApi(_AliasesApi):
     async def get_collection_aliases(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse2008:
         """
         Get list of all aliases for a collection
         """
@@ -123,7 +123,7 @@ class AsyncAliasesApi(_AliasesApi):
 
     async def get_collections_aliases(
         self,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse2008:
         """
         Get list of all existing collections aliases
         """
@@ -144,7 +144,7 @@ class SyncAliasesApi(_AliasesApi):
     def get_collection_aliases(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse2008:
         """
         Get list of all aliases for a collection
         """
@@ -154,7 +154,7 @@ class SyncAliasesApi(_AliasesApi):
 
     def get_collections_aliases(
         self,
-    ) -> m.InlineResponse2009:
+    ) -> m.InlineResponse2008:
         """
         Get list of all existing collections aliases
         """

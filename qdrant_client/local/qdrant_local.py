@@ -26,7 +26,6 @@ from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
-from qdrant_client.http.models.models import RecommendExample
 from qdrant_client.local.local_collection import (
     LocalCollection,
     DEFAULT_VECTOR_NAME,
@@ -172,27 +171,6 @@ class QdrantLocal(QdrantBase):
             return self.collections[self.aliases[collection_name]]
         raise ValueError(f"Collection {collection_name} not found")
 
-    def search_batch(
-        self,
-        collection_name: str,
-        requests: Sequence[types.SearchRequest],
-        **kwargs: Any,
-    ) -> list[list[types.ScoredPoint]]:
-        collection = self._get_collection(collection_name)
-
-        return [
-            collection.search(
-                query_vector=request.vector,
-                query_filter=request.filter,
-                limit=request.limit,
-                offset=request.offset,
-                with_payload=request.with_payload,
-                with_vectors=request.with_vector,
-                score_threshold=request.score_threshold,
-            )
-            for request in requests
-        ]
-
     def search(
         self,
         collection_name: str,
@@ -249,47 +227,6 @@ class QdrantLocal(QdrantBase):
         collection = self._get_collection(collection_name)
         return collection.search_matrix_pairs(
             query_filter=query_filter, limit=limit, sample=sample, using=using
-        )
-
-    def search_groups(
-        self,
-        collection_name: str,
-        query_vector: Union[
-            types.NumpyArray,
-            Sequence[float],
-            tuple[str, list[float]],
-            types.NamedVector,
-        ],
-        group_by: str,
-        query_filter: Optional[rest_models.Filter] = None,
-        search_params: Optional[rest_models.SearchParams] = None,
-        limit: int = 10,
-        group_size: int = 1,
-        with_payload: Union[bool, Sequence[str], rest_models.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        score_threshold: Optional[float] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        **kwargs: Any,
-    ) -> types.GroupsResult:
-        collection = self._get_collection(collection_name)
-        with_lookup_collection = None
-        if with_lookup is not None:
-            if isinstance(with_lookup, str):
-                with_lookup_collection = self._get_collection(with_lookup)
-            else:
-                with_lookup_collection = self._get_collection(with_lookup.collection)
-
-        return collection.search_groups(
-            query_vector=query_vector,
-            query_filter=query_filter,
-            limit=limit,
-            group_by=group_by,
-            group_size=group_size,
-            with_payload=with_payload,
-            with_vectors=with_vectors,
-            score_threshold=score_threshold,
-            with_lookup=with_lookup,
-            with_lookup_collection=with_lookup_collection,
         )
 
     def _resolve_query_input(
@@ -559,179 +496,6 @@ class QdrantLocal(QdrantBase):
             with_lookup=with_lookup,
             with_lookup_collection=with_lookup_collection,
         )
-
-    def recommend_batch(
-        self,
-        collection_name: str,
-        requests: Sequence[types.RecommendRequest],
-        **kwargs: Any,
-    ) -> list[list[types.ScoredPoint]]:
-        collection = self._get_collection(collection_name)
-
-        return [
-            collection.recommend(
-                positive=request.positive,
-                negative=request.negative,
-                query_filter=request.filter,
-                limit=request.limit,
-                offset=request.offset,
-                with_payload=request.with_payload,
-                with_vectors=request.with_vector,
-                score_threshold=request.score_threshold,
-                using=request.using,
-                lookup_from_collection=self._get_collection(request.lookup_from.collection)
-                if request.lookup_from
-                else None,
-                lookup_from_vector_name=request.lookup_from.vector
-                if request.lookup_from
-                else None,
-                strategy=request.strategy,
-            )
-            for request in requests
-        ]
-
-    def recommend(
-        self,
-        collection_name: str,
-        positive: Optional[Sequence[RecommendExample]] = None,
-        negative: Optional[Sequence[RecommendExample]] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
-        limit: int = 10,
-        offset: int = 0,
-        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, list[str]] = False,
-        score_threshold: Optional[float] = None,
-        using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
-        **kwargs: Any,
-    ) -> list[types.ScoredPoint]:
-        collection = self._get_collection(collection_name)
-        return collection.recommend(
-            positive=positive,
-            negative=negative,
-            query_filter=query_filter,
-            limit=limit,
-            offset=offset,
-            with_payload=with_payload,
-            with_vectors=with_vectors,
-            score_threshold=score_threshold,
-            using=using,
-            lookup_from_collection=self._get_collection(lookup_from.collection)
-            if lookup_from
-            else None,
-            lookup_from_vector_name=lookup_from.vector if lookup_from else None,
-            strategy=strategy,
-        )
-
-    def recommend_groups(
-        self,
-        collection_name: str,
-        group_by: str,
-        positive: Optional[Sequence[Union[types.PointId, list[float]]]] = None,
-        negative: Optional[Sequence[Union[types.PointId, list[float]]]] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
-        limit: int = 10,
-        group_size: int = 1,
-        score_threshold: Optional[float] = None,
-        with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, Sequence[str]] = False,
-        using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        with_lookup: Optional[types.WithLookupInterface] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
-        **kwargs: Any,
-    ) -> types.GroupsResult:
-        collection = self._get_collection(collection_name)
-        with_lookup_collection = None
-        if with_lookup is not None:
-            if isinstance(with_lookup, str):
-                with_lookup_collection = self._get_collection(with_lookup)
-            else:
-                with_lookup_collection = self._get_collection(with_lookup.collection)
-
-        return collection.recommend_groups(
-            positive=positive,
-            negative=negative,
-            group_by=group_by,
-            group_size=group_size,
-            query_filter=query_filter,
-            limit=limit,
-            with_payload=with_payload,
-            with_vectors=with_vectors,
-            score_threshold=score_threshold,
-            using=using,
-            lookup_from_collection=self._get_collection(lookup_from.collection)
-            if lookup_from
-            else None,
-            lookup_from_vector_name=lookup_from.vector if lookup_from else None,
-            with_lookup=with_lookup,
-            with_lookup_collection=with_lookup_collection,
-            strategy=strategy,
-        )
-
-    def discover(
-        self,
-        collection_name: str,
-        target: Optional[types.TargetVector] = None,
-        context: Optional[Sequence[types.ContextExamplePair]] = None,
-        query_filter: Optional[types.Filter] = None,
-        search_params: Optional[types.SearchParams] = None,
-        limit: int = 10,
-        offset: int = 0,
-        with_payload: Union[bool, list[str], types.PayloadSelector] = True,
-        with_vectors: Union[bool, list[str]] = False,
-        using: Optional[str] = None,
-        lookup_from: Optional[types.LookupLocation] = None,
-        consistency: Optional[types.ReadConsistency] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> list[types.ScoredPoint]:
-        collection = self._get_collection(collection_name)
-        return collection.discover(
-            target=target,
-            context=context,
-            query_filter=query_filter,
-            limit=limit,
-            offset=offset,
-            with_payload=with_payload,
-            with_vectors=with_vectors,
-            using=using,
-            lookup_from_collection=self._get_collection(lookup_from.collection)
-            if lookup_from
-            else None,
-            lookup_from_vector_name=lookup_from.vector if lookup_from else None,
-        )
-
-    def discover_batch(
-        self,
-        collection_name: str,
-        requests: Sequence[types.DiscoverRequest],
-        **kwargs: Any,
-    ) -> list[list[types.ScoredPoint]]:
-        collection = self._get_collection(collection_name)
-
-        return [
-            collection.discover(
-                target=request.target,
-                context=request.context,
-                query_filter=request.filter,
-                limit=request.limit,
-                offset=request.offset,
-                with_payload=request.with_payload,
-                with_vectors=request.with_vector,
-                using=request.using,
-                lookup_from_collection=self._get_collection(request.lookup_from.collection)
-                if request.lookup_from
-                else None,
-                lookup_from_vector_name=request.lookup_from.vector
-                if request.lookup_from
-                else None,
-            )
-            for request in requests
-        ]
 
     def scroll(
         self,
@@ -1008,21 +772,12 @@ class QdrantLocal(QdrantBase):
         vectors_config: Optional[
             Union[types.VectorParams, Mapping[str, types.VectorParams]]
         ] = None,
-        init_from: Optional[types.InitFrom] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         if self.closed:
             raise RuntimeError("QdrantLocal instance is closed. Please create a new instance.")
-
-        src_collection = None
-        from_collection_name = None
-        if init_from is not None:
-            from_collection_name = (
-                init_from if isinstance(init_from, str) else init_from.collection
-            )
-            src_collection = self._get_collection(from_collection_name)
 
         if collection_name in self.collections:
             raise ValueError(f"Collection {collection_name} already exists")
@@ -1041,19 +796,6 @@ class QdrantLocal(QdrantBase):
         )
         self.collections[collection_name] = collection
 
-        if src_collection and from_collection_name:
-            batch_size = 100
-            records, next_offset = self.scroll(from_collection_name, limit=2, with_vectors=True)
-            self.upload_records(
-                collection_name, records
-            )  # it is not crucial to replace upload_records here
-            # since it is an internal usage, and we don't have custom shard keys in qdrant local
-            while next_offset is not None:
-                records, next_offset = self.scroll(
-                    from_collection_name, offset=next_offset, limit=batch_size, with_vectors=True
-                )
-                self.upload_records(collection_name, records)
-
         self._save()
         return True
 
@@ -1061,14 +803,11 @@ class QdrantLocal(QdrantBase):
         self,
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
-        init_from: Optional[types.InitFrom] = None,
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name)
-        return self.create_collection(
-            collection_name, vectors_config, init_from, sparse_vectors_config
-        )
+        return self.create_collection(collection_name, vectors_config, sparse_vectors_config)
 
     def upload_points(
         self,
@@ -1077,13 +816,8 @@ class QdrantLocal(QdrantBase):
         update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ) -> None:
+        # upload_points in local mode behaves like upload_points with wait=True in server mode
         self._upload_points(collection_name, points, update_filter=update_filter)
-
-    def upload_records(
-        self, collection_name: str, records: Iterable[types.Record], **kwargs: Any
-    ) -> None:
-        # upload_records in local mode behaves like upload_records with wait=True in server mode
-        self._upload_points(collection_name, records)
 
     def _upload_points(
         self,
@@ -1239,22 +973,6 @@ class QdrantLocal(QdrantBase):
     ) -> bool:
         raise NotImplementedError(
             "Snapshots are not supported in the local Qdrant. Please use server Qdrant if you need snapshots."
-        )
-
-    def lock_storage(self, reason: str, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError(
-            "Locks are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
-        )
-
-    def unlock_storage(self, **kwargs: Any) -> types.LocksOption:
-        raise NotImplementedError(
-            "Locks are not supported in the local Qdrant. Please use server Qdrant if you need full snapshots."
-        )
-
-    def get_locks(self, **kwargs: Any) -> types.LocksOption:
-        return types.LocksOption(
-            error_message=None,
-            write=False,
         )
 
     def create_shard_key(

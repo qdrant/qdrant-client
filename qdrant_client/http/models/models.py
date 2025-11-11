@@ -33,6 +33,21 @@ class AbsExpression(BaseModel, extra="forbid"):
     abs: "Expression" = Field(..., description="")
 
 
+class AcornSearchParams(BaseModel, extra="forbid"):
+    """
+    ACORN-related search parameters
+    """
+
+    enable: Optional[bool] = Field(
+        default=False,
+        description="If true, then ACORN may be used for the HNSW search based on filters selectivity. Improves search recall for searches with multiple low-selectivity payload filters, at cost of performance.",
+    )
+    max_selectivity: Optional[float] = Field(
+        default=None,
+        description="Maximum selectivity of filters to enable ACORN.  If estimated filters selectivity is higher than this value, ACORN will not be used. Selectivity is estimated as: `estimated number of points satisfying the filters / total number of points`.  0.0 for never, 1.0 for always. Default is 0.4.",
+    )
+
+
 class AliasDescription(BaseModel):
     alias_name: str = Field(..., description="")
     collection_name: str = Field(..., description="")
@@ -113,6 +128,10 @@ class Bm25Config(BaseModel, extra="forbid"):
     )
     lowercase: Optional[bool] = Field(
         default=None, description="Lowercase the text before tokenization. Default is `true`."
+    )
+    ascii_folding: Optional[bool] = Field(
+        default=None,
+        description="If true, normalize tokens by folding accented characters to ASCII (e.g., 'ação' -&gt; 'acao'). Default is `false`.",
     )
     stopwords: Optional["StopwordsInterface"] = Field(
         default=None,
@@ -511,9 +530,6 @@ class CreateCollection(BaseModel, extra="forbid"):
         default=None,
         description="Custom params for Optimizers.  If none - values from service configuration file are used.",
     )
-    init_from: Optional["InitFrom"] = Field(
-        default=None, description="Specify other collection to copy data from.  Deprecated since Qdrant 1.15.0."
-    )
     quantization_config: Optional["QuantizationConfig"] = Field(
         default=None, description="Quantization parameters. If none - quantization is disabled."
     )
@@ -826,14 +842,15 @@ class FeatureFlags(BaseModel):
     )
     payload_index_skip_rocksdb: Optional[bool] = Field(
         default=True,
-        description="Skip usage of RocksDB in new immutable payload indices.  First implemented in Qdrant 1.13.5. Enabled by default in Qdrant 1.14.1",
+        description="Skip usage of RocksDB in new immutable payload indices.  First implemented in Qdrant 1.13.5. Enabled by default in Qdrant 1.14.1.",
     )
     payload_index_skip_mutable_rocksdb: Optional[bool] = Field(
-        default=False, description="Skip usage of RocksDB in new mutable payload indices."
+        default=True,
+        description="Skip usage of RocksDB in new mutable payload indices.  First implemented in Qdrant 1.15.0. Enabled by default in Qdrant 1.16.0.",
     )
     payload_storage_skip_rocksdb: Optional[bool] = Field(
-        default=False,
-        description="Skip usage of RocksDB in new payload storages.  On-disk payload storages never use Gridstore.  First implemented in Qdrant 1.15.0.",
+        default=True,
+        description="Skip usage of RocksDB in new payload storages.  On-disk payload storages never use Gridstore.  First implemented in Qdrant 1.15.0. Enabled by default in Qdrant 1.16.0.",
     )
     incremental_hnsw_building: Optional[bool] = Field(
         default=True, description="Use incremental HNSW building.  Enabled by default in Qdrant 1.14.1."
@@ -1091,7 +1108,7 @@ class HnswConfig(BaseModel):
         default=None,
         description="Custom M param for hnsw graph built for payload index. If not set, default M will be used.",
     )
-    copy_vectors: Optional[bool] = Field(
+    inline_storage: Optional[bool] = Field(
         default=None,
         description="Store copies of original and quantized vectors within the HNSW index file. Default: false. Enabling this option will trade the search speed for disk usage by reducing amount of random seeks during the search. Requires quantized vectors to be enabled. Multi-vectors are not supported.",
     )
@@ -1122,7 +1139,7 @@ class HnswConfigDiff(BaseModel, extra="forbid"):
         default=None,
         description="Custom M param for additional payload-aware HNSW links. If not set, default M will be used.",
     )
-    copy_vectors: Optional[bool] = Field(
+    inline_storage: Optional[bool] = Field(
         default=None,
         description="Store copies of original and quantized vectors within the HNSW index file. Default: false. Enabling this option will trade the search speed for disk usage by reducing amount of random seeks during the search. Requires quantized vectors to be enabled. Multi-vectors are not supported.",
     )
@@ -1202,16 +1219,6 @@ class InferenceUsage(BaseModel):
     models: Dict[str, "ModelUsage"] = Field(..., description="")
 
 
-class InitFrom(BaseModel, extra="forbid"):
-    """
-    Operation for creating new collection and (optionally) specify index params
-    """
-
-    collection: str = Field(
-        ..., description="Operation for creating new collection and (optionally) specify index params"
-    )
-
-
 class InlineResponse200(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
@@ -1227,116 +1234,110 @@ class InlineResponse2001(BaseModel):
 
 
 class InlineResponse20010(BaseModel):
-    time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Optional[str] = Field(default=None, description="")
-    result: Optional[bool] = Field(default=None, description="")
-
-
-class InlineResponse20011(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["SnapshotDescription"]] = Field(default=None, description="")
 
 
-class InlineResponse20012(BaseModel):
+class InlineResponse20011(BaseModel):
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["SnapshotDescription"] = Field(default=None, description="")
 
 
-class InlineResponse20013(BaseModel):
+class InlineResponse20012(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["Record"] = Field(default=None, description="")
 
 
-class InlineResponse20014(BaseModel):
+class InlineResponse20013(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["Record"]] = Field(default=None, description="")
 
 
-class InlineResponse20015(BaseModel):
+class InlineResponse20014(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["UpdateResult"]] = Field(default=None, description="")
 
 
-class InlineResponse20016(BaseModel):
+class InlineResponse20015(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["ScrollResult"] = Field(default=None, description="")
 
 
-class InlineResponse20017(BaseModel):
+class InlineResponse20016(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["ScoredPoint"]] = Field(default=None, description="")
 
 
-class InlineResponse20018(BaseModel):
+class InlineResponse20017(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List[List["ScoredPoint"]]] = Field(default=None, description="")
 
 
-class InlineResponse20019(BaseModel):
+class InlineResponse20018(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["GroupsResult"] = Field(default=None, description="")
 
 
-class InlineResponse2002(BaseModel):
-    usage: Optional["Usage"] = Field(default=None, description="")
-    time: Optional[float] = Field(default=None, description="Time spent to process this request")
-    status: Optional[str] = Field(default=None, description="")
-    result: Optional["LocksOption"] = Field(default=None, description="")
-
-
-class InlineResponse20020(BaseModel):
+class InlineResponse20019(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["CountResult"] = Field(default=None, description="")
 
 
-class InlineResponse20021(BaseModel):
+class InlineResponse2002(BaseModel):
+    usage: Optional["Usage"] = Field(default=None, description="")
+    time: Optional[float] = Field(default=None, description="Time spent to process this request")
+    status: Optional[str] = Field(default=None, description="")
+    result: Optional["ClusterStatus"] = Field(default=None, description="")
+
+
+class InlineResponse20020(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["FacetResponse"] = Field(default=None, description="")
 
 
-class InlineResponse20022(BaseModel):
+class InlineResponse20021(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["QueryResponse"] = Field(default=None, description="")
 
 
-class InlineResponse20023(BaseModel):
+class InlineResponse20022(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional[List["QueryResponse"]] = Field(default=None, description="")
 
 
-class InlineResponse20024(BaseModel):
+class InlineResponse20023(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
     result: Optional["SearchMatrixPairsResponse"] = Field(default=None, description="")
 
 
-class InlineResponse20025(BaseModel):
+class InlineResponse20024(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
@@ -1347,49 +1348,48 @@ class InlineResponse2003(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["ClusterStatus"] = Field(default=None, description="")
+    result: Optional["CollectionsResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2004(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionsResponse"] = Field(default=None, description="")
+    result: Optional["CollectionInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2005(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionInfo"] = Field(default=None, description="")
+    result: Optional["UpdateResult"] = Field(default=None, description="")
 
 
 class InlineResponse2006(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["UpdateResult"] = Field(default=None, description="")
+    result: Optional["CollectionExistence"] = Field(default=None, description="")
 
 
 class InlineResponse2007(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionExistence"] = Field(default=None, description="")
+    result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
 
 
 class InlineResponse2008(BaseModel):
     usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionClusterInfo"] = Field(default=None, description="")
+    result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
 
 
 class InlineResponse2009(BaseModel):
-    usage: Optional["Usage"] = Field(default=None, description="")
     time: Optional[float] = Field(default=None, description="Time spent to process this request")
     status: Optional[str] = Field(default=None, description="")
-    result: Optional["CollectionsAliasesResponse"] = Field(default=None, description="")
+    result: Optional[bool] = Field(default=None, description="")
 
 
 class InlineResponse202(BaseModel):
@@ -1510,14 +1510,14 @@ class LocalShardTelemetry(BaseModel):
         default=None,
         description="Sum of number of vectors in all segments This is an approximate number Do NOT rely on this number unless you know what you are doing",
     )
+    num_vectors_by_name: Optional[Dict[str, int]] = Field(
+        default=None,
+        description="Sum of number of vectors across all segments, grouped by their name. This is an approximate number. Do NOT rely on this number unless you know what you are doing",
+    )
     segments: Optional[List["SegmentTelemetry"]] = Field(default=None, description="")
     optimizations: "OptimizerTelemetry" = Field(..., description="")
     async_scorer: Optional[bool] = Field(default=None, description="")
-
-
-class LocksOption(BaseModel, extra="forbid"):
-    error_message: Optional[str] = Field(default=None, description="")
-    write: bool = Field(..., description="")
+    indexed_only_excluded_vectors: Optional[Dict[str, int]] = Field(default=None, description="")
 
 
 class Log10Expression(BaseModel, extra="forbid"):
@@ -2383,6 +2383,16 @@ class ReplicaState(str, Enum):
     RESHARDINGSCALEDOWN = "ReshardingScaleDown"
 
 
+class ReplicatePoints(BaseModel, extra="forbid"):
+    filter: Optional["Filter"] = Field(default=None, description="")
+    from_shard_key: "ShardKey" = Field(..., description="")
+    to_shard_key: "ShardKey" = Field(..., description="")
+
+
+class ReplicatePointsOperation(BaseModel, extra="forbid"):
+    replicate_points: "ReplicatePoints" = Field(..., description="")
+
+
 class ReplicateShard(BaseModel, extra="forbid"):
     shard_id: int = Field(..., description="")
     to_peer_id: int = Field(..., description="")
@@ -2625,6 +2635,7 @@ class SearchParams(BaseModel, extra="forbid"):
         default=False,
         description="If enabled, the engine will only perform search among indexed or small segments. Using this option prevents slow searches in case of delayed index, but does not guarantee that all uploaded vectors will be included in search results",
     )
+    acorn: Optional["AcornSearchParams"] = Field(default=None, description="ACORN search params")
 
 
 class SearchRequest(BaseModel, extra="forbid"):
@@ -2759,6 +2770,11 @@ class ShardCleanStatusTelemetryOneOf1(BaseModel):
 
 class ShardCleanStatusTelemetryOneOf2(BaseModel):
     failed: "ShardCleanStatusFailedTelemetry" = Field(..., description="")
+
+
+class ShardKeyWithFallback(BaseModel, extra="forbid"):
+    target: "ShardKey" = Field(..., description="")
+    fallback: "ShardKey" = Field(..., description="")
 
 
 class ShardSnapshotRecover(BaseModel, extra="forbid"):
@@ -3013,6 +3029,9 @@ class SparseVectorDataConfig(BaseModel):
     storage_type: Optional["SparseVectorStorageType"] = Field(
         default=None, description="Config of single sparse vector data storage"
     )
+    modifier: Optional["Modifier"] = Field(
+        default=None, description="Configures addition value modifications for sparse vectors. Default: none"
+    )
 
 
 class SparseVectorParams(BaseModel, extra="forbid"):
@@ -3218,6 +3237,10 @@ class TextIndexParams(BaseModel, extra="forbid"):
     min_token_len: Optional[int] = Field(default=None, description="Minimum characters to be tokenized.")
     max_token_len: Optional[int] = Field(default=None, description="Maximum characters to be tokenized.")
     lowercase: Optional[bool] = Field(default=None, description="If true, lowercase all tokens. Default: true.")
+    ascii_folding: Optional[bool] = Field(
+        default=None,
+        description="If true, normalize tokens by folding accented characters to ASCII (e.g., 'ação' -&gt; 'acao'). Default: false.",
+    )
     phrase_matching: Optional[bool] = Field(
         default=None, description="If true, support phrase matching. Default: false."
     )
@@ -3572,6 +3595,7 @@ ClusterOperations = Union[
     RestartTransferOperation,
     StartReshardingOperation,
     AbortReshardingOperation,
+    ReplicatePointsOperation,
 ]
 ClusterStatus = Union[
     ClusterStatusOneOf,
@@ -3846,6 +3870,7 @@ RecommendExample = Union[
 ShardKeySelector = Union[
     ShardKey,
     List[ShardKey],
+    ShardKeyWithFallback,
 ]
 VectorInput = Union[
     List[StrictFloat],

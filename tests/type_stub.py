@@ -1,5 +1,3 @@
-import numpy as np
-
 from qdrant_client import QdrantClient
 from qdrant_client import models as rest_models
 from qdrant_client.conversions import common_types as types
@@ -27,76 +25,9 @@ qdrant_client.get_aliases()
 qdrant_client.get_collection("collection")
 qdrant_client.collection_exists("collection")
 qdrant_client.get_collections()
-qdrant_client.get_locks()
 qdrant_client.list_full_snapshots()
 qdrant_client.list_snapshots("collection")
-qdrant_client.lock_storage("reason")
 qdrant_client.overwrite_payload("collection", {}, [])
-qdrant_client.recommend(
-    "collection",
-    [],
-    [],
-    rest_models.Filter(),
-    rest_models.SearchParams(),
-    10,
-    0,
-    True,
-    True,
-    1.0,
-    "using",
-    rest_models.LookupLocation(collection=""),
-    rest_models.RecommendStrategy.AVERAGE_VECTOR,
-    1,
-)
-qdrant_client.recommend_batch(
-    "collection",
-    [
-        rest_models.RecommendRequest(
-            positive=[],
-            negative=[],
-            filter=None,
-            params=None,
-            limit=10,
-            offset=0,
-            with_payload=True,
-            with_vector=True,
-            score_threshold=0.5,
-            using=None,
-            lookup_from=None,
-        )
-    ],
-)
-qdrant_client.discover(
-    "collection",
-    None,
-    [],
-    rest_models.Filter(),
-    rest_models.SearchParams(),
-    10,
-    0,
-    True,
-    True,
-    "using",
-    rest_models.LookupLocation(collection=""),
-    1,
-)
-qdrant_client.discover_batch(
-    "collection",
-    [
-        rest_models.DiscoverRequest(
-            target=None,
-            context=[],
-            filter=rest_models.Filter(),
-            params=rest_models.SearchParams(),
-            limit=10,
-            offset=0,
-            with_vector=True,
-            with_payload=True,
-            using="using",
-            lookup_from=rest_models.LookupLocation(collection=""),
-        ),
-    ],
-)
 qdrant_client.recover_snapshot("collection", "location", rest_models.SnapshotPriority.REPLICA)
 qdrant_client.create_collection(
     "collection",
@@ -118,8 +49,9 @@ qdrant_client.create_collection(
     rest_models.OptimizersConfigDiff(),
     rest_models.WalConfigDiff(),
     rest_models.ScalarQuantization(scalar=ScalarQuantizationConfig(type=ScalarType.INT8)),
-    None,
     5,
+    rest_models.StrictModeConfig(),
+    {},
 )
 qdrant_client.recreate_collection(
     "collection",
@@ -142,7 +74,7 @@ qdrant_client.recreate_collection(
     rest_models.WalConfigDiff(),
     rest_models.ScalarQuantization(scalar=ScalarQuantizationConfig(type=ScalarType.INT8)),
     None,
-    5,
+    rest_models.StrictModeConfig(),
 )
 qdrant_client.recreate_collection(
     "collection",
@@ -167,21 +99,11 @@ qdrant_client.recreate_collection(
         product=ProductQuantizationConfig(compression=CompressionRatio.X32)
     ),
     None,
-    5,
+    rest_models.StrictModeConfig(),
 )
 qdrant_client.retrieve("collection", [])
 qdrant_client.scroll("collection")
-qdrant_client.search_batch(
-    "collection",
-    [
-        rest_models.SearchRequest(
-            vector=[1.0, 0.0, 3.0],
-            limit=10,
-        )
-    ],
-)
 qdrant_client.set_payload("collection", {}, [], key=None, wait=True)
-qdrant_client.unlock_storage()
 qdrant_client.update_collection(
     "collection",
     rest_models.OptimizersConfigDiff(
@@ -202,54 +124,11 @@ qdrant_client.update_collection_aliases(
         )
     ]
 )
-qdrant_client.upload_records("collection", [])
 qdrant_client.upload_points("collection", [])
 qdrant_client.upsert("collection", [])
-
-qdrant_client.search("collection", [123], with_payload=["str", "another one", "and another one"])
-# pyright currently is not happy with np.array and treating it as a "partially unknown type"
-qdrant_client.search(
-    "collection",
-    np.array([123]),  # type: ignore
-    with_payload=["str", "another one", "and another one"],
-)
 qdrant_client.upload_collection("collection", [[123]])
 qdrant_client.update_vectors("collection", [rest_models.PointVectors(id=1, vector=[123])], False)
 qdrant_client.delete_vectors("collection", [], [123, 32, 44])
-qdrant_client.search_groups(
-    "collection",
-    [123],
-    "rand_field",
-    rest_models.Filter(
-        must=[rest_models.FieldCondition(key="field", match=rest_models.MatchValue(value="123"))]
-    ),
-    rest_models.SearchParams(hnsw_ef=182),
-    2,
-    3,
-    True,
-    True,
-    0.2,
-)
-qdrant_client.recommend_groups(
-    "collection",
-    "rand_field",
-    [14],
-    [],
-    rest_models.Filter(
-        must=[rest_models.FieldCondition(key="field", match=rest_models.MatchValue(value="123"))]
-    ),
-    rest_models.SearchParams(hnsw_ef=182),
-    2,
-    3,
-    3.0,
-    True,
-    True,
-    "using",
-    rest_models.LookupLocation(collection="start"),
-    None,
-)
-
-
 qdrant_client.batch_update_points(
     collection_name="batchcollection",
     update_operations=[

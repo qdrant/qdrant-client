@@ -415,8 +415,6 @@ class InferenceObject(google.protobuf.message.Message):
 global___InferenceObject = InferenceObject
 
 class Vector(google.protobuf.message.Message):
-    """Legacy vector format, which determines the vector type by the configuration of its fields."""
-
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     DATA_FIELD_NUMBER: builtins.int
@@ -623,15 +621,21 @@ class ShardKeySelector(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SHARD_KEYS_FIELD_NUMBER: builtins.int
+    FALLBACK_FIELD_NUMBER: builtins.int
     @property
     def shard_keys(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[collections_pb2.ShardKey]:
         """List of shard keys which should be used in the request"""
+    @property
+    def fallback(self) -> collections_pb2.ShardKey: ...
     def __init__(
         self,
         *,
         shard_keys: collections.abc.Iterable[collections_pb2.ShardKey] | None = ...,
+        fallback: collections_pb2.ShardKey | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["shard_keys", b"shard_keys"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_fallback", b"_fallback", "fallback", b"fallback"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_fallback", b"_fallback", "fallback", b"fallback", "shard_keys", b"shard_keys"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_fallback", b"_fallback"]) -> typing_extensions.Literal["fallback"] | None: ...
 
 global___ShardKeySelector = ShardKeySelector
 
@@ -1379,6 +1383,44 @@ class QuantizationSearchParams(google.protobuf.message.Message):
 
 global___QuantizationSearchParams = QuantizationSearchParams
 
+class AcornSearchParams(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    ENABLE_FIELD_NUMBER: builtins.int
+    MAX_SELECTIVITY_FIELD_NUMBER: builtins.int
+    enable: builtins.bool
+    """
+    If true, then ACORN may be used for the HNSW search based on filters
+    selectivity.
+
+    Improves search recall for searches with multiple low-selectivity
+    payload filters, at cost of performance.
+    """
+    max_selectivity: builtins.float
+    """
+    Maximum selectivity of filters to enable ACORN.
+
+    If estimated filters selectivity is higher than this value,
+    ACORN will not be used. Selectivity is estimated as:
+    `estimated number of points satisfying the filters / total number of points`.
+
+    0.0 for never, 1.0 for always. Default is 0.4.
+    """
+    def __init__(
+        self,
+        *,
+        enable: builtins.bool | None = ...,
+        max_selectivity: builtins.float | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_enable", b"_enable", "_max_selectivity", b"_max_selectivity", "enable", b"enable", "max_selectivity", b"max_selectivity"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_enable", b"_enable", "_max_selectivity", b"_max_selectivity", "enable", b"enable", "max_selectivity", b"max_selectivity"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_enable", b"_enable"]) -> typing_extensions.Literal["enable"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_max_selectivity", b"_max_selectivity"]) -> typing_extensions.Literal["max_selectivity"] | None: ...
+
+global___AcornSearchParams = AcornSearchParams
+
 class SearchParams(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -1386,6 +1428,7 @@ class SearchParams(google.protobuf.message.Message):
     EXACT_FIELD_NUMBER: builtins.int
     QUANTIZATION_FIELD_NUMBER: builtins.int
     INDEXED_ONLY_FIELD_NUMBER: builtins.int
+    ACORN_FIELD_NUMBER: builtins.int
     hnsw_ef: builtins.int
     """
     Params relevant to HNSW index. Size of the beam in a beam-search.
@@ -1406,6 +1449,11 @@ class SearchParams(google.protobuf.message.Message):
     Using this option prevents slow searches in case of delayed index, but does not
     guarantee that all uploaded vectors will be included in search results
     """
+    @property
+    def acorn(self) -> global___AcornSearchParams:
+        """
+        ACORN search params
+        """
     def __init__(
         self,
         *,
@@ -1413,9 +1461,12 @@ class SearchParams(google.protobuf.message.Message):
         exact: builtins.bool | None = ...,
         quantization: global___QuantizationSearchParams | None = ...,
         indexed_only: builtins.bool | None = ...,
+        acorn: global___AcornSearchParams | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_acorn", b"_acorn", "_exact", b"_exact", "_hnsw_ef", b"_hnsw_ef", "_indexed_only", b"_indexed_only", "_quantization", b"_quantization", "acorn", b"acorn", "exact", b"exact", "hnsw_ef", b"hnsw_ef", "indexed_only", b"indexed_only", "quantization", b"quantization"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_acorn", b"_acorn"]) -> typing_extensions.Literal["acorn"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_exact", b"_exact"]) -> typing_extensions.Literal["exact"] | None: ...
     @typing.overload
