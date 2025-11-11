@@ -26,7 +26,6 @@ from qdrant_client._pydantic_compat import to_dict
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.conversions import common_types as types
 from qdrant_client.http import models as rest_models
-from qdrant_client.http.models.models import RecommendExample
 from qdrant_client.local.local_collection import (
     LocalCollection,
     DEFAULT_VECTOR_NAME,

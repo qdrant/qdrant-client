@@ -27,7 +27,6 @@ from typing import (
     get_args,
 )
 import httpx
-import numpy as np
 from grpc import Compression
 from urllib3.util import Url, parse_url
 from urllib.parse import urljoin
@@ -452,17 +451,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             scored_points = [GrpcToRest.convert_scored_point(hit) for hit in res.result]
             return models.QueryResponse(points=scored_points)
         else:
-            if isinstance(query, grpc.Query):
-                query = GrpcToRest.convert_query(query)
-            if isinstance(prefetch, grpc.PrefetchQuery):
-                prefetch = GrpcToRest.convert_prefetch_query(prefetch)
-            if isinstance(prefetch, list):
-                prefetch = [
-                    GrpcToRest.convert_prefetch_query(p)
-                    if isinstance(p, grpc.PrefetchQuery)
-                    else p
-                    for p in prefetch
-                ]
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
             if isinstance(search_params, grpc.SearchParams):
@@ -528,10 +516,6 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 for r in grpc_res.result
             ]
         else:
-            requests = [
-                GrpcToRest.convert_query_points(r) if isinstance(r, grpc.QueryPoints) else r
-                for r in requests
-            ]
             http_res: Optional[list[models.QueryResponse]] = (
                 await self.http.search_api.query_batch_points(
                     collection_name=collection_name,
@@ -629,25 +613,12 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             ).result
             return GrpcToRest.convert_groups_result(result)
         else:
-            if isinstance(query, grpc.Query):
-                query = GrpcToRest.convert_query(query)
-            if isinstance(prefetch, grpc.PrefetchQuery):
-                prefetch = GrpcToRest.convert_prefetch_query(prefetch)
-            if isinstance(prefetch, list):
-                prefetch = [
-                    GrpcToRest.convert_prefetch_query(p)
-                    if isinstance(p, grpc.PrefetchQuery)
-                    else p
-                    for p in prefetch
-                ]
             if isinstance(query_filter, grpc.Filter):
                 query_filter = GrpcToRest.convert_filter(model=query_filter)
             if isinstance(search_params, grpc.SearchParams):
                 search_params = GrpcToRest.convert_search_params(search_params)
             if isinstance(with_payload, grpc.WithPayloadSelector):
                 with_payload = GrpcToRest.convert_with_payload_selector(with_payload)
-            if isinstance(with_lookup, grpc.WithLookup):
-                with_lookup = GrpcToRest.convert_with_lookup(with_lookup)
             if isinstance(lookup_from, grpc.LookupLocation):
                 lookup_from = GrpcToRest.convert_lookup_location(lookup_from)
             query_request = models.QueryGroupsRequest(
