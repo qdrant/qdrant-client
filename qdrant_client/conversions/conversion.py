@@ -3226,7 +3226,7 @@ class RestToGrpc:
                 return grpc.Vector(
                     multi_dense=grpc.MultiDenseVector(
                         vectors=[
-                            grpc.DenseVector(data=[value for value in inner_vector])  # type: ignore[union-attr]
+                            grpc.DenseVector(data=inner_vector)  # type: ignore[union-attr]
                             for inner_vector in vector
                         ]
                     )
@@ -3269,12 +3269,12 @@ class RestToGrpc:
                 return grpc.VectorOutput(
                     multi_dense=grpc.MultiDenseVector(
                         vectors=[
-                            grpc.DenseVector(data=[value for value in inner_vector])  # type: ignore[union-attr]
+                            grpc.DenseVector(data=inner_vector)  # type: ignore[union-attr]
                             for inner_vector in vector
                         ]
                     )
                 )
-            return grpc.VectorOutput(dense=grpc.DenseVector(data=[value for value in vector]))
+            return grpc.VectorOutput(dense=grpc.DenseVector(data=vector))
 
         if isinstance(model, list):
             return grpc.VectorsOutput(vector=convert_vector(model))

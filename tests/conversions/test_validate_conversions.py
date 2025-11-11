@@ -78,14 +78,9 @@ def test_conversion_completeness():
                 # Is an enum
                 assert grpc_fixture == fixture, f"{model_class_name} conversion is broken"
             elif MessageToDict(grpc_fixture) != MessageToDict(fixture):
-                try:
-                    assert MessageToDict(grpc_fixture) == MessageToDict(
-                        fixture
-                    ), f"{model_class_name} conversion is broken"
-                except AssertionError as e:
-                    print("grpc fixture", grpc_fixture)
-                    print("fixture", fixture)
-                    raise e
+                assert MessageToDict(grpc_fixture) == MessageToDict(
+                    fixture
+                ), f"{model_class_name} conversion is broken"
 
 
 def test_nested_filter():

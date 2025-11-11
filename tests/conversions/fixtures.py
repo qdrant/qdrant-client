@@ -1455,10 +1455,10 @@ fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config, collection_config_w_metadata],
     "ScoredPoint": [
-        # scored_point,
-        # scored_point_order_value_int,
+        scored_point,
+        scored_point_order_value_int,
         scored_point_order_value_float,
-        # scored_point_multivector,
+        scored_point_multivector,
     ],
     "CreateAlias": [create_alias],
     "GeoBoundingBox": [geo_bounding_box],
