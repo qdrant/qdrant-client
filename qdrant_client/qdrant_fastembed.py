@@ -563,7 +563,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         show_warning_once(
-            "`add` method has been deprecated and will be removed in 1.16. "
+            "`add` method has been deprecated and will be removed in 1.17. "
             "Instead, inference can be done internally within regular methods like `upsert` by wrapping "
             "data into `models.Document` or `models.Image`."
         )
@@ -649,7 +649,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         show_warning_once(
-            "`query` method has been deprecated and will be removed in 1.16. "
+            "`query` method has been deprecated and will be removed in 1.17. "
             "Instead, inference can be done internally within regular methods like `query_points` by wrapping "
             "data into `models.Document` or `models.Image`."
         )
@@ -739,7 +739,7 @@ class QdrantFastembedMixin(QdrantBase):
 
         """
         show_warning_once(
-            "`query_batch` method has been deprecated and will be removed in 1.16. "
+            "`query_batch` method has been deprecated and will be removed in 1.17. "
             "Instead, inference can be done internally within regular methods like `query_batch_points` by wrapping "
             "data into `models.Document` or `models.Image`."
         )
