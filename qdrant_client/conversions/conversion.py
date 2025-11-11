@@ -1011,6 +1011,7 @@ class GrpcToRest:
             otherwise it's propagated for further processing along with the raw value
         """
         name = model.WhichOneof("vector")
+        # region deprecated
         if name is None:
             if model.HasField("indices"):
                 return None, rest.SparseVector(indices=model.indices.data[:], values=model.data[:])
@@ -1021,6 +1022,7 @@ class GrpcToRest:
                 return None, [vectors[i : i + step] for i in range(0, len(vectors), step)]
 
             return None, model.data[:]
+        # endregion
 
         val = getattr(model, name)
         if name == "dense":
@@ -2969,15 +2971,19 @@ class RestToGrpc:
     @classmethod
     def convert_sparse_vector_to_vector(cls, model: rest.SparseVector) -> grpc.Vector:
         return grpc.Vector(
-            data=model.values,
-            indices=grpc.SparseIndices(data=model.indices),
+            sparse=grpc.SparseVector(
+                values=model.values,
+                indices=model.indices,
+            )
         )
 
     @classmethod
     def convert_sparse_vector_to_vector_output(cls, model: rest.SparseVector) -> grpc.VectorOutput:
         return grpc.VectorOutput(
-            data=model.values,
-            indices=grpc.SparseIndices(data=model.indices),
+            sparse=grpc.SparseVector(
+                values=model.values,
+                indices=model.indices,
+            )
         )
 
     @classmethod
@@ -3218,14 +3224,14 @@ class RestToGrpc:
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
                 return grpc.Vector(
-                    data=[
-                        inner_vector
-                        for multi_vector in vector
-                        for inner_vector in multi_vector  # type: ignore
-                    ],
-                    vectors_count=len(vector),
+                    multi_dense=grpc.MultiDenseVector(
+                        vectors=[
+                            grpc.DenseVector(data=inner_vector)  # type: ignore[union-attr]
+                            for inner_vector in vector
+                        ]
+                    )
                 )
-            return grpc.Vector(data=vector)
+            return grpc.Vector(dense=grpc.DenseVector(data=vector))
 
         if isinstance(model, list):
             return grpc.Vectors(vector=convert_vector(model))
@@ -3261,14 +3267,14 @@ class RestToGrpc:
                 vector[0], list
             ):  # we can't say whether it is an empty dense or multi-dense vector
                 return grpc.VectorOutput(
-                    data=[
-                        inner_vector
-                        for multi_vector in vector
-                        for inner_vector in multi_vector  # type: ignore
-                    ],
-                    vectors_count=len(vector),
+                    multi_dense=grpc.MultiDenseVector(
+                        vectors=[
+                            grpc.DenseVector(data=inner_vector)  # type: ignore[union-attr]
+                            for inner_vector in vector
+                        ]
+                    )
                 )
-            return grpc.VectorOutput(data=vector)
+            return grpc.VectorOutput(dense=grpc.DenseVector(data=vector))
 
         if isinstance(model, list):
             return grpc.VectorsOutput(vector=convert_vector(model))
