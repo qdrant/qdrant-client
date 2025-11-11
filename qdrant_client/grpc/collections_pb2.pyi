@@ -262,6 +262,8 @@ class _ReplicaStateEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._E
     """Points are being migrated to this shard as part of scale-up resharding"""
     ReshardingScaleDown: _ReplicaState.ValueType  # 8
     """Points are being migrated to this shard as part of scale-down resharding"""
+    ActiveRead: _ReplicaState.ValueType  # 9
+    """Active for readers, Partial for writers"""
 
 class ReplicaState(_ReplicaState, metaclass=_ReplicaStateEnumTypeWrapper): ...
 
@@ -283,6 +285,8 @@ Resharding: ReplicaState.ValueType  # 7
 """Points are being migrated to this shard as part of scale-up resharding"""
 ReshardingScaleDown: ReplicaState.ValueType  # 8
 """Points are being migrated to this shard as part of scale-down resharding"""
+ActiveRead: ReplicaState.ValueType  # 9
+"""Active for readers, Partial for writers"""
 global___ReplicaState = ReplicaState
 
 class _ReshardingDirection:

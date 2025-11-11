@@ -351,6 +351,13 @@ class CollectionParamsDiff(BaseModel, extra="forbid"):
     )
 
 
+class CollectionSnapshotTelemetry(BaseModel):
+    id: str = Field(..., description="")
+    running_snapshots: Optional[int] = Field(default=None, description="")
+    running_snapshot_recovery: Optional[int] = Field(default=None, description="")
+    total_snapshot_creations: Optional[int] = Field(default=None, description="")
+
+
 class CollectionStatus(str, Enum):
     """
     Current state of the collection. `Green` - all good. `Yellow` - optimization is running, &#x27;Grey&#x27; - optimizations are possible but not triggered, `Red` - some operations failed and was not recovered
@@ -397,6 +404,7 @@ class CollectionsTelemetry(BaseModel):
     number_of_collections: int = Field(..., description="")
     max_collections: Optional[int] = Field(default=None, description="")
     collections: Optional[List["CollectionTelemetryEnum"]] = Field(default=None, description="")
+    snapshots: Optional[List["CollectionSnapshotTelemetry"]] = Field(default=None, description="")
 
 
 class CompressionRatio(str, Enum):
@@ -870,7 +878,8 @@ class FeatureFlags(BaseModel):
         description="Migrate RocksDB based payload indices into new format on start.  Rebuilds a new payload index from scratch.",
     )
     appendable_quantization: Optional[bool] = Field(
-        default=False, description="Use appendable quantization in appendable plain segments."
+        default=True,
+        description="Use appendable quantization in appendable plain segments.  Enabled by default in Qdrant 1.16.0.",
     )
 
 
@@ -2381,6 +2390,7 @@ class ReplicaState(str, Enum):
     RECOVERY = "Recovery"
     RESHARDING = "Resharding"
     RESHARDINGSCALEDOWN = "ReshardingScaleDown"
+    ACTIVEREAD = "ActiveRead"
 
 
 class ReplicatePoints(BaseModel, extra="forbid"):
