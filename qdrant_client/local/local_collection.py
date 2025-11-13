@@ -6,7 +6,8 @@ from typing import (
     Any,
     Callable,
     Sequence,
-    get_args, Union,
+    get_args,
+    Union,
 )
 from copy import deepcopy
 import warnings

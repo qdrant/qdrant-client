@@ -12,7 +12,8 @@ from typing import (
     Iterable,
     Mapping,
     Sequence,
-    get_args, Union,
+    get_args,
+    Union,
 )
 from uuid import uuid4
 

@@ -198,7 +198,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
     def closed(self) -> bool:
         return self._closed
 
-    async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None:
+    async def close(self, grpc_grace: float | None = None, **kwargs: Any) -> None:
         if hasattr(self, "_grpc_channel_pool") and len(self._grpc_channel_pool) > 0:
             for channel in self._grpc_channel_pool:
                 try:
