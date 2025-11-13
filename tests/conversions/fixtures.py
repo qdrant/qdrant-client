@@ -1450,6 +1450,16 @@ search_matrix_offsets = grpc.SearchMatrixOffsets(
     ids=[point_id_1, point_id_2],
 )
 
+replica_state_active = grpc.ReplicaState.Active
+replica_state_dead = grpc.ReplicaState.Dead
+replica_state_partial = grpc.ReplicaState.Partial
+replica_state_initializing = grpc.ReplicaState.Initializing
+replica_state_listener = grpc.ReplicaState.Listener
+replica_state_partial_snapshot = grpc.ReplicaState.PartialSnapshot
+replica_state_recovery = grpc.ReplicaState.Recovery
+replica_state_resharding = grpc.ReplicaState.Resharding
+replica_state_resharding_scale_down = grpc.ReplicaState.ReshardingScaleDown
+replica_state_active_read = grpc.ReplicaState.ActiveRead
 
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
@@ -1623,6 +1633,18 @@ fixtures = {
     "SearchMatrixPairs": [search_matrix_pairs],
     "SearchMatrixOffsets": [search_matrix_offsets],
     "StrictModeConfig": [strict_mode_config, strict_mode_config_empty],
+    "ReplicaState": [
+        replica_state_active,
+        replica_state_dead,
+        replica_state_partial,
+        replica_state_initializing,
+        replica_state_listener,
+        replica_state_partial_snapshot,
+        replica_state_recovery,
+        replica_state_resharding,
+        replica_state_resharding_scale_down,
+        replica_state_active_read,
+    ],
 }
 
 

@@ -2312,12 +2312,15 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         shards_number: Optional[int] = None,
         replication_factor: Optional[int] = None,
         placement: Optional[list[int]] = None,
+        initial_state: Optional[types.ReplicaState] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:
         if self._prefer_grpc:
             if isinstance(shard_key, get_args_subscribed(models.ShardKey)):
                 shard_key = RestToGrpc.convert_shard_key(shard_key)
+            if isinstance(initial_state, models.ReplicaState):
+                initial_state = RestToGrpc.convert_replica_state(initial_state)
             return (
                 await self.grpc_collections.CreateShardKey(
                     grpc.CreateShardKeyRequest(
@@ -2328,6 +2331,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                             shards_number=shards_number,
                             replication_factor=replication_factor,
                             placement=placement or [],
+                            initial_state=initial_state,
                         ),
                     ),
                     timeout=timeout if timeout is not None else self._timeout,
@@ -2343,6 +2347,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                         shards_number=shards_number,
                         replication_factor=replication_factor,
                         placement=placement,
+                        initial_state=initial_state,
                     ),
                 )
             ).result
