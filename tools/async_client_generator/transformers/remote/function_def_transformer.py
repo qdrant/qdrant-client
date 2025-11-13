@@ -1,5 +1,4 @@
 import ast
-from typing import Optional, Union
 
 from tools.async_client_generator.transformers import FunctionDefTransformer
 
@@ -7,9 +6,9 @@ from tools.async_client_generator.transformers import FunctionDefTransformer
 class RemoteFunctionDefTransformer(FunctionDefTransformer):
     def __init__(
         self,
-        keep_sync: Optional[list[str]] = None,
-        exclude_methods: Optional[list[str]] = None,
-        async_methods: Optional[list[str]] = None,
+        keep_sync: list[str] | None = None,
+        exclude_methods: list[str] | None = None,
+        async_methods: list[str] | None = None,
     ):
         super().__init__(keep_sync=keep_sync)
         self.exclude_methods = exclude_methods if exclude_methods is not None else []
@@ -21,7 +20,7 @@ class RemoteFunctionDefTransformer(FunctionDefTransformer):
     @staticmethod
     def override_init(sync_node: ast.FunctionDef) -> ast.FunctionDef:
         # remove aio grpc and remain only pure grpc instead
-        kick_assignments: list[Union[ast.Assign, ast.AnnAssign]] = []
+        kick_assignments: list[ast.Assign | ast.AnnAssign] = []
         for child_node in sync_node.body:
             if isinstance(child_node, ast.Assign):
                 for target in child_node.targets:
@@ -66,7 +65,7 @@ async def close(self, grpc_grace: Optional[float] = None, **kwargs: Any) -> None
         parsed_code = ast.parse(code)
         return parsed_code.body[0]
 
-    def visit_FunctionDef(self, sync_node: ast.FunctionDef) -> Optional[ast.AST]:
+    def visit_FunctionDef(self, sync_node: ast.FunctionDef) -> ast.AST | None:
         if sync_node.name in self.exclude_methods:
             return None
 

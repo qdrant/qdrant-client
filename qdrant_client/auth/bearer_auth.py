@@ -1,5 +1,5 @@
 import asyncio
-from typing import Awaitable, Callable, Optional, Union
+from typing import Awaitable, Callable
 
 import httpx
 
@@ -7,10 +7,10 @@ import httpx
 class BearerAuth(httpx.Auth):
     def __init__(
         self,
-        auth_token_provider: Union[Callable[[], str], Callable[[], Awaitable[str]]],
+        auth_token_provider: Callable[[], str] | Callable[[], Awaitable[str]],
     ):
-        self.async_token: Optional[Callable[[], Awaitable[str]]] = None
-        self.sync_token: Optional[Callable[[], str]] = None
+        self.async_token: Callable[[], Awaitable[str]] | None = None
+        self.sync_token: Callable[[], str] | None = None
 
         if asyncio.iscoroutinefunction(auth_token_provider):
             self.async_token = auth_token_provider

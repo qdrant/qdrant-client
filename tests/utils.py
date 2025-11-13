@@ -1,12 +1,11 @@
 import os
-from typing import Optional
 from pathlib import Path
 
 
 TESTS_PATH = Path(__file__).parent
 
 
-def read_version() -> tuple[Optional[int], Optional[int], Optional[int], bool]:
+def read_version() -> tuple[int | None, int | None, int | None, bool]:
     """Read Qdrant's version from env and parse it into a tuple
 
     Returns:

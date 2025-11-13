@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Union
+from typing import Union, Optional
 
 from qdrant_client.http.models import OrderValue
 from qdrant_client.local.datetime_utils import parse

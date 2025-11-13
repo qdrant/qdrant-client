@@ -2,10 +2,8 @@ import numpy as np
 import pytest
 
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.conversions.common_types import NamedSparseVector
 from qdrant_client.http.exceptions import UnexpectedResponse
 from qdrant_client.http.models import models
-from qdrant_client.local.sparse import sort_sparse_vector
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,

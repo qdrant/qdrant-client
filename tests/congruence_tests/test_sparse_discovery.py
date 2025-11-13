@@ -6,7 +6,6 @@ import pytest
 from qdrant_client import QdrantClient, models
 from qdrant_client.client_base import QdrantBase
 from qdrant_client.http.exceptions import UnexpectedResponse
-from qdrant_client.http.models import ContextExamplePair
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,
     compare_client_results,

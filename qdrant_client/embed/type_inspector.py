@@ -1,4 +1,4 @@
-from typing import Union, Optional, Iterable, get_args
+from typing import Iterable, get_args
 
 from pydantic import BaseModel
 
@@ -18,10 +18,10 @@ class Inspector:
         parser: ModelSchemaParser instance to inspect model json schemas
     """
 
-    def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
+    def __init__(self, parser: ModelSchemaParser | None = None) -> None:
         self.parser = ModelSchemaParser() if parser is None else parser
 
-    def inspect(self, points: Union[Iterable[BaseModel], BaseModel]) -> bool:
+    def inspect(self, points: Iterable[BaseModel] | BaseModel) -> bool:
         """Looks for at least one occurrence of an object requiring inference in the received models
 
         Args:
@@ -49,7 +49,7 @@ class Inspector:
                     return False
         return False
 
-    def _inspect_model(self, model: BaseModel, paths: Optional[list[FieldPath]] = None) -> bool:
+    def _inspect_model(self, model: BaseModel, paths: list[FieldPath] | None = None) -> bool:
         if isinstance(model, get_args(INFERENCE_OBJECT_TYPES)):
             return True
 

@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Sequence, TypeAlias
 
 import numpy as np
 
@@ -16,9 +16,9 @@ from qdrant_client.local.sparse import (
 class SparseRecoQuery:
     def __init__(
         self,
-        positive: Optional[list[SparseVector]] = None,
-        negative: Optional[list[SparseVector]] = None,
-        strategy: Optional[types.RecommendStrategy] = None,
+        positive: list[SparseVector] | None = None,
+        negative: list[SparseVector] | None = None,
+        strategy: types.RecommendStrategy | None = None,
     ):
         assert strategy is not None, "Recommend strategy must be provided"
 
@@ -88,12 +88,9 @@ class SparseContextQuery:
         )
 
 
-SparseQueryVector = Union[
-    SparseVector,
-    SparseDiscoveryQuery,
-    SparseContextQuery,
-    SparseRecoQuery,
-]
+SparseQueryVector: TypeAlias = (
+    SparseVector | SparseDiscoveryQuery | SparseContextQuery | SparseRecoQuery
+)
 
 
 def calculate_distance_sparse(
@@ -126,7 +123,7 @@ def calculate_distance_sparse(
 
 # Expects sorted indices
 # Returns None if no overlap
-def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> Optional[np.float32]:
+def sparse_dot_product(vector1: SparseVector, vector2: SparseVector) -> np.float32 | None:
     result = 0.0
     i, j = 0, 0
     overlap = False

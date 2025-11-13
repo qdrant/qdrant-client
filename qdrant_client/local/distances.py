@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, Union
+from typing import TypeAlias
 
 import numpy as np
 
@@ -18,9 +18,9 @@ class DistanceOrder(str, Enum):
 class RecoQuery:
     def __init__(
         self,
-        positive: Optional[list[list[float]]] = None,
-        negative: Optional[list[list[float]]] = None,
-        strategy: Optional[models.RecommendStrategy] = None,
+        positive: list[list[float]] | None = None,
+        negative: list[list[float]] | None = None,
+        strategy: models.RecommendStrategy | None = None,
     ):
         assert strategy is not None, "Recommend strategy must be provided"
 
@@ -57,11 +57,7 @@ class ContextQuery:
         self.context_pairs = context_pairs
 
 
-DenseQueryVector = Union[
-    DiscoveryQuery,
-    ContextQuery,
-    RecoQuery,
-]
+DenseQueryVector: TypeAlias = DiscoveryQuery | ContextQuery | RecoQuery
 
 
 def distance_to_order(distance: models.Distance) -> DistanceOrder:

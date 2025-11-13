@@ -1,5 +1,5 @@
 import math
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable
 
 import numpy as np
 
@@ -93,8 +93,8 @@ multi_vector_config = {
 def initialize_fixture_collection(
     client: QdrantBase,
     collection_name: str = COLLECTION_NAME,
-    vectors_config: Optional[Union[dict[str, models.VectorParams], models.VectorParams]] = None,
-    sparse_vectors_config: Optional[dict[str, models.SparseVectorParams]] = None,
+    vectors_config: dict[str, models.VectorParams] | models.VectorParams | None = None,
+    sparse_vectors_config: dict[str, models.SparseVectorParams] | None = None,
 ) -> None:
     if vectors_config is None:
         vectors_config = dense_vectors_config
@@ -115,9 +115,9 @@ def delete_fixture_collection(client: QdrantBase) -> None:
 
 
 def generate_fixtures(
-    num: Optional[int] = NUM_VECTORS,
+    num: int | None = NUM_VECTORS,
     random_ids: bool = False,
-    vectors_sizes: Optional[Union[dict[str, int], int]] = None,
+    vectors_sizes: dict[str, int] | int | None = None,
     skip_vectors: bool = False,
 ) -> list[models.PointStruct]:
     if vectors_sizes is None:
@@ -133,9 +133,9 @@ def generate_fixtures(
 
 
 def generate_sparse_fixtures(
-    num: Optional[int] = NUM_VECTORS,
+    num: int | None = NUM_VECTORS,
     random_ids: bool = False,
-    vectors_sizes: Optional[Union[dict[str, int], int]] = None,
+    vectors_sizes: dict[str, int] | int | None = None,
     skip_vectors: bool = False,
     with_payload: bool = True,
     even_sparse: bool = True,
@@ -154,9 +154,9 @@ def generate_sparse_fixtures(
 
 
 def generate_multivector_fixtures(
-    num: Optional[int] = NUM_VECTORS,
+    num: int | None = NUM_VECTORS,
     random_ids: bool = False,
-    vectors_sizes: Optional[Union[dict[str, int], int]] = None,
+    vectors_sizes: dict[str, int] | int | None = None,
     skip_vectors: bool = False,
     with_payload: bool = True,
 ) -> list[models.PointStruct]:
@@ -197,7 +197,7 @@ def compare_collections(
     )
 
 
-def compare_vectors(vec1: Optional[VectorStruct], vec2: Optional[VectorStruct], i: int) -> None:
+def compare_vectors(vec1: VectorStruct | None, vec2: VectorStruct | None, i: int) -> None:
     assert type(vec1) is type(vec2)
     if vec1 is None:
         return
@@ -384,8 +384,8 @@ def init_client(
     client: QdrantBase,
     points: list[models.PointStruct],
     collection_name: str = COLLECTION_NAME,
-    vectors_config: Optional[Union[dict[str, models.VectorParams], models.VectorParams]] = None,
-    sparse_vectors_config: Optional[dict[str, models.SparseVectorParams]] = None,
+    vectors_config: dict[str, models.VectorParams] | models.VectorParams | None = None,
+    sparse_vectors_config: dict[str, models.SparseVectorParams] | None = None,
 ) -> None:
     initialize_fixture_collection(
         client=client,
@@ -396,7 +396,7 @@ def init_client(
     client.upload_points(collection_name, points, wait=True)
 
 
-def init_local(storage: Optional[str] = None) -> QdrantClient:
+def init_local(storage: str | None = None) -> QdrantClient:
     if storage is None or storage == ":memory:":
         client = QdrantClient(location=":memory:")
     else:
