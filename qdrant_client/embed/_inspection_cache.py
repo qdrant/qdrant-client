@@ -2657,6 +2657,23 @@ DEFS = {
         "type": "object",
     },
     "UuidIndexType": {"enum": ["uuid"], "title": "UuidIndexType", "type": "string"},
+    "ReplicaState": {
+        "description": "State of the single shard within a replica set.",
+        "enum": [
+            "Active",
+            "Dead",
+            "Partial",
+            "Initializing",
+            "Listener",
+            "PartialSnapshot",
+            "Recovery",
+            "Resharding",
+            "ReshardingScaleDown",
+            "ActiveRead",
+        ],
+        "title": "ReplicaState",
+        "type": "string",
+    },
     "CreateShardingKey": {
         "additionalProperties": False,
         "properties": {
@@ -2682,6 +2699,11 @@ DEFS = {
                 "default": None,
                 "description": "Placement of shards for this key List of peer ids, that can be used to place shards for this key If not specified, will be randomly placed among all peers",
                 "title": "Placement",
+            },
+            "initial_state": {
+                "anyOf": [{"$ref": "#/$defs/ReplicaState"}, {"type": "null"}],
+                "default": None,
+                "description": "Initial state of the shards for this key If not specified, will be `Initializing` first and then `Active` Warning: do not change this unless you know what you are doing",
             },
         },
         "required": ["shard_key"],

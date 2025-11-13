@@ -2803,6 +2803,7 @@ class CreateShardKey(google.protobuf.message.Message):
     SHARDS_NUMBER_FIELD_NUMBER: builtins.int
     REPLICATION_FACTOR_FIELD_NUMBER: builtins.int
     PLACEMENT_FIELD_NUMBER: builtins.int
+    INITIAL_STATE_FIELD_NUMBER: builtins.int
     @property
     def shard_key(self) -> global___ShardKey:
         """User-defined shard key"""
@@ -2813,6 +2814,8 @@ class CreateShardKey(google.protobuf.message.Message):
     @property
     def placement(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]:
         """List of peer ids, allowed to create shards. If empty - all peers are allowed"""
+    initial_state: global___ReplicaState.ValueType
+    """Initial state of created replicas. Warning: use with care."""
     def __init__(
         self,
         *,
@@ -2820,9 +2823,12 @@ class CreateShardKey(google.protobuf.message.Message):
         shards_number: builtins.int | None = ...,
         replication_factor: builtins.int | None = ...,
         placement: collections.abc.Iterable[builtins.int] | None = ...,
+        initial_state: global___ReplicaState.ValueType | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_replication_factor", b"_replication_factor", "_shards_number", b"_shards_number", "replication_factor", b"replication_factor", "shard_key", b"shard_key", "shards_number", b"shards_number"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_replication_factor", b"_replication_factor", "_shards_number", b"_shards_number", "placement", b"placement", "replication_factor", b"replication_factor", "shard_key", b"shard_key", "shards_number", b"shards_number"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_initial_state", b"_initial_state", "_replication_factor", b"_replication_factor", "_shards_number", b"_shards_number", "initial_state", b"initial_state", "replication_factor", b"replication_factor", "shard_key", b"shard_key", "shards_number", b"shards_number"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_initial_state", b"_initial_state", "_replication_factor", b"_replication_factor", "_shards_number", b"_shards_number", "initial_state", b"initial_state", "placement", b"placement", "replication_factor", b"replication_factor", "shard_key", b"shard_key", "shards_number", b"shards_number"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_initial_state", b"_initial_state"]) -> typing_extensions.Literal["initial_state"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_replication_factor", b"_replication_factor"]) -> typing_extensions.Literal["replication_factor"] | None: ...
     @typing.overload

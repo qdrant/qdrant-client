@@ -570,6 +570,10 @@ class CreateShardingKey(BaseModel, extra="forbid"):
         default=None,
         description="Placement of shards for this key List of peer ids, that can be used to place shards for this key If not specified, will be randomly placed among all peers",
     )
+    initial_state: Optional["ReplicaState"] = Field(
+        default=None,
+        description="Initial state of the shards for this key If not specified, will be `Initializing` first and then `Active` Warning: do not change this unless you know what you are doing",
+    )
 
 
 class CreateShardingKeyOperation(BaseModel, extra="forbid"):

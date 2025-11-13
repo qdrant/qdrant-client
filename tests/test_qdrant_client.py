@@ -1120,6 +1120,15 @@ def test_custom_sharding(prefer_grpc):
 
         client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=cats_shard_key)
         client.create_shard_key(collection_name=COLLECTION_NAME, shard_key=dogs_shard_key)
+        major, minor, patch, dev = read_version()
+        if major is None or dev or (major, minor, patch) >= (1, 16, 0):
+            fish_shard_key = "fish"
+            client.create_shard_key(
+                collection_name=COLLECTION_NAME,
+                shard_key=fish_shard_key,
+                initial_state=models.ReplicaState.ACTIVE,
+            )
+            print("created shard key with replica state")
 
     cat_ids = [1, 2, 3]
     cat_vectors = [np.random.rand(DIM).tolist() for _ in range(len(cat_ids))]

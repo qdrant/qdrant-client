@@ -2057,6 +2057,40 @@ class GrpcToRest:
         return val
 
     @classmethod
+    def convert_replica_state(cls, model: grpc.ReplicaState) -> rest.ReplicaState:
+        if model == grpc.ReplicaState.Active:
+            return rest.ReplicaState.ACTIVE
+
+        if model == grpc.ReplicaState.Dead:
+            return rest.ReplicaState.DEAD
+
+        if model == grpc.ReplicaState.Partial:
+            return rest.ReplicaState.PARTIAL
+
+        if model == grpc.ReplicaState.Initializing:
+            return rest.ReplicaState.INITIALIZING
+
+        if model == grpc.ReplicaState.Listener:
+            return rest.ReplicaState.LISTENER
+
+        if model == grpc.ReplicaState.PartialSnapshot:
+            return rest.ReplicaState.PARTIALSNAPSHOT
+
+        if model == grpc.ReplicaState.Recovery:
+            return rest.ReplicaState.RECOVERY
+
+        if model == grpc.ReplicaState.Resharding:
+            return rest.ReplicaState.RESHARDING
+
+        if model == grpc.ReplicaState.ReshardingScaleDown:
+            return rest.ReplicaState.RESHARDINGSCALEDOWN
+
+        if model == grpc.ReplicaState.ActiveRead:
+            return rest.ReplicaState.ACTIVEREAD
+
+        raise ValueError(f"invalid ReplicaState model: {model}")  # pragma: no cover
+
+    @classmethod
     def convert_shard_key_selector(cls, model: grpc.ShardKeySelector) -> rest.ShardKeySelector:
         fallback = None
         if model.HasField("fallback"):
@@ -4299,6 +4333,40 @@ class RestToGrpc:
             return grpc.ShardKey(keyword=model)
 
         raise ValueError(f"invalid ShardKey model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_replica_state(cls, model: rest.ReplicaState) -> grpc.ReplicaState:
+        if model == rest.ReplicaState.ACTIVE:
+            return grpc.ReplicaState.Active
+
+        if model == rest.ReplicaState.DEAD:
+            return grpc.ReplicaState.Dead
+
+        if model == rest.ReplicaState.PARTIAL:
+            return grpc.ReplicaState.Partial
+
+        if model == rest.ReplicaState.INITIALIZING:
+            return grpc.ReplicaState.Initializing
+
+        if model == rest.ReplicaState.LISTENER:
+            return grpc.ReplicaState.Listener
+
+        if model == rest.ReplicaState.PARTIALSNAPSHOT:
+            return grpc.ReplicaState.PartialSnapshot
+
+        if model == rest.ReplicaState.RECOVERY:
+            return grpc.ReplicaState.Recovery
+
+        if model == rest.ReplicaState.RESHARDING:
+            return grpc.ReplicaState.Resharding
+
+        if model == rest.ReplicaState.RESHARDINGSCALEDOWN:
+            return grpc.ReplicaState.ReshardingScaleDown
+
+        if model == rest.ReplicaState.ACTIVEREAD:
+            return grpc.ReplicaState.ActiveRead
+
+        raise ValueError(f"invalid ReplicaState model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_shard_key_selector(cls, model: rest.ShardKeySelector) -> grpc.ShardKeySelector:
