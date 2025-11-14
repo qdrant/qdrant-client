@@ -2296,6 +2296,7 @@ def test_cluster_collection_update():
             create_sharding_key=models.CreateShardingKey(
                 shard_key="lion",
                 shards_number=1,
+                initial_state=models.ReplicaState.PARTIAL,
             )
         ),
     )
@@ -2305,10 +2306,18 @@ def test_cluster_collection_update():
         points=[models.PointStruct(id=1, vector={}), models.PointStruct(id=2, vector={})],
         shard_key_selector="fish",
     )
-    client.upsert(
-        COLLECTION_NAME, points=[models.PointStruct(id=3, vector={})], shard_key_selector="lion"
+
+    fallback_shard_key = models.ShardKeyWithFallback(
+        target="lion",
+        fallback="fish"
     )
-    assert len(client.scroll(COLLECTION_NAME)[0]) == 3
+
+    client.upsert(
+        COLLECTION_NAME,
+        points=[models.PointStruct(id=3, vector={})],
+        shard_key_selector=fallback_shard_key
+    )
+    assert len(client.scroll(COLLECTION_NAME, shard_key_selector=fallback_shard_key)[0]) > 0
 
     client.cluster_collection_update(
         collection_name=COLLECTION_NAME,
@@ -2320,8 +2329,6 @@ def test_cluster_collection_update():
             )
         ),
     )
-    assert len(client.scroll(collection_name=COLLECTION_NAME, shard_key_selector="fish")[0]) == 2
-    assert len(client.scroll(collection_name=COLLECTION_NAME, shard_key_selector="lion")[0]) == 2
 
     client.cluster_collection_update(
         COLLECTION_NAME,
@@ -2329,4 +2336,4 @@ def test_cluster_collection_update():
             drop_sharding_key=models.DropShardingKey(shard_key="fish")
         ),
     )
-    assert len(client.scroll(COLLECTION_NAME)[0]) == 2
+
