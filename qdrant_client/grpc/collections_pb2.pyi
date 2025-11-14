@@ -4,6 +4,7 @@ isort:skip_file
 """
 import builtins
 import collections.abc
+import common_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
@@ -339,6 +340,11 @@ ReshardingStreamRecords: ShardTransferMethod.ValueType  # 3
 global___ShardTransferMethod = ShardTransferMethod
 
 class VectorParams(google.protobuf.message.Message):
+    """---------------------------------------------
+    ------------- Collection Config -------------
+    ---------------------------------------------
+    """
+
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     SIZE_FIELD_NUMBER: builtins.int
@@ -2779,6 +2785,34 @@ class RestartTransfer(google.protobuf.message.Message):
 
 global___RestartTransfer = RestartTransfer
 
+class ReplicatePoints(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    FROM_SHARD_KEY_FIELD_NUMBER: builtins.int
+    TO_SHARD_KEY_FIELD_NUMBER: builtins.int
+    FILTER_FIELD_NUMBER: builtins.int
+    @property
+    def from_shard_key(self) -> global___ShardKey:
+        """Source shard key"""
+    @property
+    def to_shard_key(self) -> global___ShardKey:
+        """Target shard key"""
+    @property
+    def filter(self) -> common_pb2.Filter:
+        """If set - only points matching the filter will be replicated"""
+    def __init__(
+        self,
+        *,
+        from_shard_key: global___ShardKey | None = ...,
+        to_shard_key: global___ShardKey | None = ...,
+        filter: common_pb2.Filter | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_filter", b"_filter", "filter", b"filter", "from_shard_key", b"from_shard_key", "to_shard_key", b"to_shard_key"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_filter", b"_filter", "filter", b"filter", "from_shard_key", b"from_shard_key", "to_shard_key", b"to_shard_key"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_filter", b"_filter"]) -> typing_extensions.Literal["filter"] | None: ...
+
+global___ReplicatePoints = ReplicatePoints
+
 class Replica(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -2864,6 +2898,7 @@ class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
     CREATE_SHARD_KEY_FIELD_NUMBER: builtins.int
     DELETE_SHARD_KEY_FIELD_NUMBER: builtins.int
     RESTART_TRANSFER_FIELD_NUMBER: builtins.int
+    REPLICATE_POINTS_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     """Name of the collection"""
@@ -2881,6 +2916,8 @@ class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
     def delete_shard_key(self) -> global___DeleteShardKey: ...
     @property
     def restart_transfer(self) -> global___RestartTransfer: ...
+    @property
+    def replicate_points(self) -> global___ReplicatePoints: ...
     timeout: builtins.int
     """Wait timeout for operation commit in seconds, if not specified - default value will be supplied"""
     def __init__(
@@ -2894,14 +2931,15 @@ class UpdateCollectionClusterSetupRequest(google.protobuf.message.Message):
         create_shard_key: global___CreateShardKey | None = ...,
         delete_shard_key: global___DeleteShardKey | None = ...,
         restart_transfer: global___RestartTransfer | None = ...,
+        replicate_points: global___ReplicatePoints | None = ...,
         timeout: builtins.int | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "abort_transfer", b"abort_transfer", "create_shard_key", b"create_shard_key", "delete_shard_key", b"delete_shard_key", "drop_replica", b"drop_replica", "move_shard", b"move_shard", "operation", b"operation", "replicate_shard", b"replicate_shard", "restart_transfer", b"restart_transfer", "timeout", b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "abort_transfer", b"abort_transfer", "collection_name", b"collection_name", "create_shard_key", b"create_shard_key", "delete_shard_key", b"delete_shard_key", "drop_replica", b"drop_replica", "move_shard", b"move_shard", "operation", b"operation", "replicate_shard", b"replicate_shard", "restart_transfer", b"restart_transfer", "timeout", b"timeout"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "abort_transfer", b"abort_transfer", "create_shard_key", b"create_shard_key", "delete_shard_key", b"delete_shard_key", "drop_replica", b"drop_replica", "move_shard", b"move_shard", "operation", b"operation", "replicate_points", b"replicate_points", "replicate_shard", b"replicate_shard", "restart_transfer", b"restart_transfer", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_timeout", b"_timeout", "abort_transfer", b"abort_transfer", "collection_name", b"collection_name", "create_shard_key", b"create_shard_key", "delete_shard_key", b"delete_shard_key", "drop_replica", b"drop_replica", "move_shard", b"move_shard", "operation", b"operation", "replicate_points", b"replicate_points", "replicate_shard", b"replicate_shard", "restart_transfer", b"restart_transfer", "timeout", b"timeout"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_timeout", b"_timeout"]) -> typing_extensions.Literal["timeout"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["operation", b"operation"]) -> typing_extensions.Literal["move_shard", "replicate_shard", "abort_transfer", "drop_replica", "create_shard_key", "delete_shard_key", "restart_transfer"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["operation", b"operation"]) -> typing_extensions.Literal["move_shard", "replicate_shard", "abort_transfer", "drop_replica", "create_shard_key", "delete_shard_key", "restart_transfer", "replicate_points"] | None: ...
 
 global___UpdateCollectionClusterSetupRequest = UpdateCollectionClusterSetupRequest
 
