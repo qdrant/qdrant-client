@@ -3150,28 +3150,10 @@ DEFS = {
         "title": "Fusion",
         "type": "string",
     },
-    "ShardTransferMethodOneOf": {
-        "description": "Stream all shard records in batches until the whole shard is transferred.",
-        "enum": ["stream_records"],
-        "title": "ShardTransferMethodOneOf",
-        "type": "string",
-    },
-    "ShardTransferMethodOneOf1": {
-        "description": "Snapshot the shard, transfer and restore it on the receiver.",
-        "enum": ["snapshot"],
-        "title": "ShardTransferMethodOneOf1",
-        "type": "string",
-    },
-    "ShardTransferMethodOneOf2": {
-        "description": "Attempt to transfer shard difference by WAL delta.",
-        "enum": ["wal_delta"],
-        "title": "ShardTransferMethodOneOf2",
-        "type": "string",
-    },
-    "ShardTransferMethodOneOf3": {
-        "description": "Shard transfer for resharding: stream all records in batches until all points are transferred.",
-        "enum": ["resharding_stream_records"],
-        "title": "ShardTransferMethodOneOf3",
+    "ShardTransferMethod": {
+        "description": "Methods for transferring a shard from one node to another.  - `stream_records` - Stream all shard records in batches until the whole shard is transferred.  - `snapshot` - Snapshot the shard, transfer and restore it on the receiver.  - `wal_delta` - Attempt to transfer shard difference by WAL delta.  - `resharding_stream_records` - Shard transfer for resharding: stream all records in batches until all points are transferred.",
+        "enum": ["stream_records", "snapshot", "wal_delta", "resharding_stream_records"],
+        "title": "ShardTransferMethod",
         "type": "string",
     },
     "MoveShard": {
@@ -3181,16 +3163,9 @@ DEFS = {
             "to_peer_id": {"description": "", "title": "To Peer Id", "type": "integer"},
             "from_peer_id": {"description": "", "title": "From Peer Id", "type": "integer"},
             "method": {
-                "anyOf": [
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf1"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf2"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf3"},
-                    {"type": "null"},
-                ],
+                "anyOf": [{"$ref": "#/$defs/ShardTransferMethod"}, {"type": "null"}],
                 "default": None,
                 "description": "Method for transferring the shard from one node to another",
-                "title": "Method",
             },
         },
         "required": ["shard_id", "to_peer_id", "from_peer_id"],
@@ -4031,16 +4006,9 @@ DEFS = {
             "to_peer_id": {"description": "", "title": "To Peer Id", "type": "integer"},
             "from_peer_id": {"description": "", "title": "From Peer Id", "type": "integer"},
             "method": {
-                "anyOf": [
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf1"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf2"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf3"},
-                    {"type": "null"},
-                ],
+                "anyOf": [{"$ref": "#/$defs/ShardTransferMethod"}, {"type": "null"}],
                 "default": None,
                 "description": "Method for transferring the shard from one node to another",
-                "title": "Method",
             },
         },
         "required": ["shard_id", "to_peer_id", "from_peer_id"],
@@ -4053,16 +4021,7 @@ DEFS = {
             "shard_id": {"description": "", "title": "Shard Id", "type": "integer"},
             "from_peer_id": {"description": "", "title": "From Peer Id", "type": "integer"},
             "to_peer_id": {"description": "", "title": "To Peer Id", "type": "integer"},
-            "method": {
-                "anyOf": [
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf1"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf2"},
-                    {"$ref": "#/$defs/ShardTransferMethodOneOf3"},
-                ],
-                "description": "",
-                "title": "Method",
-            },
+            "method": {"$ref": "#/$defs/ShardTransferMethod", "description": ""},
         },
         "required": ["shard_id", "from_peer_id", "to_peer_id", "method"],
         "title": "RestartTransfer",
@@ -4186,29 +4145,16 @@ DEFS = {
         "title": "SnapshotPriority",
         "type": "string",
     },
-    "ReshardingDirectionOneOf": {
-        "description": "Scale up, add a new shard",
-        "enum": ["up"],
-        "title": "ReshardingDirectionOneOf",
-        "type": "string",
-    },
-    "ReshardingDirectionOneOf1": {
-        "description": "Scale down, remove a shard",
-        "enum": ["down"],
-        "title": "ReshardingDirectionOneOf1",
+    "ReshardingDirection": {
+        "description": "Resharding direction, scale up or down in number of shards  - `up` - Scale up, add a new shard  - `down` - Scale down, remove a shard",
+        "enum": ["up", "down"],
+        "title": "ReshardingDirection",
         "type": "string",
     },
     "StartResharding": {
         "additionalProperties": False,
         "properties": {
-            "direction": {
-                "anyOf": [
-                    {"$ref": "#/$defs/ReshardingDirectionOneOf"},
-                    {"$ref": "#/$defs/ReshardingDirectionOneOf1"},
-                ],
-                "description": "",
-                "title": "Direction",
-            },
+            "direction": {"$ref": "#/$defs/ReshardingDirection", "description": ""},
             "peer_id": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,

@@ -1009,3 +1009,15 @@ class QdrantLocal(QdrantBase):
         return rest_models.VersionInfo(
             title="qdrant - vector search engine", version=version, commit=None
         )
+
+    def cluster_collection_update(
+        self,
+        collection_name: str,
+        cluster_operation: types.ClusterOperations,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> bool:
+        raise NotImplementedError(
+            "Cluster collection updates is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need a cluster"
+        )

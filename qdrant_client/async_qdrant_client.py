@@ -2286,3 +2286,18 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
 
         """
         return await self._client.info()
+
+    async def cluster_collection_update(
+        self,
+        collection_name: str,
+        cluster_operation: types.ClusterOperations,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> bool:
+        assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
+        return await self._client.cluster_collection_update(
+            collection_name=collection_name,
+            cluster_operation=cluster_operation,
+            timeout=timeout,
+            **kwargs,
+        )
