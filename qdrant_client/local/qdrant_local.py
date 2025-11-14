@@ -737,7 +737,10 @@ class QdrantLocal(QdrantBase):
             updated = True
 
         if metadata is not None:
-            _collection.config.metadata.update(metadata)
+            if _collection.config.metadata is not None:
+                _collection.config.metadata.update(metadata)
+            else:
+                _collection.config.metadata = deepcopy(metadata)
             updated = True
 
         self._save()
@@ -789,7 +792,7 @@ class QdrantLocal(QdrantBase):
             rest_models.CreateCollection(
                 vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
-                metadata=metadata,
+                metadata=deepcopy(metadata),
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,

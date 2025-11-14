@@ -686,7 +686,10 @@ class AsyncQdrantLocal(AsyncQdrantBase):
                 _collection.update_sparse_vectors_config(vector_name, vector_params)
             updated = True
         if metadata is not None:
-            _collection.config.metadata.update(metadata)
+            if _collection.config.metadata is not None:
+                _collection.config.metadata.update(metadata)
+            else:
+                _collection.config.metadata = deepcopy(metadata)
             updated = True
         self._save()
         return updated
@@ -734,7 +737,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             rest_models.CreateCollection(
                 vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
-                metadata=metadata,
+                metadata=deepcopy(metadata),
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,
