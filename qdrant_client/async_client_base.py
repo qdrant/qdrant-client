@@ -367,3 +367,8 @@ class AsyncQdrantBase:
 
     async def info(self) -> types.VersionInfo:
         raise NotImplementedError()
+
+    async def cluster_collection_update(
+        self, collection_name: str, cluster_operation: types.ClusterOperations, **kwargs: Any
+    ) -> bool:
+        raise NotImplementedError()
