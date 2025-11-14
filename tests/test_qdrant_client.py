@@ -2262,3 +2262,71 @@ def test_upload_collection_succeeds_with_limits(prefer_grpc, mocker):
 
         with pytest.raises(exception_class):
             client.upload_points(COLLECTION_NAME, points=points, wait=True, max_retries=1)
+
+
+def test_cluster_collection_update():
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 16, 0):
+            pytest.skip("Cluster collection update is supported as of qdrant 1.16.0")
+
+    client = QdrantClient()
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        timeout=TIMEOUT,
+        sharding_method=models.ShardingMethod.CUSTOM,
+    )
+
+    client.cluster_collection_update(
+        COLLECTION_NAME,
+        cluster_operation=models.CreateShardingKeyOperation(
+            create_sharding_key=models.CreateShardingKey(
+                shard_key="fish",
+                shards_number=1,
+            )
+        ),
+    )
+
+    client.cluster_collection_update(
+        COLLECTION_NAME,
+        cluster_operation=models.CreateShardingKeyOperation(
+            create_sharding_key=models.CreateShardingKey(
+                shard_key="lion",
+                shards_number=1,
+            )
+        ),
+    )
+
+    client.upsert(
+        COLLECTION_NAME,
+        points=[models.PointStruct(id=1, vector={}), models.PointStruct(id=2, vector={})],
+        shard_key_selector="fish",
+    )
+    client.upsert(
+        COLLECTION_NAME, points=[models.PointStruct(id=3, vector={})], shard_key_selector="lion"
+    )
+    assert len(client.scroll(COLLECTION_NAME)[0]) == 3
+
+    client.cluster_collection_update(
+        collection_name=COLLECTION_NAME,
+        cluster_operation=models.ReplicatePointsOperation(
+            replicate_points=models.ReplicatePoints(
+                from_shard_key="fish",
+                to_shard_key="lion",
+                filter=models.Filter(must=models.HasIdCondition(has_id=[1])),
+            )
+        ),
+    )
+    assert len(client.scroll(collection_name=COLLECTION_NAME, shard_key_selector="fish")[0]) == 2
+    assert len(client.scroll(collection_name=COLLECTION_NAME, shard_key_selector="lion")[0]) == 2
+
+    client.cluster_collection_update(
+        COLLECTION_NAME,
+        cluster_operation=models.DropShardingKeyOperation(
+            drop_sharding_key=models.DropShardingKey(shard_key="fish")
+        ),
+    )
+    assert len(client.scroll(COLLECTION_NAME)[0]) == 2
