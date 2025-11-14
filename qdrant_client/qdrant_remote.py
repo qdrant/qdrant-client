@@ -2580,3 +2580,16 @@ class QdrantRemote(QdrantBase):
         version_info = self.rest.service_api.root()
         assert version_info is not None, "Healthcheck returned None"
         return version_info
+
+    def cluster_collection_update(
+        self,
+        collection_name: str,
+        cluster_operation: types.ClusterOperations,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> bool:
+        update_result = self.rest.distributed_api.update_collection_cluster(
+            collection_name=collection_name, cluster_operations=cluster_operation, timeout=timeout
+        ).result
+        assert update_result is not None, "Cluster collection update returned None"
+        return update_result
