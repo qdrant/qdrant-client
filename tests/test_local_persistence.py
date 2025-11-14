@@ -150,3 +150,54 @@ def test_local_sparse_persistence(add_dense_to_config):
         client = qdrant_client.QdrantClient(path=tmpdir)
         assert client.count(default_collection_name).count == 10
         assert client.count("example_2").count == 10
+
+
+def test_update_persisence():
+    collection_name = "update_persisence"
+    with tempfile.TemporaryDirectory() as tmpdir:
+        client = qdrant_client.QdrantClient(path=tmpdir)
+
+        if client.collection_exists(collection_name):
+            client.delete_collection(collection_name)
+
+        client.create_collection(
+            collection_name,
+            vectors_config={"dense": rest.VectorParams(size=20, distance=rest.Distance.COSINE)},
+            sparse_vectors_config={
+                "text": rest.SparseVectorParams(),
+            },
+            metadata={"important": "meta information"},
+        )
+
+        original_collection_info = client.get_collection(collection_name)
+
+        assert original_collection_info.config.params.sparse_vectors["text"].modifier is None
+        assert original_collection_info.config.metadata == {"important": "meta information"}
+
+        client.update_collection(
+            collection_name,
+            sparse_vectors_config={"text": rest.SparseVectorParams(modifier=rest.Modifier.IDF)},
+            metadata={"not_important": "missing"},
+        )
+        updated_collection_info = client.get_collection(collection_name)
+        assert (
+            updated_collection_info.config.params.sparse_vectors["text"].modifier
+            == rest.Modifier.IDF
+        )
+        assert updated_collection_info.config.metadata == {
+            "important": "meta information",
+            "not_important": "missing",
+        }
+        client.close()
+        del client
+
+        client = qdrant_client.QdrantClient(path=tmpdir)
+        persisted_collection_info = client.get_collection(collection_name)
+        assert (
+            persisted_collection_info.config.params.sparse_vectors["text"].modifier
+            == rest.Modifier.IDF
+        )
+        assert persisted_collection_info.config.metadata == {
+            "important": "meta information",
+            "not_important": "missing",
+        }

@@ -77,7 +77,7 @@ class _IndexesApi:
         if "Content-Type" not in headers:
             headers["Content-Type"] = "application/json"
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2005,
             method="PUT",
             url="/collections/{collection_name}/index",
             headers=headers if headers else None,
@@ -109,7 +109,7 @@ class _IndexesApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2006,
+            type_=m.InlineResponse2005,
             method="DELETE",
             url="/collections/{collection_name}/index/{field_name}",
             headers=headers if headers else None,
@@ -125,7 +125,7 @@ class AsyncIndexesApi(_IndexesApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         create_field_index: m.CreateFieldIndex = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2005:
         """
         Create index for field in collection
         """
@@ -142,7 +142,7 @@ class AsyncIndexesApi(_IndexesApi):
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2005:
         """
         Delete field index for collection
         """
@@ -161,7 +161,7 @@ class SyncIndexesApi(_IndexesApi):
         wait: bool = None,
         ordering: WriteOrdering = None,
         create_field_index: m.CreateFieldIndex = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2005:
         """
         Create index for field in collection
         """
@@ -178,7 +178,7 @@ class SyncIndexesApi(_IndexesApi):
         field_name: str,
         wait: bool = None,
         ordering: WriteOrdering = None,
-    ) -> m.InlineResponse2006:
+    ) -> m.InlineResponse2005:
         """
         Delete field index for collection
         """

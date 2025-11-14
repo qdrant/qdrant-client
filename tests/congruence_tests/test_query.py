@@ -363,6 +363,20 @@ class TestSimpleSearcher:
             limit=10,
         )
 
+    def dense_query_parametrized_rrf(self, client: QdrantBase) -> models.QueryResponse:
+        return client.query_points(
+            collection_name=COLLECTION_NAME,
+            prefetch=[
+                models.Prefetch(
+                    query=self.dense_vector_query_text,
+                    using="text",
+                )
+            ],
+            query=models.RrfQuery(rrf=models.Rrf(k=10)),
+            with_payload=True,
+            limit=10,
+        )
+
     def dense_query_rrf_plain_prefetch(self, client: QdrantBase) -> models.QueryResponse:
         # dense_query_rrf has a list of prefetches, here we have just a prefetch
         return client.query_points(
@@ -1274,6 +1288,10 @@ def test_dense_query_fusion():
     )
     compare_clients_results(
         local_client, http_client, grpc_client, searcher.deep_dense_queries_dbsf
+    )
+
+    compare_clients_results(
+        local_client, http_client, grpc_client, searcher.dense_query_parametrized_rrf
     )
 
 

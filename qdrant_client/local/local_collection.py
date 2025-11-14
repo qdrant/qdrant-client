@@ -56,7 +56,7 @@ from qdrant_client.local.multi_distances import (
 )
 from qdrant_client.local.json_path_parser import JsonPathItem, parse_json_path
 from qdrant_client.local.order_by import to_order_value
-from qdrant_client.local.payload_filters import calculate_payload_mask
+from qdrant_client.local.payload_filters import calculate_payload_mask, check_filter
 from qdrant_client.local.payload_value_extractor import value_by_key, parse_uuid
 from qdrant_client.local.payload_value_setter import set_value_by_key
 from qdrant_client.local.persistence import CollectionPersistence
@@ -809,16 +809,23 @@ class LocalCollection:
         with_payload: Union[bool, Sequence[str], types.PayloadSelector] = True,
         with_vectors: Union[bool, Sequence[str]] = False,
     ) -> list[types.ScoredPoint]:
-        if isinstance(query, models.FusionQuery):
+        if isinstance(query, (models.FusionQuery, models.RrfQuery)):
             # Fuse results
-            if query.fusion == models.Fusion.RRF:
-                # RRF: Reciprocal Rank Fusion
-                fused = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
-            elif query.fusion == models.Fusion.DBSF:
-                # DBSF: Distribution-Based Score Fusion
-                fused = distribution_based_score_fusion(responses=sources, limit=limit + offset)
+            if isinstance(query, models.RrfQuery):
+                fused = reciprocal_rank_fusion(
+                    responses=sources, limit=limit + offset, ranking_constant_k=query.rrf.k
+                )
             else:
-                raise ValueError(f"Fusion method {query.fusion} does not exist")
+                if query.fusion == models.Fusion.RRF:
+                    # RRF: Reciprocal Rank Fusion
+                    fused = reciprocal_rank_fusion(responses=sources, limit=limit + offset)
+                elif query.fusion == models.Fusion.DBSF:
+                    # DBSF: Distribution-Based Score Fusion
+                    fused = distribution_based_score_fusion(
+                        responses=sources, limit=limit + offset
+                    )
+                else:
+                    raise ValueError(f"Fusion method {query.fusion} does not exist")
 
             # Fetch payload and vectors
             ids = [point.id for point in fused]
@@ -971,9 +978,11 @@ class LocalCollection:
             else:
                 raise ValueError(f"Unknown Sample variant: {query.sample}")
         elif isinstance(query, models.FusionQuery):
-            raise AssertionError("Cannot perform fusion without prefetches")
+            raise ValueError("Cannot perform fusion without prefetches")
         elif isinstance(query, models.FormulaQuery):
-            raise AssertionError("Cannot perform formula without prefetches")
+            raise ValueError("Cannot perform formula without prefetches")
+        elif isinstance(query, models.RrfQuery):
+            raise ValueError("Cannot perform RRF query without prefetches")
         else:
             # most likely a VectorInput, delegate to search
             return self.search(
@@ -1217,7 +1226,7 @@ class LocalCollection:
         with_vectors: Union[bool, Sequence[str]] = False,
     ) -> list[models.Record]:
         result = []
-
+        ids = [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in ids]
         for point_id in ids:
             if point_id not in self.ids:
                 continue
@@ -1663,12 +1672,6 @@ class LocalCollection:
     def _preprocess_target(
         target: Optional[models.VectorInput], collection: "LocalCollection", vector_name: str
     ) -> tuple[models.Vector, Optional[types.PointId]]:
-        # todo: context can no longer be grpc.TargetVector, but models.VectorInput, currently, grpc types are not supported
-        target = (
-            GrpcToRest.convert_target_vector(target)
-            if target is not None and isinstance(target, grpc.TargetVector)
-            else target
-        )
         if isinstance(target, get_args(types.PointId)):
             if target not in collection.ids:
                 raise ValueError(f"Point {target} is not found in the collection")
@@ -1690,15 +1693,6 @@ class LocalCollection:
     ) -> tuple[
         list[ContextPair], list[SparseContextPair], list[MultiContextPair], list[types.PointId]
     ]:
-        # todo: context can no longer be ContextExamplePair, currently grpc types are not supported
-        context = [
-            (
-                GrpcToRest.convert_context_example_pair(pair)
-                if isinstance(pair, grpc.ContextExamplePair)
-                else pair
-            )
-            for pair in context
-        ]
         mentioned_ids = []
         dense_context_vectors = []
         sparse_context_vectors = []
@@ -2269,6 +2263,8 @@ class LocalCollection:
         return rescored[:limit]
 
     def _update_point(self, point: models.PointStruct) -> None:
+        if isinstance(point.id, uuid.UUID):
+            point.id = str(point.id)
         idx = self.ids[point.id]
         self.payload[idx] = deepcopy(
             to_jsonable_python(point.payload) if point.payload is not None else {}
@@ -2327,6 +2323,9 @@ class LocalCollection:
 
     def _add_point(self, point: models.PointStruct) -> None:
         idx = len(self.ids)
+        if isinstance(point.id, uuid.UUID):
+            point.id = str(point.id)
+
         self.ids[point.id] = idx
         self.ids_inv.append(point.id)
 
@@ -2421,7 +2420,11 @@ class LocalCollection:
 
             self.multivectors[vector_name] = named_vectors
 
-    def _upsert_point(self, point: models.PointStruct) -> None:
+    def _upsert_point(
+        self,
+        point: models.PointStruct,
+        update_filter: Optional[types.Filter] = None,
+    ) -> None:
         if isinstance(point.id, str):
             # try to parse as UUID
             try:
@@ -2454,7 +2457,20 @@ class LocalCollection:
             if not self.vectors and not self.multivectors:
                 raise ValueError("Wrong input: Not existing vector name error")
 
+        if isinstance(point.id, uuid.UUID):
+            point.id = str(point.id)
+
         if point.id in self.ids:
+            idx = self.ids[point.id]
+            if not self.deleted[idx] and update_filter is not None:
+                has_vector = {}
+                for vector_name, deleted in self.deleted_per_vector.items():
+                    if not deleted[idx]:
+                        has_vector[vector_name] = True
+                if not check_filter(
+                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                ):
+                    return None
             self._update_point(point)
         else:
             self._add_point(point)
@@ -2462,10 +2478,14 @@ class LocalCollection:
         if self.storage is not None:
             self.storage.persist(point)
 
-    def upsert(self, points: Union[Sequence[models.PointStruct], models.Batch]) -> None:
+    def upsert(
+        self,
+        points: Union[Sequence[models.PointStruct], models.Batch],
+        update_filter: Optional[types.Filter] = None,
+    ) -> None:
         if isinstance(points, list):
             for point in points:
-                self._upsert_point(point)
+                self._upsert_point(point, update_filter=update_filter)
         elif isinstance(points, models.Batch):
             batch = points
             if isinstance(batch.vectors, list):
@@ -2485,7 +2505,8 @@ class LocalCollection:
                         id=point_id,
                         payload=payload,
                         vector=vector,
-                    )
+                    ),
+                    update_filter=update_filter,
                 )
         else:
             raise ValueError(f"Unsupported type: {type(points)}")
@@ -2532,15 +2553,27 @@ class LocalCollection:
                     vector_np /= np.where(vector_norm != 0.0, vector_norm, EPSILON)
                 self.multivectors[vector_name][idx] = vector_np
 
-    def update_vectors(self, points: Sequence[types.PointVectors]) -> None:
+    def update_vectors(
+        self, points: Sequence[types.PointVectors], update_filter: Optional[types.Filter] = None
+    ) -> None:
         for point in points:
-            point_id = point.id
+            point_id = str(point.id) if isinstance(point.id, uuid.UUID) else point.id
             idx = self.ids[point_id]
             vector_struct = point.vector
             if isinstance(vector_struct, list):
                 fixed_vectors = {DEFAULT_VECTOR_NAME: vector_struct}
             else:
                 fixed_vectors = vector_struct
+
+            if not self.deleted[idx] and update_filter is not None:
+                has_vector = {}
+                for vector_name, deleted in self.deleted_per_vector.items():
+                    if not deleted[idx]:
+                        has_vector[vector_name] = True
+                if not check_filter(
+                    update_filter, self.payload[idx], self.ids_inv[idx], has_vector
+                ):
+                    return None
             self._update_named_vectors(idx, fixed_vectors)
             self._persist_by_id(point_id)
 
@@ -2587,11 +2620,11 @@ class LocalCollection:
         ],
     ) -> list[models.ExtendedPointId]:
         if isinstance(selector, list):
-            return selector
+            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector]
         elif isinstance(selector, models.Filter):
             return self._filter_to_ids(selector)
         elif isinstance(selector, models.PointIdsList):
-            return selector.points
+            return [str(id_) if isinstance(id_, uuid.UUID) else id_ for id_ in selector.points]
         elif isinstance(selector, models.FilterSelector):
             return self._filter_to_ids(selector.filter)
         else:
@@ -2700,10 +2733,11 @@ class LocalCollection:
     ) -> None:
         for update_op in update_operations:
             if isinstance(update_op, models.UpsertOperation):
-                if isinstance(update_op.upsert, models.PointsBatch):
-                    self.upsert(update_op.upsert.batch)
-                elif isinstance(update_op.upsert, models.PointsList):
-                    self.upsert(update_op.upsert.points)
+                upsert_struct = update_op.upsert
+                if isinstance(upsert_struct, models.PointsBatch):
+                    self.upsert(upsert_struct.batch, update_filter=upsert_struct.update_filter)
+                elif isinstance(upsert_struct, models.PointsList):
+                    self.upsert(upsert_struct.points, update_filter=upsert_struct.update_filter)
                 else:
                     raise ValueError(f"Unsupported upsert type: {type(update_op.upsert)}")
             elif isinstance(update_op, models.DeleteOperation):
@@ -2726,7 +2760,10 @@ class LocalCollection:
             elif isinstance(update_op, models.ClearPayloadOperation):
                 self.clear_payload(update_op.clear_payload)
             elif isinstance(update_op, models.UpdateVectorsOperation):
-                self.update_vectors(update_op.update_vectors.points)
+                update_vectors = update_op.update_vectors
+                self.update_vectors(
+                    update_vectors.points, update_filter=update_vectors.update_filter
+                )
             elif isinstance(update_op, models.DeleteVectorsOperation):
                 points_selector = (
                     update_op.delete_vectors.points or update_op.delete_vectors.filter
@@ -2747,7 +2784,6 @@ class LocalCollection:
         return models.CollectionInfo(
             status=models.CollectionStatus.GREEN,
             optimizer_status=models.OptimizersStatusOneOf.OK,
-            vectors_count=None,
             indexed_vectors_count=0,  # LocalCollection does not do indexing
             points_count=self.count().count,
             segments_count=1,
@@ -2779,6 +2815,7 @@ class LocalCollection:
                     max_optimization_threads=1,
                 ),
                 quantization_config=None,
+                metadata=self.config.metadata,
             ),
         )
 

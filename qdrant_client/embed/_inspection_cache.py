@@ -3,9 +3,11 @@ CACHE_STR_PATH = {
     "AbortShardTransfer": [],
     "AbortTransferOperation": [],
     "AbsExpression": [],
+    "AcornSearchParams": [],
     "Batch": ["vectors"],
     "BinaryQuantization": [],
     "BinaryQuantizationConfig": [],
+    "Bm25Config": [],
     "BoolIndexParams": [],
     "ChangeAliasesOperation": [],
     "ClearPayloadOperation": [],
@@ -65,20 +67,19 @@ CACHE_STR_PATH = {
     "HnswConfigDiff": [],
     "Image": [],
     "InferenceObject": [],
-    "InitFrom": [],
     "IntegerIndexParams": [],
     "IsEmptyCondition": [],
     "IsNullCondition": [],
     "KeywordIndexParams": [],
     "LinDecayExpression": [],
     "LnExpression": [],
-    "LocksOption": [],
     "Log10Expression": [],
     "LookupLocation": [],
     "MatchAny": [],
     "MatchExcept": [],
     "MatchPhrase": [],
     "MatchText": [],
+    "MatchTextAny": [],
     "MatchValue": [],
     "MinShould": [],
     "Mmr": [],
@@ -200,10 +201,14 @@ CACHE_STR_PATH = {
     "RenameAlias": [],
     "RenameAliasOperation": [],
     "Replica": [],
+    "ReplicatePoints": [],
+    "ReplicatePointsOperation": [],
     "ReplicateShard": [],
     "ReplicateShardOperation": [],
     "RestartTransfer": [],
     "RestartTransferOperation": [],
+    "Rrf": [],
+    "RrfQuery": [],
     "SampleQuery": [],
     "ScalarQuantization": [],
     "ScalarQuantizationConfig": [],
@@ -215,6 +220,7 @@ CACHE_STR_PATH = {
     "SearchRequestBatch": [],
     "SetPayload": [],
     "SetPayloadOperation": [],
+    "ShardKeyWithFallback": [],
     "ShardSnapshotRecover": [],
     "SnapshotRecover": [],
     "SnowballParams": [],
@@ -437,7 +443,7 @@ DEFS = {
             "midpoint": {
                 "anyOf": [{"type": "number"}, {"type": "null"}],
                 "default": None,
-                "description": "The midpoint of the decay. Defaults to 0.5. Output will be this value when `|x - target| == scale`.",
+                "description": "The midpoint of the decay. Should be between 0 and 1.Defaults to 0.5. Output will be this value when `|x - target| == scale`.",
                 "title": "Midpoint",
             },
         },
@@ -583,6 +589,7 @@ DEFS = {
                 "anyOf": [
                     {"$ref": "#/$defs/MatchValue"},
                     {"$ref": "#/$defs/MatchText"},
+                    {"$ref": "#/$defs/MatchTextAny"},
                     {"$ref": "#/$defs/MatchPhrase"},
                     {"$ref": "#/$defs/MatchAny"},
                     {"$ref": "#/$defs/MatchExcept"},
@@ -857,7 +864,13 @@ DEFS = {
         "properties": {
             "has_id": {
                 "description": "ID-based filtering condition",
-                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                "items": {
+                    "anyOf": [
+                        {"type": "integer"},
+                        {"type": "string"},
+                        {"format": "uuid", "type": "string"},
+                    ]
+                },
                 "title": "Has Id",
                 "type": "array",
             }
@@ -1051,6 +1064,20 @@ DEFS = {
         },
         "required": ["text"],
         "title": "MatchText",
+        "type": "object",
+    },
+    "MatchTextAny": {
+        "additionalProperties": False,
+        "description": "Full-text match of at least one token of the string.",
+        "properties": {
+            "text_any": {
+                "description": "Full-text match of at least one token of the string.",
+                "title": "Text Any",
+                "type": "string",
+            }
+        },
+        "required": ["text_any"],
+        "title": "MatchTextAny",
         "type": "object",
     },
     "MatchValue": {
@@ -1430,24 +1457,104 @@ DEFS = {
         "title": "ValuesCount",
         "type": "object",
     },
+    "Bm25Config": {
+        "additionalProperties": False,
+        "description": "Configuration of the local bm25 models.",
+        "properties": {
+            "k": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": 1.2,
+                "description": "Controls term frequency saturation. Higher values mean term frequency has more impact. Default is 1.2",
+                "title": "K",
+            },
+            "b": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": 0.75,
+                "description": "Controls document length normalization. Ranges from 0 (no normalization) to 1 (full normalization). Higher values mean longer documents have less impact. Default is 0.75.",
+                "title": "B",
+            },
+            "avg_len": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": 256,
+                "description": "Expected average document length in the collection. Default is 256.",
+                "title": "Avg Len",
+            },
+            "tokenizer": {
+                "anyOf": [{"$ref": "#/$defs/TokenizerType"}, {"type": "null"}],
+                "default": None,
+                "description": "Configuration of the local bm25 models.",
+            },
+            "language": {
+                "anyOf": [{"type": "string"}, {"type": "null"}],
+                "default": None,
+                "description": "Defines which language to use for text preprocessing. This parameter is used to construct default stopwords filter and stemmer. To disable language-specific processing, set this to `'language': 'none'`. If not specified, English is assumed.",
+                "title": "Language",
+            },
+            "lowercase": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Lowercase the text before tokenization. Default is `true`.",
+                "title": "Lowercase",
+            },
+            "ascii_folding": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "If true, normalize tokens by folding accented characters to ASCII (e.g., 'ação' -&gt; 'acao'). Default is `false`.",
+                "title": "Ascii Folding",
+            },
+            "stopwords": {
+                "anyOf": [
+                    {"$ref": "#/$defs/Language"},
+                    {"$ref": "#/$defs/StopwordsSet"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Configuration of the stopwords filter. Supports list of pre-defined languages and custom stopwords. Default: initialized for specified `language` or English if not specified.",
+                "title": "Stopwords",
+            },
+            "stemmer": {
+                "anyOf": [{"$ref": "#/$defs/SnowballParams"}, {"type": "null"}],
+                "default": None,
+                "description": "Configuration of the stemmer. Processes tokens to their root form. Default: initialized Snowball stemmer for specified `language` or English if not specified.",
+            },
+            "min_token_len": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Minimum token length to keep. If token is shorter than this, it will be discarded. Default is `None`, which means no minimum length.",
+                "title": "Min Token Len",
+            },
+            "max_token_len": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Maximum token length to keep. If token is longer than this, it will be discarded. Default is `None`, which means no maximum length.",
+                "title": "Max Token Len",
+            },
+        },
+        "title": "Bm25Config",
+        "type": "object",
+    },
     "Document": {
         "additionalProperties": False,
         "description": "WARN: Work-in-progress, unimplemented  Text document for embedding. Requires inference infrastructure, unimplemented.",
         "properties": {
             "text": {
-                "description": "Text of the document This field will be used as input for the embedding model",
+                "description": "Text of the document. This field will be used as input for the embedding model.",
                 "title": "Text",
                 "type": "string",
             },
             "model": {
-                "description": "Name of the model used to generate the vector List of available models depends on a provider",
+                "description": "Name of the model used to generate the vector. List of available models depends on a provider.",
                 "title": "Model",
                 "type": "string",
             },
             "options": {
-                "anyOf": [{"additionalProperties": True, "type": "object"}, {"type": "null"}],
+                "anyOf": [
+                    {"additionalProperties": True, "type": "object"},
+                    {"$ref": "#/$defs/Bm25Config"},
+                    {"type": "null"},
+                ],
                 "default": None,
-                "description": "Parameters for the model Values of the parameters are model-specific",
+                "description": "Additional options for the model, will be passed to the inference service as-is. See model cards for available options.",
                 "title": "Options",
             },
         },
@@ -1464,7 +1571,7 @@ DEFS = {
                 "title": "Image",
             },
             "model": {
-                "description": "Name of the model used to generate the vector List of available models depends on a provider",
+                "description": "Name of the model used to generate the vector. List of available models depends on a provider.",
                 "title": "Model",
                 "type": "string",
             },
@@ -1484,11 +1591,11 @@ DEFS = {
         "description": "WARN: Work-in-progress, unimplemented  Custom object for embedding. Requires inference infrastructure, unimplemented.",
         "properties": {
             "object": {
-                "description": "Arbitrary data, used as input for the embedding model Used if the model requires more than one input or a custom input",
+                "description": "Arbitrary data, used as input for the embedding model. Used if the model requires more than one input or a custom input.",
                 "title": "Object",
             },
             "model": {
-                "description": "Name of the model used to generate the vector List of available models depends on a provider",
+                "description": "Name of the model used to generate the vector. List of available models depends on a provider.",
                 "title": "Model",
                 "type": "string",
             },
@@ -1501,6 +1608,79 @@ DEFS = {
         },
         "required": ["object", "model"],
         "title": "InferenceObject",
+        "type": "object",
+    },
+    "Language": {
+        "enum": [
+            "arabic",
+            "azerbaijani",
+            "basque",
+            "bengali",
+            "catalan",
+            "chinese",
+            "danish",
+            "dutch",
+            "english",
+            "finnish",
+            "french",
+            "german",
+            "greek",
+            "hebrew",
+            "hinglish",
+            "hungarian",
+            "indonesian",
+            "italian",
+            "japanese",
+            "kazakh",
+            "nepali",
+            "norwegian",
+            "portuguese",
+            "romanian",
+            "russian",
+            "slovene",
+            "spanish",
+            "swedish",
+            "tajik",
+            "turkish",
+        ],
+        "title": "Language",
+        "type": "string",
+    },
+    "Snowball": {"enum": ["snowball"], "title": "Snowball", "type": "string"},
+    "SnowballLanguage": {
+        "description": "Languages supported by snowball stemmer.",
+        "enum": [
+            "arabic",
+            "armenian",
+            "danish",
+            "dutch",
+            "english",
+            "finnish",
+            "french",
+            "german",
+            "greek",
+            "hungarian",
+            "italian",
+            "norwegian",
+            "portuguese",
+            "romanian",
+            "russian",
+            "spanish",
+            "swedish",
+            "tamil",
+            "turkish",
+        ],
+        "title": "SnowballLanguage",
+        "type": "string",
+    },
+    "SnowballParams": {
+        "additionalProperties": False,
+        "properties": {
+            "type": {"$ref": "#/$defs/Snowball", "description": ""},
+            "language": {"$ref": "#/$defs/SnowballLanguage", "description": ""},
+        },
+        "required": ["type", "language"],
+        "title": "SnowballParams",
         "type": "object",
     },
     "SparseVector": {
@@ -1523,6 +1703,33 @@ DEFS = {
         "required": ["indices", "values"],
         "title": "SparseVector",
         "type": "object",
+    },
+    "StopwordsSet": {
+        "additionalProperties": False,
+        "properties": {
+            "languages": {
+                "anyOf": [
+                    {"items": {"$ref": "#/$defs/Language"}, "type": "array"},
+                    {"type": "null"},
+                ],
+                "default": None,
+                "description": "Set of languages to use for stopwords. Multiple pre-defined lists of stopwords can be combined.",
+                "title": "Languages",
+            },
+            "custom": {
+                "anyOf": [{"items": {"type": "string"}, "type": "array"}, {"type": "null"}],
+                "default": None,
+                "description": "Custom stopwords set. Will be merged with the languages set.",
+                "title": "Custom",
+            },
+        },
+        "title": "StopwordsSet",
+        "type": "object",
+    },
+    "TokenizerType": {
+        "enum": ["prefix", "whitespace", "word", "multilingual"],
+        "title": "TokenizerType",
+        "type": "string",
     },
     "BinaryQuantizationConfig": {
         "additionalProperties": False,
@@ -1645,6 +1852,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -1661,7 +1869,13 @@ DEFS = {
         "properties": {
             "points": {
                 "description": "",
-                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                "items": {
+                    "anyOf": [
+                        {"type": "integer"},
+                        {"type": "string"},
+                        {"format": "uuid", "type": "string"},
+                    ]
+                },
                 "title": "Points",
                 "type": "array",
             },
@@ -1673,6 +1887,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -1682,6 +1897,24 @@ DEFS = {
         },
         "required": ["points"],
         "title": "PointIdsList",
+        "type": "object",
+    },
+    "ShardKeyWithFallback": {
+        "additionalProperties": False,
+        "properties": {
+            "target": {
+                "anyOf": [{"type": "integer"}, {"type": "string"}],
+                "description": "",
+                "title": "Target",
+            },
+            "fallback": {
+                "anyOf": [{"type": "integer"}, {"type": "string"}],
+                "description": "",
+                "title": "Fallback",
+            },
+        },
+        "required": ["target", "fallback"],
+        "title": "ShardKeyWithFallback",
         "type": "object",
     },
     "ContextPair": {
@@ -1694,6 +1927,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -1708,6 +1942,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -1757,7 +1992,7 @@ DEFS = {
             "full_scan_threshold": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
-                "description": "Minimal size (in kilobytes) of vectors for additional payload-based indexing. If payload chunk is smaller than `full_scan_threshold_kb` additional indexing won&#x27;t be used - in this case full-scan search should be preferred by query planner and additional indexing is not required. Note: 1Kb = 1 vector of size 256",
+                "description": "Minimal size threshold (in KiloBytes) below which full-scan is preferred over HNSW search. This measures the total size of vectors being queried against. When the maximum estimated amount of points that a condition satisfies is smaller than `full_scan_threshold_kb`, the query planner will use full-scan search instead of HNSW index traversal for better performance. Note: 1Kb = 1 vector of size 256",
                 "title": "Full Scan Threshold",
             },
             "max_indexing_threads": {
@@ -1778,22 +2013,14 @@ DEFS = {
                 "description": "Custom M param for additional payload-aware HNSW links. If not set, default M will be used.",
                 "title": "Payload M",
             },
+            "inline_storage": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "Store copies of original and quantized vectors within the HNSW index file. Default: false. Enabling this option will trade the search speed for disk usage by reducing amount of random seeks during the search. Requires quantized vectors to be enabled. Multi-vectors are not supported.",
+                "title": "Inline Storage",
+            },
         },
         "title": "HnswConfigDiff",
-        "type": "object",
-    },
-    "InitFrom": {
-        "additionalProperties": False,
-        "description": "Operation for creating new collection and (optionally) specify index params",
-        "properties": {
-            "collection": {
-                "description": "Operation for creating new collection and (optionally) specify index params",
-                "title": "Collection",
-                "type": "string",
-            }
-        },
-        "required": ["collection"],
-        "title": "InitFrom",
         "type": "object",
     },
     "MaxOptimizationThreadsSetting": {
@@ -2011,13 +2238,13 @@ DEFS = {
             "search_max_hnsw_ef": {
                 "anyOf": [{"type": "integer"}, {"type": "null"}],
                 "default": None,
-                "description": "Max HNSW value allowed in search parameters.",
+                "description": "Max HNSW ef value allowed in search parameters.",
                 "title": "Search Max Hnsw Ef",
             },
             "search_allow_exact": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
                 "default": None,
-                "description": "Whether exact search is allowed or not.",
+                "description": "Whether exact search is allowed.",
                 "title": "Search Allow Exact",
             },
             "search_max_oversampling": {
@@ -2083,7 +2310,7 @@ DEFS = {
                     {"type": "null"},
                 ],
                 "default": None,
-                "description": "Multivector configuration",
+                "description": "Multivector strict mode configuration",
                 "title": "Multivector Config",
             },
             "sparse_config": {
@@ -2095,8 +2322,14 @@ DEFS = {
                     {"type": "null"},
                 ],
                 "default": None,
-                "description": "Sparse vector configuration",
+                "description": "Sparse vector strict mode configuration",
                 "title": "Sparse Config",
+            },
+            "max_payload_index_count": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Max number of payload indexes in a collection",
+                "title": "Max Payload Index Count",
             },
         },
         "title": "StrictModeConfig",
@@ -2188,6 +2421,12 @@ DEFS = {
                 "default": None,
                 "description": "Number of WAL segments to create ahead of actually used ones",
                 "title": "Wal Segments Ahead",
+            },
+            "wal_retain_closed": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "Number of closed WAL segments to retain",
+                "title": "Wal Retain Closed",
             },
         },
         "title": "WalConfigDiff",
@@ -2324,106 +2563,11 @@ DEFS = {
         "type": "object",
     },
     "KeywordIndexType": {"enum": ["keyword"], "title": "KeywordIndexType", "type": "string"},
-    "Language": {
-        "enum": [
-            "arabic",
-            "azerbaijani",
-            "basque",
-            "bengali",
-            "catalan",
-            "chinese",
-            "danish",
-            "dutch",
-            "english",
-            "finnish",
-            "french",
-            "german",
-            "greek",
-            "hebrew",
-            "hinglish",
-            "hungarian",
-            "indonesian",
-            "italian",
-            "japanese",
-            "kazakh",
-            "nepali",
-            "norwegian",
-            "portuguese",
-            "romanian",
-            "russian",
-            "slovene",
-            "spanish",
-            "swedish",
-            "tajik",
-            "turkish",
-        ],
-        "title": "Language",
-        "type": "string",
-    },
     "PayloadSchemaType": {
         "description": "All possible names of payload types",
         "enum": ["keyword", "integer", "float", "geo", "text", "bool", "datetime", "uuid"],
         "title": "PayloadSchemaType",
         "type": "string",
-    },
-    "Snowball": {"enum": ["snowball"], "title": "Snowball", "type": "string"},
-    "SnowballLanguage": {
-        "description": "Languages supported by snowball stemmer.",
-        "enum": [
-            "arabic",
-            "armenian",
-            "danish",
-            "dutch",
-            "english",
-            "finnish",
-            "french",
-            "german",
-            "greek",
-            "hungarian",
-            "italian",
-            "norwegian",
-            "portuguese",
-            "romanian",
-            "russian",
-            "spanish",
-            "swedish",
-            "tamil",
-            "turkish",
-        ],
-        "title": "SnowballLanguage",
-        "type": "string",
-    },
-    "SnowballParams": {
-        "additionalProperties": False,
-        "properties": {
-            "type": {"$ref": "#/$defs/Snowball", "description": ""},
-            "language": {"$ref": "#/$defs/SnowballLanguage", "description": ""},
-        },
-        "required": ["type", "language"],
-        "title": "SnowballParams",
-        "type": "object",
-    },
-    "StopwordsSet": {
-        "additionalProperties": False,
-        "properties": {
-            "languages": {
-                "anyOf": [
-                    {"items": {"$ref": "#/$defs/Language"}, "type": "array"},
-                    {"type": "null"},
-                ],
-                "default": None,
-                "description": "",
-                "title": "Languages",
-            },
-            "custom": {
-                "anyOf": [{"items": {"type": "string"}, "type": "array"}, {"type": "null"}],
-                "default": None,
-                "description": "",
-                "title": "Custom",
-            },
-        },
-        "title": "StopwordsSet",
-        "type": "object",
     },
     "TextIndexParams": {
         "additionalProperties": False,
@@ -2451,6 +2595,12 @@ DEFS = {
                 "default": None,
                 "description": "If true, lowercase all tokens. Default: true.",
                 "title": "Lowercase",
+            },
+            "ascii_folding": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": None,
+                "description": "If true, normalize tokens by folding accented characters to ASCII (e.g., 'ação' -&gt; 'acao'). Default: false.",
+                "title": "Ascii Folding",
             },
             "phrase_matching": {
                 "anyOf": [{"type": "boolean"}, {"type": "null"}],
@@ -2485,11 +2635,6 @@ DEFS = {
         "type": "object",
     },
     "TextIndexType": {"enum": ["text"], "title": "TextIndexType", "type": "string"},
-    "TokenizerType": {
-        "enum": ["prefix", "whitespace", "word", "multilingual"],
-        "title": "TokenizerType",
-        "type": "string",
-    },
     "UuidIndexParams": {
         "additionalProperties": False,
         "properties": {
@@ -2512,6 +2657,23 @@ DEFS = {
         "type": "object",
     },
     "UuidIndexType": {"enum": ["uuid"], "title": "UuidIndexType", "type": "string"},
+    "ReplicaState": {
+        "description": "State of the single shard within a replica set.",
+        "enum": [
+            "Active",
+            "Dead",
+            "Partial",
+            "Initializing",
+            "Listener",
+            "PartialSnapshot",
+            "Recovery",
+            "Resharding",
+            "ReshardingScaleDown",
+            "ActiveRead",
+        ],
+        "title": "ReplicaState",
+        "type": "string",
+    },
     "CreateShardingKey": {
         "additionalProperties": False,
         "properties": {
@@ -2538,6 +2700,11 @@ DEFS = {
                 "description": "Placement of shards for this key List of peer ids, that can be used to place shards for this key If not specified, will be randomly placed among all peers",
                 "title": "Placement",
             },
+            "initial_state": {
+                "anyOf": [{"$ref": "#/$defs/ReplicaState"}, {"type": "null"}],
+                "default": None,
+                "description": "Initial state of the shards for this key If not specified, will be `Initializing` first and then `Active` Warning: do not change this unless you know what you are doing",
+            },
         },
         "required": ["shard_key"],
         "title": "CreateShardingKey",
@@ -2556,7 +2723,13 @@ DEFS = {
             "points": {
                 "anyOf": [
                     {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "items": {
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string"},
+                                {"format": "uuid", "type": "string"},
+                            ]
+                        },
                         "type": "array",
                     },
                     {"type": "null"},
@@ -2578,6 +2751,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -2595,7 +2769,13 @@ DEFS = {
             "points": {
                 "anyOf": [
                     {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "items": {
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string"},
+                                {"format": "uuid", "type": "string"},
+                            ]
+                        },
                         "type": "array",
                     },
                     {"type": "null"},
@@ -2623,6 +2803,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -2644,6 +2825,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -2664,6 +2846,26 @@ DEFS = {
         "title": "DiscoverInput",
         "type": "object",
     },
+    "AcornSearchParams": {
+        "additionalProperties": False,
+        "description": "ACORN-related search parameters",
+        "properties": {
+            "enable": {
+                "anyOf": [{"type": "boolean"}, {"type": "null"}],
+                "default": False,
+                "description": "If true, then ACORN may be used for the HNSW search based on filters selectivity. Improves search recall for searches with multiple low-selectivity payload filters, at cost of performance.",
+                "title": "Enable",
+            },
+            "max_selectivity": {
+                "anyOf": [{"type": "number"}, {"type": "null"}],
+                "default": None,
+                "description": "Maximum selectivity of filters to enable ACORN.  If estimated filters selectivity is higher than this value, ACORN will not be used. Selectivity is estimated as: `estimated number of points satisfying the filters / total number of points`.  0.0 for never, 1.0 for always. Default is 0.4.",
+                "title": "Max Selectivity",
+            },
+        },
+        "title": "AcornSearchParams",
+        "type": "object",
+    },
     "ContextExamplePair": {
         "additionalProperties": False,
         "properties": {
@@ -2671,6 +2873,7 @@ DEFS = {
                 "anyOf": [
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"items": {"type": "number"}, "type": "array"},
                     {"$ref": "#/$defs/SparseVector"},
                 ],
@@ -2681,6 +2884,7 @@ DEFS = {
                 "anyOf": [
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"items": {"type": "number"}, "type": "array"},
                     {"$ref": "#/$defs/SparseVector"},
                 ],
@@ -2715,6 +2919,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -2807,6 +3012,11 @@ DEFS = {
                 "description": "If enabled, the engine will only perform search among indexed or small segments. Using this option prevents slow searches in case of delayed index, but does not guarantee that all uploaded vectors will be included in search results",
                 "title": "Indexed Only",
             },
+            "acorn": {
+                "anyOf": [{"$ref": "#/$defs/AcornSearchParams"}, {"type": "null"}],
+                "default": None,
+                "description": "ACORN search params",
+            },
         },
         "title": "SearchParams",
         "type": "object",
@@ -2823,6 +3033,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -2833,6 +3044,7 @@ DEFS = {
                 "anyOf": [
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"items": {"type": "number"}, "type": "array"},
                     {"$ref": "#/$defs/SparseVector"},
                     {"type": "null"},
@@ -2933,7 +3145,7 @@ DEFS = {
         "type": "object",
     },
     "Fusion": {
-        "description": "Fusion algorithm allows to combine results of multiple prefetches.  Available fusion algorithms:  * `rrf` - Reciprocal Rank Fusion * `dbsf` - Distribution-Based Score Fusion",
+        "description": "Fusion algorithm allows to combine results of multiple prefetches.  Available fusion algorithms:  * `rrf` - Reciprocal Rank Fusion (with default parameters) * `dbsf` - Distribution-Based Score Fusion",
         "enum": ["rrf", "dbsf"],
         "title": "Fusion",
         "type": "string",
@@ -3045,7 +3257,13 @@ DEFS = {
             "points": {
                 "anyOf": [
                     {
-                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "items": {
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string"},
+                                {"format": "uuid", "type": "string"},
+                            ]
+                        },
                         "type": "array",
                     },
                     {"type": "null"},
@@ -3067,6 +3285,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -3089,7 +3308,13 @@ DEFS = {
         "properties": {
             "ids": {
                 "description": "",
-                "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                "items": {
+                    "anyOf": [
+                        {"type": "integer"},
+                        {"type": "string"},
+                        {"format": "uuid", "type": "string"},
+                    ]
+                },
                 "title": "Ids",
                 "type": "array",
             },
@@ -3147,7 +3372,11 @@ DEFS = {
         "additionalProperties": False,
         "properties": {
             "id": {
-                "anyOf": [{"type": "integer"}, {"type": "string"}],
+                "anyOf": [
+                    {"type": "integer"},
+                    {"type": "string"},
+                    {"format": "uuid", "type": "string"},
+                ],
                 "description": "",
                 "title": "Id",
             },
@@ -3274,6 +3503,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -3324,6 +3554,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -3333,6 +3564,7 @@ DEFS = {
                     {"$ref": "#/$defs/ContextQuery"},
                     {"$ref": "#/$defs/OrderByQuery"},
                     {"$ref": "#/$defs/FusionQuery"},
+                    {"$ref": "#/$defs/RrfQuery"},
                     {"$ref": "#/$defs/FormulaQuery"},
                     {"$ref": "#/$defs/SampleQuery"},
                     {"type": "null"},
@@ -3394,6 +3626,7 @@ DEFS = {
                                 },
                                 {"type": "integer"},
                                 {"type": "string"},
+                                {"format": "uuid", "type": "string"},
                                 {"$ref": "#/$defs/Document"},
                                 {"$ref": "#/$defs/Image"},
                                 {"$ref": "#/$defs/InferenceObject"},
@@ -3420,6 +3653,7 @@ DEFS = {
                                 },
                                 {"type": "integer"},
                                 {"type": "string"},
+                                {"format": "uuid", "type": "string"},
                                 {"$ref": "#/$defs/Document"},
                                 {"$ref": "#/$defs/Image"},
                                 {"$ref": "#/$defs/InferenceObject"},
@@ -3454,6 +3688,27 @@ DEFS = {
         "enum": ["average_vector", "best_score", "sum_scores"],
         "title": "RecommendStrategy",
         "type": "string",
+    },
+    "Rrf": {
+        "additionalProperties": False,
+        "description": "Parameters for Reciprocal Rank Fusion",
+        "properties": {
+            "k": {
+                "anyOf": [{"type": "integer"}, {"type": "null"}],
+                "default": None,
+                "description": "K parameter for reciprocal rank fusion",
+                "title": "K",
+            }
+        },
+        "title": "Rrf",
+        "type": "object",
+    },
+    "RrfQuery": {
+        "additionalProperties": False,
+        "properties": {"rrf": {"$ref": "#/$defs/Rrf", "description": ""}},
+        "required": ["rrf"],
+        "title": "RrfQuery",
+        "type": "object",
     },
     "Sample": {"enum": ["random"], "title": "Sample", "type": "string"},
     "SampleQuery": {
@@ -3509,6 +3764,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -3532,6 +3788,7 @@ DEFS = {
                     {"items": {"items": {"type": "number"}, "type": "array"}, "type": "array"},
                     {"type": "integer"},
                     {"type": "string"},
+                    {"format": "uuid", "type": "string"},
                     {"$ref": "#/$defs/Document"},
                     {"$ref": "#/$defs/Image"},
                     {"$ref": "#/$defs/InferenceObject"},
@@ -3541,6 +3798,7 @@ DEFS = {
                     {"$ref": "#/$defs/ContextQuery"},
                     {"$ref": "#/$defs/OrderByQuery"},
                     {"$ref": "#/$defs/FusionQuery"},
+                    {"$ref": "#/$defs/RrfQuery"},
                     {"$ref": "#/$defs/FormulaQuery"},
                     {"$ref": "#/$defs/SampleQuery"},
                     {"type": "null"},
@@ -3626,6 +3884,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -3639,6 +3898,7 @@ DEFS = {
                             "anyOf": [
                                 {"type": "integer"},
                                 {"type": "string"},
+                                {"format": "uuid", "type": "string"},
                                 {"items": {"type": "number"}, "type": "array"},
                                 {"$ref": "#/$defs/SparseVector"},
                             ]
@@ -3658,6 +3918,7 @@ DEFS = {
                             "anyOf": [
                                 {"type": "integer"},
                                 {"type": "string"},
+                                {"format": "uuid", "type": "string"},
                                 {"items": {"type": "number"}, "type": "array"},
                                 {"$ref": "#/$defs/SparseVector"},
                             ]
@@ -3738,6 +3999,29 @@ DEFS = {
         },
         "required": ["limit"],
         "title": "RecommendRequest",
+        "type": "object",
+    },
+    "ReplicatePoints": {
+        "additionalProperties": False,
+        "properties": {
+            "filter": {
+                "anyOf": [{"$ref": "#/$defs/Filter"}, {"type": "null"}],
+                "default": None,
+                "description": "",
+            },
+            "from_shard_key": {
+                "anyOf": [{"type": "integer"}, {"type": "string"}],
+                "description": "",
+                "title": "From Shard Key",
+            },
+            "to_shard_key": {
+                "anyOf": [{"type": "integer"}, {"type": "string"}],
+                "description": "",
+                "title": "To Shard Key",
+            },
+        },
+        "required": ["from_shard_key", "to_shard_key"],
+        "title": "ReplicatePoints",
         "type": "object",
     },
     "ReplicateShard": {
@@ -3826,6 +4110,7 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
@@ -4054,7 +4339,11 @@ DEFS = {
         "additionalProperties": False,
         "properties": {
             "id": {
-                "anyOf": [{"type": "integer"}, {"type": "string"}],
+                "anyOf": [
+                    {"type": "integer"},
+                    {"type": "string"},
+                    {"format": "uuid", "type": "string"},
+                ],
                 "description": "",
                 "title": "Id",
             },
@@ -4102,11 +4391,17 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
                 "description": "",
                 "title": "Shard Key",
+            },
+            "update_filter": {
+                "anyOf": [{"$ref": "#/$defs/Filter"}, {"type": "null"}],
+                "default": None,
+                "description": "If specified, only points that match this filter will be updated, others will be inserted",
             },
         },
         "required": ["batch"],
@@ -4130,11 +4425,17 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
                 "description": "",
                 "title": "Shard Key",
+            },
+            "update_filter": {
+                "anyOf": [{"$ref": "#/$defs/Filter"}, {"type": "null"}],
+                "default": None,
+                "description": "If specified, only points that match this filter will be updated, others will be inserted",
             },
         },
         "required": ["points"],
@@ -4165,11 +4466,17 @@ DEFS = {
                         "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
                         "type": "array",
                     },
+                    {"$ref": "#/$defs/ShardKeyWithFallback"},
                     {"type": "null"},
                 ],
                 "default": None,
                 "description": "",
                 "title": "Shard Key",
+            },
+            "update_filter": {
+                "anyOf": [{"$ref": "#/$defs/Filter"}, {"type": "null"}],
+                "default": None,
+                "description": "",
             },
         },
         "required": ["points"],

@@ -62,13 +62,14 @@ def test_context_cosine(
     grpc_client,
 ):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        # test single context pair
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[models.ContextExamplePair(positive=10, negative=19)],
+            query=models.ContextQuery(context=models.ContextPair(positive=10, negative=19)),
             with_payload=True,
             limit=1000,
             using="text",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
     compare_client_results(local_client, http_client, f, is_context_search=True)
@@ -80,13 +81,14 @@ def test_context_dot(
     grpc_client,
 ):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        # test list context pair
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[models.ContextExamplePair(positive=10, negative=19)],
+            query=models.ContextQuery(context=models.ContextPair(positive=10, negative=19)),
             with_payload=True,
             limit=1000,
             using="image",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
     compare_client_results(local_client, http_client, f, is_context_search=True)
@@ -98,13 +100,13 @@ def test_context_euclidean(
     grpc_client,
 ):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[models.ContextExamplePair(positive=11, negative=19)],
+            query=models.ContextQuery(context=models.ContextPair(positive=11, negative=19)),
             with_payload=True,
             limit=1000,
             using="code",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
     compare_client_results(local_client, http_client, f, is_context_search=True)
@@ -119,21 +121,23 @@ def test_context_many_pairs(
     random_image_vector_2 = random_vector(image_vector_size)
 
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[
-                models.ContextExamplePair(positive=11, negative=19),
-                models.ContextExamplePair(positive=400, negative=200),
-                models.ContextExamplePair(
-                    positive=random_image_vector_1, negative=random_image_vector_2
-                ),
-                models.ContextExamplePair(positive=30, negative=random_image_vector_2),
-                models.ContextExamplePair(positive=random_image_vector_1, negative=15),
-            ],
+            query=models.ContextQuery(
+                context=[
+                    models.ContextPair(positive=11, negative=19),
+                    models.ContextPair(positive=400, negative=200),
+                    models.ContextPair(
+                        positive=random_image_vector_1, negative=random_image_vector_2
+                    ),
+                    models.ContextPair(positive=30, negative=random_image_vector_2),
+                    models.ContextPair(positive=random_image_vector_1, negative=15),
+                ]
+            ),
             with_payload=True,
             limit=1000,
             using="image",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
     compare_client_results(local_client, http_client, f, is_context_search=True)
@@ -145,14 +149,19 @@ def test_discover_cosine(
     grpc_client,
 ):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        # test single context pair
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            target=10,
-            context=[models.ContextExamplePair(positive=11, negative=19)],
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=10,
+                    context=models.ContextPair(positive=11, negative=19),
+                )
+            ),
             with_payload=True,
             limit=10,
             using="text",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
@@ -164,14 +173,18 @@ def test_discover_dot(
     grpc_client,
 ):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        # test list context pair
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            target=10,
-            context=[models.ContextExamplePair(positive=11, negative=19)],
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=10, context=[models.ContextPair(positive=11, negative=19)]
+                )
+            ),
             with_payload=True,
             limit=10,
             using="image",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
@@ -183,14 +196,17 @@ def test_discover_euclidean(
     grpc_client,
 ):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            target=10,
-            context=[models.ContextExamplePair(positive=11, negative=19)],
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=10, context=[models.ContextPair(positive=11, negative=19)]
+                )
+            ),
             with_payload=True,
             limit=10,
             using="code",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
@@ -204,13 +220,17 @@ def test_discover_raw_target(
     random_image_vector = random_vector(image_vector_size)
 
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            target=random_image_vector,
-            context=[models.ContextExamplePair(positive=10, negative=19)],
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=random_image_vector,
+                    context=[models.ContextPair(positive=10, negative=19)],
+                )
+            ),
             limit=10,
             using="image",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
@@ -224,13 +244,17 @@ def test_context_raw_positive(
     random_image_vector = random_vector(image_vector_size)
 
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            target=10,
-            context=[models.ContextExamplePair(positive=random_image_vector, negative=19)],
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=10,
+                    context=[models.ContextPair(positive=random_image_vector, negative=19)],
+                )
+            ),
             limit=10,
             using="image",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
@@ -242,13 +266,13 @@ def test_only_target(
     grpc_client,
 ):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            target=10,
+            query=models.DiscoverQuery(discover=models.DiscoverInput(target=10, context=[])),
             with_payload=True,
             limit=10,
             using="image",
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f)
     compare_client_results(local_client, http_client, f)
@@ -261,12 +285,16 @@ def discover_from_another_collection(
     positive_point_id: Optional[int] = None,
     **kwargs: dict[str, Any],
 ) -> list[models.ScoredPoint]:
-    return client.discover(
+    return client.query_points(
         collection_name=collection_name,
-        target=5,
-        context=[models.ContextExamplePair(positive=positive_point_id, negative=6)]
-        if positive_point_id is not None
-        else [],
+        query=models.DiscoverQuery(
+            discover=models.DiscoverInput(
+                target=5,
+                context=[models.ContextPair(positive=positive_point_id, negative=6)]
+                if positive_point_id is not None
+                else [],
+            )
+        ),
         with_payload=True,
         limit=10,
         using="image",
@@ -274,7 +302,7 @@ def discover_from_another_collection(
             collection=lookup_collection_name,
             vector="image",
         ),
-    )
+    ).points
 
 
 def test_discover_from_another_collection(
@@ -317,19 +345,26 @@ def test_discover_batch(
     http_client,
     grpc_client,
 ):
-    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[list[models.ScoredPoint]]:
-        return client.discover_batch(
+    def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.QueryResponse]:
+        return client.query_batch_points(
             collection_name=COLLECTION_NAME,
             requests=[
-                models.DiscoverRequest(
-                    target=10,
-                    context=[models.ContextExamplePair(positive=15, negative=7)],
+                models.QueryRequest(
+                    query=models.DiscoverQuery(
+                        discover=models.DiscoverInput(
+                            target=10,
+                            context=[models.ContextPair(positive=15, negative=7)],
+                        )
+                    ),
                     limit=5,
                     using="image",
                 ),
-                models.DiscoverRequest(
-                    target=11,
-                    context=[models.ContextExamplePair(positive=15, negative=17)],
+                models.QueryRequest(
+                    query=models.DiscoverQuery(
+                        discover=models.DiscoverInput(
+                            target=11, context=[models.ContextPair(positive=15, negative=17)]
+                        )
+                    ),
                     limit=6,
                     using="image",
                     lookup_from=models.LookupLocation(
@@ -347,26 +382,32 @@ def test_discover_batch(
 @pytest.mark.parametrize("filter", [one_random_filter_please() for _ in range(10)])
 def test_discover_with_filters(local_client, http_client, grpc_client, filter: models.Filter):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            target=10,
-            context=[models.ContextExamplePair(positive=15, negative=7)],
+            query=models.DiscoverQuery(
+                discover=models.DiscoverInput(
+                    target=10, context=[models.ContextPair(positive=15, negative=7)]
+                )
+            ),
             limit=15,
             using="image",
             query_filter=filter,
-        )
+        ).points
+
+    compare_client_results(grpc_client, http_client, f)
+    compare_client_results(local_client, http_client, f)
 
 
 @pytest.mark.parametrize("filter", [one_random_filter_please() for _ in range(10)])
 def test_context_with_filters(local_client, http_client, grpc_client, filter: models.Filter):
     def f(client: QdrantBase, **kwargs: dict[str, Any]) -> list[models.ScoredPoint]:
-        return client.discover(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[models.ContextExamplePair(positive=15, negative=7)],
+            query=models.ContextQuery(context=models.ContextPair(positive=15, negative=7)),
             limit=1000,
             using="image",
             query_filter=filter,
-        )
+        ).points
 
     compare_client_results(grpc_client, http_client, f, is_context_search=True)
     compare_client_results(local_client, http_client, f, is_context_search=True)
@@ -386,38 +427,38 @@ def test_query_with_nan():
     init_client(remote_client, fixture_points)
 
     with pytest.raises(AssertionError):
-        local_client.discover(
+        local_client.query_points(
             collection_name=COLLECTION_NAME,
-            target=vector,
+            query=models.DiscoverQuery(discover=models.DiscoverInput(target=vector, context=[])),
             using=using,
         )
     with pytest.raises(UnexpectedResponse):
-        remote_client.discover(
+        remote_client.query_points(
             collection_name=COLLECTION_NAME,
-            target=vector,
+            query=models.DiscoverQuery(discover=models.DiscoverInput(target=vector, context=[])),
             using=using,
         )
     with pytest.raises(AssertionError):
-        local_client.discover(
+        local_client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[models.ContextExamplePair(positive=vector, negative=1)],
+            query=models.ContextQuery(context=models.ContextPair(positive=vector, negative=1)),
             using=using,
         )
     with pytest.raises(UnexpectedResponse):
-        remote_client.discover(
+        remote_client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[models.ContextExamplePair(positive=vector, negative=1)],
+            query=models.ContextQuery(context=models.ContextPair(positive=vector, negative=1)),
             using=using,
         )
     with pytest.raises(AssertionError):
-        local_client.discover(
+        local_client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[models.ContextExamplePair(positive=1, negative=vector)],
+            query=models.ContextQuery(context=models.ContextPair(positive=1, negative=vector)),
             using=using,
         )
     with pytest.raises(UnexpectedResponse):
-        remote_client.discover(
+        remote_client.query_points(
             collection_name=COLLECTION_NAME,
-            context=[models.ContextExamplePair(positive=1, negative=vector)],
+            query=models.ContextQuery(context=models.ContextPair(positive=1, negative=vector)),
             using=using,
         )

@@ -60,7 +60,7 @@ class _DistributedApi:
         """
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2003,
+            type_=m.InlineResponse2002,
             method="GET",
             url="/cluster",
             headers=headers if headers else None,
@@ -79,7 +79,7 @@ class _DistributedApi:
 
         headers = {}
         return self.api_client.request(
-            type_=m.InlineResponse2008,
+            type_=m.InlineResponse2007,
             method="GET",
             url="/collections/{collection_name}/cluster",
             headers=headers if headers else None,
@@ -156,6 +156,7 @@ class _DistributedApi:
     def _build_for_remove_peer(
         self,
         peer_id: int,
+        timeout: int = None,
         force: bool = None,
     ):
         """
@@ -166,6 +167,8 @@ class _DistributedApi:
         }
 
         query_params = {}
+        if timeout is not None:
+            query_params["timeout"] = str(timeout)
         if force is not None:
             query_params["force"] = str(force).lower()
 
@@ -211,7 +214,7 @@ class _DistributedApi:
 class AsyncDistributedApi(_DistributedApi):
     async def cluster_status(
         self,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2002:
         """
         Get information about the current state and composition of the cluster
         """
@@ -220,7 +223,7 @@ class AsyncDistributedApi(_DistributedApi):
     async def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """
@@ -260,6 +263,7 @@ class AsyncDistributedApi(_DistributedApi):
     async def remove_peer(
         self,
         peer_id: int,
+        timeout: int = None,
         force: bool = None,
     ) -> m.InlineResponse200:
         """
@@ -267,6 +271,7 @@ class AsyncDistributedApi(_DistributedApi):
         """
         return await self._build_for_remove_peer(
             peer_id=peer_id,
+            timeout=timeout,
             force=force,
         )
 
@@ -286,7 +291,7 @@ class AsyncDistributedApi(_DistributedApi):
 class SyncDistributedApi(_DistributedApi):
     def cluster_status(
         self,
-    ) -> m.InlineResponse2003:
+    ) -> m.InlineResponse2002:
         """
         Get information about the current state and composition of the cluster
         """
@@ -295,7 +300,7 @@ class SyncDistributedApi(_DistributedApi):
     def collection_cluster_info(
         self,
         collection_name: str,
-    ) -> m.InlineResponse2008:
+    ) -> m.InlineResponse2007:
         """
         Get cluster information for a collection
         """
@@ -335,6 +340,7 @@ class SyncDistributedApi(_DistributedApi):
     def remove_peer(
         self,
         peer_id: int,
+        timeout: int = None,
         force: bool = None,
     ) -> m.InlineResponse200:
         """
@@ -342,6 +348,7 @@ class SyncDistributedApi(_DistributedApi):
         """
         return self._build_for_remove_peer(
             peer_id=peer_id,
+            timeout=timeout,
             force=force,
         )
 

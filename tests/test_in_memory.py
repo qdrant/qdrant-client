@@ -42,14 +42,14 @@ def test_dense_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     assert operation_info.operation_id == 0
     assert operation_info.status == models.UpdateStatus.COMPLETED
 
-    search_result = qdrant.search(
+    search_result = qdrant.query_points(
         collection_name="test_collection",
-        query_vector=[0.2, 0.1, 0.9, 0.7],
+        query=[0.2, 0.1, 0.9, 0.7],
         query_filter=models.Filter(
             must=[models.FieldCondition(key="city", match=models.MatchValue(value="London"))]
         ),
         limit=3,
-    )
+    ).points
 
     assert [r.id for r in search_result] == [4, 2]
 
@@ -107,16 +107,14 @@ def test_sparse_in_memory_key_filter_returns_results(qdrant: QdrantClient):
     assert operation_info.operation_id == 0
     assert operation_info.status == models.UpdateStatus.COMPLETED
 
-    search_result = qdrant.search(
+    search_result = qdrant.query_points(
         collection_name="test_collection",
-        query_vector=models.NamedSparseVector(
-            name="text",
-            vector=models.SparseVector(indices=[0, 1, 2, 3], values=[0.2, 0.1, 0.9, 0.7]),
-        ),
+        using="text",
+        query=models.SparseVector(indices=[0, 1, 2, 3], values=[0.2, 0.1, 0.9, 0.7]),
         query_filter=models.Filter(
             must=[models.FieldCondition(key="city", match=models.MatchValue(value="London"))]
         ),
         limit=3,
-    )
+    ).points
 
     assert [r.id for r in search_result] == [4, 2]

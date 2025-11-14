@@ -27,122 +27,134 @@ class TestSimpleSearcher:
         self.query_code = np.random.random(code_vector_size).tolist()
 
     def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            query=self.query_text,
+            using="text",
             with_payload=True,
             limit=10,
-        )
+        ).points
 
     def simple_search_image(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("image", self.query_image),
+            using="image",
+            query=self.query_image,
             with_payload=True,
             limit=10,
-        )
+        ).points
 
     def simple_search_code(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("code", self.query_code),
+            query=self.query_code,
+            using="code",
             with_payload=True,
             limit=10,
-        )
+        ).points
 
     def simple_search_text_offset(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=True,
             limit=10,
             offset=10,
-        )
+        ).points
 
     def simple_search_text_with_vector(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=True,
             with_vectors=True,
             limit=10,
             offset=10,
-        )
+        ).points
 
     def search_score_threshold(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        res1 = client.search(
+        res1 = client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            query=self.query_text,
+            using="text",
             with_payload=True,
             limit=10,
             score_threshold=0.9,
-        )
+        ).points
 
-        res2 = client.search(
+        res2 = client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            query=self.query_text,
+            using="text",
             with_payload=True,
             limit=10,
             score_threshold=0.95,
-        )
+        ).points
 
-        res3 = client.search(
+        res3 = client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            query=self.query_text,
+            using="text",
             with_payload=True,
             limit=10,
             score_threshold=0.1,
-        )
+        ).points
 
         return res1 + res2 + res3
 
     def simple_search_text_select_payload(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=["text_array", "nested.id"],
             limit=10,
-        )
+        ).points
 
     def search_payload_exclude(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=models.PayloadSelectorExclude(exclude=["text_array", "nested.id"]),
             limit=10,
-        )
+        ).points
 
     def simple_search_image_select_vector(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("image", self.query_image),
+            using="image",
+            query=self.query_image,
             with_payload=False,
             with_vectors=["image", "code"],
             limit=10,
-        )
+        ).points
 
     def filter_search_text(
         self, client: QdrantBase, query_filter: models.Filter
     ) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             query_filter=query_filter,
             with_payload=True,
             limit=10,
-        )
+        ).points
 
     def filter_search_text_single(
         self, client: QdrantBase, query_filter: models.Filter
     ) -> list[models.ScoredPoint]:
-        return client.search(
+        return client.query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=self.query_text,
+            query=self.query_text,
             query_filter=query_filter,
             with_payload=True,
             with_vectors=True,
             limit=10,
-        )
+        ).points
 
 
 def test_simple_search():
@@ -331,10 +343,10 @@ def test_search_invalid_vector_type():
 
     vector_invalid_type = {"text": [1, 2, 3, 4]}
     with pytest.raises(ValueError):
-        local_client.search(collection_name=COLLECTION_NAME, query_vector=vector_invalid_type)
+        local_client.query_points(collection_name=COLLECTION_NAME, query=vector_invalid_type)
 
     with pytest.raises(ValueError):
-        remote_client.search(collection_name=COLLECTION_NAME, query_vector=vector_invalid_type)
+        remote_client.query_points(collection_name=COLLECTION_NAME, query=vector_invalid_type)
 
 
 def test_query_with_nan():
@@ -348,11 +360,12 @@ def test_query_with_nan():
 
     vector = np.random.random(text_vector_size)
     vector[4] = np.nan
-    query_vector = ("text", vector.tolist())
+    query_vector = vector.tolist()
+
     with pytest.raises(AssertionError):
-        local_client.search(COLLECTION_NAME, query_vector)
+        local_client.query_points(COLLECTION_NAME, query_vector, using="text")
     with pytest.raises(UnexpectedResponse):
-        remote_client.search(COLLECTION_NAME, query_vector)
+        remote_client.query_points(COLLECTION_NAME, query_vector, using="text")
 
     single_vector_config = models.VectorParams(
         size=text_vector_size, distance=models.Distance.COSINE
@@ -369,6 +382,6 @@ def test_query_with_nan():
     init_client(remote_client, fixture_points, vectors_config=single_vector_config)
 
     with pytest.raises(AssertionError):
-        local_client.search(COLLECTION_NAME, vector.tolist())
+        local_client.query_points(COLLECTION_NAME, vector.tolist())
     with pytest.raises(UnexpectedResponse):
-        remote_client.search(COLLECTION_NAME, vector.tolist())
+        remote_client.query_points(COLLECTION_NAME, vector.tolist())
