@@ -736,7 +736,10 @@ class QdrantLocal(QdrantBase):
             updated = True
 
         if metadata is not None:
-            _collection.config.metadata.update(metadata)
+            if _collection.config.metadata is not None:
+                _collection.config.metadata.update(metadata)
+            else:
+                _collection.config.metadata = deepcopy(metadata)
             updated = True
 
         self._save()
@@ -786,7 +789,7 @@ class QdrantLocal(QdrantBase):
             rest_models.CreateCollection(
                 vectors=vectors_config or {},
                 sparse_vectors=sparse_vectors_config,
-                metadata=metadata,
+                metadata=deepcopy(metadata),
             ),
             location=collection_path,
             force_disable_check_same_thread=self.force_disable_check_same_thread,
@@ -801,10 +804,13 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name)
-        return self.create_collection(collection_name, vectors_config, sparse_vectors_config)
+        return self.create_collection(
+            collection_name, vectors_config, sparse_vectors_config, metadata=metadata
+        )
 
     def upload_points(
         self,

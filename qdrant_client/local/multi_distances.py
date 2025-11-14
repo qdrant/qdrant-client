@@ -5,8 +5,6 @@ import numpy as np
 from qdrant_client.http import models
 from qdrant_client.conversions import common_types as types
 from qdrant_client.local.distances import (
-    distance_to_order,
-    DistanceOrder,
     calculate_distance,
     scaled_fast_sigmoid,
     EPSILON,
