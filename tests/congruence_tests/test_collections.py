@@ -1,12 +1,9 @@
 from time import sleep
 from typing import Callable
 
-import pytest
-
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
-    compare_collections,
     generate_fixtures,
     init_client,
     init_local,

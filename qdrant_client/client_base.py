@@ -1,7 +1,6 @@
 from typing import Any, Iterable, Mapping, Optional, Sequence, Union
 
 from qdrant_client.conversions import common_types as types
-from qdrant_client.http import models
 
 
 class QdrantBase:

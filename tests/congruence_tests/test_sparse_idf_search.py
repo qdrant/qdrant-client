@@ -1,5 +1,4 @@
 from qdrant_client.client_base import QdrantBase
-from qdrant_client.conversions.common_types import NamedSparseVector
 from qdrant_client.http.models import models
 from tests.congruence_tests.test_common import (
     COLLECTION_NAME,

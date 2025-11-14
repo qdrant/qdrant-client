@@ -1,5 +1,5 @@
 import time
-from typing import Iterable, Optional, Any
+from typing import Iterable, Optional
 
 from qdrant_client._pydantic_compat import to_dict, model_fields
 from qdrant_client.client_base import QdrantBase
