@@ -1,5 +1,4 @@
 import inspect
-from typing import Optional
 
 from tools.async_client_generator.async_client_base import AsyncQdrantBase
 from tools.async_client_generator.base_generator import BaseGenerator
@@ -17,12 +16,12 @@ from tools.async_client_generator.transformers.fastembed import (
 class FastembedGenerator(BaseGenerator):
     def __init__(
         self,
-        keep_sync: Optional[list[str]] = None,
-        class_replace_map: Optional[dict[str, str]] = None,
-        import_replace_map: Optional[dict[str, str]] = None,
+        keep_sync: list[str] | None = None,
+        class_replace_map: dict[str, str] | None = None,
+        import_replace_map: dict[str, str] | None = None,
     ):
         super().__init__()
-        self._async_methods: Optional[list[str]] = None
+        self._async_methods: list[str] | None = None
         self.transformers.append(FastembedCallTransformer(async_methods=self.async_methods))
         self.transformers.append(ClassDefTransformer(class_replace_map=class_replace_map))
         self.transformers.append(ImportTransformer(import_replace_map=import_replace_map))

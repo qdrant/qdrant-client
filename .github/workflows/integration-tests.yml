@@ -14,7 +14,6 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '3.9.x'
           - '3.10.x'
           - '3.11.x'
           - '3.12.x'
@@ -68,7 +67,7 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          QDRANT_VERSION='v1.12.6' ./tests/integration-tests.sh
+          QDRANT_VERSION='v1.15.5' ./tests/integration-tests.sh
         shell: bash
       - name: Run fastembed tests without fastembed
         run: |

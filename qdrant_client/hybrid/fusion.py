@@ -9,7 +9,7 @@ DEFAULT_RANKING_CONSTANT_K = 2
 def reciprocal_rank_fusion(
     responses: list[list[models.ScoredPoint]],
     limit: int = 10,
-    ranking_constant_k: Optional[int] = None,
+    ranking_constant_k: int | None = None,
 ) -> list[models.ScoredPoint]:
     def compute_score(pos: int) -> float:
         ranking_constant = (

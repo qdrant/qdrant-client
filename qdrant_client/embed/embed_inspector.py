@@ -1,5 +1,5 @@
 from copy import copy
-from typing import Union, Optional, Iterable, get_args
+from typing import Iterable, get_args
 
 from pydantic import BaseModel
 
@@ -17,10 +17,10 @@ class InspectorEmbed:
         parser: ModelSchemaParser instance
     """
 
-    def __init__(self, parser: Optional[ModelSchemaParser] = None) -> None:
+    def __init__(self, parser: ModelSchemaParser | None = None) -> None:
         self.parser = ModelSchemaParser() if parser is None else parser
 
-    def inspect(self, points: Union[Iterable[BaseModel], BaseModel]) -> list[FieldPath]:
+    def inspect(self, points: Iterable[BaseModel] | BaseModel) -> list[FieldPath]:
         """Looks for all the paths to objects requiring inference in the received models
 
         Args:
@@ -47,7 +47,7 @@ class InspectorEmbed:
         return convert_paths(paths)
 
     def _inspect_model(
-        self, mod: BaseModel, paths: Optional[list[FieldPath]] = None, accum: Optional[str] = None
+        self, mod: BaseModel, paths: list[FieldPath] | None = None, accum: str | None = None
     ) -> list[str]:
         """Looks for all the paths to objects requiring inference in the received model
 
@@ -75,7 +75,7 @@ class InspectorEmbed:
         original_model: BaseModel,
         current_path: str,
         tail: list[FieldPath],
-        accum: Optional[str] = None,
+        accum: str | None = None,
     ) -> list[str]:
         """Looks for all the paths to objects requiring inference in the received model
 

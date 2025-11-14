@@ -2,7 +2,7 @@ import os
 from collections import defaultdict
 from copy import deepcopy
 from multiprocessing import get_all_start_methods
-from typing import Optional, Union, Iterable, Any, Type, get_args
+from typing import Iterable, Any, Type, get_args
 
 from pydantic import BaseModel
 
@@ -45,9 +45,9 @@ class ModelEmbedder:
 
     def __init__(
         self,
-        parser: Optional[ModelSchemaParser] = None,
+        parser: ModelSchemaParser | None = None,
         is_local_mode: bool = False,
-        server_version: Optional[str] = None,
+        server_version: str | None = None,
         **kwargs: Any,
     ):
         self._batch_accumulator: dict[str, list[INFERENCE_OBJECT_TYPES]] = {}
@@ -62,7 +62,7 @@ class ModelEmbedder:
 
     @staticmethod
     def _check_builtin_embedder_availability(
-        is_local_mode: bool, server_version: Optional[str]
+        is_local_mode: bool, server_version: str | None
     ) -> bool:
         if is_local_mode:
             return False
@@ -86,7 +86,7 @@ class ModelEmbedder:
 
     def embed_models(
         self,
-        raw_models: Union[BaseModel, Iterable[BaseModel]],
+        raw_models: BaseModel | Iterable[BaseModel],
         is_query: bool = False,
         batch_size: int = 8,
     ) -> Iterable[BaseModel]:
@@ -113,10 +113,10 @@ class ModelEmbedder:
 
     def embed_models_strict(
         self,
-        raw_models: Iterable[Union[dict[str, BaseModel], BaseModel]],
+        raw_models: Iterable[dict[str, BaseModel] | BaseModel],
         batch_size: int = 8,
-        parallel: Optional[int] = None,
-    ) -> Iterable[Union[dict[str, BaseModel], BaseModel]]:
+        parallel: int | None = None,
+    ) -> Iterable[dict[str, BaseModel] | BaseModel]:
         """Embed raw data fields in models and return models with vectors
 
         Requires every input sequences element to contain raw data fields to inference.
@@ -170,7 +170,7 @@ class ModelEmbedder:
 
     def embed_models_batch(
         self,
-        raw_models: list[Union[dict[str, BaseModel], BaseModel]],
+        raw_models: list[dict[str, BaseModel] | BaseModel],
         is_query: bool = False,
         inference_batch_size: int = 8,
     ) -> Iterable[BaseModel]:
@@ -206,12 +206,12 @@ class ModelEmbedder:
 
     def _process_model(
         self,
-        model: Union[dict[str, BaseModel], BaseModel],
-        paths: Optional[list[FieldPath]] = None,
+        model: dict[str, BaseModel] | BaseModel,
+        paths: list[FieldPath] | None = None,
         is_query: bool = False,
         accumulating: bool = False,
-        inference_batch_size: Optional[int] = None,
-    ) -> Union[dict[str, BaseModel], dict[str, NumericVector], BaseModel, NumericVector]:
+        inference_batch_size: int | None = None,
+    ) -> dict[str, BaseModel] | dict[str, NumericVector] | BaseModel | NumericVector:
         """Embed model's fields requiring inference
 
         Args:

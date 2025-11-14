@@ -1,6 +1,5 @@
 import ast
 import inspect
-from typing import Optional
 
 from qdrant_client.grpc import CollectionsStub, PointsStub, SnapshotsStub, QdrantStub
 from qdrant_client.http import AsyncApiClient
@@ -29,14 +28,14 @@ from tools.async_client_generator.transformers.remote import (
 class RemoteGenerator(BaseGenerator):
     def __init__(
         self,
-        keep_sync: Optional[list[str]] = None,
-        class_replace_map: Optional[dict] = None,
-        import_replace_map: Optional[dict] = None,
-        exclude_methods: Optional[list[str]] = None,
-        rename_methods: Optional[dict[str, str]] = None,
+        keep_sync: list[str] | None = None,
+        class_replace_map: dict | None = None,
+        import_replace_map: dict | None = None,
+        exclude_methods: list[str] | None = None,
+        rename_methods: dict[str, str] | None = None,
     ):
         super().__init__()
-        self._async_methods: Optional[list[str]] = None
+        self._async_methods: list[str] | None = None
 
         self.transformers.append(
             RemoteImportFromTransformer(import_replace_map=import_replace_map)

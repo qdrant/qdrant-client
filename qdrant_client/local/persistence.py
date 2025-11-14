@@ -4,7 +4,7 @@ import logging
 import pickle
 import sqlite3
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable
 
 from qdrant_client.http import models
 
@@ -58,7 +58,7 @@ def try_migrate_to_sqlite(location: str) -> None:
 
 
 class CollectionPersistence:
-    CHECK_SAME_THREAD: Optional[bool] = None
+    CHECK_SAME_THREAD: bool | None = None
 
     @classmethod
     def encode_key(cls, key: models.ExtendedPointId) -> str:
@@ -92,7 +92,8 @@ class CollectionPersistence:
             self.__class__.CHECK_SAME_THREAD = False
 
         self.storage = sqlite3.connect(
-            str(self.location), check_same_thread=self.CHECK_SAME_THREAD  # type: ignore
+            str(self.location),
+            check_same_thread=self.CHECK_SAME_THREAD,  # type: ignore
         )
 
         self._ensure_table()

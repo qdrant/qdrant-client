@@ -3,7 +3,6 @@ import logging
 import re
 from datetime import date, datetime, timedelta, timezone
 from inspect import getmembers
-from typing import Union
 
 import pytest
 from google.protobuf.json_format import MessageToDict
@@ -268,7 +267,7 @@ def test_grpc_payload_scheme_conversion():
         date.today(),
     ],
 )
-def test_datetime_to_timestamp_conversions(dt: Union[datetime, date]):
+def test_datetime_to_timestamp_conversions(dt: datetime | date):
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
 
     rest_to_grpc = RestToGrpc.convert_datetime(dt)

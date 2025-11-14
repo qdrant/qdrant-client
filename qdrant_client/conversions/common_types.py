@@ -3,12 +3,7 @@ import sys
 import numpy as np
 import numpy.typing as npt
 
-if sys.version_info >= (3, 10):
-    from typing import TypeAlias
-else:
-    from typing_extensions import TypeAlias
-
-from typing import Union, get_args, Sequence
+from typing import Union, get_args, Sequence, TypeAlias
 from uuid import UUID
 
 from qdrant_client import grpc
@@ -46,47 +41,40 @@ def get_args_subscribed(tp):  # type: ignore
     )
 
 
-Filter = Union[rest.Filter, grpc.Filter]
-SearchParams = Union[rest.SearchParams, grpc.SearchParams]
-PayloadSelector = Union[rest.PayloadSelector, grpc.WithPayloadSelector]
-Distance = Union[rest.Distance, int]  # type(grpc.Distance) == int
-HnswConfigDiff = Union[rest.HnswConfigDiff, grpc.HnswConfigDiff]
-VectorsConfigDiff = Union[rest.VectorsConfigDiff, grpc.VectorsConfigDiff]
-QuantizationConfigDiff = Union[rest.QuantizationConfigDiff, grpc.QuantizationConfigDiff]
-OptimizersConfigDiff = Union[rest.OptimizersConfigDiff, grpc.OptimizersConfigDiff]
-CollectionParamsDiff = Union[rest.CollectionParamsDiff, grpc.CollectionParamsDiff]
-WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
-QuantizationConfig = Union[rest.QuantizationConfig, grpc.QuantizationConfig]
-PointId = Union[int, str, UUID, grpc.PointId]
-PayloadSchemaType = Union[
-    rest.PayloadSchemaType,
-    rest.PayloadSchemaParams,
-    int,
-    grpc.PayloadIndexParams,
-]  # type(grpc.PayloadSchemaType) == int
+Filter: TypeAlias = rest.Filter | grpc.Filter
+SearchParams: TypeAlias = rest.SearchParams | grpc.SearchParams
+PayloadSelector: TypeAlias = rest.PayloadSelector | grpc.WithPayloadSelector
+Distance: TypeAlias = rest.Distance | int  # type(grpc.Distance) == int
+HnswConfigDiff: TypeAlias = rest.HnswConfigDiff | grpc.HnswConfigDiff
+VectorsConfigDiff: TypeAlias = rest.VectorsConfigDiff | grpc.VectorsConfigDiff
+QuantizationConfigDiff: TypeAlias = rest.QuantizationConfigDiff | grpc.QuantizationConfigDiff
+OptimizersConfigDiff: TypeAlias = rest.OptimizersConfigDiff | grpc.OptimizersConfigDiff
+CollectionParamsDiff: TypeAlias = rest.CollectionParamsDiff | grpc.CollectionParamsDiff
+WalConfigDiff: TypeAlias = rest.WalConfigDiff | grpc.WalConfigDiff
+QuantizationConfig: TypeAlias = rest.QuantizationConfig | grpc.QuantizationConfig
+PointId: TypeAlias = int | str | UUID | grpc.PointId
+PayloadSchemaType: TypeAlias = (
+    rest.PayloadSchemaType | rest.PayloadSchemaParams | int | grpc.PayloadIndexParams
+)  # type(grpc.PayloadSchemaType) == int
 PointStruct: TypeAlias = rest.PointStruct
 Batch: TypeAlias = rest.Batch
-Points = Union[Batch, Sequence[Union[rest.PointStruct, grpc.PointStruct]]]
-PointsSelector = Union[
-    list[PointId],
-    rest.Filter,
-    grpc.Filter,
-    rest.PointsSelector,
-    grpc.PointsSelector,
-]
-LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
+Points: TypeAlias = Batch | Sequence[rest.PointStruct | grpc.PointStruct]
+PointsSelector: TypeAlias = (
+    list[PointId] | rest.Filter | grpc.Filter | rest.PointsSelector | grpc.PointsSelector
+)
+LookupLocation: TypeAlias = rest.LookupLocation | grpc.LookupLocation
 RecommendStrategy: TypeAlias = rest.RecommendStrategy
-OrderBy = Union[rest.OrderByInterface, grpc.OrderBy]
+OrderBy: TypeAlias = rest.OrderByInterface | grpc.OrderBy
 ShardingMethod: TypeAlias = rest.ShardingMethod
 ShardKey: TypeAlias = rest.ShardKey
 ShardKeySelector: TypeAlias = rest.ShardKeySelector
 
-AliasOperations = Union[
-    rest.CreateAliasOperation,
-    rest.RenameAliasOperation,
-    rest.DeleteAliasOperation,
-    grpc.AliasOperations,
-]
+AliasOperations: TypeAlias = (
+    rest.CreateAliasOperation
+    | rest.RenameAliasOperation
+    | rest.DeleteAliasOperation
+    | grpc.AliasOperations
+)
 Payload: TypeAlias = rest.Payload
 
 ScoredPoint: TypeAlias = rest.ScoredPoint
@@ -128,7 +116,7 @@ QueryResponse: TypeAlias = rest.QueryResponse
 
 FacetValue: TypeAlias = rest.FacetValue
 FacetResponse: TypeAlias = rest.FacetResponse
-SearchMatrixRequest = Union[rest.SearchMatrixRequest, grpc.SearchMatrixPoints]
+SearchMatrixRequest: TypeAlias = rest.SearchMatrixRequest | grpc.SearchMatrixPoints
 SearchMatrixOffsetsResponse: TypeAlias = rest.SearchMatrixOffsetsResponse
 SearchMatrixPairsResponse: TypeAlias = rest.SearchMatrixPairsResponse
 SearchMatrixPair: TypeAlias = rest.SearchMatrixPair

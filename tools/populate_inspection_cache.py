@@ -2,7 +2,6 @@ import importlib.util
 import sys
 import time
 from pathlib import Path
-from typing import Union
 from types import ModuleType
 
 from pydantic import BaseModel
@@ -14,7 +13,7 @@ from qdrant_client.embed.schema_parser import ModelSchemaParser
 from pydantic.version import VERSION as PYDANTIC_VERSION
 
 
-def dynamic_import(file_path: Union[str, Path], module_name: str) -> ModuleType:
+def dynamic_import(file_path: str | Path, module_name: str) -> ModuleType:
     # Create a module spec from the file path
     spec = importlib.util.spec_from_file_location(module_name, file_path)
     if spec is None:

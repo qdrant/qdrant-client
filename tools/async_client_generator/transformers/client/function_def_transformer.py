@@ -1,5 +1,4 @@
 import ast
-from typing import Optional
 
 from tools.async_client_generator.transformers import FunctionDefTransformer
 
@@ -7,10 +6,10 @@ from tools.async_client_generator.transformers import FunctionDefTransformer
 class ClientFunctionDefTransformer(FunctionDefTransformer):
     def __init__(
         self,
-        keep_sync: Optional[list[str]] = None,
-        class_replace_map: Optional[dict[str, str]] = None,
-        exclude_methods: Optional[list[str]] = None,
-        async_methods: Optional[list[str]] = None,
+        keep_sync: list[str] | None = None,
+        class_replace_map: dict[str, str] | None = None,
+        exclude_methods: list[str] | None = None,
+        async_methods: list[str] | None = None,
     ):
         super().__init__(keep_sync)
         self.class_replace_map = class_replace_map if class_replace_map is not None else {}
@@ -20,7 +19,7 @@ class ClientFunctionDefTransformer(FunctionDefTransformer):
     def _keep_sync(self, name: str) -> bool:
         return name in self.keep_sync or name not in self.async_methods
 
-    def visit_FunctionDef(self, sync_node: ast.FunctionDef) -> Optional[ast.AST]:
+    def visit_FunctionDef(self, sync_node: ast.FunctionDef) -> ast.AST | None:
         if sync_node.name in self.exclude_methods:
             return None
 

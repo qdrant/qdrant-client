@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -13,8 +13,8 @@ DEFAULT_VECTOR_NAME = "bm25"
 def prepare_collection(
     client: QdrantClient,
     collection_name: str,
-    vectors_config: Optional[dict[str, Any]] = None,
-    sparse_vectors_config: Optional[dict[str, Any]] = None,
+    vectors_config: dict[str, Any] | None = None,
+    sparse_vectors_config: dict[str, Any] | None = None,
 ) -> None:
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
