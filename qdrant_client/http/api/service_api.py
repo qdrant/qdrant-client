@@ -52,20 +52,6 @@ class _ServiceApi:
     def __init__(self, api_client: "Union[ApiClient, AsyncApiClient]"):
         self.api_client = api_client
 
-    def _build_for_get_locks(
-        self,
-    ):
-        """
-        Get lock options. If write is locked, all write operations and collection creation are forbidden
-        """
-        headers = {}
-        return self.api_client.request(
-            type_=m.InlineResponse2002,
-            method="GET",
-            url="/locks",
-            headers=headers if headers else None,
-        )
-
     def _build_for_healthz(
         self,
     ):
@@ -112,25 +98,6 @@ class _ServiceApi:
             url="/metrics",
             headers=headers if headers else None,
             params=query_params,
-        )
-
-    def _build_for_post_locks(
-        self,
-        locks_option: m.LocksOption = None,
-    ):
-        """
-        Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
-        """
-        headers = {}
-        body = jsonable_encoder(locks_option)
-        if "Content-Type" not in headers:
-            headers["Content-Type"] = "application/json"
-        return self.api_client.request(
-            type_=m.InlineResponse2002,
-            method="POST",
-            url="/locks",
-            headers=headers if headers else None,
-            content=body,
         )
 
     def _build_for_readyz(
@@ -186,14 +153,6 @@ class _ServiceApi:
 
 
 class AsyncServiceApi(_ServiceApi):
-    async def get_locks(
-        self,
-    ) -> m.InlineResponse2002:
-        """
-        Get lock options. If write is locked, all write operations and collection creation are forbidden
-        """
-        return await self._build_for_get_locks()
-
     async def healthz(
         self,
     ) -> str:
@@ -219,17 +178,6 @@ class AsyncServiceApi(_ServiceApi):
         """
         return await self._build_for_metrics(
             anonymize=anonymize,
-        )
-
-    async def post_locks(
-        self,
-        locks_option: m.LocksOption = None,
-    ) -> m.InlineResponse2002:
-        """
-        Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
-        """
-        return await self._build_for_post_locks(
-            locks_option=locks_option,
         )
 
     async def readyz(
@@ -263,14 +211,6 @@ class AsyncServiceApi(_ServiceApi):
 
 
 class SyncServiceApi(_ServiceApi):
-    def get_locks(
-        self,
-    ) -> m.InlineResponse2002:
-        """
-        Get lock options. If write is locked, all write operations and collection creation are forbidden
-        """
-        return self._build_for_get_locks()
-
     def healthz(
         self,
     ) -> str:
@@ -296,17 +236,6 @@ class SyncServiceApi(_ServiceApi):
         """
         return self._build_for_metrics(
             anonymize=anonymize,
-        )
-
-    def post_locks(
-        self,
-        locks_option: m.LocksOption = None,
-    ) -> m.InlineResponse2002:
-        """
-        Set lock options. If write is locked, all write operations and collection creation are forbidden. Returns previous lock options
-        """
-        return self._build_for_post_locks(
-            locks_option=locks_option,
         )
 
     def readyz(

@@ -1,12 +1,9 @@
 from time import sleep
 from typing import Callable
 
-import pytest
-
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
 from tests.congruence_tests.test_common import (
-    compare_collections,
     generate_fixtures,
     init_client,
     init_local,
@@ -98,75 +95,6 @@ def test_collection_exists():
 
     assert remote_client.collection_exists(COLLECTION_NAME)
     assert local_client.collection_exists(COLLECTION_NAME)
-
-
-def test_init_from():
-    vector_size = 2
-
-    remote_client = init_remote()
-    local_client = init_local()
-
-    points = generate_fixtures(vectors_sizes=vector_size)
-    vector_params = models.VectorParams(size=vector_size, distance=models.Distance.COSINE)
-
-    if remote_client.collection_exists(COLLECTION_NAME):
-        remote_client.delete_collection(collection_name=COLLECTION_NAME)
-    remote_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
-
-    if local_client.collection_exists(COLLECTION_NAME):
-        local_client.delete_collection(collection_name=COLLECTION_NAME)
-    local_client.create_collection(collection_name=COLLECTION_NAME, vectors_config=vector_params)
-
-    remote_client.upload_points(COLLECTION_NAME, points, wait=True)
-    local_client.upload_points(COLLECTION_NAME, points)
-    compare_collections(remote_client, local_client, len(points), collection_name=COLLECTION_NAME)
-
-    new_collection_name = COLLECTION_NAME + "_new"
-    if remote_client.collection_exists(new_collection_name):
-        remote_client.delete_collection(new_collection_name)
-    remote_client.create_collection(
-        new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
-    )
-
-    if local_client.collection_exists(new_collection_name):
-        local_client.delete_collection(new_collection_name)
-    local_client.create_collection(
-        new_collection_name, vectors_config=vector_params, init_from=COLLECTION_NAME
-    )
-
-    # init_from is performed asynchronously, so we need to retry
-    wait_for(
-        compare_collections,
-        remote_client,
-        local_client,
-        len(points),
-        collection_name=new_collection_name,
-    )
-
-    # try with models.InitFrom
-    if remote_client.collection_exists(new_collection_name):
-        remote_client.delete_collection(new_collection_name)
-    remote_client.create_collection(
-        new_collection_name,
-        vectors_config=vector_params,
-        init_from=models.InitFrom(collection=COLLECTION_NAME),
-    )
-    if local_client.collection_exists(new_collection_name):
-        local_client.delete_collection(new_collection_name)
-    local_client.create_collection(
-        new_collection_name,
-        vectors_config=vector_params,
-        init_from=models.InitFrom(collection=COLLECTION_NAME),
-    )
-
-    # init_from is performed asynchronously, so we need to retry
-    wait_for(
-        compare_collections,
-        remote_client,
-        local_client,
-        len(points),
-        collection_name=new_collection_name,
-    )
 
 
 def test_config_variations():

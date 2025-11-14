@@ -9,6 +9,7 @@ else:
     from typing_extensions import TypeAlias
 
 from typing import Union, get_args, Sequence
+from uuid import UUID
 
 from qdrant_client import grpc
 from qdrant_client.http import models as rest
@@ -56,7 +57,7 @@ OptimizersConfigDiff = Union[rest.OptimizersConfigDiff, grpc.OptimizersConfigDif
 CollectionParamsDiff = Union[rest.CollectionParamsDiff, grpc.CollectionParamsDiff]
 WalConfigDiff = Union[rest.WalConfigDiff, grpc.WalConfigDiff]
 QuantizationConfig = Union[rest.QuantizationConfig, grpc.QuantizationConfig]
-PointId = Union[int, str, grpc.PointId]
+PointId = Union[int, str, UUID, grpc.PointId]
 PayloadSchemaType = Union[
     rest.PayloadSchemaType,
     rest.PayloadSchemaParams,
@@ -75,9 +76,6 @@ PointsSelector = Union[
 ]
 LookupLocation = Union[rest.LookupLocation, grpc.LookupLocation]
 RecommendStrategy: TypeAlias = rest.RecommendStrategy
-RecommendExample: TypeAlias = rest.RecommendExample
-TargetVector = Union[rest.RecommendExample, grpc.TargetVector]
-ContextExamplePair = Union[rest.ContextExamplePair, grpc.ContextExamplePair]
 OrderBy = Union[rest.OrderByInterface, grpc.OrderBy]
 ShardingMethod: TypeAlias = rest.ShardingMethod
 ShardKey: TypeAlias = rest.ShardKey
@@ -107,10 +105,8 @@ VectorInput: TypeAlias = rest.VectorInput
 VectorStruct: TypeAlias = rest.VectorStruct
 VectorParams: TypeAlias = rest.VectorParams
 SparseVectorParams: TypeAlias = rest.SparseVectorParams
-LocksOption: TypeAlias = rest.LocksOption
 SnapshotPriority: TypeAlias = rest.SnapshotPriority
 CollectionsAliasesResponse: TypeAlias = rest.CollectionsAliasesResponse
-InitFrom: TypeAlias = Union[rest.InitFrom, str]
 UpdateOperation: TypeAlias = rest.UpdateOperation
 Query: TypeAlias = rest.Query
 Prefetch: TypeAlias = rest.Prefetch
@@ -119,10 +115,7 @@ Image: TypeAlias = rest.Image
 InferenceObject: TypeAlias = rest.InferenceObject
 StrictModeConfig: TypeAlias = rest.StrictModeConfig
 
-SearchRequest = Union[rest.SearchRequest, grpc.SearchPoints]
-RecommendRequest = Union[rest.RecommendRequest, grpc.RecommendPoints]
-DiscoverRequest = Union[rest.DiscoverRequest, grpc.DiscoverPoints]
-QueryRequest = Union[rest.QueryRequest, grpc.QueryPoints]
+QueryRequest: TypeAlias = rest.QueryRequest
 
 Mmr: TypeAlias = rest.Mmr
 
@@ -142,6 +135,7 @@ SearchMatrixPair: TypeAlias = rest.SearchMatrixPair
 
 VersionInfo: TypeAlias = rest.VersionInfo
 
+ReplicaState: TypeAlias = rest.ReplicaState
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7
 _np_numeric = Union[

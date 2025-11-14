@@ -3,33 +3,39 @@ from time import sleep
 from typing import Any, Generator, Iterable, Optional, Union
 from uuid import uuid4
 
+
 from qdrant_client import grpc as grpc
+from qdrant_client import models as rest
 from qdrant_client.common.client_exceptions import ResourceExhaustedResponse
 from qdrant_client.connection import get_channel
 from qdrant_client.conversions.conversion import RestToGrpc, payload_to_grpc
-from qdrant_client.grpc import PointId, PointsStub, PointStruct
-from qdrant_client.http.models import Batch, ShardKeySelector
 from qdrant_client.uploader.uploader import BaseUploader
 from qdrant_client.common.client_warnings import show_warning
+from qdrant_client.conversions import common_types as types
 
 
 def upload_batch_grpc(
-    points_client: PointsStub,
+    points_client: grpc.PointsStub,
     collection_name: str,
-    batch: Union[Batch, tuple],
+    batch: Union[rest.Batch, tuple],  # type: ignore[name-defined]
     max_retries: int,
-    shard_key_selector: Optional[ShardKeySelector],
+    shard_key_selector: Optional[grpc.ShardKeySelector],  # type: ignore[name-defined]
+    update_filter: Optional[grpc.Filter],
     wait: bool = False,
     timeout: Optional[int] = None,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
 
-    ids_batch = (PointId(uuid=str(uuid4())) for _ in count()) if ids_batch is None else ids_batch
+    ids_batch = (
+        (grpc.PointId(uuid=str(uuid4())) for _ in count()) if ids_batch is None else ids_batch
+    )
     payload_batch = (None for _ in count()) if payload_batch is None else payload_batch
 
     points = [
-        PointStruct(
-            id=RestToGrpc.convert_extended_point_id(idx) if not isinstance(idx, PointId) else idx,
+        grpc.PointStruct(
+            id=RestToGrpc.convert_extended_point_id(idx)
+            if not isinstance(idx, grpc.PointId)
+            else idx,
             vectors=RestToGrpc.convert_vector_struct(vector),
             payload=payload_to_grpc(payload or {}),
         )
@@ -44,9 +50,8 @@ def upload_batch_grpc(
                     collection_name=collection_name,
                     points=points,
                     wait=wait,
-                    shard_key_selector=RestToGrpc.convert_shard_key_selector(shard_key_selector)
-                    if shard_key_selector is not None
-                    else None,
+                    shard_key_selector=shard_key_selector,
+                    update_filter=update_filter,
                 ),
                 timeout=timeout,
             )
@@ -81,7 +86,8 @@ class GrpcBatchUploader(BaseUploader):
         collection_name: str,
         max_retries: int,
         wait: bool = False,
-        shard_key_selector: Optional[ShardKeySelector] = None,
+        shard_key_selector: Optional[types.ShardKeySelector] = None,
+        update_filter: Optional[types.Filter] = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
@@ -90,8 +96,17 @@ class GrpcBatchUploader(BaseUploader):
         self.max_retries = max_retries
         self._kwargs = kwargs
         self._wait = wait
-        self._shard_key_selector = shard_key_selector
+        self._shard_key_selector = (
+            RestToGrpc.convert_shard_key_selector(shard_key_selector)
+            if shard_key_selector is not None
+            else None
+        )
         self._timeout = kwargs.pop("timeout", None)
+        self._update_filter = (
+            RestToGrpc.convert_filter(update_filter)
+            if isinstance(update_filter, rest.Filter)  # type: ignore[attr-defined]
+            else update_filter
+        )
 
     @classmethod
     def start(
@@ -115,13 +130,14 @@ class GrpcBatchUploader(BaseUploader):
 
     def process_upload(self, items: Iterable[Any]) -> Generator[bool, None, None]:
         channel = get_channel(host=self._host, port=self._port, **self._kwargs)
-        points_client = PointsStub(channel)
+        points_client = grpc.PointsStub(channel)
         for batch in items:
             yield upload_batch_grpc(
                 points_client,
                 self.collection_name,
                 batch,
                 shard_key_selector=self._shard_key_selector,
+                update_filter=self._update_filter,
                 max_retries=self.max_retries,
                 wait=self._wait,
                 timeout=self._timeout,

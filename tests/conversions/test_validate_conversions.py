@@ -115,39 +115,51 @@ def test_vector_batch_conversion():
     batch = [[]]
     res = RestToGrpc.convert_batch_vector_struct(batch, 1)
     assert len(res) == 1
-    assert res == [grpc.Vectors(vector=grpc.Vector(data=[]))]
+    assert res == [grpc.Vectors(vector=grpc.Vector(dense=grpc.DenseVector(data=[])))]
 
     batch = [[1, 2, 3]]
     res = RestToGrpc.convert_batch_vector_struct(batch, 1)
     assert len(res) == 1
-    assert res == [grpc.Vectors(vector=grpc.Vector(data=[1, 2, 3]))]
+    assert res == [grpc.Vectors(vector=grpc.Vector(dense=grpc.DenseVector(data=[1, 2, 3])))]
 
     batch = [[1, 2, 3]]
     res = RestToGrpc.convert_batch_vector_struct(batch, 1)
     assert len(res) == 1
-    assert res == [grpc.Vectors(vector=grpc.Vector(data=[1, 2, 3]))]
+    assert res == [grpc.Vectors(vector=grpc.Vector(dense=grpc.DenseVector(data=[1, 2, 3])))]
 
     batch = [[1, 2, 3], [3, 4, 5]]
     res = RestToGrpc.convert_batch_vector_struct(batch, 0)
     assert len(res) == 2
     assert res == [
-        grpc.Vectors(vector=grpc.Vector(data=[1, 2, 3])),
-        grpc.Vectors(vector=grpc.Vector(data=[3, 4, 5])),
+        grpc.Vectors(vector=grpc.Vector(dense=grpc.DenseVector(data=[1, 2, 3]))),
+        grpc.Vectors(vector=grpc.Vector(dense=grpc.DenseVector(data=[3, 4, 5]))),
     ]
 
     batch = {"image": [[1, 2, 3]]}
     res = RestToGrpc.convert_batch_vector_struct(batch, 1)
     assert len(res) == 1
     assert res == [
-        grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1, 2, 3])}))
+        grpc.Vectors(
+            vectors=grpc.NamedVectors(
+                vectors={"image": grpc.Vector(dense=grpc.DenseVector(data=[1, 2, 3]))}
+            )
+        )
     ]
 
     batch = {"image": [[1, 2, 3], [3, 4, 5]]}
     res = RestToGrpc.convert_batch_vector_struct(batch, 2)
     assert len(res) == 2
     assert res == [
-        grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[1, 2, 3])})),
-        grpc.Vectors(vectors=grpc.NamedVectors(vectors={"image": grpc.Vector(data=[3, 4, 5])})),
+        grpc.Vectors(
+            vectors=grpc.NamedVectors(
+                vectors={"image": grpc.Vector(dense=grpc.DenseVector(data=[1, 2, 3]))}
+            )
+        ),
+        grpc.Vectors(
+            vectors=grpc.NamedVectors(
+                vectors={"image": grpc.Vector(dense=grpc.DenseVector(data=[3, 4, 5]))}
+            )
+        ),
     ]
 
     batch = {"image": [[1, 2, 3], [3, 4, 5]], "restaurants": [[6, 7, 8], [9, 10, 11]]}
@@ -157,38 +169,25 @@ def test_vector_batch_conversion():
         grpc.Vectors(
             vectors=grpc.NamedVectors(
                 vectors={
-                    "image": grpc.Vector(data=[1, 2, 3]),
-                    "restaurants": grpc.Vector(data=[6, 7, 8]),
+                    "image": grpc.Vector(dense=grpc.DenseVector(data=[1, 2, 3])),
+                    "restaurants": grpc.Vector(dense=grpc.DenseVector(data=[6, 7, 8])),
                 }
             )
         ),
         grpc.Vectors(
             vectors=grpc.NamedVectors(
                 vectors={
-                    "image": grpc.Vector(data=[3, 4, 5]),
-                    "restaurants": grpc.Vector(data=[9, 10, 11]),
+                    "image": grpc.Vector(dense=grpc.DenseVector(data=[3, 4, 5])),
+                    "restaurants": grpc.Vector(dense=grpc.DenseVector(data=[9, 10, 11])),
                 }
             )
         ),
     ]
 
 
-def test_sparse_vector_conversion():
-    from qdrant_client import grpc
-    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
-
-    sparse_vector = grpc.Vector(data=[0.2, 0.3, 0.4], indices=grpc.SparseIndices(data=[3, 2, 5]))
-    recovered = RestToGrpc.convert_sparse_vector_to_vector(
-        GrpcToRest.convert_vector(sparse_vector)
-    )
-
-    assert sparse_vector == recovered
-
-
 def test_sparse_vector_batch_conversion():
     from qdrant_client import grpc
     from qdrant_client.conversions.conversion import RestToGrpc
-    from qdrant_client.grpc import SparseIndices
     from qdrant_client.http.models import SparseVector
 
     batch = {"image": [SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30])]}
@@ -199,7 +198,7 @@ def test_sparse_vector_batch_conversion():
             vectors=grpc.NamedVectors(
                 vectors={
                     "image": grpc.Vector(
-                        data=[1.5, 2.4, 8.1], indices=SparseIndices(data=[10, 20, 30])
+                        sparse=grpc.SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30])
                     )
                 }
             )
@@ -219,7 +218,7 @@ def test_sparse_vector_batch_conversion():
             vectors=grpc.NamedVectors(
                 vectors={
                     "image": grpc.Vector(
-                        data=[1.5, 2.4, 8.1], indices=SparseIndices(data=[10, 20, 30])
+                        sparse=grpc.SparseVector(values=[1.5, 2.4, 8.1], indices=[10, 20, 30])
                     )
                 }
             )
@@ -228,7 +227,7 @@ def test_sparse_vector_batch_conversion():
             vectors=grpc.NamedVectors(
                 vectors={
                     "image": grpc.Vector(
-                        data=[7.8, 3.2, 9.5], indices=SparseIndices(data=[100, 200, 300])
+                        sparse=grpc.SparseVector(values=[7.8, 3.2, 9.5], indices=[100, 200, 300])
                     )
                 }
             )
@@ -256,14 +255,6 @@ def test_grpc_payload_scheme_conversion():
         assert payload_schema == grpc_field_type_to_payload_schema(
             grpc_payload_schema_to_field_type(payload_schema)
         )
-
-
-def test_init_from_conversion():
-    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
-
-    init_from = "collection_name"
-    recovered = RestToGrpc.convert_init_from(GrpcToRest.convert_init_from(init_from))
-    assert init_from == recovered
 
 
 @pytest.mark.parametrize(
@@ -379,66 +370,6 @@ def test_query_points():
     assert recovered.prefetch[0] == query_request.prefetch
 
 
-def test_extended_vectors():
-    # todo: test in fixtures.py from v1.14.0
-    import numpy as np
-
-    from qdrant_client import grpc, models
-    from qdrant_client.conversions.conversion import GrpcToRest
-
-    # region grpc.Vector
-    dense_vector = grpc.Vector(dense=grpc.DenseVector(data=[0.2, 0.3, 0.4]))
-    sparse_vector = grpc.Vector(
-        sparse=grpc.SparseVector(values=[0.1, 0.2, 0.3], indices=[1, 42, 240])
-    )
-    multi_dense_vector = grpc.Vector(
-        multi_dense=grpc.MultiDenseVector(
-            vectors=[
-                grpc.DenseVector(data=[0.1, 0.3, 0.5]),
-                grpc.DenseVector(data=[0.2, 0.4, 0.6]),
-            ]
-        )
-    )
-
-    rest_dense_vector = GrpcToRest.convert_vector(dense_vector)
-    rest_sparse_vector = GrpcToRest.convert_vector(sparse_vector)
-    rest_multi_dense_vector = GrpcToRest.convert_vector(multi_dense_vector)
-    assert np.allclose(rest_dense_vector, [0.2, 0.3, 0.4])
-    assert (
-        isinstance(rest_sparse_vector, models.SparseVector)
-        and np.allclose(rest_sparse_vector.values, [0.1, 0.2, 0.3])
-        and rest_sparse_vector.indices == [1, 42, 240]
-    )
-    assert np.allclose(rest_multi_dense_vector, np.array([[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]))
-    # endregion
-
-    # region grpc.VectorOutput
-    dense_vector_output = grpc.VectorOutput(dense=grpc.DenseVector(data=[0.2, 0.3, 0.4]))
-    sparse_vector_output = grpc.VectorOutput(
-        sparse=grpc.SparseVector(values=[0.1, 0.2, 0.3], indices=[1, 42, 240])
-    )
-    multi_dense_vector_output = grpc.VectorOutput(
-        multi_dense=grpc.MultiDenseVector(
-            vectors=[
-                grpc.DenseVector(data=[0.1, 0.3, 0.5]),
-                grpc.DenseVector(data=[0.2, 0.4, 0.6]),
-            ]
-        )
-    )
-
-    rest_dense_vector = GrpcToRest.convert_vector_output(dense_vector_output)
-    rest_sparse_vector = GrpcToRest.convert_vector_output(sparse_vector_output)
-    rest_multi_dense_vector = GrpcToRest.convert_vector_output(multi_dense_vector_output)
-    assert np.allclose(rest_dense_vector, [0.2, 0.3, 0.4])
-    assert (
-        isinstance(rest_sparse_vector, models.SparseVector)
-        and np.allclose(rest_sparse_vector.values, [0.1, 0.2, 0.3])
-        and rest_sparse_vector.indices == [1, 42, 240]
-    )
-    assert np.allclose(rest_multi_dense_vector, np.array([[0.1, 0.3, 0.5], [0.2, 0.4, 0.6]]))
-    # endregion
-
-
 def test_convert_text_index_params_stopwords():
     from qdrant_client import models
     from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
@@ -524,3 +455,80 @@ def test_inference_without_options():
     assert recovered_doc_wo_options.options == {}
     assert recovered_image_wo_options.options == {}
     assert recovered_inference_wo_options.options == {}
+
+
+def test_convert_shard_key_with_fallback():
+    from qdrant_client import models, grpc as q_grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    single_int_shard_key = 2
+    single_str_shard_key = "abc"
+    shard_keys = [2, "qwerty"]
+    shard_key_with_int_fallback = models.ShardKeyWithFallback(target="123", fallback=3)
+    shard_key_with_str_fallback = models.ShardKeyWithFallback(target=123, fallback="zxc")
+
+    for key in (
+        single_int_shard_key,
+        single_str_shard_key,
+        shard_keys,
+        shard_key_with_int_fallback,
+        shard_key_with_str_fallback,
+    ):
+        grpc_key = RestToGrpc.convert_shard_key_selector(key)
+        restored_key = GrpcToRest.convert_shard_key_selector(grpc_key)
+        assert restored_key == key
+
+    single_int_shard_key_list = [3]
+    single_str_shard_key_list = ["abc"]
+    for keys in single_int_shard_key_list, single_str_shard_key_list:
+        grpc_keys = RestToGrpc.convert_shard_key_selector(keys)
+        restored_key = GrpcToRest.convert_shard_key_selector(grpc_keys)
+        assert keys[0] == restored_key
+
+    invalid_grpc_fallback_shard_key = q_grpc.ShardKeySelector(
+        shard_keys=[q_grpc.ShardKey(number=3), q_grpc.ShardKey(number=2)],
+        fallback=q_grpc.ShardKey(number=2),
+    )
+
+    with pytest.raises(ValueError):
+        GrpcToRest.convert_shard_key_selector(invalid_grpc_fallback_shard_key)
+
+
+def test_legacy_vector():
+    from qdrant_client import grpc as q_grpc
+    from qdrant_client.conversions.conversion import GrpcToRest, RestToGrpc
+
+    legacy_sparse_vector = q_grpc.Vector(
+        data=[0.2, 0.3, 0.4],
+        indices=q_grpc.SparseIndices(data=[1, 2, 3]),
+    )
+
+    rest_sparse_vector = GrpcToRest.convert_vector(legacy_sparse_vector)
+    restored_sparse_vector = RestToGrpc.convert_sparse_vector_to_vector(rest_sparse_vector)
+
+    assert restored_sparse_vector == q_grpc.Vector(
+        sparse=q_grpc.SparseVector(
+            values=legacy_sparse_vector.data, indices=legacy_sparse_vector.indices.data
+        )
+    )
+
+    legacy_dense_vector = q_grpc.Vector(data=[1.0, 2.0])
+    rest_dense_vector = GrpcToRest.convert_vector(legacy_dense_vector)
+    restored_dense_vector = RestToGrpc.convert_vector_struct(rest_dense_vector)
+
+    assert restored_dense_vector.vector == q_grpc.Vector(
+        dense=q_grpc.DenseVector(data=legacy_dense_vector.data)
+    )
+
+    legacy_multi_dense_vector = q_grpc.Vector(data=[1.0, 2.0, 3.0, 4.0], vectors_count=2)
+    rest_multidense_vector = GrpcToRest.convert_vector(legacy_multi_dense_vector)
+    restored_multi_dense_vector = RestToGrpc.convert_vector_struct(rest_multidense_vector)
+
+    assert restored_multi_dense_vector.vector == q_grpc.Vector(
+        multi_dense=q_grpc.MultiDenseVector(
+            vectors=[
+                q_grpc.DenseVector(data=legacy_multi_dense_vector.data[:2]),
+                q_grpc.DenseVector(data=legacy_multi_dense_vector.data[2:]),
+            ]
+        )
+    )

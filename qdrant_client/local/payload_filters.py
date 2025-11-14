@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 from typing import Any, Optional, Union, Dict
+from uuid import UUID
 
 import numpy as np
 
@@ -152,6 +153,8 @@ def check_match(condition: models.Match, value: Any) -> bool:
         return value == condition.value
     if isinstance(condition, models.MatchText):
         return value is not None and condition.text in value
+    if isinstance(condition, models.MatchTextAny):
+        return value is not None and any(word in value for word in condition.text_any.split())
     if isinstance(condition, models.MatchAny):
         return value in condition.any
     if isinstance(condition, models.MatchExcept):
@@ -184,7 +187,8 @@ def check_condition(
         ):
             return True
     elif isinstance(condition, models.HasIdCondition):
-        if point_id in condition.has_id:
+        ids = [str(id_) if isinstance(id_, UUID) else id_ for id_ in condition.has_id]
+        if point_id in ids:
             return True
     elif isinstance(condition, models.HasVectorCondition):
         if condition.has_vector in has_vector and has_vector[condition.has_vector]:

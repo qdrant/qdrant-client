@@ -43,9 +43,13 @@ class TestGroupSearcher:
             types.NamedVector,
         ],
     ) -> models.GroupsResult:
-        return client.search_groups(
+        using = None
+        if isinstance(query_vector, tuple):
+            using, query_vector = query_vector
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=query_vector,
+            query=query_vector,
+            using=using,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             group_by=self.group_by,
             limit=self.limit,
@@ -53,9 +57,10 @@ class TestGroupSearcher:
         )
 
     def group_search_text(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             group_by=self.group_by,
             limit=self.limit,
@@ -63,9 +68,9 @@ class TestGroupSearcher:
         )
 
     def group_search_text_single(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=self.query_text,
+            query=self.query_text,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             group_by=self.group_by,
             limit=self.limit,
@@ -73,9 +78,10 @@ class TestGroupSearcher:
         )
 
     def group_search_image(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("image", self.query_image),
+            using="image",
+            query=self.query_image,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             group_by=self.group_by,
             limit=self.limit,
@@ -83,9 +89,10 @@ class TestGroupSearcher:
         )
 
     def group_search_image_with_lookup(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("image", self.query_image),
+            query=self.query_image,
+            using="image",
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             group_by=self.group_by,
             limit=self.limit,
@@ -94,9 +101,10 @@ class TestGroupSearcher:
         )
 
     def group_search_image_with_lookup_2(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("image", self.query_image),
+            using="image",
+            query=self.query_image,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             group_by=self.group_by,
             limit=self.limit,
@@ -109,9 +117,10 @@ class TestGroupSearcher:
         )
 
     def group_search_code(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("code", self.query_code),
+            using="code",
+            query=self.query_code,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             group_by=self.group_by,
             limit=self.limit,
@@ -119,9 +128,10 @@ class TestGroupSearcher:
         )
 
     def group_search_score_threshold(self, client: QdrantBase) -> models.GroupsResult:
-        res1 = client.search_groups(
+        res1 = client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=self.limit,
             group_by=self.group_by,
@@ -129,9 +139,10 @@ class TestGroupSearcher:
             group_size=self.group_size,
         )
 
-        res2 = client.search_groups(
+        res2 = client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=self.limit,
             group_by=self.group_by,
@@ -139,9 +150,10 @@ class TestGroupSearcher:
             group_size=self.group_size,
         )
 
-        res3 = client.search_groups(
+        res3 = client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=self.limit,
             group_by=self.group_by,
@@ -152,9 +164,10 @@ class TestGroupSearcher:
         return models.GroupsResult(groups=res1.groups + res2.groups + res3.groups)
 
     def group_search_text_select_payload(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=["text_array", "nested.id"],
             limit=self.limit,
             group_by=self.group_by,
@@ -162,9 +175,10 @@ class TestGroupSearcher:
         )
 
     def group_search_payload_exclude(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             with_payload=models.PayloadSelectorExclude(
                 exclude=["text_array", "nested.id", "city.geo", "rand_number"]
             ),
@@ -174,9 +188,10 @@ class TestGroupSearcher:
         )
 
     def group_search_image_select_vector(self, client: QdrantBase) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("image", self.query_image),
+            using="image",
+            query=self.query_image,
             with_payload=False,
             with_vectors=["image", "code"],
             limit=self.limit,
@@ -187,9 +202,10 @@ class TestGroupSearcher:
     def filter_group_search_text(
         self, client: QdrantBase, query_filter: models.Filter
     ) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=("text", self.query_text),
+            using="text",
+            query=self.query_text,
             query_filter=query_filter,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             limit=self.limit,
@@ -200,9 +216,9 @@ class TestGroupSearcher:
     def filter_group_search_text_single(
         self, client: QdrantBase, query_filter: models.Filter
     ) -> models.GroupsResult:
-        return client.search_groups(
+        return client.query_points_groups(
             collection_name=COLLECTION_NAME,
-            query_vector=self.query_text,
+            query=self.query_text,
             query_filter=query_filter,
             with_payload=models.PayloadSelectorExclude(exclude=["city.geo", "rand_number"]),
             with_vectors=True,
@@ -239,29 +255,6 @@ def test_group_search_types():
     query_vector_list = query_vector_np.tolist()
     compare_client_results(
         local_client, remote_client, searcher.group_search, query_vector=query_vector_list
-    )
-
-    delete_fixture_collection(local_client)
-    delete_fixture_collection(remote_client)
-
-    fixture_points = generate_fixtures()
-    init_client(local_client, fixture_points)
-    init_client(remote_client, fixture_points)
-
-    query_vector_tuple = ("text", query_vector_list)
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.group_search,
-        query_vector=query_vector_tuple,
-    )
-
-    query_named_vector = types.NamedVector(name="text", vector=query_vector_list)
-    compare_client_results(
-        local_client,
-        remote_client,
-        searcher.group_search,
-        query_vector=query_named_vector,
     )
 
     delete_fixture_collection(local_client)

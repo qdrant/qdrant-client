@@ -3,6 +3,8 @@ package qdrant;
 
 option csharp_namespace = "Qdrant.Client.Grpc";
 
+import "json_with_int.proto";
+
 enum Datatype {
   Default = 0;
   Float32 = 1;
@@ -160,6 +162,10 @@ message OptimizerStatus {
   string error = 2;
 }
 
+message CollectionWarning {
+  string message = 1;
+}
+
 message HnswConfigDiff {
   /*
      Number of edges per node in the index graph. Larger the value - more accurate the search, more space required.
@@ -170,10 +176,12 @@ message HnswConfigDiff {
   */
   optional uint64 ef_construct = 2;
   /*
-     Minimal size (in KiloBytes) of vectors for additional payload-based indexing.
-     If the payload chunk is smaller than `full_scan_threshold` additional indexing won't be used -
-     in this case full-scan search should be preferred by query planner and additional indexing is not required.
-     Note: 1 Kb = 1 vector of size 256
+    Minimal size threshold (in KiloBytes) below which full-scan is preferred over HNSW search.
+    This measures the total size of vectors being queried against.
+    When the maximum estimated amount of points that a condition satisfies is smaller than
+    `full_scan_threshold`, the query planner will use full-scan search instead of HNSW index
+    traversal for better performance.
+    Note: 1Kb = 1 vector of size 256
   */
   optional uint64 full_scan_threshold = 3;
   /*
@@ -191,6 +199,13 @@ message HnswConfigDiff {
      Number of additional payload-aware links per node in the index graph. If not set - regular M parameter will be used.
   */
   optional uint64 payload_m = 6;
+  /*
+     Store copies of original and quantized vectors within the HNSW index file. Default: false.
+     Enabling this option will trade the search speed for disk usage by reducing amount of
+     random seeks during the search.
+     Requires quantized vectors to be enabled. Multi-vectors are not supported.
+  */
+  optional bool inline_storage = 7;
 }
 
 message SparseIndexConfig {
@@ -212,6 +227,7 @@ message SparseIndexConfig {
 message WalConfigDiff {
   optional uint64 wal_capacity_mb = 1; // Size of a single WAL block file
   optional uint64 wal_segments_ahead = 2; // Number of segments to create in advance
+  optional uint64 wal_retain_closed = 3; // Number of closed segments to retain
 }
 
 message OptimizersConfigDiff {
@@ -235,6 +251,8 @@ message OptimizersConfigDiff {
   */
   optional uint64 default_segment_number = 3;
   /*
+     Deprecated:
+
      Do not create segments larger this size (in kilobytes).
      Large segments might require disproportionately long indexation times,
      therefore it makes sense to limit the size of segments.
@@ -348,25 +366,25 @@ enum ShardingMethod {
 }
 
 message StrictModeConfig {
-  optional bool enabled = 1;
-  optional uint32 max_query_limit = 2;
-  optional uint32 max_timeout = 3;
-  optional bool unindexed_filtering_retrieve = 4;
-  optional bool unindexed_filtering_update = 5;
-
-  optional uint32 search_max_hnsw_ef = 6;
-  optional bool search_allow_exact = 7;
-  optional float search_max_oversampling = 8;
-  optional uint64 upsert_max_batchsize = 9;
-  optional uint64 max_collection_vector_size_bytes = 10;
+  optional bool enabled = 1; // Whether strict mode is enabled for a collection or not.
+  optional uint32 max_query_limit = 2; // Max allowed `limit` parameter for all APIs that don't have their own max limit.
+  optional uint32 max_timeout = 3; // Max allowed `timeout` parameter.
+  optional bool unindexed_filtering_retrieve = 4; // Allow usage of unindexed fields in retrieval based (e.g. search) filters.
+  optional bool unindexed_filtering_update = 5; // Allow usage of unindexed fields in filtered updates (e.g. delete by payload).
+  optional uint32 search_max_hnsw_ef = 6; // Max HNSW ef value allowed in search parameters.
+  optional bool search_allow_exact = 7; // Whether exact search is allowed.
+  optional float search_max_oversampling = 8; // Max oversampling value allowed in search
+  optional uint64 upsert_max_batchsize = 9; // Max batchsize when upserting
+  optional uint64 max_collection_vector_size_bytes = 10; // Max size of a collections vector storage in bytes, ignoring replicas.
   optional uint32 read_rate_limit = 11; // Max number of read operations per minute per replica
   optional uint32 write_rate_limit = 12; // Max number of write operations per minute per replica
-  optional uint64 max_collection_payload_size_bytes = 13;
-  optional uint64 filter_max_conditions = 14;
-  optional uint64 condition_max_size = 15;
-  optional StrictModeMultivectorConfig multivector_config = 16;
-  optional StrictModeSparseConfig sparse_config = 17;
-  optional uint64 max_points_count = 18;
+  optional uint64 max_collection_payload_size_bytes = 13; // Max size of a collections payload storage in bytes, ignoring replicas.
+  optional uint64 filter_max_conditions = 14; // Max conditions a filter can have.
+  optional uint64 condition_max_size = 15; // Max size of a condition, eg. items in `MatchAny`.
+  optional StrictModeMultivectorConfig multivector_config = 16; // Multivector strict mode configuration
+  optional StrictModeSparseConfig sparse_config = 17; // Sparse vector strict mode configuration
+  optional uint64 max_points_count = 18; // Max number of points estimated in a collection
+  optional uint64 max_payload_index_count = 19; // Max number of payload indexes in a collection
 }
 
 message StrictModeSparseConfig {
@@ -374,7 +392,7 @@ message StrictModeSparseConfig {
 }
 
 message StrictModeSparse {
-  optional uint64 max_length = 10;
+  optional uint64 max_length = 10;  // Max length of sparse vector
 }
 
 message StrictModeMultivectorConfig {
@@ -382,7 +400,7 @@ message StrictModeMultivectorConfig {
 }
 
 message StrictModeMultivector {
-  optional uint64 max_vectors = 1;
+  optional uint64 max_vectors = 1; // Max number of vectors in a multivector
 }
 
 message CreateCollection {
@@ -398,11 +416,12 @@ message CreateCollection {
   optional VectorsConfig vectors_config = 10; // Configuration for vectors
   optional uint32 replication_factor = 11; // Number of replicas of each shard that network tries to maintain, default = 1
   optional uint32 write_consistency_factor = 12; // How many replicas should apply the operation for us to consider it successful, default = 1
-  optional string init_from_collection = 13; // Specify name of the other collection to copy data from
+  reserved 13; // Deprecated: init_from
   optional QuantizationConfig quantization_config = 14; // Quantization configuration of vector
   optional ShardingMethod sharding_method = 15; // Sharding method
   optional SparseVectorConfig sparse_vectors_config = 16; // Configuration for sparse vectors
   optional StrictModeConfig strict_mode_config = 17; // Configuration for strict mode
+  map<string, Value> metadata = 18; // Arbitrary JSON metadata for the collection
 }
 
 message UpdateCollection {
@@ -415,6 +434,7 @@ message UpdateCollection {
   optional QuantizationConfigDiff quantization_config = 7; // Quantization configuration of vector
   optional SparseVectorConfig sparse_vectors_config = 8; // New sparse vector parameters
   optional StrictModeConfig strict_mode_config = 9; // New strict mode configuration
+  map<string, Value> metadata = 10; // Arbitrary JSON-like metadata for the collection, will be merged with already stored metadata
 }
 
 message DeleteCollection {
@@ -454,6 +474,7 @@ message CollectionConfig {
   WalConfigDiff wal_config = 4; // Configuration of the Write-Ahead-Log
   optional QuantizationConfig quantization_config = 5; // Configuration of the vector quantization
   optional StrictModeConfig strict_mode_config = 6; // Configuration of strict mode.
+  map<string, Value> metadata = 7; // Arbitrary JSON metadata for the collection
 }
 
 enum TokenizerType {
@@ -499,6 +520,7 @@ message TextIndexParams {
   optional StopwordsSet stopwords = 6; // Stopwords for the text index
   optional bool phrase_matching = 7; // If true - support phrase matching.
   optional StemmingAlgorithm stemmer = 8; // Set an algorithm for stemming.
+  optional bool ascii_folding = 9; // If true, normalize tokens by folding accented characters to ASCII (e.g., "ação" -> "acao"). Default: false.
 }
 
 message StemmingAlgorithm {
@@ -547,7 +569,7 @@ message PayloadSchemaInfo {
 message CollectionInfo {
   CollectionStatus status = 1; // operating condition of the collection
   OptimizerStatus optimizer_status = 2; // status of collection optimizers
-  optional uint64 vectors_count = 3; // Approximate number of vectors in the collection
+  reserved 3; // Deprecated
   uint64 segments_count = 4; // Number of independent segments
   reserved 5; // Deprecated
   reserved 6; // Deprecated
@@ -555,6 +577,7 @@ message CollectionInfo {
   map<string, PayloadSchemaInfo> payload_schema = 8; // Collection data types
   optional uint64 points_count = 9; // Approximate number of points in the collection
   optional uint64 indexed_vectors_count = 10; // Approximate number of indexed vectors in the collection.
+  repeated CollectionWarning warnings = 11; // Warnings related to the collection
 }
 
 message ChangeAliases {
@@ -614,6 +637,7 @@ enum ReplicaState {
   Recovery = 6; // Shard is undergoing recovered by an external node; Normally rejects updates, accepts updates if force is true
   Resharding = 7; // Points are being migrated to this shard as part of scale-up resharding
   ReshardingScaleDown = 8; // Points are being migrated to this shard as part of scale-down resharding
+  ActiveRead = 9; // Active for readers, Partial for writers
 }
 
 message ShardKey {
@@ -717,6 +741,7 @@ message CreateShardKey {
   optional uint32 shards_number = 2; // Number of shards to create per shard key
   optional uint32 replication_factor = 3; // Number of replicas of each shard to create
   repeated uint64 placement = 4; // List of peer ids, allowed to create shards. If empty - all peers are allowed
+  optional ReplicaState initial_state = 5; // Initial state of created replicas. Warning: use with care.
 }
 
 message DeleteShardKey {
