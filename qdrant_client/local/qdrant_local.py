@@ -804,10 +804,13 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         vectors_config: Union[types.VectorParams, Mapping[str, types.VectorParams]],
         sparse_vectors_config: Optional[Mapping[str, types.SparseVectorParams]] = None,
+        metadata: Optional[types.Payload] = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name)
-        return self.create_collection(collection_name, vectors_config, sparse_vectors_config)
+        return self.create_collection(
+            collection_name, vectors_config, sparse_vectors_config, metadata=metadata
+        )
 
     def upload_points(
         self,
