@@ -2149,7 +2149,7 @@ class QdrantClient(QdrantFastembedMixin):
         location: str,
         api_key: str | None = None,
         checksum: str | None = None,
-        priority: types.SnapshotPriority = None,
+        priority: types.SnapshotPriority | None = None,
         wait: bool = True,
         **kwargs: Any,
     ) -> bool | None:
