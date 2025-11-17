@@ -2382,7 +2382,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         self,
         collection_name: str,
         cluster_operation: types.ClusterOperations,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         update_result = (

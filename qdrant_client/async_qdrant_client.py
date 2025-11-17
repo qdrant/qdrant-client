@@ -2285,7 +2285,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         self,
         collection_name: str,
         cluster_operation: types.ClusterOperations,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"

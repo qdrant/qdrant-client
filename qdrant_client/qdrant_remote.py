@@ -2572,7 +2572,7 @@ class QdrantRemote(QdrantBase):
         self,
         collection_name: str,
         cluster_operation: types.ClusterOperations,
-        timeout: Optional[int] = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         update_result = self.rest.distributed_api.update_collection_cluster(
