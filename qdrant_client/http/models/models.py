@@ -2425,25 +2425,15 @@ class RequestsTelemetry(BaseModel):
     grpc: "GrpcTelemetry" = Field(..., description="")
 
 
-class ReshardingDirectionOneOf(str, Enum):
+class ReshardingDirection(str, Enum):
     """
-    Scale up, add a new shard
+    Resharding direction, scale up or down in number of shards  - `up` - Scale up, add a new shard  - `down` - Scale down, remove a shard
     """
 
     def __str__(self) -> str:
         return str(self.value)
 
     UP = "up"
-
-
-class ReshardingDirectionOneOf1(str, Enum):
-    """
-    Scale down, remove a shard
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
     DOWN = "down"
 
 
@@ -2834,47 +2824,17 @@ class ShardTransferInfo(BaseModel):
     )
 
 
-class ShardTransferMethodOneOf(str, Enum):
+class ShardTransferMethod(str, Enum):
     """
-    Stream all shard records in batches until the whole shard is transferred.
+    Methods for transferring a shard from one node to another.  - `stream_records` - Stream all shard records in batches until the whole shard is transferred.  - `snapshot` - Snapshot the shard, transfer and restore it on the receiver.  - `wal_delta` - Attempt to transfer shard difference by WAL delta.  - `resharding_stream_records` - Shard transfer for resharding: stream all records in batches until all points are transferred.
     """
 
     def __str__(self) -> str:
         return str(self.value)
 
     STREAM_RECORDS = "stream_records"
-
-
-class ShardTransferMethodOneOf1(str, Enum):
-    """
-    Snapshot the shard, transfer and restore it on the receiver.
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
     SNAPSHOT = "snapshot"
-
-
-class ShardTransferMethodOneOf2(str, Enum):
-    """
-    Attempt to transfer shard difference by WAL delta.
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
     WAL_DELTA = "wal_delta"
-
-
-class ShardTransferMethodOneOf3(str, Enum):
-    """
-    Shard transfer for resharding: stream all records in batches until all points are transferred.
-    """
-
-    def __str__(self) -> str:
-        return str(self.value)
-
     RESHARDING_STREAM_RECORDS = "resharding_stream_records"
 
 
@@ -3745,10 +3705,6 @@ ReadConsistency = Union[
     StrictInt,
     ReadConsistencyType,
 ]
-ReshardingDirection = Union[
-    ReshardingDirectionOneOf,
-    ReshardingDirectionOneOf1,
-]
 ShardCleanStatusTelemetry = Union[
     ShardCleanStatusTelemetryOneOf,
     ShardCleanStatusTelemetryOneOf1,
@@ -3760,12 +3716,6 @@ ShardKey = Union[
 ]
 ShardSnapshotLocation = Union[
     StrictStr,
-]
-ShardTransferMethod = Union[
-    ShardTransferMethodOneOf,
-    ShardTransferMethodOneOf1,
-    ShardTransferMethodOneOf2,
-    ShardTransferMethodOneOf3,
 ]
 SparseIndexType = Union[
     SparseIndexTypeOneOf,

@@ -392,3 +392,11 @@ class QdrantBase:
 
     def info(self) -> types.VersionInfo:
         raise NotImplementedError()
+
+    def cluster_collection_update(
+        self,
+        collection_name: str,
+        cluster_operation: types.ClusterOperations,
+        **kwargs: Any,
+    ) -> bool:
+        raise NotImplementedError()
