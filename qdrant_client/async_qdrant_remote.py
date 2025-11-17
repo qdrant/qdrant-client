@@ -2412,11 +2412,9 @@ class AsyncQdrantRemote(AsyncQdrantBase):
             elif isinstance(cluster_operation, grpc.AbortShardTransfer):
                 grpc_operation["abort_transfer"] = cluster_operation
             elif isinstance(cluster_operation, grpc.Replica):
-                grpc_operation["replica"] = cluster_operation
+                grpc_operation["drop_replica"] = cluster_operation
             elif isinstance(cluster_operation, grpc.CreateShardKey):
                 grpc_operation["create_shard_key"] = cluster_operation
-            elif isinstance(cluster_operation, grpc.DeleteShardKey):
-                grpc_operation["delete_shard_key"] = cluster_operation
             elif isinstance(cluster_operation, grpc.DeleteShardKey):
                 grpc_operation["delete_shard_key"] = cluster_operation
             elif isinstance(cluster_operation, grpc.RestartTransfer):

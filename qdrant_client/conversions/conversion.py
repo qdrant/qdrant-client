@@ -4596,6 +4596,8 @@ class RestToGrpc:
         if isinstance(model, rest.AbortReshardingOperation):  # pragma: no cover
             raise ValueError("AbortReshardingOperation has not grpc counterpart")
 
+        raise ValueError(f"invalid ClusterOperations model: {model}")
+
     @classmethod
     def convert_move_shard(cls, model: rest.MoveShard) -> grpc.MoveShard:
         return grpc.MoveShard(
