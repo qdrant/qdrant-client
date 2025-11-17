@@ -2255,7 +2255,7 @@ class GrpcToRest:
     def convert_shard_transfer_method(
         cls, model: grpc.ShardTransferMethod
     ) -> rest.ShardTransferMethod:
-        if model == grpc.StreamRecords:
+        if model == grpc.ShardTransferMethod.StreamRecords:
             return rest.ShardTransferMethod.STREAM_RECORDS
 
         if model == grpc.ShardTransferMethod.Snapshot:
@@ -2264,7 +2264,7 @@ class GrpcToRest:
         if model == grpc.ShardTransferMethod.WalDelta:
             return rest.ShardTransferMethod.WAL_DELTA
 
-        if model == grpc.ReshardingStreamRecords:
+        if model == grpc.ShardTransferMethod.ReshardingStreamRecords:
             return rest.ShardTransferMethod.RESHARDING_STREAM_RECORDS
 
         raise ValueError(f"invalid ShardTransferMethod model: {model}")  # pragma: no cover

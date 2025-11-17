@@ -2614,8 +2614,9 @@ class QdrantRemote(QdrantBase):
             return self.grpc_collections.UpdateCollectionClusterSetup(
                 grpc.UpdateCollectionClusterSetupRequest(
                     collection_name=collection_name, timeout=timeout, **grpc_operation
-                )
-            )
+                ),
+                timeout=timeout if timeout is not None else self._timeout,
+            ).result
         update_result = self.rest.distributed_api.update_collection_cluster(
             collection_name=collection_name, cluster_operations=cluster_operation, timeout=timeout
         ).result

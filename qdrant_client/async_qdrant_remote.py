@@ -2423,11 +2423,14 @@ class AsyncQdrantRemote(AsyncQdrantBase):
                 grpc_operation["replicate_points"] = cluster_operation
             else:
                 raise TypeError(f"Unknown cluster operation: {cluster_operation}")
-            return await self.grpc_collections.UpdateCollectionClusterSetup(
-                grpc.UpdateCollectionClusterSetupRequest(
-                    collection_name=collection_name, timeout=timeout, **grpc_operation
+            return (
+                await self.grpc_collections.UpdateCollectionClusterSetup(
+                    grpc.UpdateCollectionClusterSetupRequest(
+                        collection_name=collection_name, timeout=timeout, **grpc_operation
+                    ),
+                    timeout=timeout if timeout is not None else self._timeout,
                 )
-            )
+            ).result
         update_result = (
             await self.rest.distributed_api.update_collection_cluster(
                 collection_name=collection_name,
