@@ -804,7 +804,7 @@ class QdrantLocal(QdrantBase):
         collection_name: str,
         vectors_config: types.VectorParams | Mapping[str, types.VectorParams] | None = None,
         sparse_vectors_config: Mapping[str, types.SparseVectorParams] | None = None,
-        metadata: Optional[types.Payload] = None,
+        metadata: types.Payload | None = None,
         **kwargs: Any,
     ) -> bool:
         self.delete_collection(collection_name)
