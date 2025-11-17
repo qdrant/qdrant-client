@@ -2106,7 +2106,7 @@ class GrpcToRest:
                 )
             )
         elif fallback:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 f"Fallback shard key {fallback} can only be set when a single shard key is provided"
             )
 
@@ -2119,6 +2119,155 @@ class GrpcToRest:
         if model == grpc.Custom:
             return rest.ShardingMethod.CUSTOM
         raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_cluster_operations(
+        cls,
+        model: Union[
+            grpc.MoveShard,
+            grpc.ReplicateShard,
+            grpc.AbortShardTransfer,
+            grpc.Replica,
+            grpc.CreateShardKey,
+            grpc.DeleteShardKey,
+            grpc.RestartTransfer,
+            grpc.ReplicatePoints,
+        ],
+    ) -> rest.ClusterOperations:
+        if isinstance(model, grpc.MoveShard):
+            return rest.MoveShardOperation(move_shard=cls.convert_move_shard(model))
+
+        if isinstance(model, grpc.ReplicateShard):
+            return rest.ReplicateShardOperation(replicate_shard=cls.convert_replicate_shard(model))
+
+        if isinstance(model, grpc.AbortShardTransfer):
+            return rest.AbortTransferOperation(
+                abort_transfer=cls.convert_abort_shard_transfer(model)
+            )
+
+        if isinstance(model, grpc.Replica):
+            return rest.DropReplicaOperation(drop_replica=cls.convert_replica(model))
+
+        if isinstance(model, grpc.CreateShardKey):
+            return rest.CreateShardingKeyOperation(
+                create_sharding_key=cls.convert_create_shard_key(model)
+            )
+
+        if isinstance(model, grpc.DeleteShardKey):
+            return rest.DropShardingKeyOperation(
+                drop_sharding_key=cls.convert_delete_shard_key(model)
+            )
+
+        if isinstance(model, grpc.RestartTransfer):
+            return rest.RestartTransferOperation(
+                restart_transfer=cls.convert_restart_transfer(model)
+            )
+
+        if isinstance(model, grpc.ReplicatePoints):
+            return rest.ReplicatePointsOperation(
+                replicate_points=cls.convert_replicate_points(model)
+            )
+
+        raise ValueError(f"unsupported cluster operation type: {type(model)}")  # pragma: no cover
+
+    @classmethod
+    def convert_move_shard(cls, model: grpc.MoveShard) -> rest.MoveShard:
+        return rest.MoveShard(
+            shard_id=model.shard_id,
+            from_peer_id=model.from_peer_id,
+            to_peer_id=model.to_peer_id,
+            method=cls.convert_shard_transfer_method(model.method)
+            if model.HasField("method")
+            else None,
+        )
+
+    @classmethod
+    def convert_replica(cls, model: grpc.Replica) -> rest.Replica:
+        return rest.Replica(shard_id=model.shard_id, peer_id=model.peer_id)
+
+    @classmethod
+    def convert_replicate_shard(cls, model: grpc.ReplicateShard) -> rest.ReplicateShard:
+        if model.HasField("to_shard_id"):
+            raise ValueError(
+                "to_shard_id is a field for internal purposes, can't be converted to rest"
+            )  # pragma: no cover
+        return rest.ReplicateShard(
+            shard_id=model.shard_id,
+            from_peer_id=model.from_peer_id,
+            to_peer_id=model.to_peer_id,
+            method=cls.convert_shard_transfer_method(model.method)
+            if model.HasField("method")
+            else None,
+        )
+
+    @classmethod
+    def convert_abort_shard_transfer(
+        cls, model: grpc.AbortShardTransfer
+    ) -> rest.AbortShardTransfer:
+        if model.HasField("to_shard_id"):
+            raise ValueError(
+                "to_shard_id is a field for internal purposes, can't be converted to rest"
+            )  # pragma: no cover
+        return rest.AbortShardTransfer(
+            shard_id=model.shard_id, to_peer_id=model.to_peer_id, from_peer_id=model.from_peer_id
+        )
+
+    @classmethod
+    def convert_create_shard_key(cls, model: grpc.CreateShardKey) -> rest.CreateShardingKey:
+        return rest.CreateShardingKey(
+            shard_key=cls.convert_shard_key(model.shard_key),
+            shards_number=model.shards_number if model.HasField("shards_number") else None,
+            replication_factor=model.replication_factor
+            if model.HasField("replication_factor")
+            else None,
+            placement=model.placement,
+            initial_state=cls.convert_replica_state(model.initial_state)
+            if model.HasField("initial_state")
+            else None,
+        )
+
+    @classmethod
+    def convert_delete_shard_key(cls, model: grpc.DeleteShardKey) -> rest.DropShardingKey:
+        return rest.DropShardingKey(shard_key=cls.convert_shard_key(model.shard_key))
+
+    @classmethod
+    def convert_restart_transfer(cls, model: grpc.RestartTransfer) -> rest.RestartTransfer:
+        if model.HasField("to_shard_id"):
+            raise ValueError(
+                "to_shard_id is a field for internal purposes, can't be converted to rest"
+            )  # pragma: no cover
+        return rest.RestartTransfer(
+            shard_id=model.shard_id,
+            from_peer_id=model.from_peer_id,
+            to_peer_id=model.to_peer_id,
+            method=cls.convert_shard_transfer_method(model.method),
+        )
+
+    @classmethod
+    def convert_replicate_points(cls, model: grpc.ReplicatePoints) -> rest.ReplicatePoints:
+        return rest.ReplicatePoints(
+            filter=cls.convert_filter(model.filter) if model.HasField("filter") else None,
+            from_shard_key=cls.convert_shard_key(model.from_shard_key),
+            to_shard_key=cls.convert_shard_key(model.to_shard_key),
+        )
+
+    @classmethod
+    def convert_shard_transfer_method(
+        cls, model: grpc.ShardTransferMethod
+    ) -> rest.ShardTransferMethod:
+        if model == grpc.StreamRecords:
+            return rest.ShardTransferMethod.STREAM_RECORDS
+
+        if model == grpc.ShardTransferMethod.Snapshot:
+            return rest.ShardTransferMethod.SNAPSHOT
+
+        if model == grpc.ShardTransferMethod.WalDelta:
+            return rest.ShardTransferMethod.WAL_DELTA
+
+        if model == grpc.ReshardingStreamRecords:
+            return rest.ShardTransferMethod.RESHARDING_STREAM_RECORDS
+
+        raise ValueError(f"invalid ShardTransferMethod model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_direction(cls, model: grpc.Direction) -> rest.Direction:
@@ -4395,6 +4544,150 @@ class RestToGrpc:
             return grpc.Custom
         else:
             raise ValueError(f"invalid ShardingMethod model: {model}")  # pragma: no cover
+
+    @classmethod
+    def convert_cluster_operations(
+        cls, model: rest.ClusterOperations
+    ) -> Union[
+        grpc.MoveShard,
+        grpc.ReplicateShard,
+        grpc.AbortShardTransfer,
+        grpc.Replica,
+        grpc.CreateShardKey,
+        grpc.DeleteShardKey,
+        grpc.RestartTransfer,
+        grpc.ReplicatePoints,
+    ]:
+        if isinstance(model, rest.MoveShardOperation):
+            operation = model.move_shard
+            return cls.convert_move_shard(operation)
+
+        if isinstance(model, rest.ReplicateShardOperation):
+            operation = model.replicate_shard
+            return cls.convert_replicate_shard(operation)
+
+        if isinstance(model, rest.AbortTransferOperation):
+            operation = model.abort_transfer
+            return cls.convert_abort_shard_transfer(operation)
+
+        if isinstance(model, rest.DropReplicaOperation):
+            operation = model.drop_replica
+            return cls.convert_replica(operation)
+
+        if isinstance(model, rest.CreateShardingKeyOperation):
+            operation = model.create_sharding_key
+            return cls.convert_create_shard_key(operation)
+
+        if isinstance(model, rest.DropShardingKeyOperation):
+            operation = model.drop_sharding_key
+            return cls.convert_delete_shard_key(operation)
+
+        if isinstance(model, rest.RestartTransferOperation):
+            operation = model.restart_transfer
+            return cls.convert_restart_transfer(operation)
+
+        if isinstance(model, rest.ReplicatePointsOperation):
+            operation = model.replicate_points
+            return cls.convert_replicate_points(operation)
+
+        if isinstance(model, rest.StartReshardingOperation):  # pragma: no cover
+            raise ValueError("StartReshardingOperation has no grpc counterpart")
+
+        if isinstance(model, rest.AbortReshardingOperation):  # pragma: no cover
+            raise ValueError("AbortReshardingOperation has not grpc counterpart")
+
+    @classmethod
+    def convert_move_shard(cls, model: rest.MoveShard) -> grpc.MoveShard:
+        return grpc.MoveShard(
+            shard_id=model.shard_id,
+            to_shard_id=None,
+            from_peer_id=model.from_peer_id,
+            to_peer_id=model.to_peer_id,
+            method=cls.convert_shard_transfer_method(model.method)
+            if model.method is not None
+            else None,
+        )
+
+    @classmethod
+    def convert_replicate_shard(cls, model: rest.ReplicateShard) -> grpc.ReplicateShard:
+        return grpc.ReplicateShard(
+            shard_id=model.shard_id,
+            to_shard_id=None,
+            from_peer_id=model.from_peer_id,
+            to_peer_id=model.to_peer_id,
+            method=cls.convert_shard_transfer_method(model.method)
+            if model.method is not None
+            else None,
+        )
+
+    @classmethod
+    def convert_abort_shard_transfer(
+        cls, model: rest.AbortShardTransfer
+    ) -> grpc.AbortShardTransfer:
+        return grpc.AbortShardTransfer(
+            shard_id=model.shard_id,
+            to_shard_id=None,
+            from_peer_id=model.from_peer_id,
+            to_peer_id=model.to_peer_id,
+        )
+
+    @classmethod
+    def convert_replica(cls, model: rest.Replica) -> grpc.Replica:
+        return grpc.Replica(shard_id=model.shard_id, peer_id=model.peer_id)
+
+    @classmethod
+    def convert_delete_shard_key(cls, model: rest.DropShardingKey) -> grpc.DeleteShardKey:
+        return grpc.DeleteShardKey(shard_key=cls.convert_shard_key(model.shard_key))
+
+    @classmethod
+    def convert_create_shard_key(cls, model: rest.CreateShardingKey) -> grpc.CreateShardKey:
+        return grpc.CreateShardKey(
+            shard_key=cls.convert_shard_key(model.shard_key),
+            shards_number=model.shards_number if model.shards_number is not None else None,
+            replication_factor=model.replication_factor
+            if model.replication_factor is not None
+            else None,
+            placement=model.placement if model.placement is not None else None,
+            initial_state=cls.convert_replica_state(model.initial_state)
+            if model.initial_state is not None
+            else None,
+        )
+
+    @classmethod
+    def convert_restart_transfer(cls, model: rest.RestartTransfer) -> grpc.RestartTransfer:
+        return grpc.RestartTransfer(
+            shard_id=model.shard_id,
+            to_shard_id=None,
+            from_peer_id=model.from_peer_id,
+            to_peer_id=model.to_peer_id,
+            method=cls.convert_shard_transfer_method(model.method),
+        )
+
+    @classmethod
+    def convert_replicate_points(cls, model: rest.ReplicatePoints) -> grpc.ReplicatePoints:
+        return grpc.ReplicatePoints(
+            from_shard_key=cls.convert_shard_key(model.from_shard_key),
+            to_shard_key=cls.convert_shard_key(model.to_shard_key),
+            filter=cls.convert_filter(model.filter) if model.filter is not None else None,
+        )
+
+    @classmethod
+    def convert_shard_transfer_method(
+        cls, model: rest.ShardTransferMethod
+    ) -> grpc.ShardTransferMethod:
+        if model == rest.ShardTransferMethod.STREAM_RECORDS:
+            return grpc.ShardTransferMethod.StreamRecords
+
+        if model == rest.ShardTransferMethod.SNAPSHOT:
+            return grpc.ShardTransferMethod.Snapshot
+
+        if model == rest.ShardTransferMethod.WAL_DELTA:
+            return grpc.ShardTransferMethod.WalDelta
+
+        if model == rest.ShardTransferMethod.RESHARDING_STREAM_RECORDS:
+            return grpc.ShardTransferMethod.ReshardingStreamRecords
+
+        raise ValueError(f"invalid ShardTransferMethod model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_health_check_reply(cls, model: rest.VersionInfo) -> grpc.HealthCheckReply:
