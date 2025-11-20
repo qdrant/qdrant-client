@@ -943,12 +943,28 @@ class AsyncQdrantLocal(AsyncQdrantBase):
         )
 
     async def cluster_collection_update(
-        self,
-        collection_name: str,
-        cluster_operation: types.ClusterOperations,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
+        self, collection_name: str, cluster_operation: types.ClusterOperations, **kwargs: Any
     ) -> bool:
         raise NotImplementedError(
-            "Cluster collection updates is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
+            "Cluster collection update is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
+        )
+
+    async def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+        raise NotImplementedError(
+            "Collection cluster info is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
+        )
+
+    async def cluster_status(self) -> types.ClusterStatus:
+        raise NotImplementedError(
+            "Cluster status is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
+        )
+
+    async def recover_current_peer(self) -> bool:
+        raise NotImplementedError(
+            "Recover current peer is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
+        )
+
+    async def remove_peer(self, peer_id: int, **kwargs) -> bool:
+        raise NotImplementedError(
+            "Remove peer info is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
         )

@@ -402,3 +402,15 @@ class QdrantBase:
         **kwargs: Any,
     ) -> bool:
         raise NotImplementedError()
+
+    def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+        raise NotImplementedError()
+
+    def cluster_status(self) -> types.ClusterStatus:
+        raise NotImplementedError()
+
+    def recover_current_peer(self) -> bool:
+        raise NotImplementedError()
+
+    def remove_peer(self, peer_id: int, **kwargs: Any) -> bool:
+        raise NotImplementedError()

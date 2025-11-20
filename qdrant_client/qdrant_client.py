@@ -2431,3 +2431,21 @@ class QdrantClient(QdrantFastembedMixin):
             timeout=timeout,
             **kwargs,
         )
+
+    def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+        return self._client.collection_cluster_info(collection_name=collection_name)
+
+    def cluster_status(self) -> types.ClusterStatus:
+        return self._client.cluster_status()
+
+    def recover_current_peer(self) -> bool:
+        return self._client.recover_current_peer()
+
+    def remove_peer(
+        self,
+        peer_id: int,
+        force: Optional[bool] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> bool:
+        return self._client.remove_peer(peer_id, force=force, timeout=timeout, **kwargs)

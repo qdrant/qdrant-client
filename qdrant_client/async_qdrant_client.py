@@ -2301,3 +2301,21 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             timeout=timeout,
             **kwargs,
         )
+
+    async def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+        return await self._client.collection_cluster_info(collection_name=collection_name)
+
+    async def cluster_status(self) -> types.ClusterStatus:
+        return await self._client.cluster_status()
+
+    async def recover_current_peer(self) -> bool:
+        return await self._client.recover_current_peer()
+
+    async def remove_peer(
+        self,
+        peer_id: int,
+        force: Optional[bool] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> bool:
+        return await self._client.remove_peer(peer_id, force=force, timeout=timeout, **kwargs)
