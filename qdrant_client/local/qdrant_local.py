@@ -108,7 +108,7 @@ class QdrantLocal(QdrantBase):
                     for key in (
                         deprecated_config_fields
                     ):  # fixes backward compatibility by removing parameters deleted
-                        # from collection config
+                        # from rest.CreateCollection
                         config_json.pop(key, None)
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
