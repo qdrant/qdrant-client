@@ -1039,7 +1039,7 @@ class QdrantLocal(QdrantBase):
             "Please use server Qdrant if you need a cluster"
         )
 
-    def remove_peer(self, peer_id: int, **kwargs) -> bool:
+    def remove_peer(self, peer_id: int, **kwargs: Any) -> bool:
         raise NotImplementedError(
             "Remove peer info is not supported in the local Qdrant. "
             "Please use server Qdrant if you need a cluster"

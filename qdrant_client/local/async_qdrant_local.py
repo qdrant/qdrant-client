@@ -964,7 +964,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             "Recover current peer is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
         )
 
-    async def remove_peer(self, peer_id: int, **kwargs) -> bool:
+    async def remove_peer(self, peer_id: int, **kwargs: Any) -> bool:
         raise NotImplementedError(
             "Remove peer info is not supported in the local Qdrant. Please use server Qdrant if you need a cluster"
         )
