@@ -372,3 +372,15 @@ class AsyncQdrantBase:
         self, collection_name: str, cluster_operation: types.ClusterOperations, **kwargs: Any
     ) -> bool:
         raise NotImplementedError()
+
+    async def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+        raise NotImplementedError()
+
+    async def cluster_status(self) -> types.ClusterStatus:
+        raise NotImplementedError()
+
+    async def recover_current_peer(self) -> bool:
+        raise NotImplementedError()
+
+    async def remove_peer(self, peer_id: int, **kwargs: Any) -> bool:
+        raise NotImplementedError()
