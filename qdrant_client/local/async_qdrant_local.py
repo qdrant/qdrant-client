@@ -89,7 +89,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             pass
 
     def _load(self) -> None:
-        deprecated_config_fields = "init_from"
+        deprecated_config_fields = ("init_from",)
         if not self.persistent:
             return
         meta_path = os.path.join(self.location, META_INFO_FILENAME)

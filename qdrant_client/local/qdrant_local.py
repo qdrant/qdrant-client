@@ -92,7 +92,7 @@ class QdrantLocal(QdrantBase):
             pass
 
     def _load(self) -> None:
-        deprecated_config_fields = "init_from"
+        deprecated_config_fields = ("init_from",)
 
         if not self.persistent:
             return
