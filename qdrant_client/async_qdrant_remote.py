@@ -2402,6 +2402,35 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: Optional[int] = None,
         **kwargs: Any,
     ) -> bool:
+        if self._prefer_grpc:
+            cluster_operation = RestToGrpc.convert_cluster_operations(cluster_operation)
+            grpc_operation = {}
+            if isinstance(cluster_operation, grpc.MoveShard):
+                grpc_operation["move_shard"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.ReplicateShard):
+                grpc_operation["replicate_shard"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.AbortShardTransfer):
+                grpc_operation["abort_transfer"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.Replica):
+                grpc_operation["drop_replica"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.CreateShardKey):
+                grpc_operation["create_shard_key"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.DeleteShardKey):
+                grpc_operation["delete_shard_key"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.RestartTransfer):
+                grpc_operation["restart_transfer"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.ReplicatePoints):
+                grpc_operation["replicate_points"] = cluster_operation
+            else:
+                raise TypeError(f"Unknown cluster operation: {cluster_operation}")
+            return (
+                await self.grpc_collections.UpdateCollectionClusterSetup(
+                    grpc.UpdateCollectionClusterSetupRequest(
+                        collection_name=collection_name, timeout=timeout, **grpc_operation
+                    ),
+                    timeout=timeout if timeout is not None else self._timeout,
+                )
+            ).result
         update_result = (
             await self.rest.distributed_api.update_collection_cluster(
                 collection_name=collection_name,
