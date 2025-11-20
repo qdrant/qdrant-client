@@ -6,7 +6,6 @@ authors = ["Andrey Vasnetsov <andrey@qdrant.tech>"]
 packages = [
     {include = "qdrant_client"}
 ]
-exclude = ["qdrant_client/grpc/*.pyi"]
 license = "Apache-2.0"
 readme = "README.md"
 homepage = "https://github.com/qdrant/qdrant-client"
