@@ -89,6 +89,7 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             pass
 
     def _load(self) -> None:
+        deprecated_config_fields = "init_from"
         if not self.persistent:
             return
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
@@ -100,6 +101,8 @@ class AsyncQdrantLocal(AsyncQdrantBase):
             with open(meta_path, "r") as f:
                 meta = json.load(f)
                 for collection_name, config_json in meta["collections"].items():
+                    for key in deprecated_config_fields:
+                        config_json.pop(key, None)
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
                     collection = LocalCollection(
