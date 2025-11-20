@@ -3,7 +3,7 @@ import math
 
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.http import models
-from typing import Union, Any, Tuple
+from typing import Any, Tuple
 
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import geo_distance
@@ -298,7 +298,7 @@ def evaluate_variable(
     raise ValueError(f"Invalid variable type: {type(var)}")
 
 
-def parse_variable(var: str) -> Union[str, int]:
+def parse_variable(var: str) -> str | int:
     # Try to parse score pattern
     if not var.startswith("$score"):
         # Treat as payload path

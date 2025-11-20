@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from typing import Optional
 
 # These are the formats accepted by qdrant core
 available_formats = [
@@ -16,7 +15,7 @@ available_formats = [
 ]
 
 
-def parse(date_str: str) -> Optional[datetime]:
+def parse(date_str: str) -> datetime | None:
     """Parses one section of the date string at a time.
 
     Args:
@@ -26,7 +25,7 @@ def parse(date_str: str) -> Optional[datetime]:
         Optional[datetime]: the datetime if the string is valid, otherwise None
     """
 
-    def parse_available_formats(datetime_str: str) -> Optional[datetime]:
+    def parse_available_formats(datetime_str: str) -> datetime | None:
         for fmt in available_formats:
             try:
                 dt = datetime.strptime(datetime_str, fmt)

@@ -1,6 +1,6 @@
 from itertools import count
 from time import sleep
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable
 from uuid import uuid4
 
 import numpy as np
@@ -18,10 +18,10 @@ from qdrant_client.conversions.conversion import GrpcToRest
 def upload_batch(
     openapi_client: SyncApis,
     collection_name: str,
-    batch: Union[tuple, rest.Batch],  # type: ignore[name-defined]
+    batch: tuple | rest.Batch,  # type: ignore[name-defined]
     max_retries: int,
-    shard_key_selector: Optional[rest.ShardKeySelector],  # type: ignore[name-defined]
-    update_filter: Optional[rest.Filter],  # type: ignore[name-defined]
+    shard_key_selector: rest.ShardKeySelector | None,  # type: ignore[name-defined]
+    update_filter: rest.Filter | None,  # type: ignore[name-defined]
     wait: bool = False,
 ) -> bool:
     ids_batch, vectors_batch, payload_batch = batch
@@ -78,8 +78,8 @@ class RestBatchUploader(BaseUploader):
         collection_name: str,
         max_retries: int,
         wait: bool = False,
-        shard_key_selector: Optional[types.ShardKeySelector] = None,
-        update_filter: Optional[types.Filter] = None,
+        shard_key_selector: types.ShardKeySelector | None = None,
+        update_filter: types.Filter | None = None,
         **kwargs: Any,
     ):
         self.collection_name = collection_name
@@ -96,7 +96,7 @@ class RestBatchUploader(BaseUploader):
     @classmethod
     def start(
         cls,
-        collection_name: Optional[str] = None,
+        collection_name: str | None = None,
         uri: str = "http://localhost:6333",
         max_retries: int = 3,
         **kwargs: Any,

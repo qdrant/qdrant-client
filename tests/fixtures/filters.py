@@ -1,6 +1,5 @@
 import random
 from datetime import date, datetime, timedelta, timezone
-from typing import Union
 
 from qdrant_client.http import models
 from tests.fixtures.payload import (
@@ -211,7 +210,7 @@ def datetime_range_field_condition() -> models.FieldCondition:
     start_datetime = datetime(2000, 1, 1)
     end_datetime = datetime(2001, 1, 31)
 
-    def random_datetime() -> Union[datetime, date]:
+    def random_datetime() -> datetime | date:
         dt = start_datetime + timedelta(
             seconds=random.randint(0, int((end_datetime - start_datetime).total_seconds())),
             microseconds=random.randint(0, 999999),

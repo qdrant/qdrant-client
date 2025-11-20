@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -25,9 +25,9 @@ except ImportError:
 
 
 class QueryResponse(BaseModel, extra="forbid"):  # type: ignore
-    id: Union[str, int]
-    embedding: Optional[list[float]]
-    sparse_embedding: Optional[SparseVector] = Field(default=None)
+    id: str | int
+    embedding: list[float] | None
+    sparse_embedding: SparseVector | None = Field(default=None)
     metadata: dict[str, Any]
     document: str
     score: float

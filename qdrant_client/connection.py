@@ -1,6 +1,6 @@
 import asyncio
 import collections
-from typing import Any, Awaitable, Callable, Optional, Union
+from typing import Any, Awaitable, Callable
 
 import grpc
 
@@ -131,7 +131,7 @@ class _ClientAsyncCallDetails(
 
 def header_adder_interceptor(
     new_metadata: list[tuple[str, str]],
-    auth_token_provider: Optional[Callable[[], str]] = None,
+    auth_token_provider: Callable[[], str] | None = None,
 ) -> _GenericClientInterceptor:
     def process_response(response: Any) -> Any:
         if response.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
@@ -185,7 +185,7 @@ def header_adder_interceptor(
 
 def header_adder_async_interceptor(
     new_metadata: list[tuple[str, str]],
-    auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
+    auth_token_provider: Callable[[], str] | Callable[[], Awaitable[str]] | None = None,
 ) -> _GenericAsyncClientInterceptor:
     async def process_response(call: Any) -> Any:
         try:
@@ -237,7 +237,7 @@ def header_adder_async_interceptor(
     return create_generic_async_client_interceptor(intercept_call)
 
 
-def parse_channel_options(options: Optional[dict[str, Any]] = None) -> list[tuple[str, Any]]:
+def parse_channel_options(options: dict[str, Any] | None = None) -> list[tuple[str, Any]]:
     default_options: list[tuple[str, Any]] = [
         ("grpc.max_send_message_length", -1),
         ("grpc.max_receive_message_length", -1),
@@ -254,7 +254,7 @@ def parse_channel_options(options: Optional[dict[str, Any]] = None) -> list[tupl
     return _options
 
 
-def parse_ssl_credentials(options: Optional[dict[str, Any]] = None) -> dict[str, Optional[bytes]]:
+def parse_ssl_credentials(options: dict[str, Any] | None = None) -> dict[str, bytes | None]:
     """Parse ssl credentials to create `grpc.ssl_channel_credentials` for `grpc.secure_channel`
 
     WARN: Directly modifies input `options`
@@ -262,7 +262,7 @@ def parse_ssl_credentials(options: Optional[dict[str, Any]] = None) -> dict[str,
     Return:
         dict[str, Optional[bytes]]: dict(root_certificates=..., private_key=..., certificate_chain=...)
     """
-    ssl_options: dict[str, Optional[bytes]] = dict(
+    ssl_options: dict[str, bytes | None] = dict(
         root_certificates=None, private_key=None, certificate_chain=None
     )
 
@@ -293,10 +293,10 @@ def get_channel(
     host: str,
     port: int,
     ssl: bool,
-    metadata: Optional[list[tuple[str, str]]] = None,
-    options: Optional[dict[str, Any]] = None,
-    compression: Optional[grpc.Compression] = None,
-    auth_token_provider: Optional[Callable[[], str]] = None,
+    metadata: list[tuple[str, str]] | None = None,
+    options: dict[str, Any] | None = None,
+    compression: grpc.Compression | None = None,
+    auth_token_provider: Callable[[], str] | None = None,
 ) -> grpc.Channel:
     # Parse gRPC client options
     _copied_options = (
@@ -321,10 +321,10 @@ def get_async_channel(
     host: str,
     port: int,
     ssl: bool,
-    metadata: Optional[list[tuple[str, str]]] = None,
-    options: Optional[dict[str, Any]] = None,
-    compression: Optional[grpc.Compression] = None,
-    auth_token_provider: Optional[Union[Callable[[], str], Callable[[], Awaitable[str]]]] = None,
+    metadata: list[tuple[str, str]] | None = None,
+    options: dict[str, Any] | None = None,
+    compression: grpc.Compression | None = None,
+    auth_token_provider: Callable[[], str] | Callable[[], Awaitable[str]] | None = None,
 ) -> grpc.aio.Channel:
     # Parse gRPC client options
     _copied_options = (

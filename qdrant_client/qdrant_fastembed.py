@@ -1,6 +1,6 @@
 import uuid
 from itertools import tee
-from typing import Any, Iterable, Optional, Sequence, Union, get_args
+from typing import Any, Iterable, Sequence, get_args, Union
 from copy import deepcopy
 
 import numpy as np
@@ -34,12 +34,10 @@ class QdrantFastembedMixin(QdrantBase):
     DEFAULT_BATCH_SIZE = 8
     _FASTEMBED_INSTALLED: bool
 
-    def __init__(
-        self, parser: ModelSchemaParser, is_local_mode: bool, server_version: Optional[str]
-    ):
+    def __init__(self, parser: ModelSchemaParser, is_local_mode: bool, server_version: str | None):
         self.__class__._FASTEMBED_INSTALLED = FastEmbedMisc.is_installed()
-        self._embedding_model_name: Optional[str] = None
-        self._sparse_embedding_model_name: Optional[str] = None
+        self._embedding_model_name: str | None = None
+        self._sparse_embedding_model_name: str | None = None
 
         self._model_embedder = ModelEmbedder(
             parser=parser, is_local_mode=is_local_mode, server_version=server_version
@@ -98,18 +96,18 @@ class QdrantFastembedMixin(QdrantBase):
         return self._embedding_model_name
 
     @property
-    def sparse_embedding_model_name(self) -> Optional[str]:
+    def sparse_embedding_model_name(self) -> str | None:
         return self._sparse_embedding_model_name
 
     def set_model(
         self,
         embedding_model_name: str,
-        max_length: Optional[int] = None,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        max_length: int | None = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         lazy_load: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -163,12 +161,12 @@ class QdrantFastembedMixin(QdrantBase):
 
     def set_sparse_model(
         self,
-        embedding_model_name: Optional[str],
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        embedding_model_name: str | None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         lazy_load: bool = False,
         **kwargs: Any,
     ) -> None:
@@ -235,9 +233,9 @@ class QdrantFastembedMixin(QdrantBase):
     def _get_or_init_model(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         deprecated: bool = False,
         **kwargs: Any,
     ) -> "TextEmbedding":
@@ -256,9 +254,9 @@ class QdrantFastembedMixin(QdrantBase):
     def _get_or_init_sparse_model(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         deprecated: bool = False,
         **kwargs: Any,
     ) -> "SparseTextEmbedding":
@@ -279,7 +277,7 @@ class QdrantFastembedMixin(QdrantBase):
         embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
         batch_size: int = 32,
         embed_type: str = "default",
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
     ) -> Iterable[tuple[str, list[float]]]:
         embedding_model = self._get_or_init_model(model_name=embedding_model_name, deprecated=True)
         documents_a, documents_b = tee(documents, 2)
@@ -306,7 +304,7 @@ class QdrantFastembedMixin(QdrantBase):
         documents: Iterable[str],
         embedding_model_name: str = DEFAULT_EMBEDDING_MODEL,
         batch_size: int = 32,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
     ) -> Iterable[types.SparseVector]:
         sparse_embedding_model = self._get_or_init_sparse_model(
             model_name=embedding_model_name, deprecated=True
@@ -331,7 +329,7 @@ class QdrantFastembedMixin(QdrantBase):
         model_name = self.embedding_model_name.split("/")[-1].lower()
         return f"fast-{model_name}"
 
-    def get_sparse_vector_field_name(self) -> Optional[str]:
+    def get_sparse_vector_field_name(self) -> str | None:
         """
         Returns name of the vector field in qdrant collection, used by current fastembed model.
         Returns:
@@ -378,11 +376,11 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _points_iterator(
         self,
-        ids: Optional[Iterable[models.ExtendedPointId]],
-        metadata: Optional[Iterable[dict[str, Any]]],
+        ids: Iterable[models.ExtendedPointId] | None,
+        metadata: Iterable[dict[str, Any]] | None,
         encoded_docs: Iterable[tuple[str, list[float]]],
         ids_accumulator: list,
-        sparse_vectors: Optional[Iterable[types.SparseVector]] = None,
+        sparse_vectors: Iterable[types.SparseVector] | None = None,
     ) -> Iterable[models.PointStruct]:
         if ids is None:
             ids = iter(lambda: uuid.uuid4().hex, None)
@@ -444,7 +442,7 @@ class QdrantFastembedMixin(QdrantBase):
 
     def get_embedding_size(
         self,
-        model_name: Optional[str] = None,
+        model_name: str | None = None,
     ) -> int:
         """Get the size of the embeddings produced by the specified model.
 
@@ -464,9 +462,9 @@ class QdrantFastembedMixin(QdrantBase):
 
     def get_fastembed_vector_params(
         self,
-        on_disk: Optional[bool] = None,
-        quantization_config: Optional[models.QuantizationConfig] = None,
-        hnsw_config: Optional[models.HnswConfigDiff] = None,
+        on_disk: bool | None = None,
+        quantization_config: models.QuantizationConfig | None = None,
+        hnsw_config: models.HnswConfigDiff | None = None,
     ) -> dict[str, models.VectorParams]:
         """
         Generates vector configuration, compatible with fastembed models.
@@ -493,9 +491,9 @@ class QdrantFastembedMixin(QdrantBase):
 
     def get_fastembed_sparse_vector_params(
         self,
-        on_disk: Optional[bool] = None,
-        modifier: Optional[models.Modifier] = None,
-    ) -> Optional[dict[str, models.SparseVectorParams]]:
+        on_disk: bool | None = None,
+        modifier: models.Modifier | None = None,
+    ) -> dict[str, models.SparseVectorParams] | None:
         """
         Generates vector configuration, compatible with fastembed sparse models.
 
@@ -525,12 +523,12 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         collection_name: str,
         documents: Iterable[str],
-        metadata: Optional[Iterable[dict[str, Any]]] = None,
-        ids: Optional[Iterable[models.ExtendedPointId]] = None,
+        metadata: Iterable[dict[str, Any]] | None = None,
+        ids: Iterable[models.ExtendedPointId] | None = None,
         batch_size: int = 32,
-        parallel: Optional[int] = None,
+        parallel: int | None = None,
         **kwargs: Any,
-    ) -> list[Union[str, int]]:
+    ) -> list[str | int]:
         """
         Adds text documents into qdrant collection.
         If collection does not exist, it will be created with default parameters.
@@ -624,7 +622,7 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         collection_name: str,
         query_text: str,
-        query_filter: Optional[models.Filter] = None,
+        query_filter: models.Filter | None = None,
         limit: int = 10,
         **kwargs: Any,
     ) -> list[QueryResponse]:
@@ -711,7 +709,7 @@ class QdrantFastembedMixin(QdrantBase):
         self,
         collection_name: str,
         query_texts: list[str],
-        query_filter: Optional[models.Filter] = None,
+        query_filter: models.Filter | None = None,
         limit: int = 10,
         **kwargs: Any,
     ) -> list[list[QueryResponse]]:
@@ -817,7 +815,7 @@ class QdrantFastembedMixin(QdrantBase):
             models.InferenceObject,
             None,
         ],
-    ) -> Optional[models.Query]:
+    ) -> models.Query | None:
         """Resolves query interface into a models.Query object
 
         Args:
@@ -882,9 +880,9 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _embed_models(
         self,
-        raw_models: Union[BaseModel, Iterable[BaseModel]],
+        raw_models: BaseModel | Iterable[BaseModel],
         is_query: bool = False,
-        batch_size: Optional[int] = None,
+        batch_size: int | None = None,
     ) -> Iterable[BaseModel]:
         yield from self._model_embedder.embed_models(
             raw_models=raw_models,
@@ -894,9 +892,9 @@ class QdrantFastembedMixin(QdrantBase):
 
     def _embed_models_strict(
         self,
-        raw_models: Iterable[Union[dict[str, BaseModel], BaseModel]],
-        batch_size: Optional[int] = None,
-        parallel: Optional[int] = None,
+        raw_models: Iterable[dict[str, BaseModel] | BaseModel],
+        batch_size: int | None = None,
+        parallel: int | None = None,
     ) -> Iterable[BaseModel]:
         yield from self._model_embedder.embed_models_strict(
             raw_models=raw_models,

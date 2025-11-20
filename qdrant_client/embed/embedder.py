@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Optional, Sequence, Any, TypeVar, Generic
+from typing import Sequence, Any, TypeVar, Generic
 
 from pydantic import BaseModel
 
@@ -27,7 +27,7 @@ class ModelInstance(BaseModel, Generic[T], arbitrary_types_allowed=True):  # typ
 
 
 class Embedder:
-    def __init__(self, threads: Optional[int] = None, **kwargs: Any) -> None:
+    def __init__(self, threads: int | None = None, **kwargs: Any) -> None:
         self.embedding_models: dict[str, list[ModelInstance[TextEmbedding]]] = defaultdict(list)
         self.sparse_embedding_models: dict[str, list[ModelInstance[SparseTextEmbedding]]] = (
             defaultdict(list)
@@ -46,11 +46,11 @@ class Embedder:
     def get_or_init_model(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         deprecated: bool = False,
         **kwargs: Any,
     ) -> TextEmbedding:
@@ -82,11 +82,11 @@ class Embedder:
     def get_or_init_sparse_model(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         deprecated: bool = False,
         **kwargs: Any,
     ) -> SparseTextEmbedding:
@@ -120,11 +120,11 @@ class Embedder:
     def get_or_init_late_interaction_model(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         **kwargs: Any,
     ) -> LateInteractionTextEmbedding:
         if not FastEmbedMisc.is_supported_late_interaction_text_model(model_name):
@@ -155,11 +155,11 @@ class Embedder:
     def get_or_init_late_interaction_multimodal_model(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         **kwargs: Any,
     ) -> LateInteractionMultimodalEmbedding:
         if not FastEmbedMisc.is_supported_late_interaction_multimodal_model(model_name):
@@ -190,11 +190,11 @@ class Embedder:
     def get_or_init_image_model(
         self,
         model_name: str,
-        cache_dir: Optional[str] = None,
-        threads: Optional[int] = None,
-        providers: Optional[Sequence["OnnxProvider"]] = None,
+        cache_dir: str | None = None,
+        threads: int | None = None,
+        providers: Sequence["OnnxProvider"] | None = None,
         cuda: bool = False,
-        device_ids: Optional[list[int]] = None,
+        device_ids: list[int] | None = None,
         **kwargs: Any,
     ) -> ImageEmbedding:
         if not FastEmbedMisc.is_supported_image_model(model_name):
@@ -222,9 +222,9 @@ class Embedder:
     def embed(
         self,
         model_name: str,
-        texts: Optional[list[str]] = None,
-        images: Optional[list[ImageInput]] = None,
-        options: Optional[dict[str, Any]] = None,
+        texts: list[str] | None = None,
+        images: list[ImageInput] | None = None,
+        options: dict[str, Any] | None = None,
         is_query: bool = False,
         batch_size: int = 8,
     ) -> NumericVector:
@@ -270,7 +270,7 @@ class Embedder:
         self,
         texts: list[str],
         model_name: str,
-        options: Optional[dict[str, Any]],
+        options: dict[str, Any] | None,
         is_query: bool,
         batch_size: int,
     ) -> list[list[float]]:
@@ -291,7 +291,7 @@ class Embedder:
         self,
         texts: list[str],
         model_name: str,
-        options: Optional[dict[str, Any]],
+        options: dict[str, Any] | None,
         is_query: bool,
         batch_size: int,
     ) -> list[models.SparseVector]:
@@ -322,7 +322,7 @@ class Embedder:
         self,
         texts: list[str],
         model_name: str,
-        options: Optional[dict[str, Any]],
+        options: dict[str, Any] | None,
         is_query: bool,
         batch_size: int,
     ) -> list[list[list[float]]]:
@@ -344,7 +344,7 @@ class Embedder:
         self,
         texts: list[str],
         model_name: str,
-        options: Optional[dict[str, Any]],
+        options: dict[str, Any] | None,
         batch_size: int,
     ) -> list[list[list[float]]]:
         embedding_model_inst = self.get_or_init_late_interaction_multimodal_model(
@@ -361,7 +361,7 @@ class Embedder:
         self,
         images: list[ImageInput],
         model_name: str,
-        options: Optional[dict[str, Any]],
+        options: dict[str, Any] | None,
         batch_size: int,
     ) -> list[list[list[float]]]:
         embedding_model_inst = self.get_or_init_late_interaction_multimodal_model(
@@ -376,7 +376,7 @@ class Embedder:
         self,
         images: list[ImageInput],
         model_name: str,
-        options: Optional[dict[str, Any]],
+        options: dict[str, Any] | None,
         batch_size: int,
     ) -> list[list[float]]:
         embedding_model_inst = self.get_or_init_image_model(model_name=model_name, **options or {})

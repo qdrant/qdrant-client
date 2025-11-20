@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type
+from typing import Any, Type
 
 from qdrant_client.local.json_path_parser import JsonPathItem, JsonPathItemType
 
@@ -43,7 +43,7 @@ class Setter:
         k_list: list[JsonPathItem],
         value: dict[str, Any],
         prev_data: Any,
-        prev_key: Optional[JsonPathItem],
+        prev_key: JsonPathItem | None,
     ) -> None:
         if not k_list:
             return
@@ -66,7 +66,7 @@ class Setter:
         k_list: list[JsonPathItem],
         value: dict[str, Any],
         prev_data: Any,
-        prev_key: Optional[JsonPathItem],
+        prev_key: JsonPathItem | None,
     ) -> None:
         if isinstance(data, cls.TYPE):
             cls._set_compatible_types(
@@ -98,7 +98,7 @@ class Setter:
         k_list: list[JsonPathItem],
         value: dict[str, Any],
         prev_data: Any,
-        prev_key: Optional[JsonPathItem],
+        prev_key: JsonPathItem | None,
     ) -> None:
         raise NotImplementedError()
 
@@ -132,7 +132,7 @@ class KeySetter(Setter):
         k_list: list[JsonPathItem],
         value: dict[str, Any],
         prev_data: Any,
-        prev_key: Optional[JsonPathItem],
+        prev_key: JsonPathItem | None,
     ) -> None:
         assert prev_key is not None
 
@@ -172,7 +172,7 @@ class _ListSetter(Setter):
         k_list: list[JsonPathItem],
         value: dict[str, Any],
         prev_data: Any,
-        prev_key: Optional[JsonPathItem],
+        prev_key: JsonPathItem | None,
     ) -> None:
         assert prev_key is not None
 
