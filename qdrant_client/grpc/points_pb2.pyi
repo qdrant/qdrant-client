@@ -5,13 +5,13 @@ isort:skip_file
 import builtins
 import collections.abc
 import collections_pb2
-import common_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import google.protobuf.timestamp_pb2
 import json_with_int_pb2
+import qdrant_common_pb2
 import sys
 import typing
 
@@ -557,7 +557,7 @@ class VectorInput(google.protobuf.message.Message):
     IMAGE_FIELD_NUMBER: builtins.int
     OBJECT_FIELD_NUMBER: builtins.int
     @property
-    def id(self) -> common_pb2.PointId: ...
+    def id(self) -> qdrant_common_pb2.PointId: ...
     @property
     def dense(self) -> global___DenseVector: ...
     @property
@@ -573,7 +573,7 @@ class VectorInput(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        id: common_pb2.PointId | None = ...,
+        id: qdrant_common_pb2.PointId | None = ...,
         dense: global___DenseVector | None = ...,
         sparse: global___SparseVector | None = ...,
         multi_dense: global___MultiDenseVector | None = ...,
@@ -641,7 +641,7 @@ class UpsertPoints(google.protobuf.message.Message):
     def shard_key_selector(self) -> global___ShardKeySelector:
         """Option for custom sharding to specify used shard keys"""
     @property
-    def update_filter(self) -> common_pb2.Filter:
+    def update_filter(self) -> qdrant_common_pb2.Filter:
         """If specified, only points that match this filter will be updated, others will be inserted"""
     def __init__(
         self,
@@ -651,7 +651,7 @@ class UpsertPoints(google.protobuf.message.Message):
         points: collections.abc.Iterable[global___PointStruct] | None = ...,
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
-        update_filter: common_pb2.Filter | None = ...,
+        update_filter: qdrant_common_pb2.Filter | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_wait", b"_wait", "ordering", b"ordering", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "wait", b"wait"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "wait", b"wait"]) -> None: ...
@@ -720,7 +720,7 @@ class GetPoints(google.protobuf.message.Message):
     collection_name: builtins.str
     """name of the collection"""
     @property
-    def ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[common_pb2.PointId]:
+    def ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qdrant_common_pb2.PointId]:
         """List of points to retrieve"""
     @property
     def with_payload(self) -> global___WithPayloadSelector:
@@ -740,7 +740,7 @@ class GetPoints(google.protobuf.message.Message):
         self,
         *,
         collection_name: builtins.str = ...,
-        ids: collections.abc.Iterable[common_pb2.PointId] | None = ...,
+        ids: collections.abc.Iterable[qdrant_common_pb2.PointId] | None = ...,
         with_payload: global___WithPayloadSelector | None = ...,
         with_vectors: global___WithVectorsSelector | None = ...,
         read_consistency: global___ReadConsistency | None = ...,
@@ -783,7 +783,7 @@ class UpdatePointVectors(google.protobuf.message.Message):
     def shard_key_selector(self) -> global___ShardKeySelector:
         """Option for custom sharding to specify used shard keys"""
     @property
-    def update_filter(self) -> common_pb2.Filter:
+    def update_filter(self) -> qdrant_common_pb2.Filter:
         """If specified, only points that match this filter will be updated"""
     def __init__(
         self,
@@ -793,7 +793,7 @@ class UpdatePointVectors(google.protobuf.message.Message):
         points: collections.abc.Iterable[global___PointVectors] | None = ...,
         ordering: global___WriteOrdering | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
-        update_filter: common_pb2.Filter | None = ...,
+        update_filter: qdrant_common_pb2.Filter | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_wait", b"_wait", "ordering", b"ordering", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "wait", b"wait"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_ordering", b"_ordering", "_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "_wait", b"_wait", "collection_name", b"collection_name", "ordering", b"ordering", "points", b"points", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter", "wait", b"wait"]) -> None: ...
@@ -814,7 +814,7 @@ class PointVectors(google.protobuf.message.Message):
     ID_FIELD_NUMBER: builtins.int
     VECTORS_FIELD_NUMBER: builtins.int
     @property
-    def id(self) -> common_pb2.PointId:
+    def id(self) -> qdrant_common_pb2.PointId:
         """ID to update vectors for"""
     @property
     def vectors(self) -> global___Vectors:
@@ -822,7 +822,7 @@ class PointVectors(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        id: common_pb2.PointId | None = ...,
+        id: qdrant_common_pb2.PointId | None = ...,
         vectors: global___Vectors | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["id", b"id", "vectors", b"vectors"]) -> builtins.bool: ...
@@ -1476,7 +1476,7 @@ class SearchPoints(google.protobuf.message.Message):
     def vector(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.float]:
         """vector"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions"""
     limit: builtins.int
     """Max number of result"""
@@ -1510,7 +1510,7 @@ class SearchPoints(google.protobuf.message.Message):
         *,
         collection_name: builtins.str = ...,
         vector: collections.abc.Iterable[builtins.float] | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         limit: builtins.int = ...,
         with_payload: global___WithPayloadSelector | None = ...,
         params: global___SearchParams | None = ...,
@@ -1632,7 +1632,7 @@ class SearchPointGroups(google.protobuf.message.Message):
     def vector(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.float]:
         """Vector to compare against"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions"""
     limit: builtins.int
     """Max number of result"""
@@ -1671,7 +1671,7 @@ class SearchPointGroups(google.protobuf.message.Message):
         *,
         collection_name: builtins.str = ...,
         vector: collections.abc.Iterable[builtins.float] | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         limit: builtins.int = ...,
         with_payload: global___WithPayloadSelector | None = ...,
         params: global___SearchParams | None = ...,
@@ -1777,10 +1777,10 @@ class ScrollPoints(google.protobuf.message.Message):
     TIMEOUT_FIELD_NUMBER: builtins.int
     collection_name: builtins.str
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions"""
     @property
-    def offset(self) -> common_pb2.PointId:
+    def offset(self) -> qdrant_common_pb2.PointId:
         """Start with this ID"""
     limit: builtins.int
     """Max number of result"""
@@ -1805,8 +1805,8 @@ class ScrollPoints(google.protobuf.message.Message):
         self,
         *,
         collection_name: builtins.str = ...,
-        filter: common_pb2.Filter | None = ...,
-        offset: common_pb2.PointId | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
+        offset: qdrant_common_pb2.PointId | None = ...,
         limit: builtins.int | None = ...,
         with_payload: global___WithPayloadSelector | None = ...,
         with_vectors: global___WithVectorsSelector | None = ...,
@@ -1886,13 +1886,13 @@ class RecommendPoints(google.protobuf.message.Message):
     collection_name: builtins.str
     """name of the collection"""
     @property
-    def positive(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[common_pb2.PointId]:
+    def positive(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qdrant_common_pb2.PointId]:
         """Look for vectors closest to the vectors from these points"""
     @property
-    def negative(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[common_pb2.PointId]:
+    def negative(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qdrant_common_pb2.PointId]:
         """Try to avoid vectors like the vector from these points"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions"""
     limit: builtins.int
     """Max number of result"""
@@ -1934,9 +1934,9 @@ class RecommendPoints(google.protobuf.message.Message):
         self,
         *,
         collection_name: builtins.str = ...,
-        positive: collections.abc.Iterable[common_pb2.PointId] | None = ...,
-        negative: collections.abc.Iterable[common_pb2.PointId] | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        positive: collections.abc.Iterable[qdrant_common_pb2.PointId] | None = ...,
+        negative: collections.abc.Iterable[qdrant_common_pb2.PointId] | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         limit: builtins.int = ...,
         with_payload: global___WithPayloadSelector | None = ...,
         params: global___SearchParams | None = ...,
@@ -2034,13 +2034,13 @@ class RecommendPointGroups(google.protobuf.message.Message):
     collection_name: builtins.str
     """Name of the collection"""
     @property
-    def positive(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[common_pb2.PointId]:
+    def positive(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qdrant_common_pb2.PointId]:
         """Look for vectors closest to the vectors from these points"""
     @property
-    def negative(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[common_pb2.PointId]:
+    def negative(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qdrant_common_pb2.PointId]:
         """Try to avoid vectors like the vector from these points"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions"""
     limit: builtins.int
     """Max number of groups in result"""
@@ -2087,9 +2087,9 @@ class RecommendPointGroups(google.protobuf.message.Message):
         self,
         *,
         collection_name: builtins.str = ...,
-        positive: collections.abc.Iterable[common_pb2.PointId] | None = ...,
-        negative: collections.abc.Iterable[common_pb2.PointId] | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        positive: collections.abc.Iterable[qdrant_common_pb2.PointId] | None = ...,
+        negative: collections.abc.Iterable[qdrant_common_pb2.PointId] | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         limit: builtins.int = ...,
         with_payload: global___WithPayloadSelector | None = ...,
         params: global___SearchParams | None = ...,
@@ -2153,13 +2153,13 @@ class VectorExample(google.protobuf.message.Message):
     ID_FIELD_NUMBER: builtins.int
     VECTOR_FIELD_NUMBER: builtins.int
     @property
-    def id(self) -> common_pb2.PointId: ...
+    def id(self) -> qdrant_common_pb2.PointId: ...
     @property
     def vector(self) -> global___Vector: ...
     def __init__(
         self,
         *,
-        id: common_pb2.PointId | None = ...,
+        id: qdrant_common_pb2.PointId | None = ...,
         vector: global___Vector | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["example", b"example", "id", b"id", "vector", b"vector"]) -> builtins.bool: ...
@@ -2214,7 +2214,7 @@ class DiscoverPoints(google.protobuf.message.Message):
     def context(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___ContextExamplePair]:
         """Search will be constrained by these pairs of examples"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions"""
     limit: builtins.int
     """Max number of result"""
@@ -2248,7 +2248,7 @@ class DiscoverPoints(google.protobuf.message.Message):
         collection_name: builtins.str = ...,
         target: global___TargetVector | None = ...,
         context: collections.abc.Iterable[global___ContextExamplePair] | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         limit: builtins.int = ...,
         with_payload: global___WithPayloadSelector | None = ...,
         params: global___SearchParams | None = ...,
@@ -2324,7 +2324,7 @@ class CountPoints(google.protobuf.message.Message):
     collection_name: builtins.str
     """Name of the collection"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions"""
     exact: builtins.bool
     """If `true` - return exact count, if `false` - return approximate count"""
@@ -2340,7 +2340,7 @@ class CountPoints(google.protobuf.message.Message):
         self,
         *,
         collection_name: builtins.str = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         exact: builtins.bool | None = ...,
         read_consistency: global___ReadConsistency | None = ...,
         shard_key_selector: global___ShardKeySelector | None = ...,
@@ -2509,7 +2509,7 @@ class Expression(google.protobuf.message.Message):
     variable: builtins.str
     """Payload key or reference to score."""
     @property
-    def condition(self) -> common_pb2.Condition:
+    def condition(self) -> qdrant_common_pb2.Condition:
         """Payload condition. If true, becomes 1.0; otherwise 0.0"""
     @property
     def geo_distance(self) -> global___GeoDistance:
@@ -2562,7 +2562,7 @@ class Expression(google.protobuf.message.Message):
         *,
         constant: builtins.float = ...,
         variable: builtins.str = ...,
-        condition: common_pb2.Condition | None = ...,
+        condition: qdrant_common_pb2.Condition | None = ...,
         geo_distance: global___GeoDistance | None = ...,
         datetime: builtins.str = ...,
         datetime_key: builtins.str = ...,
@@ -2592,12 +2592,12 @@ class GeoDistance(google.protobuf.message.Message):
     ORIGIN_FIELD_NUMBER: builtins.int
     TO_FIELD_NUMBER: builtins.int
     @property
-    def origin(self) -> common_pb2.GeoPoint: ...
+    def origin(self) -> qdrant_common_pb2.GeoPoint: ...
     to: builtins.str
     def __init__(
         self,
         *,
-        origin: common_pb2.GeoPoint | None = ...,
+        origin: qdrant_common_pb2.GeoPoint | None = ...,
         to: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["origin", b"origin"]) -> builtins.bool: ...
@@ -2876,7 +2876,7 @@ class PrefetchQuery(google.protobuf.message.Message):
     using: builtins.str
     """Define which vector to use for querying. If missing, the default vector is is used."""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions."""
     @property
     def params(self) -> global___SearchParams:
@@ -2894,7 +2894,7 @@ class PrefetchQuery(google.protobuf.message.Message):
         prefetch: collections.abc.Iterable[global___PrefetchQuery] | None = ...,
         query: global___Query | None = ...,
         using: builtins.str | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         params: global___SearchParams | None = ...,
         score_threshold: builtins.float | None = ...,
         limit: builtins.int | None = ...,
@@ -2948,7 +2948,7 @@ class QueryPoints(google.protobuf.message.Message):
     using: builtins.str
     """Define which vector to use for querying. If missing, the default vector is used."""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions."""
     @property
     def params(self) -> global___SearchParams:
@@ -2983,7 +2983,7 @@ class QueryPoints(google.protobuf.message.Message):
         prefetch: collections.abc.Iterable[global___PrefetchQuery] | None = ...,
         query: global___Query | None = ...,
         using: builtins.str | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         params: global___SearchParams | None = ...,
         score_threshold: builtins.float | None = ...,
         limit: builtins.int | None = ...,
@@ -3089,7 +3089,7 @@ class QueryPointGroups(google.protobuf.message.Message):
     using: builtins.str
     """Define which vector to use for querying. If missing, the default vector is used."""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions."""
     @property
     def params(self) -> global___SearchParams:
@@ -3129,7 +3129,7 @@ class QueryPointGroups(google.protobuf.message.Message):
         prefetch: collections.abc.Iterable[global___PrefetchQuery] | None = ...,
         query: global___Query | None = ...,
         using: builtins.str | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         params: global___SearchParams | None = ...,
         score_threshold: builtins.float | None = ...,
         with_payload: global___WithPayloadSelector | None = ...,
@@ -3190,7 +3190,7 @@ class FacetCounts(google.protobuf.message.Message):
     key: builtins.str
     """Payload key of the facet"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions."""
     limit: builtins.int
     """Max number of facets. Default is 10."""
@@ -3209,7 +3209,7 @@ class FacetCounts(google.protobuf.message.Message):
         *,
         collection_name: builtins.str = ...,
         key: builtins.str = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         limit: builtins.int | None = ...,
         exact: builtins.bool | None = ...,
         timeout: builtins.int | None = ...,
@@ -3293,7 +3293,7 @@ class SearchMatrixPoints(google.protobuf.message.Message):
     collection_name: builtins.str
     """Name of the collection"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """Filter conditions - return only those points that satisfy the specified conditions."""
     sample: builtins.int
     """How many points to select and search within. Default is 10."""
@@ -3313,7 +3313,7 @@ class SearchMatrixPoints(google.protobuf.message.Message):
         self,
         *,
         collection_name: builtins.str = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
         sample: builtins.int | None = ...,
         limit: builtins.int | None = ...,
         using: builtins.str | None = ...,
@@ -3363,18 +3363,18 @@ class SearchMatrixPair(google.protobuf.message.Message):
     B_FIELD_NUMBER: builtins.int
     SCORE_FIELD_NUMBER: builtins.int
     @property
-    def a(self) -> common_pb2.PointId:
+    def a(self) -> qdrant_common_pb2.PointId:
         """first id of the pair"""
     @property
-    def b(self) -> common_pb2.PointId:
+    def b(self) -> qdrant_common_pb2.PointId:
         """second id of the pair"""
     score: builtins.float
     """score of the pair"""
     def __init__(
         self,
         *,
-        a: common_pb2.PointId | None = ...,
-        b: common_pb2.PointId | None = ...,
+        a: qdrant_common_pb2.PointId | None = ...,
+        b: qdrant_common_pb2.PointId | None = ...,
         score: builtins.float = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["a", b"a", "b", b"b"]) -> builtins.bool: ...
@@ -3399,7 +3399,7 @@ class SearchMatrixOffsets(google.protobuf.message.Message):
     def scores(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.float]:
         """Scores associated with matrix coordinates"""
     @property
-    def ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[common_pb2.PointId]:
+    def ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qdrant_common_pb2.PointId]:
         """Ids of the points in order"""
     def __init__(
         self,
@@ -3407,7 +3407,7 @@ class SearchMatrixOffsets(google.protobuf.message.Message):
         offsets_row: collections.abc.Iterable[builtins.int] | None = ...,
         offsets_col: collections.abc.Iterable[builtins.int] | None = ...,
         scores: collections.abc.Iterable[builtins.float] | None = ...,
-        ids: collections.abc.Iterable[common_pb2.PointId] | None = ...,
+        ids: collections.abc.Iterable[qdrant_common_pb2.PointId] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing_extensions.Literal["ids", b"ids", "offsets_col", b"offsets_col", "offsets_row", b"offsets_row", "scores", b"scores"]) -> None: ...
 
@@ -3428,14 +3428,14 @@ class PointsUpdateOperation(google.protobuf.message.Message):
         def shard_key_selector(self) -> global___ShardKeySelector:
             """Option for custom sharding to specify used shard keys"""
         @property
-        def update_filter(self) -> common_pb2.Filter:
+        def update_filter(self) -> qdrant_common_pb2.Filter:
             """If specified, only points that match this filter will be updated, others will be inserted"""
         def __init__(
             self,
             *,
             points: collections.abc.Iterable[global___PointStruct] | None = ...,
             shard_key_selector: global___ShardKeySelector | None = ...,
-            update_filter: common_pb2.Filter | None = ...,
+            update_filter: qdrant_common_pb2.Filter | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "points", b"points", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter"]) -> None: ...
@@ -3587,14 +3587,14 @@ class PointsUpdateOperation(google.protobuf.message.Message):
         def shard_key_selector(self) -> global___ShardKeySelector:
             """Option for custom sharding to specify used shard keys"""
         @property
-        def update_filter(self) -> common_pb2.Filter:
+        def update_filter(self) -> qdrant_common_pb2.Filter:
             """If specified, only points that match this filter will be updated"""
         def __init__(
             self,
             *,
             points: collections.abc.Iterable[global___PointVectors] | None = ...,
             shard_key_selector: global___ShardKeySelector | None = ...,
-            update_filter: common_pb2.Filter | None = ...,
+            update_filter: qdrant_common_pb2.Filter | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing_extensions.Literal["_shard_key_selector", b"_shard_key_selector", "_update_filter", b"_update_filter", "points", b"points", "shard_key_selector", b"shard_key_selector", "update_filter", b"update_filter"]) -> None: ...
@@ -3852,7 +3852,7 @@ class ScoredPoint(google.protobuf.message.Message):
     SHARD_KEY_FIELD_NUMBER: builtins.int
     ORDER_VALUE_FIELD_NUMBER: builtins.int
     @property
-    def id(self) -> common_pb2.PointId:
+    def id(self) -> qdrant_common_pb2.PointId:
         """Point id"""
     @property
     def payload(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, json_with_int_pb2.Value]:
@@ -3873,7 +3873,7 @@ class ScoredPoint(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        id: common_pb2.PointId | None = ...,
+        id: qdrant_common_pb2.PointId | None = ...,
         payload: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
         score: builtins.float = ...,
         version: builtins.int = ...,
@@ -4158,7 +4158,7 @@ class ScrollResponse(google.protobuf.message.Message):
     TIME_FIELD_NUMBER: builtins.int
     USAGE_FIELD_NUMBER: builtins.int
     @property
-    def next_page_offset(self) -> common_pb2.PointId:
+    def next_page_offset(self) -> qdrant_common_pb2.PointId:
         """Use this offset for the next query"""
     @property
     def result(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[global___RetrievedPoint]: ...
@@ -4169,7 +4169,7 @@ class ScrollResponse(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        next_page_offset: common_pb2.PointId | None = ...,
+        next_page_offset: qdrant_common_pb2.PointId | None = ...,
         result: collections.abc.Iterable[global___RetrievedPoint] | None = ...,
         time: builtins.float = ...,
         usage: global___Usage | None = ...,
@@ -4223,7 +4223,7 @@ class RetrievedPoint(google.protobuf.message.Message):
     SHARD_KEY_FIELD_NUMBER: builtins.int
     ORDER_VALUE_FIELD_NUMBER: builtins.int
     @property
-    def id(self) -> common_pb2.PointId: ...
+    def id(self) -> qdrant_common_pb2.PointId: ...
     @property
     def payload(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, json_with_int_pb2.Value]: ...
     @property
@@ -4237,7 +4237,7 @@ class RetrievedPoint(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        id: common_pb2.PointId | None = ...,
+        id: qdrant_common_pb2.PointId | None = ...,
         payload: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
         vectors: global___VectorsOutput | None = ...,
         shard_key: collections_pb2.ShardKey | None = ...,
@@ -4517,12 +4517,12 @@ class PointsSelector(google.protobuf.message.Message):
     @property
     def points(self) -> global___PointsIdsList: ...
     @property
-    def filter(self) -> common_pb2.Filter: ...
+    def filter(self) -> qdrant_common_pb2.Filter: ...
     def __init__(
         self,
         *,
         points: global___PointsIdsList | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["filter", b"filter", "points", b"points", "points_selector_one_of", b"points_selector_one_of"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["filter", b"filter", "points", b"points", "points_selector_one_of", b"points_selector_one_of"]) -> None: ...
@@ -4535,11 +4535,11 @@ class PointsIdsList(google.protobuf.message.Message):
 
     IDS_FIELD_NUMBER: builtins.int
     @property
-    def ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[common_pb2.PointId]: ...
+    def ids(self) -> google.protobuf.internal.containers.RepeatedCompositeFieldContainer[qdrant_common_pb2.PointId]: ...
     def __init__(
         self,
         *,
-        ids: collections.abc.Iterable[common_pb2.PointId] | None = ...,
+        ids: collections.abc.Iterable[qdrant_common_pb2.PointId] | None = ...,
     ) -> None: ...
     def ClearField(self, field_name: typing_extensions.Literal["ids", b"ids"]) -> None: ...
 
@@ -4574,7 +4574,7 @@ class PointStruct(google.protobuf.message.Message):
     PAYLOAD_FIELD_NUMBER: builtins.int
     VECTORS_FIELD_NUMBER: builtins.int
     @property
-    def id(self) -> common_pb2.PointId: ...
+    def id(self) -> qdrant_common_pb2.PointId: ...
     @property
     def payload(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, json_with_int_pb2.Value]: ...
     @property
@@ -4582,7 +4582,7 @@ class PointStruct(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        id: common_pb2.PointId | None = ...,
+        id: qdrant_common_pb2.PointId | None = ...,
         payload: collections.abc.Mapping[builtins.str, json_with_int_pb2.Value] | None = ...,
         vectors: global___Vectors | None = ...,
     ) -> None: ...

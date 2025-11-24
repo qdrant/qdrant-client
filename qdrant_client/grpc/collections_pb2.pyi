@@ -4,12 +4,12 @@ isort:skip_file
 """
 import builtins
 import collections.abc
-import common_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
 import google.protobuf.message
 import json_with_int_pb2
+import qdrant_common_pb2
 import sys
 import typing
 
@@ -2798,14 +2798,14 @@ class ReplicatePoints(google.protobuf.message.Message):
     def to_shard_key(self) -> global___ShardKey:
         """Target shard key"""
     @property
-    def filter(self) -> common_pb2.Filter:
+    def filter(self) -> qdrant_common_pb2.Filter:
         """If set - only points matching the filter will be replicated"""
     def __init__(
         self,
         *,
         from_shard_key: global___ShardKey | None = ...,
         to_shard_key: global___ShardKey | None = ...,
-        filter: common_pb2.Filter | None = ...,
+        filter: qdrant_common_pb2.Filter | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["_filter", b"_filter", "filter", b"filter", "from_shard_key", b"from_shard_key", "to_shard_key", b"to_shard_key"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["_filter", b"_filter", "filter", b"filter", "from_shard_key", b"from_shard_key", "to_shard_key", b"to_shard_key"]) -> None: ...
