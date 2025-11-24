@@ -2602,8 +2602,6 @@ class GrpcToRest:
 
     @classmethod
     def convert_shard_transfer_info(cls, model: grpc.ShardTransferInfo) -> rest.ShardTransferInfo:
-        print("model", model)
-        print(getattr(model, "from"))
         return rest.ShardTransferInfo(
             shard_id=model.shard_id,
             to_shard_id=model.to_shard_id if model.HasField("to_shard_id") else None,

@@ -2326,7 +2326,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
     async def cluster_status(self) -> types.ClusterStatus:
         """Returns information about the cluster's current state and composition.
 
-        Returns: types.CollectionClusterInfo
+        Returns: types.ClusterStatus
         """
         return await self._client.cluster_status()
 
