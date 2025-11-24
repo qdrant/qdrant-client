@@ -1514,6 +1514,53 @@ create_shard_key_filled = grpc.CreateShardKey(
 )
 delete_shard_key = grpc.DeleteShardKey(shard_key=grpc.ShardKey(number=73))
 
+resharding_down = grpc.ReshardingDirection.Down
+resharding_up = grpc.ReshardingDirection.Up
+
+resharding_info = grpc.ReshardingInfo(
+    shard_id=2,
+    peer_id=3,
+    shard_key=grpc.ShardKey(keyword="fish"),
+    direction=resharding_down,
+)
+resharding_info_no_shard_key = grpc.ReshardingInfo(
+    shard_id=4,
+    peer_id=5,
+    direction=resharding_up,
+)
+shard_transfer_info = grpc.ShardTransferInfo(
+    shard_id=1, to_shard_id=2, to=3, sync=True, **{"from": 5}
+)
+shard_transfer_info_no_to_shard_id = grpc.ShardTransferInfo(
+    shard_id=3, to=2, sync=False, **{"from": 33}
+)
+
+remote_shard_info = grpc.RemoteShardInfo(
+    shard_id=1, peer_id=2, state=grpc.ReplicaState.ActiveRead, shard_key=grpc.ShardKey(number=42)
+)
+remote_shard_info_no_shard_key = grpc.RemoteShardInfo(
+    shard_id=11, peer_id=22, state=grpc.ReplicaState.ActiveRead
+)
+
+local_shard_info = grpc.LocalShardInfo(
+    shard_id=1,
+    points_count=999,
+    state=grpc.ReplicaState.Partial,
+    shard_key=grpc.ShardKey(keyword="sheep"),
+)
+local_shard_info_no_shard_key = grpc.LocalShardInfo(
+    shard_id=0, points_count=1000, state=grpc.ReplicaState.Active
+)
+
+collection_cluster_info = grpc.CollectionClusterInfoResponse(
+    peer_id=32,
+    shard_count=10,
+    local_shards=[local_shard_info, local_shard_info_no_shard_key],
+    remote_shards=[remote_shard_info, remote_shard_info_no_shard_key],
+    shard_transfers=[shard_transfer_info, shard_transfer_info_no_to_shard_id],
+    resharding_operations=[resharding_info, resharding_info_no_shard_key],
+)
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config, collection_config_w_metadata],
@@ -1730,6 +1777,12 @@ fixtures = {
     "Replica": [replica],
     "CreateShardKey": [create_shard_key, create_shard_key_filled],
     "DeleteShardKey": [delete_shard_key],
+    "ReshardingDirection": [resharding_down, resharding_up],
+    "ReshardingInfo": [resharding_info_no_shard_key, resharding_info],
+    "ShardTransferInfo": [shard_transfer_info, shard_transfer_info_no_to_shard_id],
+    "RemoteShardInfo": [remote_shard_info, remote_shard_info_no_shard_key],
+    "LocalShardInfo": [local_shard_info, local_shard_info_no_shard_key],
+    "CollectionClusterInfo": [collection_cluster_info],
 }
 
 
