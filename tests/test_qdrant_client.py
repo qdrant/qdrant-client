@@ -2334,3 +2334,33 @@ def test_cluster_collection_update(prefer_grpc):
             drop_sharding_key=models.DropShardingKey(shard_key="fish")
         ),
     )
+
+
+@pytest.mark.parametrize("prefer_grpc", [False, True])
+def test_cluster_methods(prefer_grpc):
+    major, minor, patch, dev = read_version()
+    if not (major is None or dev):
+        if (major, minor, patch) < (1, 16, 0):
+            pytest.skip("Cluster collection update is supported as of qdrant 1.16.0")
+
+    client = QdrantClient(prefer_grpc=prefer_grpc)
+    if client.collection_exists(COLLECTION_NAME):
+        client.delete_collection(COLLECTION_NAME, timeout=TIMEOUT)
+    client.create_collection(
+        collection_name=COLLECTION_NAME,
+        vectors_config=models.VectorParams(size=DIM, distance=models.Distance.DOT),
+        timeout=TIMEOUT,
+    )
+    client.upsert(
+        COLLECTION_NAME, points=[models.PointStruct(id=2, vector=np.random.rand(DIM).tolist())]
+    )
+    cluster_info = client.collection_cluster_info(collection_name=COLLECTION_NAME)
+    assert cluster_info.shard_count == 1
+    assert len(cluster_info.local_shards) == 1
+    assert cluster_info.remote_shards == []
+    assert cluster_info.shard_transfers == []
+
+    client.recover_current_peer()
+
+    cluster_status = client.cluster_status()
+    assert cluster_status.status == "enabled"

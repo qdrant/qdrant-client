@@ -2555,6 +2555,87 @@ class GrpcToRest:
             max_vectors=model.max_vectors if model.HasField("max_vectors") else None
         )
 
+    @classmethod
+    def convert_collection_cluster_info(
+        cls, model: grpc.CollectionClusterInfoResponse
+    ) -> rest.CollectionClusterInfo:
+        return rest.CollectionClusterInfo(
+            peer_id=model.peer_id,
+            shard_count=model.shard_count,
+            local_shards=[
+                cls.convert_local_shard_info(local_shard) for local_shard in model.local_shards
+            ],
+            remote_shards=[
+                cls.convert_remote_shard_info(remote_shard) for remote_shard in model.remote_shards
+            ],
+            shard_transfers=[
+                cls.convert_shard_transfer_info(shard_transfer_info)
+                for shard_transfer_info in model.shard_transfers
+            ],
+            resharding_operations=[
+                cls.convert_resharding_info(resharding_operation)
+                for resharding_operation in model.resharding_operations
+            ],
+        )
+
+    @classmethod
+    def convert_local_shard_info(cls, model: grpc.LocalShardInfo) -> rest.LocalShardInfo:
+        return rest.LocalShardInfo(
+            shard_id=model.shard_id,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.HasField("shard_key")
+            else None,
+            points_count=model.points_count,
+            state=cls.convert_replica_state(model.state),
+        )
+
+    @classmethod
+    def convert_remote_shard_info(cls, model: grpc.RemoteShardInfo) -> rest.RemoteShardInfo:
+        return rest.RemoteShardInfo(
+            shard_id=model.shard_id,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.HasField("shard_key")
+            else None,
+            peer_id=model.peer_id,
+            state=cls.convert_replica_state(model.state),
+        )
+
+    @classmethod
+    def convert_shard_transfer_info(cls, model: grpc.ShardTransferInfo) -> rest.ShardTransferInfo:
+        return rest.ShardTransferInfo(
+            shard_id=model.shard_id,
+            to_shard_id=model.to_shard_id if model.HasField("to_shard_id") else None,
+            to=model.to,
+            sync=model.sync,
+            **{"from": getattr(model, "from")},
+            # grpc has no field method
+            # method=cls.convert_shard_transfer_method(model.method) if model.HasField("method") else None,
+            # grpc has no field comment
+            # comment=model.comment if model.HasField("comment") else None,
+        )
+
+    @classmethod
+    def convert_resharding_info(cls, model: grpc.ReshardingInfo) -> rest.ReshardingInfo:
+        return rest.ReshardingInfo(
+            direction=cls.convert_resharding_direction(model.direction),
+            shard_id=model.shard_id,
+            peer_id=model.peer_id,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.HasField("shard_key")
+            else None,
+        )
+
+    @classmethod
+    def convert_resharding_direction(
+        cls, model: grpc.ReshardingDirection
+    ) -> rest.ReshardingDirection:
+        if model == grpc.ReshardingDirection.Up:
+            return rest.ReshardingDirection.UP
+        if model == grpc.ReshardingDirection.Down:
+            return rest.ReshardingDirection.DOWN
+
+        raise ValueError(f"Unsupported resharding direction: {model}")  # pragma: no cover
+
 
 # ----------------------------------------
 #
@@ -4596,7 +4677,7 @@ class RestToGrpc:
         if isinstance(model, rest.AbortReshardingOperation):  # pragma: no cover
             raise ValueError("AbortReshardingOperation has not grpc counterpart")
 
-        raise ValueError(f"invalid ClusterOperations model: {model}")
+        raise ValueError(f"invalid ClusterOperations model: {model}")  # pragma: no cover
 
     @classmethod
     def convert_move_shard(cls, model: rest.MoveShard) -> grpc.MoveShard:
@@ -4862,3 +4943,85 @@ class RestToGrpc:
         return grpc.StrictModeSparse(
             max_length=model.max_length,
         )
+
+    @classmethod
+    def convert_collection_cluster_info(
+        cls, model: rest.CollectionClusterInfo
+    ) -> grpc.CollectionClusterInfoResponse:
+        return grpc.CollectionClusterInfoResponse(
+            peer_id=model.peer_id,
+            shard_count=model.shard_count,
+            local_shards=[
+                cls.convert_local_shard_info(local_shard) for local_shard in model.local_shards
+            ],
+            remote_shards=[
+                cls.convert_remote_shard_info(remote_shard) for remote_shard in model.remote_shards
+            ],
+            shard_transfers=[
+                cls.convert_shard_transfer_info(shard_transfer_info)
+                for shard_transfer_info in model.shard_transfers
+            ],
+            resharding_operations=[
+                cls.convert_resharding_info(resharding_operation)
+                for resharding_operation in model.resharding_operations or []
+            ],
+        )
+
+    @classmethod
+    def convert_local_shard_info(cls, model: rest.LocalShardInfo) -> grpc.LocalShardInfo:
+        return grpc.LocalShardInfo(
+            shard_id=model.shard_id,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.shard_key is not None
+            else None,
+            points_count=model.points_count,
+            state=cls.convert_replica_state(model.state),
+        )
+
+    @classmethod
+    def convert_remote_shard_info(cls, model: rest.RemoteShardInfo) -> grpc.RemoteShardInfo:
+        return grpc.RemoteShardInfo(
+            shard_id=model.shard_id,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.shard_key is not None
+            else None,
+            peer_id=model.peer_id,
+            state=cls.convert_replica_state(model.state),
+        )
+
+    @classmethod
+    def convert_shard_transfer_info(cls, model: rest.ShardTransferInfo) -> grpc.ShardTransferInfo:
+        ugly_param = {"from": model.from_}  # `from` is reserved in python
+        return grpc.ShardTransferInfo(
+            shard_id=model.shard_id,
+            to_shard_id=model.to_shard_id if model.to_shard_id is not None else None,
+            to=model.to,
+            sync=model.sync,
+            **ugly_param,
+            # grpc has no field method
+            # method=cls.convert_shard_transfer_method(model.method) if model.method is not None else None,
+            # grpc has no comment field
+            # comment=model.comment if model.comment is not None else None,
+        )
+
+    @classmethod
+    def convert_resharding_info(cls, model: rest.ReshardingInfo) -> grpc.ReshardingInfo:
+        return grpc.ReshardingInfo(
+            direction=cls.convert_resharding_direction(model.direction),
+            shard_id=model.shard_id,
+            peer_id=model.peer_id,
+            shard_key=cls.convert_shard_key(model.shard_key)
+            if model.shard_key is not None
+            else None,
+        )
+
+    @classmethod
+    def convert_resharding_direction(
+        cls, model: rest.ReshardingDirection
+    ) -> grpc.ReshardingDirection:
+        if model == rest.ReshardingDirection.UP:
+            return grpc.ReshardingDirection.Up
+        if model == rest.ReshardingDirection.DOWN:
+            return grpc.ReshardingDirection.Down
+
+        raise ValueError(f"Unsupported resharding direction: {model}")  # pragma: no cover
