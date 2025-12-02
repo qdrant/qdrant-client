@@ -104,7 +104,7 @@ def test_sparse_retrieve() -> None:
     compare_client_results(
         local_client,
         remote_client,
-        lambda c: c.retrieve(COLLECTION_NAME, [id_], with_vectors=["sparse-image", "sparse-code"]),
+        lambda c: c.retrieve(COLLECTION_NAME, [id_], with_vectors=["sparse-image", "sparse-text"]),
     )
     compare_client_results(
         local_client,
@@ -112,7 +112,7 @@ def test_sparse_retrieve() -> None:
         lambda c: c.retrieve(
             COLLECTION_NAME,
             [id_],
-            with_vectors=["sparse-image", "sparse-code"],
+            with_vectors=["sparse-image", "sparse-text"],
             with_payload=False,
         ),
     )

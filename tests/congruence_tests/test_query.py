@@ -20,7 +20,6 @@ from tests.congruence_tests.test_common import (
     text_vector_size,
     sparse_text_vector_size,
     sparse_image_vector_size,
-    sparse_code_vector_size,
     generate_sparse_fixtures,
     sparse_vectors_config,
     generate_multivector_fixtures,
@@ -59,9 +58,6 @@ class TestSimpleSearcher:
         )
         self.sparse_vector_query_image = generate_random_sparse_vector(
             sparse_image_vector_size, density=0.2
-        )
-        self.sparse_vector_query_code = generate_random_sparse_vector(
-            sparse_code_vector_size, density=0.1
         )
 
         # multivector query vectors

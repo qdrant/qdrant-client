@@ -11,7 +11,6 @@ from tests.congruence_tests.test_common import (
     init_client,
     init_local,
     init_remote,
-    sparse_code_vector_size,
     sparse_image_vector_size,
     sparse_text_vector_size,
     sparse_vectors_config,
@@ -26,7 +25,6 @@ class TestSimpleSparseSearcher:
     def __init__(self):
         self.query_text = generate_random_sparse_vector(sparse_text_vector_size, density=0.3)
         self.query_image = generate_random_sparse_vector(sparse_image_vector_size, density=0.2)
-        self.query_code = generate_random_sparse_vector(sparse_code_vector_size, density=0.1)
 
     def simple_search_text(self, client: QdrantBase) -> list[models.ScoredPoint]:
         return client.query_points(
@@ -45,16 +43,6 @@ class TestSimpleSparseSearcher:
             using="sparse-image",
             with_payload=True,
             with_vectors=["sparse-image"],
-            limit=10,
-        ).points
-
-    def simple_search_code(self, client: QdrantBase) -> list[models.ScoredPoint]:
-        return client.query_points(
-            collection_name=COLLECTION_NAME,
-            using="sparse-code",
-            query=self.query_code,
-            with_payload=True,
-            with_vectors=True,
             limit=10,
         ).points
 
@@ -122,7 +110,7 @@ class TestSimpleSparseSearcher:
             using="sparse-image",
             query=self.query_image,
             with_payload=False,
-            with_vectors=["sparse-image", "sparse-code"],
+            with_vectors=["sparse-image", "sparse-text"],
             limit=10,
         ).points
 
@@ -186,7 +174,6 @@ def test_simple_search():
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
-    compare_client_results(local_client, remote_client, searcher.simple_search_code)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
     compare_client_results(local_client, remote_client, searcher.search_score_threshold)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
@@ -235,7 +222,6 @@ def test_simple_opt_vectors_search():
 
     compare_client_results(local_client, remote_client, searcher.simple_search_text)
     compare_client_results(local_client, remote_client, searcher.simple_search_image)
-    compare_client_results(local_client, remote_client, searcher.simple_search_code)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_offset)
     compare_client_results(local_client, remote_client, searcher.search_score_threshold)
     compare_client_results(local_client, remote_client, searcher.simple_search_text_select_payload)
