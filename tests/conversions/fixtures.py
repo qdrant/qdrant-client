@@ -1461,6 +1461,106 @@ replica_state_resharding = grpc.ReplicaState.Resharding
 replica_state_resharding_scale_down = grpc.ReplicaState.ReshardingScaleDown
 replica_state_active_read = grpc.ReplicaState.ActiveRead
 
+
+move_shard = grpc.MoveShard(shard_id=1, from_peer_id=2, to_peer_id=3)
+move_shard_snapshot = grpc.MoveShard(
+    shard_id=1, from_peer_id=2, to_peer_id=3, method=grpc.ShardTransferMethod.Snapshot
+)
+move_shard_stream_records = grpc.MoveShard(
+    shard_id=1, from_peer_id=2, to_peer_id=3, method=grpc.ShardTransferMethod.StreamRecords
+)
+move_shard_wal_delta = grpc.MoveShard(
+    shard_id=1, from_peer_id=2, to_peer_id=3, method=grpc.ShardTransferMethod.WalDelta
+)
+move_shard_resharding_stream_records = grpc.MoveShard(
+    shard_id=1,
+    from_peer_id=2,
+    to_peer_id=3,
+    method=grpc.ShardTransferMethod.ReshardingStreamRecords,
+)
+replicate_shard = grpc.ReplicateShard(shard_id=1, from_peer_id=2, to_peer_id=3)
+replicate_shard_transfer_method = grpc.ReplicateShard(
+    shard_id=1, from_peer_id=2, to_peer_id=3, method=grpc.ShardTransferMethod.Snapshot
+)
+abort_shard_transfer = grpc.AbortShardTransfer(shard_id=1, from_peer_id=2, to_peer_id=3)
+restart_transfer = grpc.RestartTransfer(shard_id=1, from_peer_id=2, to_peer_id=3)
+restart_transfer_transfer_method = grpc.RestartTransfer(
+    shard_id=1,
+    from_peer_id=2,
+    to_peer_id=3,
+    method=grpc.ShardTransferMethod.ReshardingStreamRecords,
+)
+replicate_points = grpc.ReplicatePoints(
+    from_shard_key=grpc.ShardKey(number=1),
+    to_shard_key=grpc.ShardKey(keyword="fish"),
+)
+replicate_points_filter = grpc.ReplicatePoints(
+    from_shard_key=grpc.ShardKey(keyword="dog"),
+    to_shard_key=grpc.ShardKey(number=2),
+    filter=grpc.Filter(
+        must=[
+            condition_has_id,
+        ]
+    ),
+)
+replica = grpc.Replica(shard_id=2, peer_id=101010)
+create_shard_key = grpc.CreateShardKey(shard_key=grpc.ShardKey(keyword="cats"))
+create_shard_key_filled = grpc.CreateShardKey(
+    shard_key=grpc.ShardKey(number=42),
+    shards_number=2,
+    replication_factor=3,
+    placement=[5],
+    initial_state=grpc.ReplicaState.PartialSnapshot,
+)
+delete_shard_key = grpc.DeleteShardKey(shard_key=grpc.ShardKey(number=73))
+
+resharding_down = grpc.ReshardingDirection.Down
+resharding_up = grpc.ReshardingDirection.Up
+
+resharding_info = grpc.ReshardingInfo(
+    shard_id=2,
+    peer_id=3,
+    shard_key=grpc.ShardKey(keyword="fish"),
+    direction=resharding_down,
+)
+resharding_info_no_shard_key = grpc.ReshardingInfo(
+    shard_id=4,
+    peer_id=5,
+    direction=resharding_up,
+)
+shard_transfer_info = grpc.ShardTransferInfo(
+    shard_id=1, to_shard_id=2, to=3, sync=True, **{"from": 5}
+)
+shard_transfer_info_no_to_shard_id = grpc.ShardTransferInfo(
+    shard_id=3, to=2, sync=False, **{"from": 33}
+)
+
+remote_shard_info = grpc.RemoteShardInfo(
+    shard_id=1, peer_id=2, state=grpc.ReplicaState.ActiveRead, shard_key=grpc.ShardKey(number=42)
+)
+remote_shard_info_no_shard_key = grpc.RemoteShardInfo(
+    shard_id=11, peer_id=22, state=grpc.ReplicaState.ActiveRead
+)
+
+local_shard_info = grpc.LocalShardInfo(
+    shard_id=1,
+    points_count=999,
+    state=grpc.ReplicaState.Partial,
+    shard_key=grpc.ShardKey(keyword="sheep"),
+)
+local_shard_info_no_shard_key = grpc.LocalShardInfo(
+    shard_id=0, points_count=1000, state=grpc.ReplicaState.Active
+)
+
+collection_cluster_info = grpc.CollectionClusterInfoResponse(
+    peer_id=32,
+    shard_count=10,
+    local_shards=[local_shard_info, local_shard_info_no_shard_key],
+    remote_shards=[remote_shard_info, remote_shard_info_no_shard_key],
+    shard_transfers=[shard_transfer_info, shard_transfer_info_no_to_shard_id],
+    resharding_operations=[resharding_info, resharding_info_no_shard_key],
+)
+
 fixtures = {
     "CollectionParams": [collection_params, collection_params_2],
     "CollectionConfig": [collection_config, collection_config_w_metadata],
@@ -1645,6 +1745,44 @@ fixtures = {
         replica_state_resharding_scale_down,
         replica_state_active_read,
     ],
+    "ClusterOperations": [  # general cluster operations to test RestToGrpc
+        move_shard,
+        move_shard_snapshot,
+        move_shard_stream_records,
+        move_shard_wal_delta,
+        move_shard_resharding_stream_records,
+        replicate_shard,
+        replicate_shard_transfer_method,
+        abort_shard_transfer,
+        restart_transfer,
+        restart_transfer_transfer_method,
+        replicate_points,
+        replicate_points_filter,
+        replica,
+        create_shard_key,
+        create_shard_key_filled,
+        delete_shard_key,
+    ],
+    "MoveShard": [
+        move_shard,
+        move_shard_snapshot,
+        move_shard_stream_records,
+        move_shard_wal_delta,
+        move_shard_resharding_stream_records,
+    ],
+    "ReplicateShard": [replicate_shard, replicate_shard_transfer_method],
+    "AbortShardTransfer": [abort_shard_transfer],
+    "RestartTransfer": [restart_transfer, restart_transfer_transfer_method],
+    "ReplicatePoints": [replicate_points, replicate_points_filter],
+    "Replica": [replica],
+    "CreateShardKey": [create_shard_key, create_shard_key_filled],
+    "DeleteShardKey": [delete_shard_key],
+    "ReshardingDirection": [resharding_down, resharding_up],
+    "ReshardingInfo": [resharding_info_no_shard_key, resharding_info],
+    "ShardTransferInfo": [shard_transfer_info, shard_transfer_info_no_to_shard_id],
+    "RemoteShardInfo": [remote_shard_info, remote_shard_info_no_shard_key],
+    "LocalShardInfo": [local_shard_info, local_shard_info_no_shard_key],
+    "CollectionClusterInfo": [collection_cluster_info],
 }
 
 

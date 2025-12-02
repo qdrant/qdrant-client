@@ -125,6 +125,8 @@ VersionInfo: TypeAlias = rest.VersionInfo
 
 ReplicaState: TypeAlias = rest.ReplicaState
 ClusterOperations: TypeAlias = rest.ClusterOperations
+ClusterStatus: TypeAlias = rest.ClusterStatus
+CollectionClusterInfo: TypeAlias = rest.CollectionClusterInfo
 
 # we can't use `nptyping` package due to numpy/python-version incompatibilities
 # thus we need to define precise type annotations while we support python3.7

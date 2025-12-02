@@ -2385,6 +2385,35 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
+        if self._prefer_grpc:
+            cluster_operation = RestToGrpc.convert_cluster_operations(cluster_operation)
+            grpc_operation = {}
+            if isinstance(cluster_operation, grpc.MoveShard):
+                grpc_operation["move_shard"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.ReplicateShard):
+                grpc_operation["replicate_shard"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.AbortShardTransfer):
+                grpc_operation["abort_transfer"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.Replica):
+                grpc_operation["drop_replica"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.CreateShardKey):
+                grpc_operation["create_shard_key"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.DeleteShardKey):
+                grpc_operation["delete_shard_key"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.RestartTransfer):
+                grpc_operation["restart_transfer"] = cluster_operation
+            elif isinstance(cluster_operation, grpc.ReplicatePoints):
+                grpc_operation["replicate_points"] = cluster_operation
+            else:
+                raise TypeError(f"Unknown cluster operation: {cluster_operation}")
+            return (
+                await self.grpc_collections.UpdateCollectionClusterSetup(
+                    grpc.UpdateCollectionClusterSetupRequest(
+                        collection_name=collection_name, timeout=timeout, **grpc_operation
+                    ),
+                    timeout=timeout if timeout is not None else self._timeout,
+                )
+            ).result
         update_result = (
             await self.rest.distributed_api.update_collection_cluster(
                 collection_name=collection_name,
@@ -2394,3 +2423,43 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         ).result
         assert update_result is not None, "Cluster collection update returned None"
         return update_result
+
+    async def cluster_status(self) -> types.ClusterStatus:
+        status_result = (await self.rest.distributed_api.cluster_status()).result
+        assert status_result is not None, "Cluster status returned None"
+        return status_result
+
+    async def recover_current_peer(self) -> bool:
+        recover_result = (await self.rest.distributed_api.recover_current_peer()).result
+        assert recover_result is not None, "Recover current peer returned None"
+        return recover_result
+
+    async def remove_peer(
+        self,
+        peer_id: int,
+        force: Optional[bool] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> bool:
+        update_result = (
+            await self.rest.distributed_api.remove_peer(
+                peer_id=peer_id, force=force, timeout=timeout
+            )
+        ).result
+        assert update_result is not None, "Remove peer returned None"
+        return update_result
+
+    async def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+        if self._prefer_grpc:
+            collection_info = await self.grpc_collections.CollectionClusterInfo(
+                grpc.CollectionClusterInfoRequest(collection_name=collection_name),
+                timeout=self._timeout,
+            )
+            return GrpcToRest.convert_collection_cluster_info(collection_info)
+        collection_info = (
+            await self.rest.distributed_api.collection_cluster_info(
+                collection_name=collection_name
+            )
+        ).result
+        assert collection_info is not None, "Collection cluster info returned None"
+        return collection_info

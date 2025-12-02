@@ -2288,6 +2288,16 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
+        """Updates the cluster configuration for a specified collection.
+
+        Args:
+            collection_name: Name of the collection
+            cluster_operation: Cluster operation to update
+            timeout: Timeout in seconds to wait for the operation to complete
+
+        Returns:
+            bool: Operation result
+        """
         assert len(kwargs) == 0, f"Unknown arguments: {list(kwargs.keys())}"
         return await self._client.cluster_collection_update(
             collection_name=collection_name,
@@ -2295,3 +2305,49 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
             timeout=timeout,
             **kwargs,
         )
+
+    async def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+        """Retrieves cluster details for a specified collection.
+
+        Args:
+            collection_name: Name of the collection
+
+        Returns:
+            types.CollectionClusterInfo: cluster details
+        """
+        return await self._client.collection_cluster_info(collection_name=collection_name)
+
+    async def cluster_status(self) -> types.ClusterStatus:
+        """Returns information about the cluster's current state and composition.
+
+        Returns: types.ClusterStatus
+        """
+        return await self._client.cluster_status()
+
+    async def recover_current_peer(self) -> bool:
+        """Attempts to restore or synchronize the node's current state with that of its peers.
+
+        Returns:
+            bool: Operation result
+        """
+        return await self._client.recover_current_peer()
+
+    async def remove_peer(
+        self,
+        peer_id: int,
+        force: Optional[bool] = None,
+        timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> bool:
+        """Attempts to remove the node from the cluster. This endpoint returns an error if the node (peer) has
+        shards on it.
+
+        Args:
+            peer_id: Peer ID
+            force: If true - removes peer even if it has shards/replicas on it.
+            timeout: Wait for operation commit timeout in seconds. If timeout is reached - request will fail
+
+        Returns:
+            bool: Operation result
+        """
+        return await self._client.remove_peer(peer_id, force=force, timeout=timeout, **kwargs)

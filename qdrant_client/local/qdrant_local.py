@@ -91,6 +91,8 @@ class QdrantLocal(QdrantBase):
             pass
 
     def _load(self) -> None:
+        deprecated_config_fields = ("init_from",)
+
         if not self.persistent:
             return
         meta_path = os.path.join(self.location, META_INFO_FILENAME)
@@ -102,6 +104,11 @@ class QdrantLocal(QdrantBase):
             with open(meta_path, "r") as f:
                 meta = json.load(f)
                 for collection_name, config_json in meta["collections"].items():
+                    for key in (
+                        deprecated_config_fields
+                    ):  # fixes backward compatibility by removing parameters deleted
+                        # from rest.CreateCollection
+                        config_json.pop(key, None)
                     config = rest_models.CreateCollection(**config_json)
                     collection_path = self._collection_path(collection_name)
                     collection = LocalCollection(
@@ -1009,10 +1016,33 @@ class QdrantLocal(QdrantBase):
         self,
         collection_name: str,
         cluster_operation: types.ClusterOperations,
-        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         raise NotImplementedError(
-            "Cluster collection updates is not supported in the local Qdrant. "
+            "Cluster collection update is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need a cluster"
+        )
+
+    def collection_cluster_info(self, collection_name: str) -> types.CollectionClusterInfo:
+        raise NotImplementedError(
+            "Collection cluster info is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need a cluster"
+        )
+
+    def cluster_status(self) -> types.ClusterStatus:
+        raise NotImplementedError(
+            "Cluster status is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need a cluster"
+        )
+
+    def recover_current_peer(self) -> bool:
+        raise NotImplementedError(
+            "Recover current peer is not supported in the local Qdrant. "
+            "Please use server Qdrant if you need a cluster"
+        )
+
+    def remove_peer(self, peer_id: int, **kwargs: Any) -> bool:
+        raise NotImplementedError(
+            "Remove peer info is not supported in the local Qdrant. "
             "Please use server Qdrant if you need a cluster"
         )
