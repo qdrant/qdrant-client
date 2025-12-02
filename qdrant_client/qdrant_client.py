@@ -6,7 +6,6 @@ from typing import (
     Iterable,
     Mapping,
     Sequence,
-    Union,
 )
 
 import numpy as np
@@ -270,18 +269,16 @@ class QdrantClient(QdrantFastembedMixin):
     def query_points(
         self,
         collection_name: str,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            types.Document,
-            types.Image,
-            types.InferenceObject,
-            None,
-        ] = None,
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | types.Document
+        | types.Image
+        | types.InferenceObject
+        | None = None,
         using: str | None = None,
         prefetch: types.Prefetch | list[types.Prefetch] | None = None,
         query_filter: types.Filter | None = None,
@@ -446,18 +443,16 @@ class QdrantClient(QdrantFastembedMixin):
         self,
         collection_name: str,
         group_by: str,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            types.Document,
-            types.Image,
-            types.InferenceObject,
-            None,
-        ] = None,
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | types.Document
+        | types.Image
+        | types.InferenceObject
+        | None = None,
         using: str | None = None,
         prefetch: types.Prefetch | list[types.Prefetch] | None = None,
         query_filter: types.Filter | None = None,

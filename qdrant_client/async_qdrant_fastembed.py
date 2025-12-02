@@ -11,7 +11,7 @@
 
 import uuid
 from itertools import tee
-from typing import Any, Iterable, Sequence, get_args, Union
+from typing import Any, Iterable, Sequence, get_args
 from copy import deepcopy
 import numpy as np
 from pydantic import BaseModel
@@ -746,18 +746,16 @@ class AsyncQdrantFastembedMixin(AsyncQdrantBase):
     @classmethod
     def _resolve_query(
         cls,
-        query: Union[
-            types.PointId,
-            list[float],
-            list[list[float]],
-            types.SparseVector,
-            types.Query,
-            types.NumpyArray,
-            models.Document,
-            models.Image,
-            models.InferenceObject,
-            None,
-        ],
+        query: types.PointId
+        | list[float]
+        | list[list[float]]
+        | types.SparseVector
+        | types.Query
+        | types.NumpyArray
+        | models.Document
+        | models.Image
+        | models.InferenceObject
+        | None,
     ) -> models.Query | None:
         """Resolves query interface into a models.Query object
 
