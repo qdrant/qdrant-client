@@ -2625,8 +2625,8 @@ class QdrantRemote(QdrantBase):
     def remove_peer(
         self,
         peer_id: int,
-        force: Optional[bool] = None,
-        timeout: Optional[int] = None,
+        force: bool | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         # grpc does not have remove peer api

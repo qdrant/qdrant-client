@@ -2333,11 +2333,7 @@ class AsyncQdrantClient(AsyncQdrantFastembedMixin):
         return await self._client.recover_current_peer()
 
     async def remove_peer(
-        self,
-        peer_id: int,
-        force: Optional[bool] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
+        self, peer_id: int, force: bool | None = None, timeout: int | None = None, **kwargs: Any
     ) -> bool:
         """Attempts to remove the node from the cluster. This endpoint returns an error if the node (peer) has
         shards on it.

@@ -1,4 +1,3 @@
-from typing import Optional
 from pathlib import Path
 from unittest.mock import patch
 from functools import lru_cache
@@ -121,7 +120,7 @@ def arg_interceptor(func, kwarg_storage):
 def populate_dense_collection(
     client: QdrantBase,
     points: list[models.PointStruct],
-    vector_name: Optional[str] = None,
+    vector_name: str | None = None,
     collection_name: str = COLLECTION_NAME,
     recreate: bool = True,
 ) -> None:

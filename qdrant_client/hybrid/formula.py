@@ -3,7 +3,7 @@ import math
 
 from qdrant_client.conversions.common_types import get_args_subscribed
 from qdrant_client.http import models
-from typing import Any, Tuple
+from typing import Any
 
 from qdrant_client.local import datetime_utils
 from qdrant_client.local.geo import geo_distance
@@ -220,7 +220,7 @@ def evaluate_decay_params(
     payload: models.Payload,
     has_vector: dict[str, bool],
     defaults: dict[str, Any],
-) -> Tuple[float, float, float, float]:
+) -> tuple[float, float, float, float]:
     x = evaluate_expression(params.x, point_id, scores, payload, has_vector, defaults)
 
     if params.target is None:

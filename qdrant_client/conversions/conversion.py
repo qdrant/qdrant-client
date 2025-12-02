@@ -2123,16 +2123,14 @@ class GrpcToRest:
     @classmethod
     def convert_cluster_operations(
         cls,
-        model: Union[
-            grpc.MoveShard,
-            grpc.ReplicateShard,
-            grpc.AbortShardTransfer,
-            grpc.Replica,
-            grpc.CreateShardKey,
-            grpc.DeleteShardKey,
-            grpc.RestartTransfer,
-            grpc.ReplicatePoints,
-        ],
+        model: grpc.MoveShard
+        | grpc.ReplicateShard
+        | grpc.AbortShardTransfer
+        | grpc.Replica
+        | grpc.CreateShardKey
+        | grpc.DeleteShardKey
+        | grpc.RestartTransfer
+        | grpc.ReplicatePoints,
     ) -> rest.ClusterOperations:
         if isinstance(model, grpc.MoveShard):
             return rest.MoveShardOperation(move_shard=cls.convert_move_shard(model))
@@ -4629,16 +4627,16 @@ class RestToGrpc:
     @classmethod
     def convert_cluster_operations(
         cls, model: rest.ClusterOperations
-    ) -> Union[
-        grpc.MoveShard,
-        grpc.ReplicateShard,
-        grpc.AbortShardTransfer,
-        grpc.Replica,
-        grpc.CreateShardKey,
-        grpc.DeleteShardKey,
-        grpc.RestartTransfer,
-        grpc.ReplicatePoints,
-    ]:
+    ) -> (
+        grpc.MoveShard
+        | grpc.ReplicateShard
+        | grpc.AbortShardTransfer
+        | grpc.Replica
+        | grpc.CreateShardKey
+        | grpc.DeleteShardKey
+        | grpc.RestartTransfer
+        | grpc.ReplicatePoints
+    ):
         if isinstance(model, rest.MoveShardOperation):
             operation = model.move_shard
             return cls.convert_move_shard(operation)

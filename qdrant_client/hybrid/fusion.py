@@ -1,5 +1,3 @@
-from typing import Optional
-
 from qdrant_client.http import models
 
 

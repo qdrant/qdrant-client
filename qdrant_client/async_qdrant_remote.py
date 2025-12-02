@@ -2435,11 +2435,7 @@ class AsyncQdrantRemote(AsyncQdrantBase):
         return recover_result
 
     async def remove_peer(
-        self,
-        peer_id: int,
-        force: Optional[bool] = None,
-        timeout: Optional[int] = None,
-        **kwargs: Any,
+        self, peer_id: int, force: bool | None = None, timeout: int | None = None, **kwargs: Any
     ) -> bool:
         update_result = (
             await self.rest.distributed_api.remove_peer(

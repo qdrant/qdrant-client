@@ -2462,8 +2462,8 @@ class QdrantClient(QdrantFastembedMixin):
     def remove_peer(
         self,
         peer_id: int,
-        force: Optional[bool] = None,
-        timeout: Optional[int] = None,
+        force: bool | None = None,
+        timeout: int | None = None,
         **kwargs: Any,
     ) -> bool:
         """Attempts to remove the node from the cluster. This endpoint returns an error if the node (peer) has
